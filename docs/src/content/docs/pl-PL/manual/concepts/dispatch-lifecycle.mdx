@@ -2,7 +2,7 @@
 title: Cykl życia wysyłania agentów
 description: Co dzieje się między nadejściem wiadomości a zamknięciem dziennika uruchomienia — składanie promptu, drzewa robocze, tożsamość, co ogranicza uruchomienie i jak jego wynik jest zapisywany rzetelnie.
 slug: pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Czym jest wysłanie
@@ -130,7 +130,7 @@ Gdy uruchomienie kończy się bez rezultatu wymaganego przez jego tryb — uruch
 Jest to celowe. Zmiana statusu poruszyłaby maszyny stanów zgłoszeń i potoków, które nie mają nic wspólnego z brakującym artefaktem. Oznacza to też, że sam zapis „status: completed” nigdy nie wystarcza, by uznać uruchomienie za udane — czytaj podsumowanie.
 :::
 
-Zamknięcie uruchomienia publikuje `AgentRunCompleted` i wiele od niego zależy: ramka powiadomienia i jej trwały wpis w kanale, przekaźnik na żywo, który wypycha ją do podłączonych klientów, sumowanie kosztów potoku, wznowienie kroku potoku, który czekał na to uruchomienie, ukończenie powiązanego zgłoszenia, zmapowanie orkiestracji na stan końcowy, decyzja nadzorcy celu o kontynuacji lub zatrzymaniu, rola kontrolera i ocena budżetu po uruchomieniu. Lista obecności pojawia się osobno, obserwując ostatnie dzienniki uruchomień, a nie samo zdarzenie.
+Zamknięcie uruchomienia publikuje `AgentRunCompleted` i wiele od niego zależy: sumowanie kosztów potoku, wznowienie kroku potoku, który czekał na to uruchomienie, ukończenie powiązanego zgłoszenia, zmapowanie orkiestracji na stan końcowy, decyzja nadzorcy celu o kontynuacji lub zatrzymaniu, rola kontrolera i ocena budżetu po uruchomieniu. Lista obecności pojawia się osobno, obserwując ostatnie dzienniki uruchomień, a nie samo zdarzenie. Powiadomienia „agent ukończył pracę” nie ma na tej liście: zdarzenie pojawia się, gdy kończy się strumień procesu, zanim odpowiedź zostanie zapisana, więc powiadomieniem jest `MessageReceived` danej tury, publikowane po utrwaleniu wiadomości.
 
 ## Budżety, po fakcie
 

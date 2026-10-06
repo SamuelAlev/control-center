@@ -4246,7 +4246,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Notifica per nuovi messaggi degli agenti in altri spazi.';
+      'Notifica quando vieni menzionato in uno spazio.';
 
   @override
   String get notifyPrMerged => 'Notifica quando una pull request viene unita.';
@@ -9015,7 +9015,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Accesso scaduto, si rinnova alla prossima esecuzione';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Parzialmente disponibile';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% usato';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15201,4 +15203,26 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Controlla di nuovo';
+
+  @override
+  String get ideQuickOpen => 'Vai al file';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Cerca i file della conversazione per nome e aprine uno in una scheda';
+
+  @override
+  String get ideQuickOpenHint => 'Cerca file per nome';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Aperto di recente';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Apri di lato';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Rimuovi dai file aperti di recente';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Nessun file aperto di recente';
 }

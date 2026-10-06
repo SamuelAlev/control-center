@@ -132,6 +132,7 @@ class CodeServerOpenEvent {
     required this.repoId,
     required this.path,
     this.line,
+    this.windowId,
   });
 
   /// The repo whose worktree hosts the file (may be empty → server picks first).
@@ -142,6 +143,10 @@ class CodeServerOpenEvent {
 
   /// Best-effort 0-based go-to line, or null.
   final int? line;
+
+  /// The bridge id of the editor window that navigated (null from an older
+  /// bridge), so the file's tab opens in the pane holding that window.
+  final String? windowId;
 }
 
 /// Streams the embedded editor's in-editor open-file requests for the given
@@ -161,6 +166,7 @@ final codeServerOpenRequestsProvider = StreamProvider.autoDispose
               repoId: m['repo_id'] as String? ?? '',
               path: m['path'] as String? ?? '',
               line: (m['line'] as num?)?.toInt(),
+              windowId: m['window_id'] as String?,
             ),
           );
     });
@@ -229,5 +235,52 @@ Future<bool> saveCodeServerFile(
     // A server without code-server (opUnknown) or a transport hiccup — treat as
     // "couldn't save"; the caller decides whether to still close the tab.
     return false;
+  }
+}
+
+/// Asks the editor window [windowId] (its bridge id) to show the
+/// worktree-relative [path], revealing the 1-based [line] when given. Backs a
+/// shared editor window following the app's tab switches. Best-effort: a server
+/// without code-server or a dropped call leaves the window on its old file.
+Future<void> openCodeServerFile(
+  RemoteRpcClient rpcClient, {
+  required String spaceId,
+  String? repoId,
+  required String windowId,
+  required String path,
+  int? line,
+}) async {
+  try {
+    await rpcClient.call('codeServer.openFile', {
+      'space_id': spaceId,
+      if (repoId != null && repoId.isNotEmpty) 'repo_id': repoId,
+      'window_id': windowId,
+      'path': path,
+      if (line != null && line > 0) 'line': line,
+    });
+  } catch (_) {
+    // opUnknown (no code-server) or a transport hiccup: nothing to switch.
+  }
+}
+
+/// Closes the worktree-relative [path] in the worktree's editor windows after
+/// its app tab closed; [revert] first discards unsaved edits (the close
+/// prompt's "Don't save"). Best-effort, like [openCodeServerFile].
+Future<void> closeCodeServerFile(
+  RemoteRpcClient rpcClient, {
+  required String spaceId,
+  String? repoId,
+  required String path,
+  bool revert = false,
+}) async {
+  try {
+    await rpcClient.call('codeServer.closeFile', {
+      'space_id': spaceId,
+      if (repoId != null && repoId.isNotEmpty) 'repo_id': repoId,
+      'path': path,
+      if (revert) 'revert': true,
+    });
+  } catch (_) {
+    // opUnknown (no code-server) or a transport hiccup: nothing to close.
   }
 }

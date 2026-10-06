@@ -2,7 +2,7 @@
 title: Γεγονότα τομέα
 description: Πλήρης κατάλογος των 53 γεγονότων τομέα, των φορτίων τους και των συνδρομητών στην πλευρά του διακομιστή που τα καταναλώνουν.
 slug: el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Δίαυλος γεγονότων
@@ -199,8 +199,8 @@ sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 
 | Κατηγορία              | Γεγονός προέλευσης        | Μέθοδος δικτύου                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (σας αναφέρει)                        |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, χωρίς αναφορά σε εσάς) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

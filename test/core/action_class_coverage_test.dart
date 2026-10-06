@@ -401,6 +401,13 @@ void main() {
         'the path to it), so the same reasoning as `worktree.writeFile` '
         'applies: the worktree is the containment and '
         '`fileWriteOutsideWorktree` would be a false claim.',
+    'codeServer.openFile':
+        'Tells an already-running editor window which worktree file to show. '
+        'It spawns nothing (`codeServer.open` does) and writes no file.',
+    'codeServer.closeFile':
+        'Closes a worktree file in the running editor, at most discarding its '
+        'unsaved in-memory buffer. Nothing on disk is written or deleted, so '
+        '`fileDelete` and `fileWriteOutsideWorktree` would be false claims.',
   };
 
   test('RPC catalog ops declare exactly their curated ActionClass sets', () {

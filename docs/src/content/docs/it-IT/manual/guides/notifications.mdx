@@ -2,7 +2,7 @@
 title: Configura le notifiche
 description: Attiva o disattiva le categorie, imposta un orario di silenzio e un suono e scopri quali notifiche ti arrivano e dove.
 slug: it-IT/manuale/guide/notifiche
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Questa guida ti mostra come configurare le notifiche e che cosa controlla
@@ -29,10 +29,10 @@ notifica.
 
 | Categoria                      | Si attiva quando                                                                     |
 | ------------------------------ | ------------------------------------------------------------------------------------ |
-| Agente completato              | Un agente ha completato un'esecuzione                                                |
+| Agente completato              | Un agente ha risposto in un'esecuzione avviata da te, oppure l'esecuzione non è riuscita |
 | PR pubblicata                  | Un agente ha pubblicato una PR                                                       |
 | PR unita                       | Una PR è stata unita                                                                 |
-| Nuovi messaggi                 | È arrivato un messaggio in uno spazio che non stai guardando                         |
+| Nuovi messaggi                 | Qualcuno ti ha menzionato in uno spazio                                              |
 | Menzionato in una pull request | Il polling delle notifiche di GitHub ha rilevato che sei stato menzionato in una PR  |
 | Revisione richiesta            | La tua revisione è stata effettivamente richiesta su una PR non in bozza             |
 | Revisione non aggiornata       | Sono arrivati nuovi commit su una pull request che hai già revisionato               |
@@ -103,6 +103,8 @@ tutto:
 
 - Un messaggio non menzionato proveniente da un'altra **persona** non diventa mai
   una notifica
+- In uno spazio condiviso, la risposta di un agente notifica chi ha avviato
+  quell'esecuzione, non ogni membro
 - Gli spazi agente-agente sono silenziati nella barra laterale, quindi non
   incrementano mai il badge dei non letti delle persone
 
@@ -151,7 +153,9 @@ svuota. Si stabilizza quando il marcatore è caricato.
 ### L'esecuzione di un agente è terminata ma non mi è arrivato nulla
 
 Verifica di non essere già stato nello spazio in cui è successo — una route
-attiva sopprime il proprio toast di sistema.
+attiva sopprime il proprio toast di sistema. In uno spazio condiviso,
+un'esecuzione avviata da qualcun altro notifica quella persona, non te. Un turno
+terminato senza risposta e senza errori non invia nulla.
 
 ## Guide correlate
 

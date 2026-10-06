@@ -121,6 +121,21 @@ void main() {
       expect(bounds.center.dy, closeTo(kLaptop.center.dy, 0.01));
     });
 
+    test('server-setup window fits a laptop display, keeping its width', () {
+      final bounds = resolveMainWindowBounds(
+        saved: null,
+        workAreas: const [],
+        primaryWorkArea: kLaptop,
+        defaultSize: serverSetupWindowSize,
+        minSize: serverSetupWindowMinSize,
+      );
+      // 920 tall does not fit the 907 work area: it fills the height instead
+      // of hanging the connect button off the bottom, and stays 600 wide.
+      expect(bounds.size, Size(serverSetupWindowSize.width, kLaptop.height));
+      expect(bounds.center.dx, closeTo(kLaptop.center.dx, 0.01));
+      expect(bounds.top, kLaptop.top);
+    });
+
     test('never goes below the minimum size, even on a tiny work area', () {
       const tiny = Rect.fromLTWH(0, 25, 800, 500);
       final bounds = resolveMainWindowBounds(

@@ -185,15 +185,15 @@ dependencies:
   chewie: ^1.14.1
   # WebRTC for the remote-control transport (one DataChannel per paired phone carries JSON-RPC). DataChannel-only — no camera/mic. Heavy native xcframework; see macos Podfile minimum.
   flutter_webrtc: ^1.6.0
-  # Pure-Dart QR widget for the remote-control pairing QR code.
-  qr_flutter: ^4.1.0
+  # QR matrix encoder behind the pairing/invite QR widget (lib/shared/widgets/qr_code_view.dart).
+  qr: ^4.0.0
   flutter_svg: ^2.3.0
 
   # Terminal emulator (xterm.dart) + host-side PTY
   xterm: ^4.0.0
   flutter_pty: ^0.4.2
 
-  kalender: ^0.32.0
+  kalender: ^0.33.0
   # Desktop in-app updater: Sparkle 2 (macOS) + WinSparkle (Windows) behind one
   # Dart seam (lib/core/update/desktop_updater*.dart). Updates the WHOLE app
   # bundle (UI + embedded cc_server + natives); the check cadence and the
@@ -276,6 +276,7 @@ flutter:
   assets:
     - assets/ide_logos/
     - assets/browser_logos/
+    - assets/ai_logos/
     - assets/sandbox/seccomp/
     - assets/sounds/
 

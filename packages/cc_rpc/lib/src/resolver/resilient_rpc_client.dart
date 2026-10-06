@@ -637,6 +637,7 @@ const _safeSubscriptions = <String>{
   'agents.watchForWorkspace',
   'agents.watchAll',
   'pr.watchOpenForWorkspace',
+  'pr.watchForSpaceBranches',
   'pr.watchNeedsMyReviewCount',
   'pr.watchRepoAccessForWorkspace',
   'pr_review.watchPullRequest',

@@ -4184,8 +4184,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'جب آپ کا ذکر pull request میں ہو تو مطلع کریں۔';
 
   @override
-  String get notifyNewMessages =>
-      'دوسری اسپیسز میں نئے ایجنٹ پیغامات پر مطلع کریں۔';
+  String get notifyNewMessages => 'جب کسی اسپیس میں آپ کا ذکر ہو تو مطلع کریں۔';
 
   @override
   String get notifyPrMerged => 'جب pull request مرج ہو تو مطلع کریں۔';
@@ -8912,7 +8911,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get subscriptionUsageSignInExpired => 'سائن اِن ختم، اگلے رن پر تجدید';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'جزوی طور پر دستیاب';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% استعمال';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15046,4 +15047,27 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'دوبارہ چیک کریں';
+
+  @override
+  String get ideQuickOpen => 'فائل پر جائیں';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'گفتگو کی فائلیں نام سے تلاش کریں اور ایک کو ٹیب میں کھولیں';
+
+  @override
+  String get ideQuickOpenHint => 'نام سے فائلیں تلاش کریں';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'حال ہی میں کھولی گئی';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'ساتھ میں کھولیں';
+
+  @override
+  String get ideQuickOpenRemoveRecent =>
+      'حال ہی میں کھولی گئی فائلوں سے ہٹائیں';
+
+  @override
+  String get ideQuickOpenNoRecent => 'حال ہی میں کوئی فائل نہیں کھولی گئی';
 }

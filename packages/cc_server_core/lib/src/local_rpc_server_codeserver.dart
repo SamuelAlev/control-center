@@ -96,7 +96,13 @@ extension _CodeServerMethods on LocalRpcServer {
             } else {
               final rawLine = decoded['line'];
               final line = rawLine is num ? rawLine.toInt() : null;
-              codeServerReport?.call(sid, path, line);
+              final window = decoded['window'];
+              codeServerReport?.call(
+                sid,
+                path,
+                line,
+                window is String && window.isNotEmpty ? window : null,
+              );
             }
           }
         }

@@ -2,7 +2,7 @@
 title: رویدادهای دامنه
 description: فهرست کامل ۵۳ رویداد دامنه، بار داده‌هایشان و مشترکان سمت سرور که آن‌ها را مصرف می‌کنند.
 slug: fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## گذرگاه رویداد
@@ -199,8 +199,8 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 
 | دسته                   | رویداد مبدأ               | متد شبکه‌ای                                                             |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (شما را منشن می‌کند)                  |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`، بدون منشن شما)   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -232,6 +232,6 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 
 ## همچنین ببینید
 
-- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)
-- [تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
-- [اعلان‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)
+- [رویدادهای دامنه](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)
+- [تریگرهای پایپ‌لاین](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
+- [اعلان‌ها](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)

@@ -7,9 +7,13 @@ import 'package:meta/meta.dart';
 
 /// Streams [SandboxViolation]s parsed from OS-level sandbox denial logs.
 ///
-/// On macOS this taps `log stream --predicate 'sender == "Sandbox"'`. On
-/// Linux there's no equivalent first-class log feed; the manager attributes
-/// violations from stderr `EPERM` text instead and this class is unused.
+/// On macOS this taps `log stream` for the kernel's `Sandbox` sender and the
+/// `com.apple.sandbox*` subsystems. Both feeds are needed: the kernel
+/// throttles its own lines ("N duplicate reports for …"), and recent macOS
+/// reports some denials — a refused `process-exec` among them — only through
+/// `sandboxd` (`com.apple.sandbox.reporting`). On Linux there's no equivalent
+/// first-class log feed; the manager attributes violations from stderr
+/// `EPERM` text instead and this class is unused.
 ///
 ///  - [isNoise]: a static allowlist of known-irrelevant denials
 ///    (audio HAL, iCloud daemons, MDM file probes) — these fire on every
@@ -43,7 +47,7 @@ class SandboxViolationMonitor {
       '--style',
       'ndjson',
       '--predicate',
-      'sender == "Sandbox" OR subsystem == "com.apple.sandbox"',
+      'sender == "Sandbox" OR subsystem BEGINSWITH "com.apple.sandbox"',
     ]);
 
     final recent = <String, DateTime>{};
@@ -101,9 +105,14 @@ class SandboxViolationMonitor {
     }
     try {
       final json = jsonDecode(line) as Map<String, dynamic>;
-      final message = json['eventMessage'] as String? ?? '';
       // "Sandbox: <proc>(<pid>) deny(1) file-read-data /Library/foo"
       // "Sandbox: <proc>(<pid>) deny file-write-create /Users/foo/bar"
+      // sandboxd's reports continue with a crash-report-style body
+      // ("Process: …", "Path: …") on the following lines — the denial is
+      // the first line alone.
+      final message = LineSplitter.split(
+        json['eventMessage'] as String? ?? '',
+      ).firstWhere((l) => l.trim().isNotEmpty, orElse: () => '');
       final procMatch = RegExp(
         r'Sandbox:\s+(\S+?)\((\d+)\)',
       ).firstMatch(message);
@@ -140,6 +149,16 @@ class SandboxViolationMonitor {
   @visibleForTesting
   static bool isNoise(ParsedLine parsed) {
     final v = parsed.violation;
+
+    // A refused exec is never framework noise: it is a command that failed.
+    // And the process that asked is whatever the agent's shell ran — `env`
+    // (Nix ships it inside a multi-call `coreutils`), `xargs`, `make`, a
+    // package manager — which no name list keeps up with. Dropping it on the
+    // process name is how a blocked `node` reached the agent as a bare
+    // "operation not permitted" and never reached the operator at all.
+    if (v.action.startsWith('process-exec')) {
+      return false;
+    }
 
     // Process-name allowlist: drop denials from any other sandboxed app
     // (Cursor, Spotlight, Mail, mdworker, …) that the log stream catches.

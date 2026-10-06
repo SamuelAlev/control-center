@@ -2,7 +2,7 @@
 title: 安裝
 description: 在瀏覽器使用 Control Center，或安裝桌面應用程式、設定代理後端，並選擇伺服器的執行位置。
 slug: zh-HK/手冊/安裝
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center 有兩種用法：在 [app.usectrl.dev](https://app.usectrl.dev) 以**網頁應用程式**
@@ -111,7 +111,7 @@ Linux 封存檔建基於 Ubuntu 22.04，其隨附的原生程式庫連結 glibc 
 
 Control Center 透過**配接器**派發代理。配接器只有兩個，清單是固定的，並且會自動偵測——無法再註冊其他配接器。
 
-**Control Center (built-in)** 配接器不需要外部 CLI：代理迴圈在伺服器內部執行，並透過 HTTP 與模型供應商通訊，因此永遠可用。在 **設定 → 伺服器 → 模型供應商** 下連接供應商。OpenAI、Codex、Cursor 與 Kimi Code 提供瀏覽器登入；Anthropic、OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai 與 Moonshot 則需要 API 金鑰。Codex 與 Cursor 是這個執行器上的供應商，而不是獨立的 CLI。z.ai 刻意列出兩次：**z.ai** 是按用量付費的開放平台，從你的帳戶餘額扣費；而 **z.ai GLM Coding Plan** 則是訂閱方案。兩者使用同一個帳戶金鑰，但 z.ai 從另一台主機提供該方案——把編碼方案的 key 貼到普通的 z.ai 圖磚中，每個請求都會回傳 `429 … "Insufficient balance or no resource package"`，因為該方案沒有可扣的餘額。Claude Pro/Max 訂閱不是 Anthropic API 登入；請改為透過 Claude Code 配接器使用該方案。你在該頁面_可以_新增的是**自訂供應商**——任何相容 OpenAI 或相容 Anthropic 的端點（Ollama、LM Studio、vLLM、私人部署），位於 **自訂供應商 → 新增供應商** 之下。
+**Control Center (built-in)** 配接器不需要外部 CLI：代理迴圈在伺服器內部執行，並透過 HTTP 與模型供應商通訊，因此永遠可用。在 **設定 → 伺服器 → 模型供應商** 下連接供應商。OpenAI、Codex、Cursor 與 Kimi Code 提供瀏覽器登入；Anthropic、OpenRouter、Google Gemini、DeepSeek、Mistral、xAI、z.ai 與 Moonshot 則需要 API 金鑰。Codex 與 Cursor 是這個執行器上的供應商，而不是獨立的 CLI。z.ai 刻意列出兩次：**z.ai** 是按用量付費的開放平台，從你的帳戶餘額扣費；而 **z.ai GLM Coding Plan** 則是訂閱方案。兩者使用同一個帳戶金鑰，但 z.ai 從另一台主機提供該方案——把編碼方案的 key 貼到普通的 z.ai 圖磚中，每個請求都會回傳 `429 … "Insufficient balance or no resource package"`，因為該方案沒有可扣的餘額。Claude Pro/Max 訂閱不是 Anthropic API 登入；請改為透過 Claude Code 配接器使用該方案。你在該頁面_可以_新增的是**自訂供應商**——任何相容 OpenAI 或相容 Anthropic 的端點（Ollama、LM Studio、vLLM、私人部署），位於 **自訂供應商 → 新增供應商** 之下。
 
 另一個配接器則包裝外部 CLI：
 

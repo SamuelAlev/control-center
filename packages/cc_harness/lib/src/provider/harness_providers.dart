@@ -84,11 +84,6 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
     displayName: 'OpenRouter',
     authMethods: [HarnessAuthMethod.apiKey],
   ),
-  'groq': HarnessProviderMeta(
-    id: 'groq',
-    displayName: 'Groq',
-    authMethods: [HarnessAuthMethod.apiKey],
-  ),
   'google': HarnessProviderMeta(
     id: 'google',
     displayName: 'Google Gemini',
@@ -155,7 +150,6 @@ const List<String> harnessSupportedProviderIds = [
   'codex',
   'cursor',
   'openrouter',
-  'groq',
   'google',
   'deepseek',
   'mistral',

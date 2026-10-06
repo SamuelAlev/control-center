@@ -4183,8 +4183,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notifyPrMentioned => 'קבל התראה כשמאזכרים אותך בבקשת משיכה.';
 
   @override
-  String get notifyNewMessages =>
-      'קבל התראה על הודעות חדשות מסוכנים במרחבים אחרים.';
+  String get notifyNewMessages => 'קבל התראה כשמאזכרים אותך במרחב.';
 
   @override
   String get notifyPrMerged => 'קבל התראה כשבקשת משיכה ממוזגת.';
@@ -8935,7 +8934,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get subscriptionUsageSignInExpired => 'ההתחברות פגה, תתחדש בהרצה הבאה';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'זמין חלקית';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% בשימוש';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15104,4 +15105,26 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'בדוק שוב';
+
+  @override
+  String get ideQuickOpen => 'מעבר לקובץ';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'חיפוש קובצי השיחה לפי שם ופתיחת אחד מהם בכרטיסייה';
+
+  @override
+  String get ideQuickOpenHint => 'חיפוש קבצים לפי שם';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'נפתח לאחרונה';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'פתיחה בצד';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'הסרה מהקבצים שנפתחו לאחרונה';
+
+  @override
+  String get ideQuickOpenNoRecent => 'אין קבצים שנפתחו לאחרונה';
 }

@@ -2,14 +2,17 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
-  
 minimumReleaseAgeExclude:
-  - '@cloudflare/unenv-preset@2.16.2'
-  - '@cloudflare/workerd-darwin-64@1.20260921.1'
-  - '@cloudflare/workerd-darwin-arm64@1.20260921.1'
-  - '@cloudflare/workerd-linux-64@1.20260921.1'
-  - '@cloudflare/workerd-linux-arm64@1.20260921.1'
-  - '@cloudflare/workerd-windows-64@1.20260921.1'
-  - miniflare@5.20260921.0-alpha || 5.20260926.1-alpha
-  - workerd@1.20260921.1
-  - wrangler@4.136.1 || 4.143.1
+  - '@astrojs/cloudflare@14.3.4'
+  - '@astrojs/internal-helpers@0.12.0'
+  - '@astrojs/markdown-satteri@0.4.3'
+  - '@astrojs/mdx@8.0.3'
+  - '@cloudflare/workerd-darwin-64@1.20261006.1'
+  - '@cloudflare/workerd-darwin-arm64@1.20261006.1'
+  - '@cloudflare/workerd-linux-64@1.20261006.1'
+  - '@cloudflare/workerd-linux-arm64@1.20261006.1'
+  - '@cloudflare/workerd-windows-64@1.20261006.1'
+  - astro@7.3.6
+  - miniflare@5.20261006.0-alpha
+  - workerd@1.20261006.1
+  - wrangler@4.148.0

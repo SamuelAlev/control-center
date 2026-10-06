@@ -392,6 +392,20 @@ class OpenPrPollingService {
     }
   }
 
+  /// Ticks once on subscribe and again whenever a sweep persists a changed
+  /// snapshot for [workspaceId] — the change feed for derived views (a
+  /// space's branch PRs) that re-ask [openPrForHeadBranch] rather than hold
+  /// the whole list. Like [watchRepoAccessForWorkspace] it registers no list
+  /// interest, so the idle cadence applies, but subscribing kicks one
+  /// freshness pass: a just-opened surface sees a PR opened on the forge
+  /// since the last sweep.
+  Stream<void> watchSnapshotChanges(String workspaceId) {
+    unawaited(pollSoon(workspaceId));
+    return _cache(
+      workspaceId,
+    ).watch(workspaceId, cacheKind, cacheKey).map((_) {});
+  }
+
   /// Requests a near-term freshness pass for [workspaceId] (subscribe, or an
   /// external hint like a GitHub notification). Throttled so bursts collapse.
   Future<void> pollSoon(String workspaceId) async {

@@ -4238,7 +4238,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Benachrichtigen bei neuen Agent-Nachrichten in anderen Bereichen.';
+      'Benachrichtigen, wenn du in einem Bereich erwähnt wirst.';
 
   @override
   String get notifyPrMerged =>
@@ -9011,7 +9011,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Anmeldung abgelaufen, erneuert sich beim nächsten Lauf';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Teilweise verfügbar';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent % verbraucht';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15203,4 +15205,26 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Erneut prüfen';
+
+  @override
+  String get ideQuickOpen => 'Zu Datei wechseln';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Dateien der Unterhaltung nach Namen suchen und eine in einem Tab öffnen';
+
+  @override
+  String get ideQuickOpenHint => 'Dateien nach Namen suchen';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Zuletzt geöffnet';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Seitlich öffnen';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Aus „Zuletzt geöffnet“ entfernen';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Keine zuletzt geöffneten Dateien';
 }

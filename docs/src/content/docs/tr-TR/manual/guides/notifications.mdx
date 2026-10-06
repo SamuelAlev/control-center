@@ -2,7 +2,7 @@
 title: Bildirimleri yapılandırma
 description: Kategorileri açıp kapatın, sessiz saatleri ve bir ses belirleyin; hangi bildirimlerin size nerede ulaştığını öğrenin.
 slug: tr-TR/kilavuz/nasil-yapilir/bildirimler
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Bu kılavuz, bildirimleri nasıl yapılandıracağınızı ve her ayarın gerçekte neyi
@@ -28,10 +28,10 @@ istemcisinde hiçbir bildirim yüzeyi yoktur.
 
 | Kategori                  | Ne zaman tetiklenir                                                        |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Ajan tamamlandı           | Bir ajan bir çalıştırmayı tamamladı                                        |
+| Ajan tamamlandı           | Başlattığınız bir çalıştırmada bir ajan yanıt verdi ya da çalıştırma başarısız oldu |
 | PR yayınlandı             | Bir ajan bir PR yayınladı                                                  |
 | PR birleştirildi          | Bir PR birleştirildi                                                       |
-| Yeni mesajlar             | Bakmadığınız bir alana bir mesaj geldi                                     |
+| Yeni mesajlar             | Biri bir alanda sizden bahsetti                                            |
 | Pull request'te bahsedildi | GitHub'ın bildirim anketi bir PR'da sizden bahsedildiğini gördü           |
 | İnceleme istendi          | Taslak olmayan bir PR için incelemeniz gerçekten istendi                   |
 | İnceleme güncel değil     | Zaten incelediğiniz bir pull request'e yeni commit'ler geldi                |
@@ -99,6 +99,8 @@ noktasında işler:
 
 - Başka bir **insandan** gelip sizden bahsedilmeyen bir mesaj asla bildirime
   dönüşmez
+- Paylaşılan bir alanda bir ajanın yanıtı her üyeye değil, o çalıştırmayı
+  başlatan kişiye bildirim gönderir
 - Ajanlar arası alanlar kenar çubuğunda sessize alınmıştır, bu yüzden insan
   okunmamış rozetini hiç artırmazlar
 
@@ -145,7 +147,9 @@ yüklendiğinde bu durum oturur.
 ### Bir ajanın çalıştırması bitti ama bana hiç bildirim gelmedi
 
 Olayın gerçekleştiği alanda zaten bulunmadığınızı denetleyin — etkin bir rota
-kendi işletim sistemi bildirimini bastırır.
+kendi işletim sistemi bildirimini bastırır. Paylaşılan bir alanda başka birinin
+başlattığı çalıştırma size değil, o kişiye bildirim gönderir. Yanıt ve hata
+olmadan biten bir tur hiçbir şey göndermez.
 
 ## İlgili kılavuzlar
 

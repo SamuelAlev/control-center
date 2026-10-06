@@ -2,7 +2,7 @@
 title: Kitaran hayat penghantaran ejen
 description: Apa yang berlaku antara ketibaan mesej dan penutupan log larian — pemasangan prompt, worktree, identiti, apa yang membatasi larian dan bagaimana hasilnya direkodkan secara jujur.
 slug: ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Apakah itu penghantaran
@@ -130,7 +130,7 @@ Apabila larian tamat tanpa hasil serahan yang diperlukan oleh modusnya — laria
 Ini disengajakan. Menukar status akan menggerakkan mesin keadaan tiket dan pipeline yang tiada kaitan dengan artifak yang hilang itu. Ia juga bermakna "status: completed" sahaja tidak pernah mencukupi untuk menyimpulkan bahawa larian berjaya — bacalah ringkasannya.
 :::
 
-Menutup larian menerbitkan `AgentRunCompleted` dan banyak yang bergantung padanya: bingkai pemberitahuan dan entri suapan tahan lamanya, penyampai langsung yang menolaknya kepada klien yang bersambung, penghimpunan kos pipeline, menyambung semula langkah pipeline yang menunggu larian, menyempurnakan tiket penyokong, memetakan orkestrasi kepada keadaan terminal, keputusan terus-atau-berhenti penyelia matlamat, peranan penyemak dan penilaian belanjawan selepas larian. Senarai kehadiran menyusul secara berasingan, dengan memerhati log larian terkini dan bukannya peristiwa itu.
+Menutup larian menerbitkan `AgentRunCompleted` dan banyak yang bergantung padanya: penghimpunan kos pipeline, menyambung semula langkah pipeline yang menunggu larian, menyempurnakan tiket penyokong, memetakan orkestrasi kepada keadaan terminal, keputusan terus-atau-berhenti penyelia matlamat, peranan penyemak dan penilaian belanjawan selepas larian. Senarai kehadiran menyusul secara berasingan, dengan memerhati log larian terkini dan bukannya peristiwa itu. Pemberitahuan "ejen selesai" tiada dalam senarai itu: peristiwa tersebut dicetuskan apabila aliran proses tamat, sebelum balasan ditulis, jadi pemberitahuannya ialah `MessageReceived` giliran itu, yang diterbitkan sebaik sahaja mesej disimpan.
 
 ## Belanjawan, selepas kejadian
 

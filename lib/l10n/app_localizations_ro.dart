@@ -4247,7 +4247,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Notifică la mesaje noi de agent în alte spații.';
+      'Notifică când ești menționat într-un spațiu.';
 
   @override
   String get notifyPrMerged => 'Notifică când un pull request este fuzionat.';
@@ -9037,7 +9037,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Autentificarea a expirat, se reînnoiește la următoarea rulare';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Parțial disponibil';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% folosit';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15265,4 +15267,26 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Verifică din nou';
+
+  @override
+  String get ideQuickOpen => 'Accesează fișierul';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Caută fișierele conversației după nume și deschide unul într-o filă';
+
+  @override
+  String get ideQuickOpenHint => 'Caută fișiere după nume';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Deschis recent';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Deschide în lateral';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Elimină din deschise recent';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Niciun fișier deschis recent';
 }

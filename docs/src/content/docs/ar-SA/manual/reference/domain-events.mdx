@@ -2,7 +2,7 @@
 title: أحداث النطاق
 description: الفهرس الكامل لأحداث النطاق وعددها 53، وحمولاتها، والمشتركون على جانب الخادم الذين يستهلكونها.
 slug: ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## ناقل الأحداث
@@ -199,8 +199,8 @@ sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 
 | الفئة | حدث المصدر | أسلوب السلك |
 | --- | --- | --- |
-| `newMessage` | `MessageReceived` | `notifications/message_received` |
-| `agentRunCompleted` | `AgentRunCompleted` | `notifications/agent_run_completed` |
+| `newMessage` | `MessageReceived` | `notifications/message_received` (يشير إليك) |
+| `agentRunCompleted` | `MessageReceived` | `notifications/message_received` (`is_agent_message`، دون إشارة إليك) |
 | `ticketAssigned` | `TicketAssigned` | `notifications/ticket_assigned` |
 | `ticketStatusChanged` | `TicketStatusChanged` | `notifications/ticket_status_changed` |
 | `pullRequestPublished` | `PullRequestPublished` | `notifications/pr_published` |

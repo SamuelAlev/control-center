@@ -2,7 +2,7 @@
 title: Configurar notificaciones
 description: Activa o desactiva categorías, define el horario de silencio y un sonido, y averigua qué notificaciones te llegan y dónde.
 slug: es-ES/manual/guias/notificaciones
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Esta guía te muestra cómo configurar las notificaciones y qué controla de verdad
@@ -29,10 +29,10 @@ notificaciones.
 
 | Categoría                 | Se activa cuando                                                              |
 | ------------------------- | ----------------------------------------------------------------------------- |
-| Agente finalizado         | Un agente terminó una ejecución                                               |
+| Agente finalizado         | Un agente respondió en una ejecución que iniciaste, o la ejecución falló      |
 | PR publicada              | Un agente publicó una PR                                                      |
 | PR fusionada              | Se fusionó una PR                                                             |
-| Nuevos mensajes           | Llegó un mensaje a un espacio que no estás mirando                            |
+| Nuevos mensajes           | Alguien te mencionó en un espacio                                             |
 | Mencionado en pull request | El sondeo de notificaciones de GitHub detectó que te mencionaron en una PR   |
 | Revisión solicitada       | Se solicitó de verdad tu revisión en una PR que no es un borrador             |
 | Revisión desactualizada   | Llegaron commits nuevos a una pull request que ya habías revisado             |
@@ -105,6 +105,8 @@ enviar:
 
 - Un mensaje de otro **humano** en el que no te mencionan nunca se convierte en
   una notificación
+- En un espacio compartido, la respuesta de un agente avisa a quien inició esa
+  ejecución, no a todos los miembros
 - Los espacios entre agentes están silenciados en la barra lateral, así que
   nunca incrementan la insignia de no leídos de los humanos
 
@@ -153,7 +155,9 @@ se vacía. Se asienta en cuanto se carga la marca.
 ### La ejecución de un agente ha terminado pero no me ha avisado nada
 
 Comprueba que no estuvieras ya en el espacio donde ocurrió: una ruta activa
-suprime su propio toast del sistema operativo.
+suprime su propio toast del sistema operativo. En un espacio compartido, una
+ejecución que inició otra persona le avisa a ella, no a ti. Un turno que terminó
+sin respuesta y sin error no envía nada.
 
 ## Guías relacionadas
 

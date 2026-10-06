@@ -149,6 +149,7 @@ class SettingsRailItem extends StatelessWidget {
     this.tone,
     this.statusLabel,
     this.icon,
+    this.leading,
     this.selected = false,
     this.trailing,
   });
@@ -165,6 +166,10 @@ class SettingsRailItem extends StatelessWidget {
 
   /// A leading icon when there is no [tone] dot.
   final IconData? icon;
+
+  /// A mark drawn between the status dot and the name (a brand logo). The
+  /// dot keeps the state; this only says whose row it is.
+  final Widget? leading;
 
   /// Whether the row is the selected one.
   final bool selected;
@@ -201,6 +206,10 @@ class SettingsRailItem extends StatelessWidget {
               else if (icon != null)
                 Icon(icon, size: 15, color: tokens.textSecondary),
               const SizedBox(width: AppSpacing.sm),
+              if (leading case final leading?) ...[
+                leading,
+                const SizedBox(width: AppSpacing.sm),
+              ],
               Expanded(
                 child: Text(
                   label,

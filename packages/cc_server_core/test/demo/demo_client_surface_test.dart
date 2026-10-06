@@ -65,6 +65,8 @@ void main() {
     'mcp.setToken',
     'codeServer.open',
     'codeServer.saveFile',
+    'codeServer.openFile',
+    'codeServer.closeFile',
     // Settings surfaces that render their own "not available on this server"
     // state from an `opUnknown` (the SSO card's warning alert, the adapter
     // and provider-app panels).

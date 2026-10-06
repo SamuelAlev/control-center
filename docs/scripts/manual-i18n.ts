@@ -143,11 +143,8 @@ export function blobHash(bytes: Buffer): string {
   return createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 }
 
-/**
- * Calls [visit] with every root-relative link target (`](/x)`, `href="/x"`)
- * outside fenced code, replacing it with the result when one is returned.
- */
-export function mapRootLinks(text: string, visit: (path: string, line: number) => string | undefined): string {
+/** Maps every line of [text] outside fenced code through [map] (1-based line numbers). */
+function mapProseLines(text: string, map: (source: string, line: number) => string): string {
   let fence: string | undefined;
   return text
     .split('\n')
@@ -157,13 +154,46 @@ export function mapRootLinks(text: string, visit: (path: string, line: number) =
         fence = fence ? undefined : marker;
         return source;
       }
-      if (fence) return source;
-      const replace = (_: string, lead: string, path: string) => lead + (visit(path, index + 1) ?? path);
-      return source
-        .replace(/(\]\()(\/[^)\s#?"]*)/g, replace)
-        .replace(/(\bhref=["'])(\/[^"'\s#?]*)/g, replace);
+      return fence ? source : map(source, index + 1);
     })
     .join('\n');
+}
+
+/**
+ * Calls [visit] with every root-relative link target (`](/x)`, `href="/x"`)
+ * outside fenced code, replacing it with the result when one is returned.
+ */
+export function mapRootLinks(text: string, visit: (path: string, line: number) => string | undefined): string {
+  return mapProseLines(text, (source, line) => {
+    const replace = (_: string, lead: string, path: string) => lead + (visit(path, line) ?? path);
+    return source
+      .replace(/(\]\()(\/[^)\s#?"]*)/g, replace)
+      .replace(/(\bhref=["'])(\/[^"'\s#?]*)/g, replace);
+  });
+}
+
+/**
+ * Lines outside fenced code with a link whose text lost its closing bracket
+ * (`[text(/x)`, the text possibly wrapped over several lines). Markdown
+ * renders that as literal text, and [mapRootLinks] never sees the target, so
+ * the link checks would pass it silently.
+ */
+export function unclosedLinkLines(text: string): number[] {
+  // Fenced code blanked, so offsets still map to line numbers.
+  const prose = new Set<number>();
+  mapProseLines(text, (source, line) => (prose.add(line), source));
+  const visible = text.split('\n').map((source, index) => (prose.has(index + 1) ? source : '')).join('\n');
+  const lines: number[] = [];
+  for (const match of visible.matchAll(/\((\/[^)\s]*)\)/g)) {
+    const at = match.index;
+    if (visible[at - 1] === ']') continue;
+    const before = visible.slice(0, at);
+    const open = before.lastIndexOf('[');
+    if (open > before.lastIndexOf(']') && open > before.lastIndexOf('\n\n')) {
+      lines.push(before.split('\n').length);
+    }
+  }
+  return lines;
 }
 
 const trimSlashes = (path: string) => path.replace(/^\/+|\/+$/g, '');
@@ -256,6 +286,9 @@ function linkProblems(locale: string, page: LocalePage, file: string, routes: Ma
     }
     return undefined;
   });
+  for (const line of unclosedLinkLines(page.text)) {
+    problems.push({ kind: 'links', locale, file, line, message: 'has a link missing the `]` after its text' });
+  }
   return problems;
 }
 

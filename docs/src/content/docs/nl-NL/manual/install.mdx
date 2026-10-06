@@ -2,7 +2,7 @@
 title: Installeren
 description: Gebruik Control Center in de browser of installeer de desktopapp, stel een agentbackend in en kies waar zijn server draait.
 slug: nl-NL/handleiding/installeren
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center werkt op twee manieren: als **webapp** op
@@ -120,7 +120,7 @@ Het Linux-archief is gebouwd op Ubuntu 22.04 en de meegeleverde native bibliothe
 
 Control Center dispatcht agenten via **adapters**. Er zijn er twee, de lijst ligt vast en ze worden automatisch gedetecteerd — je kunt er geen derde registreren.
 
-De adapter **Control Center (built-in)** heeft geen externe CLI nodig: de agentloop draait in de server en praat via HTTP met modelaanbieders, dus hij is altijd beschikbaar. Verbind een provider onder **Instellingen → Server → Modelaanbieders**. OpenAI, Codex, Cursor en Kimi Code bieden inloggen via de browser; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai en Moonshot vragen om een API-sleutel. Codex en Cursor zijn providers op deze runner, geen aparte CLI's. z.ai staat met opzet twee keer in de lijst: **z.ai** is het open platform met betalen naar gebruik, afgerekend op het saldo van je account, terwijl **z.ai GLM Coding Plan** het abonnement is. Het is dezelfde accountsleutel, maar z.ai bedient het abonnement vanaf een andere host — plak je een key van het Coding Plan in de gewone z.ai-tegel, dan komt elk verzoek terug met `429 … "Insufficient balance or no resource package"`, omdat het abonnement geen saldo heeft om te besteden. Een Claude Pro/Max-abonnement is geen Anthropic API-login; bereik dat abonnement via de Claude Code-adapter. Wat je op die pagina _wel_ kunt toevoegen is een **aangepaste provider** — elk OpenAI- of Anthropic-compatibel endpoint (Ollama, LM Studio, vLLM, een private deployment) onder **Aangepaste providers → Provider toevoegen**.
+De adapter **Control Center (built-in)** heeft geen externe CLI nodig: de agentloop draait in de server en praat via HTTP met modelaanbieders, dus hij is altijd beschikbaar. Verbind een provider onder **Instellingen → Server → Modelaanbieders**. OpenAI, Codex, Cursor en Kimi Code bieden inloggen via de browser; Anthropic, OpenRouter, Google Gemini, DeepSeek, Mistral, xAI, z.ai en Moonshot vragen om een API-sleutel. Codex en Cursor zijn providers op deze runner, geen aparte CLI's. z.ai staat met opzet twee keer in de lijst: **z.ai** is het open platform met betalen naar gebruik, afgerekend op het saldo van je account, terwijl **z.ai GLM Coding Plan** het abonnement is. Het is dezelfde accountsleutel, maar z.ai bedient het abonnement vanaf een andere host — plak je een key van het Coding Plan in de gewone z.ai-tegel, dan komt elk verzoek terug met `429 … "Insufficient balance or no resource package"`, omdat het abonnement geen saldo heeft om te besteden. Een Claude Pro/Max-abonnement is geen Anthropic API-login; bereik dat abonnement via de Claude Code-adapter. Wat je op die pagina _wel_ kunt toevoegen is een **aangepaste provider** — elk OpenAI- of Anthropic-compatibel endpoint (Ollama, LM Studio, vLLM, een private deployment) onder **Aangepaste providers → Provider toevoegen**.
 
 De andere adapter omhult een externe CLI:
 

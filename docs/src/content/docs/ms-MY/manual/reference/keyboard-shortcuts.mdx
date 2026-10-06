@@ -2,10 +2,10 @@
 title: Pintasan papan kekunci
 description: Daftar penuh ikatan kekunci, mengikut skop, dengan syarat setiap pintasan berfungsi.
 slug: ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Pintasan datang daripada satu daftar `const`, `KeybindingRegistry` dalam `lib/core/constants/keybindings.dart`. Ia mengandungi **48 ikatan**. Tetapan → Anda → Ikatan kekunci memaparkan daftar itu sebagai **rujukan baca sahaja**: tiada UI pengikatan semula dan tiada fail ikatan kekunci pengguna.
+Pintasan datang daripada satu daftar `const`, `KeybindingRegistry` dalam `lib/core/constants/keybindings.dart`. Ia mengandungi **49 ikatan**. Tetapan → Anda → Ikatan kekunci memaparkan daftar itu sebagai **rujukan baca sahaja**: tiada UI pengikatan semula dan tiada fail ikatan kekunci pengguna.
 
 `Cmd` di bawah ialah pengubah arahan utama — ⌘ pada macOS, Ctrl pada Windows dan Linux. Sesuatu ikatan hanya berfungsi apabila perintahnya mempunyai pengendali berdaftar pada skrin semasa dan klausa `when`-nya dipenuhi; `!textInputFocus` bermaksud kekunci itu diserahkan kepada medan teks yang difokuskan.
 
@@ -72,7 +72,7 @@ Skop `/users/`. Klausa `when` ialah regex terhadap `/users/<login>` **atau** `/t
 | `/`            | Fokus carian |
 | `Cmd/Ctrl + F` | Fokus carian |
 
-## Ruang (8)
+## Ruang (9)
 
 Skop `/spaces`. Klausa `when` menggunakan regex supaya ia berfungsi pada senarai ruang (`/spaces`) dan ruang yang dipilih (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Skop `/spaces`. Klausa `when` menggunakan regex supaya ia berfungsi pada senarai
 | `Cmd/Ctrl + T`         | Buka tab editor        | Pada laluan `/spaces` |
 | `Cmd/Ctrl + W`         | Tutup tab editor       | Pada laluan `/spaces` |
 | `Cmd/Ctrl + B`         | Togol bar sisi editor  | Pada laluan `/spaces` |
+| `Cmd/Ctrl + P`         | Pergi ke fail          | Pada laluan `/spaces` |
+
+Pergi ke fail membuka pemilih bagi fail perbualan. Tanpa menaip apa-apa, ia menyenaraikan fail yang paling baru anda buka; menaip akan mencari setiap fail dalam worktree perbualan. `Enter` membuka fail yang dipilih dalam tab baharu, `Cmd/Ctrl + Enter` atau butang pisah pada baris membukanya dalam anak tetingkap di sebelah kanan, dan `×` pada baris fail terbaru mengalih keluarnya daripada senarai.
 
 Hantar dengan Enter dimiliki oleh medan teks komposer; tekan untuk bercakap dimiliki oleh butang mikrofon komposer (pengendali papan kekunci perkakasan tersendiri). Kedua-duanya disenaraikan dalam daftar untuk rujukan tetapan.
 

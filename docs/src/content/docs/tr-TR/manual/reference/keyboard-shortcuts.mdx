@@ -2,10 +2,10 @@
 title: Klavye kısayolları
 description: Kapsama göre eksiksiz kısayol kayıt defteri ve her kısayolun hangi koşullarda devreye girdiği.
 slug: tr-TR/kilavuz/referans/klavye-kisayollari
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Kısayollar tek bir `const` kayıt defterinden gelir: `lib/core/constants/keybindings.dart` içindeki `KeybindingRegistry`. Bu kayıt defteri **48 bağlama** barındırır. Ayarlar → Siz → Kısayollar, bu kayıt defterini **salt okunur bir referans** olarak gösterir: yeniden atama arayüzü yoktur ve kullanıcı kısayol dosyası bulunmaz.
+Kısayollar tek bir `const` kayıt defterinden gelir: `lib/core/constants/keybindings.dart` içindeki `KeybindingRegistry`. Bu kayıt defteri **49 bağlama** barındırır. Ayarlar → Siz → Kısayollar, bu kayıt defterini **salt okunur bir referans** olarak gösterir: yeniden atama arayüzü yoktur ve kullanıcı kısayol dosyası bulunmaz.
 
 Aşağıdaki `Cmd`, birincil komut değiştiricisidir — macOS’ta ⌘, Windows ve Linux’ta Ctrl. Bir bağlama ancak komutunun geçerli ekranda kayıtlı bir işleyicisi varsa ve `when` koşulu sağlanıyorsa devreye girer; `!textInputFocus`, tuşun bunun yerine odaklanmış bir metin alanına aktarıldığı anlamına gelir.
 
@@ -72,7 +72,7 @@ Kapsam `/users/`. `when` koşulu, `/users/<login>` **veya** `/teams/<organizatio
 | `/`            | Aramaya odaklan |
 | `Cmd/Ctrl + F` | Aramaya odaklan |
 
-## Alanlar (8)
+## Alanlar (9)
 
 Kapsam `/spaces`. `when` koşulları bir düzenli ifade kullanır; böylece hem alan listesinde (`/spaces`) hem de seçili bir alanda (`/spaces/<id>`) devreye girerler.
 
@@ -86,6 +86,9 @@ Kapsam `/spaces`. `when` koşulları bir düzenli ifade kullanır; böylece hem 
 | `Cmd/Ctrl + T`         | Düzenleyici sekmesini aç           | Bir `/spaces` rotasında |
 | `Cmd/Ctrl + W`         | Düzenleyici sekmesini kapat        | Bir `/spaces` rotasında |
 | `Cmd/Ctrl + B`         | Düzenleyici kenar çubuğunu aç/kapat | Bir `/spaces` rotasında |
+| `Cmd/Ctrl + P`         | Dosyaya git                         | Bir `/spaces` rotasında |
+
+Dosyaya git, konuşmanın dosyaları üzerinde bir seçici açar. Hiçbir şey yazmadığınızda en son açtığınız dosyaları listeler; yazdığınızda konuşmanın worktree'lerindeki tüm dosyalarda arar. `Enter` seçili dosyayı yeni bir sekmede açar, `Cmd/Ctrl + Enter` ya da satırdaki bölme düğmesi onu sağdaki bir bölmede açar, son açılan bir satırdaki `×` ise onu listeden kaldırır.
 
 Enter ile gönderme, composer metin alanına aittir; bas konuş ise composer’ın mikrofon düğmesine aittir (kendi donanım klavyesi işleyicisi). Her ikisi de ayarlar referansı için kayıt defterinde listelenir.
 

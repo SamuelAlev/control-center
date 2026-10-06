@@ -2,7 +2,7 @@
 title: Levenscyclus van agent-dispatch
 description: Wat er gebeurt tussen het aankomen van een bericht en het sluiten van een run-log — promptopbouw, worktrees, identiteit, wat een run begrenst en hoe de uitkomst ervan eerlijk wordt vastgelegd.
 slug: nl-NL/handleiding/concepten/dispatch-levenscyclus
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Wat een dispatch is
@@ -130,7 +130,7 @@ Wanneer een run eindigt zonder het resultaat dat zijn modus vereiste — een pla
 Dit is bewust. De status omzetten zou ticket- en pipelinestatemachines verplaatsen die niets met het ontbrekende artefact te maken hebben. Het betekent ook dat "status: completed" alleen nooit genoeg is om te concluderen dat een run is geslaagd — lees de samenvatting.
 :::
 
-Het sluiten van de run publiceert `AgentRunCompleted` en daar hangt veel aan: het meldingsframe en zijn duurzame feedvermelding, de live-doorstuurder die hem naar verbonden clients pusht, kostenoptelling van de pipeline, het hervatten van een pipelinestap die op de run wachtte, het afronden van het onderliggende ticket, het mappen van een orkestratie op een eindtoestand, de voort-of-stopbeslissing van de doelsupervisor, de rol van controleur en de budgetevaluatie na de run. Het aanwezigheidsrooster volgt apart, door naar de recente run-logs te kijken in plaats van naar de gebeurtenis.
+Het sluiten van de run publiceert `AgentRunCompleted` en daar hangt veel aan: kostenoptelling van de pipeline, het hervatten van een pipelinestap die op de run wachtte, het afronden van het onderliggende ticket, het mappen van een orkestratie op een eindtoestand, de voort-of-stopbeslissing van de doelsupervisor, de rol van controleur en de budgetevaluatie na de run. Het aanwezigheidsrooster volgt apart, door naar de recente run-logs te kijken in plaats van naar de gebeurtenis. De melding "agent voltooid" staat niet in dat rijtje: de gebeurtenis vuurt zodra de processtroom eindigt, voordat het antwoord is weggeschreven, dus de melding is de `MessageReceived` van de beurt, gepubliceerd zodra het bericht is opgeslagen.
 
 ## Budgetten, achteraf
 

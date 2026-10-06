@@ -2,10 +2,10 @@
 title: 鍵盤快捷鍵
 description: 完整的按鍵綁定登錄表，依範圍分類，並列出每個快捷鍵觸發的條件。
 slug: zh-TW/手冊/參考/鍵盤快捷鍵
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-快捷鍵全都來自同一個 `const` 登錄表，也就是 `lib/core/constants/keybindings.dart` 中的 `KeybindingRegistry`。它包含 **48 組綁定**。設定 → 你 → 快捷鍵 會把該登錄表呈現為一份**唯讀參考**：沒有重新綁定的介面，也沒有使用者自訂的按鍵綁定檔案。
+快捷鍵全都來自同一個 `const` 登錄表，也就是 `lib/core/constants/keybindings.dart` 中的 `KeybindingRegistry`。它包含 **49 組綁定**。設定 → 你 → 快捷鍵 會把該登錄表呈現為一份**唯讀參考**：沒有重新綁定的介面，也沒有使用者自訂的按鍵綁定檔案。
 
 下文的 `Cmd` 是主要命令修飾鍵——macOS 上是 ⌘，Windows 與 Linux 上是 Ctrl。只有在目前畫面上，某個綁定的命令已註冊處理常式，且其 `when` 子句成立時，該綁定才會觸發；`!textInputFocus` 則表示按鍵改為直接傳遞給取得焦點的文字欄位。
 
@@ -72,7 +72,7 @@ sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 | `/`            | 聚焦搜尋     |
 | `Cmd/Ctrl + F` | 聚焦搜尋     |
 
-## 空間（8）
+## 空間（9）
 
 範圍為 `/spaces`。`when` 子句使用正規表示式，因此無論是在空間清單（`/spaces`）或已選取的空間（`/spaces/<id>`）上都會觸發。
 
@@ -86,6 +86,9 @@ sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 | `Cmd/Ctrl + T`         | 開啟編輯器分頁       | 位於 `/spaces` 路由時  |
 | `Cmd/Ctrl + W`         | 關閉編輯器分頁       | 位於 `/spaces` 路由時  |
 | `Cmd/Ctrl + B`         | 切換編輯器側邊欄     | 位於 `/spaces` 路由時  |
+| `Cmd/Ctrl + P`         | 前往檔案     | 位於 `/spaces` 路由時  |
+
+「前往檔案」會開啟一個選擇器，列出對話的檔案。未輸入任何內容時，會列出你最近開啟的檔案；輸入後，會在對話工作樹的所有檔案中搜尋。`Enter` 會在新分頁中開啟所選檔案，`Cmd/Ctrl + Enter` 或該列的分割按鈕會在右側窗格中開啟它，最近檔案列上的 `×` 則會將其從清單中移除。
 
 按 Enter 傳送由輸入區的文字欄位負責；按住說話由輸入區的麥克風按鈕負責（它有自己的硬體鍵盤處理常式）。兩者都列在登錄表中，供設定參考。
 

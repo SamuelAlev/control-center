@@ -2,7 +2,7 @@
 title: Configurează notificările
 description: Activează sau dezactivează categorii, setează orele de liniște și un sunet și află ce notificări te ajung și unde.
 slug: ro-RO/manual/ghiduri-practice/notificari
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Acest ghid arată cum să configurezi notificările și ce controlează de fapt
@@ -29,10 +29,10 @@ suprafață de notificări.
 
 | Categorie                        | Se declanșează când                                                                  |
 | -------------------------------- | ------------------------------------------------------------------------------------ |
-| Agentul a terminat               | Un agent a terminat o rulare                                                         |
+| Agentul a terminat               | Un agent a răspuns într-o rulare pornită de tine sau rularea a eșuat                 |
 | PR publicat                      | Un agent a publicat un PR                                                            |
 | PR fuzionat                      | Un PR a fost fuzionat                                                                |
-| Mesaje noi                       | A sosit un mesaj într-un spațiu pe care nu îl privești                               |
+| Mesaje noi                       | Cineva te-a menționat într-un spațiu                                                 |
 | Menționat într-un pull request   | Interogarea de notificări a GitHub a văzut că ești menționat într-un PR              |
 | Revizuire solicitată             | Revizuirea ta a fost chiar solicitată pe un PR care nu este ciornă                   |
 | Revizuire învechită              | Au aterizat commit-uri noi pe un pull request pe care l-ai revizuit deja             |
@@ -102,6 +102,8 @@ totuși evenimentul.
 
 - Un mesaj în care nu ești menționat, de la o altă **persoană**, nu devine
   niciodată o notificare
+- Într-un spațiu partajat, răspunsul unui agent o anunță pe persoana care a
+  pornit rularea, nu pe fiecare membru
 - Spațiile agent-la-agent sunt dezactivate în bara laterală, așa că nu
   incrementează niciodată badge-ul de necitite al persoanei
 
@@ -150,7 +152,9 @@ stabilizează odată ce marcajul se încarcă.
 ### Rularea unui agent s-a terminat, dar nu m-a anunțat nimic
 
 Verifică dacă nu erai deja în spațiul în care s-a întâmplat — o rută activă își
-suprimă propriul toast OS.
+suprimă propriul toast OS. Într-un spațiu partajat, o rulare pornită de altcineva
+îl anunță pe acela, nu pe tine. O tură încheiată fără răspuns și fără eroare nu
+trimite nimic.
 
 ## Ghiduri conexe
 

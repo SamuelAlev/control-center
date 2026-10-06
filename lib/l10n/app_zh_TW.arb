@@ -2423,7 +2423,7 @@
   "notifications": "通知",
   "notifyAgentRunCompleted": "代理完成執行時通知。",
   "notifyPrMentioned": "在 pull request 中被提及時通知。",
-  "notifyNewMessages": "其他空間有新的代理訊息時通知。",
+  "notifyNewMessages": "在空間中被提及時通知。",
   "notifyPrMerged": "pull request 合併時通知。",
   "notifyPrPublished": "代理發布 pull request 時通知。",
   "notifyReviewRequested": "有人請求你審查 pull request 時通知。",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "配額已用盡",
   "subscriptionUsageSignInRequired": "重新登入",
   "subscriptionUsageSignInExpired": "登入已過期，將於下次執行時更新",
-  "subscriptionUsagePartiallyAvailable": "部分可用",
+  "subscriptionUsagePercentUsed": "已使用 {percent}%",
   "resetsIn": "{duration}後重設",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "還原",
   "nativeSandboxUnsupported": "原生沙盒尚未支援 {platform}。",
   "continueWithoutSandbox": "不使用沙箱繼續",
-  "sandboxCheckAgain": "重新檢查"
+  "sandboxCheckAgain": "重新檢查",
+  "ideQuickOpen": "前往檔案",
+  "ideQuickOpenDescription": "依名稱搜尋對話中的檔案並在分頁中開啟",
+  "ideQuickOpenHint": "依名稱搜尋檔案",
+  "ideQuickOpenRecentlyOpened": "最近開啟",
+  "ideQuickOpenOpenToSide": "在側邊開啟",
+  "ideQuickOpenRemoveRecent": "從最近開啟中移除",
+  "ideQuickOpenNoRecent": "沒有最近開啟的檔案"
 }

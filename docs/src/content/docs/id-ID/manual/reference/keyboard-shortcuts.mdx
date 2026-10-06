@@ -2,10 +2,10 @@
 title: Pintasan keyboard
 description: Registri binding yang lengkap, menurut cakupan, beserta kondisi yang memicu setiap pintasan.
 slug: id-ID/panduan-pengguna/referensi/pintasan-keyboard
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Pintasan berasal dari satu registri `const`, `KeybindingRegistry` di `lib/core/constants/keybindings.dart`. Registri ini memuat **48 binding**. Pengaturan → Anda → Pintasan keyboard menampilkan registri tersebut sebagai **referensi hanya-baca**: tidak ada UI untuk mengubah binding dan tidak ada berkas binding milik pengguna.
+Pintasan berasal dari satu registri `const`, `KeybindingRegistry` di `lib/core/constants/keybindings.dart`. Registri ini memuat **49 binding**. Pengaturan → Anda → Pintasan keyboard menampilkan registri tersebut sebagai **referensi hanya-baca**: tidak ada UI untuk mengubah binding dan tidak ada berkas binding milik pengguna.
 
 `Cmd` di bawah ini adalah modifikator perintah utama — ⌘ di macOS, Ctrl di Windows dan Linux. Sebuah binding hanya terpicu bila perintahnya memiliki handler terdaftar di layar saat ini dan klausa `when`-nya terpenuhi; `!textInputFocus` berarti tombol tersebut diteruskan ke kolom teks yang sedang difokuskan.
 
@@ -72,7 +72,7 @@ Cakupan `/users/`. Klausa `when`-nya adalah regex terhadap `/users/<login>` **at
 | `/`            | Fokus ke pencarian |
 | `Cmd/Ctrl + F` | Fokus ke pencarian |
 
-## Space (8)
+## Space (9)
 
 Cakupan `/spaces`. Klausa `when`-nya memakai regex sehingga terpicu baik di daftar space (`/spaces`) maupun di space yang dipilih (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Cakupan `/spaces`. Klausa `when`-nya memakai regex sehingga terpicu baik di daft
 | `Cmd/Ctrl + T`         | Buka tab editor        | Di rute `/spaces`     |
 | `Cmd/Ctrl + W`         | Tutup tab editor       | Di rute `/spaces`     |
 | `Cmd/Ctrl + B`         | Alihkan bilah sisi editor | Di rute `/spaces`  |
+| `Cmd/Ctrl + P`         | Buka file                 | Di rute `/spaces`  |
+
+Buka file membuka pemilih atas file percakapan. Tanpa mengetik apa pun, pemilih menampilkan file yang terakhir Anda buka; mengetik akan mencari di semua file di worktree percakapan. `Enter` membuka file yang dipilih di tab baru, `Cmd/Ctrl + Enter` atau tombol pisah di baris membukanya di panel sebelah kanan, dan `×` di baris file terbaru menghapusnya dari daftar.
 
 Kirim dengan Enter ditangani oleh kolom teks composer; tekan untuk bicara ditangani oleh tombol mikrofon composer (handler keyboard perangkat kerasnya sendiri). Keduanya tercantum di registri untuk referensi pengaturan.
 

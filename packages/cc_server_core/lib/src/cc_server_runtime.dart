@@ -7007,10 +7007,11 @@ Future<CcServer> runCcServer({
     // demo: no editor proxy.
     codeServerReport: demo != null
         ? null
-        : (sid, absPath, line) => codeServerSessions.reportOpen(
+        : (sid, absPath, line, windowId) => codeServerSessions.reportOpen(
             sessionId: sid,
             absPath: absPath,
             line: line,
+            windowId: windowId,
           ),
     // Receives the bridge extension's dirty-state reports (same endpoint,
     // `{type:'dirty'}`) and fans them out so the app can toggle the per-tab

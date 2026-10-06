@@ -4062,7 +4062,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notifyPrMentioned => '你在 pull request 中被提及时通知。';
 
   @override
-  String get notifyNewMessages => '其他空间有新的智能体消息时通知。';
+  String get notifyNewMessages => '你在空间中被提及时通知。';
 
   @override
   String get notifyPrMerged => 'pull request 合并时通知。';
@@ -8664,7 +8664,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subscriptionUsageSignInExpired => '登录已过期，将在下次运行时续期';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => '部分可用';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '已使用 $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -14603,6 +14605,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => '重新检查';
+
+  @override
+  String get ideQuickOpen => '转到文件';
+
+  @override
+  String get ideQuickOpenDescription => '按名称搜索对话中的文件并在标签页中打开';
+
+  @override
+  String get ideQuickOpenHint => '按名称搜索文件';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => '最近打开';
+
+  @override
+  String get ideQuickOpenOpenToSide => '在侧边打开';
+
+  @override
+  String get ideQuickOpenRemoveRecent => '从最近打开中移除';
+
+  @override
+  String get ideQuickOpenNoRecent => '没有最近打开的文件';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -18828,7 +18851,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get notifyPrMentioned => '在 pull request 中被提及時通知。';
 
   @override
-  String get notifyNewMessages => '其他空間有新的代理訊息時通知。';
+  String get notifyNewMessages => '在空間中被提及時通知。';
 
   @override
   String get notifyPrMerged => 'pull request 合併時通知。';
@@ -23429,7 +23452,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get subscriptionUsageSignInExpired => '登入已過期，將於下次執行時更新';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => '部分可用';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '已使用 $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -29372,4 +29397,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get sandboxCheckAgain => '重新檢查';
+
+  @override
+  String get ideQuickOpen => '前往檔案';
+
+  @override
+  String get ideQuickOpenDescription => '依名稱搜尋對話中的檔案並在分頁中開啟';
+
+  @override
+  String get ideQuickOpenHint => '依名稱搜尋檔案';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => '最近開啟';
+
+  @override
+  String get ideQuickOpenOpenToSide => '在側邊開啟';
+
+  @override
+  String get ideQuickOpenRemoveRecent => '從最近開啟中移除';
+
+  @override
+  String get ideQuickOpenNoRecent => '沒有最近開啟的檔案';
 }

@@ -39,7 +39,7 @@ class MessagingScreen extends ConsumerStatefulWidget {
 
 class _MessagingScreenState extends ConsumerState<MessagingScreen> {
   /// IDE editor action sink — owned by this state so the keyboard shortcuts
-  /// (⌘T/⌘W/⌘B) can drive the layout without coupling to its private state.
+  /// (⌘T/⌘W/⌘B/⌘P) can drive the layout without coupling to its private state.
   ///
   /// MUST be a state field, never rebuilt in [build]: [MessagingIdeLayout]
   /// wires its callbacks onto this instance in its `initState`, so a fresh sink
@@ -147,6 +147,7 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
         'msg.ide-new-tab': () => _ideActions.openEditor?.call(),
         'msg.ide-close-tab': () => _ideActions.closeActiveTab?.call(),
         'msg.ide-toggle-sidebar': () => _ideActions.toggleSidebar?.call(),
+        'msg.ide-quick-open': () => _ideActions.quickOpen?.call(),
       },
       child: workspaceId == null
           ? const Center(child: CcSpinner())

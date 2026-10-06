@@ -34,7 +34,7 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -79,7 +79,7 @@ jobs:
     steps:
       - name: Harden runner
         # block is Linux-only. This job holds the Developer ID certificate.
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
         with:
           egress-policy: audit
 
@@ -166,7 +166,7 @@ jobs:
     steps:
       - name: Harden runner
         # block is Linux-only.
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
         with:
           egress-policy: audit
 
@@ -266,7 +266,7 @@ jobs:
       # (meson), SourceForge (LAME; downloads. redirects to *.dl), Flutter,
       # sigstore, Azure blobs (actions/cache).
       - name: Harden runner
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -401,7 +401,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
         with:
           egress-policy: block
           # download-artifact redirects to Azure blob storage.
@@ -458,7 +458,7 @@ jobs:
     steps:
       - name: Harden runner
         # audit: base-image pulls hit Docker Hub and GHCR hosts that move.
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
         with:
           egress-policy: audit
 

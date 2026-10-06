@@ -134,43 +134,46 @@ void main() {
       );
     });
 
-    test('peeks inside .git for hooks/config and skips node_modules', () async {
-      final gitDir = Directory(p.join(root.path, '.git'))..createSync();
-      Directory(p.join(gitDir.path, 'hooks')).createSync();
-      File(p.join(gitDir.path, 'config')).writeAsStringSync('c');
-      // node_modules must be skipped for performance.
-      Directory(
-        p.join(root.path, 'node_modules', 'deep'),
-      ).createSync(recursive: true);
+    test(
+      'peeks inside .git for hooks/config and skips node_modules',
+      () async {
+        final gitDir = Directory(p.join(root.path, '.git'))..createSync();
+        Directory(p.join(gitDir.path, 'hooks')).createSync();
+        File(p.join(gitDir.path, 'config')).writeAsStringSync('c');
+        // node_modules must be skipped for performance.
+        Directory(
+          p.join(root.path, 'node_modules', 'deep'),
+        ).createSync(recursive: true);
 
-      final cfg = await builder.build(
-        SandboxPolicySpec(
-          sessionId: 's6',
-          denyRead: const [],
-          allowWrite: [root.path],
-          denyWrite: const [],
-          denyExecutables: const [],
-          allowedDomains: const [],
-          deniedDomains: const [],
-          networkOn: false,
-        ),
-      );
-      expect(
-        cfg.filesystem.denyWrite,
-        contains(p.join(root.path, '.git', 'hooks')),
-      );
-      expect(
-        cfg.filesystem.denyWrite,
-        contains(p.join(root.path, '.git', 'config')),
-      );
-      expect(
-        cfg.filesystem.denyWrite,
-        isNot(contains(p.join(root.path, 'node_modules'))),
-      );
-    },
+        final cfg = await builder.build(
+          SandboxPolicySpec(
+            sessionId: 's6',
+            denyRead: const [],
+            allowWrite: [root.path],
+            denyWrite: const [],
+            denyExecutables: const [],
+            allowedDomains: const [],
+            deniedDomains: const [],
+            networkOn: false,
+          ),
+        );
+        expect(
+          cfg.filesystem.denyWrite,
+          contains(p.join(root.path, '.git', 'hooks')),
+        );
+        expect(
+          cfg.filesystem.denyWrite,
+          contains(p.join(root.path, '.git', 'config')),
+        );
+        expect(
+          cfg.filesystem.denyWrite,
+          isNot(contains(p.join(root.path, 'node_modules'))),
+        );
+      },
       skip: Platform.isWindows
           ? 'the .git-peek deny paths come out separator-mixed on the Windows runner (raw-root pass vs resolved-root pass); needs on-machine debugging'
-          : false);
+          : false,
+    );
 
     test('recurses up to the depth cap', () async {
       // Depth 0..3 are scanned; depth 4 is beyond the cap (depth > 3 returns).
@@ -259,30 +262,67 @@ void main() {
       );
     });
 
-    test('resolves a real deny token (rm) to its absolute path', () async {
+    test('allows every installed fnm node, not just the newest', () async {
+      // The agent's shell runs the fnm DEFAULT (or a repo's `.node-version`),
+      // which is rarely the newest install. Allowing only the newest left
+      // `node` on PATH refused by the `$HOME` exec deny.
+      final home = Directory.systemTemp.createTempSync('cc-sbx-fnm-');
+      addTearDown(() => home.deleteSync(recursive: true));
+      final versions = p.join(home.path, '.local/share/fnm/node-versions');
+      final nodes = [
+        for (final v in ['v24.18.0', 'v24.21.0', 'v26.10.0'])
+          File(p.join(versions, v, 'installation/bin/node'))
+            ..createSync(recursive: true),
+      ];
+
       final cfg = await builder.build(
-        const SandboxPolicySpec(
-          sessionId: 's9',
-          denyRead: [],
-          allowWrite: [],
-          denyWrite: [],
-          denyExecutables: ['rm'],
-          allowedDomains: [],
-          deniedDomains: [],
+        SandboxPolicySpec(
+          sessionId: 's-fnm',
+          denyRead: const [],
+          allowWrite: const [],
+          denyWrite: const [],
+          denyExecutables: const [],
+          allowedDomains: const [],
+          deniedDomains: const [],
           networkOn: false,
+          homeDir: home.path,
         ),
       );
-      // `rm` resolves on test runners (POSIX PATH, Git-for-Windows' rm on
-      // Windows); if found, it must be ABSOLUTE — platform-shaped, so the
-      // assertion goes through p.isAbsolute rather than a '/' prefix.
-      if (cfg.denyExecutables.isNotEmpty) {
-        expect(cfg.denyExecutables.every(p.isAbsolute), isTrue);
+      for (final node in nodes) {
+        expect(
+          cfg.allowedExecutables,
+          contains(node.resolveSymbolicLinksSync()),
+        );
       }
-    },
+    });
+
+    test(
+      'resolves a real deny token (rm) to its absolute path',
+      () async {
+        final cfg = await builder.build(
+          const SandboxPolicySpec(
+            sessionId: 's9',
+            denyRead: [],
+            allowWrite: [],
+            denyWrite: [],
+            denyExecutables: ['rm'],
+            allowedDomains: [],
+            deniedDomains: [],
+            networkOn: false,
+          ),
+        );
+        // `rm` resolves on test runners (POSIX PATH, Git-for-Windows' rm on
+        // Windows); if found, it must be ABSOLUTE — platform-shaped, so the
+        // assertion goes through p.isAbsolute rather than a '/' prefix.
+        if (cfg.denyExecutables.isNotEmpty) {
+          expect(cfg.denyExecutables.every(p.isAbsolute), isTrue);
+        }
+      },
       skip: Platform.isWindows
           ? 'rm only resolves through Git-for-Windows usr/bin on the runner '
-              'and not always to an absolute path'
-          : false);
+                'and not always to an absolute path'
+          : false,
+    );
   });
 
   group('SandboxConfigBuilder.build — pass-through fields', () {
@@ -363,23 +403,28 @@ void main() {
       }
     });
 
-    test('allowWrite carries both the written and the resolved spelling',
-        () async {
-      final cfg = await builder.build(
-        SandboxPolicySpec(
-          sessionId: 's12',
-          denyRead: const [],
-          allowWrite: [link.path],
-          denyWrite: const [],
-          denyExecutables: const [],
-          allowedDomains: const [],
-          deniedDomains: const [],
-          networkOn: false,
-        ),
-      );
-      expect(cfg.filesystem.allowWrite, contains(link.path));
-      expect(cfg.filesystem.allowWrite, contains(real.resolveSymbolicLinksSync()));
-    });
+    test(
+      'allowWrite carries both the written and the resolved spelling',
+      () async {
+        final cfg = await builder.build(
+          SandboxPolicySpec(
+            sessionId: 's12',
+            denyRead: const [],
+            allowWrite: [link.path],
+            denyWrite: const [],
+            denyExecutables: const [],
+            allowedDomains: const [],
+            deniedDomains: const [],
+            networkOn: false,
+          ),
+        );
+        expect(cfg.filesystem.allowWrite, contains(link.path));
+        expect(
+          cfg.filesystem.allowWrite,
+          contains(real.resolveSymbolicLinksSync()),
+        );
+      },
+    );
 
     test('readOnlyMounts and runnerStateDirs are resolved too', () async {
       final cfg = await builder.build(

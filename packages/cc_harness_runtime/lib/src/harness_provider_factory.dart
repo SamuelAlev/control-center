@@ -24,7 +24,7 @@ class ParsedModel {
 ///
 /// New providers plug in here; the agent loop stays provider-agnostic:
 /// Anthropic (native, API key or OAuth), OpenAI (native, API key or OAuth),
-  /// the OpenAI-compatible family (OpenRouter, Groq, Google Gemini compat,
+  /// the OpenAI-compatible family (OpenRouter, Google Gemini compat,
   /// DeepSeek, Mistral, xAI, z.ai, the GLM Coding Plan, Kimi), Cursor
   /// (subscription, HTTP/2 AgentService), plus user-defined **custom
   /// providers** — any OpenAI- or Anthropic-compatible endpoint whose
@@ -124,13 +124,6 @@ class HarnessProviderFactory {
           providerName: 'OpenRouter',
           supportsReasoningEffort: true,
           supportsPromptCacheKey: true,
-        );
-      case 'groq':
-        return OpenAiProvider(
-          apiKey: apiKey,
-          baseUrl: baseUrl ?? 'https://api.groq.com/openai/v1',
-          defaultModel: model ?? 'llama-3.3-70b-versatile',
-          providerName: 'Groq',
         );
       case 'google':
         return OpenAiProvider(

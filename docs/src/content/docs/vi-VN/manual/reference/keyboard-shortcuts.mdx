@@ -2,10 +2,10 @@
 title: Phím tắt
 description: Toàn bộ sổ đăng ký phím tắt, theo phạm vi, kèm điều kiện để mỗi phím tắt kích hoạt.
 slug: vi-VN/so-tay/tham-chieu/phim-tat
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Các phím tắt đến từ một sổ đăng ký `const`, `KeybindingRegistry` trong `lib/core/constants/keybindings.dart`. Sổ này chứa **48 bindings**. Cài đặt → Bạn → Phím tắt hiển thị sổ đăng ký đó dưới dạng **tham chiếu chỉ đọc**: không có giao diện gán lại phím và không có tệp phím tắt của người dùng.
+Các phím tắt đến từ một sổ đăng ký `const`, `KeybindingRegistry` trong `lib/core/constants/keybindings.dart`. Sổ này chứa **49 bindings**. Cài đặt → Bạn → Phím tắt hiển thị sổ đăng ký đó dưới dạng **tham chiếu chỉ đọc**: không có giao diện gán lại phím và không có tệp phím tắt của người dùng.
 
 `Cmd` dưới đây là phím bổ trợ lệnh chính — ⌘ trên macOS, Ctrl trên Windows và Linux. Một binding chỉ kích hoạt khi lệnh của nó có handler đã đăng ký trên màn hình hiện tại và mệnh đề `when` của nó đúng; `!textInputFocus` nghĩa là phím được chuyển tiếp cho một ô nhập văn bản đang có focus.
 
@@ -72,7 +72,7 @@ Phạm vi `/users/`. Mệnh đề `when` là một regex khớp với `/users/<l
 | `/`            | Tập trung ô tìm kiếm  |
 | `Cmd/Ctrl + F` | Tập trung ô tìm kiếm  |
 
-## Space (8)
+## Space (9)
 
 Phạm vi `/spaces`. Các mệnh đề `when` dùng regex nên chúng kích hoạt trên cả danh sách space (`/spaces`) lẫn một space đã chọn (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Phạm vi `/spaces`. Các mệnh đề `when` dùng regex nên chúng kích ho�
 | `Cmd/Ctrl + T`         | Mở tab trình soạn thảo           | Trên một tuyến `/spaces`  |
 | `Cmd/Ctrl + W`         | Đóng tab trình soạn thảo         | Trên một tuyến `/spaces`  |
 | `Cmd/Ctrl + B`         | Bật/tắt thanh bên trình soạn thảo | Trên một tuyến `/spaces`  |
+| `Cmd/Ctrl + P`         | Đi tới tệp                        | Trên một tuyến `/spaces`  |
+
+Đi tới tệp mở một bộ chọn trên các tệp của cuộc hội thoại. Khi chưa gõ gì, bộ chọn liệt kê các tệp bạn mở gần đây nhất; khi gõ, nó tìm trong mọi tệp thuộc các worktree của cuộc hội thoại. `Enter` mở tệp đã chọn trong một thẻ mới, `Cmd/Ctrl + Enter` hoặc nút chia trên hàng mở tệp trong một ngăn ở bên phải, còn `×` trên một hàng gần đây sẽ xóa tệp khỏi danh sách.
 
 Gửi bằng Enter thuộc ô nhập văn bản của trình soạn tin; nhấn để nói thuộc nút mic của trình soạn tin (handler bàn phím cứng riêng của nó). Cả hai đều được liệt kê trong sổ đăng ký để làm tham chiếu trong cài đặt.
 

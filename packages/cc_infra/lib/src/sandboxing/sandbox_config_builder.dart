@@ -220,19 +220,44 @@ class SandboxConfigBuilder {
     'git',
   ];
 
+  /// Absolute paths (and realpaths) the exec allowlist names for
+  /// [_runtimeTools].
+  ///
+  /// One path per tool is not enough. The first install-prefix hit is the
+  /// NEWEST fnm/nvm version, while the agent's shell runs whichever one its
+  /// `PATH` names (the fnm default, a repo's `.node-version`) — so an fnm user
+  /// whose default was not their newest install had `node` refused outright.
+  /// Each tool therefore allows its install-prefix hit, its `PATH` hit, and
+  /// every version-manager install, all as literals: the `$HOME` exec deny
+  /// stays closed to anything that is not a named runtime binary.
   Future<List<String>> _resolveRuntimeTools(String? homeDir) async {
+    final home = (homeDir != null && homeDir.isNotEmpty)
+        ? homeDir
+        : Platform.environment['HOME'] ?? '';
     final resolved = <String>{};
+    void allow(String path) {
+      resolved.add(path);
+      // Also resolve realpath (symlink targets under fnm/nvm/fvm). The kernel
+      // matches an exec rule against the RESOLVED path, so for a tool reached
+      // through a symlink this entry — not the one above — is what fires.
+      try {
+        resolved.add(File(path).resolveSymbolicLinksSync());
+      } catch (_) {}
+    }
+
     for (final tool in _runtimeTools) {
       final path = await _resolveAbsolute(tool);
       if (path != null) {
-        resolved.add(path);
-        // Also resolve realpath (symlink targets under fnm/nvm/fvm). The kernel
-        // matches an exec rule against the RESOLVED path, so for a tool reached
-        // through a symlink this entry — not the one above — is what fires.
-        try {
-          final real = File(path).resolveSymbolicLinksSync();
-          resolved.add(real);
-        } catch (_) {}
+        allow(path);
+      }
+      final onPath = _scanPath(tool);
+      if (onPath != null && onPath != path) {
+        allow(onPath);
+      }
+      for (final versioned in versionManagedBinaryPaths(tool, home: home)) {
+        if (File(versioned).existsSync()) {
+          allow(versioned);
+        }
       }
     }
     return resolved.toList()..sort();

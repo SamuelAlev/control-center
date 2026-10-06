@@ -2,10 +2,10 @@
 title: Tastatursnarveier
 description: Det komplette registeret over tastaturbindinger, etter omfang, med betingelsene for når hver snarvei utløses.
 slug: nb-NO/handbok/referanse/tastatursnarveier
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Snarveiene kommer fra ett `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det inneholder **48 bindinger**. Innstillinger → Deg → Hurtigtaster viser dette registeret som en **skrivebeskyttet referanse**: det finnes ingen grensesnitt for å tilordne på nytt, og ingen fil for egne tastatursnarveier.
+Snarveiene kommer fra ett `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det inneholder **49 bindinger**. Innstillinger → Deg → Hurtigtaster viser dette registeret som en **skrivebeskyttet referanse**: det finnes ingen grensesnitt for å tilordne på nytt, og ingen fil for egne tastatursnarveier.
 
 `Cmd` nedenfor er den primære kommandomodifikatoren — ⌘ på macOS, Ctrl på Windows og Linux. En binding utløses bare når kommandoen har en registrert behandler på gjeldende skjerm, og `when`-klausulen er oppfylt; `!textInputFocus` betyr at tasten i stedet sendes videre til et tekstfelt som har fokus.
 
@@ -72,7 +72,7 @@ Omfanget er `/users/`. `when`-klausulen er et regex mot `/users/<login>` **eller
 | `/`            | Fokuser søk    |
 | `Cmd/Ctrl + F` | Fokuser søk    |
 
-## Områder (8)
+## Områder (9)
 
 Omfanget er `/spaces`. `when`-klausulene bruker et regex, så de utløses både på områdelisten (`/spaces`) og i et valgt område (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Omfanget er `/spaces`. `when`-klausulene bruker et regex, så de utløses både 
 | `Cmd/Ctrl + T`         | Åpne editorfane                 | På en `/spaces`-rute          |
 | `Cmd/Ctrl + W`         | Lukk editorfane                 | På en `/spaces`-rute          |
 | `Cmd/Ctrl + B`         | Slå editor-sidepanelet av/på    | På en `/spaces`-rute          |
+| `Cmd/Ctrl + P`         | Gå til fil                      | På en `/spaces`-rute          |
+
+«Gå til fil» åpner en velger over samtalens filer. Uten inntastet tekst viser den filene du åpnet sist; når du skriver, søker den i alle filene i samtalens worktrær. `Enter` åpner den valgte filen i en ny fane, `Cmd/Ctrl + Enter` eller deleknappen på raden åpner den i et panel til høyre, og `×` på en nylig rad fjerner den fra listen.
 
 Sending med Enter hører til tekstfeltet i meldingsfeltet; trykk-for-å-snakke hører til mikrofonknappen i meldingsfeltet, som har sin egen behandler for fysisk tastatur. Begge står i registeret for at innstillingsreferansen skal føre dem opp.
 

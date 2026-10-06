@@ -2,10 +2,10 @@
 title: Sneltoetsen
 description: Het volledige register van toetscombinaties, per scope, met de voorwaarden waaronder elke sneltoets afgaat.
 slug: nl-NL/handleiding/referentie/sneltoetsen
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Sneltoetsen komen uit één `const`-register, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Het bevat **48 bindings**. Instellingen → Jij → Sneltoetsen toont dat register als een **alleen-lezen naslagwerk**: er is geen UI om sneltoetsen opnieuw toe te wijzen, en er is geen bestand met gebruikerssneltoetsen.
+Sneltoetsen komen uit één `const`-register, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Het bevat **49 bindings**. Instellingen → Jij → Sneltoetsen toont dat register als een **alleen-lezen naslagwerk**: er is geen UI om sneltoetsen opnieuw toe te wijzen, en er is geen bestand met gebruikerssneltoetsen.
 
 Hieronder is `Cmd` de primaire commandotoets — ⌘ op macOS, Ctrl op Windows en Linux. Een binding gaat alleen af wanneer het bijbehorende commando een geregistreerde handler heeft op het huidige scherm en de `when`-clausule ervan waar is; `!textInputFocus` betekent dat de toets in plaats daarvan wordt doorgegeven aan een tekstveld met focus.
 
@@ -72,7 +72,7 @@ Scope `/users/`. De `when`-clausule is een regex op `/users/<login>` **of** `/te
 | `/`            | Zoeken focussen |
 | `Cmd/Ctrl + F` | Zoeken focussen |
 
-## Ruimtes (8)
+## Ruimtes (9)
 
 Scope `/spaces`. De `when`-clausules gebruiken een regex, zodat ze zowel in de ruimtelijst (`/spaces`) als in een geselecteerde ruimte (`/spaces/<id>`) afgaan.
 
@@ -86,6 +86,9 @@ Scope `/spaces`. De `when`-clausules gebruiken een regex, zodat ze zowel in de r
 | `Cmd/Ctrl + T`         | Editortabblad openen   | Op een `/spaces`-route |
 | `Cmd/Ctrl + W`         | Editortabblad sluiten  | Op een `/spaces`-route |
 | `Cmd/Ctrl + B`         | Editor-zijbalk wisselen | Op een `/spaces`-route |
+| `Cmd/Ctrl + P`         | Ga naar bestand         | Op een `/spaces`-route |
+
+Ga naar bestand opent een kiezer over de bestanden van het gesprek. Zonder invoer toont die de bestanden die je het laatst hebt geopend; typen doorzoekt alle bestanden in de worktrees van het gesprek. `Enter` opent het geselecteerde bestand in een nieuw tabblad, `Cmd/Ctrl + Enter` of de splitsknop op de rij opent het in een deelvenster aan de rechterkant, en het `×` op een recente rij haalt het uit de lijst.
 
 Verzenden met Enter valt onder het tekstveld van de composer; druk-om-te-spreken valt onder de microfoonknop van de composer (met een eigen handler voor een hardwaretoetsenbord). Beide staan in het register vermeld voor het instellingenoverzicht.
 

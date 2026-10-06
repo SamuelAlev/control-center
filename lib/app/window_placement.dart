@@ -34,6 +34,18 @@ const Size defaultMainWindowSize = Size(1440, 900);
 /// display is that small; the case exists so the maths has a defined answer.
 const Size mainWindowMinSize = Size(1024, 600);
 
+/// Size the pre-app server-setup window opens at.
+///
+/// Tall enough for the remote form (URL, invite, device id, pairing key, an
+/// error banner and the connect button) without scrolling. Clamped to the
+/// display like [defaultMainWindowSize], so a small laptop still gets a window
+/// that fits; the form scrolls below that.
+const Size serverSetupWindowSize = Size(600, 920);
+
+/// Smallest frame the server-setup window can be resized to (matches its
+/// `BoxConstraints`).
+const Size serverSetupWindowMinSize = Size(460, 520);
+
 /// How much of the main window must land on a display for that display to be
 /// considered the one it was saved on. Below this the saved position is
 /// treated as belonging to a display that is gone.

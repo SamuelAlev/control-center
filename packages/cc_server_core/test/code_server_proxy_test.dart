@@ -280,7 +280,7 @@ void main() {
     late HttpServer upstream;
     late LocalRpcServer server;
     late int serverPort;
-    late List<({String sid, String path, int? line})> reports;
+    late List<({String sid, String path, int? line, String? window})> reports;
 
     setUp(() async {
       reports = [];
@@ -309,8 +309,8 @@ void main() {
                 status: CodeServerStatus.ready,
               )
             : null,
-        codeServerReport: (sid, path, line) =>
-            reports.add((sid: sid, path: path, line: line)),
+        codeServerReport: (sid, path, line, window) =>
+            reports.add((sid: sid, path: path, line: line, window: window)),
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
@@ -346,6 +346,16 @@ void main() {
       expect(reports.single.sid, knownSid);
       expect(reports.single.path, '/tmp/fake-worktree/lib/foo.dart');
       expect(reports.single.line, 41);
+      expect(reports.single.window, isNull);
+    });
+
+    test('a report carries the reporting window id', () async {
+      final resp = await postReport(
+        knownSid,
+        '{"path":"/tmp/fake-worktree/lib/foo.dart","line":3,"window":"w-1"}',
+      );
+      await resp.drain<void>();
+      expect(reports.single.window, 'w-1');
     });
 
     test(

@@ -129,7 +129,7 @@ void main() {
     test('openai supports OAuth; no local built-ins remain', () {
       expect(harnessProviderMetas['openai']!.supportsOAuth, isTrue);
       expect(harnessProviderMetas.containsKey('ollama'), isFalse);
-      expect(harnessProviderMetas['groq']!.supportsOAuth, isFalse);
+      expect(harnessProviderMetas['deepseek']!.supportsOAuth, isFalse);
     });
 
     // The UI offers a "sign in with browser" button off `supportsOAuth`, so

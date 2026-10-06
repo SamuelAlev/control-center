@@ -3,7 +3,7 @@ title: Keyboard shortcuts
 description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **49 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
 
 `Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
 
@@ -70,7 +70,7 @@ Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/
 | `/`            | Focus search |
 | `Cmd/Ctrl + F` | Focus search |
 
-## Spaces (8)
+## Spaces (9)
 
 Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
 
@@ -84,6 +84,9 @@ Scope `/spaces`. The `when` clauses use a regex so they fire on both the space l
 | `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
 | `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
 | `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| `Cmd/Ctrl + P`         | Go to file             | On a `/spaces` route  |
+
+Go to file opens a picker over the conversation's files. With nothing typed it lists the files you opened most recently; typing searches every file in the conversation's worktrees. `Enter` opens the selected file in a new tab, `Cmd/Ctrl + Enter` or the split button on the row opens it in a pane to the right, and the `×` on a recent row removes it from the list.
 
 Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
 

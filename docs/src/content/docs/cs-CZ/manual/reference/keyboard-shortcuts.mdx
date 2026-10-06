@@ -2,10 +2,10 @@
 title: Klávesové zkratky
 description: Úplný registr klávesových zkratek podle rozsahu, včetně podmínek, za kterých se každá zkratka spustí.
 slug: cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Zkratky vycházejí z jednoho registru `const`, `KeybindingRegistry` v `lib/core/constants/keybindings.dart`. Je v něm **48 vazeb**. Nastavení → Vy → Klávesové zkratky ten registr vykreslí jako **referenci jen ke čtení**: zkratky nejdou přemapovat a uživatelský soubor zkratek neexistuje.
+Zkratky vycházejí z jednoho registru `const`, `KeybindingRegistry` v `lib/core/constants/keybindings.dart`. Je v něm **49 vazeb**. Nastavení → Vy → Klávesové zkratky ten registr vykreslí jako **referenci jen ke čtení**: zkratky nejdou přemapovat a uživatelský soubor zkratek neexistuje.
 
 `Cmd` níže je hlavní modifikátor příkazu — ⌘ na macOS, Ctrl na Windows a Linuxu. Vazba se spustí jen tehdy, když má její příkaz na aktuální obrazovce zaregistrovaný handler a platí její klauzule `when`. `!textInputFocus` znamená, že se klávesa předá zaměřenému textovému poli.
 
@@ -72,7 +72,7 @@ Rozsah `/users/`. Klauzule `when` je regulární výraz na `/users/<login>` **ne
 | `/`            | Zaměřit hledání  |
 | `Cmd/Ctrl + F` | Zaměřit hledání  |
 
-## Prostory (8)
+## Prostory (9)
 
 Rozsah `/spaces`. Klauzule `when` používají regulární výraz, takže se spustí jak na seznamu prostorů (`/spaces`), tak ve vybraném prostoru (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Rozsah `/spaces`. Klauzule `when` používají regulární výraz, takže se spu
 | `Cmd/Ctrl + T`         | Otevřít editor         | Na trase `/spaces` |
 | `Cmd/Ctrl + W`         | Zavřít kartu           | Na trase `/spaces` |
 | `Cmd/Ctrl + B`         | Přepnout postranní panel | Na trase `/spaces` |
+| `Cmd/Ctrl + P`         | Přejít na soubor         | Na trase `/spaces` |
+
+Přejít na soubor otevře výběr ze souborů konverzace. Když nic nenapíšeš, zobrazí naposledy otevřené soubory; psaním prohledáš všechny soubory ve worktree konverzace. `Enter` otevře vybraný soubor na nové kartě, `Cmd/Ctrl + Enter` nebo tlačítko rozdělení na řádku ho otevře v podokně vpravo a `×` na řádku nedávného souboru ho ze seznamu odebere.
 
 Odeslání Enterem patří textovému poli composeru. Stisknout a mluvit patří tlačítku mikrofonu v composeru (vlastní handler hardwarové klávesnice). Obojí je v registru kvůli referenci v nastavení.
 

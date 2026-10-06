@@ -36,6 +36,7 @@ class NotesPanel extends ConsumerWidget {
     if (spaceId == null) {
       return CcEmptyState(
         icon: AppIcons.notebookText,
+        size: CcEmptyStateSize.sm,
         message: AppLocalizations.of(context).selectConversation,
       );
     }

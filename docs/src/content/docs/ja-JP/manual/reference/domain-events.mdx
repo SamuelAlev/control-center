@@ -2,7 +2,7 @@
 title: ドメインイベント
 description: 53 個のドメインイベント、そのペイロード、およびそれらを消費するサーバー側のサブスクライバーの完全なカタログです。
 slug: ja-JP/マニュアル/リファレンス/ドメインイベント
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## イベントバス
@@ -199,8 +199,8 @@ sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 
 | カテゴリ               | ソースイベント            | ワイヤメソッド                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received`（あなたへのメンション）                          |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`、あなたへのメンションなし）     |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

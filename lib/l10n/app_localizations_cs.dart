@@ -4242,8 +4242,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Upozornit, když vás někdo zmíní v pull requestu.';
 
   @override
-  String get notifyNewMessages =>
-      'Upozornit na nové zprávy agenta v jiných prostorech.';
+  String get notifyNewMessages => 'Upozornit, když vás někdo zmíní v prostoru.';
 
   @override
   String get notifyPrMerged => 'Upozornit, když je pull request sloučen.';
@@ -9047,7 +9046,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přihlášení vypršelo, obnoví se při dalším běhu';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Částečně dostupné';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'využito $percent %';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15268,4 +15269,26 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Zkontrolovat znovu';
+
+  @override
+  String get ideQuickOpen => 'Přejít na soubor';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Vyhledejte soubory konverzace podle názvu a otevřete jeden na kartě';
+
+  @override
+  String get ideQuickOpenHint => 'Hledat soubory podle názvu';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Nedávno otevřené';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Otevřít vedle';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Odebrat z nedávno otevřených';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Žádné nedávno otevřené soubory';
 }

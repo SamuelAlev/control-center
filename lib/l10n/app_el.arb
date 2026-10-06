@@ -2423,7 +2423,7 @@
   "notifications": "Ειδοποιήσεις",
   "notifyAgentRunCompleted": "Ειδοποίηση όταν ένας πράκτορας ολοκληρώνει μια εκτέλεση.",
   "notifyPrMentioned": "Ειδοποίηση όταν σας αναφέρουν σε pull request.",
-  "notifyNewMessages": "Ειδοποίηση για νέα μηνύματα πρακτόρων σε άλλους χώρους.",
+  "notifyNewMessages": "Ειδοποίηση όταν σας αναφέρουν σε έναν χώρο.",
   "notifyPrMerged": "Ειδοποίηση όταν συγχωνεύεται ένα pull request.",
   "notifyPrPublished": "Ειδοποίηση όταν ένας πράκτορας δημοσιεύει pull request.",
   "notifyReviewRequested": "Ειδοποίηση όταν ζητείται η ανασκόπησή σας σε pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Το όριο εξαντλήθηκε",
   "subscriptionUsageSignInRequired": "Συνδεθείτε ξανά",
   "subscriptionUsageSignInExpired": "Η σύνδεση έληξε, ανανεώνεται στην επόμενη εκτέλεση",
-  "subscriptionUsagePartiallyAvailable": "Μερικώς διαθέσιμη",
+  "subscriptionUsagePercentUsed": "{percent}% χρησιμοποιήθηκε",
   "resetsIn": "Επαναφορά σε {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Επαναφορά",
   "nativeSandboxUnsupported": "Το εγγενές sandbox δεν υποστηρίζεται ακόμη στο {platform}.",
   "continueWithoutSandbox": "Συνέχεια χωρίς sandbox",
-  "sandboxCheckAgain": "Έλεγχος ξανά"
+  "sandboxCheckAgain": "Έλεγχος ξανά",
+  "ideQuickOpen": "Μετάβαση σε αρχείο",
+  "ideQuickOpenDescription": "Αναζητήστε τα αρχεία της συνομιλίας με βάση το όνομα και ανοίξτε ένα σε καρτέλα",
+  "ideQuickOpenHint": "Αναζήτηση αρχείων με βάση το όνομα",
+  "ideQuickOpenRecentlyOpened": "Άνοιξε πρόσφατα",
+  "ideQuickOpenOpenToSide": "Άνοιγμα στο πλάι",
+  "ideQuickOpenRemoveRecent": "Κατάργηση από τα πρόσφατα",
+  "ideQuickOpenNoRecent": "Δεν υπάρχουν πρόσφατα αρχεία"
 }

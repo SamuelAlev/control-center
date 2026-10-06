@@ -2423,7 +2423,7 @@
   "notifications": "Сповіщення",
   "notifyAgentRunCompleted": "Сповіщати, коли агент завершує запуск.",
   "notifyPrMentioned": "Сповіщати, коли вас згадують у pull request.",
-  "notifyNewMessages": "Сповіщати про нові повідомлення агента в інших просторах.",
+  "notifyNewMessages": "Сповіщати, коли вас згадують у просторі.",
   "notifyPrMerged": "Сповіщати, коли pull request злито.",
   "notifyPrPublished": "Сповіщати, коли агент публікує pull request.",
   "notifyReviewRequested": "Сповіщати, коли вас просять зробити рев’ю pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Квоту вичерпано",
   "subscriptionUsageSignInRequired": "Увійдіть знову",
   "subscriptionUsageSignInExpired": "Сеанс закінчився, оновиться з наступним запуском",
-  "subscriptionUsagePartiallyAvailable": "Частково доступно",
+  "subscriptionUsagePercentUsed": "Використано {percent}%",
   "resetsIn": "Скидається через {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Відновити",
   "nativeSandboxUnsupported": "Нативна пісочниця поки не підтримується на {platform}.",
   "continueWithoutSandbox": "Продовжити без пісочниці",
-  "sandboxCheckAgain": "Перевірити знову"
+  "sandboxCheckAgain": "Перевірити знову",
+  "ideQuickOpen": "Перейти до файлу",
+  "ideQuickOpenDescription": "Шукайте файли розмови за назвою та відкривайте один у вкладці",
+  "ideQuickOpenHint": "Пошук файлів за назвою",
+  "ideQuickOpenRecentlyOpened": "Нещодавно відкриті",
+  "ideQuickOpenOpenToSide": "Відкрити збоку",
+  "ideQuickOpenRemoveRecent": "Вилучити з нещодавно відкритих",
+  "ideQuickOpenNoRecent": "Немає нещодавно відкритих файлів"
 }

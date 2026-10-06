@@ -4247,8 +4247,7 @@ class AppLocalizationsUk extends AppLocalizations {
       'Сповіщати, коли вас згадують у pull request.';
 
   @override
-  String get notifyNewMessages =>
-      'Сповіщати про нові повідомлення агента в інших просторах.';
+  String get notifyNewMessages => 'Сповіщати, коли вас згадують у просторі.';
 
   @override
   String get notifyPrMerged => 'Сповіщати, коли pull request злито.';
@@ -9051,7 +9050,9 @@ class AppLocalizationsUk extends AppLocalizations {
       'Сеанс закінчився, оновиться з наступним запуском';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Частково доступно';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'Використано $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15292,4 +15293,26 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Перевірити знову';
+
+  @override
+  String get ideQuickOpen => 'Перейти до файлу';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Шукайте файли розмови за назвою та відкривайте один у вкладці';
+
+  @override
+  String get ideQuickOpenHint => 'Пошук файлів за назвою';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Нещодавно відкриті';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Відкрити збоку';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Вилучити з нещодавно відкритих';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Немає нещодавно відкритих файлів';
 }

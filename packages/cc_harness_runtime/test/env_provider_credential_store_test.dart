@@ -116,11 +116,11 @@ void main() {
   group('EnvProviderCredentialStore — credentialsFor', () {
     test('returns a single-element list for an enabled provider', () async {
       final store = EnvProviderCredentialStore(
-        environment: const {'GROQ_API_KEY': 'gq'},
+        environment: const {'DEEPSEEK_API_KEY': 'ds'},
       );
-      final list = await store.credentialsFor('groq');
+      final list = await store.credentialsFor('deepseek');
       expect(list, hasLength(1));
-      expect(list.single.secret, 'gq');
+      expect(list.single.secret, 'ds');
     });
 
     test('enumerates every set env var for multi-key rotation', () async {

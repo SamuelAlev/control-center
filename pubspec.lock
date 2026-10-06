@@ -961,10 +961,10 @@ packages:
     dependency: "direct main"
     description:
       name: kalender
-      sha256: "271cd17f61120b9290e34d09a6d4719460d50c19e61e8b3e325c41b34d01d7fa"
+      sha256: "4106a2d63745fe2cf1705b8c7633fe0dd487362adc5b5647cb09639e48a4be25"
       url: "https://pub.dev"
     source: hosted
-    version: "0.32.0"
+    version: "0.33.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -1374,21 +1374,13 @@ packages:
     source: hosted
     version: "1.5.0"
   qr:
-    dependency: transitive
-    description:
-      name: qr
-      sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.2"
-  qr_flutter:
     dependency: "direct main"
     description:
-      name: qr_flutter
-      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      name: qr
+      sha256: "5adccca7f0274326125fcdbf97328f5d6b1b2d7fb8a52a01cef9f40d96a759d9"
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.0"
+    version: "4.0.0"
   quiver:
     dependency: transitive
     description:
@@ -1966,10 +1958,10 @@ packages:
     dependency: transitive
     description:
       name: vector_math
-      sha256: f36f9f3be64c6198714492bb455c11056e33e2f85d9a0b676a48301e44fdcf47
+      sha256: "92b9910f66ed1057fd4da7b040ae7c74cafacf885bdc81be496928d5049b032d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.2"
+    version: "2.4.3"
   video_player:
     dependency: "direct main"
     description:

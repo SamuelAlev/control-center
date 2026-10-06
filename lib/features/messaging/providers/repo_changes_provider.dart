@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart' show PrFileDto, RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/core/providers/cache_for.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -80,6 +81,7 @@ const RepoChanges kEmptyRepoChanges = (
 /// Degrades to empty buckets when the host doesn't expose the op.
 final repoChangesGroupedProvider = FutureProvider.autoDispose
     .family<RepoChanges, RepoChangesArgs>((ref, args) async {
+      ref.cacheFor(kPanelCacheTtl);
       try {
         final data = await ref
             .watch(rpcClientProvider)

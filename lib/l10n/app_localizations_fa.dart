@@ -4183,8 +4183,7 @@ class AppLocalizationsFa extends AppLocalizations {
       'وقتی در یک pull request منشن می‌شوید اعلان بده.';
 
   @override
-  String get notifyNewMessages =>
-      'برای پیام‌های جدید عامل در فضاهای دیگر اعلان بده.';
+  String get notifyNewMessages => 'وقتی در یک فضا منشن می‌شوید اعلان بده.';
 
   @override
   String get notifyPrMerged => 'وقتی یک pull request ادغام می‌شود اعلان بده.';
@@ -8911,7 +8910,9 @@ class AppLocalizationsFa extends AppLocalizations {
       'ورود منقضی شد، در اجرای بعدی تمدید می‌شود';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'تا حدی در دسترس';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent٪ استفاده‌شده';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15046,4 +15047,26 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'بررسی دوباره';
+
+  @override
+  String get ideQuickOpen => 'رفتن به فایل';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'فایل‌های گفتگو را با نام جست‌وجو کنید و یکی را در یک زبانه باز کنید';
+
+  @override
+  String get ideQuickOpenHint => 'جست‌وجوی فایل‌ها با نام';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'اخیراً باز شده';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'باز کردن در کنار';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'حذف از موارد اخیراً باز شده';
+
+  @override
+  String get ideQuickOpenNoRecent => 'هیچ فایلی اخیراً باز نشده است';
 }

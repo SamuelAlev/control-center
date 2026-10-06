@@ -2423,7 +2423,7 @@
   "notifications": "اعلان‌ها",
   "notifyAgentRunCompleted": "وقتی عاملی یک اجرا را تمام می‌کند اعلان بده.",
   "notifyPrMentioned": "وقتی در یک pull request منشن می‌شوید اعلان بده.",
-  "notifyNewMessages": "برای پیام‌های جدید عامل در فضاهای دیگر اعلان بده.",
+  "notifyNewMessages": "وقتی در یک فضا منشن می‌شوید اعلان بده.",
   "notifyPrMerged": "وقتی یک pull request ادغام می‌شود اعلان بده.",
   "notifyPrPublished": "وقتی عاملی یک pull request منتشر می‌کند اعلان بده.",
   "notifyReviewRequested": "وقتی بازبینی شما روی یک pull request درخواست می‌شود اعلان بده.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "سهمیه تمام شد",
   "subscriptionUsageSignInRequired": "دوباره وارد شوید",
   "subscriptionUsageSignInExpired": "ورود منقضی شد، در اجرای بعدی تمدید می‌شود",
-  "subscriptionUsagePartiallyAvailable": "تا حدی در دسترس",
+  "subscriptionUsagePercentUsed": "{percent}٪ استفاده‌شده",
   "resetsIn": "بازنشانی در {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "بازیابی",
   "nativeSandboxUnsupported": "سندباکس بومی هنوز روی ⁨{platform}⁩ پشتیبانی نمی‌شود.",
   "continueWithoutSandbox": "ادامه بدون سندباکس",
-  "sandboxCheckAgain": "بررسی دوباره"
+  "sandboxCheckAgain": "بررسی دوباره",
+  "ideQuickOpen": "رفتن به فایل",
+  "ideQuickOpenDescription": "فایل‌های گفتگو را با نام جست‌وجو کنید و یکی را در یک زبانه باز کنید",
+  "ideQuickOpenHint": "جست‌وجوی فایل‌ها با نام",
+  "ideQuickOpenRecentlyOpened": "اخیراً باز شده",
+  "ideQuickOpenOpenToSide": "باز کردن در کنار",
+  "ideQuickOpenRemoveRecent": "حذف از موارد اخیراً باز شده",
+  "ideQuickOpenNoRecent": "هیچ فایلی اخیراً باز نشده است"
 }

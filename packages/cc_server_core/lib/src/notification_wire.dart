@@ -5,7 +5,6 @@
 // rendered, so the client-side frame mapper treats both the same.
 library;
 
-import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
@@ -21,6 +20,13 @@ typedef NotificationFrame = ({String method, Map<String, dynamic> params});
 /// that resolved at least one `@mention` DOES forward, human-authored or not,
 /// so the mentioned principal is pinged. The client applies the actual
 /// "am I the one who should be notified" routing; this is just the gate.
+///
+/// An agent's message is also the ONLY "agent finished" signal: the turn's
+/// stream processor publishes it after the final message is persisted and
+/// broadcast. `AgentRunCompleted` is deliberately not a frame — the dispatch
+/// publishes it when the process stream ends, before the turn is written, so a
+/// toast keyed off it announced a reply the conversation had not rendered yet,
+/// and doubled every agent turn in the feed.
 NotificationFrame? messageReceivedFrame(MessageReceived event) {
   if (!event.isAgentMessage && event.mentions.isEmpty) {
     return null;
@@ -88,23 +94,6 @@ NotificationFrame ticketReassignedFrame(
     'workspace_id': ?workspaceId,
   },
 );
-
-/// Agent run completed. Null when the run has no conversation to link to.
-NotificationFrame? agentRunCompletedFrame(AgentRunCompleted event) {
-  final conversationId = event.conversationId;
-  if (conversationId == null) {
-    return null;
-  }
-  return (
-    method: 'notifications/agent_run_completed',
-    params: {
-      'agent_id': event.agentId,
-      'conversation_id': conversationId,
-      'workspace_id': ?event.workspaceId,
-      if (event.runId != null) 'run_id': event.runId,
-    },
-  );
-}
 
 /// Pull request published.
 NotificationFrame prPublishedFrame(PullRequestPublished event) => (

@@ -2,7 +2,7 @@
 title: Konfigurasi notifikasi
 description: Nyalakan atau matikan kategori, atur Quiet hours dan suara, serta ketahui notifikasi mana yang sampai kepada Anda dan di mana.
 slug: id-ID/panduan-pengguna/panduan-praktis/notifikasi
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Panduan ini menunjukkan cara mengonfigurasi notifikasi dan apa yang sebenarnya
@@ -28,10 +28,10 @@ ponsel sama sekali tidak memiliki permukaan notifikasi.
 
 | Kategori                  | Memicu ketika                                                              |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agen selesai              | Agen menyelesaikan sebuah run                                              |
+| Agen selesai              | Agen membalas dalam run yang Anda mulai, atau run tersebut gagal           |
 | PR dipublikasikan         | Agen memublikasikan sebuah PR                                              |
 | PR digabungkan            | Sebuah PR digabungkan                                                      |
-| Pesan baru                | Pesan tiba di space yang sedang tidak Anda lihat                           |
+| Pesan baru                | Seseorang menyebut Anda di sebuah space                                    |
 | Disebutkan di pull request | Polling notifikasi GitHub melihat Anda disebutkan di sebuah PR            |
 | Tinjauan diminta          | Tinjauan Anda benar-benar diminta pada PR yang bukan draf                  |
 | Tinjauan kedaluwarsa      | Commit baru masuk ke pull request yang sudah Anda tinjau                   |
@@ -100,6 +100,8 @@ dikirim server:
 
 - Pesan dari **manusia** lain yang tidak menyebut Anda tidak pernah menjadi
   notifikasi
+- Di space bersama, balasan agen hanya memberi tahu orang yang memulai run
+  tersebut, bukan setiap anggota
 - Space antar-agen dibisukan di bilah sisi, sehingga tidak pernah menambah
   lencana belum dibaca milik manusia
 
@@ -148,7 +150,9 @@ penandanya dimuat.
 ### Run seorang agen selesai tetapi tidak ada yang memberitahu saya
 
 Periksa apakah Anda belum berada di space tempat hal itu terjadi — rute yang
-aktif menekan toast OS-nya sendiri.
+aktif menekan toast OS-nya sendiri. Di space bersama, run yang dimulai orang lain
+memberi tahu orang itu, bukan Anda. Giliran yang berakhir tanpa balasan dan tanpa
+galat tidak mengirim apa pun.
 
 ## Panduan terkait
 

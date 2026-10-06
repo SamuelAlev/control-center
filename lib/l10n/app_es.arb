@@ -2123,7 +2123,7 @@
   "notifications": "Notificaciones",
   "notifyAgentRunCompleted": "Notificar cuando un agente complete una ejecución.",
   "notifyPrMentioned": "Notificar cuando te mencionen en una pull request.",
-  "notifyNewMessages": "Notificar sobre nuevos mensajes de agentes en otros espacios.",
+  "notifyNewMessages": "Notificar cuando te mencionen en un espacio.",
   "notifyPrMerged": "Notificar cuando se fusione una pull request.",
   "notifyPrPublished": "Notificar cuando un agente publique una pull request.",
   "notifyReviewRequested": "Notificar cuando se solicite tu revisión en una pull request.",
@@ -4395,7 +4395,7 @@
   "subscriptionUsageExhausted": "Cuota agotada",
   "subscriptionUsageSignInRequired": "Vuelve a iniciar sesión",
   "subscriptionUsageSignInExpired": "La sesión expiró, se renueva en la próxima ejecución",
-  "subscriptionUsagePartiallyAvailable": "Parcialmente disponible",
+  "subscriptionUsagePercentUsed": "{percent} % usado",
   "resetsIn": "Se restablece en {duration}",
   "feedbackHelpful": "Esto fue útil",
   "feedbackNotHelpful": "Esto no fue útil",
@@ -7985,5 +7985,12 @@
   "windowRestore": "Restaurar",
   "nativeSandboxUnsupported": "El sandbox nativo aún no es compatible con {platform}.",
   "continueWithoutSandbox": "Continuar sin sandbox",
-  "sandboxCheckAgain": "Comprobar de nuevo"
+  "sandboxCheckAgain": "Comprobar de nuevo",
+  "ideQuickOpen": "Ir al archivo",
+  "ideQuickOpenDescription": "Busca los archivos de la conversación por nombre y abre uno en una pestaña",
+  "ideQuickOpenHint": "Buscar archivos por nombre",
+  "ideQuickOpenRecentlyOpened": "Abierto recientemente",
+  "ideQuickOpenOpenToSide": "Abrir en el lateral",
+  "ideQuickOpenRemoveRecent": "Quitar de abiertos recientemente",
+  "ideQuickOpenNoRecent": "No hay archivos abiertos recientemente"
 }

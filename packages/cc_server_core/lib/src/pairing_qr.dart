@@ -37,10 +37,13 @@ String buildWebClientDeepLink({
 String renderQrToAnsi(
   String data, {
   int margin = 2,
-  int errorCorrectLevel = QrErrorCorrectLevel.M,
+  QrErrorCorrectLevel errorCorrectLevel = QrErrorCorrectLevel.medium,
 }) {
   final qr = QrImage(
-    QrCode.fromData(data: data, errorCorrectLevel: errorCorrectLevel),
+    QrCode(
+      payload: QrPayload.fromString(data),
+      errorCorrectLevel: errorCorrectLevel,
+    ),
   );
   final n = qr.moduleCount;
   final size = n + margin * 2;

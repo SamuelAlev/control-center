@@ -14,6 +14,10 @@
   "use strict";
 
   const BTN_CLASS = "cc-open-btn";
+  // A notification row's button. It takes GitHub's own button classes instead
+  // of BTN_CLASS (see buildRowButton), so it needs its own class to be found.
+  const ROW_BTN_CLASS = "cc-open-row-btn";
+  const ROW_ITEM_CLASS = "cc-open-row-item";
   const INBOX_BTN_ID = "cc-open-inbox-btn";
   // Styled as a Primer default button with a KeybindingHint trailing visual,
   // matching GitHub's own actions ("Code" and the merge status on a PR, "New
@@ -98,6 +102,13 @@ a.${BTN_CLASS}.${BTN_CLASS}--small {
 .Box-header:has(> .js-notifications-mark-selected-actions[hidden] ~ .rgh-open-notifications-button) > #${INBOX_BTN_ID} {
   margin-left: var(--base-size-8, 8px) !important;
 }
+/* A row's hover actions are positioned over its time column, which GitHub
+   sizes (inline, 140px) for its three: widen it by one more (a 34px \`btn px-2\`
+   plus its 8px margin) so ours does not spill over the avatars. Every row
+   gets the width, so the avatars stay in one column. */
+body:has(li.${ROW_ITEM_CLASS}) .notifications-list-item .notification-list-item-hide-on-hover {
+  width: calc(140px + 42px) !important;
+}
 /* A repo group's header: spaced like the actions after it. */
 a.${BTN_CLASS}.${BTN_CLASS}--group {
   margin-right: var(--base-size-8, 8px) !important;
@@ -117,6 +128,16 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
   const NOTIFICATIONS_HEADER =
     ".js-check-all-container .js-bulk-action-toasts ~ div .Box-header";
   const REPO_GROUP_MARK_DONE = ".js-grouped-notifications-mark-all-read-button";
+  // A row, its subject link, and the actions GitHub shows only while the row
+  // is hovered or focused ("Done", "Unsubscribe", "Save").
+  const NOTIFICATION_ROW = ".notifications-list-item";
+  const ROW_LINK = "a.notification-list-item-link";
+  const ROW_ACTIONS = "ul.notification-list-item-actions";
+  const ROW_DONE_BUTTON = 'form[action="/notifications/beta/archive"] button';
+  const ROW_SAVE_ITEM = "li.notification-action-star";
+
+  // A pull request's path, as `owner`, `repo` and `number`.
+  const PR_PATH = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/|$)/;
 
   // The owner and repo segments the app's deep links accept.
   const REPO_NAME = /^([A-Za-z0-9_.-]+)\s*\/\s*([A-Za-z0-9_.-]+)$/;
@@ -134,7 +155,7 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
   // style modifiers and tooltip, and whether it is the one `SHORTCUT` clicks.
   function currentTargets() {
     const path = window.location.pathname;
-    const pr = path.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/|$)/);
+    const pr = path.match(PR_PATH);
     if (pr) {
       return [
         {
@@ -162,8 +183,9 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
     return [];
   }
 
-  // Notifications: the whole inbox from the list's header and, when grouped
-  // by repository, each repo's inbox from its group's header.
+  // Notifications: the whole inbox from the list's header, when grouped by
+  // repository each repo's inbox from its group's header, and each pull
+  // request from its row's hover actions.
   function notificationTargets() {
     const targets = [
       {
@@ -187,7 +209,36 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
         shortcut: false,
       });
     }
+    for (const row of document.querySelectorAll(NOTIFICATION_ROW)) {
+      const pr = prOfRow(row);
+      const actions = row.querySelector(ROW_ACTIONS);
+      if (!pr || !actions) continue;
+      targets.push({
+        id: `cc-open-pr-row-${pr}`,
+        href: `control-center://pr/${pr}`,
+        place: (btn) => placeInRowActions(btn, actions),
+        build: (target) => buildRowButton(target, actions),
+        title: `Open ${pr.replace(/\/(\d+)$/, "#$1")} in Control Center`,
+        shortcut: false,
+      });
+    }
     return targets;
+  }
+
+  // The `owner/repo/number` of the pull request a notification row is about,
+  // or null when it is about something else (an issue, a release, ...).
+  function prOfRow(row) {
+    const link = row.querySelector(ROW_LINK);
+    if (!link) return null;
+    let url;
+    try {
+      url = new URL(link.href);
+    } catch {
+      return null;
+    }
+    if (url.origin !== window.location.origin) return null;
+    const pr = url.pathname.match(PR_PATH);
+    return pr ? `${pr[1]}/${pr[2]}/${pr[3]}` : null;
   }
 
   // The `owner/repo` a notifications group's header names, or null when the
@@ -287,6 +338,35 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
     return true;
   }
 
+  // A notification row: between its "Unsubscribe" and "Save" hover actions,
+  // or last when the row offers no "Save". The list item takes the "Done" item's layout
+  // classes (its spacing), not its behavior (`js-*`) or role
+  // (`notification-action-*`) classes.
+  function placeInRowActions(btn, actions) {
+    if (!actions.isConnected) return false;
+    const item = document.createElement("li");
+    const doneItem = actions.querySelector(ROW_DONE_BUTTON)?.closest("li");
+    item.className = [
+      ...(doneItem ? githubLayoutClasses(doneItem) : []),
+      ROW_ITEM_CLASS,
+    ].join(" ");
+    item.appendChild(btn);
+    actions.insertBefore(item, actions.querySelector(ROW_SAVE_ITEM));
+    return true;
+  }
+
+  // An element's classes without GitHub's behavior hooks (`js-*`), its
+  // per-action ones, and `d-none`, which hides an action the row's state
+  // does not offer.
+  function githubLayoutClasses(el) {
+    return Array.from(el.classList).filter(
+      (c) =>
+        !c.startsWith("js-") &&
+        !c.startsWith("notification-action-") &&
+        c !== "d-none",
+    );
+  }
+
   // Each placed button's watch on its parent, by the button's id.
   const removalObservers = new Map();
 
@@ -297,20 +377,22 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
 
   // Watch the button's parent: when React re-renders the header (tab switch,
   // websocket update, etc.) it replaces the DOM contents, which removes our
-  // button. We detect that and re-inject.
+  // button. We detect that and re-inject. A row's button is watched through
+  // the list item wrapping it.
   function watchRemoval(btn) {
     removalObservers.get(btn.id)?.disconnect();
+    const placed = btn.closest(`li.${ROW_ITEM_CLASS}`) ?? btn;
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
         for (const node of m.removedNodes) {
-          if (node === btn) {
+          if (node === placed) {
             setTimeout(sync, 150);
             return;
           }
         }
       }
     });
-    observer.observe(btn.parentElement, { childList: true });
+    observer.observe(placed.parentElement, { childList: true });
     removalObservers.set(btn.id, observer);
   }
 
@@ -326,8 +408,10 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
       observer.disconnect();
       removalObservers.delete(id);
     }
-    for (const el of document.querySelectorAll(`a.${BTN_CLASS}`)) {
-      if (!ids.has(el.id)) el.remove();
+    for (const el of document.querySelectorAll(
+      `a.${BTN_CLASS}, a.${ROW_BTN_CLASS}`,
+    )) {
+      if (!ids.has(el.id)) (el.closest(`li.${ROW_ITEM_CLASS}`) ?? el).remove();
     }
     for (const target of targets) {
       const existing = document.getElementById(target.id);
@@ -338,7 +422,7 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
         }
         continue;
       }
-      const btn = buildButton(target);
+      const btn = (target.build ?? buildButton)(target);
       if (target.place(btn)) watchRemoval(btn);
     }
   }
@@ -358,6 +442,36 @@ a.${BTN_CLASS}.${BTN_CLASS}--group {
       btn.setAttribute("aria-keyshortcuts", SHORTCUT.ariaKeyshortcuts);
       btn.appendChild(buildKeybindingHint());
     }
+    return btn;
+  }
+
+  // A notification row's button: icon only, like the actions beside it, and
+  // wearing the classes of the row's "Done" button so it sizes, colors and
+  // reacts the same in every theme; Primer's `btn btn-sm` when that is
+  // missing. A `tooltipped` class shows the aria-label as GitHub's tooltip,
+  // so the native title is only set without one.
+  function buildRowButton(target, actions) {
+    const btn = document.createElement("a");
+    btn.id = target.id;
+    const done = actions.querySelector(ROW_DONE_BUTTON);
+    const classes = done ? githubLayoutClasses(done) : ["btn", "btn-sm"];
+    btn.className = [...classes, ROW_BTN_CLASS].join(" ");
+    btn.href = target.href;
+    btn.setAttribute("aria-label", target.title);
+    if (!classes.some((c) => c.startsWith("tooltipped"))) {
+      btn.title = target.title;
+    }
+    // GitHub's own markup for these icons, which `octicon` aligns in the
+    // button's line box like theirs.
+    const icon = buildIcon();
+    icon.classList.add("octicon");
+    const iconBox = document.createElement("span");
+    iconBox.className = "text-center d-inline-block";
+    iconBox.style.width = "16px";
+    iconBox.appendChild(icon);
+    btn.appendChild(iconBox);
+    // The row is a navigation item; keep the click on the button.
+    btn.addEventListener("click", (e) => e.stopPropagation());
     return btn;
   }
 

@@ -20,7 +20,7 @@ const String codeServerBinaryName = 'code-server';
 /// The pinned code-server release tag vendored / downloaded on demand
 /// (Renovate-tracked — bump here and the CI fetch + managed download follow).
 /// Matches the `coder/code-server` GitHub release naming (`v<version>`).
-const String codeServerVersion = '4.139.1';
+const String codeServerVersion = '4.140.0';
 
 /// Curated language extensions pre-provisioned into the shared `--extensions-dir`
 /// so the embedded editor demonstrably ships one LSP end-to-end (the "one LSP
@@ -32,7 +32,7 @@ const String codeServerVersion = '4.139.1';
 /// Each entry is (publisher, name, version) on the Open VSX registry.
 const List<({String publisher, String name, String version})>
 codeServerCuratedExtensions = [
-  (publisher: 'Dart-Code', name: 'dart-code', version: '3.142.0'),
+  (publisher: 'Dart-Code', name: 'dart-code', version: '3.144.0'),
 ];
 
 /// Session capability TTL: a minted capability authorizes the proxy for this
@@ -158,12 +158,15 @@ class CodeServerService implements CodeServerPort {
     // the title bar that survives `window.commandCenter: false`. Disable it so
     // no chat toolbar appears in the embedded editor's chrome.
     settings['chat.commandCenter.enabled'] = false;
+    // A new workspace opens the secondary side bar (chat) by default. Keep it
+    // closed from the first paint instead of waiting for the bridge to close
+    // it after the extension host activates.
+    settings['workbench.secondarySideBar.defaultVisibility'] = 'hidden';
 
-    // Single-file windows: the app shell owns tabs, so each editor window stays
-    // pinned to its entry file and any navigation to another file is handed off
-    // as a NEW app tab (see the bridge extension). Force permanent (non-preview)
-    // opens so a go-to-definition / quick-open can't reuse and REPLACE the
-    // current editor before the hand-off closes it.
+    // The app shell owns tabs: one editor window serves every app tab of the
+    // worktree, and the bridge switches its file as tabs switch. Force
+    // permanent (non-preview) opens so a go-to-definition / quick-open adds an
+    // editor rather than REPLACING the one another app tab still shows.
     settings['workbench.editor.enablePreview'] = false;
     settings['workbench.editor.enablePreviewFromQuickOpen'] = false;
 
@@ -914,6 +917,7 @@ class CodeServerService implements CodeServerPort {
     required String sessionId,
     required String absPath,
     int? line,
+    String? windowId,
   }) {
     final instance = _instances[sessionId];
     if (instance == null) {
@@ -937,6 +941,7 @@ class CodeServerService implements CodeServerPort {
         repoId: instance.repoId,
         path: rel,
         line: line,
+        windowId: windowId,
       ),
     );
   }
@@ -986,15 +991,14 @@ class CodeServerService implements CodeServerPort {
     return instance.commands.stream;
   }
 
-  @override
-  Future<bool> saveFile({
+  /// The running code-server for the conversation's worktree, keyed the same
+  /// way [ensureSession] keys instances. Null when the worktree doesn't resolve
+  /// or no instance is running for it.
+  Future<_CodeServerInstance?> _runningInstance({
     required String workspaceId,
     required String spaceId,
     required String repoId,
-    required String path,
   }) async {
-    // Resolve the conversation's running code-server the same way [ensureSession]
-    // keys instances (by worktree). No running instance → nothing to save.
     IsolatedRepo? worktree;
     if (repoId.isNotEmpty) {
       worktree = await _repos.forUnitRepo(workspaceId, spaceId, repoId);
@@ -1003,23 +1007,95 @@ class CodeServerService implements CodeServerPort {
       worktree = all.isEmpty ? null : all.first;
     }
     if (worktree == null) {
-      return false;
+      return null;
     }
     final key = '${worktree.workspaceId}\x1f${worktree.path}';
     final capability = _byWorktree[key];
     final instance = capability == null ? null : _instances[capability];
     if (instance == null || instance.process.pid <= 0) {
-      return false;
+      return null;
     }
     // Cross-workspace guard: the resolved worktree is workspace-scoped, but
     // assert the instance too (defence in depth against a stale reverse index).
     _assertOwned(instance, workspaceId);
+    return instance;
+  }
 
-    // Confine the target to the worktree and hand the bridge the ABSOLUTE path
-    // (its `TextDocument.uri.fsPath` is absolute).
+  /// [path] resolved against [instance]'s worktree as the ABSOLUTE path the
+  /// bridge matches on (`TextDocument.uri.fsPath`), or null when it escapes the
+  /// worktree.
+  String? _confinedPath(_CodeServerInstance instance, String path) {
     final abs = p.normalize(p.join(instance.folderPath, path));
     if (!p.equals(instance.folderPath, abs) &&
         !p.isWithin(instance.folderPath, abs)) {
+      return null;
+    }
+    return abs;
+  }
+
+  @override
+  Future<bool> openFile({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String windowId,
+    required String path,
+    int? line,
+  }) async {
+    final instance = await _runningInstance(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      repoId: repoId,
+    );
+    final abs = instance == null ? null : _confinedPath(instance, path);
+    if (instance == null || abs == null || windowId.isEmpty) {
+      return false;
+    }
+    instance.commands.add({
+      'cmd': 'open',
+      'window': windowId,
+      'path': abs,
+      if (line != null && line > 0) 'line': line,
+    });
+    return true;
+  }
+
+  @override
+  Future<bool> closeFile({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String path,
+    bool revert = false,
+  }) async {
+    final instance = await _runningInstance(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      repoId: repoId,
+    );
+    final abs = instance == null ? null : _confinedPath(instance, path);
+    if (instance == null || abs == null) {
+      return false;
+    }
+    instance.commands.add({'cmd': 'close', 'path': abs, 'revert': revert});
+    return true;
+  }
+
+  @override
+  Future<bool> saveFile({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String path,
+  }) async {
+    // No running instance → nothing to save.
+    final instance = await _runningInstance(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      repoId: repoId,
+    );
+    final abs = instance == null ? null : _confinedPath(instance, path);
+    if (instance == null || abs == null) {
       return false;
     }
 

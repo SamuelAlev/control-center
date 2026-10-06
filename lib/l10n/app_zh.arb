@@ -2423,7 +2423,7 @@
   "notifications": "通知",
   "notifyAgentRunCompleted": "智能体完成运行时通知。",
   "notifyPrMentioned": "你在 pull request 中被提及时通知。",
-  "notifyNewMessages": "其他空间有新的智能体消息时通知。",
+  "notifyNewMessages": "你在空间中被提及时通知。",
   "notifyPrMerged": "pull request 合并时通知。",
   "notifyPrPublished": "智能体发布 pull request 时通知。",
   "notifyReviewRequested": "pull request 请求你评审时通知。",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "配额已用尽",
   "subscriptionUsageSignInRequired": "请重新登录",
   "subscriptionUsageSignInExpired": "登录已过期，将在下次运行时续期",
-  "subscriptionUsagePartiallyAvailable": "部分可用",
+  "subscriptionUsagePercentUsed": "已使用 {percent}%",
   "resetsIn": "{duration} 后重置",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "还原",
   "nativeSandboxUnsupported": "{platform} 上尚不支持原生沙盒。",
   "continueWithoutSandbox": "不使用沙箱继续",
-  "sandboxCheckAgain": "重新检查"
+  "sandboxCheckAgain": "重新检查",
+  "ideQuickOpen": "转到文件",
+  "ideQuickOpenDescription": "按名称搜索对话中的文件并在标签页中打开",
+  "ideQuickOpenHint": "按名称搜索文件",
+  "ideQuickOpenRecentlyOpened": "最近打开",
+  "ideQuickOpenOpenToSide": "在侧边打开",
+  "ideQuickOpenRemoveRecent": "从最近打开中移除",
+  "ideQuickOpenNoRecent": "没有最近打开的文件"
 }

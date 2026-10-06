@@ -98,25 +98,39 @@ Iterable<String> _candidatePaths(String binary) sync* {
     yield '$home/.local/share/pnpm/$binary';
 
     // Version-manager installs (nvm, fnm) — version dirs are dynamic, so
-    // pick the lexicographically latest match.
-    yield* _latestVersionedBin('$home/.nvm/versions/node', 'bin', binary);
-    yield* _latestVersionedBin(
-      '$home/.local/share/fnm/node-versions',
-      'installation/bin',
-      binary,
-    );
-    yield* _latestVersionedBin(
-      '$home/.fnm/node-versions',
-      'installation/bin',
-      binary,
-    );
+    // the newest version comes first.
+    yield* versionManagedBinaryPaths(binary, home: home);
 
     yield '$home/.local/bin/$binary';
     yield '$home/bin/$binary';
   }
 }
 
-Iterable<String> _latestVersionedBin(
+/// Every version-manager (nvm, fnm) install of [binary] under [home], newest
+/// version first, without touching anything but the version directories.
+///
+/// [candidateBinaryPaths] only needs the newest; the sandbox needs them all.
+/// The shell an agent runs in picks its version from the fnm/nvm default or a
+/// repo's `.node-version`, which is rarely the newest install — and a version
+/// the exec allowlist does not name is refused by the `$HOME` exec deny.
+Iterable<String> versionManagedBinaryPaths(
+  String binary, {
+  required String home,
+}) sync* {
+  if (_isUnsafeBinaryName(binary) || home.isEmpty) {
+    return;
+  }
+  yield* _versionedBins('$home/.nvm/versions/node', 'bin', binary);
+  for (final fnmRoot in [
+    '$home/.local/share/fnm',
+    '$home/.fnm',
+    if (Platform.isMacOS) '$home/Library/Application Support/fnm',
+  ]) {
+    yield* _versionedBins('$fnmRoot/node-versions', 'installation/bin', binary);
+  }
+}
+
+Iterable<String> _versionedBins(
   String root,
   String binSubpath,
   String binary,
@@ -125,9 +139,51 @@ Iterable<String> _latestVersionedBin(
   if (!dir.existsSync()) {
     return;
   }
-  final versions =
-      dir.listSync().whereType<Directory>().map((d) => d.path).toList()..sort();
+  final List<String> versions;
+  try {
+    versions = dir.listSync().whereType<Directory>().map((d) => d.path).toList()
+      ..sort(compareVersionDirs);
+  } on FileSystemException {
+    return;
+  }
   for (final v in versions.reversed) {
     yield '$v/$binSubpath/$binary';
   }
+}
+
+/// Orders version directories (`v9.11.2`, `v24.18.0`, …) numerically, so
+/// `v24` sorts above `v9`. A plain string sort puts `v9` last, and "newest"
+/// then meant the oldest install. Names without a version fall back to string
+/// order, below every versioned name.
+int compareVersionDirs(String a, String b) {
+  final va = _versionParts(a);
+  final vb = _versionParts(b);
+  if (va == null || vb == null) {
+    if (va != null) {
+      return 1;
+    }
+    if (vb != null) {
+      return -1;
+    }
+    return a.compareTo(b);
+  }
+  for (var i = 0; i < va.length || i < vb.length; i++) {
+    final x = i < va.length ? va[i] : 0;
+    final y = i < vb.length ? vb[i] : 0;
+    if (x != y) {
+      return x.compareTo(y);
+    }
+  }
+  return a.compareTo(b);
+}
+
+List<int>? _versionParts(String path) {
+  final name = path.substring(path.lastIndexOf('/') + 1);
+  final match = RegExp(r'^v?(\d+(?:\.\d+)*)').firstMatch(name);
+  if (match == null) {
+    return null;
+  }
+  return [
+    for (final part in match.group(1)!.split('.')) int.tryParse(part) ?? 0,
+  ];
 }

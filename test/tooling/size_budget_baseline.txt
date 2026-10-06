@@ -174,7 +174,6 @@ lib/features/shell/presentation/widgets/app_sidebar.dart  551
 lib/features/shell/presentation/widgets/notification_bell.dart  615
 lib/features/shell/presentation/widgets/server_shutdown_overlay.dart  436
 lib/features/shell/presentation/widgets/title_bar_workspace_chip.dart  363
-lib/features/subscriptions/presentation/widgets/subscription_usage_pill.dart  324
 lib/features/teams/presentation/widgets/team_detail_panel.dart  559
 lib/features/teams/presentation/widgets/teams_management_view.dart  406
 lib/features/ticketing/presentation/screens/project_overview_screen.dart  550

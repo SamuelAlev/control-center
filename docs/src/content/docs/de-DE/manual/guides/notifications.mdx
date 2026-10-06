@@ -2,7 +2,7 @@
 title: Benachrichtigungen konfigurieren
 description: Schalte Kategorien ein oder aus, lege Quiet hours und einen Ton fest und erkenne, welche Benachrichtigungen dich wo erreichen.
 slug: de-DE/handbuch/anleitungen/benachrichtigungen
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Diese Anleitung zeigt, wie du Benachrichtigungen konfigurierst und was jede
@@ -30,10 +30,10 @@ Benachrichtigungsfläche.
 
 | Kategorie               | Auslöser                                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------------------- |
-| Agent abgeschlossen     | Ein Agent hat einen Lauf abgeschlossen                                                      |
+| Agent abgeschlossen     | Ein Agent hat in einem Lauf geantwortet, den du gestartet hast, oder der Lauf ist fehlgeschlagen |
 | PR veröffentlicht       | Ein Agent hat einen PR veröffentlicht                                                       |
 | PR zusammengeführt      | Ein PR wurde zusammengeführt                                                                |
-| Neue Nachrichten        | Eine Nachricht ist in einem Bereich angekommen, den du gerade nicht ansiehst               |
+| Neue Nachrichten        | Jemand hat dich in einem Bereich erwähnt                                                   |
 | In Pull Request erwähnt | Der Benachrichtigungsabruf von GitHub hat gesehen, dass du in einem PR erwähnt wurdest     |
 | Review angefragt        | Dein Review wurde wirklich für einen PR angefragt, der kein Entwurf ist                    |
 | Prüfung veraltet        | Neue Commits sind auf einem Pull Request gelandet, den du schon geprüft hast               |
@@ -102,6 +102,8 @@ Zwei weitere Unterdrückungen liegen vorgelagert, bei dem, was der Server
 
 - Eine Nachricht eines anderen **Menschen**, in der du nicht erwähnt wirst,
   wird nie zu einer Benachrichtigung
+- In einem gemeinsamen Bereich benachrichtigt die Antwort eines Agenten die
+  Person, die den Lauf gestartet hat, nicht jedes Mitglied
 - Bereiche von Agent zu Agent sind in der Seitenleiste stumm, deshalb erhöhen
   sie nie das Ungelesen-Badge eines Menschen
 
@@ -150,7 +152,10 @@ pendelt sich ein, sobald die Marke geladen ist.
 ### Der Lauf eines Agenten ist fertig, aber nichts hat mich benachrichtigt
 
 Prüfe, ob du nicht schon in dem Bereich warst, in dem es passiert ist. Eine
-aktive Route unterdrückt ihren eigenen Betriebssystem-Toast.
+aktive Route unterdrückt ihren eigenen Betriebssystem-Toast. In einem
+gemeinsamen Bereich benachrichtigt ein Lauf, den jemand anderes gestartet hat,
+diese Person und nicht dich. Ein Turn, der ohne Antwort und ohne Fehler endet,
+sendet nichts.
 
 ## Verwandte Anleitungen
 

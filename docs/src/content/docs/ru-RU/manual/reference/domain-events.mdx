@@ -2,7 +2,7 @@
 title: Доменные события
 description: Полный каталог 53 доменных событий, их полезных нагрузок и серверных подписчиков, которые их потребляют.
 slug: ru-RU/руководство/справка/доменные-события
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Шина событий
@@ -199,8 +199,8 @@ sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 
 | Категория              | Исходное событие          | Метод передачи                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (упоминает вас)                       |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, без упоминания вас) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

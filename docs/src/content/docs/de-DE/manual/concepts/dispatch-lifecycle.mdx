@@ -2,7 +2,7 @@
 title: Lebenszyklus der Agenten-Ausführung
 description: Was zwischen einer eintreffenden Nachricht und dem Schließen eines Laufprotokolls passiert, von Prompt-Aufbau und Worktrees über Identität bis zu den Grenzen eines Laufs und der ehrlichen Aufzeichnung seines Ergebnisses.
 slug: de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Was eine Ausführung ist
@@ -130,7 +130,7 @@ Endet ein Lauf ohne das Ergebnis, das sein Modus verlangt, bleibt der Status `co
 Das ist Absicht. Den Status umzulegen würde Zustandsmaschinen von Tickets und Pipelines bewegen, die mit dem fehlenden Artefakt nichts zu tun haben. „status: completed“ allein reicht nie, um einen gelungenen Lauf zu schließen. Lies die Zusammenfassung.
 :::
 
-Beim Schließen veröffentlicht der Lauf `AgentRunCompleted`, und daran hängt einiges: der Benachrichtigungsrahmen und sein dauerhafter Eintrag im Feed, der Live-Weiterleiter an verbundene Clients, die Kostenaufsummierung der Pipeline, das Fortsetzen eines Pipeline-Schritts, der auf den Lauf gewartet hat, das Abschließen des zugehörigen Tickets, das Abbilden einer Orchestrierung auf einen Endzustand, die Entscheidung des Zielwächters weiterzumachen oder zu stoppen, die Prüferrolle und die Budgetauswertung nach dem Lauf. Die Präsenzliste folgt getrennt: Sie beobachtet die jüngsten Laufprotokolle, nicht das Ereignis.
+Beim Schließen veröffentlicht der Lauf `AgentRunCompleted`, und daran hängt einiges: die Kostenaufsummierung der Pipeline, das Fortsetzen eines Pipeline-Schritts, der auf den Lauf gewartet hat, das Abschließen des zugehörigen Tickets, das Abbilden einer Orchestrierung auf einen Endzustand, die Entscheidung des Zielwächters weiterzumachen oder zu stoppen, die Prüferrolle und die Budgetauswertung nach dem Lauf. Die Präsenzliste folgt getrennt: Sie beobachtet die jüngsten Laufprotokolle, nicht das Ereignis. Die Benachrichtigung „Agent abgeschlossen“ gehört nicht dazu: Das Ereignis feuert, wenn der Prozess-Stream endet, also bevor die Antwort geschrieben ist. Die Benachrichtigung ist deshalb das `MessageReceived` des Turns, veröffentlicht, sobald die Nachricht gespeichert ist.
 
 ## Budgets im Nachhinein
 

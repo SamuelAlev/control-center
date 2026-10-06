@@ -88,6 +88,42 @@ void main() {
       );
     });
 
+    test("an agent's reply is the agent-finished notification; a mention is "
+        'a new message', () {
+      const reply = {
+        'space_id': 'ch-1',
+        'message_id': 'm-1',
+        'sender_name': 'Bot',
+        'content_preview': 'done',
+        'workspace_id': 'ws-1',
+        'is_agent_message': true,
+      };
+
+      // The server sends no separate run-completed frame, so the reply obeys
+      // the "Agent finished" toggle.
+      final finished = mapNotificationFrame(
+        'notifications/message_received',
+        reply,
+        l10n: l10n,
+        currentUserId: 'me',
+      );
+      expect(finished!.category, NotificationCategory.agentRunCompleted);
+      expect(finished.title, 'Bot');
+      expect(finished.body, 'done');
+      expect(finished.spaceId, 'ch-1');
+
+      final mention = mapNotificationFrame(
+        'notifications/message_received',
+        {
+          ...reply,
+          'mentions': ['user:me'],
+        },
+        l10n: l10n,
+        currentUserId: 'me',
+      );
+      expect(mention!.category, NotificationCategory.newMessage);
+    });
+
     test('review_stale deep-links to the PR and stays out of the way', () {
       // Centre-only on purpose: a banner is for something time-critical AND
       // directly actionable, and re-reviewing is a choice you make when you

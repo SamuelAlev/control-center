@@ -2,7 +2,7 @@
 title: インストール
 description: ブラウザーで Control Center を使うか、デスクトップアプリをインストールし、エージェントバックエンドを設定して、サーバーをどこで実行するかを選びます。
 slug: ja-JP/マニュアル/インストール
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center の使い方は 2 通りあります。ダウンロード不要の **Web アプリ**として [app.usectrl.dev](https://app.usectrl.dev) で使うか、インストールする **デスクトップアプリ**として使うかです。どちらも同じ機能を持つ同じアプリケーションで、違うのはサーバーをどこで実行するかだけです — そして Web アプリは、あなたの代わりにサーバーを実行することはできません。
@@ -80,7 +80,7 @@ Linux アーカイブは Ubuntu 22.04 でビルドされ、同梱のネイティ
 
 Control Center は**アダプター**を通じてエージェントをディスパッチします。アダプターは 2 つだけで、この一覧は固定であり、自動的に検出されます — 別のものを登録する方法はありません。
 
-**Control Center (built-in)** アダプターは外部 CLI を必要としません。エージェントループがサーバー内で実行され、モデルプロバイダーとは HTTP で通信するため、常に利用できます。プロバイダーは**設定 → サーバー → モデルプロバイダー**で接続します。OpenAI、Codex、Cursor、Kimi Code はブラウザーでのサインインに対応し、Anthropic、OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai、Moonshot は API キーを使います。Codex と Cursor は、別個の CLI ではなく、このランナー上のプロバイダーです。z.ai が 2 つ表示されるのは意図的です: **z.ai** は従量課金のオープンプラットフォームで、アカウントの残高に対して課金され、**z.ai GLM Coding Plan** はサブスクリプションです。アカウントキーは同じですが、z.ai はこのプランを別のホストから提供します — コーディングプランのキーを素の z.ai のタイルに貼り付けると、すべてのリクエストが `429 … "Insufficient balance or no resource package"` を返します。そのプランには消費できる残高がないためです。Claude Pro/Max のサブスクリプションは Anthropic API のログインではありません。そのプランを使うには、代わりに Claude Code アダプターを経由してください。そのページで追加_できる_のは**カスタムプロバイダー**です — OpenAI または Anthropic 互換の任意のエンドポイント（Ollama、LM Studio、vLLM、プライベートデプロイメント）を、**カスタムプロバイダー → プロバイダーを追加**から追加できます。
+**Control Center (built-in)** アダプターは外部 CLI を必要としません。エージェントループがサーバー内で実行され、モデルプロバイダーとは HTTP で通信するため、常に利用できます。プロバイダーは**設定 → サーバー → モデルプロバイダー**で接続します。OpenAI、Codex、Cursor、Kimi Code はブラウザーでのサインインに対応し、Anthropic、OpenRouter、Google Gemini、DeepSeek、Mistral、xAI、z.ai、Moonshot は API キーを使います。Codex と Cursor は、別個の CLI ではなく、このランナー上のプロバイダーです。z.ai が 2 つ表示されるのは意図的です: **z.ai** は従量課金のオープンプラットフォームで、アカウントの残高に対して課金され、**z.ai GLM Coding Plan** はサブスクリプションです。アカウントキーは同じですが、z.ai はこのプランを別のホストから提供します — コーディングプランのキーを素の z.ai のタイルに貼り付けると、すべてのリクエストが `429 … "Insufficient balance or no resource package"` を返します。そのプランには消費できる残高がないためです。Claude Pro/Max のサブスクリプションは Anthropic API のログインではありません。そのプランを使うには、代わりに Claude Code アダプターを経由してください。そのページで追加_できる_のは**カスタムプロバイダー**です — OpenAI または Anthropic 互換の任意のエンドポイント（Ollama、LM Studio、vLLM、プライベートデプロイメント）を、**カスタムプロバイダー → プロバイダーを追加**から追加できます。
 
 もう一方のアダプターは外部 CLI をラップします:
 

@@ -2423,7 +2423,7 @@
   "notifications": "Уведомления",
   "notifyAgentRunCompleted": "Уведомлять, когда агент завершает запуск.",
   "notifyPrMentioned": "Уведомлять, когда вас упоминают в pull request.",
-  "notifyNewMessages": "Уведомлять о новых сообщениях агента в других пространствах.",
+  "notifyNewMessages": "Уведомлять, когда вас упоминают в пространстве.",
   "notifyPrMerged": "Уведомлять, когда pull request объединяется.",
   "notifyPrPublished": "Уведомлять, когда агент публикует pull request.",
   "notifyReviewRequested": "Уведомлять, когда у вас запрашивают ревью pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Квота исчерпана",
   "subscriptionUsageSignInRequired": "Войдите снова",
   "subscriptionUsageSignInExpired": "Сеанс истёк, обновится при следующем запуске",
-  "subscriptionUsagePartiallyAvailable": "Частично доступно",
+  "subscriptionUsagePercentUsed": "Использовано {percent}%",
   "resetsIn": "Сброс через {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Восстановить",
   "nativeSandboxUnsupported": "Нативная песочница пока не поддерживается на {platform}.",
   "continueWithoutSandbox": "Продолжить без песочницы",
-  "sandboxCheckAgain": "Проверить снова"
+  "sandboxCheckAgain": "Проверить снова",
+  "ideQuickOpen": "Перейти к файлу",
+  "ideQuickOpenDescription": "Найдите файлы беседы по имени и откройте один во вкладке",
+  "ideQuickOpenHint": "Поиск файлов по имени",
+  "ideQuickOpenRecentlyOpened": "Недавно открытые",
+  "ideQuickOpenOpenToSide": "Открыть сбоку",
+  "ideQuickOpenRemoveRecent": "Удалить из недавно открытых",
+  "ideQuickOpenNoRecent": "Нет недавно открытых файлов"
 }

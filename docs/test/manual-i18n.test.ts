@@ -113,6 +113,22 @@ describe('checkManual', () => {
     assert.match(links[1], /de-DE manual/);
     assert.match(links[2], /not a fr-FR manual page/);
   });
+
+  it('reports a link whose text lost its closing bracket', () => {
+    translateAll();
+    french(
+      'manual/guides/create-agent.mdx',
+      'fr-FR/manuel/guides/creer-agent',
+      'Retour au [manuel(/fr-FR/manuel/), puis au [manuel\nentier(/fr-FR/manuel/), au [bon](/fr-FR/manuel/).\n\n```md\n[code(/fr-FR/manuel/)\n```',
+    );
+    const links = check().filter(problem => problem.kind === 'links');
+    assert.deepEqual(
+      links.map(problem => problem.line),
+      [7, 8],
+      links.map(problem => problem.message).join('\n'),
+    );
+    assert.match(links[0].message, /missing the `\]`/);
+  });
 });
 
 describe('scaffoldManual', () => {

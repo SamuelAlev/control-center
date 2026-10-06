@@ -3546,7 +3546,7 @@
   "notifications": "Notifications",
   "notifyAgentRunCompleted": "Notify when an agent completes a run.",
   "notifyPrMentioned": "Notify when you're mentioned in a pull request.",
-  "notifyNewMessages": "Notify on new agent messages in other spaces.",
+  "notifyNewMessages": "Notify when you're mentioned in a space.",
   "notifyPrMerged": "Notify when a pull request is merged.",
   "notifyPrPublished": "Notify when an agent publishes a pull request.",
   "notifyReviewRequested": "Notify when your review is requested on a pull request.",
@@ -8023,7 +8023,15 @@
   "subscriptionUsageExhausted": "Quota exhausted",
   "subscriptionUsageSignInRequired": "Sign in again",
   "subscriptionUsageSignInExpired": "Sign-in expired, renews on the next run",
-  "subscriptionUsagePartiallyAvailable": "Partially available",
+  "subscriptionUsagePercentUsed": "{percent}% used",
+  "@subscriptionUsagePercentUsed": {
+    "description": "How much of a quota window is used, under its meter",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "resetsIn": "Resets in {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -13764,5 +13772,19 @@
   "continueWithoutSandbox": "Continue without sandbox",
   "@continueWithoutSandbox": {"description": "Onboarding sandbox step button on a platform with no native sandbox: agents will run without isolation"},
   "sandboxCheckAgain": "Check again",
-  "@sandboxCheckAgain": {"description": "Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools"}
+  "@sandboxCheckAgain": {"description": "Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools"},
+  "ideQuickOpen": "Go to file",
+  "@ideQuickOpen": {"description": "Keyboard shortcut label (⌘P / Ctrl+P) for the IDE quick open file picker."},
+  "ideQuickOpenDescription": "Search the conversation's files by name and open one in a tab",
+  "@ideQuickOpenDescription": {"description": "Keyboard shortcut description for the IDE quick open file picker."},
+  "ideQuickOpenHint": "Search files by name",
+  "@ideQuickOpenHint": {"description": "Placeholder in the quick open picker's search field."},
+  "ideQuickOpenRecentlyOpened": "Recently opened",
+  "@ideQuickOpenRecentlyOpened": {"description": "Tag on a quick open row that comes from the recently opened file list."},
+  "ideQuickOpenOpenToSide": "Open to the side",
+  "@ideQuickOpenOpenToSide": {"description": "Tooltip on a quick open row's button that opens the file in a new split pane to the side."},
+  "ideQuickOpenRemoveRecent": "Remove from recently opened",
+  "@ideQuickOpenRemoveRecent": {"description": "Tooltip on a quick open row's button that removes the file from the recently opened list."},
+  "ideQuickOpenNoRecent": "No recently opened files",
+  "@ideQuickOpenNoRecent": {"description": "Quick open empty state when nothing is typed and no files have been opened yet."}
 }

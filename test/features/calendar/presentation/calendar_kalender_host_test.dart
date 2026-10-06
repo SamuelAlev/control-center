@@ -44,7 +44,7 @@ double _bodyOpacity(WidgetTester tester) {
       .widget<Opacity>(
         find
             .ancestor(
-              of: find.byType(k.KalenderBody),
+              of: find.byType(k.MultiDayBody),
               matching: find.byType(Opacity),
             )
             .first,
@@ -176,7 +176,14 @@ void main() {
       'month view has no timed body to position and is never hidden',
       (tester) async {
         await tester.pumpWidget(testWrap(_host(CalendarViewMode.month)));
-        expect(_bodyOpacity(tester), 1);
+        final body = find.byType(k.MonthBody);
+        expect(body, findsOneWidget);
+        final hiding = tester
+            .widgetList<Opacity>(
+              find.ancestor(of: body, matching: find.byType(Opacity)),
+            )
+            .where((opacity) => opacity.opacity < 1);
+        expect(hiding, isEmpty);
       },
     );
   });
@@ -214,7 +221,7 @@ void main() {
     /// The whole point of the band is that this number is a constant, so it is
     /// the one every height test is written against.
     double gridTop(WidgetTester tester) =>
-        tester.getTopLeft(find.byType(k.KalenderBody)).dy -
+        tester.getTopLeft(find.byType(k.MultiDayBody)).dy -
         tester.getTopLeft(find.byType(CalendarKalenderHost)).dy;
 
     /// The height the all-day band actually paints at, overhang included.

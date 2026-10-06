@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter/widgets.dart';
 
 /// The left rail of the detected-runners master-detail: every runner in the
@@ -68,6 +69,10 @@ class AdapterRail extends StatelessWidget {
           for (final d in visible)
             SettingsRailItem(
               label: d.adapter.name,
+              leading: AiBrandLogo(
+                brand: AiBrand.forProvider(d.adapter.id),
+                color: tokens.textSecondary,
+              ),
               tone: _tone(d.status),
               statusLabel: _statusLabel(l10n, d.status),
               selected: selectedId == d.adapter.id,

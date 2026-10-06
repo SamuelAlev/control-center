@@ -43,7 +43,7 @@ dependencies:
   path: ^1.9.1
   # Pure-Dart QR matrix generator (no Flutter) — used to render the pairing
   # deep link as a terminal-scannable QR from the `cc_server pair` command.
-  qr: ^3.0.2
+  qr: ^4.0.0
   uuid: ^4.5.3
   # Cross-platform WebSocket client — cc_server dials the signaling broker as a
   # peer to relay the phone's RPC when it isn't directly reachable.

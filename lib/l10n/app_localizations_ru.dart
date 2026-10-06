@@ -4247,7 +4247,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Уведомлять о новых сообщениях агента в других пространствах.';
+      'Уведомлять, когда вас упоминают в пространстве.';
 
   @override
   String get notifyPrMerged => 'Уведомлять, когда pull request объединяется.';
@@ -9050,7 +9050,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сеанс истёк, обновится при следующем запуске';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Частично доступно';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'Использовано $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15296,4 +15298,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Проверить снова';
+
+  @override
+  String get ideQuickOpen => 'Перейти к файлу';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Найдите файлы беседы по имени и откройте один во вкладке';
+
+  @override
+  String get ideQuickOpenHint => 'Поиск файлов по имени';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Недавно открытые';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Открыть сбоку';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Удалить из недавно открытых';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Нет недавно открытых файлов';
 }

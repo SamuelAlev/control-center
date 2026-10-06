@@ -2,10 +2,10 @@
 title: Raccourcis clavier
 description: Le registre complet des raccourcis clavier, par portée, avec les conditions dans lesquelles chaque raccourci se déclenche.
 slug: fr-CA/manuel/reference/raccourcis-clavier
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Les raccourcis proviennent d’un seul registre `const`, `KeybindingRegistry`, dans `lib/core/constants/keybindings.dart`. Il contient **48 associations**. Paramètres → Vous → Raccourcis clavier affiche ce registre sous forme de **référence en lecture seule** : il n’existe aucune interface de réassignation ni aucun fichier de raccourcis utilisateur.
+Les raccourcis proviennent d’un seul registre `const`, `KeybindingRegistry`, dans `lib/core/constants/keybindings.dart`. Il contient **49 associations**. Paramètres → Vous → Raccourcis clavier affiche ce registre sous forme de **référence en lecture seule** : il n’existe aucune interface de réassignation ni aucun fichier de raccourcis utilisateur.
 
 `Cmd` désigne ci-dessous le modificateur de commande principal — ⌘ sous macOS, Ctrl sous Windows et Linux. Une association ne se déclenche que si sa commande possède un gestionnaire enregistré sur l’écran courant et si sa clause `when` est vraie; `!textInputFocus` signifie que la touche est plutôt transmise au champ de texte ayant le focus.
 
@@ -72,7 +72,7 @@ Portée `/users/`. La clause `when` est une expression régulière appliquée à
 | `/`            | Aller à la recherche   |
 | `Cmd/Ctrl + F` | Aller à la recherche   |
 
-## Espaces (8)
+## Espaces (9)
 
 Portée `/spaces`. Les clauses `when` utilisent une expression régulière, de sorte qu’elles se déclenchent à la fois dans la liste des espaces (`/spaces`) et dans un espace sélectionné (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Portée `/spaces`. Les clauses `when` utilisent une expression régulière, de s
 | `Cmd/Ctrl + T`         | Ouvrir un onglet d’éditeur      | Sur une route `/spaces`     |
 | `Cmd/Ctrl + W`         | Fermer l’onglet d’éditeur       | Sur une route `/spaces`     |
 | `Cmd/Ctrl + B`         | Basculer la barre latérale de l’éditeur | Sur une route `/spaces` |
+| `Cmd/Ctrl + P`         | Aller au fichier                        | Sur une route `/spaces` |
+
+« Aller au fichier » ouvre un sélecteur sur les fichiers de la conversation. Sans saisie, il liste les fichiers que vous avez ouverts le plus récemment; la saisie lance une recherche dans tous les fichiers des arbres de travail de la conversation. `Enter` ouvre le fichier sélectionné dans un nouvel onglet, `Cmd/Ctrl + Enter` ou le bouton de division de la ligne l’ouvre dans un volet à droite, et le `×` d’une ligne récente le retire de la liste.
 
 L’envoi par la touche Entrée appartient au champ de texte du composeur; l’appui pour parler appartient au bouton de microphone du composeur (son propre gestionnaire de clavier matériel). Les deux figurent dans le registre pour la référence des paramètres.
 

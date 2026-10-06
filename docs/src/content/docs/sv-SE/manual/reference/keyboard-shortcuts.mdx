@@ -2,10 +2,10 @@
 title: Tangentbordsgenvägar
 description: Hela registret över tangentbindningar, per omfång, med villkoren som avgör när varje genväg utlöses.
 slug: sv-SE/handbok/referens/tangentbordsgenvagar
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Genvägarna kommer från ett enda `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det innehåller **48 bindningar**. Inställningar → Du → Kortkommandon visar registret som en **skrivskyddad referens**: det finns inget gränssnitt för att tilldela om genvägar och ingen fil för egna tangentbindningar.
+Genvägarna kommer från ett enda `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det innehåller **49 bindningar**. Inställningar → Du → Kortkommandon visar registret som en **skrivskyddad referens**: det finns inget gränssnitt för att tilldela om genvägar och ingen fil för egna tangentbindningar.
 
 `Cmd` nedan är den primära kommandomodifieraren — ⌘ på macOS, Ctrl på Windows och Linux. En bindning utlöses bara när dess kommando har en registrerad hanterare på den aktuella skärmen och dess `when`-villkor är uppfyllt; `!textInputFocus` betyder att tangenten i stället skickas vidare till ett fokuserat textfält.
 
@@ -72,7 +72,7 @@ Omfånget `/users/`. `when`-villkoret är ett regex mot `/users/<login>` **eller
 | `/`           | Fokusera sökfält |
 | `Cmd/Ctrl + F` | Fokusera sökfält |
 
-## Ytor (8)
+## Ytor (9)
 
 Omfånget `/spaces`. `when`-villkoren använder ett regex så att de utlöses både i listan över ytor (`/spaces`) och i en vald yta (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Omfånget `/spaces`. `when`-villkoren använder ett regex så att de utlöses b�
 | `Cmd/Ctrl + T`        | Öppna redigerarflik        | På en `/spaces`-rutt  |
 | `Cmd/Ctrl + W`        | Stäng redigerarflik        | På en `/spaces`-rutt  |
 | `Cmd/Ctrl + B`        | Växla redigerarens sidofält | På en `/spaces`-rutt |
+| `Cmd/Ctrl + P`        | Gå till fil                 | På en `/spaces`-rutt |
+
+Gå till fil öppnar en väljare över samtalets filer. Utan inmatning listar den de filer du senast öppnade; när du skriver söker den i alla filer i samtalets worktrees. `Enter` öppnar den valda filen i en ny flik, `Cmd/Ctrl + Enter` eller delningsknappen på raden öppnar den i en panel till höger, och `×` på en nylig rad tar bort den från listan.
 
 Enter-för-att-skicka hanteras av meddelandefältets textfält; tryck-för-att-tala hanteras av meddelandefältets mikrofonsknapp (med sin egen hanterare för fysiskt tangentbord). Båda finns med i registret för inställningsreferensen.
 

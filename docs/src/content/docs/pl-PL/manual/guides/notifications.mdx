@@ -2,7 +2,7 @@
 title: Skonfiguruj powiadomienia
 description: Włączaj i wyłączaj kategorie, ustaw godziny ciszy i dźwięk oraz wiedz, które powiadomienia docierają do Ciebie i gdzie.
 slug: pl-PL/podrecznik/poradniki/powiadomienia
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Ten poradnik pokazuje, jak skonfigurować powiadomienia i czym naprawdę steruje
@@ -28,10 +28,10 @@ jego historia nadal działają, bo czytają kanał z serwera. Klient mobilny nie
 
 | Kategoria                 | Wyzwalane, gdy                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent ukończył pracę      | Agent zakończył uruchomienie                                               |
+| Agent ukończył pracę      | Agent odpowiedział w uruchomieniu, które rozpocząłeś, albo uruchomienie się nie powiodło |
 | Opublikowano PR           | Agent opublikował PR                                                       |
 | Scalono PR                | PR został scalony                                                          |
-| Nowe wiadomości           | Wiadomość dotarła do przestrzeni, na którą nie patrzysz                    |
+| Nowe wiadomości           | Ktoś wspomniał o Tobie w przestrzeni                                       |
 | Wzmianka w pull requeście | Odpytywanie powiadomień GitHuba wykryło, że wspomniano Cię w PR            |
 | Prośba o recenzję         | Twoja recenzja została faktycznie zamówiona w PR, który nie jest wersją roboczą |
 | Nieaktualna recenzja      | Do pull requesta, który już zrecenzowałeś, trafiły nowe commity            |
@@ -100,6 +100,8 @@ Dwa kolejne wstrzymania działają wcześniej, na tym, co serwer w ogóle wysył
 
 - Wiadomość od innego **człowieka**, w której nie ma wzmianki o Tobie, nigdy nie
   staje się powiadomieniem
+- We współdzielonej przestrzeni odpowiedź agenta powiadamia osobę, która
+  rozpoczęła to uruchomienie, a nie każdego członka
 - Przestrzenie agent–agent są wyciszone na pasku bocznym, więc nigdy nie
   zwiększają plakietki nieprzeczytanych
 
@@ -149,7 +151,9 @@ Ustabilizuje się, gdy znacznik się wczyta.
 ### Uruchomienie agenta się zakończyło, ale nic mnie nie powiadomiło
 
 Sprawdź, czy nie byłeś już w przestrzeni, w której to się stało — aktywna trasa
-wstrzymuje własny toast systemowy.
+wstrzymuje własny toast systemowy. We współdzielonej przestrzeni uruchomienie
+rozpoczęte przez kogoś innego powiadamia tę osobę, a nie Ciebie. Tura, która
+zakończyła się bez odpowiedzi i bez błędu, niczego nie wysyła.
 
 ## Powiązane poradniki
 

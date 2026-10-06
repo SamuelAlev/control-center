@@ -423,6 +423,9 @@ class AgentStreamProcessor {
     await ctx.streamRegistry.unregister(ctx.messageId);
 
     await ctx.agentDispatchService.failRun(runLog, error.toString());
+    // The turn's message is the only "agent finished" notification, so a
+    // crashed turn still sends one — carrying what went wrong.
+    _notifyMessageReceived(ctx, content: content);
   }
 
   Map<String, dynamic> _finalMetadata(

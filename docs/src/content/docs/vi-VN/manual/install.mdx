@@ -2,7 +2,7 @@
 title: Cài đặt
 description: Dùng Control Center trong trình duyệt hoặc cài ứng dụng desktop, thiết lập backend agent và chọn nơi máy chủ của nó chạy.
 slug: vi-VN/so-tay/cai-dat
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center chạy theo hai cách: dưới dạng **ứng dụng web** tại
@@ -118,7 +118,7 @@ Bản lưu trữ Linux được dựng trên Ubuntu 22.04 và các thư viện n
 
 Control Center điều phối agent thông qua **adapter**. Có hai adapter, danh sách này cố định và chúng được phát hiện tự động — không có cách nào đăng ký thêm một cái nữa.
 
-Adapter **Control Center (tích hợp sẵn)** không cần CLI bên ngoài: vòng lặp agent chạy bên trong máy chủ và nói chuyện với các nhà cung cấp mô hình qua HTTP, nên nó luôn sẵn có. Kết nối một nhà cung cấp trong **Cài đặt → Máy chủ → Nhà cung cấp mô hình**. OpenAI, Codex, Cursor và Kimi Code cho phép đăng nhập qua trình duyệt; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai và Moonshot nhận khóa API. Codex và Cursor là các nhà cung cấp trên runner này, không phải CLI riêng. z.ai được liệt kê hai lần là có chủ đích: **z.ai** là nền tảng mở trả theo mức dùng, tính vào số dư tài khoản của bạn, còn **z.ai GLM Coding Plan** là gói đăng ký. Đó là cùng một khóa tài khoản, nhưng z.ai phục vụ gói này từ một host khác — dán khóa của gói lập trình vào ô z.ai thường thì mọi yêu cầu đều trả về `429 … "Insufficient balance or no resource package"`, vì gói này không có số dư để tiêu. Gói đăng ký Claude Pro/Max không phải là đăng nhập API Anthropic; thay vào đó hãy dùng gói đó qua adapter Claude Code. Thứ bạn _có thể_ thêm trên trang đó là một **nhà cung cấp tùy chỉnh** — bất kỳ endpoint tương thích OpenAI hoặc Anthropic nào (Ollama, LM Studio, vLLM, một triển khai riêng) trong **Nhà cung cấp tùy chỉnh → Thêm nhà cung cấp**.
+Adapter **Control Center (tích hợp sẵn)** không cần CLI bên ngoài: vòng lặp agent chạy bên trong máy chủ và nói chuyện với các nhà cung cấp mô hình qua HTTP, nên nó luôn sẵn có. Kết nối một nhà cung cấp trong **Cài đặt → Máy chủ → Nhà cung cấp mô hình**. OpenAI, Codex, Cursor và Kimi Code cho phép đăng nhập qua trình duyệt; Anthropic, OpenRouter, Google Gemini, DeepSeek, Mistral, xAI, z.ai và Moonshot nhận khóa API. Codex và Cursor là các nhà cung cấp trên runner này, không phải CLI riêng. z.ai được liệt kê hai lần là có chủ đích: **z.ai** là nền tảng mở trả theo mức dùng, tính vào số dư tài khoản của bạn, còn **z.ai GLM Coding Plan** là gói đăng ký. Đó là cùng một khóa tài khoản, nhưng z.ai phục vụ gói này từ một host khác — dán khóa của gói lập trình vào ô z.ai thường thì mọi yêu cầu đều trả về `429 … "Insufficient balance or no resource package"`, vì gói này không có số dư để tiêu. Gói đăng ký Claude Pro/Max không phải là đăng nhập API Anthropic; thay vào đó hãy dùng gói đó qua adapter Claude Code. Thứ bạn _có thể_ thêm trên trang đó là một **nhà cung cấp tùy chỉnh** — bất kỳ endpoint tương thích OpenAI hoặc Anthropic nào (Ollama, LM Studio, vLLM, một triển khai riêng) trong **Nhà cung cấp tùy chỉnh → Thêm nhà cung cấp**.
 
 Adapter còn lại bao bọc một CLI bên ngoài:
 

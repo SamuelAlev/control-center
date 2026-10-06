@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba quais notificações chegam até você e onde.
 slug: pt-BR/manual/guias/notificacoes
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Este guia mostra como configurar as notificações e o que cada ajuste realmente
@@ -29,10 +29,10 @@ notificação.
 
 | Categoria                 | Dispara quando                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agente finalizado         | Um agente terminou uma execução                                            |
+| Agente finalizado         | Um agente respondeu em uma execução que você iniciou, ou a execução falhou |
 | PR publicada              | Um agente publicou uma PR                                                  |
 | PR mesclada               | Uma PR foi mesclada                                                        |
-| Novas mensagens           | Chegou uma mensagem em um espaço que você não está olhando                 |
+| Novas mensagens           | Alguém mencionou você em um espaço                                         |
 | Mencionado em um pull request | A sondagem de notificações do GitHub viu você mencionado em uma PR     |
 | Revisão solicitada        | Sua revisão foi realmente solicitada em uma PR que não é rascunho          |
 | Revisão desatualizada     | Novos commits chegaram a uma pull request que você já revisou              |
@@ -103,6 +103,8 @@ enviar:
 
 - Uma mensagem de outro **humano** em que você não é mencionado nunca se torna
   uma notificação
+- Em um espaço compartilhado, a resposta de um agente avisa quem iniciou
+  aquela execução, não todos os membros
 - Os espaços entre agentes ficam silenciados na barra lateral, então nunca
   incrementam o indicador de não lidos dos humanos
 
@@ -151,7 +153,9 @@ Isso se estabiliza assim que a marca carrega.
 ### A execução de um agente terminou, mas nada me avisou
 
 Verifique se você já não estava no espaço onde isso aconteceu — uma rota ativa
-suprime o próprio toast do sistema operacional.
+suprime o próprio toast do sistema operacional. Em um espaço compartilhado, uma
+execução que outra pessoa iniciou avisa essa pessoa, não você. Uma rodada que
+terminou sem resposta e sem erro não envia nada.
 
 ## Guias relacionados
 

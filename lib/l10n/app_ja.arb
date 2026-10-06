@@ -2423,7 +2423,7 @@
   "notifications": "通知",
   "notifyAgentRunCompleted": "エージェントの実行が完了したときに通知します。",
   "notifyPrMentioned": "プルリクエストでメンションされたときに通知します。",
-  "notifyNewMessages": "他のスペースの新しいエージェントメッセージを通知します。",
+  "notifyNewMessages": "スペースでメンションされたときに通知します。",
   "notifyPrMerged": "プルリクエストがマージされたときに通知します。",
   "notifyPrPublished": "エージェントがプルリクエストを公開したときに通知します。",
   "notifyReviewRequested": "プルリクエストでレビューを依頼されたときに通知します。",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "クォータ切れ",
   "subscriptionUsageSignInRequired": "再サインイン",
   "subscriptionUsageSignInExpired": "サインインの有効期限が切れています。次回の実行時に更新されます",
-  "subscriptionUsagePartiallyAvailable": "一部利用可能",
+  "subscriptionUsagePercentUsed": "{percent}%使用中",
   "resetsIn": "{duration} 後にリセット",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "元のサイズに戻す",
   "nativeSandboxUnsupported": "ネイティブサンドボックスは{platform}ではまだサポートされていません。",
   "continueWithoutSandbox": "サンドボックスなしで続行",
-  "sandboxCheckAgain": "再確認"
+  "sandboxCheckAgain": "再確認",
+  "ideQuickOpen": "ファイルに移動",
+  "ideQuickOpenDescription": "会話のファイルを名前で検索してタブで開きます",
+  "ideQuickOpenHint": "ファイル名で検索",
+  "ideQuickOpenRecentlyOpened": "最近開いたファイル",
+  "ideQuickOpenOpenToSide": "横に開く",
+  "ideQuickOpenRemoveRecent": "最近開いたファイルから削除",
+  "ideQuickOpenNoRecent": "最近開いたファイルはありません"
 }

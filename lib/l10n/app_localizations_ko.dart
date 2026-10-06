@@ -4116,7 +4116,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notifyPrMentioned => '풀 리퀘스트에서 멘션되면 알립니다.';
 
   @override
-  String get notifyNewMessages => '다른 스페이스의 새 에이전트 메시지를 알립니다.';
+  String get notifyNewMessages => '스페이스에서 멘션되면 알립니다.';
 
   @override
   String get notifyPrMerged => '풀 리퀘스트가 병합되면 알립니다.';
@@ -8757,7 +8757,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subscriptionUsageSignInExpired => '로그인이 만료되었습니다. 다음 실행 시 갱신됩니다';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => '일부만 사용 가능';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% 사용됨';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -14774,4 +14776,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => '다시 확인';
+
+  @override
+  String get ideQuickOpen => '파일로 이동';
+
+  @override
+  String get ideQuickOpenDescription => '대화의 파일을 이름으로 검색하고 탭에서 엽니다';
+
+  @override
+  String get ideQuickOpenHint => '이름으로 파일 검색';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => '최근에 연 파일';
+
+  @override
+  String get ideQuickOpenOpenToSide => '옆에 열기';
+
+  @override
+  String get ideQuickOpenRemoveRecent => '최근에 연 파일에서 제거';
+
+  @override
+  String get ideQuickOpenNoRecent => '최근에 연 파일이 없습니다';
 }

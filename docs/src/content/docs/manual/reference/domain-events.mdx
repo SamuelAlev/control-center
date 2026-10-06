@@ -197,8 +197,8 @@ There are exactly **sixteen** notification categories. Several events map to mor
 
 | Category               | Source event              | Wire method                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (mentions you)                        |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, no mention of you) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

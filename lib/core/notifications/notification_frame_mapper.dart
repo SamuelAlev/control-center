@@ -87,6 +87,9 @@ AppNotification? mapNotificationFrame(
       return _prThreadResolved(p, l10n);
   }
   switch (method) {
+    // No longer pushed — an agent's turn notifies through `message_received`
+    // once the reply is persisted. Kept so feed rows recorded before that
+    // still render.
     case 'notifications/agent_run_completed':
       return _agentRunCompleted(p, l10n);
     case 'notifications/pr_published':
@@ -493,6 +496,11 @@ AppNotification _prMerged(Map<String, dynamic> p, AppLocalizations l10n) {
 /// does not even push those frames) — UNLESS the frame names the human who requested that
 /// run (`requested_by_user_id`) and it names someone OTHER than me, in which case it is
 /// THEIR run finishing, not mine, so it is suppressed.
+///
+/// An agent's own turn is the "agent finished" notification (the server sends
+/// no separate run-completed frame), so it files under
+/// [NotificationCategory.agentRunCompleted] and obeys that toggle. A message
+/// that mentions me stays [NotificationCategory.newMessage], whoever wrote it.
 AppNotification? _messageReceived(Map<String, dynamic> p, String? me) {
   final workspaceId = p['workspace_id'] as String?;
   final spaceId = p['space_id'] as String?;
@@ -528,7 +536,9 @@ AppNotification? _messageReceived(Map<String, dynamic> p, String? me) {
     return null;
   }
   return AppNotification(
-    category: NotificationCategory.newMessage,
+    category: iAmMentioned
+        ? NotificationCategory.newMessage
+        : NotificationCategory.agentRunCompleted,
     title: p['sender_name'] as String? ?? '',
     body: body,
     route: _spaceDeepLink(

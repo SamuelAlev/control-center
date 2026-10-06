@@ -2,7 +2,7 @@
 title: Meldingen configureren
 description: Zet categorieën aan of uit, stel Quiet hours en een geluid in en zie welke meldingen je waar bereiken.
 slug: nl-NL/handleiding/gidsen/meldingen
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Deze gids laat je zien hoe je meldingen configureert en wat elke instelling
@@ -28,10 +28,10 @@ server lezen. De telefoonclient heeft helemaal geen meldingsoppervlak.
 
 | Categorie                  | Wordt geactiveerd wanneer                                                   |
 | -------------------------- | --------------------------------------------------------------------------- |
-| Agent voltooid             | Een agent heeft een run afgerond                                            |
+| Agent voltooid             | Een agent heeft geantwoord in een run die jij hebt gestart, of de run is mislukt |
 | PR gepubliceerd            | Een agent heeft een PR gepubliceerd                                         |
 | PR samengevoegd            | Een PR is samengevoegd                                                      |
-| Nieuwe berichten           | Er is een bericht aangekomen in een ruimte waar je niet naar kijkt          |
+| Nieuwe berichten           | Iemand heeft je in een ruimte vermeld                                       |
 | Vermeld in een pull request | De meldingspoll van GitHub zag dat je in een PR werd vermeld               |
 | Review aangevraagd         | Je review is daadwerkelijk aangevraagd voor een PR die geen concept is      |
 | Review verouderd           | Er zijn nieuwe commits geland op een pull request die je al hebt gereviewd  |
@@ -100,6 +100,8 @@ verstuurt:
 
 - Een bericht van een andere **mens** waarin je niet wordt vermeld, wordt nooit
   een melding
+- In een gedeelde ruimte krijgt alleen wie de run heeft gestart een melding van
+  het antwoord van een agent, niet elk lid
 - Ruimtes van agent tot agent staan gedempt in de zijbalk, dus ze verhogen nooit
   de ongelezen-badge van een mens
 
@@ -146,7 +148,9 @@ weer leeg is. Het stabiliseert zodra de markering is geladen.
 ### De run van een agent is afgerond, maar ik heb geen melding gekregen
 
 Controleer of je niet al in de ruimte was waar het gebeurde — een actieve route
-onderdrukt zijn eigen OS-toast.
+onderdrukt zijn eigen OS-toast. In een gedeelde ruimte krijgt degene die een run
+heeft gestart de melding, niet jij. Een beurt die eindigde zonder antwoord en
+zonder fout, stuurt niets.
 
 ## Gerelateerde gidsen
 

@@ -2,7 +2,7 @@
 title: Ciclul de viață al trimiterii agenților
 description: Ce se întâmplă între sosirea unui mesaj și închiderea unui jurnal de rulare — asamblarea promptului, worktree-urile, identitatea, ce limitează o rulare și cum este înregistrat cu onestitate rezultatul ei.
 slug: ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Ce este o trimitere
@@ -130,7 +130,7 @@ Când o rulare se termină fără livrabilul cerut de modul ei — o rulare în 
 Acest lucru este deliberat. Schimbarea stării ar mișca mașini de stări de tichete și pipeline-uri care nu au nimic de-a face cu artefactul lipsă. Înseamnă și că „stare: completed” singur nu este niciodată suficient pentru a concluziona că o rulare a reușit — citește rezumatul.
 :::
 
-Închiderea rulării publică `AgentRunCompleted` și multe depind de el: cadrul de notificare și intrarea lui durabilă în flux, forwarderul live care îl împinge către clienții conectați, cumulul de cost al pipeline-ului, reluarea unui pas de pipeline care aștepta rularea, finalizarea tichetului suport, maparea unei orchestrări către o stare terminală, decizia de continuare sau oprire a supraveghetorului de obiective, rolul de verificator și evaluarea bugetului de după rulare. Lista de prezență urmează separat, urmărind jurnalele de rulare recente, nu evenimentul.
+Închiderea rulării publică `AgentRunCompleted` și multe depind de el: cumulul de cost al pipeline-ului, reluarea unui pas de pipeline care aștepta rularea, finalizarea tichetului suport, maparea unei orchestrări către o stare terminală, decizia de continuare sau oprire a supraveghetorului de obiective, rolul de verificator și evaluarea bugetului de după rulare. Lista de prezență urmează separat, urmărind jurnalele de rulare recente, nu evenimentul. Notificarea „Agentul a terminat” nu se află pe această listă: evenimentul se declanșează când se încheie fluxul procesului, înainte ca răspunsul să fie scris, așa că notificarea este `MessageReceived` al turei, publicat după ce mesajul este persistat.
 
 ## Bugete, după fapt
 

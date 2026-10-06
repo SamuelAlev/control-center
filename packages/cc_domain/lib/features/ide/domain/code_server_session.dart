@@ -74,6 +74,7 @@ class CodeServerOpenRequest {
     required this.repoId,
     required this.path,
     this.line,
+    this.windowId,
   });
 
   /// The owning workspace (the isolation boundary — the watch stream filters on
@@ -94,6 +95,11 @@ class CodeServerOpenRequest {
   /// The 0-based line the editor was navigated to (a go-to-definition target),
   /// or null when unknown. Best-effort — the client may ignore it.
   final int? line;
+
+  /// The reporting editor window's bridge id (see
+  /// [codeServerBridgeWindowMarker]), or null from an older bridge. The client
+  /// uses it to open the file in the pane that holds that window.
+  final String? windowId;
 }
 
 /// A "this file's unsaved (dirty) state changed" report that originated INSIDE
@@ -155,3 +161,9 @@ enum CodeServerStatus {
 /// embedding webview that sees this line knows its editor is down to just the
 /// code and can stop covering it.
 const String codeServerChromeHiddenMarker = 'cc-ide-bridge:chrome-hidden';
+
+/// Prefix of the console line the bridge extension logs on activation, followed
+/// by the random id of its editor window. Forwarded to that window's own
+/// renderer console like [codeServerChromeHiddenMarker], so the embedding
+/// webview learns which id to address `open` commands to.
+const String codeServerBridgeWindowMarker = 'cc-ide-bridge:window:';

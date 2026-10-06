@@ -4265,7 +4265,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Powiadom o nowych wiadomościach agentów w innych przestrzeniach.';
+      'Powiadom, gdy zostaniesz wspomniany w przestrzeni.';
 
   @override
   String get notifyPrMerged => 'Powiadom, gdy pull request zostanie scalony.';
@@ -9078,7 +9078,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Sesja wygasła, odnowi się przy następnym uruchomieniu';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Częściowo dostępne';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'wykorzystano $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15320,4 +15322,26 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Sprawdź ponownie';
+
+  @override
+  String get ideQuickOpen => 'Przejdź do pliku';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Wyszukaj pliki rozmowy według nazwy i otwórz jeden w karcie';
+
+  @override
+  String get ideQuickOpenHint => 'Szukaj plików według nazwy';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Ostatnio otwierane';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Otwórz z boku';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Usuń z ostatnio otwieranych';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Brak ostatnio otwieranych plików';
 }

@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/qr_code_view.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 /// The post-creation view of an invite: the ONE-TIME code, a copyable invite
 /// link (when the server advertises a reachable redemption URL) and a QR of
@@ -121,10 +121,9 @@ class InviteResultView extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             color: const Color(0xFFFFFFFF),
-            child: QrImageView(
+            child: QrCodeView(
               data: _qrPayload,
               size: 180,
-              backgroundColor: const Color(0xFFFFFFFF),
             ),
           ),
         ),

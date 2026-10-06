@@ -2423,7 +2423,7 @@
   "notifications": "Notificări",
   "notifyAgentRunCompleted": "Notifică când un agent finalizează o rulare.",
   "notifyPrMentioned": "Notifică când ești menționat într-un pull request.",
-  "notifyNewMessages": "Notifică la mesaje noi de agent în alte spații.",
+  "notifyNewMessages": "Notifică când ești menționat într-un spațiu.",
   "notifyPrMerged": "Notifică când un pull request este fuzionat.",
   "notifyPrPublished": "Notifică când un agent publică un pull request.",
   "notifyReviewRequested": "Notifică când ți se cere revizuirea unui pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Cotă epuizată",
   "subscriptionUsageSignInRequired": "Autentifică-te din nou",
   "subscriptionUsageSignInExpired": "Autentificarea a expirat, se reînnoiește la următoarea rulare",
-  "subscriptionUsagePartiallyAvailable": "Parțial disponibil",
+  "subscriptionUsagePercentUsed": "{percent}% folosit",
   "resetsIn": "Se resetează în {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Restabilire",
   "nativeSandboxUnsupported": "Sandbox-ul nativ nu este încă acceptat pe {platform}.",
   "continueWithoutSandbox": "Continuă fără sandbox",
-  "sandboxCheckAgain": "Verifică din nou"
+  "sandboxCheckAgain": "Verifică din nou",
+  "ideQuickOpen": "Accesează fișierul",
+  "ideQuickOpenDescription": "Caută fișierele conversației după nume și deschide unul într-o filă",
+  "ideQuickOpenHint": "Caută fișiere după nume",
+  "ideQuickOpenRecentlyOpened": "Deschis recent",
+  "ideQuickOpenOpenToSide": "Deschide în lateral",
+  "ideQuickOpenRemoveRecent": "Elimină din deschise recent",
+  "ideQuickOpenNoRecent": "Niciun fișier deschis recent"
 }

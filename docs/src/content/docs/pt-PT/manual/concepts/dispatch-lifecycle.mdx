@@ -2,7 +2,7 @@
 title: Ciclo de vida do despacho de agentes
 description: O que acontece entre a chegada de uma mensagem e o fecho de um registo de execução — composição do prompt, worktrees, identidade, o que limita uma execução e como o seu desfecho é registado com honestidade.
 slug: pt-PT/manual/conceitos/ciclo-de-vida-do-despacho
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## O que é um despacho
@@ -130,7 +130,7 @@ Quando uma execução termina sem o resultado que o seu modo exigia — uma exec
 Isto é deliberado. Mudar o estado mexeria nas máquinas de estados de tickets e pipelines que não têm nada a ver com o artefacto em falta. Também significa que «estado: completed» por si só nunca chega para concluir que uma execução teve êxito — lê o resumo.
 :::
 
-Fechar a execução publica `AgentRunCompleted`, e muita coisa depende disso: o frame de notificação e a respetiva entrada durável no feed, o encaminhador em direto que o empurra para os clientes ligados, a agregação de custos do pipeline, a retoma de um passo de pipeline que estava à espera da execução, a conclusão do ticket subjacente, o mapeamento de uma orquestração para um estado terminal, a decisão de continuar ou parar do supervisor de objetivos, o papel de verificador e a avaliação de orçamento posterior à execução. A lista de presença segue-se à parte, ao observar os registos de execução recentes em vez do evento.
+Fechar a execução publica `AgentRunCompleted`, e muita coisa depende disso: a agregação de custos do pipeline, a retoma de um passo de pipeline que estava à espera da execução, a conclusão do ticket subjacente, o mapeamento de uma orquestração para um estado terminal, a decisão de continuar ou parar do supervisor de objetivos, o papel de verificador e a avaliação de orçamento posterior à execução. A lista de presença segue-se à parte, ao observar os registos de execução recentes em vez do evento. A notificação «agente finalizado» não consta dessa lista: o evento é disparado quando o stream do processo termina, antes de a resposta ser escrita, pelo que a notificação é o `MessageReceived` do turno, publicado assim que a mensagem é guardada.
 
 ## Orçamentos, a posteriori
 

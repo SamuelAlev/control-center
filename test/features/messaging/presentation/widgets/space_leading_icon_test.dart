@@ -64,14 +64,14 @@ void main() {
       overrides: [
         spacePrsProvider('space-1').overrideWithValue(const []),
         spaceBranchPullRequestsProvider('space-1').overrideWith(
-          (ref) async => [
+          (ref) => Stream.value([
             (
               repoId: 'repo-1',
               repoFullName: 'control-center/control-center',
               branch: 'space/6b2256bb',
               pr: _openPr(),
             ),
-          ],
+          ]),
         ),
       ],
     );
@@ -89,7 +89,7 @@ void main() {
         spacePrsProvider('space-1').overrideWithValue(const []),
         spaceBranchPullRequestsProvider(
           'space-1',
-        ).overrideWith((ref) async => const []),
+        ).overrideWith((ref) => Stream.value(const [])),
       ],
     );
     await tester.pump();
@@ -109,7 +109,7 @@ void main() {
         spacePrsProvider('space-1').overrideWithValue(const []),
         spaceBranchPullRequestsProvider(
           'space-1',
-        ).overrideWith((ref) async => const []),
+        ).overrideWith((ref) => Stream.value(const [])),
       ],
     );
     await tester.pump();
@@ -127,14 +127,14 @@ void main() {
       overrides: [
         spacePrsProvider('space-1').overrideWithValue(const []),
         spaceBranchPullRequestsProvider('space-1').overrideWith(
-          (ref) async => [
+          (ref) => Stream.value([
             (
               repoId: 'repo-1',
               repoFullName: 'control-center/control-center',
               branch: 'space/6b2256bb',
               pr: _openPr(),
             ),
-          ],
+          ]),
         ),
       ],
     );

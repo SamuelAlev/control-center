@@ -71,6 +71,7 @@ class GeneralPanel extends ConsumerWidget {
     if (spaceId == null) {
       return CcEmptyState(
         icon: AppIcons.layoutDashboard,
+        size: CcEmptyStateSize.sm,
         message: l10n.selectConversation,
       );
     }

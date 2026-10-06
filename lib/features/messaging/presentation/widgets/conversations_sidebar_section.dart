@@ -330,8 +330,27 @@ Future<void> showNewSpaceDialog(BuildContext context, WidgetRef ref) async {
   // stale/lagging `activeWorkspaceIdProvider` value. (We're inside the workspace
   // shell here, so the param is always present.)
   final workspaceId = context.currentWorkspaceId!;
-  final agents = await ref.read(workspaceAgentsProvider(workspaceId).future);
-  final repos = await ref.read(reposForWorkspaceProvider(workspaceId).future);
+  // A bare `ref.read(...future)` adds no listener, and Riverpod pauses an
+  // unlistened provider — so on a screen that doesn't already watch these
+  // streams the future never resolved and the `+` did nothing until some
+  // other screen subscribed. Hold a listener across the awaits.
+  final agentsSub = ref.listenManual(
+    workspaceAgentsProvider(workspaceId),
+    (_, _) {},
+  );
+  final reposSub = ref.listenManual(
+    reposForWorkspaceProvider(workspaceId),
+    (_, _) {},
+  );
+  final List<Agent> agents;
+  final List<Repo> repos;
+  try {
+    agents = await ref.read(workspaceAgentsProvider(workspaceId).future);
+    repos = await ref.read(reposForWorkspaceProvider(workspaceId).future);
+  } finally {
+    agentsSub.close();
+    reposSub.close();
+  }
   if (!context.mounted) {
     return;
   }

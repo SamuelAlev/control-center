@@ -2,7 +2,7 @@
 title: Ciclo de vida do despacho de agentes
 description: O que acontece entre a chegada de uma mensagem e o fechamento de um log de execução — montagem do prompt, worktrees, identidade, o que limita uma execução e como o resultado dela é registrado com honestidade.
 slug: pt-BR/manual/conceitos/ciclo-de-vida-do-despacho
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## O que é um despacho
@@ -130,7 +130,7 @@ Quando uma execução termina sem o artefato entregável que seu modo exigia —
 Isso é deliberado. Mudar o status movimentaria máquinas de estado de tickets e pipelines que nada têm a ver com o artefato ausente. Também significa que "status: completed" sozinho nunca basta para concluir que uma execução teve êxito — leia o resumo.
 :::
 
-Fechar a execução publica `AgentRunCompleted`, e muita coisa depende disso: o frame de notificação e sua entrada durável no feed, o encaminhador ao vivo que o empurra para os clientes conectados, a consolidação de custos do pipeline, a retomada de uma etapa de pipeline que esperava a execução, a conclusão do ticket de base, o mapeamento de uma orquestração para um estado terminal, a decisão de continuar ou parar do supervisor de metas, o papel de verificador e a avaliação de orçamento pós-execução. A lista de presença é atualizada separadamente, observando os logs de execução recentes em vez do evento.
+Fechar a execução publica `AgentRunCompleted`, e muita coisa depende disso: a consolidação de custos do pipeline, a retomada de uma etapa de pipeline que esperava a execução, a conclusão do ticket de base, o mapeamento de uma orquestração para um estado terminal, a decisão de continuar ou parar do supervisor de metas, o papel de verificador e a avaliação de orçamento pós-execução. A lista de presença é atualizada separadamente, observando os logs de execução recentes em vez do evento. A notificação "agente finalizado" não está nessa lista: o evento dispara quando o stream do processo termina, antes de a resposta ser gravada, então a notificação é o `MessageReceived` da rodada, publicado assim que a mensagem é persistida.
 
 ## Orçamentos, a posteriori
 

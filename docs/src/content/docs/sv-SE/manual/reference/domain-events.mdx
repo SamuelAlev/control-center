@@ -2,7 +2,7 @@
 title: Domänhändelser
 description: Fullständig katalog över de 53 domänhändelserna, deras nyttolaster och prenumeranterna på serversidan som konsumerar dem.
 slug: sv-SE/handbok/referens/domanhandelser
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Händelsebussen
@@ -237,8 +237,8 @@ medan kategorin bär frågan (”vad gör CI?”).
 
 | Kategori               | Källhändelse              | Trådmetod                                                              |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (nämner dig)                          |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, nämner inte dig) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

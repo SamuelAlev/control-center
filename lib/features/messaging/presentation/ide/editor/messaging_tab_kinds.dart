@@ -1,3 +1,4 @@
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/attachment_preview_pane.dart'
@@ -62,9 +63,12 @@ abstract final class MessagingTabKinds {
   /// has to import a feature's presentation layer to name a tab.
   static const String attachment = kAttachmentPreviewTabKind;
 
-  /// Whether [kind] is a heavyweight webview pane (code-server / browser) that
-  /// participates in the hidden-webview suspension LRU.
-  static bool isWebview(String kind) => kind == codeServer || kind == browser;
+  /// Whether [kind] is a heavyweight webview pane that participates in the
+  /// hidden-webview suspension LRU. A code-server tab holds no webview of its
+  /// own where its worktree's window is shared (and moves between tabs).
+  static bool isWebview(String kind) =>
+      kind == browser ||
+      (kind == codeServer && !CodeServerWindowPool.sharesWindows);
 
   /// Dedup key (and thus `?tab=` URL key) of the chat tab showing
   /// [conversationId]. The one identity scheme for conversation tabs — the

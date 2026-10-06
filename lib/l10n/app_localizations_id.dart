@@ -4210,7 +4210,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Beritahu saat ada pesan agen baru di ruang lain.';
+      'Beritahu saat Anda disebutkan di sebuah ruang.';
 
   @override
   String get notifyPrMerged => 'Beritahu saat pull request digabungkan.';
@@ -8959,7 +8959,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Sesi masuk kedaluwarsa, diperbarui pada run berikutnya';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Tersedia sebagian';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% terpakai';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15117,4 +15119,26 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Periksa lagi';
+
+  @override
+  String get ideQuickOpen => 'Buka file';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Cari file percakapan berdasarkan nama dan buka salah satunya di tab';
+
+  @override
+  String get ideQuickOpenHint => 'Cari file berdasarkan nama';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Baru dibuka';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Buka di samping';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Hapus dari yang baru dibuka';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Tidak ada file yang baru dibuka';
 }

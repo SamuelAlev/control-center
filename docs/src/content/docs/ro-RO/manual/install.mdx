@@ -2,7 +2,7 @@
 title: Instalare
 description: Folosește Control Center în browser sau instalează aplicația desktop, configurează un backend de agenți și alege unde rulează serverul.
 slug: ro-RO/manual/instalare
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center rulează în două moduri: ca **aplicație web** la
@@ -108,7 +108,7 @@ Arhiva Linux este construită pe Ubuntu 22.04, iar bibliotecile native incluse s
 
 Control Center trimite agenții prin **adaptoare**. Există două, lista este fixă și sunt detectate automat — nu există nicio modalitate de a înregistra altul.
 
-Adaptorul **Control Center (built-in)** nu are nevoie de niciun CLI extern: bucla agentului rulează în interiorul serverului și comunică cu providerii de modele prin HTTP, așa că este mereu disponibil. Conectează un provider în **Setări → Server → Provideri de modele**. OpenAI, Codex, Cursor și Kimi Code oferă autentificare în browser; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai și Moonshot cer o cheie API. Codex și Cursor sunt provideri pe acest runner, nu CLI-uri separate. z.ai apare de două ori intenționat: **z.ai** este platforma deschisă cu plată pe măsură ce consumi, facturată din soldul contului tău, în timp ce **z.ai GLM Coding Plan** este abonamentul. Este aceeași cheie de cont, dar z.ai servește planul de pe alt host — lipește o cheie de plan de programare în cardul simplu z.ai și fiecare cerere întoarce `429 … "Insufficient balance or no resource package"`, pentru că planul nu are sold de cheltuit. Un abonament Claude Pro/Max nu este o autentificare în API-ul Anthropic; ajunge la acel plan prin adaptorul Claude Code. Ce _poți_ adăuga pe acea pagină este un **provider personalizat** — orice endpoint compatibil OpenAI sau Anthropic (Ollama, LM Studio, vLLM, o implementare privată) sub **Provideri personalizați → Adaugă provider**.
+Adaptorul **Control Center (built-in)** nu are nevoie de niciun CLI extern: bucla agentului rulează în interiorul serverului și comunică cu providerii de modele prin HTTP, așa că este mereu disponibil. Conectează un provider în **Setări → Server → Provideri de modele**. OpenAI, Codex, Cursor și Kimi Code oferă autentificare în browser; Anthropic, OpenRouter, Google Gemini, DeepSeek, Mistral, xAI, z.ai și Moonshot cer o cheie API. Codex și Cursor sunt provideri pe acest runner, nu CLI-uri separate. z.ai apare de două ori intenționat: **z.ai** este platforma deschisă cu plată pe măsură ce consumi, facturată din soldul contului tău, în timp ce **z.ai GLM Coding Plan** este abonamentul. Este aceeași cheie de cont, dar z.ai servește planul de pe alt host — lipește o cheie de plan de programare în cardul simplu z.ai și fiecare cerere întoarce `429 … "Insufficient balance or no resource package"`, pentru că planul nu are sold de cheltuit. Un abonament Claude Pro/Max nu este o autentificare în API-ul Anthropic; ajunge la acel plan prin adaptorul Claude Code. Ce _poți_ adăuga pe acea pagină este un **provider personalizat** — orice endpoint compatibil OpenAI sau Anthropic (Ollama, LM Studio, vLLM, o implementare privată) sub **Provideri personalizați → Adaugă provider**.
 
 Celălalt adaptor împachetează un CLI extern:
 

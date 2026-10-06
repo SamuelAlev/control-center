@@ -88,8 +88,8 @@ void main() {
 
       expect(find.text('dev@example.com'), findsOneWidget);
       expect(find.text('5h'), findsOneWidget);
-      expect(find.text('48%'), findsOneWidget);
-      expect(find.text('21%'), findsOneWidget);
+      expect(find.text('48% used'), findsOneWidget);
+      expect(find.text('21% used'), findsOneWidget);
       // One meter per window, so the reading is never colour-only.
       expect(find.byType(CcProgressBar), findsNWidgets(2));
       expect(find.textContaining('Resets in'), findsOneWidget);
@@ -116,7 +116,7 @@ void main() {
       );
 
       expect(find.text('Session'), findsOneWidget);
-      expect(find.text('40%'), findsOneWidget);
+      expect(find.text('40% used'), findsOneWidget);
       expect(find.byType(CcProgressBar), findsOneWidget);
     });
 
@@ -181,8 +181,8 @@ void main() {
       );
 
       expect(find.text('plus@openai.com'), findsOneWidget);
-      expect(find.text('12%'), findsOneWidget);
-      expect(find.text('90%'), findsNothing);
+      expect(find.text('12% used'), findsOneWidget);
+      expect(find.text('90% used'), findsNothing);
     });
 
     test('only plan providers map to a usage source', () {

@@ -2,7 +2,7 @@
 title: Ajan gönderim yaşam döngüsü
 description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Gönderim nedir
@@ -130,7 +130,7 @@ Bir çalıştırma, modunun gerektirdiği teslimatı üretmeden bittiğinde — 
 Bu bilinçlidir. Durumu ters çevirmek, eksik çıktıyla hiç ilgisi olmayan bilet ve pipeline durum makinelerini hareket ettirirdi. Ayrıca "status: completed" ifadesi tek başına bir çalıştırmanın başarılı olduğu sonucuna varmak için asla yeterli değildir — özeti okuyun.
 :::
 
-Çalıştırmayı kapatmak `AgentRunCompleted` olayını yayımlar ve ona çok şey bağlıdır: bildirim çerçevesi ve kalıcı akış girdisi, onu bağlı istemcilere iten canlı iletici, pipeline maliyet toplaması, çalıştırmayı bekleyen bir pipeline adımının sürdürülmesi, arkasındaki bileti tamamlama, bir orkestrasyonu son duruma eşleme, hedef gözetmeninin devam et ya da dur kararı, denetleyici rolü ve çalıştırma sonrası bütçe değerlendirmesi. Varlık listesi ise olayı değil, son çalıştırma günlüklerini izleyerek ayrıca güncellenir.
+Çalıştırmayı kapatmak `AgentRunCompleted` olayını yayımlar ve ona çok şey bağlıdır: pipeline maliyet toplaması, çalıştırmayı bekleyen bir pipeline adımının sürdürülmesi, arkasındaki bileti tamamlama, bir orkestrasyonu son duruma eşleme, hedef gözetmeninin devam et ya da dur kararı, denetleyici rolü ve çalıştırma sonrası bütçe değerlendirmesi. Varlık listesi ise olayı değil, son çalıştırma günlüklerini izleyerek ayrıca güncellenir. “Ajan tamamlandı” bildirimi bu listede yer almaz: olay, süreç akışı sona erdiğinde, yanıt yazılmadan önce tetiklenir; bu yüzden bildirim, mesaj kalıcı olarak kaydedildikten sonra yayımlanan turun `MessageReceived` olayıdır.
 
 ## Bütçeler, iş bittikten sonra
 

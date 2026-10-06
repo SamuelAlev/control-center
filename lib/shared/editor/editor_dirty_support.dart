@@ -52,8 +52,9 @@ enum _CloseDecision { save, dontSave, cancel }
 /// Close interceptor for a code-server editor tab. When the file is clean this
 /// returns true immediately; when dirty it shows a Save / Don't save / Cancel
 /// prompt and, on Save, awaits [onSave] (which asks the embedded editor to
-/// persist the buffer) before returning true. Returns false to cancel the close
-/// (Cancel, or scrim/Escape dismissal).
+/// persist the buffer) before returning true; on Don't save it awaits
+/// [onDontSave] (which discards the buffer) when given. Returns false to cancel
+/// the close (Cancel, or scrim/Escape dismissal).
 ///
 /// [fileName] is shown in the prompt title (typically the path's basename).
 Future<bool> confirmCloseDirtyEditorTab({
@@ -61,6 +62,7 @@ Future<bool> confirmCloseDirtyEditorTab({
   required bool isDirty,
   required String fileName,
   required Future<void> Function() onSave,
+  Future<void> Function()? onDontSave,
 }) async {
   if (!isDirty) {
     return true;
@@ -98,6 +100,7 @@ Future<bool> confirmCloseDirtyEditorTab({
     case _CloseDecision.cancel:
       return false;
     case _CloseDecision.dontSave:
+      await onDontSave?.call();
       return true;
     case _CloseDecision.save:
       await onSave();

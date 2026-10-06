@@ -4165,8 +4165,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get notifyPrMentioned => 'แจ้งเตือนเมื่อคุณถูกกล่าวถึงใน pull request';
 
   @override
-  String get notifyNewMessages =>
-      'แจ้งเตือนเมื่อมีข้อความเอเจนต์ใหม่ในสเปซอื่น';
+  String get notifyNewMessages => 'แจ้งเตือนเมื่อคุณถูกกล่าวถึงในสเปซ';
 
   @override
   String get notifyPrMerged => 'แจ้งเตือนเมื่อ pull request ถูกรวม';
@@ -8867,7 +8866,9 @@ class AppLocalizationsTh extends AppLocalizations {
       'การลงชื่อเข้าใช้หมดอายุ จะต่อเมื่อรันครั้งหน้า';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'พร้อมใช้บางส่วน';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'ใช้แล้ว $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -14966,4 +14967,26 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'ตรวจสอบอีกครั้ง';
+
+  @override
+  String get ideQuickOpen => 'ไปที่ไฟล์';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'ค้นหาไฟล์ของการสนทนาตามชื่อและเปิดหนึ่งไฟล์ในแท็บ';
+
+  @override
+  String get ideQuickOpenHint => 'ค้นหาไฟล์ตามชื่อ';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'เปิดล่าสุด';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'เปิดด้านข้าง';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'นำออกจากที่เปิดล่าสุด';
+
+  @override
+  String get ideQuickOpenNoRecent => 'ไม่มีไฟล์ที่เปิดล่าสุด';
 }

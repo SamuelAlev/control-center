@@ -4190,8 +4190,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notify when you\'re mentioned in a pull request.';
 
   @override
-  String get notifyNewMessages =>
-      'Notify on new agent messages in other spaces.';
+  String get notifyNewMessages => 'Notify when you\'re mentioned in a space.';
 
   @override
   String get notifyPrMerged => 'Notify when a pull request is merged.';
@@ -8923,7 +8922,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in expired, renews on the next run';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Partially available';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% used';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15060,6 +15061,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Check again';
+
+  @override
+  String get ideQuickOpen => 'Go to file';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Search the conversation\'s files by name and open one in a tab';
+
+  @override
+  String get ideQuickOpenHint => 'Search files by name';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Recently opened';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Open to the side';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Remove from recently opened';
+
+  @override
+  String get ideQuickOpenNoRecent => 'No recently opened files';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

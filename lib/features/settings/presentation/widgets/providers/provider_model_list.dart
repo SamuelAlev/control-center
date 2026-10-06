@@ -2,11 +2,13 @@ import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/providers/model_context_pill.dart';
 import 'package:control_center/features/settings/presentation/widgets/providers/model_edit_dialog.dart';
 import 'package:control_center/features/settings/presentation/widgets/providers/provider_confirm.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -189,6 +191,15 @@ class _ModelRow extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
+          // Who MADE the model, not who serves it: Cursor and OpenRouter list
+          // Claude, GPT and Grok side by side.
+          AiBrandLogo(
+            brand:
+                AiBrand.forModel(model.id, name: model.displayName) ??
+                AiBrand.forProvider(provider.id),
+            color: tokens.textSecondary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             // A Wrap, not a Row: under narrow widths (or wide translations)
             // the badges flow under the name instead of overflowing the row.
@@ -218,7 +229,7 @@ class _ModelRow extends ConsumerWidget {
                 ? const SizedBox.shrink()
                 : Align(
                     alignment: AlignmentDirectional.centerEnd,
-                    child: _ContextPill(label: _compactTokens(contextWindow)),
+                    child: ModelContextPill(tokens: contextWindow),
                   ),
           ),
           SizedBox(
@@ -307,53 +318,6 @@ class _ModelRow extends ConsumerWidget {
         ref,
         providerId: provider.id,
         modelId: model.bareId,
-      ),
-    );
-  }
-
-  static String _compactTokens(int tokens) {
-    if (tokens >= 1000000) {
-      final m = tokens / 1000000;
-      return m == m.roundToDouble()
-          ? '${m.toStringAsFixed(0)}M'
-          : '${m.toStringAsFixed(1)}M';
-    }
-    if (tokens >= 1000) {
-      return '${(tokens / 1000).toStringAsFixed(0)}K';
-    }
-    return '$tokens';
-  }
-}
-
-/// The context-window badge on a model row — a small mono capsule, the one
-/// number that decides whether a model fits the job.
-class _ContextPill extends StatelessWidget {
-  const _ContextPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.bgSecondary,
-        borderRadius: AppRadii.brSm,
-        border: Border.all(color: tokens.borderSecondary),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xxs,
-        ),
-        child: Text(
-          label,
-          style: CcFonts.code(
-            textStyle: CcTypography.caption.copyWith(
-              color: tokens.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }

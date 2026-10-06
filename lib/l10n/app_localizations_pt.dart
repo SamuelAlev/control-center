@@ -4233,7 +4233,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Notificar sobre novas mensagens de agentes em outros espaços.';
+      'Notificar quando você for mencionado em um espaço.';
 
   @override
   String get notifyPrMerged =>
@@ -8993,7 +8993,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sessão expirada, renova-se na próxima execução';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Parcialmente disponível';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% usado';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15182,6 +15184,28 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Verificar novamente';
+
+  @override
+  String get ideQuickOpen => 'Ir para o arquivo';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Pesquise os arquivos da conversa pelo nome e abra um em uma aba';
+
+  @override
+  String get ideQuickOpenHint => 'Pesquisar arquivos por nome';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Aberto recentemente';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Abrir ao lado';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Remover dos abertos recentemente';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Nenhum arquivo aberto recentemente';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -16935,4 +16959,17 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get repoLinkWorkspaceRemember =>
       'Memorizar a minha escolha para este repositório';
+
+  @override
+  String get ideQuickOpen => 'Ir para o ficheiro';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Pesquise os ficheiros da conversa pelo nome e abra um num separador';
+
+  @override
+  String get ideQuickOpenHint => 'Pesquisar ficheiros por nome';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Nenhum ficheiro aberto recentemente';
 }

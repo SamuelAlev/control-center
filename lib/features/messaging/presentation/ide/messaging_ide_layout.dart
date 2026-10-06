@@ -14,6 +14,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/agent_
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/context_explorer_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/conversation_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/editor_layout_snapshot.dart';
@@ -22,12 +23,14 @@ import 'package:control_center/features/messaging/presentation/ide/editor/messag
 import 'package:control_center/features/messaging/presentation/ide/editor/review_code_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_sidebar.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
+import 'package:control_center/features/messaging/presentation/ide/quick_open/quick_open_dialog.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/widgets/create_untitled_conversation.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/messaging/providers/space_browser_tabs_provider.dart';
 import 'package:control_center/features/messaging/providers/space_takeover_provider.dart';
@@ -51,6 +54,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_dirty_support.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
+import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_live_close.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_group.dart';
@@ -80,6 +84,9 @@ class MessagingIdeActions {
 
   /// Toggles the IDE sidebar visibility.
   VoidCallback? toggleSidebar;
+
+  /// Opens the quick open file picker (⌘P / Ctrl+P).
+  VoidCallback? quickOpen;
 }
 
 /// IDE messaging surface: editor split-tree plus activity sidebar.
@@ -181,17 +188,49 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// into the seed beforehand would be silently dropped.
   bool _layoutRestored = false;
 
-  /// How many *hidden* webview tabs (code-server / browser) keep their live
-  /// platform view mounted. Hidden webviews beyond the most-recently-visible
-  /// cap are suspended ([EditorSuspendedPane]) and rebuilt fresh on reveal — the
-  /// server-side code-server session survives, so the editor reattaches.
-  /// Chat and terminal tabs are never evicted.
+  /// How many *hidden* webview tabs ([MessagingTabKinds.isWebview]) keep their
+  /// live platform view mounted. Hidden webviews beyond the most-recently-visible
+  /// cap are suspended ([EditorSuspendedPane]) and rebuilt fresh on reveal.
+  /// Code-server tabs are exempt where their worktree's window is shared (the
+  /// [_windowPool] bounds those). Chat and terminal tabs are never evicted.
   static const int kMaxHiddenWebviews = 2;
 
   final EditorBodyHost _bodyHost = EditorBodyHost(
     isWebviewKind: MessagingTabKinds.isWebview,
     maxHiddenWebviews: kMaxHiddenWebviews,
   );
+
+  /// One embedded editor window per worktree, moved between the code-server
+  /// tabs of [_layout] as they are selected.
+  late final CodeServerWindowPool _windowPool = CodeServerWindowPool(
+    targetOf: _codeServerTarget,
+    openFile: (worktree, windowId, path, line) => openCodeServerFile(
+      ref.read(rpcClientProvider),
+      spaceId: worktree.spaceId,
+      repoId: worktree.repoId,
+      windowId: windowId,
+      path: path,
+      line: line,
+    ),
+    closeFile: (worktree, path) => closeCodeServerFile(
+      ref.read(rpcClientProvider),
+      spaceId: worktree.spaceId,
+      repoId: worktree.repoId,
+      path: path,
+    ),
+  );
+
+  static CodeServerTarget? _codeServerTarget(EditorTab tab) {
+    final spaceId = tab.args['spaceId'];
+    if (tab.kind != MessagingTabKinds.codeServer || spaceId is! String) {
+      return null;
+    }
+    return CodeServerTarget(
+      spaceId: spaceId,
+      repoId: tab.args['repoId'] as String?,
+      path: tab.args['path'] as String?,
+    );
+  }
 
   double _sidebarWidth = 300;
   static const double _minSidebar = 200;
@@ -230,6 +269,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     final warm = _peekLayout(widget.selectedSpaceId);
     _layout = warm?.layout ?? _seedLayout(widget.selectedSpaceId);
     _layout.addListener(_onLayoutChanged);
+    _windowPool.attach(_layout);
     _wireActions(widget.actions);
     _tabUrl = EditorTabUrlTracker(
       initialKey: widget.focusedTabKey,
@@ -276,7 +316,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     actions
       ..openEditor = openEditor
       ..closeActiveTab = closeActiveTab
-      ..toggleSidebar = toggleSidebar;
+      ..toggleSidebar = toggleSidebar
+      ..quickOpen = quickOpen;
   }
 
   /// Detaches [actions] so a stale shortcut can't call into a torn-down (or
@@ -286,7 +327,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     actions
       ..openEditor = null
       ..closeActiveTab = null
-      ..toggleSidebar = null;
+      ..toggleSidebar = null
+      ..quickOpen = null;
   }
 
   @override
@@ -296,6 +338,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _persistNow(widget.selectedSpaceId);
     _persistence?.dispose();
     _sidebarTab.dispose();
+    _windowPool.dispose();
     _layout.removeListener(_onLayoutChanged);
     _layout.dispose();
     super.dispose();
@@ -425,6 +468,98 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         args: {'spaceId': spaceId},
       ),
     );
+  }
+
+  /// Shows the quick open picker (⌘P) over the open conversation's worktrees
+  /// and opens the pick: a tab in the active pane, or a new pane to the side.
+  Future<void> quickOpen() async {
+    final spaceId = widget.selectedSpaceId;
+    if (spaceId == null) {
+      return;
+    }
+    final choice = await showQuickOpen(
+      context,
+      workspaceId: widget.workspaceId,
+      spaceId: spaceId,
+    );
+    // The conversation may have changed while the picker was up; its files
+    // belong to the one it was opened for.
+    if (choice == null || !mounted || widget.selectedSpaceId != spaceId) {
+      return;
+    }
+    _openWorktreeFile(choice.file, toSide: choice.toSide);
+  }
+
+  /// Opens (or refocuses) the code-server tab for a worktree file — the
+  /// Explorer's default open, Source control's "view source" and quick open.
+  /// Each distinct file gets its own tab; a file already open in the active
+  /// pane is refocused (dedup by path). [toSide] instead opens a fresh tab in
+  /// a new pane split off to the right of the active one.
+  void _openWorktreeFile(
+    ({String repoId, String path}) target, {
+    bool toSide = false,
+    String? leafId,
+  }) {
+    final spaceId = widget.selectedSpaceId;
+    if (spaceId == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final fileName = target.path.split('/').last;
+    EditorTab build() => EditorTab(
+      kind: MessagingTabKinds.codeServer,
+      // Name the tab after the file the editor was opened with (the entry
+      // file); falls back to the generic label when there's no path.
+      label: fileName.isEmpty ? l10n.ideCodeServer : fileName,
+      icon: MessagingTabKinds.iconFor(MessagingTabKinds.codeServer),
+      args: {
+        'spaceId': spaceId,
+        if (target.repoId.isNotEmpty) 'repoId': target.repoId,
+        'path': target.path,
+      },
+    );
+    if (toSide) {
+      _layout.openInSplit(_layout.activeLeafId, build(), DropEdge.right);
+      return;
+    }
+    _layout.focusOrOpenInLeaf(
+      leafId ?? _layout.activeLeafId,
+      (t) =>
+          t.kind == MessagingTabKinds.codeServer &&
+          t.args['spaceId'] == spaceId &&
+          t.args['path'] == target.path,
+      build,
+    );
+  }
+
+  /// Feeds quick open's recent list: the file a worktree file tab shows, once
+  /// it is the focused tab of the active pane. Every route there — Explorer,
+  /// quick open, in-editor navigation, a tab press — counts as opening it.
+  void _recordRecentFile() {
+    final spaceId = widget.selectedSpaceId;
+    final controller = _layout.activeLeaf.controller;
+    if (spaceId == null || controller.isEmpty) {
+      return;
+    }
+    final tab = controller.tabs[controller.selectedIndex];
+    final path = tab.args['path'];
+    if ((tab.kind != MessagingTabKinds.codeServer &&
+            tab.kind != MessagingTabKinds.file) ||
+        tab.args['spaceId'] != spaceId ||
+        path is! String ||
+        path.isEmpty) {
+      return;
+    }
+    final repoId = tab.args['repoId'] as String? ?? '';
+    final args = (workspaceId: widget.workspaceId, spaceId: spaceId);
+    // Layout changes can land mid-frame; a provider write must not.
+    scheduleMicrotask(() {
+      if (mounted) {
+        ref
+            .read(recentFilesProvider(args).notifier)
+            .touch(repoId: repoId, path: path);
+      }
+    });
   }
 
   /// Opens (or refocuses) a tab requested from inside a tab body via
@@ -689,6 +824,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// reconciling the body host against the new tree.
   void _setLayout(EditorLayoutController next) {
     _layout.removeListener(_onLayoutChanged);
+    _windowPool.attach(next);
     _layout.dispose();
     _layout = next;
     _layout.addListener(_onLayoutChanged);
@@ -869,6 +1005,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // visited body a second time for each tab press.
     _schedulePersist();
     _tabUrl.writeFromLayout(_layout);
+    _recordRecentFile();
   }
 
   /// Drops body-host entries for tabs no longer anywhere in the tree. The
@@ -1143,7 +1280,13 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         final spaceId = tab.args['spaceId'] as String;
         final repoId = tab.args['repoId'] as String?;
         final path = tab.args['path'] as String?;
-        return CodeServerPane(spaceId: spaceId, repoId: repoId, path: path);
+        return CodeServerPane(
+          spaceId: spaceId,
+          repoId: repoId,
+          path: path,
+          tab: tab,
+          pool: _windowPool,
+        );
       case MessagingTabKinds.attachment:
         return AttachmentPreviewPane(
           attachmentId: tab.args[kAttachmentPreviewIdArg] as String? ?? '',
@@ -1452,10 +1595,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
 
     // In-editor navigation → app tab: the embedded editor's bridge extension
-    // reports a file the user navigated to (cmd-click "go to definition", an
-    // Explorer open, …). Open it as its OWN app tab in the active leaf, leaving
-    // the source tab pinned on its file. Errors (a server without code-server)
-    // are ignored. Scoped to the open conversation.
+    // reports a file the user navigated to (cmd-click "go to definition", quick
+    // open, …). Focus or open that file's tab in the pane holding the window
+    // that navigated; the tab then takes over the same window, already on the
+    // file. Errors (a server without code-server) are ignored. Scoped to the
+    // open conversation.
     if (spaceId != null) {
       ref.listen<AsyncValue<CodeServerOpenEvent>>(
         codeServerOpenRequestsProvider(spaceId),
@@ -1464,19 +1608,12 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
           if (evt == null || evt.path.isEmpty) {
             return;
           }
-          final fileName = evt.path.split('/').last;
-          _layout.openInActiveLeaf(
-            EditorTab(
-              kind: MessagingTabKinds.codeServer,
-              label: fileName.isEmpty ? l10n.ideCodeServer : fileName,
-              icon: MessagingTabKinds.iconFor(MessagingTabKinds.codeServer),
-              args: {
-                'spaceId': spaceId,
-                if (evt.repoId.isNotEmpty) 'repoId': evt.repoId,
-                'path': evt.path,
-              },
-            ),
-          );
+          _windowPool.noteNavigated(evt.windowId, evt.path);
+          final owner = _windowPool.ownerOfBridge(evt.windowId);
+          _openWorktreeFile((
+            repoId: evt.repoId,
+            path: evt.path,
+          ), leafId: owner == null ? null : _layout.leafIdContaining(owner));
         },
       );
 
@@ -1513,6 +1650,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       // divider both span the full surface, as the top-level Row did before.
       fit: StackFit.expand,
       children: [
+        // Editor windows no visible tab shows, kept warm offstage.
+        CodeServerWindowParking(pool: _windowPool),
         // Panes laid out flush, edge-to-edge: the editor fills the remaining
         // width and the sidebar abuts it with no gap. The boundary line is the
         // overlaid divider below, not a border on either pane.
@@ -1540,39 +1679,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                   spaceId: widget.selectedSpaceId,
                   onFocusBrowserTab: _focusBrowserTab,
                   onCloseBrowserTab: _closeBrowserTab,
-                  onOpenFile: (target) {
-                    // The editor is the default open action: open (or refocus) a
-                    // code-server tab for the clicked file. Each distinct file gets
-                    // its own tab — clicking a new file opens a new tab; clicking a
-                    // file that's already open refocuses it (dedup by path).
-                    final spaceId = widget.selectedSpaceId;
-                    if (spaceId == null) {
-                      return;
-                    }
-                    final fileName = target.path.split('/').last;
-                    _layout.focusOrOpenInLeaf(
-                      _layout.activeLeafId,
-                      (t) =>
-                          t.kind == MessagingTabKinds.codeServer &&
-                          t.args['spaceId'] == spaceId &&
-                          t.args['path'] == target.path,
-                      () => EditorTab(
-                        kind: MessagingTabKinds.codeServer,
-                        // Name the tab after the file the editor was opened with
-                        // (the entry file); falls back to the generic label when
-                        // there's no path.
-                        label: fileName.isEmpty ? l10n.ideCodeServer : fileName,
-                        icon: MessagingTabKinds.iconFor(
-                          MessagingTabKinds.codeServer,
-                        ),
-                        args: {
-                          'spaceId': spaceId,
-                          'repoId': target.repoId,
-                          'path': target.path,
-                        },
-                      ),
-                    );
-                  },
+                  // The editor is the default open action (dedup by path).
+                  onOpenFile: _openWorktreeFile,
                   onQuickViewFile: (target) {
                     // Lightweight read-only fallback (the old default) — available as
                     // an explicit "Quick view" so plain-text browsing still works.
@@ -1613,35 +1721,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                       ),
                     );
                   },
-                  onViewSource: (target) {
-                    // Open (or refocus) a code-server tab for the file. Same path
-                    // the Explorer file-click uses (dedup by path).
-                    final spaceId = widget.selectedSpaceId;
-                    if (spaceId == null) {
-                      return;
-                    }
-                    _layout.focusOrOpenInLeaf(
-                      _layout.activeLeafId,
-                      (t) =>
-                          t.kind == MessagingTabKinds.codeServer &&
-                          t.args['spaceId'] == spaceId &&
-                          t.args['path'] == target.path,
-                      () => EditorTab(
-                        kind: MessagingTabKinds.codeServer,
-                        label: target.path.split('/').last.isEmpty
-                            ? l10n.ideCodeServer
-                            : target.path.split('/').last,
-                        icon: MessagingTabKinds.iconFor(
-                          MessagingTabKinds.codeServer,
-                        ),
-                        args: {
-                          'spaceId': spaceId,
-                          'repoId': target.repoId,
-                          'path': target.path,
-                        },
-                      ),
-                    );
-                  },
+                  // Same path the Explorer file-click uses (dedup by path).
+                  onViewSource: _openWorktreeFile,
                   onRevertFiles: _revertFiles,
                   onOpenAgentRun: _openAgentRun,
                   onFocusTerminal: _focusOrOpenTerminal,
@@ -1736,6 +1817,20 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
             spaceId: spaceId,
             repoId: tab.args['repoId'] as String?,
             path: path,
+          );
+        }
+      },
+      // The editor window outlives the tab now, so the unsaved buffer has to
+      // be discarded explicitly.
+      onDontSave: () async {
+        final spaceId = tab.args['spaceId'] as String?;
+        if (spaceId != null && path.isNotEmpty) {
+          await closeCodeServerFile(
+            ref.read(rpcClientProvider),
+            spaceId: spaceId,
+            repoId: tab.args['repoId'] as String?,
+            path: path,
+            revert: true,
           );
         }
       },

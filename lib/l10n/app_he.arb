@@ -2423,7 +2423,7 @@
   "notifications": "התראות",
   "notifyAgentRunCompleted": "קבל התראה כשסוכן משלים הרצה.",
   "notifyPrMentioned": "קבל התראה כשמאזכרים אותך בבקשת משיכה.",
-  "notifyNewMessages": "קבל התראה על הודעות חדשות מסוכנים במרחבים אחרים.",
+  "notifyNewMessages": "קבל התראה כשמאזכרים אותך במרחב.",
   "notifyPrMerged": "קבל התראה כשבקשת משיכה ממוזגת.",
   "notifyPrPublished": "קבל התראה כשסוכן מפרסם בקשת משיכה.",
   "notifyReviewRequested": "קבל התראה כשמתבקשת ממך סקירה על בקשת משיכה.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "המכסה מוצתה",
   "subscriptionUsageSignInRequired": "יש להתחבר שוב",
   "subscriptionUsageSignInExpired": "ההתחברות פגה, תתחדש בהרצה הבאה",
-  "subscriptionUsagePartiallyAvailable": "זמין חלקית",
+  "subscriptionUsagePercentUsed": "{percent}% בשימוש",
   "resetsIn": "מתאפס בעוד {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "שחזר",
   "nativeSandboxUnsupported": "ארגז חול מקורי עדיין לא נתמך ב־⁨{platform}⁩.",
   "continueWithoutSandbox": "המשך ללא ארגז חול",
-  "sandboxCheckAgain": "בדוק שוב"
+  "sandboxCheckAgain": "בדוק שוב",
+  "ideQuickOpen": "מעבר לקובץ",
+  "ideQuickOpenDescription": "חיפוש קובצי השיחה לפי שם ופתיחת אחד מהם בכרטיסייה",
+  "ideQuickOpenHint": "חיפוש קבצים לפי שם",
+  "ideQuickOpenRecentlyOpened": "נפתח לאחרונה",
+  "ideQuickOpenOpenToSide": "פתיחה בצד",
+  "ideQuickOpenRemoveRecent": "הסרה מהקבצים שנפתחו לאחרונה",
+  "ideQuickOpenNoRecent": "אין קבצים שנפתחו לאחרונה"
 }

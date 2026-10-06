@@ -2,7 +2,7 @@
 title: Configurer les notifications
 description: Activez ou désactivez des catégories, définissez des heures de silence et un son, et sachez quelles notifications vous parviennent et où.
 slug: fr-CA/manuel/guides/notifications
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Ce guide explique comment configurer les notifications et ce que chaque réglage
@@ -29,10 +29,10 @@ n’a aucune surface de notification.
 
 | Catégorie | Se déclenche quand |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent terminé | Un agent a terminé une exécution |
+| Agent terminé | Un agent a répondu dans une exécution que vous avez lancée, ou l’exécution a échoué |
 | PR publiée | Un agent a publié une PR |
 | PR fusionnée | Une PR a été fusionnée |
-| Nouveaux messages | Un message est arrivé dans un espace que vous ne regardez pas |
+| Nouveaux messages | Quelqu’un vous a mentionné dans un espace |
 | Mentionné dans une pull request | Le sondage de notifications de GitHub a vu que vous étiez mentionné sur une PR |
 | Revue demandée | Votre revue a réellement été demandée sur une pull request qui n’est pas un brouillon |
 | Revue obsolète | De nouveaux commits sont arrivés sur une pull request que vous aviez déjà révisée |
@@ -104,6 +104,8 @@ du tout :
 
 - Un message d’un autre **humain** où vous n’êtes pas mentionné ne devient jamais
   une notification
+- Dans un espace partagé, la réponse d’un agent notifie la personne qui a lancé
+  cette exécution, pas tous les membres
 - Les espaces entre agents sont en sourdine dans la barre latérale, de sorte
   qu’ils n’incrémentent jamais la pastille de non-lus des humains
 
@@ -152,7 +154,9 @@ vide. Tout se stabilise dès que la marque est chargée.
 ### L’exécution d’un agent s’est terminée sans que rien ne m’avertisse
 
 Vérifiez que vous n’étiez pas déjà dans l’espace où elle a eu lieu — une route
-active supprime son propre toast du système d’exploitation.
+active supprime son propre toast du système d’exploitation. Dans un espace
+partagé, une exécution lancée par quelqu’un d’autre notifie cette personne, pas
+vous. Un tour terminé sans réponse ni erreur n’envoie rien.
 
 ## Guides connexes
 

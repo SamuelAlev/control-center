@@ -35,7 +35,9 @@ void main() {
 
     test('returns null when the deny marker has no trailing action', () {
       expect(
-        SandboxViolationMonitor.parseLogLine(logLine('Sandbox: claude(1) deny(1)')),
+        SandboxViolationMonitor.parseLogLine(
+          logLine('Sandbox: claude(1) deny(1)'),
+        ),
         isNull,
       );
     });
@@ -68,6 +70,26 @@ void main() {
       expect(parsed, isNotNull);
       expect(parsed!.processName, isNull);
       expect(parsed.violation.action, 'file-write-create');
+    });
+
+    test('parses only the first line of a multi-line sandboxd report', () {
+      // `com.apple.sandbox.reporting` (sandboxd) appends a crash-report-style
+      // body; reading past the first line folded it into the target.
+      final parsed = SandboxViolationMonitor.parseLogLine(
+        logLine(
+          'Sandbox: coreutils(5506) deny(1) process-exec* '
+          '/Users/u/.local/share/fnm/node-versions/v24.18.0/installation/bin/node'
+          '\nProcess:         coreutils [5506]'
+          '\nPath:            /nix/store/x-coreutils-9.11/bin/coreutils',
+        ),
+      );
+      expect(parsed, isNotNull);
+      expect(parsed!.processName, 'coreutils');
+      expect(parsed.violation.action, 'process-exec*');
+      expect(
+        parsed.violation.target,
+        '/Users/u/.local/share/fnm/node-versions/v24.18.0/installation/bin/node',
+      );
     });
 
     test('joins a multi-word target', () {
@@ -128,6 +150,24 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    test('keeps a process-exec denial from any process', () {
+      // The process that asks to exec is whatever the agent's shell ran —
+      // here Nix's multi-call `coreutils` standing in for `env node`.
+      for (final proc in ['coreutils', 'env', 'xargs', null]) {
+        expect(
+          SandboxViolationMonitor.isNoise(
+            parsed(
+              processName: proc,
+              action: 'process-exec*',
+              target: '/Users/u/.local/share/fnm/node-versions/v24/bin/node',
+            ),
+          ),
+          isFalse,
+          reason: 'exec denied from $proc',
+        );
+      }
     });
 
     test('drops denials with no process name', () {

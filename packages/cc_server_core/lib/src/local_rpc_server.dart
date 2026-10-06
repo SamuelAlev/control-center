@@ -270,8 +270,14 @@ typedef CodeServerSessionResolver =
 /// Records a bridge-extension "open this file as an app tab" report for the
 /// code-server addressed by capability `sessionId`. Wired by the runtime to
 /// [CodeServerService.reportOpen]; null on a host that does not run code-server.
+/// `windowId` is the reporting window's bridge id (null from an older bridge).
 typedef CodeServerOpenReporter =
-    void Function(String sessionId, String absPath, int? line);
+    void Function(
+      String sessionId,
+      String absPath,
+      int? line,
+      String? windowId,
+    );
 
 /// Records a bridge-extension "this file's dirty state changed" report for the
 /// code-server addressed by capability `sessionId`. Wired by the runtime to

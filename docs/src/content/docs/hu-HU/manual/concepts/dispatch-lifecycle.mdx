@@ -2,7 +2,7 @@
 title: Az ügynökindítás életciklusa
 description: Mi történik egy üzenet megérkezésétől egy futtatási napló lezárásáig — a prompt összeállítása, a worktree-k, az identitás, mi korlátoz egy futtatást, és hogyan rögzítjük annak kimenetelét őszintén.
 slug: hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Mi az indítás
@@ -130,7 +130,7 @@ Amikor egy futtatás a módja által megkövetelt eredmény nélkül ér véget 
 Ez szándékos. Az állapot átbillentése olyan jegy- és pipeline-állapotgépeket mozgatna meg, amelyeknek semmi közük a hiányzó artefaktumhoz. Az is következik ebből, hogy a „status: completed” önmagában soha nem elég annak megállapításához, hogy egy futtatás sikeres volt — olvasd el az összefoglalót.
 :::
 
-A futtatás lezárása közzéteszi az `AgentRunCompleted` eseményt, amelyre sok minden épül: az értesítési keret és annak tartós hírfolyam-bejegyzése, az élő továbbító, amely eljuttatja a csatlakozott kliensekhez, a pipeline-költségek összesítése, egy futtatásra váró pipeline-lépés folytatása, a mögöttes jegy lezárása, egy orchestráció terminális állapotra képezése, a célfelügyelő folytatás-vagy-leállás döntése, az ellenőrző szerepkör és a futtatás utáni költségkeret-kiértékelés. A jelenléti névsor külön következik, a közelmúltbeli futtatási naplók figyelésével, nem az esemény alapján.
+A futtatás lezárása közzéteszi az `AgentRunCompleted` eseményt, amelyre sok minden épül: a pipeline-költségek összesítése, egy futtatásra váró pipeline-lépés folytatása, a mögöttes jegy lezárása, egy orchestráció terminális állapotra képezése, a célfelügyelő folytatás-vagy-leállás döntése, az ellenőrző szerepkör és a futtatás utáni költségkeret-kiértékelés. A jelenléti névsor külön következik, a közelmúltbeli futtatási naplók figyelésével, nem az esemény alapján. Az „ügynök befejezte” értesítés nem szerepel ezen a listán: az esemény akkor sül el, amikor a folyamat adatfolyama véget ér, még a válasz kiírása előtt, ezért az értesítés a kör `MessageReceived` eseménye, amely az üzenet tárolása után jelenik meg.
 
 ## Költségkeretek, utólag
 

@@ -2,7 +2,7 @@
 title: Instal
 description: Gunakan Control Center di peramban atau instal aplikasi desktop, siapkan backend agen, dan pilih tempat server-nya berjalan.
 slug: id-ID/panduan-pengguna/instal
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center berjalan dengan dua cara: sebagai **aplikasi web** di
@@ -108,7 +108,7 @@ Arsip Linux dibangun di Ubuntu 22.04 dan pustaka native yang dibundel menautkan 
 
 Control Center mengirim agen melalui **adapter**. Ada dua, daftarnya tetap, dan keduanya terdeteksi secara otomatis — tidak ada cara untuk mendaftarkan adapter lain.
 
-Adapter **Control Center (built-in)** tidak memerlukan CLI eksternal: loop agen berjalan di dalam server dan berbicara dengan penyedia model melalui HTTP, sehingga selalu tersedia. Hubungkan penyedia di **Pengaturan → Server → Penyedia model**. OpenAI, Codex, Cursor, dan Kimi Code menawarkan login lewat peramban; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, dan Moonshot memerlukan kunci API. Codex dan Cursor adalah penyedia pada runner ini, bukan CLI terpisah. z.ai tercantum dua kali dengan sengaja: **z.ai** adalah platform terbuka bayar sesuai pemakaian yang ditagihkan ke saldo akun Anda, sedangkan **z.ai GLM Coding Plan** adalah langganannya. Ini kunci akun yang sama, tetapi z.ai melayani paket tersebut dari host yang berbeda — tempelkan kunci paket coding ke ubin z.ai biasa dan setiap permintaan kembali dengan `429 … "Insufficient balance or no resource package"`, karena paket itu tidak punya saldo untuk dibelanjakan. Langganan Claude Pro/Max bukanlah login API Anthropic; jangkau paket itu melalui adapter Claude Code sebagai gantinya. Yang _dapat_ Anda tambahkan di halaman itu adalah **penyedia kustom** — endpoint apa pun yang kompatibel dengan OpenAI atau Anthropic (Ollama, LM Studio, vLLM, deployment pribadi) di bawah **Penyedia kustom → Tambah penyedia**.
+Adapter **Control Center (built-in)** tidak memerlukan CLI eksternal: loop agen berjalan di dalam server dan berbicara dengan penyedia model melalui HTTP, sehingga selalu tersedia. Hubungkan penyedia di **Pengaturan → Server → Penyedia model**. OpenAI, Codex, Cursor, dan Kimi Code menawarkan login lewat peramban; Anthropic, OpenRouter, Google Gemini, DeepSeek, Mistral, xAI, z.ai, dan Moonshot memerlukan kunci API. Codex dan Cursor adalah penyedia pada runner ini, bukan CLI terpisah. z.ai tercantum dua kali dengan sengaja: **z.ai** adalah platform terbuka bayar sesuai pemakaian yang ditagihkan ke saldo akun Anda, sedangkan **z.ai GLM Coding Plan** adalah langganannya. Ini kunci akun yang sama, tetapi z.ai melayani paket tersebut dari host yang berbeda — tempelkan kunci paket coding ke ubin z.ai biasa dan setiap permintaan kembali dengan `429 … "Insufficient balance or no resource package"`, karena paket itu tidak punya saldo untuk dibelanjakan. Langganan Claude Pro/Max bukanlah login API Anthropic; jangkau paket itu melalui adapter Claude Code sebagai gantinya. Yang _dapat_ Anda tambahkan di halaman itu adalah **penyedia kustom** — endpoint apa pun yang kompatibel dengan OpenAI atau Anthropic (Ollama, LM Studio, vLLM, deployment pribadi) di bawah **Penyedia kustom → Tambah penyedia**.
 
 Adapter lainnya membungkus CLI eksternal:
 

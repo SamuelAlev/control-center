@@ -2,6 +2,7 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:control_center/shared/widgets/subscription_window_row.dart';
 import 'package:flutter/widgets.dart';
 
@@ -62,12 +63,20 @@ class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
       children: [
         Row(
           children: [
+            AiBrandLogo(
+              brand: AiBrand.forProvider(usage.providerId),
+              color: t.textPrimary,
+              size: 16,
+            ),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 usage.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: t.textPrimary,
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -100,7 +109,12 @@ class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
         // sharing the row truncated the one part that identifies the account.
         if (multiple && usage.accountLabel != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            // Hangs under the name, not the logo, so the mark stays the one
+            // thing in the left column.
+            padding: const EdgeInsetsDirectional.only(
+              start: 16 + AppSpacing.sm,
+              top: 2,
+            ),
             child: Text(
               usage.accountLabel!,
               maxLines: 2,
@@ -108,82 +122,105 @@ class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
               style: TextStyle(color: t.textTertiary, fontSize: 12),
             ),
           ),
-        const SizedBox(height: 6),
-        if (!ok) ...[
-          // Five different silences, and conflating them misdirects the
-          // operator every time. A plan that reports no windows at all (a fresh
-          // account, or one whose org publishes none) is quiet; a plan that
-          // answered and is SPENT needs a top-up; a login that lapsed overnight
-          // fixes itself on the next run; a login that cannot authenticate at
-          // all has quietly dropped out of the rotation and needs a human; a
-          // fetch that failed is the only one that is actually breakage. They
-          // all used to read "no usage reported for this account".
-          Text(
-            switch (usage.status) {
-              SubscriptionStatus.unconfigured =>
-                l10n.subscriptionUsageNoneReported,
-              SubscriptionStatus.exhausted => l10n.subscriptionUsageExhausted,
-              SubscriptionStatus.signInRequired =>
-                l10n.subscriptionUsageSignInRequired,
-              SubscriptionStatus.signInExpired =>
-                l10n.subscriptionUsageSignInExpired,
-              _ => l10n.subscriptionUsageUnavailable,
-            },
-            style: TextStyle(
-              // Colour is additive here, never the carrier: the line states the
-              // status in words, so the reading survives without it. Only the
-              // two states a person has to DO something about are tinted —
-              // `signInExpired` stays muted precisely because every account
-              // nobody used overnight is in it by morning.
-              color: switch (usage.status) {
-                SubscriptionStatus.exhausted => t.danger,
-                SubscriptionStatus.signInRequired => t.warn,
-                _ => t.textTertiary,
-              },
-              fontSize: 12,
-              fontWeight: actionable ? FontWeight.w600 : FontWeight.w400,
+        const SizedBox(height: AppSpacing.sm),
+        // The readings sit on one warm surface per provider, so a provider
+        // reads as a unit and the gap between two of them is unmistakable.
+        ColoredBox(
+          color: t.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!ok) ...[
+                  // Five different silences, and conflating them misdirects the
+                  // operator every time. A plan that reports no windows at all
+                  // (a fresh account, or one whose org publishes none) is
+                  // quiet; a plan that answered and is SPENT needs a top-up; a
+                  // login that lapsed overnight fixes itself on the next run; a
+                  // login that cannot authenticate at all has quietly dropped
+                  // out of the rotation and needs a human; a fetch that failed
+                  // is the only one that is actually breakage. They all used to
+                  // read "no usage reported for this account".
+                  Text(
+                    switch (usage.status) {
+                      SubscriptionStatus.unconfigured =>
+                        l10n.subscriptionUsageNoneReported,
+                      SubscriptionStatus.exhausted =>
+                        l10n.subscriptionUsageExhausted,
+                      SubscriptionStatus.signInRequired =>
+                        l10n.subscriptionUsageSignInRequired,
+                      SubscriptionStatus.signInExpired =>
+                        l10n.subscriptionUsageSignInExpired,
+                      _ => l10n.subscriptionUsageUnavailable,
+                    },
+                    style: TextStyle(
+                      // Colour is additive here, never the carrier: the line
+                      // states the status in words, so the reading survives
+                      // without it. Only the two states a person has to DO
+                      // something about are tinted — `signInExpired` stays
+                      // muted precisely because every account nobody used
+                      // overnight is in it by morning.
+                      color: switch (usage.status) {
+                        SubscriptionStatus.exhausted => t.textErrorPrimary,
+                        SubscriptionStatus.signInRequired =>
+                          t.textWarningPrimary,
+                        _ => t.textTertiary,
+                      },
+                      fontSize: 12,
+                      fontWeight: actionable
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                  // The provider's own sentence — "Credits used up." — says
+                  // what to do about it where the localized line above only
+                  // says what happened. Verbatim and unlocalized for the same
+                  // reason as [accountLabel]: it is a value the provider handed
+                  // back, not our copy to translate.
+                  if (exhausted &&
+                      (usage.error?.trim().isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      usage.error!.trim(),
+                      style: TextStyle(color: t.textTertiary, fontSize: 12),
+                    ),
+                  ],
+                ] else ...[
+                  for (var i = 0; i < usage.windows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: AppSpacing.lg),
+                    SubscriptionWindowRow(window: usage.windows[i]),
+                  ],
+                  if (spend != null) ...[
+                    if (usage.windows.isNotEmpty)
+                      const SizedBox(height: AppSpacing.lg),
+                    SubscriptionWindowRow(
+                      window: SubscriptionWindow(
+                        id: 'spend',
+                        label: l10n.subscriptionUsageCredits,
+                        // An UNCAPPED balance has no fraction to draw, so the
+                        // bar stays empty and the amounts carry the meaning.
+                        usedFraction: spend.usedFraction,
+                      ),
+                      // The dollars are the reading here; a percentage of a
+                      // $600 cap rounds to "0%" at $1.41 and says nothing.
+                      // Spent AND cap on one line, because they are one fact —
+                      // "$1.41 of $600.00" reads as a sentence, where a cap
+                      // parked under the bar reads as a separate note about
+                      // something else.
+                      valueOverride: spend.hasLimit
+                          ? l10n.subscriptionUsageSpend(
+                              _money(spend.used, spend.currency),
+                              _money(spend.limit, spend.currency),
+                            )
+                          : _money(spend.used, spend.currency),
+                    ),
+                  ],
+                ],
+              ],
             ),
           ),
-          // The provider's own sentence — "Credits used up." — says what to do
-          // about it where the localized line above only says what happened.
-          // Verbatim and unlocalized for the same reason as [accountLabel]:
-          // it is a value the provider handed back, not our copy to translate.
-          if (exhausted && (usage.error?.trim().isNotEmpty ?? false)) ...[
-            const SizedBox(height: 2),
-            Text(
-              usage.error!.trim(),
-              style: TextStyle(color: t.textTertiary, fontSize: 12),
-            ),
-          ],
-        ] else ...[
-          for (var i = 0; i < usage.windows.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            SubscriptionWindowRow(window: usage.windows[i]),
-          ],
-          if (spend != null) ...[
-            if (usage.windows.isNotEmpty) const SizedBox(height: 8),
-            SubscriptionWindowRow(
-              window: SubscriptionWindow(
-                id: 'spend',
-                label: l10n.subscriptionUsageCredits,
-                // An UNCAPPED balance has no fraction to draw, so the bar
-                // stays empty and the amounts carry the meaning.
-                usedFraction: spend.usedFraction,
-              ),
-              // The dollars are the reading here; a percentage of a $600 cap
-              // rounds to "0%" at $1.41 and says nothing. Spent AND cap on one
-              // line, because they are one fact — "$1.41 of $600.00" reads as
-              // a sentence, where a cap parked under the bar reads as a
-              // separate note about something else.
-              valueOverride: spend.hasLimit
-                  ? l10n.subscriptionUsageSpend(
-                      _money(spend.used, spend.currency),
-                      _money(spend.limit, spend.currency),
-                    )
-                  : _money(spend.used, spend.currency),
-            ),
-          ],
-        ],
+        ),
       ],
     );
   }

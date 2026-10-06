@@ -2,7 +2,7 @@
 title: 領域事件
 description: 完整列出全部 53 個領域事件、它們的承載內容，以及消費它們的伺服器端訂閱者。
 slug: zh-TW/手冊/參考/領域事件
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## 事件匯流排
@@ -199,8 +199,8 @@ sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 
 | 類別                   | 來源事件                  | 線上方法                                                                 |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received`（提及你）                                  |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`，未提及你）              |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

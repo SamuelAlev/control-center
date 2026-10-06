@@ -2,7 +2,7 @@
 title: Cấu hình thông báo
 description: Bật hoặc tắt các danh mục, đặt giờ yên tĩnh cùng âm thanh và biết thông báo nào đến với bạn ở đâu.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Hướng dẫn này chỉ cho bạn cách cấu hình thông báo và mỗi tùy chọn thực sự kiểm
@@ -28,10 +28,10 @@ thông báo từ máy chủ. Máy khách điện thoại không có bề mặt t
 
 | Danh mục                  | Kích hoạt khi                                                              |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent đã hoàn tất         | Một agent hoàn tất một lần chạy                                            |
+| Agent đã hoàn tất         | Một agent đã trả lời trong lần chạy do bạn khởi động, hoặc lần chạy thất bại |
 | PR đã được công bố        | Một agent công bố một PR                                                   |
 | PR đã được merge          | Một PR đã được merge                                                       |
-| Tin nhắn mới              | Một tin nhắn đến trong một space bạn không xem                             |
+| Tin nhắn mới              | Ai đó nhắc đến bạn trong một space                                         |
 | Được nhắc trong pull request | Lượt thăm dò thông báo của GitHub phát hiện bạn được nhắc trên một PR   |
 | Yêu cầu review            | Bạn thực sự được yêu cầu review trên một PR không phải bản nháp            |
 | Review đã lỗi thời        | Có commit mới trên một pull request bạn đã review                          |
@@ -100,6 +100,8 @@ chủ gửi đi:
 
 - Một tin nhắn không nhắc đến bạn từ một **con người** khác không bao giờ trở
   thành thông báo
+- Trong một space dùng chung, câu trả lời của agent chỉ báo cho người đã khởi
+  động lần chạy đó, không phải mọi thành viên
 - Các space giữa các agent bị tắt tiếng trên thanh bên, nên chúng không bao giờ
   làm tăng huy hiệu chưa đọc của con người
 
@@ -147,7 +149,9 @@ hiển thị là đã đọc để tránh một huy hiệu nhấp nháy rồi tr
 ### Một lần chạy của agent đã kết thúc nhưng không có gì báo cho tôi
 
 Hãy kiểm tra xem bạn có đang ở sẵn trong space nơi sự việc xảy ra không — một
-tuyến đang mở sẽ chặn toast hệ điều hành của chính nó.
+tuyến đang mở sẽ chặn toast hệ điều hành của chính nó. Trong một space dùng chung,
+lần chạy do người khác khởi động sẽ báo cho họ, không phải bạn. Một lượt hội thoại
+kết thúc mà không có câu trả lời và không có lỗi thì không gửi gì cả.
 
 ## Hướng dẫn liên quan
 

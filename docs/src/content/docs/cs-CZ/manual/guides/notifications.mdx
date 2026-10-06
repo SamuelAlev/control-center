@@ -2,7 +2,7 @@
 title: Nastavte oznámení
 description: Zapni nebo vypni kategorie, nastav tiché hodiny a zvuk a zjisti, která oznámení k tobě dorazí a kam.
 slug: cs-CZ/prirucka/navody/oznameni
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Tenhle návod ukazuje, jak nastavit oznámení a co které nastavení opravdu
@@ -28,10 +28,10 @@ Telefonní klient nemá plochu oznámení vůbec.
 
 | Kategorie                          | Kdy se spustí                                                                      |
 | ---------------------------------- | ---------------------------------------------------------------------------------- |
-| Agent dokončil                     | Agent dokončil běh                                                                |
+| Agent dokončil                     | Agent odpověděl v běhu, který jsi spustil, nebo běh selhal                        |
 | PR zveřejněn                       | Agent zveřejnil PR                                                                |
 | PR sloučen                         | PR byl sloučen                                                                    |
-| Nové zprávy                        | Do prostoru, na který se právě nedíváš, přišla zpráva                             |
+| Nové zprávy                        | Někdo tě zmínil v prostoru                                                        |
 | Zmíněn v pull requestu             | Dotazování na oznámení GitHubu zjistilo, že tě na PR někdo zmínil                 |
 | Vyžádána kontrola                  | O tvoji kontrolu někdo opravdu požádal u PR, který není koncept                   |
 | Kontrola je zastaralá              | Na pull request, který už jsi zkontroloval, přibyly nové commity                  |
@@ -96,6 +96,8 @@ Další dvě potlačení jsou výš, v tom, co server vůbec pošle:
 
 - Zpráva od jiného člověka, ve které tě nikdo nezmínil, se oznámením nikdy
   nestane
+- Ve sdíleném prostoru upozorní odpověď agenta toho, kdo daný běh spustil, ne
+  všechny členy
 - Prostory, kde si agenti píšou mezi sebou, jsou v postranním panelu ztlumené,
   takže člověku nikdy nezvednou odznak nepřečtených
 
@@ -141,7 +143,8 @@ značka načte.
 ### Běh agenta skončil, ale nic mě neupozornilo
 
 Zkontroluj, že už nejsi v prostoru, kde se to stalo. Aktivní trasa potlačí
-vlastní systémový toast.
+vlastní systémový toast. Ve sdíleném prostoru upozorní běh, který spustil někdo
+jiný, jeho, ne tebe. Tah, který skončil bez odpovědi i bez chyby, nepošle nic.
 
 ## Související návody
 

@@ -2423,7 +2423,7 @@
   "notifications": "Pemberitahuan",
   "notifyAgentRunCompleted": "Beritahu apabila ejen menyelesaikan larian.",
   "notifyPrMentioned": "Beritahu apabila anda disebut dalam pull request.",
-  "notifyNewMessages": "Beritahu tentang mesej ejen baharu dalam ruang lain.",
+  "notifyNewMessages": "Beritahu apabila anda disebut dalam ruang.",
   "notifyPrMerged": "Beritahu apabila pull request dicantum.",
   "notifyPrPublished": "Beritahu apabila ejen menerbitkan pull request.",
   "notifyReviewRequested": "Beritahu apabila semakan anda diminta pada pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kuota habis",
   "subscriptionUsageSignInRequired": "Log masuk semula",
   "subscriptionUsageSignInExpired": "Log masuk luput, diperbaharui pada larian seterusnya",
-  "subscriptionUsagePartiallyAvailable": "Tersedia sebahagian",
+  "subscriptionUsagePercentUsed": "{percent}% digunakan",
   "resetsIn": "Ditetapkan semula dalam {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Pulihkan",
   "nativeSandboxUnsupported": "Kotak pasir natif belum disokong pada {platform}.",
   "continueWithoutSandbox": "Teruskan tanpa kotak pasir",
-  "sandboxCheckAgain": "Semak semula"
+  "sandboxCheckAgain": "Semak semula",
+  "ideQuickOpen": "Pergi ke fail",
+  "ideQuickOpenDescription": "Cari fail perbualan mengikut nama dan buka satu dalam tab",
+  "ideQuickOpenHint": "Cari fail mengikut nama",
+  "ideQuickOpenRecentlyOpened": "Dibuka baru-baru ini",
+  "ideQuickOpenOpenToSide": "Buka di sisi",
+  "ideQuickOpenRemoveRecent": "Alih keluar daripada dibuka baru-baru ini",
+  "ideQuickOpenNoRecent": "Tiada fail dibuka baru-baru ini"
 }

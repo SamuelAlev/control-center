@@ -1,3 +1,4 @@
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -69,9 +70,12 @@ abstract final class PrTabKinds {
 
   /// Whether [kind] is a heavyweight webview surface subject to the body host's
   /// LRU suspension (its live platform view is torn down when hidden beyond the
-  /// cap and rebuilt on reveal).
+  /// cap and rebuilt on reveal). A code-server tab holds no webview of its own
+  /// where its worktree's window is shared (and moves between tabs).
   static bool isWebview(String kind) =>
-      kind == codeServer || kind == browser || kind == preview;
+      kind == browser ||
+      kind == preview ||
+      (kind == codeServer && !CodeServerWindowPool.sharesWindows);
 
   /// The tab-strip icon for a PR [kind].
   static IconData iconFor(String kind) {

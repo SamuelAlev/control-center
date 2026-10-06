@@ -2423,7 +2423,7 @@
   "notifications": "الإشعارات",
   "notifyAgentRunCompleted": "الإشعار عندما يُكمل وكيل تشغيلًا.",
   "notifyPrMentioned": "الإشعار عند الإشارة إليك في طلب سحب.",
-  "notifyNewMessages": "الإشعار عند ورود رسائل جديدة من الوكلاء في مساحات أخرى.",
+  "notifyNewMessages": "الإشعار عند الإشارة إليك في مساحة.",
   "notifyPrMerged": "الإشعار عند دمج طلب سحب.",
   "notifyPrPublished": "الإشعار عندما ينشر وكيل طلب سحب.",
   "notifyReviewRequested": "الإشعار عند طلب مراجعتك على طلب سحب.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "استُنفدت الحصة",
   "subscriptionUsageSignInRequired": "سجّل الدخول مرة أخرى",
   "subscriptionUsageSignInExpired": "انتهت صلاحية تسجيل الدخول، يتجدد عند التشغيل التالي",
-  "subscriptionUsagePartiallyAvailable": "متاح جزئيًا",
+  "subscriptionUsagePercentUsed": "استُخدم {percent}%",
   "resetsIn": "يُعاد التعيين خلال {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "استعادة",
   "nativeSandboxUnsupported": "البيئة المعزولة الأصلية غير مدعومة على ⁨{platform}⁩ بعد.",
   "continueWithoutSandbox": "المتابعة دون بيئة معزولة",
-  "sandboxCheckAgain": "تحقق مرة أخرى"
+  "sandboxCheckAgain": "تحقق مرة أخرى",
+  "ideQuickOpen": "الانتقال إلى ملف",
+  "ideQuickOpenDescription": "ابحث في ملفات المحادثة بالاسم وافتح أحدها في علامة تبويب",
+  "ideQuickOpenHint": "ابحث عن الملفات بالاسم",
+  "ideQuickOpenRecentlyOpened": "فُتح مؤخرًا",
+  "ideQuickOpenOpenToSide": "فتح على الجانب",
+  "ideQuickOpenRemoveRecent": "إزالة من الملفات المفتوحة مؤخرًا",
+  "ideQuickOpenNoRecent": "لا توجد ملفات مفتوحة مؤخرًا"
 }

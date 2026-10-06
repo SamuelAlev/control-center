@@ -2,7 +2,7 @@
 title: Siklus hidup pengiriman agen
 description: Apa yang terjadi antara pesan yang masuk dan penutupan log run — perakitan prompt, worktree, identitas, apa yang membatasi sebuah run, dan bagaimana hasilnya dicatat secara jujur.
 slug: id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Apa itu pengiriman
@@ -130,7 +130,7 @@ Ketika sebuah run berakhir tanpa hasil yang diwajibkan modenya — run mode Renc
 Ini disengaja. Membalik statusnya akan menggerakkan mesin keadaan tiket dan pipeline yang sama sekali tidak terkait dengan artefak yang hilang. Ini juga berarti "status: completed" saja tidak pernah cukup untuk menyimpulkan sebuah run berhasil — bacalah ringkasannya.
 :::
 
-Menutup run menerbitkan `AgentRunCompleted` dan banyak hal bergantung padanya: bingkai notifikasi dan entri feed persistannya, penyiar langsung yang mendorongnya ke klien yang terhubung, akumulasi biaya pipeline, melanjutkan langkah pipeline yang menunggu run tersebut, menyelesaikan tiket yang mendasarinya, memetakan orkestrasi ke keadaan terminal, keputusan lanjut-atau-berhenti dari pengawas goal, peran pemeriksa, dan evaluasi anggaran setelah run. Daftar kehadiran menyusul secara terpisah, dengan mengamati log run terbaru alih-alih peristiwanya.
+Menutup run menerbitkan `AgentRunCompleted` dan banyak hal bergantung padanya: akumulasi biaya pipeline, melanjutkan langkah pipeline yang menunggu run tersebut, menyelesaikan tiket yang mendasarinya, memetakan orkestrasi ke keadaan terminal, keputusan lanjut-atau-berhenti dari pengawas goal, peran pemeriksa, dan evaluasi anggaran setelah run. Daftar kehadiran menyusul secara terpisah, dengan mengamati log run terbaru alih-alih peristiwanya. Notifikasi "agen selesai" tidak ada dalam daftar itu: peristiwa tersebut terpicu saat aliran proses berakhir, sebelum balasannya ditulis, sehingga notifikasinya adalah `MessageReceived` milik giliran tersebut, yang diterbitkan setelah pesannya disimpan.
 
 ## Anggaran, setelah kejadian
 

@@ -2120,7 +2120,7 @@
   "notifications": "Meldingen",
   "notifyAgentRunCompleted": "Melding wanneer een agent een run voltooit.",
   "notifyPrMentioned": "Melding wanneer je wordt vermeld in een pull request.",
-  "notifyNewMessages": "Melding bij nieuwe agent-berichten in andere ruimtes.",
+  "notifyNewMessages": "Melding wanneer je wordt vermeld in een ruimte.",
   "notifyPrMerged": "Melding wanneer een pull request wordt samengevoegd.",
   "notifyPrPublished": "Melding wanneer een agent een pull request publiceert.",
   "notifyReviewRequested": "Melden wanneer je review wordt gevraagd voor een pull request.",
@@ -4401,7 +4401,7 @@
   "subscriptionUsageExhausted": "Quotum uitgeput",
   "subscriptionUsageSignInRequired": "Meld je opnieuw aan",
   "subscriptionUsageSignInExpired": "Aanmelding verlopen, wordt vernieuwd bij de volgende run",
-  "subscriptionUsagePartiallyAvailable": "Gedeeltelijk beschikbaar",
+  "subscriptionUsagePercentUsed": "{percent}% gebruikt",
   "resetsIn": "Reset over {duration}",
   "feedbackHelpful": "Dit was nuttig",
   "feedbackNotHelpful": "Dit was niet nuttig",
@@ -7991,5 +7991,12 @@
   "windowRestore": "Vorig formaat",
   "nativeSandboxUnsupported": "Native sandbox wordt nog niet ondersteund op {platform}.",
   "continueWithoutSandbox": "Doorgaan zonder sandbox",
-  "sandboxCheckAgain": "Opnieuw controleren"
+  "sandboxCheckAgain": "Opnieuw controleren",
+  "ideQuickOpen": "Ga naar bestand",
+  "ideQuickOpenDescription": "Zoek de bestanden van het gesprek op naam en open er een in een tabblad",
+  "ideQuickOpenHint": "Bestanden zoeken op naam",
+  "ideQuickOpenRecentlyOpened": "Recent geopend",
+  "ideQuickOpenOpenToSide": "Aan de zijkant openen",
+  "ideQuickOpenRemoveRecent": "Verwijderen uit recent geopend",
+  "ideQuickOpenNoRecent": "Geen recent geopende bestanden"
 }

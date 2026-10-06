@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba que notificações lhe chegam e onde.
 slug: pt-PT/manual/guias/notificacoes
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Este guia mostra como configurar as notificações e o que cada opção controla de
@@ -29,10 +29,10 @@ telemóvel não tem nenhuma superfície de notificação.
 
 | Categoria                 | Dispara quando                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agente finalizado         | Um agente concluiu uma execução                                            |
+| Agente finalizado         | Um agente respondeu numa execução que iniciou, ou a execução falhou        |
 | PR publicada              | Um agente publicou uma PR                                                  |
 | PR fundida                | Uma PR foi fundida                                                         |
-| Novas mensagens           | Chegou uma mensagem a um espaço que não está a ver                         |
+| Novas mensagens           | Alguém o mencionou num espaço                                              |
 | Mencionado em um pull request | A sondagem de notificações do GitHub detetou que foi mencionado numa PR |
 | Revisão solicitada        | A sua revisão foi realmente solicitada numa PR que não é rascunho          |
 | Revisão desatualizada     | Chegaram novos commits a uma pull request que já tinha revisto             |
@@ -101,6 +101,8 @@ duradouro continua a registar o evento.
 Há mais duas supressões a montante, naquilo que o servidor chega a enviar:
 
 - Uma mensagem não mencionada de outro **humano** nunca se torna uma notificação
+- Num espaço partilhado, a resposta de um agente avisa quem iniciou essa
+  execução, não todos os membros
 - Os espaços entre agentes estão silenciados na barra lateral, pelo que nunca
   fazem subir o distintivo de não lidos dos humanos
 
@@ -149,7 +151,9 @@ depois se esvazia. Estabiliza assim que a marca é carregada.
 ### A execução de um agente terminou, mas não recebi nenhum aviso
 
 Verifique se não estava já no espaço onde isso aconteceu — uma rota ativa suprime
-a sua própria notificação do sistema operativo.
+a sua própria notificação do sistema operativo. Num espaço partilhado, uma
+execução iniciada por outra pessoa avisa essa pessoa, não a si. Um turno que
+terminou sem resposta e sem erro não envia nada.
 
 ## Guias relacionados
 

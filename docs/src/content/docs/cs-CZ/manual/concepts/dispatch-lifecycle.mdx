@@ -2,7 +2,7 @@
 title: Životní cyklus odeslání agenta
 description: Co se stane mezi příchodem zprávy a uzavřením záznamu běhu. Skládání promptu, worktree, identita, co běh ohraničuje a jak se výsledek zapíše poctivě.
 slug: cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Co je odeslání
@@ -130,7 +130,7 @@ Když běh skončí bez toho, co měl režim dodat (běh v režimu plánu, kter�
 Je to schválně. Přepnutí stavu by pohnulo automaty ticketů a pipeline, které s chybějícím artefaktem nemají co dělat. Samotné „status: completed“ taky nikdy nestačí, abys z něj usoudil, že běh uspěl. Přečti shrnutí.
 :::
 
-Uzavření běhu publikuje `AgentRunCompleted` a na té události visí hodně: rámec oznámení a jeho trvalá položka v přehledu, živý přeposílač, který ji tlačí připojeným klientům, souhrn nákladů pipeline, obnovení kroku pipeline, který na běh čekal, dokončení podkladového ticketu, namapování orchestrace na koncový stav, rozhodnutí supervizora cíle, jestli pokračovat, nebo zastavit, role kontrolora a vyhodnocení rozpočtu po běhu. Seznam přítomnosti jde vlastní cestou: sleduje nedávné záznamy běhů, ne tuhle událost.
+Uzavření běhu publikuje `AgentRunCompleted` a na té události visí hodně: souhrn nákladů pipeline, obnovení kroku pipeline, který na běh čekal, dokončení podkladového ticketu, namapování orchestrace na koncový stav, rozhodnutí supervizora cíle, jestli pokračovat, nebo zastavit, role kontrolora a vyhodnocení rozpočtu po běhu. Seznam přítomnosti jde vlastní cestou: sleduje nedávné záznamy běhů, ne tuhle událost. Oznámení „Agent dokončil“ v tom výčtu není: událost se spustí ve chvíli, kdy skončí proud procesu, tedy ještě před zápisem odpovědi. Oznámením je proto `MessageReceived` daného tahu, publikované až po uložení zprávy.
 
 ## Rozpočty až potom
 

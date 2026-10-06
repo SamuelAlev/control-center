@@ -2,10 +2,10 @@
 title: Tastenkürzel
 description: Die vollständige Registry der Tastenkürzel, nach Geltungsbereich, mit den Bedingungen, unter denen jedes Kürzel auslöst.
 slug: de-DE/handbuch/referenz/tastenkuerzel
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Die Kürzel kommen aus einer `const`-Registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Sie enthält **48 Bindungen**. Einstellungen → Du → Tastaturkürzel zeigt diese Registry als **schreibgeschützte Referenz**: Es gibt keine Oberfläche zum Umbelegen und keine Datei für eigene Tastenkürzel.
+Die Kürzel kommen aus einer `const`-Registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Sie enthält **49 Bindungen**. Einstellungen → Du → Tastaturkürzel zeigt diese Registry als **schreibgeschützte Referenz**: Es gibt keine Oberfläche zum Umbelegen und keine Datei für eigene Tastenkürzel.
 
 `Cmd` unten ist der primäre Befehlsmodifikator — ⌘ auf macOS, Ctrl unter Windows und Linux. Eine Bindung löst nur aus, wenn ihr Befehl auf dem aktuellen Bildschirm einen registrierten Handler hat und ihre `when`-Klausel zutrifft; `!textInputFocus` heißt, die Taste wird an ein fokussiertes Textfeld durchgereicht.
 
@@ -72,7 +72,7 @@ Geltungsbereich `/users/`. Die `when`-Klausel ist ein Regex gegen `/users/<login
 | `/`            | Suche fokussieren  |
 | `Cmd/Ctrl + F` | Suche fokussieren  |
 
-## Bereiche (8)
+## Bereiche (9)
 
 Geltungsbereich `/spaces`. Die `when`-Klauseln nutzen einen Regex, damit sie sowohl auf der Bereichsliste (`/spaces`) als auch in einem ausgewählten Bereich (`/spaces/<id>`) auslösen.
 
@@ -86,6 +86,9 @@ Geltungsbereich `/spaces`. Die `when`-Klauseln nutzen einen Regex, damit sie sow
 | `Cmd/Ctrl + T`         | Editor öffnen                  | Auf einer `/spaces`-Route  |
 | `Cmd/Ctrl + W`         | Tab schließen                  | Auf einer `/spaces`-Route  |
 | `Cmd/Ctrl + B`         | Seitenleiste ein/ausblenden    | Auf einer `/spaces`-Route  |
+| `Cmd/Ctrl + P`         | Zu Datei wechseln              | Auf einer `/spaces`-Route  |
+
+„Zu Datei wechseln“ öffnet eine Auswahl über die Dateien der Unterhaltung. Ohne Eingabe listet sie die zuletzt geöffneten Dateien; beim Tippen durchsucht sie alle Dateien in den Worktrees der Unterhaltung. `Enter` öffnet die ausgewählte Datei in einem neuen Tab, `Cmd/Ctrl + Enter` oder die Teilen-Schaltfläche in der Zeile öffnet sie in einem Bereich rechts daneben, und das `×` in einer Zeile mit einer zuletzt geöffneten Datei entfernt sie aus der Liste.
 
 Senden mit Enter gehört zum Textfeld des Composers. Zum Sprechen drücken gehört zur Mikrofontaste des Composers, mit eigenem Handler für die Hardware-Tastatur. Beide stehen in der Registry, damit die Einstellungsreferenz sie aufführt.
 

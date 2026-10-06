@@ -4219,7 +4219,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Melding bij nieuwe agent-berichten in andere ruimtes.';
+      'Melding wanneer je wordt vermeld in een ruimte.';
 
   @override
   String get notifyPrMerged =>
@@ -8981,7 +8981,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Aanmelding verlopen, wordt vernieuwd bij de volgende run';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Gedeeltelijk beschikbaar';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% gebruikt';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15154,4 +15156,26 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Opnieuw controleren';
+
+  @override
+  String get ideQuickOpen => 'Ga naar bestand';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Zoek de bestanden van het gesprek op naam en open er een in een tabblad';
+
+  @override
+  String get ideQuickOpenHint => 'Bestanden zoeken op naam';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Recent geopend';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Aan de zijkant openen';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Verwijderen uit recent geopend';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Geen recent geopende bestanden';
 }

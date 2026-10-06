@@ -2,10 +2,10 @@
 title: Scurtături de tastatură
 description: Registrul complet de scurtături, pe domenii de aplicare, cu condițiile în care se declanșează fiecare scurtătură.
 slug: ro-RO/manual/referinta/scurtaturi-de-tastatura
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Scurtăturile provin dintr-un singur registru `const`, `KeybindingRegistry` din `lib/core/constants/keybindings.dart`. El conține **48 de scurtături**. Setări → Tu → Scurtături afișează acel registru ca **referință doar în citire**: nu există interfață de reatribuire și niciun fișier de scurtături al utilizatorului.
+Scurtăturile provin dintr-un singur registru `const`, `KeybindingRegistry` din `lib/core/constants/keybindings.dart`. El conține **49 de scurtături**. Setări → Tu → Scurtături afișează acel registru ca **referință doar în citire**: nu există interfață de reatribuire și niciun fișier de scurtături al utilizatorului.
 
 `Cmd` de mai jos este modificatorul principal de comandă — ⌘ pe macOS, Ctrl pe Windows și Linux. O scurtătură se declanșează doar când comanda ei are un handler înregistrat pe ecranul curent și clauza ei `when` este îndeplinită; `!textInputFocus` înseamnă că tasta este transmisă mai departe unui câmp de text focusat.
 
@@ -72,7 +72,7 @@ Domeniul `/users/`. Clauza `when` este o expresie regulată care se potrivește 
 | `/`            | Focalizează căutarea |
 | `Cmd/Ctrl + F` | Focalizează căutarea |
 
-## Spații (8)
+## Spații (9)
 
 Domeniul `/spaces`. Clauzele `when` folosesc o expresie regulată, așa că se declanșează atât în lista de spații (`/spaces`), cât și într-un spațiu selectat (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Domeniul `/spaces`. Clauzele `when` folosesc o expresie regulată, așa că se d
 | `Cmd/Ctrl + T`         | Deschide fila editorului       | Pe o rută `/spaces`   |
 | `Cmd/Ctrl + W`         | Închide fila editorului        | Pe o rută `/spaces`   |
 | `Cmd/Ctrl + B`         | Comută bara laterală a editorului | Pe o rută `/spaces` |
+| `Cmd/Ctrl + P`         | Accesează fișierul                | Pe o rută `/spaces` |
+
+„Accesează fișierul” deschide un selector peste fișierele conversației. Fără text introdus, listează fișierele deschise cel mai recent; tastarea caută în toate fișierele din worktree-urile conversației. `Enter` deschide fișierul selectat într-o filă nouă, `Cmd/Ctrl + Enter` sau butonul de împărțire de pe rând îl deschide într-un panou în dreapta, iar `×` de pe un rând recent îl elimină din listă.
 
 Trimiterea cu Enter aparține câmpului de text al compozitorului; apăsarea pentru a vorbi aparține butonului de microfon al compozitorului (care are propriul handler de tastatură hardware). Ambele sunt listate în registru pentru referința din setări.
 

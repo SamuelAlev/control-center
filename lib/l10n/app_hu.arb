@@ -2423,7 +2423,7 @@
   "notifications": "Értesítések",
   "notifyAgentRunCompleted": "Értesítés, ha egy ügynök befejez egy futtatást.",
   "notifyPrMentioned": "Értesítés, ha említik egy pull requestben.",
-  "notifyNewMessages": "Értesítés új ügynöküzenetekről más terekben.",
+  "notifyNewMessages": "Értesítés, ha említik egy térben.",
   "notifyPrMerged": "Értesítés, ha egy pull requestet összefésülnek.",
   "notifyPrPublished": "Értesítés, ha egy ügynök pull requestet tesz közzé.",
   "notifyReviewRequested": "Értesítés, ha az Ön átnézését kérik egy pull requesten.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kvóta kimerítve",
   "subscriptionUsageSignInRequired": "Jelentkezzen be újra",
   "subscriptionUsageSignInExpired": "A bejelentkezés lejárt, a következő futtatáskor megújul",
-  "subscriptionUsagePartiallyAvailable": "Részben elérhető",
+  "subscriptionUsagePercentUsed": "{percent}% felhasználva",
   "resetsIn": "Visszaáll {duration} múlva",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Előző méret",
   "nativeSandboxUnsupported": "A natív homokozó még nem támogatott {platform} rendszeren.",
   "continueWithoutSandbox": "Folytatás homokozó nélkül",
-  "sandboxCheckAgain": "Újraellenőrzés"
+  "sandboxCheckAgain": "Újraellenőrzés",
+  "ideQuickOpen": "Ugrás fájlra",
+  "ideQuickOpenDescription": "A beszélgetés fájljainak keresése név szerint, és egy megnyitása lapon",
+  "ideQuickOpenHint": "Fájlok keresése név szerint",
+  "ideQuickOpenRecentlyOpened": "Nemrég megnyitott",
+  "ideQuickOpenOpenToSide": "Megnyitás oldalt",
+  "ideQuickOpenRemoveRecent": "Eltávolítás a nemrég megnyitottak közül",
+  "ideQuickOpenNoRecent": "Nincsenek nemrég megnyitott fájlok"
 }

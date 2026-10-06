@@ -4244,8 +4244,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifyPrMentioned => 'الإشعار عند الإشارة إليك في طلب سحب.';
 
   @override
-  String get notifyNewMessages =>
-      'الإشعار عند ورود رسائل جديدة من الوكلاء في مساحات أخرى.';
+  String get notifyNewMessages => 'الإشعار عند الإشارة إليك في مساحة.';
 
   @override
   String get notifyPrMerged => 'الإشعار عند دمج طلب سحب.';
@@ -9058,7 +9057,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهت صلاحية تسجيل الدخول، يتجدد عند التشغيل التالي';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'متاح جزئيًا';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'استُخدم $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15317,4 +15318,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'تحقق مرة أخرى';
+
+  @override
+  String get ideQuickOpen => 'الانتقال إلى ملف';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'ابحث في ملفات المحادثة بالاسم وافتح أحدها في علامة تبويب';
+
+  @override
+  String get ideQuickOpenHint => 'ابحث عن الملفات بالاسم';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'فُتح مؤخرًا';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'فتح على الجانب';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'إزالة من الملفات المفتوحة مؤخرًا';
+
+  @override
+  String get ideQuickOpenNoRecent => 'لا توجد ملفات مفتوحة مؤخرًا';
 }

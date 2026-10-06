@@ -3,7 +3,7 @@ import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 /// Version of the bundled bridge extension. Bump it (here + in the package.json
 /// and .vsix manifest below) to force a reinstall of the shipped source; the
 /// installer skips work once `extensions.json` lists this version.
-const String codeServerBridgeExtensionVersion = '0.0.11';
+const String codeServerBridgeExtensionVersion = '0.0.12';
 
 /// `package.json` for the bundled bridge extension. It runs in code-server's
 /// SERVER-SIDE Node extension host (`main`, activated on startup), so it has
@@ -14,7 +14,7 @@ const String codeServerBridgeExtensionPackageJson = '''
   "displayName": "Control Center IDE Bridge",
   "description": "Hands in-editor file navigation back to the Control Center app shell so it owns the tabs.",
   "publisher": "control-center",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "engines": { "vscode": "^1.80.0" },
   "extensionKind": ["workspace"],
   "categories": ["Other"],
@@ -42,7 +42,7 @@ const String codeServerBridgeVsixManifest = '''
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.11" Publisher="control-center"/>
+    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.12" Publisher="control-center"/>
     <DisplayName>Control Center IDE Bridge</DisplayName>
     <Description xml:space="preserve">Hands in-editor file navigation to the Control Center app shell.</Description>
     <Tags>__ext_control-center</Tags>
@@ -63,13 +63,16 @@ const String codeServerBridgeVsixManifest = '''
 </PackageManifest>
 ''';
 
-/// Bundled bridge extension source (CommonJS). Each window pins its entry
-/// file; navigation POSTs the target to `CC_IDE_REPORT_URL` (app opens a tab)
-/// and closes the drifted editor. Also reports dirty state, consumes
-/// `CC_IDE_COMMANDS_URL` SSE (`save`), keeps side bars/panel closed on
-/// activate + user editor focus (skips programmatic selection), logs a
-/// chrome-hidden marker the app waits on before showing the editor, and
-/// registers a working-tree quick-diff provider so the gutter shows git changes.
+/// Bundled bridge extension source (CommonJS). One window serves every app tab
+/// of a worktree: it logs a random window id the app addresses `open` commands
+/// to, switches files on `open`, closes them on `close`, and POSTs in-editor
+/// navigation to `CC_IDE_REPORT_URL` (with its window id) so the app focuses
+/// or opens that file's tab. Also reports dirty state, consumes
+/// `CC_IDE_COMMANDS_URL` SSE (`open` / `close` / `save`), keeps side bars and
+/// panel closed on activate + user editor focus (skips programmatic
+/// selection), logs a chrome-hidden marker the app waits on before showing the
+/// editor, and registers a working-tree quick-diff provider so the gutter
+/// shows git changes.
 const String codeServerBridgeExtensionSource =
     r'''
 const vscode = require('vscode');
@@ -161,10 +164,116 @@ async function saveByPath(fsPath) {
   } catch (e) {}
 }
 
+// Random id of THIS editor window. Every window of a worktree shares one
+// command stream, so an `open` names the window it is for.
+const WINDOW_ID = require('crypto').randomUUID();
+
+// The file this window last showed for the app. Active-editor changes to any
+// other file are user navigation and get reported; changes while a command
+// runs (quietDepth > 0) are our own and only update it.
+let current;
+let quietDepth = 0;
+
+function activeFsPath() {
+  const editor = vscode.window.activeTextEditor;
+  return editor && isFile(editor.document.uri) ? editor.document.uri.fsPath : undefined;
+}
+
+// Runs fn with navigation reporting muted. The unmute is delayed a beat: the
+// workbench can deliver the active-editor change after the command resolves.
+async function quietly(fn) {
+  quietDepth++;
+  try {
+    await fn();
+  } catch (e) {
+  } finally {
+    setTimeout(function () {
+      quietDepth--;
+      if (quietDepth === 0) { current = activeFsPath() || current; }
+    }, 150);
+  }
+}
+
+// The URI fsPath is already open under, else a file URI. The window's boot
+// file arrives through the URL payload with its own remote authority; a fresh
+// Uri.file for the same path would open a second, separate editor (and buffer)
+// beside it.
+function uriFor(fsPath) {
+  const docs = vscode.workspace.textDocuments || [];
+  for (var i = 0; i < docs.length; i++) {
+    if (isFile(docs[i].uri) && docs[i].uri.fsPath === fsPath) { return docs[i].uri; }
+  }
+  const tabs = tabsFor(fsPath);
+  return tabs.length > 0 ? tabs[0].input.uri : vscode.Uri.file(fsPath);
+}
+
+// Shows fsPath in this window (switching from whatever file the previous app
+// tab had), revealing the 1-based line when given. A file VS Code can't open
+// as text (an image) goes through the generic open command instead.
+async function openByPath(fsPath, line) {
+  await quietly(async function () {
+    current = fsPath;
+    const uri = uriFor(fsPath);
+    const options = { preview: false, preserveFocus: false };
+    if (typeof line === 'number' && line > 0) {
+      const pos = new vscode.Position(line - 1, 0);
+      options.selection = new vscode.Range(pos, pos);
+    }
+    try {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc, options);
+    } catch (e) {
+      await vscode.commands.executeCommand('vscode.open', uri, options);
+    }
+  });
+}
+
+function tabsFor(fsPath) {
+  const out = [];
+  const groups = vscode.window.tabGroups.all;
+  for (var i = 0; i < groups.length; i++) {
+    const tabs = groups[i].tabs;
+    for (var j = 0; j < tabs.length; j++) {
+      const input = tabs[j].input;
+      if (input && input.uri && isFile(input.uri) && input.uri.fsPath === fsPath) {
+        out.push(tabs[j]);
+      }
+    }
+  }
+  return out;
+}
+
+// Closes fsPath's editors once its app tab closed. revert discards unsaved
+// edits first ("Don't save"); otherwise a dirty editor stays open so nothing
+// is lost.
+async function closeByPath(fsPath, revert) {
+  if (tabsFor(fsPath).length === 0) { return; }
+  await quietly(async function () {
+    if (revert) {
+      const docs = vscode.workspace.textDocuments || [];
+      for (var i = 0; i < docs.length; i++) {
+        if (isFile(docs[i].uri) && docs[i].uri.fsPath === fsPath && docs[i].isDirty) {
+          await vscode.window.showTextDocument(docs[i], { preview: false });
+          await vscode.commands.executeCommand('workbench.action.files.revert');
+        }
+      }
+    }
+    const clean = tabsFor(fsPath).filter(function (t) { return !t.isDirty; });
+    if (clean.length > 0) {
+      await vscode.window.tabGroups.close(clean, true);
+    }
+  });
+}
+
 async function handleCommand(msg) {
   if (!msg || typeof msg !== 'object') { return; }
   if (msg.cmd === 'save' && typeof msg.path === 'string') {
     await saveByPath(msg.path);
+  } else if (msg.cmd === 'open' && msg.window === WINDOW_ID &&
+      typeof msg.path === 'string') {
+    await openByPath(msg.path, msg.line);
+  } else if (msg.cmd === 'close' && typeof msg.path === 'string') {
+    await closeByPath(msg.path, msg.revert === true);
   }
 }
 
@@ -221,7 +330,8 @@ function subscribeCommands(commandsUrl) {
 // forwards console output to its own window's renderer console, so the app's
 // webview sees it for exactly this window and only then uncovers the editor.
 const CHROME_HIDDEN_MARKER = '''
-    "'$codeServerChromeHiddenMarker';"
+    "'$codeServerChromeHiddenMarker';\n"
+    "const WINDOW_MARKER = '$codeServerBridgeWindowMarker';"
     r'''
 
 function runQuietly(command) {
@@ -268,31 +378,6 @@ function shouldHideFromSelection(e) {
   // clicking a view.
   const Kind = vscode.TextEditorSelectionChangeKind;
   return e.kind === Kind.Mouse || e.kind === Kind.Keyboard;
-}
-
-// Pin the active (entry) editor so a preview open — go-to-definition, quick
-// open — can't REUSE and REPLACE it; the target instead lands in a separate
-// editor the hand-off below closes. `pinEditor` is a pin, not a toggle
-// (idempotent — a no-op on an already-pinned editor). Best-effort.
-function pinEntry() {
-  try {
-    vscode.commands.executeCommand('workbench.action.pinEditor');
-  } catch (e) {}
-}
-
-// Bring the pinned entry file back to the foreground. After the drifted editor
-// is closed the pinned entry is usually still open, so this is a cheap focus; it
-// reopens (and re-pins) only if the entry was somehow lost. Best-effort.
-async function revealEntry(entry) {
-  const still = vscode.window.activeTextEditor;
-  if (still && isFile(still.document.uri) && still.document.uri.fsPath === entry) {
-    return;
-  }
-  try {
-    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(entry));
-    await vscode.window.showTextDocument(doc, { preview: false });
-    pinEntry();
-  } catch (e) {}
 }
 
 // Git's quick-diff provider is scoped to the repository root. In this
@@ -376,6 +461,7 @@ function installQuickDiff(context) {
 }
 
 function activate(context) {
+  console.log(WINDOW_MARKER + WINDOW_ID);
   installQuickDiff(context);
   hideChromeOnBoot();
   // Chrome can come back after the boot retries. Re-hide when the user actually
@@ -407,39 +493,19 @@ function activate(context) {
 
   if (!reportUrl) { return; }
 
-  // The file THIS editor window was opened on. The app shell owns tabs, so any
-  // navigation to a different file is handed back to the app and this window is
-  // pinned to its entry file.
-  let entry;
-  const initial = vscode.window.activeTextEditor;
-  if (initial && isFile(initial.document.uri)) {
-    entry = initial.document.uri.fsPath;
-    pinEntry();
-  }
-
-  let handling = false;
-  const sub = vscode.window.onDidChangeActiveTextEditor(async function (editor) {
-    if (!editor || handling) { return; }
-    const uri = editor.document.uri;
-    if (!isFile(uri)) { return; }
-    const fsPath = uri.fsPath;
-    // The first file this window sees becomes its pinned entry.
-    if (entry === undefined) { entry = fsPath; pinEntry(); return; }
-    if (fsPath === entry) { return; }
-    handling = true;
-    try {
-      const line = editor.selection ? editor.selection.active.line : 0;
-      // Hand the target to the app shell (it opens a NEW app tab), then drop the
-      // drifted editor and reveal the pinned entry so this window never shows a
-      // file other than the one it was opened on.
-      report(reportUrl, { path: fsPath, line: line });
-      await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-      await revealEntry(entry);
-    } catch (e) {
-      // best-effort — never break the editor over a failed hand-off
-    } finally {
-      handling = false;
-    }
+  // The file the window booted on (the opening app tab's) is not news to the
+  // app; any later switch the user makes inside the editor (go to definition,
+  // quick open) is reported so the app focuses or opens that file's tab, which
+  // then shows this same window.
+  current = activeFsPath();
+  const sub = vscode.window.onDidChangeActiveTextEditor(function (editor) {
+    if (!editor || !isFile(editor.document.uri)) { return; }
+    const fsPath = editor.document.uri.fsPath;
+    if (quietDepth > 0 || current === undefined) { current = fsPath; return; }
+    if (fsPath === current) { return; }
+    current = fsPath;
+    const line = editor.selection ? editor.selection.active.line : 0;
+    report(reportUrl, { path: fsPath, line: line, window: WINDOW_ID });
   });
   context.subscriptions.push(sub);
 }

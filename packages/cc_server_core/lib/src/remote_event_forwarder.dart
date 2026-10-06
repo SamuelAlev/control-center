@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
@@ -79,7 +78,6 @@ class RemoteEventForwarder {
     // The unified task-lifecycle stream (queued → … → completed/failed, plus
     // typed task:message frames). The sealed base captures every subtype.
     _subs.add(_eventBus.on<TaskLifecycleEvent>().listen(_onTaskLifecycle));
-    _subs.add(_eventBus.on<AgentRunCompleted>().listen(_onAgentRunCompleted));
     _subs.add(
       _eventBus.on<PullRequestPublished>().listen(_onPullRequestPublished),
     );
@@ -166,10 +164,6 @@ class RemoteEventForwarder {
         ? null
         : await resolver(event.ticketId);
     _forward(ticketReassignedFrame(event, workspaceId));
-  }
-
-  void _onAgentRunCompleted(AgentRunCompleted event) {
-    _forward(agentRunCompletedFrame(event));
   }
 
   void _onPullRequestPublished(PullRequestPublished event) {

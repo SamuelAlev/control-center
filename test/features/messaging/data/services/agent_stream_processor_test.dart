@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
@@ -819,6 +821,47 @@ void main() {
       );
       expect(segs.whereType<ErrorSegment>(), isNotEmpty);
       expect(dispatch.failRunCalled, isTrue);
+    });
+
+    test('error path still notifies, with what went wrong', () async {
+      // The turn's MessageReceived is the only "agent finished" notification;
+      // a crashed turn that skipped it would end silently.
+      final bus = DomainEventBus();
+      addTearDown(bus.dispose);
+      final received = <MessageReceived>[];
+      final sub = bus.on<MessageReceived>().listen(received.add);
+      addTearDown(sub.cancel);
+      final registry = ActiveStreamRegistry();
+      final processor = AgentStreamProcessor(
+        agentDispatchService: _FakeAgentDispatchService(),
+        repo: _FakeMessagingRepo(),
+        streamRegistry: registry,
+        eventBus: bus,
+      );
+      final controller = StreamController<AgentProcessEvent>();
+      registry.register('run-1');
+      processor.processStream(
+        stream: controller.stream,
+        workspaceId: _ws,
+        dispatchResult: AgentDispatchResult(
+          stream: controller.stream,
+          dispatchId: 'd-1',
+          runLog: _testRunLog(),
+        ),
+        spaceId: 'ch-1',
+        agentId: 'agent-1',
+        agentName: 'Tester',
+        messageId: 'run-1',
+      );
+      controller.addError(StateError('stream blew up'));
+      await pumpEventQueue();
+      await controller.close();
+      await pumpEventQueue();
+
+      expect(received, hasLength(1));
+      expect(received.single.messageId, 'run-1');
+      expect(received.single.isAgentMessage, isTrue);
+      expect(received.single.contentPreview, contains('stream blew up'));
     });
   });
 

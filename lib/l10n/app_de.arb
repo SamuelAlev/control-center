@@ -2116,7 +2116,7 @@
   "notifications": "Benachrichtigungen",
   "notifyAgentRunCompleted": "Benachrichtigen, wenn ein Agent einen Lauf abschließt.",
   "notifyPrMentioned": "Benachrichtigen, wenn du in einem Pull Request erwähnt wirst.",
-  "notifyNewMessages": "Benachrichtigen bei neuen Agent-Nachrichten in anderen Bereichen.",
+  "notifyNewMessages": "Benachrichtigen, wenn du in einem Bereich erwähnt wirst.",
   "notifyPrMerged": "Benachrichtigen, wenn ein Pull Request zusammengeführt wird.",
   "notifyPrPublished": "Benachrichtigen, wenn ein Agent einen Pull Request veröffentlicht.",
   "notifyReviewRequested": "Benachrichtigen, wenn dein Review für einen Pull Request angefragt wird.",
@@ -4395,7 +4395,7 @@
   "subscriptionUsageExhausted": "Kontingent aufgebraucht",
   "subscriptionUsageSignInRequired": "Erneut anmelden",
   "subscriptionUsageSignInExpired": "Anmeldung abgelaufen, erneuert sich beim nächsten Lauf",
-  "subscriptionUsagePartiallyAvailable": "Teilweise verfügbar",
+  "subscriptionUsagePercentUsed": "{percent} % verbraucht",
   "resetsIn": "Zurücksetzung in {duration}",
   "feedbackHelpful": "Das war hilfreich",
   "feedbackNotHelpful": "Das war nicht hilfreich",
@@ -7983,5 +7983,12 @@
   "windowRestore": "Wiederherstellen",
   "nativeSandboxUnsupported": "Nativer Sandbox wird auf {platform} noch nicht unterstützt.",
   "continueWithoutSandbox": "Ohne Sandbox fortfahren",
-  "sandboxCheckAgain": "Erneut prüfen"
+  "sandboxCheckAgain": "Erneut prüfen",
+  "ideQuickOpen": "Zu Datei wechseln",
+  "ideQuickOpenDescription": "Dateien der Unterhaltung nach Namen suchen und eine in einem Tab öffnen",
+  "ideQuickOpenHint": "Dateien nach Namen suchen",
+  "ideQuickOpenRecentlyOpened": "Zuletzt geöffnet",
+  "ideQuickOpenOpenToSide": "Seitlich öffnen",
+  "ideQuickOpenRemoveRecent": "Aus „Zuletzt geöffnet“ entfernen",
+  "ideQuickOpenNoRecent": "Keine zuletzt geöffneten Dateien"
 }

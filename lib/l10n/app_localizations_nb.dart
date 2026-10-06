@@ -4206,8 +4206,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get notifyPrMentioned => 'Varsle når du blir nevnt i en pull request.';
 
   @override
-  String get notifyNewMessages =>
-      'Varsle om nye agentmeldinger i andre områder.';
+  String get notifyNewMessages => 'Varsle når du blir nevnt i et område.';
 
   @override
   String get notifyPrMerged => 'Varsle når en pull request slås sammen.';
@@ -8946,7 +8945,9 @@ class AppLocalizationsNb extends AppLocalizations {
       'Innlogging utløpt, fornyes ved neste kjøring';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Delvis tilgjengelig';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent % brukt';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15109,4 +15110,26 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Sjekk på nytt';
+
+  @override
+  String get ideQuickOpen => 'Gå til fil';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Søk i samtalens filer etter navn og åpne én i en fane';
+
+  @override
+  String get ideQuickOpenHint => 'Søk etter filer etter navn';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Nylig åpnet';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Åpne ved siden av';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Fjern fra nylig åpnet';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Ingen nylig åpnede filer';
 }

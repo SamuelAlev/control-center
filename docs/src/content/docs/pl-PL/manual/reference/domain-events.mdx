@@ -2,7 +2,7 @@
 title: Zdarzenia domenowe
 description: Pełny katalog 53 zdarzeń domenowych, ich ładunków oraz działających po stronie serwera subskrybentów, którzy je konsumują.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/zdarzenia-domenowe
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Szyna zdarzeń
@@ -199,8 +199,8 @@ Kategorii powiadomień jest dokładnie **szesnaście**. Kilka zdarzeń mapuje si
 
 | Kategoria              | Zdarzenie źródłowe        | Metoda transmisyjna                                                      |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (wspomina o Tobie)                    |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, bez wzmianki o Tobie) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

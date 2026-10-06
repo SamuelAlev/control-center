@@ -70,10 +70,13 @@ abstract interface class CodeServerPort {
   /// out on [watchOpenRequests]. An unknown/expired [sessionId] or an
   /// out-of-worktree [absPath] is ignored (never throws — it is called from the
   /// proxy's report endpoint). [line] is the best-effort go-to target.
+  /// [windowId] is the reporting window's bridge id, passed through to the
+  /// client.
   void reportOpen({
     required String sessionId,
     required String absPath,
     int? line,
+    String? windowId,
   });
 
   /// Streams "this file's unsaved (dirty) state changed" reports from the bridge
@@ -108,6 +111,36 @@ abstract interface class CodeServerPort {
     required String spaceId,
     required String repoId,
     required String path,
+  });
+
+  /// Asks the embedded editor window [windowId] (its bridge id) to show the
+  /// worktree-relative [path], revealing the 1-based [line] when given. One
+  /// window serves every app tab of a worktree, so switching tabs switches the
+  /// file it shows instead of booting a window per tab. Pushes an `open`
+  /// command onto the running code-server's [commandStream]; only the bridge
+  /// with that id acts on it. Returns false when no code-server is running for
+  /// the worktree or [path] escapes it. Throws on a cross-workspace mismatch.
+  Future<bool> openFile({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String windowId,
+    required String path,
+    int? line,
+  });
+
+  /// Closes the worktree-relative [path] in every editor window of the
+  /// worktree, after its app tab closed. With [revert] the unsaved buffer is
+  /// discarded first (the close prompt's "Don't save"); without it a dirty
+  /// buffer is left open rather than lost. Returns false when no code-server
+  /// is running for the worktree or [path] escapes it. Throws on a
+  /// cross-workspace mismatch.
+  Future<bool> closeFile({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String path,
+    bool revert = false,
   });
 
   /// The reverse command stream for the session addressed by capability

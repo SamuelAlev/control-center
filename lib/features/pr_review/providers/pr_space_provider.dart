@@ -127,38 +127,42 @@ typedef SpaceBranchPr = ({
 /// The pull requests opened FROM this conversation, matched by head branch.
 /// The branch is the join, and it holds however the PR was opened — the compose screen,
 /// `gh`, the GitHub web UI, or an agent in the space's own terminal.
-/// Resolved SERVER-SIDE (`pr.forSpaceBranches`) off the open-PR poller's persisted
+/// Resolved SERVER-SIDE (`pr.watchForSpaceBranches`) off the open-PR poller's persisted
 /// snapshot, so this costs a cache read rather than a forge call and the client holds one
 /// PR instead of the whole open-PR list — which is deliberately autoDisposed (see
 /// `prsByRepoProvider`) precisely because it is too big to keep resident, and a space
-/// surface stays open while someone works.
-final spaceBranchPullRequestsProvider = FutureProvider.autoDispose
-    .family<List<SpaceBranchPr>, String>((ref, spaceId) async {
+/// surface stays open while someone works. Live: a PR opened outside the app arrives
+/// with the poller's next sweep instead of waiting for a local git action to refetch.
+final spaceBranchPullRequestsProvider = StreamProvider.autoDispose
+    .family<List<SpaceBranchPr>, String>((ref, spaceId) async* {
       if (spaceId.isEmpty) {
-        return const [];
+        yield const [];
+        return;
       }
       try {
-        final data = await ref.watch(rpcClientProvider).call(
-          'pr.forSpaceBranches',
-          {'space_id': spaceId},
-        );
-        return [
-          for (final raw in (data['matches'] as List?) ?? const [])
-            if (raw is Map)
-              (
-                repoId: raw['repo_id'] as String? ?? '',
-                repoFullName: raw['repo_full_name'] as String? ?? '',
-                branch: raw['branch'] as String? ?? '',
-                pr: pullRequestFromWireDto(
-                  PullRequestDto.fromJson(
-                    (raw['pull_request'] as Map).cast<String, dynamic>(),
-                  ),
-                ),
-              ),
-        ];
+        yield* ref
+            .watch(rpcClientProvider)
+            .subscribe('pr.watchForSpaceBranches', {'space_id': spaceId})
+            .map(
+              (data) => [
+                for (final raw in (data['matches'] as List?) ?? const [])
+                  if (raw is Map)
+                    (
+                      repoId: raw['repo_id'] as String? ?? '',
+                      repoFullName: raw['repo_full_name'] as String? ?? '',
+                      branch: raw['branch'] as String? ?? '',
+                      pr: pullRequestFromWireDto(
+                        PullRequestDto.fromJson(
+                          (raw['pull_request'] as Map).cast<String, dynamic>(),
+                        ),
+                      ),
+                    ),
+              ],
+            );
       } on RemoteRpcException catch (e) {
         if (e.code == RpcErrorCodes.opUnknown) {
-          return const [];
+          yield const [];
+          return;
         }
         rethrow;
       }
@@ -209,9 +213,9 @@ final spaceBranchPullRequestForRepoProvider = Provider.autoDispose
 
 /// The open pull request that belongs to the branch now checked out.
 ///
-/// [branchMatched] is `pr.forSpaceBranches`: the worktree branch at the time
-/// that read ran. [linked] is the space's review associations, which already
-/// know their head branch. A row for any other branch is ignored, so a
+/// [branchMatched] is `pr.watchForSpaceBranches`: the worktree branch at the
+/// time its last match ran. [linked] is the space's review associations,
+/// which already know their head branch. A row for any other branch is ignored, so a
 /// checkout does not keep the previous branch's pull request.
 PullRequest? pullRequestForCheckedOutBranch({
   required String branch,

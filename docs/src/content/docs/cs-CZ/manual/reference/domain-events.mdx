@@ -2,7 +2,7 @@
 title: Doménové události
 description: Úplný katalog 53 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
 slug: cs-CZ/prirucka/referencni-prirucka/domenove-udalosti
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Sběrnice událostí
@@ -199,8 +199,8 @@ Kategorií oznámení je přesně **šestnáct**. Několik událostí se mapuje 
 
 | Kategorie              | Zdrojová událost          | Metoda na drátě                                                            |
 | ---------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                           |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                        |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (zmiňuje tě)                              |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, bez tvé zmínky)      |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                            |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                      |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                               |

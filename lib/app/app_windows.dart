@@ -292,8 +292,11 @@ class _ServerSetupWindow extends StatefulWidget {
 
 class _ServerSetupWindowState extends State<_ServerSetupWindow> {
   final WindowController _controller = WindowController(
-    size: const Size(600, 720),
-    constraints: const BoxConstraints(minWidth: 460, minHeight: 520),
+    size: serverSetupWindowSize,
+    constraints: BoxConstraints(
+      minWidth: serverSetupWindowMinSize.width,
+      minHeight: serverSetupWindowMinSize.height,
+    ),
     title: serverSetupWindowTitle,
     // Closing the pre-app setup window (before any main window exists) quits the
     // app rather than orphaning a headless engine with no windows.

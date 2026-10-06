@@ -2,7 +2,7 @@
 title: Acara domain
 description: Katalog lengkap 53 acara domain, muatannya dan pelanggan di pihak pelayan yang menggunakannya.
 slug: ms-MY/manual-pengguna/rujukan/acara-domain
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Bas acara
@@ -199,8 +199,8 @@ Terdapat tepat **enam belas** kategori pemberitahuan. Beberapa acara memetakan k
 
 | Kategori               | Acara sumber              | Kaedah wayar                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (menyebut anda)                       |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, tidak menyebut anda) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

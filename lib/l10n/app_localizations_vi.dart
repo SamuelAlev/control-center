@@ -4198,7 +4198,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Thông báo tin nhắn agent mới ở các không gian khác.';
+      'Thông báo khi bạn được nhắc trong một không gian.';
 
   @override
   String get notifyPrMerged => 'Thông báo khi một pull request được merge.';
@@ -8932,7 +8932,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Phiên đăng nhập hết hạn, gia hạn khi chạy lần sau';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Khả dụng một phần';
+  String subscriptionUsagePercentUsed(int percent) {
+    return 'Đã dùng $percent%';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15072,4 +15074,26 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Kiểm tra lại';
+
+  @override
+  String get ideQuickOpen => 'Đi tới tệp';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Tìm tệp của cuộc trò chuyện theo tên và mở một tệp trong thẻ';
+
+  @override
+  String get ideQuickOpenHint => 'Tìm tệp theo tên';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Đã mở gần đây';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Mở bên cạnh';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Xóa khỏi danh sách đã mở gần đây';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Không có tệp nào được mở gần đây';
 }

@@ -41,7 +41,7 @@ import 'package:go_router/go_router.dart';
 /// workspace can link a dozen repos while a space checks out one, and a repo with no
 /// worktree here has no working tree to diff, stage or commit — listing it would offer
 /// actions that cannot run.
-class SourceControlPanel extends ConsumerWidget {
+class SourceControlPanel extends ConsumerStatefulWidget {
   /// Creates a [SourceControlPanel].
   const SourceControlPanel({
     super.key,
@@ -71,12 +71,49 @@ class SourceControlPanel extends ConsumerWidget {
   final ValueChanged<({String repoId, List<String> paths})> onRevertFiles;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SourceControlPanel> createState() =>
+      _SourceControlPanelState();
+}
+
+class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
+  @override
+  void initState() {
+    super.initState();
+    // Stale-while-revalidate: the sidebar unmounts this panel on a tab switch
+    // and its reads are held briefly (`cacheFor`), so a return paints the
+    // held worktrees and stack at once. Re-read them behind that paint — an
+    // agent may have checked out or cut a layer while the tab was hidden.
+    final spaceId = widget.spaceId;
+    if (spaceId == null) {
+      return;
+    }
+    final worktrees = spaceWorktreesProvider((
+      workspaceId: widget.workspaceId,
+      spaceId: spaceId,
+    ));
+    final heldWorktrees = ref.read(worktrees).hasValue;
+    final heldStack = ref.read(spaceStackProvider(spaceId)).hasValue;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (heldWorktrees) {
+        ref.invalidate(worktrees);
+      }
+      if (heldStack) {
+        ref.invalidate(spaceStackProvider(spaceId));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final spaceId = this.spaceId;
+    final spaceId = widget.spaceId;
     if (spaceId == null) {
       return CcEmptyState(
         icon: AppIcons.gitBranch,
+        size: CcEmptyStateSize.sm,
         message: l10n.ideSourceControlNoSpace,
       );
     }
@@ -94,9 +131,9 @@ class SourceControlPanel extends ConsumerWidget {
       );
     }
 
-    final reposAsync = ref.watch(reposForWorkspaceProvider(workspaceId));
+    final reposAsync = ref.watch(reposForWorkspaceProvider(widget.workspaceId));
     final worktreesAsync = ref.watch(
-      spaceWorktreesProvider((workspaceId: workspaceId, spaceId: spaceId)),
+      spaceWorktreesProvider((workspaceId: widget.workspaceId, spaceId: spaceId)),
     );
     final repos = reposAsync.value;
     final worktrees = worktreesAsync.value;
@@ -114,6 +151,7 @@ class SourceControlPanel extends ConsumerWidget {
     if (cloned.isEmpty) {
       return CcEmptyState(
         icon: AppIcons.gitBranch,
+        size: CcEmptyStateSize.sm,
         message: l10n.noReposInConversation,
       );
     }
@@ -125,13 +163,13 @@ class SourceControlPanel extends ConsumerWidget {
         // Keyed by repo so a re-order (or a repo leaving the space) moves the
         // section's own state — its commit draft above all — with it.
         key: ValueKey(cloned[i].id),
-        workspaceId: workspaceId,
+        workspaceId: widget.workspaceId,
         spaceId: spaceId,
         repo: cloned[i],
         branch: branchByRepo[cloned[i].id] ?? '',
-        onOpenReview: onOpenReview,
-        onViewSource: onViewSource,
-        onRevertFiles: onRevertFiles,
+        onOpenReview: widget.onOpenReview,
+        onViewSource: widget.onViewSource,
+        onRevertFiles: widget.onRevertFiles,
       ),
     );
   }
@@ -219,6 +257,17 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     repoId: widget.repo.id,
     spaceId: widget.spaceId,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // A held list (see `cacheFor`) paints at once; refresh it behind that
+    // paint rather than wait out the first poll tick. A cold read is already
+    // in flight, so it is left alone.
+    if (ref.read(repoChangesGroupedProvider(_args)).hasValue) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    }
+  }
 
   @override
   void dispose() {
@@ -345,8 +394,8 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     }
     if (res.pushed) {
       // The branch now exists on the forge, so the "create pull request"
-      // affordance can resolve against it — re-check what this space's branches
-      // point at (the match is a one-shot read, not a subscription).
+      // affordance can resolve against it — re-match now rather than wait for
+      // the poller's next snapshot change.
       ref.invalidate(spaceBranchPullRequestsProvider(widget.spaceId));
       toast?.show(
         l10n.branchPublished(widget.branch),

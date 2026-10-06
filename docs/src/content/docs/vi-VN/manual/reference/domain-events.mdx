@@ -2,7 +2,7 @@
 title: Sự kiện miền
 description: Danh mục đầy đủ của 53 sự kiện miền, dữ liệu tải của chúng và những bên đăng ký phía máy chủ tiêu thụ chúng.
 slug: vi-VN/so-tay/tham-chieu/su-kien-mien
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Bus sự kiện
@@ -199,8 +199,8 @@ Có đúng **mười sáu** danh mục thông báo. Một số sự kiện ánh 
 
 | Danh mục               | Sự kiện nguồn             | Phương thức truyền                                                     |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (nhắc đến bạn)                        |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, không nhắc đến bạn) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

@@ -23,7 +23,6 @@ class EnvProviderCredentialStore implements ProviderCredentialStore {
     // only — this var does not enable that lane.
     'codex': ['OPENAI_CODEX_API_KEY'],
     'openrouter': ['OPENROUTER_API_KEY'],
-    'groq': ['GROQ_API_KEY'],
     'google': ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
     'deepseek': ['DEEPSEEK_API_KEY'],
     'mistral': ['MISTRAL_API_KEY'],

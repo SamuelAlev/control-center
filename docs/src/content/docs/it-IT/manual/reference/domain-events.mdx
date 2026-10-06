@@ -2,7 +2,7 @@
 title: Eventi di dominio
 description: Catalogo completo dei 53 eventi di dominio, dei loro payload e dei sottoscrittori lato server che li consumano.
 slug: it-IT/manuale/riferimento/eventi-di-dominio
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Bus di eventi
@@ -199,8 +199,8 @@ Ci sono esattamente **sedici** categorie di notifica. Diversi eventi corrispondo
 
 | Categoria | Evento di origine | Metodo di rete |
 | --- | --- | --- |
-| `newMessage` | `MessageReceived` | `notifications/message_received` |
-| `agentRunCompleted` | `AgentRunCompleted` | `notifications/agent_run_completed` |
+| `newMessage` | `MessageReceived` | `notifications/message_received` (ti menziona) |
+| `agentRunCompleted` | `MessageReceived`   | `notifications/message_received` (`is_agent_message`, senza menzionarti) |
 | `ticketAssigned` | `TicketAssigned` | `notifications/ticket_assigned` |
 | `ticketStatusChanged` | `TicketStatusChanged` | `notifications/ticket_status_changed` |
 | `pullRequestPublished` | `PullRequestPublished` | `notifications/pr_published` |

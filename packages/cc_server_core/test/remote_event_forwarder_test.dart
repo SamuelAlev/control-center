@@ -138,12 +138,14 @@ void main() {
       expect(space.sent, hasLength(2));
     });
 
-    test('AgentRunCompleted for a non-member workspace is dropped', () async {
-      forwarder(isMember: (_) async => false);
+    // The turn's MessageReceived is the completion notification; the run
+    // event fires before the reply is persisted, so it never reaches the wire.
+    test('AgentRunCompleted is not forwarded, even to a member', () async {
+      forwarder(isMember: (_) async => true);
       bus.publish(
         AgentRunCompleted(
           agentId: 'a1',
-          workspaceId: 'ws-theirs',
+          workspaceId: 'ws-mine',
           conversationId: 'conv1',
           occurredAt: DateTime(2026),
         ),

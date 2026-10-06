@@ -2,7 +2,7 @@
 title: "Ciclo de vida del despacho de agentes"
 description: "Qué ocurre entre la llegada de un mensaje y el cierre de un registro de ejecución: el montaje del prompt, los worktrees, la identidad, qué delimita una ejecución y cómo se registra su resultado con honestidad."
 slug: es-ES/manual/conceptos/ciclo-de-vida-del-despacho
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Qué es un despacho
@@ -130,7 +130,7 @@ Cuando una ejecución termina sin el entregable que exigía su modo (una ejecuci
 Esto es deliberado. Cambiar el estado movería máquinas de estados de tickets y pipelines que no tienen nada que ver con el artefacto ausente. También significa que «status: completed» por sí solo nunca basta para concluir que una ejecución tuvo éxito: lee el resumen.
 :::
 
-Cerrar la ejecución publica `AgentRunCompleted`, y de él cuelgan muchas cosas: el marco de notificación y su entrada duradera en el feed, el reenviador en vivo que lo empuja a los clientes conectados, la acumulación de costes del pipeline, la reanudación de un paso de pipeline que esperaba a la ejecución, la finalización del ticket de respaldo, la asignación de una orquestación a un estado terminal, la decisión de continuar o detenerse del supervisor de objetivos, el rol de verificador y la evaluación de presupuesto posterior a la ejecución. La lista de presencia llega aparte, observando los registros de ejecución recientes en lugar del evento.
+Cerrar la ejecución publica `AgentRunCompleted`, y de él cuelgan muchas cosas: la acumulación de costes del pipeline, la reanudación de un paso de pipeline que esperaba a la ejecución, la finalización del ticket de respaldo, la asignación de una orquestación a un estado terminal, la decisión de continuar o detenerse del supervisor de objetivos, el rol de verificador y la evaluación de presupuesto posterior a la ejecución. La lista de presencia llega aparte, observando los registros de ejecución recientes en lugar del evento. La notificación «Agente finalizado» no está en esa lista: el evento se dispara cuando termina el flujo del proceso, antes de que se escriba la respuesta, así que la notificación es el `MessageReceived` del turno, que se publica en cuanto se persiste el mensaje.
 
 ## Presupuestos, a posteriori
 

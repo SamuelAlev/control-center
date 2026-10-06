@@ -17,38 +17,35 @@ void main() {
 
     tearDown(() => tmp.deleteSync(recursive: true));
 
-    test(
-      'rejects a foreign space/repo with no worktree (no fallback)',
-      () async {
-        // Workspace A has a worktree for (wsA, chA, repoA); workspace B does NOT.
-        final repo = _FakeIsolatedRepoRepo(
-          worktrees: {
-            'wsA:chA:repoA': _worktree(
-              workspaceId: 'wsA',
-              spaceId: 'chA',
-              repoId: 'repoA',
-            ),
-          },
-        );
-        final service = CodeServerService(
-          isolatedRepos: repo,
-          dataRoot: tmp.path,
-          attemptManagedDownload: false,
-        );
-
-        // A foreign (workspace/space/repo) yields NO worktree → ensureSession
-        // throws loudly rather than falling back to a raw checkout.
-        await expectLater(
-          service.ensureSession(
-            workspaceId: 'wsB',
-            spaceId: 'chB',
-            repoId: 'repoB',
-            deviceId: 'device-b',
+    test('rejects a foreign space/repo with no worktree (no fallback)', () async {
+      // Workspace A has a worktree for (wsA, chA, repoA); workspace B does NOT.
+      final repo = _FakeIsolatedRepoRepo(
+        worktrees: {
+          'wsA:chA:repoA': _worktree(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
           ),
-          throwsA(isA<StateError>()),
-        );
-      },
-    );
+        },
+      );
+      final service = CodeServerService(
+        isolatedRepos: repo,
+        dataRoot: tmp.path,
+        attemptManagedDownload: false,
+      );
+
+      // A foreign (workspace/space/repo) yields NO worktree → ensureSession
+      // throws loudly rather than falling back to a raw checkout.
+      await expectLater(
+        service.ensureSession(
+          workspaceId: 'wsB',
+          spaceId: 'chB',
+          repoId: 'repoB',
+          deviceId: 'device-b',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
 
     test('empty repoId resolves the space\'s first worktree', () async {
       // The PR "open editor" / ⌘T path opens a code-server tab without naming a
@@ -188,6 +185,154 @@ void main() {
         path: 'lib/main.dart',
       );
       expect(saved, isFalse);
+    });
+
+    group('with a running instance', () {
+      late Directory worktreeDir;
+      late CodeServerService service;
+      late String sessionId;
+
+      setUp(() async {
+        // A stand-in `code-server` in the managed install dir: it accepts the
+        // bridge install, then prints the startup banner and idles, which is
+        // all the service needs to register a running instance.
+        final os = Platform.isMacOS ? 'darwin' : 'linux';
+        final uname = Process.runSync('uname', ['-m']).stdout as String;
+        final arch = uname.contains('arm64') || uname.contains('aarch64')
+            ? 'arm64'
+            : 'x64';
+        final bin = File('${tmp.path}/code-server/$os-$arch/bin/code-server')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(
+            '#!/bin/sh\n'
+            'case "\$*" in *--install-extension*) exit 0;; esac\n'
+            'echo "HTTP server listening on http://127.0.0.1:45678/"\n'
+            'exec sleep 60\n',
+          );
+        Process.runSync('chmod', ['755', bin.path]);
+        for (final ext in codeServerCuratedExtensions) {
+          Directory(
+            '${tmp.path}/code-server/extensions/'
+            '${ext.publisher}.${ext.name}-${ext.version}',
+          ).createSync(recursive: true);
+        }
+        worktreeDir = Directory('${tmp.path}/wsA-chA-repoA')
+          ..createSync(recursive: true);
+        service = CodeServerService(
+          isolatedRepos: _FakeIsolatedRepoRepo(
+            worktrees: {
+              'wsA:chA:repoA': _worktree(
+                workspaceId: 'wsA',
+                spaceId: 'chA',
+                repoId: 'repoA',
+                path: worktreeDir.path,
+              ),
+            },
+          ),
+          dataRoot: tmp.path,
+          attemptManagedDownload: false,
+        );
+        final session = await service.ensureSession(
+          workspaceId: 'wsA',
+          spaceId: 'chA',
+          repoId: 'repoA',
+          deviceId: 'device-a',
+        );
+        expect(session.status, CodeServerStatus.ready);
+        sessionId = session.sessionId;
+      });
+
+      tearDown(() => service.disposeAll());
+
+      test('openFile addresses one window with the absolute path', () async {
+        final commands = <Map<String, Object?>>[];
+        final sub = service.commandStream(sessionId).listen(commands.add);
+        addTearDown(sub.cancel);
+
+        final sent = await service.openFile(
+          workspaceId: 'wsA',
+          spaceId: 'chA',
+          repoId: 'repoA',
+          windowId: 'w1',
+          path: 'lib/main.dart',
+          line: 12,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(sent, isTrue);
+        expect(commands, [
+          {
+            'cmd': 'open',
+            'window': 'w1',
+            'path': '${worktreeDir.path}/lib/main.dart',
+            'line': 12,
+          },
+        ]);
+      });
+
+      test('closeFile broadcasts the close, with revert when asked', () async {
+        final commands = <Map<String, Object?>>[];
+        final sub = service.commandStream(sessionId).listen(commands.add);
+        addTearDown(sub.cancel);
+
+        await service.closeFile(
+          workspaceId: 'wsA',
+          spaceId: 'chA',
+          repoId: 'repoA',
+          path: 'lib/main.dart',
+          revert: true,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(commands, [
+          {
+            'cmd': 'close',
+            'path': '${worktreeDir.path}/lib/main.dart',
+            'revert': true,
+          },
+        ]);
+      });
+
+      test('a path escaping the worktree is refused', () async {
+        final commands = <Map<String, Object?>>[];
+        final sub = service.commandStream(sessionId).listen(commands.add);
+        addTearDown(sub.cancel);
+
+        expect(
+          await service.openFile(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            windowId: 'w1',
+            path: '../outside.dart',
+          ),
+          isFalse,
+        );
+        expect(
+          await service.closeFile(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            path: '../outside.dart',
+          ),
+          isFalse,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(commands, isEmpty);
+      });
+
+      test('another workspace cannot reach the instance', () async {
+        expect(
+          await service.openFile(
+            workspaceId: 'wsB',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            windowId: 'w1',
+            path: 'lib/main.dart',
+          ),
+          isFalse,
+        );
+      });
     });
 
     test(

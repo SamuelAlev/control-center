@@ -1221,6 +1221,64 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     }
   }
 
+  // Open PR(s) from this conversation — matched by head branch, off the
+  // open-PR poller's snapshot. One space worktree can carry a stack of
+  // branches; every recorded layer matches, not only the one checked out.
+  // Branch is the join (`review_spaces` runs the other way via
+  // `pr.ensureSpace`). The worktrees are re-read per call, so a checkout
+  // since the last answer is picked up.
+  Future<List<Map<String, dynamic>>> spaceBranchPrMatches(
+    OpenPrPollingService poller,
+    String workspaceId,
+    String spaceId,
+  ) async {
+    final worktrees = await isolatedRepoRepository.forSpace(
+      workspaceId,
+      spaceId,
+    );
+    if (worktrees.isEmpty) {
+      return [];
+    }
+    final linked = await workspaceRepository
+        .watchReposForWorkspace(workspaceId)
+        .first;
+    final reposById = {for (final r in linked) r.id: r};
+    final matches = <Map<String, dynamic>>[];
+    for (final worktree in worktrees) {
+      final repo = reposById[worktree.repoId];
+      if (repo == null || !repo.hasForgeRemote) {
+        continue;
+      }
+      final heads = pullRequestHeadBranches(
+        checkedOut: worktree.branch,
+        stackBranches: spaceStackRepository == null
+            ? const []
+            : (await spaceStackRepository.forRepo(
+                workspaceId,
+                spaceId,
+                worktree.repoId,
+              )).map((entry) => entry.branch),
+      );
+      for (final branch in heads) {
+        final pr = await poller.openPrForHeadBranch(
+          workspaceId: workspaceId,
+          repoFullName: repo.fullName,
+          branch: branch,
+        );
+        if (pr == null) {
+          continue;
+        }
+        matches.add({
+          'repo_id': repo.id,
+          'repo_full_name': repo.fullName,
+          'branch': branch,
+          'pull_request': pr,
+        });
+      }
+    }
+    return matches;
+  }
+
   Future<void> assertConversationOwned(
     String workspaceId,
     String conversationId,
@@ -5784,6 +5842,46 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               path: ctx.args['path'] as String,
             );
             return {'saved': saved};
+          },
+        ),
+        // Switch the file one embedded editor window shows. The client keeps
+        // one window per worktree and moves it between app tabs, so a tab
+        // switch is an `open` command to the bridge in that window (addressed
+        // by its `window_id`) rather than a fresh VS Code boot. Returns
+        // `{sent: bool}` — false when no code-server runs for the worktree.
+        RepoOp(
+          name: 'codeServer.openFile',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['space_id', 'window_id', 'path'],
+          handler: (ctx) async {
+            final line = ctx.args['line'];
+            final sent = await vscode.openFile(
+              workspaceId: ctx.workspaceId!,
+              spaceId: ctx.args['space_id'] as String,
+              repoId: ctx.args['repo_id'] as String? ?? '',
+              windowId: ctx.args['window_id'] as String,
+              path: ctx.args['path'] as String,
+              line: line is num ? line.toInt() : null,
+            );
+            return {'sent': sent};
+          },
+        ),
+        // Close a file in the worktree's editor windows once its app tab
+        // closed, discarding the unsaved buffer when `revert` is set (the
+        // close prompt's "Don't save"). Returns `{sent: bool}`.
+        RepoOp(
+          name: 'codeServer.closeFile',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['space_id', 'path'],
+          handler: (ctx) async {
+            final sent = await vscode.closeFile(
+              workspaceId: ctx.workspaceId!,
+              spaceId: ctx.args['space_id'] as String,
+              repoId: ctx.args['repo_id'] as String? ?? '',
+              path: ctx.args['path'] as String,
+              revert: ctx.args['revert'] == true,
+            );
+            return {'sent': sent};
           },
         ),
       ].map(fullClientOnly),
@@ -10637,10 +10735,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // Open PR(s) from this conversation — matched by head branch. One space
-    // worktree can carry a stack of branches; every recorded layer matches,
-    // not only the one checked out. Branch is the join (`review_spaces` runs
-    // the other way via `pr.ensureSpace`).
+    // One-shot read of [spaceBranchPrMatches]; `pr.watchForSpaceBranches` is
+    // the live counterpart the space panels subscribe to.
     if (openPrPoller != null)
       RepoOp(
         name: 'pr.forSpaceBranches',
@@ -10649,51 +10745,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId);
-          final worktrees = await isolatedRepoRepository.forSpace(
-            ctx.workspaceId!,
-            spaceId,
-          );
-          if (worktrees.isEmpty) {
-            return {'matches': <Map<String, dynamic>>[]};
-          }
-          final linked = await workspaceRepository
-              .watchReposForWorkspace(ctx.workspaceId!)
-              .first;
-          final reposById = {for (final r in linked) r.id: r};
-          final matches = <Map<String, dynamic>>[];
-          for (final worktree in worktrees) {
-            final repo = reposById[worktree.repoId];
-            if (repo == null || !repo.hasForgeRemote) {
-              continue;
-            }
-            final heads = pullRequestHeadBranches(
-              checkedOut: worktree.branch,
-              stackBranches: spaceStackRepository == null
-                  ? const []
-                  : (await spaceStackRepository.forRepo(
-                      ctx.workspaceId!,
-                      spaceId,
-                      worktree.repoId,
-                    )).map((entry) => entry.branch),
-            );
-            for (final branch in heads) {
-              final pr = await openPrPoller.openPrForHeadBranch(
-                workspaceId: ctx.workspaceId!,
-                repoFullName: repo.fullName,
-                branch: branch,
-              );
-              if (pr == null) {
-                continue;
-              }
-              matches.add({
-                'repo_id': repo.id,
-                'repo_full_name': repo.fullName,
-                'branch': branch,
-                'pull_request': pr,
-              });
-            }
-          }
-          return {'matches': matches};
+          return {
+            'matches': await spaceBranchPrMatches(
+              openPrPoller,
+              ctx.workspaceId!,
+              spaceId,
+            ),
+          };
         },
       ),
     // The SERVER's authenticated GitHub user (global — not workspace data). The
@@ -14023,9 +14081,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (voiceModel != null)
       modelControlWatchQuery(prefix: 'voice', control: voiceModel),
     // In-editor navigation → app tabs: the bundled bridge extension reports a
-    // file the user navigated the embedded editor to; the client (subscribed
-    // per conversation) opens it as a NEW app tab and the editor stays pinned on
-    // its entry file. Workspace-scoped (the service stream filters on it); the
+    // file the user navigated the embedded editor to (and which window did);
+    // the client (subscribed per conversation) focuses or opens that file's app
+    // tab in the pane holding the window. Workspace-scoped (the service stream filters on it); the
     // optional `space_id` arg narrows to one conversation. Registered only when
     // the host runs code-server.
     if (vscode != null)
@@ -14042,6 +14100,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                   'repo_id': r.repoId,
                   'path': r.path,
                   if (r.line != null) 'line': r.line,
+                  if (r.windowId != null) 'window_id': r.windowId,
                 },
               );
         },
@@ -15295,6 +15354,38 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return;
         }
         yield* poller.watchOpenForWorkspace(ctx.workspaceId!);
+      },
+    ),
+
+    // The push counterpart of `pr.forSpaceBranches`: re-matches whenever a
+    // sweep lands a snapshot change, so a PR opened outside the app (the forge
+    // UI, `gh`, an agent terminal) reaches the space panel without the
+    // operator acting. A lite feed: no fast-cadence interest, one freshness
+    // pass on subscribe. Re-emits only when the matches themselves change.
+    WatchQuery(
+      name: 'pr.watchForSpaceBranches',
+      handler: (ctx) async* {
+        final spaceId = ctx.args['space_id'] as String? ?? '';
+        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        final poller = openPrPoller;
+        if (poller == null) {
+          yield {'matches': <Map<String, dynamic>>[]};
+          return;
+        }
+        String? last;
+        await for (final _ in poller.watchSnapshotChanges(ctx.workspaceId!)) {
+          final matches = await spaceBranchPrMatches(
+            poller,
+            ctx.workspaceId!,
+            spaceId,
+          );
+          final encoded = jsonEncode(matches);
+          if (encoded == last) {
+            continue;
+          }
+          last = encoded;
+          yield {'matches': matches};
+        }
       },
     ),
 

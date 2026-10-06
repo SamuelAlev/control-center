@@ -2423,7 +2423,7 @@
   "notifications": "Notifikasi",
   "notifyAgentRunCompleted": "Beritahu saat agen menyelesaikan sebuah run.",
   "notifyPrMentioned": "Beritahu saat Anda disebutkan di pull request.",
-  "notifyNewMessages": "Beritahu saat ada pesan agen baru di ruang lain.",
+  "notifyNewMessages": "Beritahu saat Anda disebutkan di sebuah ruang.",
   "notifyPrMerged": "Beritahu saat pull request digabungkan.",
   "notifyPrPublished": "Beritahu saat agen memublikasikan pull request.",
   "notifyReviewRequested": "Beritahu saat tinjauan Anda diminta pada pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kuota habis",
   "subscriptionUsageSignInRequired": "Masuk lagi",
   "subscriptionUsageSignInExpired": "Sesi masuk kedaluwarsa, diperbarui pada run berikutnya",
-  "subscriptionUsagePartiallyAvailable": "Tersedia sebagian",
+  "subscriptionUsagePercentUsed": "{percent}% terpakai",
   "resetsIn": "Diatur ulang dalam {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Pulihkan",
   "nativeSandboxUnsupported": "Sandbox native belum didukung di {platform}.",
   "continueWithoutSandbox": "Lanjutkan tanpa sandbox",
-  "sandboxCheckAgain": "Periksa lagi"
+  "sandboxCheckAgain": "Periksa lagi",
+  "ideQuickOpen": "Buka file",
+  "ideQuickOpenDescription": "Cari file percakapan berdasarkan nama dan buka salah satunya di tab",
+  "ideQuickOpenHint": "Cari file berdasarkan nama",
+  "ideQuickOpenRecentlyOpened": "Baru dibuka",
+  "ideQuickOpenOpenToSide": "Buka di samping",
+  "ideQuickOpenRemoveRecent": "Hapus dari yang baru dibuka",
+  "ideQuickOpenNoRecent": "Tidak ada file yang baru dibuka"
 }

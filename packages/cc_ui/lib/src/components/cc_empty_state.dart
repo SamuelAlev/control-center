@@ -75,7 +75,9 @@ class CcEmptyState extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Padding(
+          // The side gutter keeps the copy off the edges of a narrow panel.
           padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
             vertical: _compact ? AppSpacing.md : 0,
           ),
           child: Column(

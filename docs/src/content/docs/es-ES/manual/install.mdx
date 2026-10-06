@@ -2,7 +2,7 @@
 title: Instalar
 description: Usa Control Center en el navegador o instala la aplicación de escritorio, configura un backend de agentes y elige dónde se ejecuta su servidor.
 slug: es-ES/manual/instalar
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center se ejecuta de dos maneras: como **aplicación web** en
@@ -127,7 +127,7 @@ El archivo de Linux se compila en Ubuntu 22.04 y sus bibliotecas nativas incluid
 
 Control Center despacha agentes a través de **adaptadores**. Hay dos, la lista es fija y se detectan automáticamente: no hay forma de registrar otro.
 
-El adaptador **Control Center (built-in)** no necesita ninguna CLI externa: el bucle de agente se ejecuta dentro del servidor y habla con los proveedores de modelos por HTTP, así que siempre está disponible. Conecta un proveedor en **Ajustes → Servidor → Proveedores de modelos**. OpenAI, Codex, Cursor y Kimi Code ofrecen un inicio de sesión en el navegador; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai y Moonshot requieren una clave de API. Codex y Cursor son proveedores de este ejecutor, no CLI independientes. z.ai aparece dos veces a propósito: **z.ai** es la plataforma abierta de pago por uso, facturada contra el saldo de tu cuenta, mientras que **z.ai GLM Coding Plan** es la suscripción. Es la misma clave de cuenta, pero z.ai sirve el plan desde un host distinto: si pegas una clave del plan de código en el cuadro normal de z.ai, todas las peticiones devuelven `429 … "Insufficient balance or no resource package"`, porque el plan no tiene saldo que gastar. Una suscripción Claude Pro/Max no es un inicio de sesión en la API de Anthropic; llega a ese plan a través del adaptador Claude Code. Lo que _sí_ puedes añadir en esa página es un **proveedor personalizado**: cualquier endpoint compatible con OpenAI o con Anthropic (Ollama, LM Studio, vLLM, un despliegue privado) en **Proveedores personalizados → Añadir proveedor**.
+El adaptador **Control Center (built-in)** no necesita ninguna CLI externa: el bucle de agente se ejecuta dentro del servidor y habla con los proveedores de modelos por HTTP, así que siempre está disponible. Conecta un proveedor en **Ajustes → Servidor → Proveedores de modelos**. OpenAI, Codex, Cursor y Kimi Code ofrecen un inicio de sesión en el navegador; Anthropic, OpenRouter, Google Gemini, DeepSeek, Mistral, xAI, z.ai y Moonshot requieren una clave de API. Codex y Cursor son proveedores de este ejecutor, no CLI independientes. z.ai aparece dos veces a propósito: **z.ai** es la plataforma abierta de pago por uso, facturada contra el saldo de tu cuenta, mientras que **z.ai GLM Coding Plan** es la suscripción. Es la misma clave de cuenta, pero z.ai sirve el plan desde un host distinto: si pegas una clave del plan de código en el cuadro normal de z.ai, todas las peticiones devuelven `429 … "Insufficient balance or no resource package"`, porque el plan no tiene saldo que gastar. Una suscripción Claude Pro/Max no es un inicio de sesión en la API de Anthropic; llega a ese plan a través del adaptador Claude Code. Lo que _sí_ puedes añadir en esa página es un **proveedor personalizado**: cualquier endpoint compatible con OpenAI o con Anthropic (Ollama, LM Studio, vLLM, un despliegue privado) en **Proveedores personalizados → Añadir proveedor**.
 
 El otro adaptador envuelve una CLI externa:
 

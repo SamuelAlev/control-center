@@ -376,7 +376,6 @@ abstract final class KeybindingRegistry {
     ),
   ];
 
-
   /// The browse-only PR queue on a `/users/<login>` profile page: move / open /
   /// search / refresh. No select or merge — profiles are read-only.
   static final List<Keybinding> userProfile = [
@@ -482,6 +481,17 @@ abstract final class KeybindingRegistry {
       cmd: true,
       when: r'route =~ /^\/spaces/',
     ),
+    // ⌘P / Ctrl+P: quick open — fuzzy-find a file in the conversation's
+    // worktrees and open it as a tab (VS Code's "Go to file"). Live while
+    // typing in the composer too, like the other ⌘ IDE strokes.
+    Keybinding.key(
+      id: 'msg.ide-quick-open',
+      category: KeybindingCategory.view,
+      scope: '/spaces',
+      key: LogicalKeyboardKey.keyP,
+      cmd: true,
+      when: r'route =~ /^\/spaces/',
+    ),
   ];
 
   /// Workspace management shortcuts.
@@ -581,7 +591,6 @@ abstract final class KeybindingRegistry {
     ),
   ];
 
-
   /// All keybindings aggregated from every category.
   static List<Keybinding> get all => [
     ...system,
@@ -663,6 +672,7 @@ extension KeybindingL10n on Keybinding {
       'msg.ide-new-tab' => l10n.ideNewTab,
       'msg.ide-close-tab' => l10n.ideCloseTab,
       'msg.ide-toggle-sidebar' => l10n.ideToggleSidebar,
+      'msg.ide-quick-open' => l10n.ideQuickOpen,
       'ws.new' => l10n.keybindingNewWorkspace,
       'ws.open' => l10n.keybindingOpenWorkspace,
       'settings.next' => 'Next settings page',
@@ -725,6 +735,7 @@ extension KeybindingL10n on Keybinding {
       'msg.ide-new-tab' => l10n.ideNewTab,
       'msg.ide-close-tab' => l10n.ideCloseTab,
       'msg.ide-toggle-sidebar' => l10n.ideToggleSidebar,
+      'msg.ide-quick-open' => l10n.ideQuickOpenDescription,
       'ws.new' => l10n.keybindingCreateANewWorkspaceDescription,
       'ws.open' => l10n.keybindingOpenTheSelectedWorkspaceDescription,
       'settings.next' => 'Navigate to the next item in the settings sidebar',

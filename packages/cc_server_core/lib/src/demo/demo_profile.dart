@@ -733,6 +733,7 @@ class DemoProfile {
     'plan.watchById',
     'plan.watchForWorkspace',
     'playbook.watchForWorkspace',
+    'pr.watchForSpaceBranches',
     'pr.watchNeedsMyReviewCount',
     'pr.watchOpenForWorkspace',
     'pr.watchRepoAccessForWorkspace',

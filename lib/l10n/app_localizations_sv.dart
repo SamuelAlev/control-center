@@ -4206,8 +4206,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get notifyPrMentioned => 'Avisera när du nämns i en pull request.';
 
   @override
-  String get notifyNewMessages =>
-      'Avisera vid nya agentmeddelanden i andra ytor.';
+  String get notifyNewMessages => 'Avisera när du nämns i en yta.';
 
   @override
   String get notifyPrMerged => 'Avisera när en pull request slås samman.';
@@ -8952,7 +8951,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inloggningen har gått ut, förnyas vid nästa körning';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Delvis tillgänglig';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent % använt';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15116,4 +15117,26 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Kontrollera igen';
+
+  @override
+  String get ideQuickOpen => 'Gå till fil';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Sök bland konversationens filer efter namn och öppna en i en flik';
+
+  @override
+  String get ideQuickOpenHint => 'Sök filer efter namn';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Nyligen öppnade';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Öppna vid sidan';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Ta bort från nyligen öppnade';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Inga nyligen öppnade filer';
 }

@@ -2423,7 +2423,7 @@
   "notifications": "알림",
   "notifyAgentRunCompleted": "에이전트가 실행을 완료하면 알립니다.",
   "notifyPrMentioned": "풀 리퀘스트에서 멘션되면 알립니다.",
-  "notifyNewMessages": "다른 스페이스의 새 에이전트 메시지를 알립니다.",
+  "notifyNewMessages": "스페이스에서 멘션되면 알립니다.",
   "notifyPrMerged": "풀 리퀘스트가 병합되면 알립니다.",
   "notifyPrPublished": "에이전트가 풀 리퀘스트를 게시하면 알립니다.",
   "notifyReviewRequested": "풀 리퀘스트에 내 리뷰가 요청되면 알립니다.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "할당량 소진",
   "subscriptionUsageSignInRequired": "다시 로그인하세요",
   "subscriptionUsageSignInExpired": "로그인이 만료되었습니다. 다음 실행 시 갱신됩니다",
-  "subscriptionUsagePartiallyAvailable": "일부만 사용 가능",
+  "subscriptionUsagePercentUsed": "{percent}% 사용됨",
   "resetsIn": "재설정까지 {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "이전 크기로 복원",
   "nativeSandboxUnsupported": "{platform}에서는 아직 네이티브 샌드박스를 지원하지 않습니다.",
   "continueWithoutSandbox": "샌드박스 없이 계속",
-  "sandboxCheckAgain": "다시 확인"
+  "sandboxCheckAgain": "다시 확인",
+  "ideQuickOpen": "파일로 이동",
+  "ideQuickOpenDescription": "대화의 파일을 이름으로 검색하고 탭에서 엽니다",
+  "ideQuickOpenHint": "이름으로 파일 검색",
+  "ideQuickOpenRecentlyOpened": "최근에 연 파일",
+  "ideQuickOpenOpenToSide": "옆에 열기",
+  "ideQuickOpenRemoveRecent": "최근에 연 파일에서 제거",
+  "ideQuickOpenNoRecent": "최근에 연 파일이 없습니다"
 }

@@ -6,17 +6,21 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/editor_layout_snapshot.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/messaging_ide_layout.dart';
+import 'package:control_center/features/messaging/presentation/ide/quick_open/quick_open_row.dart';
 import 'package:control_center/features/messaging/presentation/screens/messaging_screen.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
+import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/material.dart';
@@ -364,6 +368,178 @@ void main() {
       reason: '⌘T still opens the editor',
     );
     expect(secondSink.toggleSidebar, isNotNull, reason: '⌘B still toggles');
+
+    await tester.pumpWidget(Container());
+    await tester.pumpAndSettle();
+  });
+
+  // ⌘P end to end: the sink opens the picker over the selected space, Enter
+  // opens the pick as a focused code-server tab, the file lands in the recent
+  // list, and the row's split action opens it again in a pane to the side.
+  testWidgets('quick open opens a file as a tab, then to the side', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final searches = <Map<String, dynamic>>[];
+    String? lastLayout;
+    final host = FakeRpcHost()
+      ..onCall = (op, args) {
+        switch (op) {
+          case 'repos.searchFiles':
+            searches.add(args);
+            return {
+              'hits': [
+                {
+                  'absolutePath': '/wt/lib/menu.dart',
+                  'relativePath': 'lib/menu.dart',
+                  'rootPath': '/wt',
+                  'isDirectory': false,
+                  'score': 1.0,
+                  'repoId': 'r1',
+                },
+              ],
+              'has_more': false,
+            };
+          case 'cache.write':
+            lastLayout = args['payload'] as String?;
+        }
+        return const <String, dynamic>{};
+      };
+    final prefs = AppPreferences.inMemory();
+    // A real router: the layout mirrors the focused tab into `?tab=`.
+    final router = GoRouter(
+      initialLocation: '/workspaces/ws-1/spaces/ch-2',
+      routes: [
+        GoRoute(
+          path: '/workspaces/:wid/spaces/:cid',
+          builder: (context, state) => _wrap(
+            MessagingScreen(
+              selectedSpaceId: state.pathParameters['cid'],
+              focusedTabKey: state.uri.queryParameters['tab'],
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(prefs),
+          activeWorkspaceIdProvider.overrideWith(
+            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
+          ),
+          rpcClientProvider.overrideWithValue(host.client()),
+          selectedSpaceIdProvider.overrideWith(
+            () => _TestSelectedSpaceNotifier('ch-2'),
+          ),
+          spacesProvider.overrideWith((ref) => Stream.value([_testSpaceB])),
+          workspaceSpacesProvider(
+            _kWorkspaceId,
+          ).overrideWith((ref) => Stream.value([_testSpaceB])),
+          agentsProvider.overrideWith((ref) => Stream.value(const [])),
+          spaceParticipantsProvider(
+            'ch-2',
+          ).overrideWith((ref) => Stream.value(const [])),
+          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
+          spaceFeedWindowedProvider((
+            spaceId: 'ch-2',
+            conversationId: 'ch-2',
+          )).overrideWith(
+            (ref) => Stream.value((messages: const [], hasMore: false)),
+          ),
+          spaceReadRepositoryProvider.overrideWith(
+            (ref) => _FakeSpaceReadRepository(),
+          ),
+          spaceMessagesProvider(
+            'ch-2',
+          ).overrideWith((ref) => Stream.value(const [])),
+          standingConversationIdProvider(
+            'ch-2',
+          ).overrideWith((ref) async => 'ch-2'),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final sink = tester
+        .widget<MessagingIdeLayout>(find.byType(MessagingIdeLayout))
+        .actions;
+    expect(sink.quickOpen, isNotNull, reason: '⌘P is wired');
+
+    sink.quickOpen!();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('No recently opened files'), findsOneWidget);
+
+    tester.testTextInput.enterText('menu');
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(searches.single['space_id'], 'ch-2');
+    expect(searches.single['workspace_id'], _kWorkspaceId);
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MessagingIdeLayout)),
+    );
+    expect(
+      container.read(
+        recentFilesProvider((workspaceId: _kWorkspaceId, spaceId: 'ch-2')),
+      ),
+      [(repoId: 'r1', path: 'lib/menu.dart')],
+      reason: 'the focused file tab is recorded as recently opened',
+    );
+    await tester.pump(const Duration(seconds: 2));
+    // The persisted layout carries structure, not selection: the recent
+    // record above is what proves the new tab took focus.
+    var layout = messagingLayoutCodec.decode(lastLayout!)!;
+    expect(layout.root, isA<EditorLeafNode>());
+    expect(
+      layout.activeLeaf.controller.tabs.map((t) => t.args).toList(),
+      anyElement(
+        equals({'spaceId': 'ch-2', 'repoId': 'r1', 'path': 'lib/menu.dart'}),
+      ),
+    );
+
+    // Again, now from the recent list: the row's split button.
+    sink.quickOpen!();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Recently opened'), findsOneWidget);
+    // Scoped to the picker row: the editor's own split menu uses the same icon.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(QuickOpenRow),
+        matching: find.byIcon(AppIcons.columns),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(seconds: 2));
+
+    layout = messagingLayoutCodec.decode(lastLayout!)!;
+    final split = layout.root as EditorSplitNode;
+    expect(split.axis, Axis.horizontal);
+    expect(split.children, hasLength(2));
+    final side = (split.children[1] as EditorLeafNode).controller;
+    expect(side.tabs.single.kind, MessagingTabKinds.codeServer);
+    expect(side.tabs.single.args['path'], 'lib/menu.dart');
 
     await tester.pumpWidget(Container());
     await tester.pumpAndSettle();

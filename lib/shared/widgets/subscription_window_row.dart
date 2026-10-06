@@ -3,12 +3,12 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// One quota window: its label, the percentage used, a meter and when it
+/// One quota window: its label, a meter, how much of it is used and when it
 /// resets.
 ///
-/// Shared by the title-bar usage pill and Settings → Adapters, so a plan reads
-/// identically wherever it is surfaced — the same wording, the same colour
-/// ramp, the same countdown format.
+/// Shared by the title-bar usage popover and Settings → Adapters, so a plan
+/// reads identically wherever it is surfaced — the same wording, the same
+/// colour ramp, the same countdown format.
 class SubscriptionWindowRow extends StatelessWidget {
   /// Creates a [SubscriptionWindowRow].
   const SubscriptionWindowRow({
@@ -20,7 +20,7 @@ class SubscriptionWindowRow extends StatelessWidget {
   /// The quota window to render.
   final SubscriptionWindow window;
 
-  /// Replaces the trailing percentage.
+  /// Replaces the "N% used" reading under the meter.
   ///
   /// A credit balance is read in money, not percent: `$1.41` of a `$600` cap
   /// rounds to "0%", which is true and tells the operator nothing.
@@ -31,39 +31,50 @@ class SubscriptionWindowRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final pct = (window.usedFraction * 100).round();
+    final reading = valueOverride ?? l10n.subscriptionUsagePercentUsed(pct);
     final reset = window.resetsAt;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                window.label,
-                style: TextStyle(color: t.textSecondary, fontSize: 12),
-              ),
-            ),
-            Text(
-              valueOverride ?? '$pct%',
-              style: TextStyle(color: t.textSecondary, fontSize: 12),
-            ),
-          ],
+        Text(
+          window.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: t.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         CcProgressBar(
           value: window.usedFraction,
           height: 6,
           color: subscriptionUsageColor(window.usedFraction, t),
-          semanticLabel: '${window.label}: ${valueOverride ?? '$pct%'}',
+          // fg@8%: reads as a track on the white panel AND on the warm
+          // surface the popover groups windows on, in both themes.
+          trackColor: t.hoverStrong,
+          semanticLabel: '${window.label}: $reading',
         ),
-        if (reset != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            l10n.resetsIn(formatSubscriptionReset(reset)),
-            style: TextStyle(color: t.textTertiary, fontSize: 11),
-          ),
-        ],
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                reading,
+                style: TextStyle(color: t.textSecondary, fontSize: 12),
+              ),
+            ),
+            if (reset != null) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                l10n.resetsIn(formatSubscriptionReset(reset)),
+                style: TextStyle(color: t.textTertiary, fontSize: 12),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }

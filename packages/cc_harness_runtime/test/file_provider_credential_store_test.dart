@@ -72,13 +72,13 @@ void main() {
   test('remove deletes the provider credentials', () async {
     await store.save(
       const ProviderCredential(
-        providerId: 'groq',
+        providerId: 'deepseek',
         method: HarnessAuthMethod.apiKey,
         apiKey: 'k',
       ),
     );
-    await store.remove('groq');
-    expect(await store.activeCredential('groq'), isNull);
+    await store.remove('deepseek');
+    expect(await store.activeCredential('deepseek'), isNull);
   });
 
   test('two unlabeled keys append instead of replacing', () async {

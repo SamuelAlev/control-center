@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
@@ -44,11 +43,6 @@ class NotificationFeedRecorder {
       ..add(
         _eventBus.on<TicketStatusChanged>().listen(
           (e) => _record(ticketStatusChangedFrame(e)),
-        ),
-      )
-      ..add(
-        _eventBus.on<AgentRunCompleted>().listen(
-          (e) => _record(agentRunCompletedFrame(e)),
         ),
       )
       ..add(

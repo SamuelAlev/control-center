@@ -2,10 +2,10 @@
 title: Skróty klawiszowe
 description: Pełny rejestr skrótów klawiszowych według zakresów, wraz z warunkami, w których każdy skrót jest wyzwalany.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Skróty pochodzą z jednego rejestru `const`, `KeybindingRegistry` w `lib/core/constants/keybindings.dart`. Zawiera on **48 przypisań**. Ustawienia → Ty → Skróty klawiszowe wyświetla ten rejestr jako **dokumentację referencyjną tylko do odczytu**: nie ma interfejsu do ponownego przypisywania skrótów ani pliku skrótów użytkownika.
+Skróty pochodzą z jednego rejestru `const`, `KeybindingRegistry` w `lib/core/constants/keybindings.dart`. Zawiera on **49 przypisań**. Ustawienia → Ty → Skróty klawiszowe wyświetla ten rejestr jako **dokumentację referencyjną tylko do odczytu**: nie ma interfejsu do ponownego przypisywania skrótów ani pliku skrótów użytkownika.
 
 W dalszej części strony `Cmd` oznacza główny modyfikator polecenia — ⌘ w macOS oraz Ctrl w Windows i Linuksie. Przypisanie działa tylko wtedy, gdy jego polecenie ma zarejestrowany handler na bieżącym ekranie, a jego klauzula `when` jest spełniona; `!textInputFocus` oznacza, że klawisz jest przekazywany do pola tekstowego, które ma fokus.
 
@@ -72,7 +72,7 @@ Zakres `/users/`. Klauzula `when` to wyrażenie regularne dopasowywane do `/user
 | `/`            | Przejdź do wyszukiwania |
 | `Cmd/Ctrl + F` | Przejdź do wyszukiwania |
 
-## Przestrzenie (8)
+## Przestrzenie (9)
 
 Zakres `/spaces`. Klauzule `when` używają wyrażenia regularnego, więc działają zarówno na liście przestrzeni (`/spaces`), jak i w wybranej przestrzeni (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Zakres `/spaces`. Klauzule `when` używają wyrażenia regularnego, więc dział
 | `Cmd/Ctrl + T`         | Otwórz kartę edytora                   | W trasie `/spaces`    |
 | `Cmd/Ctrl + W`         | Zamknij kartę edytora                  | W trasie `/spaces`    |
 | `Cmd/Ctrl + B`         | Przełącz panel boczny edytora          | W trasie `/spaces`    |
+| `Cmd/Ctrl + P`         | Przejdź do pliku                       | W trasie `/spaces`    |
+
+„Przejdź do pliku” otwiera selektor plików rozmowy. Bez wpisanego tekstu pokazuje ostatnio otwierane pliki; wpisywanie przeszukuje wszystkie pliki w worktree rozmowy. `Enter` otwiera wybrany plik w nowej karcie, `Cmd/Ctrl + Enter` lub przycisk podziału w wierszu otwiera go w panelu po prawej, a `×` w wierszu ostatniego pliku usuwa go z listy.
 
 Wysyłanie klawiszem Enter należy do pola tekstowego kompozytora; dyktowanie „Przyciśnij i mów” należy do przycisku mikrofonu w kompozytorze (ma własny handler klawiatury sprzętowej). Oba są wymienione w rejestrze na potrzeby dokumentacji ustawień.
 

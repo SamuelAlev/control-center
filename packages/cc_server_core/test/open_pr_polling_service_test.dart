@@ -1151,6 +1151,28 @@ void main() {
       expect(await lookup('f1'), isNull);
       expect(port.probedRepoIds, isEmpty);
     });
+
+    // `pr.watchForSpaceBranches` re-asks on every tick, so a PR opened on the
+    // forge reaches an open space panel with the next sweep.
+    test('watchSnapshotChanges ticks when a sweep lands a new PR', () async {
+      await sweepTwoPrs();
+      var ticks = 0;
+      final sub = poller.watchSnapshotChanges('ws1').listen((_) => ticks++);
+      await pump();
+      expect(ticks, 1, reason: 'one tick on subscribe');
+      expect(await lookup('f3'), isNull);
+
+      now = now.add(const Duration(minutes: 5));
+      port.groups = [
+        (repo: repo1, prs: [_pr(1), _pr(2), _pr(3)], hasMore: false),
+      ];
+      await poller.refreshNow('ws1');
+      await pump();
+
+      expect(ticks, 2);
+      expect((await lookup('f3'))?['number'], 3);
+      await sub.cancel();
+    });
   });
 
   // Author-facing lanes: merge readiness, review decisions, checks.

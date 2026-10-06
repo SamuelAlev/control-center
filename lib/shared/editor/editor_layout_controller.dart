@@ -295,6 +295,33 @@ class EditorLayoutController extends ChangeNotifier {
     _finishMutation();
   }
 
+  /// Opens [tab] in a NEW leaf on the [edge] side of [leafId] and makes it the
+  /// active leaf — "open to the side" for a tab that isn't open yet (the quick
+  /// open picker's split action). A [DropEdge.center] edge opens [tab] in
+  /// [leafId] itself.
+  void openInSplit(String leafId, EditorTab tab, DropEdge edge) {
+    final leaf = _findLeaf(leafId);
+    if (leaf == null) {
+      return;
+    }
+    if (edge == DropEdge.center) {
+      leaf.controller.openTab(tab);
+      return;
+    }
+    _mutating = true;
+    final newLeaf = EditorLeafNode(
+      id: _nextId('leaf'),
+      controller: EditorTabGroupController()..insert(0, tab),
+    );
+    final axis = (edge == DropEdge.left || edge == DropEdge.right)
+        ? Axis.horizontal
+        : Axis.vertical;
+    final before = edge == DropEdge.left || edge == DropEdge.top;
+    _insertSibling(leaf, newLeaf, axis, before);
+    _activeLeafId = newLeaf.id;
+    _finishMutation();
+  }
+
   /// The split-button behaviour: [splitTabToward] applied to [leafId]'s
   /// currently selected tab.
   void splitActiveTabToward(String leafId, DropEdge edge) {

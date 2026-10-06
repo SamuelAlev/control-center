@@ -4241,7 +4241,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Notifier pour les nouveaux messages d\'agent dans d\'autres espaces.';
+      'Notifier lorsque vous êtes mentionné dans un espace.';
 
   @override
   String get notifyPrMerged =>
@@ -9019,7 +9019,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Connexion expirée, renouvelée à la prochaine exécution';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Partiellement disponible';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent % utilisé';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15228,6 +15230,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Vérifier à nouveau';
+
+  @override
+  String get ideQuickOpen => 'Aller au fichier';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Rechercher les fichiers de la conversation par nom et en ouvrir un dans un onglet';
+
+  @override
+  String get ideQuickOpenHint => 'Rechercher des fichiers par nom';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Ouvert récemment';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Ouvrir sur le côté';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Retirer des fichiers récents';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Aucun fichier ouvert récemment';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

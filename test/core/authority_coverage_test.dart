@@ -216,6 +216,7 @@ void main() {
       'pipeline_template.watchForWorkspace',
       'pipeline_trigger.watchForWorkspace',
       'plan.watchById', 'plan.watchForWorkspace', 'playbook.watchForWorkspace',
+      'pr.watchForSpaceBranches',
       'pr.watchNeedsMyReviewCount', 'pr.watchOpenForWorkspace',
       'pr.watchRepoAccessForWorkspace', 'pr_lifecycle.watchByWorkspace',
       'pr_review.watchCheckRuns', 'pr_review.watchCommitFiles',

@@ -8,6 +8,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
@@ -232,6 +234,45 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     isWebviewKind: PrTabKinds.isWebview,
   );
 
+  /// One embedded editor window per worktree, moved between this PR's
+  /// code-server tabs as they are selected.
+  late final CodeServerWindowPool _windowPool = CodeServerWindowPool(
+    targetOf: _codeServerTarget,
+    openFile: (worktree, windowId, path, line) => openCodeServerFile(
+      ref.read(rpcClientProvider),
+      spaceId: worktree.spaceId,
+      repoId: worktree.repoId,
+      windowId: windowId,
+      path: path,
+      line: line,
+    ),
+    closeFile: (worktree, path) => closeCodeServerFile(
+      ref.read(rpcClientProvider),
+      spaceId: worktree.spaceId,
+      repoId: worktree.repoId,
+      path: path,
+    ),
+  );
+
+  /// What a code-server [tab] shows, once the PR's space exists (its tabs show
+  /// the provisioning state until then).
+  CodeServerTarget? _codeServerTarget(EditorTab tab) {
+    if (tab.kind != PrTabKinds.codeServer) {
+      return null;
+    }
+    final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+    if (spaceId == null) {
+      return null;
+    }
+    final line = tab.args['line'];
+    return CodeServerTarget(
+      spaceId: spaceId,
+      repoId: tab.args['repoId'] as String?,
+      path: tab.args['path'] as String?,
+      line: line is num ? line.toInt() : null,
+    );
+  }
+
   /// Debounced, workspace-scoped layout persistence, keyed per PR
   /// (`owner/repo#number`) so this PR's workbench panes/sizes restore on reopen.
   EditorLayoutPersistence? _persistence;
@@ -283,6 +324,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     super.initState();
     _layout = _seedLayout();
     _layout.addListener(_onLayoutChanged);
+    _windowPool.attach(_layout);
     _tabUrl = EditorTabUrlTracker(
       initialKey: widget.focusedTabKey,
       focusKey: _focusUrlTarget,
@@ -476,6 +518,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   void dispose() {
     _persistNow();
     _persistence?.dispose();
+    _windowPool.dispose();
     _layout.removeListener(_onLayoutChanged);
     _layout.dispose();
     _pendingFileJump.dispose();
@@ -498,6 +541,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
 
   void _setLayout(EditorLayoutController next) {
     _layout.removeListener(_onLayoutChanged);
+    _windowPool.attach(next);
     _layout.dispose();
     _layout = next;
     _layout.addListener(_onLayoutChanged);
@@ -742,11 +786,11 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   /// re-opening the same file refocuses; [line] (1-based) deep-links a location
   /// (best-effort). Replaces the former plain-text quick editor; the legacy
   /// `pr.file` kind stays decodable for old persisted layouts.
-  void _openFileInEditor(String path, {int? line}) {
+  void _openFileInEditor(String path, {int? line, String? leafId}) {
     final slash = path.lastIndexOf('/');
     final basename = slash >= 0 ? path.substring(slash + 1) : path;
     _layout.focusOrOpenInLeaf(
-      _layout.activeLeafId,
+      leafId ?? _layout.activeLeafId,
       (t) => t.kind == PrTabKinds.codeServer && t.args['path'] == path,
       () => EditorTab(
         kind: PrTabKinds.codeServer,
@@ -807,6 +851,20 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
             spaceId: spaceId,
             repoId: tab.args['repoId'] as String? ?? _prRepoId,
             path: path,
+          );
+        }
+      },
+      // The editor window outlives the tab now, so the unsaved buffer has to
+      // be discarded explicitly.
+      onDontSave: () async {
+        final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+        if (spaceId != null && path.isNotEmpty) {
+          await closeCodeServerFile(
+            ref.read(rpcClientProvider),
+            spaceId: spaceId,
+            repoId: tab.args['repoId'] as String? ?? _prRepoId,
+            path: path,
+            revert: true,
           );
         }
       },
@@ -1018,6 +1076,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       case PrTabKinds.codeServer:
         final lineArg = tab.args['line'];
         return PrCodeServerTab(
+          tab: tab,
+          pool: _windowPool,
           pr: widget.pr,
           path: tab.args['path'] as String?,
           repoId: tab.args['repoId'] as String?,
@@ -1158,10 +1218,11 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
 
     // In-editor navigation → app tab. When a code-server tab is open, the
     // embedded editor's bridge extension reports files the user navigated to
-    // (cmd-click "go to definition", an Explorer open); open each as its own
-    // code-server tab so the source tab stays pinned on its file. Gated on an
-    // existing code-server tab so merely viewing a PR never provisions the
-    // worktree (watching prSpaceProvider ensures the space).
+    // (cmd-click "go to definition", quick open); focus or open that file's
+    // tab in the pane holding the window that navigated, which then takes the
+    // window over, already on the file. Gated on an existing code-server tab
+    // so merely viewing a PR never provisions the worktree (watching
+    // prSpaceProvider ensures the space).
     final hasCodeServerTab = _layout.allTabs().any(
       (t) => t.kind == PrTabKinds.codeServer,
     );
@@ -1175,20 +1236,11 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
             if (evt == null || evt.path.isEmpty) {
               return;
             }
-            final fileName = evt.path.split('/').last;
-            _layout.openInActiveLeaf(
-              EditorTab(
-                kind: PrTabKinds.codeServer,
-                label: fileName.isEmpty ? l10n.ideCodeServer : fileName,
-                icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
-                args: {
-                  'path': evt.path,
-                  if (evt.repoId.isNotEmpty) 'repoId': evt.repoId,
-                  // The bridge reports a 0-based line; the URL builder wants
-                  // 1-based.
-                  if (evt.line != null) 'line': evt.line! + 1,
-                },
-              ),
+            _windowPool.noteNavigated(evt.windowId, evt.path);
+            final owner = _windowPool.ownerOfBridge(evt.windowId);
+            _openFileInEditor(
+              evt.path,
+              leafId: owner == null ? null : _layout.leafIdContaining(owner),
             );
           },
         );
@@ -1222,190 +1274,203 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         children: [
           ReviewTimerBanner(prNumber: widget.prRef.number),
           Expanded(
-            child: EditorWorkspace(
-              layout: _layout,
-              chrome: EditorChrome(
-                iconFor: PrTabKinds.iconForTab,
-                // A browser-rig tab leads with its engine's monochrome logo,
-                // so "Firefox (VM)" and "Chromium (VM)" are told apart at a
-                // glance — the job the generic globe could not do.
-                leadingFor: (tab) =>
-                    tab.kind == PrTabKinds.rig &&
-                        tab.args['surface'] == RigTabSurfaces.browser
-                    ? (color) => BrowserEngineLogo(
-                        engine:
-                            RigTabSurfaces.browserEngineOf(tab.args) ??
-                            RigBrowserEngine.fallback,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Editor windows no visible tab shows, kept warm offstage.
+                CodeServerWindowParking(pool: _windowPool),
+                EditorWorkspace(
+                  layout: _layout,
+                  chrome: EditorChrome(
+                    iconFor: PrTabKinds.iconForTab,
+                    // A browser-rig tab leads with its engine's monochrome logo,
+                    // so "Firefox (VM)" and "Chromium (VM)" are told apart at a
+                    // glance — the job the generic globe could not do.
+                    leadingFor: (tab) =>
+                        tab.kind == PrTabKinds.rig &&
+                            tab.args['surface'] == RigTabSurfaces.browser
+                        ? (color) => BrowserEngineLogo(
+                            engine:
+                                RigTabSurfaces.browserEngineOf(tab.args) ??
+                                RigBrowserEngine.fallback,
+                            color: color,
+                          )
+                        : null,
+                    trailingFor: (tab) {
+                      if (tab.kind != PrTabKinds.rig) {
+                        return null;
+                      }
+                      final surface =
+                          tab.args['surface'] as String? ??
+                          RigTabSurfaces.computer;
+                      return (color) => RigTabAudioIndicators(
+                        tabKey: tab,
                         color: color,
-                      )
-                    : null,
-                trailingFor: (tab) {
-                  if (tab.kind != PrTabKinds.rig) {
-                    return null;
-                  }
-                  final surface =
-                      tab.args['surface'] as String? ?? RigTabSurfaces.computer;
-                  return (color) => RigTabAudioIndicators(
-                    tabKey: tab,
-                    color: color,
-                    supportsOutput: RigTabSurfaces.supportsAudioOutput(surface),
-                    supportsMicrophone: RigTabSurfaces.supportsMicrophone(
-                      surface,
-                    ),
-                  );
-                },
-                dirtyFor: _tabDirty,
-                confirmClose: _confirmCloseTab,
-                tabContextMenuExtras: _tabContextExtras,
-                // Dynamic tabs (terminal, opened file, code-server) carry their
-                // own label (e.g. the filename, or "Code server" for the bare
-                // editor); the fixed tabs are localized by kind. A terminal
-                // whose shell set a title (OSC 0/2) shows that instead.
-                labelFor: (tab) => switch (tab.kind) {
-                  PrTabKinds.terminal => _terminalTitles[tab] ?? tab.label,
-                  PrTabKinds.rig => tab.label,
-                  PrTabKinds.file ||
-                  PrTabKinds.codeServer ||
-                  PrTabKinds.preview => tab.label,
-                  _ => _label(tab.kind, l10n),
-                },
-                // Three groups, in a fixed authored order: the tools that run
-                // on the host, the machines that run beside it, and — only
-                // when something is actually closed — the PR views to bring
-                // back. See [_reopenGroup] for why the variable-length group
-                // is last.
-                newTabMenuItems: (leafId) => [
-                  CcMenuItem.section(l10n.ideMenuSectionTools),
-                  CcMenuItem(
-                    label: l10n.terminal,
-                    icon: PrTabKinds.iconFor(PrTabKinds.terminal),
-                    onSelected: () {
-                      _layout.setActiveLeaf(leafId);
-                      // A fresh terminal each time (no dedupKey) — multiple
-                      // shells on the same PR worktree are useful.
-                      _layout.openInActiveLeaf(
-                        EditorTab(
-                          kind: PrTabKinds.terminal,
+                        supportsOutput: RigTabSurfaces.supportsAudioOutput(
+                          surface,
+                        ),
+                        supportsMicrophone: RigTabSurfaces.supportsMicrophone(
+                          surface,
+                        ),
+                      );
+                    },
+                    dirtyFor: _tabDirty,
+                    confirmClose: _confirmCloseTab,
+                    tabContextMenuExtras: _tabContextExtras,
+                    // Dynamic tabs (terminal, opened file, code-server) carry their
+                    // own label (e.g. the filename, or "Code server" for the bare
+                    // editor); the fixed tabs are localized by kind. A terminal
+                    // whose shell set a title (OSC 0/2) shows that instead.
+                    labelFor: (tab) => switch (tab.kind) {
+                      PrTabKinds.terminal => _terminalTitles[tab] ?? tab.label,
+                      PrTabKinds.rig => tab.label,
+                      PrTabKinds.file ||
+                      PrTabKinds.codeServer ||
+                      PrTabKinds.preview => tab.label,
+                      _ => _label(tab.kind, l10n),
+                    },
+                    // Three groups, in a fixed authored order: the tools that run
+                    // on the host, the machines that run beside it, and — only
+                    // when something is actually closed — the PR views to bring
+                    // back. See [_reopenGroup] for why the variable-length group
+                    // is last.
+                    newTabMenuItems: (leafId) => [
+                      CcMenuItem.section(l10n.ideMenuSectionTools),
+                      CcMenuItem(
+                        label: l10n.terminal,
+                        icon: PrTabKinds.iconFor(PrTabKinds.terminal),
+                        onSelected: () {
+                          _layout.setActiveLeaf(leafId);
+                          // A fresh terminal each time (no dedupKey) — multiple
+                          // shells on the same PR worktree are useful.
+                          _layout.openInActiveLeaf(
+                            EditorTab(
+                              kind: PrTabKinds.terminal,
+                              label: l10n.terminal,
+                              icon: PrTabKinds.iconFor(PrTabKinds.terminal),
+                            ),
+                          );
+                        },
+                      ),
+                      CcMenuItem(
+                        label: l10n.ideCodeServer,
+                        icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
+                        onSelected: () {
+                          _layout.setActiveLeaf(leafId);
+                          _layout.focusOrOpenInLeaf(
+                            leafId,
+                            (t) => t.kind == PrTabKinds.codeServer,
+                            () => EditorTab(
+                              kind: PrTabKinds.codeServer,
+                              label: l10n.ideCodeServer,
+                              icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
+                              dedupKey: PrTabKinds.codeServer,
+                            ),
+                          );
+                        },
+                      ),
+                      CcMenuItem(
+                        label: l10n.ideWebBrowser,
+                        icon: PrTabKinds.iconFor(PrTabKinds.browser),
+                        onSelected: () {
+                          _layout.setActiveLeaf(leafId);
+                          _layout.openInActiveLeaf(
+                            EditorTab(
+                              kind: PrTabKinds.browser,
+                              label: l10n.ideWebBrowser,
+                              icon: PrTabKinds.iconFor(PrTabKinds.browser),
+                            ),
+                          );
+                        },
+                      ),
+                      const CcMenuItem.divider(),
+                      // The heading is what lets every row under it drop the
+                      // "(VM)" its label used to carry. It also puts the in-app
+                      // webview ("Web browser", above) and a browser rig in
+                      // visibly different groups, which is the confusion the
+                      // suffix existed to prevent — structurally now, not by
+                      // making the reader parse to the end of each line.
+                      CcMenuItem.section(l10n.ideMenuSectionMachines),
+                      // A shell inside the PR conversation's enclosed VM. Only
+                      // when the server can actually host one — otherwise the
+                      // entry is a button whose sole outcome is a delayed error.
+                      if (_serverHostsVmTerminals)
+                        CcMenuItem(
                           label: l10n.terminal,
                           icon: PrTabKinds.iconFor(PrTabKinds.terminal),
+                          searchText: RigTabSurfaces.menuSearchKeywords(l10n),
+                          onSelected: () {
+                            _layout.setActiveLeaf(leafId);
+                            _layout.openInActiveLeaf(
+                              EditorTab(
+                                kind: PrTabKinds.terminal,
+                                label: l10n.terminal,
+                                icon: PrTabKinds.iconFor(PrTabKinds.terminal),
+                                args: const {'backend': 'microvm'},
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  CcMenuItem(
-                    label: l10n.ideCodeServer,
-                    icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
-                    onSelected: () {
-                      _layout.setActiveLeaf(leafId);
-                      _layout.focusOrOpenInLeaf(
-                        leafId,
-                        (t) => t.kind == PrTabKinds.codeServer,
-                        () => EditorTab(
-                          kind: PrTabKinds.codeServer,
-                          label: l10n.ideCodeServer,
-                          icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
-                          dedupKey: PrTabKinds.codeServer,
+                      // One entry per machine an agent can drive on this PR, and
+                      // one per BROWSER — checking a change against Firefox and
+                      // Chromium is most of what a reviewer opens a browser rig
+                      // for.
+                      for (final target in RigTabSurfaces.targets(
+                        _serverBrowserEngines,
+                        advertisedSurfaces: _serverRigSurfaces,
+                      ))
+                        CcMenuItem(
+                          label: RigTabSurfaces.menuLabelFor(l10n, target),
+                          icon: RigTabSurfaces.iconFor(target.surface),
+                          searchText: RigTabSurfaces.menuSearchKeywords(l10n),
+                          // A browser entry leads with its engine's logo — the
+                          // whole reason to open a second browser rig is to tell
+                          // the engines apart.
+                          leading: target.engine == null
+                              ? null
+                              : (color) => BrowserEngineLogo(
+                                  engine: target.engine!,
+                                  size: 16,
+                                  color: color,
+                                ),
+                          onSelected: () {
+                            _layout.setActiveLeaf(leafId);
+                            _layout.focusOrOpenInLeaf(
+                              leafId,
+                              (t) =>
+                                  t.kind == PrTabKinds.rig &&
+                                  t.args['surface'] == target.surface &&
+                                  RigTabSurfaces.browserEngineOf(t.args) ==
+                                      RigTabSurfaces.browserEngineOf(
+                                        target.args,
+                                      ),
+                              () => EditorTab(
+                                kind: PrTabKinds.rig,
+                                label: RigTabSurfaces.labelFor(
+                                  l10n,
+                                  target.surface,
+                                  engine: target.engine,
+                                ),
+                                icon: RigTabSurfaces.iconFor(target.surface),
+                                args: target.args,
+                                // One tab per machine: a second "Firefox (VM)"
+                                // would show the same machine twice.
+                                dedupKey:
+                                    '${PrTabKinds.rig}:${target.dedupKey}',
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ..._reopenGroup(leafId, l10n),
+                    ],
                   ),
-                  CcMenuItem(
-                    label: l10n.ideWebBrowser,
-                    icon: PrTabKinds.iconFor(PrTabKinds.browser),
-                    onSelected: () {
-                      _layout.setActiveLeaf(leafId);
-                      _layout.openInActiveLeaf(
-                        EditorTab(
-                          kind: PrTabKinds.browser,
-                          label: l10n.ideWebBrowser,
-                          icon: PrTabKinds.iconFor(PrTabKinds.browser),
-                        ),
-                      );
-                    },
+                  buildBody: (tab, {required isVisible}) => _buildBody(
+                    tab,
+                    isVisible: isVisible,
+                    pollingState: pollingState,
                   ),
-                  const CcMenuItem.divider(),
-                  // The heading is what lets every row under it drop the
-                  // "(VM)" its label used to carry. It also puts the in-app
-                  // webview ("Web browser", above) and a browser rig in
-                  // visibly different groups, which is the confusion the
-                  // suffix existed to prevent — structurally now, not by
-                  // making the reader parse to the end of each line.
-                  CcMenuItem.section(l10n.ideMenuSectionMachines),
-                  // A shell inside the PR conversation's enclosed VM. Only
-                  // when the server can actually host one — otherwise the
-                  // entry is a button whose sole outcome is a delayed error.
-                  if (_serverHostsVmTerminals)
-                    CcMenuItem(
-                      label: l10n.terminal,
-                      icon: PrTabKinds.iconFor(PrTabKinds.terminal),
-                      searchText: RigTabSurfaces.menuSearchKeywords(l10n),
-                      onSelected: () {
-                        _layout.setActiveLeaf(leafId);
-                        _layout.openInActiveLeaf(
-                          EditorTab(
-                            kind: PrTabKinds.terminal,
-                            label: l10n.terminal,
-                            icon: PrTabKinds.iconFor(PrTabKinds.terminal),
-                            args: const {'backend': 'microvm'},
-                          ),
-                        );
-                      },
-                    ),
-                  // One entry per machine an agent can drive on this PR, and
-                  // one per BROWSER — checking a change against Firefox and
-                  // Chromium is most of what a reviewer opens a browser rig
-                  // for.
-                  for (final target in RigTabSurfaces.targets(
-                    _serverBrowserEngines,
-                    advertisedSurfaces: _serverRigSurfaces,
-                  ))
-                    CcMenuItem(
-                      label: RigTabSurfaces.menuLabelFor(l10n, target),
-                      icon: RigTabSurfaces.iconFor(target.surface),
-                      searchText: RigTabSurfaces.menuSearchKeywords(l10n),
-                      // A browser entry leads with its engine's logo — the
-                      // whole reason to open a second browser rig is to tell
-                      // the engines apart.
-                      leading: target.engine == null
-                          ? null
-                          : (color) => BrowserEngineLogo(
-                              engine: target.engine!,
-                              size: 16,
-                              color: color,
-                            ),
-                      onSelected: () {
-                        _layout.setActiveLeaf(leafId);
-                        _layout.focusOrOpenInLeaf(
-                          leafId,
-                          (t) =>
-                              t.kind == PrTabKinds.rig &&
-                              t.args['surface'] == target.surface &&
-                              RigTabSurfaces.browserEngineOf(t.args) ==
-                                  RigTabSurfaces.browserEngineOf(target.args),
-                          () => EditorTab(
-                            kind: PrTabKinds.rig,
-                            label: RigTabSurfaces.labelFor(
-                              l10n,
-                              target.surface,
-                              engine: target.engine,
-                            ),
-                            icon: RigTabSurfaces.iconFor(target.surface),
-                            args: target.args,
-                            // One tab per machine: a second "Firefox (VM)"
-                            // would show the same machine twice.
-                            dedupKey: '${PrTabKinds.rig}:${target.dedupKey}',
-                          ),
-                        );
-                      },
-                    ),
-                  ..._reopenGroup(leafId, l10n),
-                ],
-              ),
-              buildBody: (tab, {required isVisible}) => _buildBody(
-                tab,
-                isVisible: isVisible,
-                pollingState: pollingState,
-              ),
+                ),
+              ],
             ),
           ),
         ],

@@ -2,7 +2,7 @@
 title: 領域事件
 description: 全部 53 個領域事件的完整目錄、它們的載荷，以及消費這些事件的伺服器端訂閱方。
 slug: zh-HK/手冊/參考/領域事件
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## 事件匯流排
@@ -223,8 +223,8 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 
 | 類別                   | 來源事件                  | 傳輸方法                                                                 |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                         |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                      |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received`（提及你）                                    |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`，未提及你）                |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                          |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                    |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                             |

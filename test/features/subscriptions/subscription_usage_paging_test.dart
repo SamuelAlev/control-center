@@ -5,6 +5,7 @@ import 'package:control_center/features/subscriptions/presentation/widgets/subsc
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -152,20 +153,21 @@ void main() {
       _usage(accountId: 'a', accountLabel: 'me@work', used: 0.2),
       _usage(accountId: 'b', accountLabel: 'me@home', used: 0.76),
     ]);
-    // Scoped to the block: the pill CHIP also renders a percentage (the worst
-    // provider's), so a bare text finder would match it and prove nothing.
-    Finder inBlock(String text) => find.descendant(
+    // Scoped to the block: the pill CHIP also renders a percentage (each
+    // provider's worst account), so a bare text finder would prove nothing.
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    Finder inBlock(int percent) => find.descendant(
       of: find.byType(SubscriptionProviderBlock),
-      matching: find.text(text),
+      matching: find.text(l10n.subscriptionUsagePercentUsed(percent)),
     );
 
-    expect(inBlock('20%'), findsOneWidget);
-    expect(inBlock('76%'), findsNothing);
+    expect(inBlock(20), findsOneWidget);
+    expect(inBlock(76), findsNothing);
 
     await tester.tap(find.byIcon(AppIcons.chevronRight));
     await tester.pumpAndSettle();
-    expect(inBlock('76%'), findsOneWidget);
-    expect(inBlock('20%'), findsNothing);
+    expect(inBlock(76), findsOneWidget);
+    expect(inBlock(20), findsNothing);
   });
 
   testWidgets('a per-token account shows money, not a percentage', (
@@ -217,7 +219,7 @@ void main() {
       ),
     ]);
     expect(find.text('Session'), findsOneWidget);
-    expect(find.text('20%'), findsWidgets);
+    expect(find.text(l10n.subscriptionUsagePercentUsed(20)), findsOneWidget);
     expect(
       find.text(l10n.subscriptionUsageSpend(r'$5.00', r'$100.00')),
       findsOneWidget,
@@ -241,8 +243,6 @@ void main() {
     expect(find.text(l10n.subscriptionUsageExhausted), findsOneWidget);
     expect(find.text('Credits used up.'), findsOneWidget);
     expect(find.text(l10n.subscriptionUsageNoneReported), findsNothing);
-    // Scoped to the block: the CHIP legitimately reads "Unavailable" here,
-    // because the only configured provider is the spent one.
     expect(
       find.descendant(
         of: find.byType(SubscriptionProviderBlock),
@@ -317,17 +317,18 @@ void main() {
       ),
     ]);
 
-    expect(find.text(l10n.subscriptionUsagePartiallyAvailable), findsNothing);
     expect(find.text(l10n.subscriptionUsageUnavailable), findsNothing);
-    expect(find.text('40%'), findsWidgets);
+    // The chip reads the account that HAS a reading, not a spent 100%.
+    expect(find.text('40%'), findsOneWidget);
+    expect(find.text('100%'), findsNothing);
   });
 
   testWidgets('a spent plan is not hidden behind a healthy one', (
     tester,
   ) async {
-    // The chip reports the most-constrained provider, so an exhausted plan
-    // has to beat a Claude account sitting at 40%.
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // Each provider gets its own reading on the chip, so the spent plan reads
+    // as spent beside a Claude account sitting at 40%, and which one is spent
+    // is never in doubt.
     await _openPill(tester, [
       _usage(),
       const SubscriptionUsage(
@@ -338,11 +339,30 @@ void main() {
       ),
     ]);
 
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('40%'), findsOneWidget);
     expect(
-      find.text(l10n.subscriptionUsagePartiallyAvailable),
-      findsOneWidget,
-      reason: 'one plan is spent while the other still has headroom',
+      find.byType(AiBrandLogo),
+      findsNWidgets(2 + 2),
+      reason: 'one mark per provider on the chip, one per block in the popover',
     );
-    expect(find.text('40%'), findsWidgets);
+  });
+
+  testWidgets('a provider reads its most-constrained account', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _openPill(tester, [
+      _usage(accountId: 'a', accountLabel: 'me@work', used: 0.2),
+      _usage(accountId: 'b', accountLabel: 'me@home', used: 0.8),
+      _usage(providerId: 'codex', displayName: 'Codex', used: 0.05),
+    ]);
+    // One chip entry per PROVIDER, not per account.
+    expect(find.text('80%'), findsOneWidget);
+    expect(find.text('20%'), findsNothing);
+    expect(find.text('5%'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Claude 80%, Codex 5%')),
+      findsOneWidget,
+    );
+    semantics.dispose();
   });
 }

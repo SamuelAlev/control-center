@@ -71,11 +71,21 @@ class _CalendarEventLayoutDelegate extends k.EventLayoutDelegate {
   /// `minimumTileHeight`. Used to detect genuine time conflicts and as the basis
   /// for the rendered extents (which only grow short tiles into empty space).
   List<k.VerticalLayoutData> _realVerticalData() {
+    final dayStart = timeOfDayRange.start.toFloatingDateTime(date);
     return [
       for (var i = 0; i < events.length; i++)
         () {
           final event = events.elementAt(i);
-          final top = calculateDistanceFromStart(event);
+          // The event's start on [date] (clipped to the day for one that began
+          // earlier), measured from the top of the visible day.
+          final start =
+              event
+                  .floatingRange(location: location)
+                  .rangeOnDate(date)
+                  ?.start ??
+              date.startOfDay;
+          final top =
+              start.difference(dayStart).inSeconds * heightPerMinute / 60;
           final height = event.duration.inSeconds * heightPerMinute / 60;
           return k.VerticalLayoutData(id: i, top: top, bottom: top + height);
         }(),
@@ -135,7 +145,7 @@ class _CalendarEventLayoutDelegate extends k.EventLayoutDelegate {
       // Column count = the most events that are ever live at the same instant
       // (the longest chain of mutual overlaps). A lone event is a chain of one
       // and so spans the full width.
-      final columns = findLongestChain(members);
+      final columns = _longestChain(members);
       final columnWidth = size.width / columns;
 
       // x-offset and width of each tile already placed in this group, so a later
@@ -182,5 +192,41 @@ class _CalendarEventLayoutDelegate extends k.EventLayoutDelegate {
         placed[member.id] = (x: xOffset, width: width);
       }
     }
+  }
+
+  /// The length of the longest chain of overlapping entries in [data] — a
+  /// depth-first search over the overlap graph, memoised per start entry.
+  ///
+  /// kalender's `EventLayoutDelegate.findLongestChain`, which it deprecated
+  /// (its own side-by-side layout counts columns differently now); kept here so
+  /// the column count this layout produces doesn't change.
+  static int _longestChain(List<k.VerticalLayoutData> data) {
+    if (data.isEmpty) {
+      return 0;
+    }
+    final memo = <int, int>{};
+
+    int depthFirstSearch(int current, Set<int> visited) {
+      final known = memo[current];
+      if (known != null) {
+        return known;
+      }
+      var longest = 1;
+      for (var i = 0; i < data.length; i++) {
+        if (i != current &&
+            !visited.contains(i) &&
+            data[current].overlaps(data[i])) {
+          longest = math.max(longest, 1 + depthFirstSearch(i, {...visited, i}));
+        }
+      }
+      memo[current] = longest;
+      return longest;
+    }
+
+    var longest = 1;
+    for (var i = 0; i < data.length; i++) {
+      longest = math.max(longest, depthFirstSearch(i, {i}));
+    }
+    return longest;
   }
 }

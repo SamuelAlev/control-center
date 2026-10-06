@@ -2535,7 +2535,7 @@
   "notifications": "การแจ้งเตือน",
   "notifyAgentRunCompleted": "แจ้งเตือนเมื่อเอเจนต์ทำรันเสร็จ",
   "notifyPrMentioned": "แจ้งเตือนเมื่อคุณถูกกล่าวถึงใน pull request",
-  "notifyNewMessages": "แจ้งเตือนเมื่อมีข้อความเอเจนต์ใหม่ในสเปซอื่น",
+  "notifyNewMessages": "แจ้งเตือนเมื่อคุณถูกกล่าวถึงในสเปซ",
   "notifyPrMerged": "แจ้งเตือนเมื่อ pull request ถูกรวม",
   "notifyPrPublished": "แจ้งเตือนเมื่อเอเจนต์เผยแพร่ pull request",
   "notifyReviewRequested": "แจ้งเตือนเมื่อมีการขอรีวิวจากคุณใน pull request",
@@ -5400,7 +5400,7 @@
   "subscriptionUsageExhausted": "โควตาหมด",
   "subscriptionUsageSignInRequired": "ลงชื่อเข้าใช้อีกครั้ง",
   "subscriptionUsageSignInExpired": "การลงชื่อเข้าใช้หมดอายุ จะต่อเมื่อรันครั้งหน้า",
-  "subscriptionUsagePartiallyAvailable": "พร้อมใช้บางส่วน",
+  "subscriptionUsagePercentUsed": "ใช้แล้ว {percent}%",
   "resetsIn": "รีเซ็ตใน {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -9216,5 +9216,12 @@
   "windowRestore": "คืนค่า",
   "nativeSandboxUnsupported": "แซนด์บ็อกซ์เนทีฟยังไม่รองรับบน {platform}",
   "continueWithoutSandbox": "ดำเนินการต่อโดยไม่ใช้แซนด์บ็อกซ์",
-  "sandboxCheckAgain": "ตรวจสอบอีกครั้ง"
+  "sandboxCheckAgain": "ตรวจสอบอีกครั้ง",
+  "ideQuickOpen": "ไปที่ไฟล์",
+  "ideQuickOpenDescription": "ค้นหาไฟล์ของการสนทนาตามชื่อและเปิดหนึ่งไฟล์ในแท็บ",
+  "ideQuickOpenHint": "ค้นหาไฟล์ตามชื่อ",
+  "ideQuickOpenRecentlyOpened": "เปิดล่าสุด",
+  "ideQuickOpenOpenToSide": "เปิดด้านข้าง",
+  "ideQuickOpenRemoveRecent": "นำออกจากที่เปิดล่าสุด",
+  "ideQuickOpenNoRecent": "ไม่มีไฟล์ที่เปิดล่าสุด"
 }

@@ -2423,7 +2423,7 @@
   "notifications": "Aviseringar",
   "notifyAgentRunCompleted": "Avisera när en agent slutför en körning.",
   "notifyPrMentioned": "Avisera när du nämns i en pull request.",
-  "notifyNewMessages": "Avisera vid nya agentmeddelanden i andra ytor.",
+  "notifyNewMessages": "Avisera när du nämns i en yta.",
   "notifyPrMerged": "Avisera när en pull request slås samman.",
   "notifyPrPublished": "Avisera när en agent publicerar en pull request.",
   "notifyReviewRequested": "Avisera när din granskning begärs på en pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kvoten är slut",
   "subscriptionUsageSignInRequired": "Logga in igen",
   "subscriptionUsageSignInExpired": "Inloggningen har gått ut, förnyas vid nästa körning",
-  "subscriptionUsagePartiallyAvailable": "Delvis tillgänglig",
+  "subscriptionUsagePercentUsed": "{percent} % använt",
   "resetsIn": "Återställs om {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Återställ",
   "nativeSandboxUnsupported": "Inbyggd sandlåda stöds inte på {platform} ännu.",
   "continueWithoutSandbox": "Fortsätt utan sandlåda",
-  "sandboxCheckAgain": "Kontrollera igen"
+  "sandboxCheckAgain": "Kontrollera igen",
+  "ideQuickOpen": "Gå till fil",
+  "ideQuickOpenDescription": "Sök bland konversationens filer efter namn och öppna en i en flik",
+  "ideQuickOpenHint": "Sök filer efter namn",
+  "ideQuickOpenRecentlyOpened": "Nyligen öppnade",
+  "ideQuickOpenOpenToSide": "Öppna vid sidan",
+  "ideQuickOpenRemoveRecent": "Ta bort från nyligen öppnade",
+  "ideQuickOpenNoRecent": "Inga nyligen öppnade filer"
 }

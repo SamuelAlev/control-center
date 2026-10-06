@@ -2,7 +2,7 @@
 title: Alan olayları
 description: 53 alan olayının, yüklerinin ve bunları tüketen sunucu tarafı abonelerin eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/alan-olaylari
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Olay veri yolu
@@ -199,8 +199,8 @@ Tam olarak **on altı** bildirim kategorisi vardır. Birkaç olay birden fazla i
 
 | Kategori               | Kaynak olay               | İletişim yöntemi                                                        |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                        |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                     |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (sizden bahseder)                      |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, sizden bahsetmez) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                         |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                   |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                            |

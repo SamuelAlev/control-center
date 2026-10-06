@@ -739,6 +739,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
     if (repoById.isEmpty) {
       return CcEmptyState(
         icon: AppIcons.folderTree,
+        size: CcEmptyStateSize.sm,
         // A conversation with no checkout is a different fact from a workspace
         // with no repos, and only one of them is fixed in settings.
         message: widget.spaceId == null
@@ -803,12 +804,17 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       if (hasError) {
         return CcEmptyState(
           icon: AppIcons.searchX,
+          size: CcEmptyStateSize.sm,
           message: l10n.ideFileSearchFailed,
         );
       }
     }
     // Loaded (or previously loaded) and genuinely empty.
-    return CcEmptyState(icon: AppIcons.searchX, message: l10n.noMatchingFiles);
+    return CcEmptyState(
+      icon: AppIcons.searchX,
+      size: CcEmptyStateSize.sm,
+      message: l10n.noMatchingFiles,
+    );
   }
 
   /// Scroll listener for the flat results list: near the end (or already at
@@ -860,6 +866,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
     if (query.isEmpty) {
       body = CcEmptyState(
         icon: AppIcons.search,
+        size: CcEmptyStateSize.sm,
         message: l10n.ideSearchInFiles,
       );
     } else if (results.isNotEmpty) {
@@ -875,6 +882,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
     } else {
       body = CcEmptyState(
         icon: AppIcons.searchX,
+        size: CcEmptyStateSize.sm,
         message: l10n.ideNoContentMatches,
       );
     }

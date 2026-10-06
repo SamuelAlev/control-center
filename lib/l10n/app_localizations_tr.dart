@@ -4200,8 +4200,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir pull request\'te sizden bahsedildiğinde bildir.';
 
   @override
-  String get notifyNewMessages =>
-      'Diğer alanlardaki yeni ajan mesajlarında bildir.';
+  String get notifyNewMessages => 'Bir alanda sizden bahsedildiğinde bildir.';
 
   @override
   String get notifyPrMerged => 'Bir pull request birleştirildiğinde bildir.';
@@ -8942,7 +8941,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Oturum süresi doldu, sonraki çalışmada yenilenir';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Kısmen kullanılabilir';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '%$percent kullanıldı';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15102,4 +15103,26 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Tekrar kontrol et';
+
+  @override
+  String get ideQuickOpen => 'Dosyaya git';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Konuşmanın dosyalarını ada göre arayın ve birini sekmede açın';
+
+  @override
+  String get ideQuickOpenHint => 'Dosyaları ada göre ara';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Son açılanlar';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Yanda aç';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Son açılanlardan kaldır';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Son açılan dosya yok';
 }

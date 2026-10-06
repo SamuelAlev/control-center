@@ -4113,7 +4113,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notifyPrMentioned => 'プルリクエストでメンションされたときに通知します。';
 
   @override
-  String get notifyNewMessages => '他のスペースの新しいエージェントメッセージを通知します。';
+  String get notifyNewMessages => 'スペースでメンションされたときに通知します。';
 
   @override
   String get notifyPrMerged => 'プルリクエストがマージされたときに通知します。';
@@ -8759,7 +8759,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'サインインの有効期限が切れています。次回の実行時に更新されます';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => '一部利用可能';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent%使用中';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -14779,4 +14781,25 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => '再確認';
+
+  @override
+  String get ideQuickOpen => 'ファイルに移動';
+
+  @override
+  String get ideQuickOpenDescription => '会話のファイルを名前で検索してタブで開きます';
+
+  @override
+  String get ideQuickOpenHint => 'ファイル名で検索';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => '最近開いたファイル';
+
+  @override
+  String get ideQuickOpenOpenToSide => '横に開く';
+
+  @override
+  String get ideQuickOpenRemoveRecent => '最近開いたファイルから削除';
+
+  @override
+  String get ideQuickOpenNoRecent => '最近開いたファイルはありません';
 }

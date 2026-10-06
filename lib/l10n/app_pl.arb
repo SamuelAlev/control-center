@@ -2423,7 +2423,7 @@
   "notifications": "Powiadomienia",
   "notifyAgentRunCompleted": "Powiadom, gdy agent zakończy uruchomienie.",
   "notifyPrMentioned": "Powiadom, gdy zostaniesz wspomniany w pull requeście.",
-  "notifyNewMessages": "Powiadom o nowych wiadomościach agentów w innych przestrzeniach.",
+  "notifyNewMessages": "Powiadom, gdy zostaniesz wspomniany w przestrzeni.",
   "notifyPrMerged": "Powiadom, gdy pull request zostanie scalony.",
   "notifyPrPublished": "Powiadom, gdy agent opublikuje pull request.",
   "notifyReviewRequested": "Powiadom, gdy Twoja recenzja będzie potrzebna w pull requeście.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Limit wyczerpany",
   "subscriptionUsageSignInRequired": "Zaloguj się ponownie",
   "subscriptionUsageSignInExpired": "Sesja wygasła, odnowi się przy następnym uruchomieniu",
-  "subscriptionUsagePartiallyAvailable": "Częściowo dostępne",
+  "subscriptionUsagePercentUsed": "wykorzystano {percent}%",
   "resetsIn": "Reset za {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Przywróć",
   "nativeSandboxUnsupported": "Natywny sandbox nie jest jeszcze obsługiwany na {platform}.",
   "continueWithoutSandbox": "Kontynuuj bez piaskownicy",
-  "sandboxCheckAgain": "Sprawdź ponownie"
+  "sandboxCheckAgain": "Sprawdź ponownie",
+  "ideQuickOpen": "Przejdź do pliku",
+  "ideQuickOpenDescription": "Wyszukaj pliki rozmowy według nazwy i otwórz jeden w karcie",
+  "ideQuickOpenHint": "Szukaj plików według nazwy",
+  "ideQuickOpenRecentlyOpened": "Ostatnio otwierane",
+  "ideQuickOpenOpenToSide": "Otwórz z boku",
+  "ideQuickOpenRemoveRecent": "Usuń z ostatnio otwieranych",
+  "ideQuickOpenNoRecent": "Brak ostatnio otwieranych plików"
 }

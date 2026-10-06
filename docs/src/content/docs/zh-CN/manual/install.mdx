@@ -2,7 +2,7 @@
 title: 安装
 description: 在浏览器中使用 Control Center，或安装桌面应用，设置智能体后端，并选择服务器的运行位置。
 slug: zh-CN/手册/安装
-sourceHash: 61fade1417802e204ccd815be10778a417836e89
+sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 ---
 
 Control Center 有两种运行方式：一种是位于
@@ -113,7 +113,7 @@ Linux 归档基于 Ubuntu 22.04 构建，其捆绑的原生库链接 glibc 2.35 
 
 Control Center 通过**适配器**派发智能体。适配器只有两个，列表是固定的，并且会自动检测——无法再注册其他适配器。
 
-**Control Center (built-in)** 适配器不需要外部 CLI：智能体循环在服务器内部运行，通过 HTTP 与模型提供商通信，因此始终可用。在 **设置 → 服务器 → 模型提供商** 中连接提供商。OpenAI、Codex、Cursor 和 Kimi Code 支持浏览器登录；Anthropic、OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai 和 Moonshot 则需要 API 密钥。Codex 和 Cursor 是这个运行器上的提供商，而不是独立的 CLI。z.ai 有意列出两次：**z.ai** 是按量付费的开放平台，从你的账户余额中扣费，而 **z.ai GLM Coding Plan** 是订阅套餐。两者使用同一个账户密钥，但 z.ai 从不同的主机提供该套餐——把编码套餐的密钥粘贴到普通的 z.ai 卡片中，每个请求都会返回 `429 … "Insufficient balance or no resource package"`，因为该套餐没有可扣的余额。Claude Pro/Max 订阅不是 Anthropic API 登录；请改通过 Claude Code 适配器使用该套餐。在那页上你_可以_添加的是**自定义提供商**——任何兼容 OpenAI 或兼容 Anthropic 的端点（Ollama、LM Studio、vLLM、私有部署），位于 **自定义提供商 → 添加提供商** 下。
+**Control Center (built-in)** 适配器不需要外部 CLI：智能体循环在服务器内部运行，通过 HTTP 与模型提供商通信，因此始终可用。在 **设置 → 服务器 → 模型提供商** 中连接提供商。OpenAI、Codex、Cursor 和 Kimi Code 支持浏览器登录；Anthropic、OpenRouter、Google Gemini、DeepSeek、Mistral、xAI、z.ai 和 Moonshot 则需要 API 密钥。Codex 和 Cursor 是这个运行器上的提供商，而不是独立的 CLI。z.ai 有意列出两次：**z.ai** 是按量付费的开放平台，从你的账户余额中扣费，而 **z.ai GLM Coding Plan** 是订阅套餐。两者使用同一个账户密钥，但 z.ai 从不同的主机提供该套餐——把编码套餐的密钥粘贴到普通的 z.ai 卡片中，每个请求都会返回 `429 … "Insufficient balance or no resource package"`，因为该套餐没有可扣的余额。Claude Pro/Max 订阅不是 Anthropic API 登录；请改通过 Claude Code 适配器使用该套餐。在那页上你_可以_添加的是**自定义提供商**——任何兼容 OpenAI 或兼容 Anthropic 的端点（Ollama、LM Studio、vLLM、私有部署），位于 **自定义提供商 → 添加提供商** 下。
 
 另一个适配器封装外部 CLI：
 

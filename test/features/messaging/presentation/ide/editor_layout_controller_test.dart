@@ -41,6 +41,42 @@ void main() {
     });
   });
 
+  group('open in a new split', () {
+    test('opens a new tab in a pane to the right and focuses it', () {
+      final ctl = _single([_tab('A'), _tab('B')]);
+
+      ctl.openInSplit('leaf-0', _tab('C', 'codeServer'), DropEdge.right);
+
+      final split = ctl.root as EditorSplitNode;
+      expect(split.axis, Axis.horizontal);
+      // The source pane keeps every tab it had — nothing is moved out of it.
+      expect(_labels(split.children[0]), ['A', 'B']);
+      expect(_labels(split.children[1]), ['C']);
+      expect(ctl.activeLeafId, (split.children[1] as EditorLeafNode).id);
+      expect(ctl.activeLeaf.controller.selectedIndex, 0);
+    });
+
+    test('works from a single-tab pane', () {
+      final ctl = _single([_tab('A')]);
+
+      ctl.openInSplit('leaf-0', _tab('B'), DropEdge.right);
+
+      final split = ctl.root as EditorSplitNode;
+      expect(_labels(split.children[0]), ['A']);
+      expect(_labels(split.children[1]), ['B']);
+    });
+
+    test('center edge opens the tab in the pane itself', () {
+      final ctl = _single([_tab('A')]);
+
+      ctl.openInSplit('leaf-0', _tab('B'), DropEdge.center);
+
+      expect(ctl.root, isA<EditorLeafNode>());
+      expect(_labels(ctl.root), ['A', 'B']);
+      expect(ctl.activeLeaf.controller.selectedIndex, 1);
+    });
+  });
+
   group('split with a tab', () {
     test('right edge creates a horizontal split, new pane on the right', () {
       final a = _tab('A');

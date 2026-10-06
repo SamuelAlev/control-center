@@ -2423,7 +2423,7 @@
   "notifications": "Thông báo",
   "notifyAgentRunCompleted": "Thông báo khi agent hoàn tất một lần chạy.",
   "notifyPrMentioned": "Thông báo khi bạn được nhắc trong một pull request.",
-  "notifyNewMessages": "Thông báo tin nhắn agent mới ở các không gian khác.",
+  "notifyNewMessages": "Thông báo khi bạn được nhắc trong một không gian.",
   "notifyPrMerged": "Thông báo khi một pull request được merge.",
   "notifyPrPublished": "Thông báo khi agent công bố một pull request.",
   "notifyReviewRequested": "Thông báo khi bạn được yêu cầu review một pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Hết hạn mức",
   "subscriptionUsageSignInRequired": "Đăng nhập lại",
   "subscriptionUsageSignInExpired": "Phiên đăng nhập hết hạn, gia hạn khi chạy lần sau",
-  "subscriptionUsagePartiallyAvailable": "Khả dụng một phần",
+  "subscriptionUsagePercentUsed": "Đã dùng {percent}%",
   "resetsIn": "Đặt lại sau {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Khôi phục",
   "nativeSandboxUnsupported": "Sandbox gốc chưa được hỗ trợ trên {platform}.",
   "continueWithoutSandbox": "Tiếp tục không dùng sandbox",
-  "sandboxCheckAgain": "Kiểm tra lại"
+  "sandboxCheckAgain": "Kiểm tra lại",
+  "ideQuickOpen": "Đi tới tệp",
+  "ideQuickOpenDescription": "Tìm tệp của cuộc trò chuyện theo tên và mở một tệp trong thẻ",
+  "ideQuickOpenHint": "Tìm tệp theo tên",
+  "ideQuickOpenRecentlyOpened": "Đã mở gần đây",
+  "ideQuickOpenOpenToSide": "Mở bên cạnh",
+  "ideQuickOpenRemoveRecent": "Xóa khỏi danh sách đã mở gần đây",
+  "ideQuickOpenNoRecent": "Không có tệp nào được mở gần đây"
 }

@@ -2,7 +2,7 @@
 title: Konfigurer varsler
 description: Slå kategorier av eller på, angi Quiet hours og en lyd, og få oversikt over hvilke varsler som når deg hvor.
 slug: nb-NO/handbok/slik-gjor-du/varsler
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Denne veiledningen viser hvordan du konfigurerer varsler og hva hver innstilling
@@ -28,10 +28,10 @@ Telefonklienten har ingen varselflate i det hele tatt.
 
 | Kategori                                | Utløses når                                                                              |
 | --------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Agent ferdig                            | En agent fullførte en kjøring                                                            |
+| Agent ferdig                            | En agent svarte i en kjøring du startet, eller kjøringen mislyktes                       |
 | PR publisert                            | En agent publiserte en PR                                                                |
 | PR sammenslått                          | En PR ble slått sammen                                                                   |
-| Nye meldinger                           | En melding kom inn i et område du ikke ser på                                            |
+| Nye meldinger                           | Noen nevnte deg i et område                                                              |
 | Nevnt i pull request                    | GitHubs varselavspørring så at du ble nevnt i en PR                                      |
 | Gjennomgang forespurt                   | Gjennomgangen din ble faktisk forespurt på en PR som ikke er et utkast                   |
 | Gjennomgang utdatert                    | Nye commits landet på en pull request du allerede har gjennomgått                        |
@@ -97,6 +97,8 @@ To flere undertrykkinger ligger lenger oppstrøms, i det serveren i det hele tat
 sender:
 
 - En melding fra et annet **menneske** der du ikke nevnes, blir aldri et varsel
+- I et delt område varsler et agentsvar den som startet kjøringen, ikke alle
+  medlemmene
 - Områder mellom agenter er dempet i sidestolpen, så de øker aldri badgen for
   uleste hos et menneske
 
@@ -142,7 +144,8 @@ lastet.
 ### En agentkjøring ble ferdig, men ingenting varslet meg
 
 Sjekk at du ikke allerede var i området det skjedde i — en aktiv rute undertrykker
-sin egen OS-toast.
+sin egen OS-toast. I et delt område varsler en kjøring som noen andre startet,
+dem og ikke deg. En tur som endte uten svar og uten feil, sender ingenting.
 
 ## Relaterte veiledninger
 

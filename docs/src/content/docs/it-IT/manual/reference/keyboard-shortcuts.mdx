@@ -2,10 +2,10 @@
 title: Scorciatoie da tastiera
 description: L'intero registro delle associazioni di tasti, per ambito, con le condizioni in cui ciascuna scorciatoia si attiva.
 slug: it-IT/manuale/riferimento/scorciatoie-da-tastiera
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Le scorciatoie provengono da un unico registro `const`, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Contiene **48 associazioni**. Impostazioni → Tu → Tasti rapidi mostra quel registro come **riferimento di sola lettura**: non esiste un'interfaccia per riassegnare i tasti né un file di scorciatoie utente.
+Le scorciatoie provengono da un unico registro `const`, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Contiene **49 associazioni**. Impostazioni → Tu → Tasti rapidi mostra quel registro come **riferimento di sola lettura**: non esiste un'interfaccia per riassegnare i tasti né un file di scorciatoie utente.
 
 Nel seguito `Cmd` indica il modificatore di comando principale: ⌘ su macOS, Ctrl su Windows e Linux. Un'associazione si attiva solo quando il suo comando ha un gestore registrato nella schermata corrente e la sua clausola `when` è soddisfatta; `!textInputFocus` significa invece che il tasto viene passato a un campo di testo attivo.
 
@@ -72,7 +72,7 @@ Ambito `/users/`. La clausola `when` è una regex su `/users/<login>` **oppure**
 | `/`            | Vai alla ricerca |
 | `Cmd/Ctrl + F` | Vai alla ricerca |
 
-## Spazi (8)
+## Spazi (9)
 
 Ambito `/spaces`. Le clausole `when` usano una regex, quindi si attivano sia nell'elenco degli spazi (`/spaces`) sia in uno spazio selezionato (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Ambito `/spaces`. Le clausole `when` usano una regex, quindi si attivano sia nel
 | `Cmd/Ctrl + T`         | Apri scheda editor                          | In una route `/spaces` |
 | `Cmd/Ctrl + W`         | Chiudi scheda editor                        | In una route `/spaces` |
 | `Cmd/Ctrl + B`         | Attiva/disattiva barra laterale dell'editor | In una route `/spaces` |
+| `Cmd/Ctrl + P`         | Vai al file                                 | In una route `/spaces` |
+
+«Vai al file» apre un selettore sui file della conversazione. Senza digitare nulla elenca i file aperti più di recente; digitando cerca in tutti i file dei worktree della conversazione. `Enter` apre il file selezionato in una nuova scheda, `Cmd/Ctrl + Enter` o il pulsante di divisione sulla riga lo apre in un riquadro a destra e la `×` su una riga recente lo rimuove dall’elenco.
 
 L'invio con Invio è gestito dal campo di testo dell'editor dei messaggi; il premi per parlare è gestito dal pulsante microfono dell'editor dei messaggi (con un proprio gestore della tastiera hardware). Entrambi sono elencati nel registro per il riferimento delle impostazioni.
 

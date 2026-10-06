@@ -2,7 +2,7 @@
 title: "Ciclo di vita dell'invio degli agenti"
 description: "Cosa accade tra l'arrivo di un messaggio e la chiusura di un log di esecuzione: composizione del prompt, worktree, identità, cosa delimita un'esecuzione e come il suo esito viene registrato con onestà."
 slug: it-IT/manuale/concetti/ciclo-di-vita-invio
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Che cos'è un invio
@@ -130,7 +130,7 @@ Quando un'esecuzione termina senza il risultato che la sua modalità richiedeva 
 Ciò è deliberato. Cambiare lo stato farebbe avanzare macchine a stati di ticket e pipeline che non hanno nulla a che vedere con l'artefatto mancante. Significa anche che «status: completed» da solo non basta mai per concludere che un'esecuzione sia riuscita — leggi il riepilogo.
 :::
 
-La chiusura dell'esecuzione pubblica `AgentRunCompleted` e da essa dipende molto: il frame di notifica e la sua voce durevole nel feed, il forwarder live che la spinge ai client connessi, l'aggregazione dei costi della pipeline, la ripresa di un passaggio di pipeline che era in attesa dell'esecuzione, il completamento del ticket sottostante, la mappatura di un'orchestrazione su uno stato terminale, la decisione di continuare o fermarsi del supervisore degli obiettivi, il ruolo di revisore e la valutazione del budget a esecuzione conclusa. L'elenco della presenza segue separatamente, osservando i log di esecuzione recenti anziché l'evento.
+La chiusura dell'esecuzione pubblica `AgentRunCompleted` e da essa dipende molto: l'aggregazione dei costi della pipeline, la ripresa di un passaggio di pipeline che era in attesa dell'esecuzione, il completamento del ticket sottostante, la mappatura di un'orchestrazione su uno stato terminale, la decisione di continuare o fermarsi del supervisore degli obiettivi, il ruolo di revisore e la valutazione del budget a esecuzione conclusa. L'elenco della presenza segue separatamente, osservando i log di esecuzione recenti anziché l'evento. La notifica «agente completato» non è in questo elenco: l'evento scatta quando termina lo stream del processo, prima che la risposta venga scritta, quindi la notifica è il `MessageReceived` del turno, pubblicato una volta che il messaggio è stato salvato.
 
 ## I budget, a posteriori
 

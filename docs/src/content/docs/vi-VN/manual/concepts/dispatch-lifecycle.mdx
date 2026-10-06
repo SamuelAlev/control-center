@@ -2,7 +2,7 @@
 title: Vòng đời điều phối agent
 description: Điều gì diễn ra giữa lúc một tin nhắn đến và lúc một log lượt chạy khép lại — việc lắp ghép prompt, worktree, danh tính, điều gì giới hạn một lượt chạy và cách ghi lại kết quả của nó một cách trung thực.
 slug: vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Một lần điều phối là gì
@@ -130,7 +130,7 @@ Khi một lượt chạy kết thúc mà không có kết quả giao mà chế �
 Đây là chủ ý. Đảo trạng thái sẽ làm dịch chuyển máy trạng thái của phiếu và quy trình, những thứ chẳng liên quan gì đến artifact còn thiếu. Nó cũng có nghĩa là chỉ "status: completed" thì không bao giờ đủ để kết luận một lượt chạy thành công — hãy đọc bản tóm tắt.
 :::
 
-Việc đóng lượt chạy phát `AgentRunCompleted` và rất nhiều thứ phụ thuộc vào nó: khung thông báo và mục nhập bền vững của nó trong bảng tin, bộ chuyển tiếp trực tiếp đẩy nó tới các máy khách đã kết nối, việc tổng hợp chi phí quy trình, việc tiếp tục một bước quy trình đang chờ lượt chạy, việc hoàn tất phiếu đứng sau, việc ánh xạ một điều phối sang một trạng thái cuối, quyết định tiếp tục hay dừng của bộ giám sát mục tiêu, vai trò trình kiểm tra và việc đánh giá ngân sách sau lượt chạy. Danh sách hiện diện theo sau một cách riêng, bằng cách quan sát các log lượt chạy gần đây thay vì sự kiện.
+Việc đóng lượt chạy phát `AgentRunCompleted` và rất nhiều thứ phụ thuộc vào nó: việc tổng hợp chi phí quy trình, việc tiếp tục một bước quy trình đang chờ lượt chạy, việc hoàn tất phiếu đứng sau, việc ánh xạ một điều phối sang một trạng thái cuối, quyết định tiếp tục hay dừng của bộ giám sát mục tiêu, vai trò trình kiểm tra và việc đánh giá ngân sách sau lượt chạy. Danh sách hiện diện theo sau một cách riêng, bằng cách quan sát các log lượt chạy gần đây thay vì sự kiện. Thông báo “Agent đã hoàn tất” không nằm trong danh sách đó: sự kiện được phát khi luồng của tiến trình kết thúc, trước khi câu trả lời được ghi, nên thông báo chính là `MessageReceived` của lượt hội thoại, được phát sau khi tin nhắn đã được lưu bền vững.
 
 ## Ngân sách, sau khi việc đã rồi
 

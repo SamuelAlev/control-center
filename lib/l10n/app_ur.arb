@@ -2423,7 +2423,7 @@
   "notifications": "اطلاعات",
   "notifyAgentRunCompleted": "جب ایجنٹ رن مکمل کرے تو مطلع کریں۔",
   "notifyPrMentioned": "جب آپ کا ذکر pull request میں ہو تو مطلع کریں۔",
-  "notifyNewMessages": "دوسری اسپیسز میں نئے ایجنٹ پیغامات پر مطلع کریں۔",
+  "notifyNewMessages": "جب کسی اسپیس میں آپ کا ذکر ہو تو مطلع کریں۔",
   "notifyPrMerged": "جب pull request مرج ہو تو مطلع کریں۔",
   "notifyPrPublished": "جب ایجنٹ pull request شائع کرے تو مطلع کریں۔",
   "notifyReviewRequested": "جب آپ کے ریویو کی درخواست pull request پر ہو تو مطلع کریں۔",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "کوٹا ختم",
   "subscriptionUsageSignInRequired": "دوبارہ سائن اِن کریں",
   "subscriptionUsageSignInExpired": "سائن اِن ختم، اگلے رن پر تجدید",
-  "subscriptionUsagePartiallyAvailable": "جزوی طور پر دستیاب",
+  "subscriptionUsagePercentUsed": "{percent}% استعمال",
   "resetsIn": "{duration} میں ری سیٹ",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "بحال کریں",
   "nativeSandboxUnsupported": "نیٹو سینڈ باکس ابھی ⁨{platform}⁩ پر معاون نہیں ہے۔",
   "continueWithoutSandbox": "سینڈ باکس کے بغیر جاری رکھیں",
-  "sandboxCheckAgain": "دوبارہ چیک کریں"
+  "sandboxCheckAgain": "دوبارہ چیک کریں",
+  "ideQuickOpen": "فائل پر جائیں",
+  "ideQuickOpenDescription": "گفتگو کی فائلیں نام سے تلاش کریں اور ایک کو ٹیب میں کھولیں",
+  "ideQuickOpenHint": "نام سے فائلیں تلاش کریں",
+  "ideQuickOpenRecentlyOpened": "حال ہی میں کھولی گئی",
+  "ideQuickOpenOpenToSide": "ساتھ میں کھولیں",
+  "ideQuickOpenRemoveRecent": "حال ہی میں کھولی گئی فائلوں سے ہٹائیں",
+  "ideQuickOpenNoRecent": "حال ہی میں کوئی فائل نہیں کھولی گئی"
 }

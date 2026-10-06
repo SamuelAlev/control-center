@@ -2,7 +2,7 @@
 title: Livscykel för agentdispatch
 description: Vad som händer mellan att ett meddelande kommer in och att en körningslogg stängs — promptsammansättning, worktrees, identitet, vad som begränsar en körning och hur utfallet registreras ärligt.
 slug: sv-SE/handbok/koncept/livscykel-agentdispatch
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Vad en dispatch är
@@ -130,7 +130,7 @@ När en körning slutar utan den leverabel dess läge krävde — en planlägesk
 Detta är avsiktligt. Att flippa statusen skulle flytta ärende- och pipelinestate-maskiner som inte har något med den saknade artefakten att göra. Det betyder också att "status: completed" ensamt aldrig räcker för att dra slutsatsen att en körning lyckades — läs sammanfattningen.
 :::
 
-Att stänga körningen publicerar `AgentRunCompleted`, och mycket hänger på den: notisramen och dess hållbara flödespost, den live-vidarebefordrare som skickar den till anslutna klienter, upprullning av pipelinekostnad, återupptagning av ett pipelinesteg som väntade på körningen, slutförande av det bakomliggande ärendet, mappning av en orkestrering till ett terminaltillstånd, målövervakarens beslut att fortsätta eller stoppa, kontrollantrollen och budgetutvärderingen efter körningen. Närvarolistan följer separat, genom att titta på de senaste körningsloggarna i stället för på händelsen.
+Att stänga körningen publicerar `AgentRunCompleted`, och mycket hänger på den: upprullning av pipelinekostnad, återupptagning av ett pipelinesteg som väntade på körningen, slutförande av det bakomliggande ärendet, mappning av en orkestrering till ett terminaltillstånd, målövervakarens beslut att fortsätta eller stoppa, kontrollantrollen och budgetutvärderingen efter körningen. Närvarolistan följer separat, genom att titta på de senaste körningsloggarna i stället för på händelsen. Aviseringen ”Agenten är klar” finns inte med i den listan: händelsen utlöses när processens ström tar slut, innan svaret har skrivits, så aviseringen är turens `MessageReceived`, som publiceras när meddelandet har sparats.
 
 ## Budgetar i efterhand
 

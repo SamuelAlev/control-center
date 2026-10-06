@@ -1,20 +1,23 @@
+import 'dart:math' as math;
+
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/subscriptions/presentation/widgets/subscription_provider_block.dart';
+import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_chip.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/subscription_window_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Title-bar pill showing live AI subscription usage (Claude Code, Codex,
-/// Cursor, z.ai, Kimi Code): a compact "{worst}% used" chip that expands to a
-/// per-provider breakdown with progress bars and reset countdowns.
+/// Cursor, z.ai, Kimi Code): each configured provider's logo beside its
+/// most-constrained reading, expanding to a per-provider breakdown with
+/// progress bars and reset countdowns.
 ///
-/// Mirrors Claude Code's usage indicator. The compact chip reports the most
-/// constrained provider at a glance; the popover carries the full detail and
-/// the "resets in Y" times.
+/// One reading per provider rather than one for all of them: a single
+/// headline could only say "one plan is spent, others are fine" without
+/// saying which, and which is the whole question.
 class SubscriptionUsagePill extends ConsumerStatefulWidget {
   /// Creates a [SubscriptionUsagePill].
   const SubscriptionUsagePill({super.key});
@@ -71,40 +74,35 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
       return const SizedBox.shrink();
     }
 
-    // The headline reports the most-constrained situation across all
-    // configured providers. A provider that said it is spent
-    // ([SubscriptionStatus.exhausted]) counts as fully consumed, and so does
-    // one whose fetch merely failed ([SubscriptionStatus.error]) — most often
-    // that IS an exhausted subscription that also fails its usage fetch (Claude
-    // rate-limits the usage endpoint when the plan is spent) — so an exhausted
-    // provider is never hidden behind a healthy one.
+    // Each provider's reading is its most-constrained account, so a spent
+    // account ([SubscriptionStatus.exhausted], counted as fully consumed) is
+    // never hidden behind a healthy sibling.
     //
-    // An account we could not authenticate for
-    // ([SubscriptionStatus.signInRequired] / [SubscriptionStatus.signInExpired])
-    // contributes NOTHING instead — it has no reading, and inventing a spent
-    // one would report a quota problem where the actual problem is a login. The
-    // flyout is where that gets said.
-    double? headlineFraction(SubscriptionUsage p) {
-      if (p.status == SubscriptionStatus.error ||
-          p.status == SubscriptionStatus.exhausted) {
-        return 1.0;
-      }
-      return p.peakUsedFraction;
-    }
-
-    double? worstFrac;
-    var hasCapacity = false;
+    // An account we could not read contributes no NUMBER. One we could not
+    // authenticate for ([SubscriptionStatus.signInRequired] /
+    // [SubscriptionStatus.signInExpired]) has no reading, and inventing a spent
+    // one would report a quota problem where the actual problem is a login. A
+    // fetch that failed ([SubscriptionStatus.error]) is often an exhausted plan
+    // whose usage endpoint is rate-limited too (Claude does this), but "often"
+    // is not "100%": it marks the provider as needing a look instead. The
+    // flyout is where either gets said.
+    final readings = <String, ProviderUsageReading>{};
     for (final p in configured) {
-      final f = headlineFraction(p);
-      if (f == null) {
-        continue;
-      }
-      if (f < 1.0) {
-        hasCapacity = true;
-      }
-      if (worstFrac == null || f > worstFrac) {
-        worstFrac = f;
-      }
+      final f = p.status == SubscriptionStatus.exhausted
+          ? 1.0
+          : p.peakUsedFraction;
+      final prev = readings[p.providerId];
+      final worst = switch ((prev?.fraction, f)) {
+        (null, final b) => b,
+        (final a, null) => a,
+        (final double a, final double b) => a > b ? a : b,
+      };
+      readings[p.providerId] = ProviderUsageReading(
+        providerId: p.providerId,
+        displayName: p.displayName,
+        fraction: worst,
+        failed: (prev?.failed ?? false) || p.status == SubscriptionStatus.error,
+      );
     }
 
     return CcPopover(
@@ -115,128 +113,9 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
       semanticLabel: l10n.subscriptionUsage,
       overlayBuilder: (context, _) =>
           _UsageOverlay(providers: configured, isLoading: async.isLoading),
-      target: _PillButton(
-        fraction: worstFrac,
-        hasCapacity: hasCapacity,
+      target: SubscriptionUsageChip(
+        readings: readings.values.toList(),
         onTap: _open,
-      ),
-    );
-  }
-}
-
-class _PillButton extends StatefulWidget {
-  const _PillButton({
-    required this.fraction,
-    required this.hasCapacity,
-    required this.onTap,
-  });
-
-  /// The headline fraction driving the chip — the most-constrained provider's.
-  /// May be `1.0` for a provider whose fetch failed (counted as exhausted);
-  /// see [_SubscriptionUsagePillState.build].
-  final double? fraction;
-
-  /// Whether at least one configured provider still has headroom. Drives the
-  /// "Partially available" vs "Unavailable" distinction when [fraction] is
-  /// exhausted.
-  final bool hasCapacity;
-
-  final VoidCallback onTap;
-
-  @override
-  State<_PillButton> createState() => _PillButtonState();
-}
-
-class _PillButtonState extends State<_PillButton> {
-  bool _hover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final frac = widget.fraction;
-    final exhausted = frac != null && frac >= 1.0;
-    // When the most-constrained provider is spent, the headline still has two
-    // flavours: every provider is exhausted (Unavailable) or at least one still
-    // has headroom (Partially available). The latter is the common case — one
-    // plan maxed out while others carry on.
-    final unavailable = exhausted && !widget.hasCapacity;
-    final partially = exhausted && widget.hasCapacity;
-    final bg = _hover ? t.bgSecondaryHover : t.bgSecondary;
-    // Pre-blend lineStrong against the hover fill so the border tween runs
-    // between two OPAQUE endpoints (same treatment as CcButtonTokens.secondary):
-    // lerping the raw fg@16% token against opaque borderPrimary peaks darker
-    // than either end mid-tween — a dark-border flicker on hover↔rest.
-    final border = _hover
-        ? Color.alphaBlend(t.lineStrong, t.bgSecondaryHover)
-        : t.borderPrimary;
-    final dot = frac == null
-        ? t.muted
-        : unavailable
-        ? t.danger
-        : (exhausted ? t.warn : subscriptionUsageColor(frac, t));
-    final label = (frac == null)
-        ? null
-        : unavailable
-        ? l10n.subscriptionUsageUnavailable
-        : partially
-        ? l10n.subscriptionUsagePartiallyAvailable
-        : '${(frac * 100).round()}%';
-    // The tooltip names the control, nothing more: the reading is already on
-    // the chip as text (the percentage, or "Partially available"/"Unavailable"),
-    // so status is never carried by the dot colour alone and repeating it on
-    // hover only makes the label longer and staler.
-
-    return CcTooltip(
-      followerAnchor: Alignment.topCenter,
-      targetAnchor: Alignment.bottomCenter,
-      message: l10n.subscriptionUsage,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            height: 24,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: AppRadii.brSm,
-              border: Border.all(color: border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (frac == null)
-                  Icon(AppIcons.gauge, size: 12, color: t.muted)
-                else
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: dot,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                if (label != null) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: t.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -271,26 +150,34 @@ class _UsageOverlay extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
 
-    // Off-Material overlay: supply a concrete text style so nothing falls
-    // through to the 48px yellow error fallback.
-    return DefaultTextStyle(
-      style: TextStyle(
-        color: t.textPrimary,
-        fontSize: 13,
-        decoration: TextDecoration.none,
-      ),
+    // Merged onto the complete style CcPopover provides, not replacing it:
+    // a fresh DefaultTextStyle here dropped the UI family, and every line in
+    // the flyout fell back to the platform font.
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontSize: 13),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320, minWidth: 280),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+        constraints: BoxConstraints(
+          maxWidth: 340,
+          minWidth: 300,
+          // Five providers with several windows each outgrow a short window;
+          // the list scrolls under a fixed header instead of running off it.
+          maxHeight: math.max(200, MediaQuery.sizeOf(context).height - 96),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: Row(
                 children: [
                   Icon(AppIcons.gauge, size: 14, color: t.textSecondary),
-                  const SizedBox(width: AppSpacing.xs),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       l10n.subscriptionUsage,
@@ -304,19 +191,33 @@ class _UsageOverlay extends StatelessWidget {
                   if (isLoading) const CcSpinner(size: 12),
                 ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              if (providers.isEmpty)
-                Text(
-                  l10n.notConfiguredLabel,
-                  style: TextStyle(color: t.textTertiary, fontSize: 12),
-                )
-              else
-                for (var i = 0; i < groups.length; i++) ...[
-                  if (i > 0) const SizedBox(height: AppSpacing.md),
-                  SubscriptionProviderBlock(accounts: groups[i]),
-                ],
-            ],
-          ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (providers.isEmpty)
+                      Text(
+                        l10n.notConfiguredLabel,
+                        style: TextStyle(color: t.textTertiary, fontSize: 12),
+                      )
+                    else
+                      for (var i = 0; i < groups.length; i++) ...[
+                        if (i > 0) const SizedBox(height: AppSpacing.lg),
+                        SubscriptionProviderBlock(accounts: groups[i]),
+                      ],
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

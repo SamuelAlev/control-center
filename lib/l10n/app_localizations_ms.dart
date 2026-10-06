@@ -4207,8 +4207,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Beritahu apabila anda disebut dalam pull request.';
 
   @override
-  String get notifyNewMessages =>
-      'Beritahu tentang mesej ejen baharu dalam ruang lain.';
+  String get notifyNewMessages => 'Beritahu apabila anda disebut dalam ruang.';
 
   @override
   String get notifyPrMerged => 'Beritahu apabila pull request dicantum.';
@@ -8961,7 +8960,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'Log masuk luput, diperbaharui pada larian seterusnya';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Tersedia sebahagian';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% digunakan';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15122,4 +15123,27 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Semak semula';
+
+  @override
+  String get ideQuickOpen => 'Pergi ke fail';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Cari fail perbualan mengikut nama dan buka satu dalam tab';
+
+  @override
+  String get ideQuickOpenHint => 'Cari fail mengikut nama';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Dibuka baru-baru ini';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Buka di sisi';
+
+  @override
+  String get ideQuickOpenRemoveRecent =>
+      'Alih keluar daripada dibuka baru-baru ini';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Tiada fail dibuka baru-baru ini';
 }

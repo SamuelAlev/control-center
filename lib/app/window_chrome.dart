@@ -146,6 +146,14 @@ void styleWindowOnShow(Window window, AppPreferences prefs) {
       if (_geometryRestoredWindowIds.add(window.id)) {
         _restoreMainWindowGeometry(window, prefs);
       }
+    case serverSetupWindowTitle:
+      // The setup form is taller than many laptop work areas once the remote
+      // fields and an error are showing, so fit it to the display and centre it
+      // rather than letting macOS hang the bottom (and the connect button) off
+      // screen.
+      if (_geometryRestoredWindowIds.add(window.id)) {
+        _placeServerSetupWindow(window);
+      }
     case bootFailureWindowTitle:
       // Keeps its ordinary movable frame (it draws no title bar of its own),
       // but put it where the operator is looking rather than wherever macOS
@@ -272,6 +280,24 @@ void _restoreMainWindowGeometry(Window window, AppPreferences prefs) {
     // on whatever macOS would have guessed.
     window.maximize();
   }
+}
+
+/// Opens the server-setup window at [serverSetupWindowSize], clamped to and
+/// centred on the primary display. Nothing is persisted for this window, so
+/// there is no saved frame to restore.
+void _placeServerSetupWindow(Window window) {
+  final primaryWorkArea = _readDisplayLayout().primary;
+  if (primaryWorkArea == null) {
+    window.center();
+    return;
+  }
+  window.bounds = resolveMainWindowBounds(
+    saved: null,
+    workAreas: const [],
+    primaryWorkArea: primaryWorkArea,
+    defaultSize: serverSetupWindowSize,
+    minSize: serverSetupWindowMinSize,
+  );
 }
 
 void _restoreFullScreenLater(int windowId) {

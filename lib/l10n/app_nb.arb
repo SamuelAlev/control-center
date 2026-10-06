@@ -2423,7 +2423,7 @@
   "notifications": "Varslinger",
   "notifyAgentRunCompleted": "Varsle når en agent fullfører en kjøring.",
   "notifyPrMentioned": "Varsle når du blir nevnt i en pull request.",
-  "notifyNewMessages": "Varsle om nye agentmeldinger i andre områder.",
+  "notifyNewMessages": "Varsle når du blir nevnt i et område.",
   "notifyPrMerged": "Varsle når en pull request slås sammen.",
   "notifyPrPublished": "Varsle når en agent publiserer en pull request.",
   "notifyReviewRequested": "Varsle når gjennomgangen din blir forespurt på en pull request.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kvote brukt opp",
   "subscriptionUsageSignInRequired": "Logg inn på nytt",
   "subscriptionUsageSignInExpired": "Innlogging utløpt, fornyes ved neste kjøring",
-  "subscriptionUsagePartiallyAvailable": "Delvis tilgjengelig",
+  "subscriptionUsagePercentUsed": "{percent} % brukt",
   "resetsIn": "Tilbakestilles om {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Gjenopprett",
   "nativeSandboxUnsupported": "Innebygd sandkasse støttes ikke på {platform} ennå.",
   "continueWithoutSandbox": "Fortsett uten sandkasse",
-  "sandboxCheckAgain": "Sjekk på nytt"
+  "sandboxCheckAgain": "Sjekk på nytt",
+  "ideQuickOpen": "Gå til fil",
+  "ideQuickOpenDescription": "Søk i samtalens filer etter navn og åpne én i en fane",
+  "ideQuickOpenHint": "Søk etter filer etter navn",
+  "ideQuickOpenRecentlyOpened": "Nylig åpnet",
+  "ideQuickOpenOpenToSide": "Åpne ved siden av",
+  "ideQuickOpenRemoveRecent": "Fjern fra nylig åpnet",
+  "ideQuickOpenNoRecent": "Ingen nylig åpnede filer"
 }

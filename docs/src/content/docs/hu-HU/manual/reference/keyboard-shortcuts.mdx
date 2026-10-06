@@ -2,10 +2,10 @@
 title: Billentyűparancsok
 description: A billentyűparancsok teljes nyilvántartása hatókör szerint, azzal a feltétellel együtt, amely mellett az egyes parancsok aktiválódnak.
 slug: hu-HU/kezikonyv/referencia/billentyuparancsok
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-A billentyűparancsok egyetlen `const` nyilvántartásból származnak: a `KeybindingRegistry`-ből a `lib/core/constants/keybindings.dart` fájlban. Ez **48 kötést** tartalmaz. A Beállítások → Ön → Gyorsbillentyűk ezt a nyilvántartást **írásvédett referenciaként** jeleníti meg: nincs átkötési felület, és nincs felhasználói gyorsbillentyű-fájl sem.
+A billentyűparancsok egyetlen `const` nyilvántartásból származnak: a `KeybindingRegistry`-ből a `lib/core/constants/keybindings.dart` fájlban. Ez **49 kötést** tartalmaz. A Beállítások → Ön → Gyorsbillentyűk ezt a nyilvántartást **írásvédett referenciaként** jeleníti meg: nincs átkötési felület, és nincs felhasználói gyorsbillentyű-fájl sem.
 
 Az alábbiakban a `Cmd` az elsődleges parancsmódosító — ⌘ macOS-en, Ctrl Windowson és Linuxon. Egy kötés csak akkor aktiválódik, ha a parancsához az aktuális képernyőn regisztrált kezelő tartozik, és teljesül a `when` feltétele; a `!textInputFocus` azt jelenti, hogy a lenyomás inkább egy fókuszált szövegmezőbe jut tovább.
 
@@ -72,7 +72,7 @@ A lapváltást (`1`/`2`/`3`), a fájl megtekintettként jelölését és összec
 | `/`              | Keresés fókusza |
 | `Cmd/Ctrl + F`   | Keresés fókusza |
 
-## Terek (8)
+## Terek (9)
 
 `/spaces` hatókör. A `when` feltételek regexet használnak, így a térlistán (`/spaces`) és egy kijelölt téren (`/spaces/<id>`) is aktiválódnak.
 
@@ -86,6 +86,9 @@ A lapváltást (`1`/`2`/`3`), a fájl megtekintettként jelölését és összec
 | `Cmd/Ctrl + T`         | Szerkesztőlap megnyitása       | `/spaces` útvonalon   |
 | `Cmd/Ctrl + W`         | Szerkesztőlap bezárása         | `/spaces` útvonalon   |
 | `Cmd/Ctrl + B`         | Szerkesztő oldalsávjának váltása | `/spaces` útvonalon |
+| `Cmd/Ctrl + P`         | Ugrás fájlra                     | `/spaces` útvonalon |
+
+Az „Ugrás fájlra” választót nyit a beszélgetés fájljaival. Ha nem gépel semmit, a legutóbb megnyitott fájlokat listázza; gépeléskor a beszélgetés worktree-jeinek összes fájljában keres. Az `Enter` új lapon nyitja meg a kijelölt fájlt, a `Cmd/Ctrl + Enter` vagy a sor felosztás gombja egy jobb oldali panelen nyitja meg, a nemrég megnyitott fájl sorában lévő `×` pedig eltávolítja a listából.
 
 Az Enterrel küldést a szerkesztő szövegmezője birtokolja; a nyomva beszélhet módot a szerkesztő mikrofon gombja (a saját hardveres billentyűzetkezelője). Mindkettő a beállítások referenciája kedvéért szerepel a nyilvántartásban.
 

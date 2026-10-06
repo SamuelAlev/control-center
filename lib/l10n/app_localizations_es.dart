@@ -4242,7 +4242,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notifyNewMessages =>
-      'Notificar sobre nuevos mensajes de agentes en otros espacios.';
+      'Notificar cuando te mencionen en un espacio.';
 
   @override
   String get notifyPrMerged => 'Notificar cuando se fusione una pull request.';
@@ -9009,7 +9009,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'La sesión expiró, se renueva en la próxima ejecución';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Parcialmente disponible';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent % usado';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15200,6 +15202,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Comprobar de nuevo';
+
+  @override
+  String get ideQuickOpen => 'Ir al archivo';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Busca los archivos de la conversación por nombre y abre uno en una pestaña';
+
+  @override
+  String get ideQuickOpenHint => 'Buscar archivos por nombre';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Abierto recientemente';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Abrir en el lateral';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Quitar de abiertos recientemente';
+
+  @override
+  String get ideQuickOpenNoRecent => 'No hay archivos abiertos recientemente';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

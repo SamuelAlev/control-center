@@ -2,7 +2,7 @@
 title: Événements de domaine
 description: Catalogue complet des 53 événements de domaine, de leurs charges utiles et des abonnés côté serveur qui les consomment.
 slug: fr-CA/manuel/reference/evenements-de-domaine
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Bus d’événements
@@ -199,8 +199,8 @@ Il y a exactement **seize** catégories de notification. Plusieurs événements 
 
 | Catégorie              | Événement source          | Méthode de trame                                                        |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (vous mentionne)                      |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, sans mention de vous) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

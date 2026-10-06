@@ -55,7 +55,7 @@ void main() {
   });
 
   test('openai-compatible providers reuse OpenAiProvider with their name', () {
-    expect(factory.create(providerId: 'groq').displayName, 'Groq');
+    expect(factory.create(providerId: 'openrouter').displayName, 'OpenRouter');
     expect(factory.create(providerId: 'deepseek'), isA<OpenAiProvider>());
   });
 

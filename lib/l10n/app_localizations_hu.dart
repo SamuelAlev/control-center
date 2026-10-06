@@ -4219,8 +4219,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get notifyPrMentioned => 'Értesítés, ha említik egy pull requestben.';
 
   @override
-  String get notifyNewMessages =>
-      'Értesítés új ügynöküzenetekről más terekben.';
+  String get notifyNewMessages => 'Értesítés, ha említik egy térben.';
 
   @override
   String get notifyPrMerged =>
@@ -8985,7 +8984,9 @@ class AppLocalizationsHu extends AppLocalizations {
       'A bejelentkezés lejárt, a következő futtatáskor megújul';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Részben elérhető';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% felhasználva';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15164,4 +15165,27 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Újraellenőrzés';
+
+  @override
+  String get ideQuickOpen => 'Ugrás fájlra';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'A beszélgetés fájljainak keresése név szerint, és egy megnyitása lapon';
+
+  @override
+  String get ideQuickOpenHint => 'Fájlok keresése név szerint';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Nemrég megnyitott';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Megnyitás oldalt';
+
+  @override
+  String get ideQuickOpenRemoveRecent =>
+      'Eltávolítás a nemrég megnyitottak közül';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Nincsenek nemrég megnyitott fájlok';
 }

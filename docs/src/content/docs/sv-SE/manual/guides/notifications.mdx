@@ -2,7 +2,7 @@
 title: Konfigurera aviseringar
 description: Slå på eller av kategorier, ställ in tysta timmar och ett ljud och få veta vilka aviseringar som når dig var.
 slug: sv-SE/handbok/how-to-guider/aviseringar
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Den här guiden visar hur du konfigurerar aviseringar och vad varje inställning
@@ -28,10 +28,10 @@ Telefonklienten har ingen aviseringsyta alls.
 
 | Kategori                       | Utlöses när                                                                       |
 | ------------------------------ | --------------------------------------------------------------------------------- |
-| Agenten är klar                | En agent avslutade en körning                                                     |
+| Agenten är klar                | En agent svarade i en körning du startade, eller så misslyckades körningen        |
 | PR publicerad                  | En agent publicerade en PR                                                        |
 | PR sammanslagen                | En PR slogs samman                                                                |
-| Nya meddelanden                | Ett meddelande kom in i en yta du inte tittar på                                  |
+| Nya meddelanden                | Någon nämnde dig i en yta                                                         |
 | Omnämnd i pull request         | GitHubs aviseringsavsökning såg att du nämndes i en PR                            |
 | Granskning begärd              | Din granskning begärdes faktiskt på en PR som inte är ett utkast                  |
 | Granskning inaktuell           | Nya commits landade på en pull request som du redan har granskat                  |
@@ -99,6 +99,8 @@ Ytterligare två undertryckningar finns längre uppströms, i vad servern
 
 - Ett meddelande från en annan **människa** där du inte nämns blir aldrig en
   avisering
+- I en delad yta pingar en agents svar den som startade körningen, inte varje
+  medlem
 - Ytor mellan agenter är dämpade i sidopanelen, så de höjer aldrig människans
   oläst-badge
 
@@ -144,7 +146,9 @@ snart markeringen har laddats.
 ### En agents körning blev klar men inget pingade mig
 
 Kontrollera att du inte redan var i ytan där det hände — en aktiv rutt
-undertrycker sin egen OS-toast.
+undertrycker sin egen OS-toast. I en delad yta pingar en körning som någon annan
+startade den personen, inte dig. En tur som slutade utan svar och utan fel skickar
+ingenting.
 
 ## Relaterade guider
 

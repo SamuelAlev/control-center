@@ -2,7 +2,7 @@
 title: Livssyklus for agentutsending
 description: Hva som skjer fra en melding kommer inn til en kjøringslogg lukkes — sammensetting av prompten, worktrees, identitet, hva som begrenser en kjøring, og hvordan resultatet registreres ærlig.
 slug: nb-NO/handbok/konsepter/livssyklus-agentutsending
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Hva en utsending er
@@ -130,7 +130,7 @@ Når en kjøring avsluttes uten leveransen modusen krevde — en plan-modus-kjø
 Dette er bevisst. Å vippe statusen ville flytte saks- og pipeline-tilstandsmaskiner som ikke har noe med den manglende artefakten å gjøre. Det betyr også at «status: completed» alene aldri er nok til å konkludere med at en kjøring lyktes — les sammendraget.
 :::
 
-Å lukke kjøringen publiserer `AgentRunCompleted`, og mye henger på den: varselrammen og dens varige oppføring i strømmen, sanntidsvideresenderen som dytter den til tilkoblede klienter, oppsamling av pipeline-kostnader, gjenopptakelse av et pipeline-steg som ventet på kjøringen, fullføring av den bakenforliggende saken, kartlegging av en orkestrering til en sluttilstand, målvokterens beslutning om å fortsette eller stoppe, kontrollørrollen og budsjettvurderingen etter kjøringen. Tilstedeværelseslisten følger separat, ved å se på de nyeste kjøringsloggene i stedet for hendelsen.
+Å lukke kjøringen publiserer `AgentRunCompleted`, og mye henger på den: oppsamling av pipeline-kostnader, gjenopptakelse av et pipeline-steg som ventet på kjøringen, fullføring av den bakenforliggende saken, kartlegging av en orkestrering til en sluttilstand, målvokterens beslutning om å fortsette eller stoppe, kontrollørrollen og budsjettvurderingen etter kjøringen. Tilstedeværelseslisten følger separat, ved å se på de nyeste kjøringsloggene i stedet for hendelsen. «Agent ferdig»-varselet står ikke på den listen: hendelsen utløses når prosessstrømmen slutter, før svaret er skrevet, så varselet er turens `MessageReceived`, som publiseres når meldingen er lagret.
 
 ## Budsjetter, i etterkant
 

@@ -4,10 +4,12 @@ import 'package:cc_ui/cc_ui.dart';
 
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,11 +27,19 @@ class PrCodeServerTab extends ConsumerWidget {
   /// Creates a [PrCodeServerTab].
   const PrCodeServerTab({
     super.key,
+    required this.tab,
+    required this.pool,
     required this.pr,
     this.path,
     this.repoId,
     this.line,
   });
+
+  /// The tab this renders (the [pool]'s ownership key).
+  final EditorTab tab;
+
+  /// The workbench's shared editor windows.
+  final CodeServerWindowPool pool;
 
   /// The pull request whose worktree the editor opens on.
   final PullRequest pr;
@@ -87,6 +97,8 @@ class PrCodeServerTab extends ConsumerWidget {
           repoId: repoId,
           path: path,
           line: line,
+          tab: tab,
+          pool: pool,
         );
       },
     );

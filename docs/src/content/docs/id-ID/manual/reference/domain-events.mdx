@@ -2,7 +2,7 @@
 title: Peristiwa domain
 description: Katalog lengkap dari 53 peristiwa domain, payload-nya, dan pelanggan sisi server yang mengonsumsinya.
 slug: id-ID/panduan-pengguna/referensi/peristiwa-domain
-sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
+sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 ---
 
 ## Bus peristiwa
@@ -199,8 +199,8 @@ Tepat ada **enam belas** kategori notifikasi. Beberapa peristiwa dipetakan ke le
 
 | Kategori               | Peristiwa sumber          | Metode wire                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received` (menyebut Anda)                       |
+| `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, tidak menyebut Anda) |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |

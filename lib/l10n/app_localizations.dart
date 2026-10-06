@@ -7324,7 +7324,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifyNewMessages.
   ///
   /// In en, this message translates to:
-  /// **'Notify on new agent messages in other spaces.'**
+  /// **'Notify when you\'re mentioned in a space.'**
   String get notifyNewMessages;
 
   /// No description provided for @notifyPrMerged.
@@ -15371,11 +15371,11 @@ abstract class AppLocalizations {
   /// **'Sign-in expired, renews on the next run'**
   String get subscriptionUsageSignInExpired;
 
-  /// No description provided for @subscriptionUsagePartiallyAvailable.
+  /// How much of a quota window is used, under its meter
   ///
   /// In en, this message translates to:
-  /// **'Partially available'**
-  String get subscriptionUsagePartiallyAvailable;
+  /// **'{percent}% used'**
+  String subscriptionUsagePercentUsed(int percent);
 
   /// Quota reset countdown
   ///
@@ -25605,6 +25605,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check again'**
   String get sandboxCheckAgain;
+
+  /// Keyboard shortcut label (⌘P / Ctrl+P) for the IDE quick open file picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to file'**
+  String get ideQuickOpen;
+
+  /// Keyboard shortcut description for the IDE quick open file picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the conversation\'s files by name and open one in a tab'**
+  String get ideQuickOpenDescription;
+
+  /// Placeholder in the quick open picker's search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search files by name'**
+  String get ideQuickOpenHint;
+
+  /// Tag on a quick open row that comes from the recently opened file list.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently opened'**
+  String get ideQuickOpenRecentlyOpened;
+
+  /// Tooltip on a quick open row's button that opens the file in a new split pane to the side.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to the side'**
+  String get ideQuickOpenOpenToSide;
+
+  /// Tooltip on a quick open row's button that removes the file from the recently opened list.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from recently opened'**
+  String get ideQuickOpenRemoveRecent;
+
+  /// Quick open empty state when nothing is typed and no files have been opened yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No recently opened files'**
+  String get ideQuickOpenNoRecent;
 }
 
 class _AppLocalizationsDelegate

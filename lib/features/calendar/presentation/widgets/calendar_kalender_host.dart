@@ -115,7 +115,23 @@ class CalendarKalenderHost extends StatefulWidget {
 
 class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   final _eventsController = k.DefaultEventsController();
-  final _calendarController = k.KalenderController();
+
+  /// Holds the view configuration. An events refresh (or any unrelated
+  /// rebuild) leaves it alone, so the view controller and its scroll position
+  /// survive; only a change of view *mode* switches it, and same-mode date
+  /// changes animate via the controller instead (see [didUpdateWidget]).
+  late final _calendarController = k.KalenderController(
+    viewConfiguration: _buildConfiguration(),
+  );
+
+  /// Dragging, resizing and creation are all disabled, in the header and the
+  /// body alike. Held so a rebuild doesn't hand kalender a new (never `==`)
+  /// instance to propagate.
+  final _readOnly = k.KalenderInteraction(
+    allowResizing: false,
+    allowRescheduling: false,
+    allowEventCreation: false,
+  );
 
   /// False for the one frame a timed view needs to lay its body out before
   /// [_positionOnNow] can place it; the body paints fully transparent until then.
@@ -125,12 +141,6 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// and spring back down. Month and agenda have no timed body to position, so
   /// they are never hidden.
   bool _bodyPositioned = false;
-
-  /// Cached so an events refresh (or any unrelated rebuild) doesn't recreate
-  /// the kalender view controller and lose the scroll position. Rebuilt only
-  /// when the view *mode* changes; same-mode date changes animate via the
-  /// controller instead (see [didUpdateWidget]).
-  late k.ViewConfiguration _viewConfiguration = _buildConfiguration();
 
   /// Whether the user has folded the all-day strip down to its one-row
   /// summary. Week view only — day view's gutter is taken by the day label, so
@@ -178,8 +188,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   void didUpdateWidget(CalendarKalenderHost oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.mode != widget.mode) {
-      // A new configuration recreates the view, opening it on the focused date.
-      _viewConfiguration = _buildConfiguration();
+      // A new configuration switches the view, opening it on the focused date.
+      _calendarController.viewConfiguration = _buildConfiguration();
       _visibleRange = null;
       // The recreated timed body carries the outgoing view's time-of-day over
       // (kalender's ScrollTransition.preserve), so re-centre the now-indicator
@@ -378,7 +388,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   }
 
   /// kalender's controller for the vertically-scrolling timed body, or `null`
-  /// when the attached view has none (month) or nothing is attached yet.
+  /// when the current view has none (month).
   k.MultiDayViewController? get _timedViewController {
     final viewController = _calendarController.viewController;
     return viewController is k.MultiDayViewController ? viewController : null;
@@ -429,14 +439,14 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// The kalender header, with the all-day rows capped at [maxRows] — beyond
   /// that the remainder collapses behind the "+N more" portal, so the strip's
   /// height stays the one [_laneHeight] computed.
-  Widget _calendarHeader(DesignSystemTokens t, {required int? maxRows}) {
-    return k.KalenderHeader(
-      multiDayHeaderConfiguration: k.MultiDayHeaderConfiguration(
+  Widget _calendarHeader(DesignSystemTokens t, {required int maxRows}) {
+    return k.MultiDayHeader(
+      configuration: k.MultiDayHeaderConfiguration(
         maximumNumberOfVerticalEvents: maxRows,
       ),
       // Without explicit tile components the all-day header falls back to
       // kalender's default builder, which renders the literal text "Tile".
-      multiDayTileComponents: k.TileComponents(
+      tileComponents: k.TileComponents(
         tileBuilder: (_, event, tileRange) =>
             _tile(t, event, dense: true, tileRange: tileRange),
       ),
@@ -466,7 +476,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       child: k.KalenderView(
         eventsController: _eventsController,
         kalenderController: _calendarController,
-        viewConfiguration: _viewConfiguration,
+        interaction: _readOnly,
         components: _components(
           t,
           laneHeight: laneHeight,
@@ -488,48 +498,57 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             }
           },
         ),
-        header: hasAllDayStrip
-            ? _allDayHeader(t, laneHeight: laneHeight, collapsed: collapsed)
-            : DecoratedBox(
-                // Month's header is just the weekday labels — no strip, so no
-                // rule under it and nothing to float.
-                decoration: BoxDecoration(color: t.bgPrimary),
-                child: _calendarHeader(t, maxRows: null),
+        // Transparent until the timed body has been scrolled to "now" (one
+        // frame, see [_bodyPositioned]); the header stays visible throughout.
+        // Opacity, not Offstage: the body has to be laid out for its scroll
+        // extents to exist. Month is never hidden.
+        views: [
+          k.MultiDayViewParts(
+            header: _allDayHeader(
+              t,
+              laneHeight: laneHeight,
+              collapsed: collapsed,
+            ),
+            body: Opacity(
+              opacity: _bodyPositioned ? 1 : 0,
+              child: k.MultiDayBody(
+                // Overlapping events lay out side by side in equal-width
+                // columns (so two conflicting tiles never paint their titles in
+                // the same band and turn unreadable) and every tile gets a
+                // minimum height so short events stay legible. See
+                // [CalendarEventLayoutStrategy].
+                configuration: const k.MultiDayBodyConfiguration(
+                  eventLayoutStrategy: CalendarEventLayoutStrategy(),
+                  minimumTileHeight: _minimumTileHeight,
+                ),
+                tileComponents: k.TileComponents(
+                  tileBuilder: (_, event, _) => _tile(t, event, dense: false),
+                ),
               ),
-        // Transparent until the timed body has been scrolled to "now" (one frame,
-        // see [_bodyPositioned]); the header stays visible throughout. Opacity, not
-        // Offstage: the body has to be laid out for its scroll extents to exist.
-        body: Opacity(
-          opacity: _bodyPositioned ? 1 : 0,
-          child: k.KalenderBody(
-            interaction: k.KalenderInteraction(
-              allowResizing: false,
-              allowRescheduling: false,
-              allowEventCreation: false,
-            ),
-            // Overlapping events lay out side by side in equal-width columns (so
-            // two conflicting tiles never paint their titles in the same band and
-            // turn unreadable) and every tile gets a minimum height so short
-            // events stay legible. See [CalendarEventLayoutStrategy].
-            multiDayBodyConfiguration: const k.MultiDayBodyConfiguration(
-              eventLayoutStrategy: CalendarEventLayoutStrategy(),
-              minimumTileHeight: _minimumTileHeight,
-            ),
-            multiDayTileComponents: k.TileComponents(
-              tileBuilder: (_, event, _) => _tile(t, event, dense: false),
-            ),
-            // Order each month day-cell's events by start time. kalender's default
-            // frame generator sorts by duration (longest first), which reads as a
-            // random order for a stack of same-length meetings.
-            monthBodyConfiguration: const k.MonthBodyConfiguration(
-              multiDayLayoutStrategy: _StartSortedMultiDayLayoutStrategy(),
-            ),
-            monthTileComponents: k.TileComponents(
-              tileBuilder: (_, event, tileRange) =>
-                  _tile(t, event, dense: true, tileRange: tileRange),
             ),
           ),
-        ),
+          k.MonthViewParts(
+            // Month's header is just the weekday labels — no strip, so no rule
+            // under it and nothing to float.
+            header: DecoratedBox(
+              decoration: BoxDecoration(color: t.bgPrimary),
+              child: const k.MonthHeader(),
+            ),
+            body: k.MonthBody(
+              // Order each month day-cell's events by start time. kalender's
+              // default frame generator sorts by duration (longest first),
+              // which reads as a random order for a stack of same-length
+              // meetings.
+              configuration: const k.MonthBodyConfiguration(
+                multiDayLayoutStrategy: _StartSortedMultiDayLayoutStrategy(),
+              ),
+              tileComponents: k.TileComponents(
+                tileBuilder: (_, event, tileRange) =>
+                    _tile(t, event, dense: true, tileRange: tileRange),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

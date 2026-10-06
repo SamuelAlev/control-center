@@ -2,10 +2,10 @@
 title: Atajos de teclado
 description: El registro completo de atajos de teclado, por alcance, con las condiciones en las que se activa cada atajo.
 slug: es-MX/manual/referencia/atajos-de-teclado
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Los atajos provienen de un único registro `const`, `KeybindingRegistry` en `lib/core/constants/keybindings.dart`. Contiene **48 asignaciones**. **Ajustes → Tú → Atajos de teclado** muestra ese registro como una **referencia de solo lectura**: no hay interfaz para reasignar atajos ni archivo de atajos de teclado del usuario.
+Los atajos provienen de un único registro `const`, `KeybindingRegistry` en `lib/core/constants/keybindings.dart`. Contiene **49 asignaciones**. **Ajustes → Tú → Atajos de teclado** muestra ese registro como una **referencia de solo lectura**: no hay interfaz para reasignar atajos ni archivo de atajos de teclado del usuario.
 
 `Cmd` a continuación es el modificador de comando principal: ⌘ en macOS y Ctrl en Windows y Linux. Una asignación solo se activa cuando su comando tiene un manejador registrado en la pantalla actual y se cumple su cláusula `when`; `!textInputFocus` significa que la tecla se deja pasar a un campo de texto que tiene el foco.
 
@@ -72,7 +72,7 @@ Alcance `/users/`. La cláusula `when` es una expresión regular contra `/users/
 | `/`            | Enfocar búsqueda |
 | `Cmd/Ctrl + F` | Enfocar búsqueda |
 
-## Espacios (8)
+## Espacios (9)
 
 Alcance `/spaces`. Las cláusulas `when` usan una expresión regular, así que se activan tanto en la lista de espacios (`/spaces`) como en un espacio seleccionado (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Alcance `/spaces`. Las cláusulas `when` usan una expresión regular, así que s
 | `Cmd/Ctrl + T`         | Abrir pestaña del editor     | En una ruta `/spaces`           |
 | `Cmd/Ctrl + W`         | Cerrar pestaña del editor    | En una ruta `/spaces`           |
 | `Cmd/Ctrl + B`         | Alternar la barra lateral del editor | En una ruta `/spaces`    |
+| `Cmd/Ctrl + P`         | Ir al archivo                        | En una ruta `/spaces`    |
+
+«Ir al archivo» abre un selector con los archivos de la conversación. Sin escribir nada, muestra los archivos que abriste más recientemente; al escribir, busca en todos los archivos de los worktrees de la conversación. `Enter` abre el archivo seleccionado en una pestaña nueva, `Cmd/Ctrl + Enter` o el botón de dividir de la fila lo abre en un panel a la derecha, y la `×` de una fila reciente lo quita de la lista.
 
 El envío con Enter lo maneja el campo de texto del compositor; pulsar para hablar lo maneja el botón de micrófono del compositor (su propio manejador de teclado físico). Ambos aparecen en el registro para la referencia de ajustes.
 

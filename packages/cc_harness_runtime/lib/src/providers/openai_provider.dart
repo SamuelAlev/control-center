@@ -7,7 +7,7 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// Talks to an OpenAI-compatible Chat Completions API
 /// (`POST /v1/chat/completions`, streaming SSE).
 ///
-/// The same implementation drives OpenAI, OpenRouter, Groq, LM Studio and
+/// The same implementation drives OpenAI, OpenRouter, LM Studio and
 /// other OpenAI-compatible endpoints — only the base URL and auth differ. The
 /// local Ollama provider subclasses it.
 class OpenAiProvider implements LlmProviderPort {

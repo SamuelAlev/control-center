@@ -4249,8 +4249,7 @@ class AppLocalizationsEl extends AppLocalizations {
       'Ειδοποίηση όταν σας αναφέρουν σε pull request.';
 
   @override
-  String get notifyNewMessages =>
-      'Ειδοποίηση για νέα μηνύματα πρακτόρων σε άλλους χώρους.';
+  String get notifyNewMessages => 'Ειδοποίηση όταν σας αναφέρουν σε έναν χώρο.';
 
   @override
   String get notifyPrMerged => 'Ειδοποίηση όταν συγχωνεύεται ένα pull request.';
@@ -9037,7 +9036,9 @@ class AppLocalizationsEl extends AppLocalizations {
       'Η σύνδεση έληξε, ανανεώνεται στην επόμενη εκτέλεση';
 
   @override
-  String get subscriptionUsagePartiallyAvailable => 'Μερικώς διαθέσιμη';
+  String subscriptionUsagePercentUsed(int percent) {
+    return '$percent% χρησιμοποιήθηκε';
+  }
 
   @override
   String resetsIn(String duration) {
@@ -15247,4 +15248,26 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get sandboxCheckAgain => 'Έλεγχος ξανά';
+
+  @override
+  String get ideQuickOpen => 'Μετάβαση σε αρχείο';
+
+  @override
+  String get ideQuickOpenDescription =>
+      'Αναζητήστε τα αρχεία της συνομιλίας με βάση το όνομα και ανοίξτε ένα σε καρτέλα';
+
+  @override
+  String get ideQuickOpenHint => 'Αναζήτηση αρχείων με βάση το όνομα';
+
+  @override
+  String get ideQuickOpenRecentlyOpened => 'Άνοιξε πρόσφατα';
+
+  @override
+  String get ideQuickOpenOpenToSide => 'Άνοιγμα στο πλάι';
+
+  @override
+  String get ideQuickOpenRemoveRecent => 'Κατάργηση από τα πρόσφατα';
+
+  @override
+  String get ideQuickOpenNoRecent => 'Δεν υπάρχουν πρόσφατα αρχεία';
 }

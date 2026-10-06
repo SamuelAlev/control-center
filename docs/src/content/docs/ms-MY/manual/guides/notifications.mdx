@@ -2,7 +2,7 @@
 title: Konfigurasikan pemberitahuan
 description: Hidupkan atau matikan kategori, tetapkan waktu senyap dan bunyi, serta ketahui pemberitahuan mana yang sampai kepada anda dan di mana.
 slug: ms-MY/manual-pengguna/panduan-cara/pemberitahuan
-sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
+sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
 ---
 
 Panduan ini menunjukkan cara mengkonfigurasi pemberitahuan dan perkara yang
@@ -28,10 +28,10 @@ langsung tiada permukaan pemberitahuan.
 
 | Kategori                   | Dicetuskan apabila                                                          |
 | -------------------------- | -------------------------------------------------------------------------- |
-| Ejen selesai               | Ejen menyelesaikan satu larian                                             |
+| Ejen selesai               | Ejen membalas dalam larian yang anda mulakan, atau larian itu gagal        |
 | PR diterbitkan             | Ejen menerbitkan satu PR                                                   |
 | PR dicantum                | Satu PR telah dicantum                                                     |
-| Mesej baharu               | Mesej tiba di ruang yang sedang tidak anda lihat                           |
+| Mesej baharu               | Seseorang menyebut anda dalam sesuatu ruang                                |
 | Disebut dalam pull request | Pengundian pemberitahuan GitHub melihat anda disebut pada satu PR          |
 | Semakan diminta            | Semakan anda benar-benar diminta pada PR yang bukan draf                   |
 | Semakan lapuk              | Commit baharu masuk ke pull request yang sudah anda semak                  |
@@ -102,6 +102,8 @@ pada apa yang dihantar oleh pelayan sama sekali:
 
 - Mesej daripada **manusia** lain yang tidak menyebut anda tidak pernah menjadi
   pemberitahuan
+- Dalam ruang kongsi, balasan ejen hanya memberitahu orang yang memulakan
+  larian itu, bukan setiap ahli
 - Ruang antara ejen dibisukan dalam bar sisi, jadi ia tidak pernah menambah
   lencana belum dibaca untuk manusia
 
@@ -149,7 +151,9 @@ stabil sebaik sahaja tanda itu dimuatkan.
 ### Larian ejen selesai tetapi tiada apa-apa memberitahu saya
 
 Periksa sama ada anda tidak sudah berada dalam ruang tempatnya berlaku — laluan
-yang aktif menahan toast OS-nya sendiri.
+yang aktif menahan toast OS-nya sendiri. Dalam ruang kongsi, larian yang dimulakan
+oleh orang lain memberitahu orang itu, bukan anda. Giliran yang berakhir tanpa
+balasan dan tanpa ralat tidak menghantar apa-apa.
 
 ## Panduan berkaitan
 

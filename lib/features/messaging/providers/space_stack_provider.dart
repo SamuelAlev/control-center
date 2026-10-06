@@ -1,4 +1,5 @@
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
+import 'package:control_center/core/providers/cache_for.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +70,7 @@ typedef StackCallResult = ({bool ok, bool dirty, String? error});
 /// when the call fails, so a sidebar that cannot reach the server stays quiet.
 final spaceStackProvider = FutureProvider.autoDispose
     .family<List<SpaceStackLayer>, String>((ref, spaceId) async {
+      ref.cacheFor(kPanelCacheTtl);
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
       if (workspaceId == null || spaceId.isEmpty) {
         return const [];

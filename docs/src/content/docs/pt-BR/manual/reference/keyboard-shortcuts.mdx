@@ -2,10 +2,10 @@
 title: Atalhos de teclado
 description: O registro completo de atalhos de teclado, por escopo, com as condições em que cada atalho é disparado.
 slug: pt-BR/manual/referencia/atalhos-de-teclado
-sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
+sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
 ---
 
-Os atalhos vêm de um único registro `const`, o `KeybindingRegistry` em `lib/core/constants/keybindings.dart`. Ele contém **48 associações de teclas**. A tela Configurações → Você → Atalhos de teclado renderiza esse registro como uma **referência somente leitura**: não existe interface de reatribuição nem arquivo de atalhos de teclado do usuário.
+Os atalhos vêm de um único registro `const`, o `KeybindingRegistry` em `lib/core/constants/keybindings.dart`. Ele contém **49 associações de teclas**. A tela Configurações → Você → Atalhos de teclado renderiza esse registro como uma **referência somente leitura**: não existe interface de reatribuição nem arquivo de atalhos de teclado do usuário.
 
 O `Cmd` abaixo é o modificador de comando principal — ⌘ no macOS, Ctrl no Windows e no Linux. Uma associação só é disparada quando seu comando tem um manipulador registrado na tela atual e sua cláusula `when` é satisfeita; `!textInputFocus` significa que a tecla é repassada para um campo de texto em foco.
 
@@ -72,7 +72,7 @@ Escopo `/users/`. A cláusula `when` é uma regex contra `/users/<login>` **ou**
 | `/`            | Focar na busca |
 | `Cmd/Ctrl + F` | Focar na busca |
 
-## Espaços (8)
+## Espaços (9)
 
 Escopo `/spaces`. As cláusulas `when` usam uma regex, então são disparadas tanto na lista de espaços (`/spaces`) quanto em um espaço selecionado (`/spaces/<id>`).
 
@@ -86,6 +86,9 @@ Escopo `/spaces`. As cláusulas `when` usam uma regex, então são disparadas ta
 | `Cmd/Ctrl + T`         | Abrir aba do editor                       | Em uma rota `/spaces`           |
 | `Cmd/Ctrl + W`         | Fechar aba do editor                      | Em uma rota `/spaces`           |
 | `Cmd/Ctrl + B`         | Mostrar/ocultar a barra lateral do editor | Em uma rota `/spaces`           |
+| `Cmd/Ctrl + P`         | Ir para o arquivo                         | Em uma rota `/spaces`           |
+
+“Ir para o arquivo” abre um seletor com os arquivos da conversa. Sem nada digitado, ele lista os arquivos que você abriu mais recentemente; ao digitar, busca em todos os arquivos dos worktrees da conversa. `Enter` abre o arquivo selecionado em uma nova aba, `Cmd/Ctrl + Enter` ou o botão de dividir na linha o abre em um painel à direita, e o `×` em uma linha recente o remove da lista.
 
 O Enter para enviar pertence ao campo de texto do compositor; o ditado de premir para falar pertence ao botão de microfone do compositor (com seu próprio manipulador de teclado de hardware). Ambos estão listados no registro para a referência de atalhos de teclado.
 

@@ -6,10 +6,10 @@ import 'package:cc_domain/features/remote_control/domain/services/pairing_payloa
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/qr_code_view.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 /// Pair an additional client to the connected `cc_server`: another web browser,
 /// a desktop app, or a phone. The host page owns the trigger button (in its
@@ -312,10 +312,9 @@ class _MintedCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 color: const Color(0xFFFFFFFF),
-                child: QrImageView(
+                child: QrCodeView(
                   data: relay,
                   size: 200,
-                  backgroundColor: const Color(0xFFFFFFFF),
                 ),
               ),
             ),

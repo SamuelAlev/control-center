@@ -2423,7 +2423,7 @@
   "notifications": "Bildirimler",
   "notifyAgentRunCompleted": "Bir ajan çalışmayı tamamladığında bildir.",
   "notifyPrMentioned": "Bir pull request'te sizden bahsedildiğinde bildir.",
-  "notifyNewMessages": "Diğer alanlardaki yeni ajan mesajlarında bildir.",
+  "notifyNewMessages": "Bir alanda sizden bahsedildiğinde bildir.",
   "notifyPrMerged": "Bir pull request birleştirildiğinde bildir.",
   "notifyPrPublished": "Bir ajan pull request yayınladığında bildir.",
   "notifyReviewRequested": "Bir pull request'te incelemeniz istendiğinde bildir.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kota doldu",
   "subscriptionUsageSignInRequired": "Yeniden oturum aç",
   "subscriptionUsageSignInExpired": "Oturum süresi doldu, sonraki çalışmada yenilenir",
-  "subscriptionUsagePartiallyAvailable": "Kısmen kullanılabilir",
+  "subscriptionUsagePercentUsed": "%{percent} kullanıldı",
   "resetsIn": "{duration} içinde sıfırlanır",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Geri getir",
   "nativeSandboxUnsupported": "Yerel sandbox henüz {platform} üzerinde desteklenmiyor.",
   "continueWithoutSandbox": "Sandbox olmadan devam et",
-  "sandboxCheckAgain": "Tekrar kontrol et"
+  "sandboxCheckAgain": "Tekrar kontrol et",
+  "ideQuickOpen": "Dosyaya git",
+  "ideQuickOpenDescription": "Konuşmanın dosyalarını ada göre arayın ve birini sekmede açın",
+  "ideQuickOpenHint": "Dosyaları ada göre ara",
+  "ideQuickOpenRecentlyOpened": "Son açılanlar",
+  "ideQuickOpenOpenToSide": "Yanda aç",
+  "ideQuickOpenRemoveRecent": "Son açılanlardan kaldır",
+  "ideQuickOpenNoRecent": "Son açılan dosya yok"
 }

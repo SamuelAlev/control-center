@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_browser_rail.dart';
 import 'package:control_center/features/settings/providers/model_browser_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -201,7 +203,21 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (groups.length > 1) ...[
-                  SizedBox(width: 190, child: _rail(l10n, groups)),
+                  SizedBox(
+                    width: 190,
+                    child: ModelBrowserRail(
+                      groups: groups,
+                      query: _searchCtl.text,
+                      selectedId: _providerId,
+                      onSelected: (id) => setState(() {
+                        _providerId = id;
+                        _highlight = 0;
+                        if (_listCtl.hasClients) {
+                          _listCtl.jumpTo(0);
+                        }
+                      }),
+                    ),
+                  ),
                   AppSpacing.hGapMd,
                   Container(width: 1, color: t.borderPrimary),
                   AppSpacing.hGapMd,
@@ -229,72 +245,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
           _footer(l10n, focused),
         ],
       ),
-    );
-  }
-
-  Widget _rail(AppLocalizations l10n, List<ModelBrowserGroup> groups) {
-    final q = _searchCtl.text;
-    final total = groups.fold<int>(0, (n, g) => n + g.matchCount(q));
-    return CcScrollArea(
-      fadeColor: context.ds.panel,
-      child: ListView(
-        children: [
-          _railItem(label: l10n.allModels, count: total, id: null),
-          for (final g in groups)
-            _railItem(label: g.name, count: g.matchCount(q), id: g.id),
-        ],
-      ),
-    );
-  }
-
-  Widget _railItem({
-    required String label,
-    required int count,
-    required String? id,
-  }) {
-    final t = context.ds;
-    final selected = _providerId == id;
-    return CcTappable(
-      onPressed: () => setState(() {
-        _providerId = id;
-        _highlight = 0;
-        if (_listCtl.hasClients) {
-          _listCtl.jumpTo(0);
-        }
-      }),
-      borderRadius: AppRadii.brSm,
-      semanticLabel: label,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return Container(
-          padding: const EdgeInsetsDirectional.fromSTEB(10, 7, 10, 7),
-          decoration: BoxDecoration(
-            color: selected
-                ? t.accentSoft
-                : hovered
-                ? t.bgSecondaryHover
-                : null,
-            borderRadius: AppRadii.brSm,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: CcTruncatedText(
-                  label,
-                  style: CcTypography.bodySm.copyWith(
-                    color: selected ? t.textPrimary : t.textSecondary,
-                  ),
-                ),
-              ),
-              AppSpacing.hGapSm,
-              Text(
-                '$count',
-                style: CcTypography.caption.copyWith(color: t.textTertiary),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -346,6 +296,16 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
       onPressed: () => Navigator.of(context).pop(e.id),
       child: Row(
         children: [
+          // Who made the model: one provider (Cursor, OpenRouter) can serve
+          // several vendors' models.
+          AiBrandLogo(
+            brand:
+                AiBrand.forModel(e.id, name: e.name) ??
+                AiBrand.forProvider(e.providerId),
+            color: t.fgSecondary,
+            size: 16,
+          ),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

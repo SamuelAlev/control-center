@@ -2,7 +2,7 @@
 title: Cycle de vie du lancement d'un agent
 description: Ce qui se passe entre l'arrivée d'un message et la fermeture d'un journal d'exécution — assemblage du prompt, arbres de travail, identité, ce qui borne une exécution et comment son résultat est consigné honnêtement.
 slug: fr-FR/manuel/concepts/cycle-de-vie-du-lancement
-sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
+sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 ---
 
 ## Ce qu'est un lancement
@@ -130,7 +130,7 @@ Lorsqu'une exécution se termine sans le livrable exigé par son mode — une ex
 C'est délibéré. Basculer le statut ferait bouger des machines à états de tickets et de pipelines qui n'ont rien à voir avec l'artefact manquant. Cela signifie aussi que « statut : completed » à lui seul ne suffit jamais à conclure qu'une exécution a réussi — lisez le résumé.
 :::
 
-La clôture de l'exécution publie `AgentRunCompleted`, et beaucoup de choses en dépendent : la trame de notification et son entrée durable dans le fil, le redirecteur en direct qui la pousse vers les clients connectés, l'agrégation des coûts de pipeline, la reprise d'une étape de pipeline qui attendait l'exécution, la clôture du ticket sous-jacent, la correspondance d'une orchestration avec un état terminal, la décision de poursuivre ou d'arrêter du superviseur d'objectif, le rôle de vérificateur et l'évaluation budgétaire après exécution. La liste de présence suit séparément, en observant les journaux d'exécution récents plutôt que l'événement.
+La clôture de l'exécution publie `AgentRunCompleted`, et beaucoup de choses en dépendent : l'agrégation des coûts de pipeline, la reprise d'une étape de pipeline qui attendait l'exécution, la clôture du ticket sous-jacent, la correspondance d'une orchestration avec un état terminal, la décision de poursuivre ou d'arrêter du superviseur d'objectif, le rôle de vérificateur et l'évaluation budgétaire après exécution. La liste de présence suit séparément, en observant les journaux d'exécution récents plutôt que l'événement. La notification « Agent terminé » ne figure pas dans cette liste : l'événement se déclenche à la fin du flux du processus, avant l'écriture de la réponse. La notification est donc le `MessageReceived` du tour, publié une fois le message enregistré.
 
 ## Budgets, après coup
 

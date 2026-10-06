@@ -2423,7 +2423,7 @@
   "notifications": "Oznámení",
   "notifyAgentRunCompleted": "Upozornit, když agent dokončí běh.",
   "notifyPrMentioned": "Upozornit, když vás někdo zmíní v pull requestu.",
-  "notifyNewMessages": "Upozornit na nové zprávy agenta v jiných prostorech.",
+  "notifyNewMessages": "Upozornit, když vás někdo zmíní v prostoru.",
   "notifyPrMerged": "Upozornit, když je pull request sloučen.",
   "notifyPrPublished": "Upozornit, když agent zveřejní pull request.",
   "notifyReviewRequested": "Upozornit, když je na pull requestu vyžádána vaše kontrola.",
@@ -5103,7 +5103,7 @@
   "subscriptionUsageExhausted": "Kvóta vyčerpána",
   "subscriptionUsageSignInRequired": "Přihlaste se znovu",
   "subscriptionUsageSignInExpired": "Přihlášení vypršelo, obnoví se při dalším běhu",
-  "subscriptionUsagePartiallyAvailable": "Částečně dostupné",
+  "subscriptionUsagePercentUsed": "využito {percent} %",
   "resetsIn": "Obnoví se za {duration}",
   "@resetsIn": {
     "description": "Quota reset countdown",
@@ -8804,5 +8804,12 @@
   "windowRestore": "Obnovit",
   "nativeSandboxUnsupported": "Nativní sandbox zatím není na {platform} podporován.",
   "continueWithoutSandbox": "Pokračovat bez sandboxu",
-  "sandboxCheckAgain": "Zkontrolovat znovu"
+  "sandboxCheckAgain": "Zkontrolovat znovu",
+  "ideQuickOpen": "Přejít na soubor",
+  "ideQuickOpenDescription": "Vyhledejte soubory konverzace podle názvu a otevřete jeden na kartě",
+  "ideQuickOpenHint": "Hledat soubory podle názvu",
+  "ideQuickOpenRecentlyOpened": "Nedávno otevřené",
+  "ideQuickOpenOpenToSide": "Otevřít vedle",
+  "ideQuickOpenRemoveRecent": "Odebrat z nedávno otevřených",
+  "ideQuickOpenNoRecent": "Žádné nedávno otevřené soubory"
 }
