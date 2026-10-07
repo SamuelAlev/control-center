@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
@@ -19,6 +20,7 @@ import 'package:cc_persistence/cc_persistence.dart'
     show DaoAgentRepository, DaoUserRepository, DaoWorkspaceRepository;
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
+import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_account_token_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
@@ -76,6 +78,7 @@ ExtraOpsResult buildServerExtraOps({
   required ConversationTitlePort? conversationTitles,
   required ClaudeAccountStore? claudeAccounts,
   required PendingCredentialBlockRegistry? credentialBlocks,
+  required WorkspaceSettingsRepository? workspaceSettings,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -117,6 +120,7 @@ ExtraOpsResult buildServerExtraOps({
       credentialBlocks: credentialBlocks,
       isServerOwner: isServerOwner,
     ),
+    ...buildAccountPoolOps(workspaceSettings),
   ];
 
   final watches = <WatchQuery>[

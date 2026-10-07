@@ -243,6 +243,7 @@ import 'package:uuid/uuid.dart';
 part 'runtime/cc_server_instance.dart';
 part 'runtime/server_boot_logging.dart';
 part 'runtime/server_helpers.dart';
+part 'runtime/server_review_wiring.dart';
 
 /// Diagnostics via [CcHostLog]. Secrets (device PSKs, provider app identity,
 /// per-user credentials, SSO) share one [FileSecretsStore] under the data dir.
@@ -5314,6 +5315,7 @@ Future<CcServer> runCcServer({
     conversationTitles: conversationTitleService,
     claudeAccounts: demo?.claudeAccounts ?? claudeAccountStore,
     credentialBlocks: credentialGateRegistry,
+    workspaceSettings: workspaceSettingsRepository,
   );
 
   demoReview = demo == null
@@ -5328,6 +5330,11 @@ Future<CcServer> runCcServer({
           databases: workspaceDbs,
         );
 
+  final linkPreviews = _linkPreviewFetchers(
+    forActor: githubClientForActor,
+    forOwner: githubClientForOwner,
+    server: serverGitHubClient,
+  );
   final catalog = buildRemoteRpcCatalog(
     manualPairingEnabled: ssoSettings.isPairingEnabled,
     // The demo's one outbound marketing read: the project's own star count,
@@ -5987,44 +5994,14 @@ Future<CcServer> runCcServer({
     // composer picker shows so "which account should this run use?" can be
     // answered on remaining headroom rather than from memory.
     claudeAccounts: demo?.claudeAccounts ?? claudeAccountStore,
-    // Account pools live in each workspace's settings while the credentials
-    // are server-global, so a removal has to visit every workspace to take the
-    // id off. One sweep for every lane; only "which ids still exist" is
-    // lane-specific. Through CrossWorkspaceQueries: a maintenance sweep,
-    // sequential.
+    // Prunes a removed credential's id out of every workspace's pools for its
+    // lane; see [_accountPoolCredentialsSweep].
     onAccountPoolCredentialsRemoved: demo == null
-        ? (lane) async {
-            final provider = AccountPoolLanes.harnessProviderOf(lane);
-            final Set<String> existing;
-            if (lane == AccountPoolLanes.claudeCode) {
-              existing = {for (final a in await claudeAccountStore.list()) a.id};
-            } else if (provider != null) {
-              existing = {
-                for (final c in await harnessCreds.credentialsFor(provider))
-                  c.credentialId,
-              };
-            } else {
-              return;
-            }
-            await crossWorkspace.forEachWorkspace(
-              (wsDb) async {
-                final dao = wsDb.workspaceSettingDao;
-                final rows = await dao.getForWorkspace(wsDb.workspaceId);
-                final pruned = prunedAccountPools(
-                  {for (final r in rows) r.key: r.value},
-                  lane: lane,
-                  existing: existing,
-                );
-                for (final MapEntry(:key, :value) in pruned.entries) {
-                  await dao.setValue(wsDb.workspaceId, key, value);
-                }
-              },
-              onError: (workspaceId, e) => CcHostLog.warning(
-                'account pools: could not prune $lane in workspace '
-                '$workspaceId: $e',
-              ),
-            );
-          }
+        ? _accountPoolCredentialsSweep(
+            claudeAccounts: claudeAccountStore,
+            harnessCreds: harnessCreds,
+            crossWorkspace: crossWorkspace,
+          )
         : null,
     fetchClaudeAccountUsage: demo == null
         ? (configDir) async => (await claudeUsageCache.get(configDir)).toJson()
@@ -6041,50 +6018,10 @@ Future<CcServer> runCcServer({
     // Generic workspace-scoped cache (the messaging IDE editor-layout persists
     // + restores per conversation here, so layouts are shared across clients).
     cacheRepository: DaoCacheRepository(workspaceDbs),
-    // The caller's client, same reason as `userProfile` above: the no-caller
-    // lane is the GitHub App, and a private repo the installation cannot see
-    // comes back 404. A member with no GitHub credential still falls through
-    // `tokenForActor` to the app identity.
-    fetchPrPreview:
-        (owner, repo, number, {required actingUserId, workspaceId}) async {
-          final client = actingUserId.isNotEmpty
-              ? githubClientForActor(actingUserId, workspaceId: workspaceId)
-              : workspaceId != null && workspaceId.isNotEmpty
-              ? githubClientForOwner(workspaceId, owner)
-              : serverGitHubClient;
-          try {
-            final pr = await client.pr.getPullRequest(owner, repo, number);
-            if (pr == null) {
-              return null;
-            }
-            return {
-              'title': pr.title,
-              'state': pr.state,
-              'is_draft': pr.isDraft,
-              'is_merged': pr.mergedAt != null,
-              'html_url': pr.htmlUrl,
-            };
-          } catch (_) {
-            return null;
-          }
-        },
-    fetchCommitPreview:
-        (owner, repo, sha, {required actingUserId, workspaceId}) async {
-          final client = actingUserId.isNotEmpty
-              ? githubClientForActor(actingUserId, workspaceId: workspaceId)
-              : workspaceId != null && workspaceId.isNotEmpty
-              ? githubClientForOwner(workspaceId, owner)
-              : serverGitHubClient;
-          try {
-            final commit = await client.pr.getCommit(owner, repo, sha);
-            if (commit == null) {
-              return null;
-            }
-            return {'title': commit.title, 'short_sha': commit.shortSha};
-          } catch (_) {
-            return null;
-          }
-        },
+    // PR/commit link previews on the caller's client; see
+    // [_linkPreviewFetchers].
+    fetchPrPreview: linkPreviews.pr,
+    fetchCommitPreview: linkPreviews.commit,
     // The headless server hosts its own MCP HTTP server; the `mcp.*` ops drive
     // this control so a connected web/thin client can start/stop/reconfigure it.
     // demo: no MCP server control, so /mcp and /sse are never mounted.
@@ -6274,25 +6211,7 @@ Future<CcServer> runCcServer({
     computeReviewStudio: computeReviewStudioFn,
     reviewBlastRadius: reviewBlastRadiusFn,
     reviewCohortImpact: reviewCohortImpactFn,
-    reviewHubStats: ({required String workspaceId}) async {
-      final stats = await reviewRunSnapshotRepository.statsForWorkspace(
-        workspaceId,
-      );
-      return {
-        'findings_total': stats.findingsTotal,
-        'resolved': stats.resolved,
-        'dismissed': stats.dismissed,
-        'still_open': stats.stillOpen,
-        'addressed': stats.addressed,
-        // The two that actually say whether the review is worth running.
-        // `action_rate` counts only findings a human FIXED — a dismissal is a
-        // rejection, and folding it into "addressed" is how a reviewer
-        // congratulates itself for being ignored. `dismissal_rate` is the
-        // noise signal to tune against.
-        'action_rate': stats.actionRate,
-        'dismissal_rate': stats.dismissalRate,
-      };
-    },
+    reviewHubStats: _reviewHubStats(reviewRunSnapshotRepository),
     // Every AI-review entry point runs the `pr_review` pipeline through one
     // implementation — see [startPrReview]. The op name and its
     // `{status, space_id, pr_external_id}` shape are kept deliberately: they
@@ -6300,36 +6219,7 @@ Future<CcServer> runCcServer({
     // tool, and renaming an op buys nothing a comment cannot say.
     reviewFindingStatus: reviewFindingStatusService,
     reviewHubStart: demo != null ? null : startPrReview,
-    publishReview:
-        ({
-          required String workspaceId,
-          required String spaceId,
-          required String selection,
-          required bool approveOnShip,
-          required String userId,
-        }) async {
-          // Published under the APP — findings are reviewer-agent work with a
-          // human release gate, not the operator's own prose.
-          // `userId` still required for the role gate and audit; GitHub credit
-          // is the app.
-          final result = await reviewPublisherService.publish(
-            workspaceId: workspaceId,
-            spaceId: spaceId,
-            selection: selection == 'all_open'
-                ? ReviewPublishSelection.allOpen
-                : ReviewPublishSelection.consensus,
-            approveOnShip: approveOnShip,
-            actingUserId: null,
-          );
-          return {
-            'review_id': result.reviewId,
-            'event': result.event,
-            'finding_count': result.findingCount,
-            'inline_count': result.inlineCount,
-            'used_body_fallback': result.usedFallback,
-            'status': 'published',
-          };
-        },
+    publishReview: _publishReviewAsApp(reviewPublisherService),
     resolveStudioKey: resolvePrExternalId,
   );
 

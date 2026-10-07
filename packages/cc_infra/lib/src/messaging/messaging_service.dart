@@ -36,6 +36,7 @@ import 'package:cc_infra/src/messaging/agent_working_directory.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
 import 'package:cc_infra/src/messaging/conversation_side_channel_service.dart';
 import 'package:cc_infra/src/messaging/conversation_title_service.dart';
+import 'package:cc_infra/src/messaging/mention_principals.dart';
 import 'package:cc_infra/src/messaging/prompt_attachments.dart';
 import 'package:cc_infra/src/messaging/steering_queue_service.dart';
 
@@ -362,7 +363,7 @@ class MessagingService implements MessagingPort {
       content: content,
       isAgentMessage: false,
       messageId: messageId,
-      mentions: _decodeMentionPrincipals(metadata),
+      mentions: decodeMentionPrincipals(metadata),
       senderUserId: authorUserId,
       conversationId: conversationId,
     );
@@ -389,31 +390,7 @@ class MessagingService implements MessagingPort {
     );
   }
 
-  /// Decodes `metadata['mentions']` (see [MessagingService.sendAndDispatch])
-  /// into wire-ready [Principal]s for the [MessageReceived] notification
-  /// event (PRD 16 §7/§15) — a human mention rides this path so a mentioned
-  /// teammate is notified even though the message itself is human-authored
-  /// (which otherwise never raises a notification).
-  List<Principal> _decodeMentionPrincipals(Map<String, dynamic>? metadata) {
-    final raw = metadata?['mentions'];
-    if (raw is! List) {
-      return const [];
-    }
-    final principals = <Principal>[];
-    for (final m in raw) {
-      if (m is Map<String, dynamic>) {
-        final mention = MessageMention.fromJson(m);
-        principals.add(Principal.of(mention.principalType, mention.agentId));
-      }
-    }
-    return principals;
-  }
-
-  void _embedLastMessage(
-    String workspaceId,
-    String messageId,
-    String content,
-  ) {
+  void _embedLastMessage(String workspaceId, String messageId, String content) {
     final port = _embeddingPort;
     if (port == null || !port.isReady || content.isEmpty) {
       return;
@@ -664,9 +641,8 @@ class MessagingService implements MessagingPort {
     if (agentRepo == null) {
       return;
     }
-    final roster = allAgents ?? await agentRepo.watchByWorkspace(
-      workspaceId,
-    ).first;
+    final roster =
+        allAgents ?? await agentRepo.watchByWorkspace(workspaceId).first;
     if (roster.isEmpty) {
       return;
     }
@@ -1396,7 +1372,8 @@ class MessagingService implements MessagingPort {
     required String conversationId,
     required String messageId,
     required String content,
-  }) async => await steeringQueueService?.edit(
+  }) async =>
+      await steeringQueueService?.edit(
         workspaceId: workspaceId,
         conversationId: conversationId,
         messageId: messageId,
@@ -1410,7 +1387,8 @@ class MessagingService implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String messageId,
-  }) async => await steeringQueueService?.delete(
+  }) async =>
+      await steeringQueueService?.delete(
         workspaceId: workspaceId,
         conversationId: conversationId,
         messageId: messageId,
@@ -1435,7 +1413,8 @@ class MessagingService implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String messageId,
-  }) async => await steeringQueueService?.deliver(
+  }) async =>
+      await steeringQueueService?.deliver(
         workspaceId: workspaceId,
         conversationId: conversationId,
         messageId: messageId,

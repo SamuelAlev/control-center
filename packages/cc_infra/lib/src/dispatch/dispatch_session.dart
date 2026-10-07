@@ -76,6 +76,7 @@ part 'dispatch_session_harness.dart';
 part 'dispatch_session_subagent.dart';
 part 'dispatch_session_claude_cli.dart';
 part 'dispatch_session_gateway.dart';
+part 'dispatch_session_account_pool.dart';
 
 /// A session that dispatches and manages a single sandboxed agent run.
 /// Default per-run priced cost cap, in cents: what one unattended segment of
@@ -1335,44 +1336,6 @@ class DispatchSession implements SteeringSessionView {
     );
   }
 
-  /// Orders [stored] according to the workspace's pool for [providerId].
-  ///
-  /// Returns the list unchanged when no resolver is wired or the pool is
-  /// unconfigured — which is what keeps every existing install on the exact
-  /// chain it had before pools existed. The resolver is the ONLY thing that
-  /// knows about workspaces, strategies and cooldowns; this layer just spends
-  /// the order it is given.
-  Future<List<ProviderCredential>> _orderRotation(
-    String providerId,
-    List<ProviderCredential> stored,
-  ) async {
-    final resolve = onResolveHarnessRotation;
-    // Consulted even for ONE stored key: a pool naming only removed keys must
-    // refuse, not quietly run on whatever key is left.
-    if (resolve == null || stored.isEmpty) {
-      return stored;
-    }
-    final answer = await resolve(
-      workspaceId: workspaceId,
-      agentId: agentId,
-      providerId: providerId,
-      credentialIds: [for (final c in stored) c.credentialId],
-    );
-    final refusal = answer.refusal;
-    if (refusal != null) {
-      throw _AccountPoolRefused(providerId, refusal);
-    }
-    final order = answer.order;
-    if (order == null || order.isEmpty) {
-      return stored;
-    }
-    final byId = {for (final c in stored) c.credentialId: c};
-    return [
-      for (final id in order)
-        if (byId[id] != null) byId[id]!,
-    ];
-  }
-
   bool _sameCredential(ProviderCredential a, ProviderCredential? b) =>
       b != null && a.method == b.method && a.secret == b.secret;
 
@@ -1393,161 +1356,6 @@ class DispatchSession implements SteeringSessionView {
       return null;
     }
     return RefreshingCredential(refresher, credential).resolve;
-  }
-
-  /// Parks this run until this account's directory holds a credential again,
-  /// and reports whether it does.
-  ///
-  /// False when no gate is wired, when the operator cancels, or when the wait
-  /// times out — every one of which falls through to the failure the run had
-  /// before the gate existed.
-  Future<bool> _gateOnClaudeSignIn({required String detail}) async {
-    final gate = deps.credentialGate;
-    if (gate == null) {
-      return false;
-    }
-    addEvent(
-      DebugEvent(
-        content:
-            '[claude] waiting for a sign-in on $claudeConfigDir — '
-            'the run continues as soon as one lands.',
-      ),
-    );
-    final outcome = await gate.awaitCredentials(
-      RunCredentialBlockRequest(
-        lane: RunCredentialLane.claudeCode,
-        reason: RunCredentialReason.signedOut,
-        detail: detail,
-        runLogId: runLogId,
-        accountIds: [for (final a in claudeAccounts) a.accountId],
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-        agentName: agentName,
-      ),
-      // The credential lands as a FILE in the account directory — written
-      // directly by the CLI off macOS or by an in-sandbox refresh, and mirrored
-      // there from the Keychain otherwise. The mirror has to be re-run for the
-      // Keychain case; without it the probe would watch a file that a
-      // successful `claude auth login` never touches.
-      recheck: () async {
-        final sync = deps.syncClaudeCredential;
-        final accountId = claudeAccounts.firstOrNull?.accountId;
-        if (sync != null && accountId != null) {
-          await sync(accountId);
-        }
-        return _claudeAccountHasCredential();
-      },
-    );
-    return outcome == RunCredentialOutcome.resolved;
-  }
-
-  /// Parks this run until a Claude Code account that just 401'd has a newer
-  /// credential, and reports whether one landed.
-  ///
-  /// Distinct from [_gateOnClaudeSignIn]: that one fires before spawn, when
-  /// the directory is empty. This one fires after `claude -p` has already
-  /// proved the credential on disk no longer authenticates — an access token
-  /// the CLI could not renew, which still looks signed-in to the pre-spawn
-  /// probe. The same prompt is re-run when a human signs in; cancelling or
-  /// timing out falls through to the error the turn already has.
-  ///
-  /// False when no gate is wired, when the operator cancels, when the wait
-  /// times out, or when the gate says "resolved" without the credential file
-  /// actually changing — that last one is what stops a poll from relaunching
-  /// `claude` against the same dead token.
-  Future<bool> _gateOnExpiredClaudeSignIn({required String detail}) async {
-    final gate = deps.credentialGate;
-    if (gate == null) {
-      return false;
-    }
-    addEvent(
-      DebugEvent(
-        content:
-            '[claude] waiting for a fresh sign-in — '
-            'the same prompt continues as soon as one lands.',
-      ),
-    );
-    final before = _claudeCredentialBlobs();
-    final outcome = await gate.awaitCredentials(
-      RunCredentialBlockRequest(
-        lane: RunCredentialLane.claudeCode,
-        reason: RunCredentialReason.credentialExpired,
-        detail: detail,
-        runLogId: runLogId,
-        accountIds: [
-          for (final a in claudeAccounts)
-            if (a.accountId.isNotEmpty) a.accountId,
-        ],
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-        agentName: agentName,
-      ),
-      // Re-mirror first. On macOS the login lands in the Keychain and the
-      // file the sandbox can read is only a copy; without the sync the probe
-      // watches a file `claude auth login` never touches.
-      recheck: () => _claudeCredentialsRenewed(before),
-    );
-    if (outcome != RunCredentialOutcome.resolved) {
-      return false;
-    }
-    return _claudeCredentialsRenewed(before);
-  }
-
-  /// `.credentials.json` contents for every account dir this run can see.
-  ///
-  /// A missing file is stored as null so a login that creates one counts as
-  /// a change, and a sign-out that deletes one does not have to.
-  Map<String, String?> _claudeCredentialBlobs() {
-    final dirs = <String>{
-      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
-        claudeConfigDir!,
-      for (final a in claudeAccounts)
-        if (a.configDir.isNotEmpty) a.configDir,
-    };
-    return {for (final dir in dirs) dir: _readClaudeCredential(dir)};
-  }
-
-  /// Whether any account dir now holds a different credential than [before].
-  ///
-  /// Content, not mtime: a failed refresh and the Keychain mirror can both
-  /// rewrite the file without a human signing in, and a 1-second filesystem
-  /// timestamp cannot tell that apart from a real login. A new sign-in
-  /// replaces the blob.
-  Future<bool> _claudeCredentialsRenewed(Map<String, String?> before) async {
-    final sync = deps.syncClaudeCredential;
-    if (sync != null) {
-      for (final account in claudeAccounts) {
-        if (account.accountId.isEmpty) {
-          continue;
-        }
-        await sync(account.accountId);
-      }
-    }
-    for (final entry in _claudeCredentialBlobs().entries) {
-      final current = entry.value;
-      if (current != null &&
-          current.isNotEmpty &&
-          current != before[entry.key]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  String? _readClaudeCredential(String dir) {
-    try {
-      final file = File('$dir/.credentials.json');
-      if (!file.existsSync()) {
-        return null;
-      }
-      return file.readAsStringSync();
-    } on Object {
-      return null;
-    }
   }
 
   /// Whether [credential] can actually start a run: it carries a secret, or it
@@ -1601,54 +1409,6 @@ class DispatchSession implements SteeringSessionView {
       return null;
     }
     return _resolveHarnessCredential(providerId);
-  }
-
-  /// Parks this run until [refused]'s pool stops refusing it, and reports
-  /// whether it did.
-  ///
-  /// False when no gate is wired, when the operator cancels, or when the wait
-  /// times out — each falls through to the refusal as the run's failure.
-  Future<bool> _gateOnHarnessPool(_AccountPoolRefused refused) async {
-    final gate = deps.credentialGate;
-    final resolve = onResolveHarnessRotation;
-    if (gate == null || resolve == null) {
-      return false;
-    }
-    final detail = refused.toString();
-    addEvent(DebugEvent(content: detail));
-    final outcome = await gate.awaitCredentials(
-      RunCredentialBlockRequest(
-        lane: RunCredentialLane.harness,
-        reason: refused.refusal.reason,
-        detail: detail,
-        runLogId: runLogId,
-        providerId: refused.providerId,
-        accountIds: refused.refusal.accountIds,
-        availableAt: refused.refusal.earliestReset,
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-        agentName: agentName,
-      ),
-      // Re-asking the pool IS the probe: an edit to it lands in workspace
-      // settings, which only a fresh read observes.
-      recheck: () async {
-        final stored =
-            await deps.harnessCredentialStore?.credentialsFor(
-              refused.providerId,
-            ) ??
-            const <ProviderCredential>[];
-        final answer = await resolve(
-          workspaceId: workspaceId,
-          agentId: agentId,
-          providerId: refused.providerId,
-          credentialIds: [for (final c in stored) c.credentialId],
-        );
-        return answer.refusal == null;
-      },
-    );
-    return outcome == RunCredentialOutcome.resolved;
   }
 
   /// Resolves the full credential for a harness provider (API key or OAuth):
@@ -1771,62 +1531,6 @@ class DispatchSession implements SteeringSessionView {
       merged.addAll(lease.environment(merged));
     }
     return merged;
-  }
-
-  /// Whether the Claude Code account this run will use has something to
-  /// authenticate with.
-  ///
-  /// Only answerable when Control Center owns the config dir; with none set the
-  /// CLI resolves its own credential (a keychain item, `~/.claude`) and this
-  /// returns true rather than guessing. A token in the environment counts:
-  /// `CLAUDE_CODE_OAUTH_TOKEN` and `ANTHROPIC_API_KEY` both authenticate the
-  /// CLI without any file in the config dir, so treating an empty dir as
-  /// signed-out would refuse a run that would have worked.
-  bool _claudeAccountHasCredential() {
-    final dir = claudeConfigDir;
-    if (dir == null || dir.isEmpty) {
-      return true;
-    }
-    for (final key in const ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']) {
-      final fromCaller = callerEnv[key] ?? adapterEnvOverride[key];
-      if (fromCaller != null && fromCaller.isNotEmpty) {
-        return true;
-      }
-      final fromHost = Platform.environment[key];
-      if (fromHost != null && fromHost.isNotEmpty) {
-        return true;
-      }
-    }
-    return File('$dir/.credentials.json').existsSync() ||
-        readClaudeLongLivedToken(dir) != null;
-  }
-
-  /// [base] re-pointed at ONE account of a multi-account run.
-  ///
-  /// The token has to move with the config dir. [_mergedEnv] exported the
-  /// FIRST account's token, and a failover attempt on an account without one
-  /// would otherwise sign in as the account it is failing over from — exactly
-  /// the plan that just ran out.
-  Map<String, String> _envForClaudeAccount(
-    Map<String, String> base,
-    String configDir,
-  ) {
-    if (configDir.isEmpty) {
-      return base;
-    }
-    final env = {...base, 'CLAUDE_CONFIG_DIR': configDir};
-    final token = readClaudeLongLivedToken(configDir);
-    final first = claudeConfigDir;
-    final inherited = first == null || first.isEmpty
-        ? null
-        : readClaudeLongLivedToken(first);
-    if (token != null) {
-      env[claudeLongLivedTokenEnvKey] = token;
-    } else if (inherited != null &&
-        env[claudeLongLivedTokenEnvKey] == inherited) {
-      env.remove(claudeLongLivedTokenEnvKey);
-    }
-    return env;
   }
 
   /// Directories the runner keeps its own state in, writable in every mode.
@@ -2689,17 +2393,4 @@ class _ClosureSubagentSpawner implements SubagentSpawner {
 
   @override
   Future<SubagentResult> spawn(SubagentSpawnRequest request) => _run(request);
-}
-
-/// Thrown out of harness provider assembly when the scope's account pool
-/// refuses the run, so the session can park it on the credential gate instead
-/// of building a provider on a credential the pool rules out.
-class _AccountPoolRefused implements Exception {
-  _AccountPoolRefused(this.providerId, this.refusal);
-
-  final String providerId;
-  final AccountPoolRefusal refusal;
-
-  @override
-  String toString() => harnessPoolRefusalDetail(providerId, refusal);
 }

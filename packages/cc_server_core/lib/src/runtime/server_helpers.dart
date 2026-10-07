@@ -359,3 +359,48 @@ String _claudeAccountLabel(ClaudeAccount account) {
   ];
   return parts.isEmpty ? account.label : parts.join(' · ');
 }
+
+/// The `onAccountPoolCredentialsRemoved` hook: after a credential of a lane is
+/// removed (a Claude Code account, a harness key, a whole custom provider),
+/// takes its id out of every workspace's pools for that lane.
+///
+/// Account pools live in each workspace's settings while the credentials are
+/// server-global, so a removal has to visit every workspace to take the id
+/// off. One sweep for every lane; only "which ids still exist" is
+/// lane-specific. Through CrossWorkspaceQueries: a maintenance sweep,
+/// sequential.
+Future<void> Function(String lane) _accountPoolCredentialsSweep({
+  required ClaudeAccountStore claudeAccounts,
+  required ProviderCredentialStore harnessCreds,
+  required CrossWorkspaceQueries crossWorkspace,
+}) => (lane) async {
+  final provider = AccountPoolLanes.harnessProviderOf(lane);
+  final Set<String> existing;
+  if (lane == AccountPoolLanes.claudeCode) {
+    existing = {for (final a in await claudeAccounts.list()) a.id};
+  } else if (provider != null) {
+    existing = {
+      for (final c in await harnessCreds.credentialsFor(provider))
+        c.credentialId,
+    };
+  } else {
+    return;
+  }
+  await crossWorkspace.forEachWorkspace(
+    (wsDb) async {
+      final dao = wsDb.workspaceSettingDao;
+      final rows = await dao.getForWorkspace(wsDb.workspaceId);
+      final pruned = prunedAccountPools(
+        {for (final r in rows) r.key: r.value},
+        lane: lane,
+        existing: existing,
+      );
+      for (final MapEntry(:key, :value) in pruned.entries) {
+        await dao.setValue(wsDb.workspaceId, key, value);
+      }
+    },
+    onError: (workspaceId, e) => CcHostLog.warning(
+      'account pools: could not prune $lane in workspace $workspaceId: $e',
+    ),
+  );
+};
