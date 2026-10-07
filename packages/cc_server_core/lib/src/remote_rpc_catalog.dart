@@ -1134,8 +1134,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // The conversation repository backs the `conversation.*` mutate ops and the
   // `conversation.watchForSpace` subscription. Null leaves those ops absent.
   ConversationRepository? conversationRepository,
-  // Proposes a title on the workspace's short-task runner for the rename
-  // dialog (`conversation.suggestTitle`). Null leaves that op absent.
+  // Which conversations are getting an automatic title right now
+  // (`conversation.watchTitleGenerating`). Null leaves that watch absent; the
+  // `conversation.suggestTitle` op is an `extraOps` pack.
   ConversationTitlePort? conversationTitles,
   Stream<List<Conversation>> Function(String workspaceId, String spaceId)?
   watchConversationsForSpace,
@@ -6413,26 +6414,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-      if (conversationTitles != null)
-        RepoOp(
-          name: 'conversation.suggestTitle',
-          // A read: it spends a model call but writes nothing — the human
-          // keeps or discards the suggestion in the rename dialog.
-          kind: RepoOpKind.read,
-          requiredArgs: ['conversation_id'],
-          handler: (ctx) async {
-            // Scoped by the bound workspace: a foreign id is not found.
-            final suggestion = await conversationTitles.suggestTitle(
-              workspaceId: ctx.workspaceId!,
-              conversationId: ctx.args['conversation_id'] as String,
-            );
-            return {
-              'title': ?suggestion.title,
-              'unavailable': suggestion.unavailable,
-              'empty': suggestion.empty,
-            };
-          },
-        ),
       RepoOp(
         name: 'conversation.archive',
         kind: RepoOpKind.mutate,
@@ -11498,62 +11479,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             console: ctx.args['console'] as bool? ?? false,
           );
           return {'argv': cmd.argv, 'environment': cmd.environment};
-        },
-      ),
-      // The long-lived alternative to `loginCommand`. The interactive login's
-      // refresh token rotates, so its copies (keychain item, mirrored file)
-      // sign each other out; a `claude setup-token` token never refreshes and
-      // stays signed in for about a year. Control Center still mints nothing:
-      // the CLI prints the token in the operator's terminal and they paste it
-      // into `setToken`. It is written into the account directory on the host
-      // and never read back out — `list` only reports that one is present.
-      RepoOp(
-        name: 'claude_accounts.setupTokenCommand',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.read,
-        workspaceScoped: false,
-        requiredArgs: ['id'],
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          final cmd = claudeAccounts.setupTokenCommand(
-            ctx.args['id'] as String,
-          );
-          return {'argv': cmd.argv, 'environment': cmd.environment};
-        },
-      ),
-      RepoOp(
-        name: 'claude_accounts.setToken',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        requiredArgs: ['id', 'token'],
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          try {
-            await claudeAccounts.setLongLivedToken(
-              ctx.args['id'] as String,
-              ctx.args['token'] as String,
-            );
-          } on ArgumentError catch (e) {
-            // The message names the problem, never the value: the store
-            // redacts the token before it can reach an error.
-            throw ValidationException('${e.message}');
-          }
-          // A run parked on this account being signed out can go now.
-          await credentialBlockRegistry?.nudge();
-          return {'ok': true};
-        },
-      ),
-      RepoOp(
-        name: 'claude_accounts.clearToken',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        requiredArgs: ['id'],
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          await claudeAccounts.clearLongLivedToken(ctx.args['id'] as String);
-          return {'ok': true};
         },
       ),
     ],

@@ -70,6 +70,7 @@ void main() {
     // these would be an empty frame.
     const notShowable = <String>{
       'CcToastScope', // an inherited scope; toasts are shown via CcToast
+      'CcToastObstruction', // invisible marker the toast stack lifts past
       'CcSelectionScope', // marker for "an ancestor owns selection"
       'CcSidebarScope', // inherited state for the sidebar's children
       'CcResizableController', // a controller, not a widget

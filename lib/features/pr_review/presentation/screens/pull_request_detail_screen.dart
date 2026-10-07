@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cc_domain/features/pr_review/domain/entities/deployment_preview.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
-import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
@@ -19,6 +18,7 @@ import 'package:control_center/features/pr_review/presentation/review_artifact/p
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_chat_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_checks_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_code_server_tab.dart';
+import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_detail_states.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_file_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_layout_codec.dart';
@@ -149,10 +149,10 @@ class _PullRequestDetailScreenState
       return _buildDetail(pr, prRef);
     }
     return prAsync.when(
-      data: (_) => PageWrapper(child: _NotFound(prNumber: prNumber)),
+      data: (_) => PageWrapper(child: PrDetailNotFound(prNumber: prNumber)),
       loading: () => const PageWrapper(child: _PrDetailLoadingBody()),
       error: (e, _) => PageWrapper(
-        child: _ErrorState(prRef: prRef, error: e),
+        child: PrDetailErrorState(prRef: prRef, error: e),
       ),
     );
   }
@@ -1587,133 +1587,6 @@ class _PrDetailLoadingBodyState extends State<_PrDetailLoadingBody> {
         PrTabKinds.diff => const PrDiffTabSkeleton(),
         _ => const PrPanelSkeleton(),
       },
-    );
-  }
-}
-
-class _NotFound extends StatelessWidget {
-  const _NotFound({required this.prNumber});
-  final int prNumber;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.fileQuestion, size: 48, color: t.textTertiary),
-          const SizedBox(height: 16),
-          Text(
-            l10n.pullRequestNotFound,
-            style: CcTypography.title.copyWith(color: t.textPrimary),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.pullRequestNotFoundBody,
-            textAlign: TextAlign.center,
-            style: CcTypography.caption.copyWith(color: t.textTertiary),
-          ),
-          const SizedBox(height: 20),
-          CcButton(
-            variant: CcButtonVariant.secondary,
-            onPressed: () =>
-                context.go(pullRequestsRoute(context.currentWorkspaceId!)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(AppIcons.arrowLeft, size: 16),
-                const SizedBox(width: 8),
-                Text(l10n.backToPullRequests),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends ConsumerStatefulWidget {
-  const _ErrorState({required this.prRef, required this.error});
-  final PrRef prRef;
-  final Object error;
-
-  @override
-  ConsumerState<_ErrorState> createState() => _ErrorStateState();
-}
-
-class _ErrorStateState extends ConsumerState<_ErrorState> {
-  bool _showDetails = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.triangleAlert, size: 48, color: t.textErrorPrimary),
-              const SizedBox(height: 16),
-              Text(
-                l10n.couldntLoadPullRequest,
-                textAlign: TextAlign.center,
-                style: CcTypography.title.copyWith(color: t.textPrimary),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  CcButton(
-                    onPressed: () =>
-                        ref.invalidate(prDetailProvider(widget.prRef)),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(AppIcons.refreshCw, size: 16),
-                        const SizedBox(width: 8),
-                        Text(l10n.retry),
-                      ],
-                    ),
-                  ),
-                  CcButton(
-                    variant: CcButtonVariant.secondary,
-                    onPressed: () =>
-                        setState(() => _showDetails = !_showDetails),
-                    child: Text(l10n.showDetails),
-                  ),
-                ],
-              ),
-              CcCollapsible(
-                expanded: _showDetails,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 16),
-                    CcSelectionRegion(
-                      child: Text(
-                        widget.error.toString(),
-                        textAlign: TextAlign.center,
-                        style: CcTypography.caption.copyWith(
-                          color: t.textTertiary,
-                          fontFamily: CcFonts.codeFamily,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

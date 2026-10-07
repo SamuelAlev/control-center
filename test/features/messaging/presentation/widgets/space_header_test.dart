@@ -9,6 +9,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/context_meter_chip.dart';
+import 'package:control_center/features/messaging/presentation/widgets/manage_space_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';

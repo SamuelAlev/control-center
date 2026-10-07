@@ -12,6 +12,7 @@ import 'package:control_center/features/messaging/presentation/utils/conversatio
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversation_permission_prompt.dart';
+import 'package:control_center/features/messaging/presentation/widgets/manage_space_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';

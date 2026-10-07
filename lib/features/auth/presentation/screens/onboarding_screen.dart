@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_model_steps.dart';
 import 'package:control_center/features/auth/presentation/widgets/api_keys_panel.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_step_layout.dart';
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
+import 'package:control_center/features/auth/providers/onboarding_runner_choice.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/sandboxing/presentation/onboarding_step_sandbox.dart';
 import 'package:control_center/features/settings/presentation/widgets/field_placeholder.dart';
@@ -464,52 +464,11 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
           CcButton(
             onPressed: canContinue
                 ? () async {
-                    await ref
-                        .read(defaultChatAdapterProvider.notifier)
-                        .set(adapterId);
-                    await ref
-                        .read(defaultChatModelProvider.notifier)
-                        .set(modelId);
-                    // The short-task runner is workspace state (titles every
-                    // member reads), written through the admin-gated lane. An
-                    // invited member is refused there; that must not block
-                    // finishing onboarding.
-                    try {
-                      await ref
-                          .read(shortTaskAdapterProvider.notifier)
-                          .set(adapterId);
-                      await ref
-                          .read(shortTaskModelProvider.notifier)
-                          .set(modelId);
-                    } catch (_) {
-                      // Non-critical — the workspace admin picks it in
-                      // Settings → Adapters.
-                    }
-                    // Back-patch every agent seeded before the adapter prefs
-                    // existed (onboarding step 2 creates the workspace, which
-                    // seeds the CEO *and* the four specialists; the adapter is
-                    // only picked here, in step 3). The CEO was the only one
-                    // patched, which left the specialists with no runner at
-                    // all — the workspace looked configured and four of its
-                    // five agents could not run.
-                    //
-                    // Only agents missing the pair are touched, and the pair is
-                    // written together: a model id belongs to the adapter that
-                    // serves it, so filling one from an unrelated selection
-                    // would produce a combination nothing can honour.
-                    try {
-                      final repo = ref.read(agentRepositoryProvider);
-                      final agents = await repo.watchAll().first;
-                      for (final a in agents) {
-                        if (a.adapterId == null || a.modelId == null) {
-                          await repo.upsert(
-                            a.copyWith(adapterId: adapterId, modelId: modelId),
-                          );
-                        }
-                      }
-                    } catch (_) {
-                      // Non-critical — adapter can be changed in Settings.
-                    }
+                    await saveOnboardingRunnerChoice(
+                      ref,
+                      adapterId: adapterId,
+                      modelId: modelId,
+                    );
                     widget.onContinue();
                   }
                 : null,

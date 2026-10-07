@@ -289,8 +289,22 @@ class ContextWindowEvent extends AgentProcessEvent {
     this.windowTokens,
     this.compactions = 0,
     super.timestamp,
-  }) : assert(contextTokens >= 0, 'context tokens must be non-negative'),
-       assert(compactions >= 0, 'compactions must be non-negative');
+  }) {
+    if (contextTokens < 0) {
+      throw ArgumentError.value(
+        contextTokens,
+        'contextTokens',
+        'must be non-negative',
+      );
+    }
+    if (compactions < 0) {
+      throw ArgumentError.value(
+        compactions,
+        'compactions',
+        'must be non-negative',
+      );
+    }
+  }
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.contextWindow;

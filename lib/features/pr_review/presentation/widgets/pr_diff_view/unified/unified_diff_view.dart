@@ -29,6 +29,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/measured_inline_thread.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/server_thread_span.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_config.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_gap_row.dart';
@@ -239,7 +240,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       _threadOpen[thread.id] ?? !thread.resolved;
 
   /// The forge-or-optimistic resolved state of a server conversation.
-  bool _isSpanResolved(_ServerThreadSpan span) =>
+  bool _isSpanResolved(ServerThreadSpan span) =>
       _resolvedOverride[span.id] ?? span.serverResolved;
 
   /// The open inline comment/suggestion composer (anchored under a selection or
@@ -677,15 +678,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// `partitionServerCommentsForFile` walks the WHOLE server-comment list, and
   /// this is called once per file per highlight pass — so a 200-file PR
   /// re-partitioned 300 comments 200 times per build.
-  final Map<String, List<_ServerThreadSpan>> _serverSpansMemo = {};
-  final Map<String, Map<String, _ServerThreadSpan>> _serverSpanByLineMemo = {};
+  final Map<String, List<ServerThreadSpan>> _serverSpansMemo = {};
+  final Map<String, Map<String, ServerThreadSpan>> _serverSpanByLineMemo = {};
   Object? _serverSpansMemoSource;
-
-  /// How many lines of one conversation's range get indexed by line.
-  ///
-  /// Real ranges are a handful of lines. The cap exists so a malformed
-  /// `start_line` can't make the index proportional to the file.
-  static const int _maxIndexedSpanLines = 512;
 
   /// Drops both memos when the server-comment list is replaced.
   void _invalidateServerSpansIfStale() {
@@ -700,76 +695,25 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// Server review conversations for [filename], each with the LINE RANGE it
   /// anchors to. Comments the current diff can no longer place (no anchor line)
   /// are NOT dropped here — they are surfaced via [_outdatedServerComments].
-  List<_ServerThreadSpan> _serverSpans(String filename) {
+  List<ServerThreadSpan> _serverSpans(String filename) {
     _invalidateServerSpansIfStale();
-    return _serverSpansMemo[filename] ??= _buildServerSpans(filename);
+    return _serverSpansMemo[filename] ??= buildServerThreadSpans(
+      widget.serverComments,
+      filename,
+    );
   }
 
   /// `"<side>-<line>" → conversation` for every line the file's conversations
   /// cover, so the highlight pass stays one map lookup per row.
-  Map<String, _ServerThreadSpan> _serverSpanByLine(String filename) {
+  Map<String, ServerThreadSpan> _serverSpanByLine(String filename) {
     _invalidateServerSpansIfStale();
-    return _serverSpanByLineMemo[filename] ??= {
-      for (final span in _serverSpans(filename)) ...{
-        // The END line is always indexed, cap or not: it is where the card
-        // anchors, so a range the cap truncated would otherwise lose its
-        // conversation entirely rather than just part of its highlight.
-        '${span.side}-${span.endLine}': span,
-        for (
-          var line = span.startLine;
-          line <= span.endLine && line - span.startLine < _maxIndexedSpanLines;
-          line++
-        )
-          '${span.side}-$line': span,
-      },
-    };
-  }
-
-  List<_ServerThreadSpan> _buildServerSpans(String filename) {
-    final anchored = partitionServerCommentsForFile(
-      widget.serverComments,
-      filename,
-    ).anchored;
-    final out = <_ServerThreadSpan>[];
-    for (final group in anchored.values) {
-      if (group.isEmpty) {
-        continue;
-      }
-      final sorted = [...group]
-        ..sort((a, b) {
-          final ad = a.createdAt;
-          final bd = b.createdAt;
-          if (ad != null && bd != null) {
-            return ad.compareTo(bd);
-          }
-          return a.id.compareTo(b.id);
-        });
-      final first = sorted.first;
-      final end = first.anchorLine;
-      if (end == null) {
-        continue;
-      }
-      // The RANGE comes off the thread's FIRST comment: GitHub anchors a
-      // multi-line comment at its last line and carries the first in
-      // `start_line`, and replies repeat the anchor without the range.
-      final start = (first.anchorStartLine ?? end).clamp(1, end);
-      out.add(
-        _ServerThreadSpan(
-          id: 'server-${first.id}',
-          side: first.side,
-          startLine: start,
-          endLine: end,
-          serverResolved: first.isResolved,
-          threadId: first.threadId,
-          comments: sorted,
-        ),
-      );
-    }
-    return out;
+    return _serverSpanByLineMemo[filename] ??= indexServerThreadSpansByLine(
+      _serverSpans(filename),
+    );
   }
 
   /// The conversation covering [line] on [side] in [filename], or null.
-  _ServerThreadSpan? _spanCovering(String filename, String side, int line) =>
+  ServerThreadSpan? _spanCovering(String filename, String side, int line) =>
       _serverSpanByLine(filename)['$side-$line'];
 
   /// Server review comments for [filename] whose diff line no longer exists
@@ -814,7 +758,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   }
 
   PrInlineThread _synthesizeServerThread(
-    _ServerThreadSpan span,
+    ServerThreadSpan span,
     String filename,
     int fileIndex,
     int anchorDisplayLine,
@@ -860,7 +804,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// there, else the forge's own `diff_hunk` — which is the snapshot the
   /// comment was written against and survives the code changing under it.
   String _originalCodeForServerThread(
-    _ServerThreadSpan span,
+    ServerThreadSpan span,
     int fileIndex,
     int anchorDisplayLine,
   ) {
@@ -876,7 +820,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   String _originalCodeForSpan(
     int fileIndex,
     int anchorDisplayLine,
-    _ServerThreadSpan span,
+    ServerThreadSpan span,
   ) {
     final raw = _document.structureOf(fileIndex);
     if (raw == null) {
@@ -3818,51 +3762,4 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       setState(() => _revision++);
     }
   }
-}
-
-/// One server-side review conversation resolved against the current diff: the
-/// synthesised thread id, the LINE RANGE it anchors to and its forge state.
-///
-/// The range is the part that is easy to lose. A forge anchors a multi-line
-/// comment at its LAST line and carries the first separately, so a thread keyed
-/// only by its anchor highlights the last row of a seven-row comment and
-/// diffs a suggestion against one line of source. Everything that reads
-/// "which rows does this conversation cover" goes through [covers].
-@immutable
-class _ServerThreadSpan {
-  const _ServerThreadSpan({
-    required this.id,
-    required this.side,
-    required this.startLine,
-    required this.endLine,
-    required this.serverResolved,
-    required this.threadId,
-    required this.comments,
-  });
-
-  /// Synthesised thread id (`server-<first comment id>`), stable across
-  /// refreshes so a collapse survives a poll.
-  final String id;
-
-  /// `LEFT` (pre-change) or `RIGHT` (post-change).
-  final String side;
-
-  /// First and last covered line, inclusive, in [side]'s numbering.
-  final int startLine;
-
-  /// Last covered line, inclusive — where the card anchors.
-  final int endLine;
-
-  /// The forge's resolved flag; the optimistic override sits above it.
-  final bool serverResolved;
-
-  /// The forge's thread id, or null when it could not be resolved.
-  final String? threadId;
-
-  /// The conversation's comments, oldest first.
-  final List<PrCodeReviewComment> comments;
-
-  /// Whether this conversation covers [line] on [s].
-  bool covers(String s, int line) =>
-      s == side && line >= startLine && line <= endLine;
 }

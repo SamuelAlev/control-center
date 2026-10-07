@@ -3,10 +3,13 @@ import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
+import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
-import 'package:cc_host/cc_host.dart' show RepoOp, WatchQuery;
+import 'package:cc_host/cc_host.dart'
+    show PendingCredentialBlockRegistry, RepoOp, WatchQuery;
 import 'package:cc_infra/cc_infra.dart'
     show
+        ClaudeAccountStore,
         FilterListService,
         FontsourceCatalogService,
         ModelCatalogService,
@@ -16,6 +19,8 @@ import 'package:cc_persistence/cc_persistence.dart'
     show DaoAgentRepository, DaoUserRepository, DaoWorkspaceRepository;
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
+import 'package:cc_server_core/src/catalog/claude_account_token_ops.dart';
+import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
@@ -68,6 +73,9 @@ ExtraOpsResult buildServerExtraOps({
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
   PrMergeConflictService? prMergeConflicts,
   required DatabaseBackupPort? databaseBackup,
+  required ConversationTitlePort? conversationTitles,
+  required ClaudeAccountStore? claudeAccounts,
+  required PendingCredentialBlockRegistry? credentialBlocks,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -103,6 +111,12 @@ ExtraOpsResult buildServerExtraOps({
     ),
     ...buildPrMergeConflictOps(prMergeConflicts),
     ...buildBackupOps(databaseBackup: databaseBackup),
+    ...buildConversationTitleOps(conversationTitles),
+    ...buildClaudeAccountTokenOps(
+      accounts: claudeAccounts,
+      credentialBlocks: credentialBlocks,
+      isServerOwner: isServerOwner,
+    ),
   ];
 
   final watches = <WatchQuery>[

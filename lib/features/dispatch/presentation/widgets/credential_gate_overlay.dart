@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:cc_domain/cc_domain.dart'
-    show RunCredentialBlockDto, RunCredentialLane, RunCredentialReason;
+import 'package:cc_domain/cc_domain.dart' show RunCredentialBlockDto;
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart'
     show AdapterTransport, predefinedAdapters;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_body.dart';
+import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_title.dart';
 import 'package:control_center/features/dispatch/providers/credential_gate_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
@@ -281,7 +281,7 @@ class _CredentialGateDialogState extends ConsumerState<_CredentialGateDialog> {
 
     return CcDialog(
       maxWidth: 560,
-      title: _title(l10n, block),
+      title: credentialGateTitle(l10n, block),
       content: CredentialGateBody(
         block: block,
         onConnected: _retry,
@@ -304,24 +304,4 @@ class _CredentialGateDialogState extends ConsumerState<_CredentialGateDialog> {
       ],
     );
   }
-
-  /// The headline names the SPECIFIC problem, never "a credential problem".
-  /// Each reason has a different fix, and a title that does not say which one
-  /// leaves the operator to guess between signing in, waiting, pasting a key
-  /// and editing the account list.
-  String _title(AppLocalizations l10n, RunCredentialBlockDto block) =>
-      switch (block.reason) {
-        RunCredentialReason.planSpent => l10n.credentialGatePlanSpentTitle,
-        RunCredentialReason.signedOut => l10n.credentialGateSignedOutTitle,
-        RunCredentialReason.credentialExpired =>
-          l10n.credentialGateExpiredTitle,
-        RunCredentialReason.accountsRemoved =>
-          l10n.credentialGateAccountsRemovedTitle,
-        RunCredentialReason.noCredential =>
-          block.lane == RunCredentialLane.harness
-              ? l10n.credentialGateHarnessTitle(
-                  block.providerId ?? l10n.credentialGateWaitingTitle,
-                )
-              : l10n.credentialGateSignedOutTitle,
-      };
 }

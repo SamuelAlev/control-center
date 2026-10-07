@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/widgets.dart';
@@ -149,37 +150,12 @@ class SpaceRowLayout extends StatelessWidget {
 
   bool get _twoLine => subtitle != null && subtitle!.isNotEmpty;
 
-  /// Body at medium for spaces; bodySm at regular for conversations.
-  TextStyle get _labelStyle {
-    final conversation = labelFontSize <= CcTypography.bodySm.fontSize!;
-    final base = conversation ? CcTypography.bodySm : CcTypography.body;
-    return base.copyWith(
-      color: contentColor,
-      fontWeight: conversation
-          ? CcTypography.regularWeight
-          : CcTypography.mediumWeight,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = tokens;
-    final showTrailing =
-        trailingLabel != null && trailingLabel!.isNotEmpty && !transitioning;
-    // The chip leaves with the other trailing chrome: as the row narrows it
-    // would overflow the title line.
-    final showCount = count != null && !transitioning;
     // Fixed columns. The rail is narrower than these mid-animation.
     final minRowWidth =
         markSlot + markGap + (hasMenu ? kSpaceSidebarOverflowSlot : 0);
-    final showIndicator =
-        !muted &&
-        !transitioning &&
-        SpaceTrailingIndicator.shouldShow(
-          status: status,
-          unread: unread,
-          leadingHandlesRunning: leadingHandlesRunning,
-        );
     return AnimatedContainer(
       duration: CcMotion.resolve(context, CcMotion.fast),
       curve: CcMotion.standard,
@@ -243,60 +219,21 @@ class SpaceRowLayout extends StatelessWidget {
                         opacity: transitioning ? 0 : 1,
                         duration: CcMotion.fast,
                         curve: CcMotion.standard,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: CcScrambleText(
-                                    label,
-                                    scrambling: labelScrambling,
-                                    style: _labelStyle,
-                                  ),
-                                ),
-                                if (showCount) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  SpaceCountChip(
-                                    count: count!,
-                                    selected: filled,
-                                  ),
-                                ],
-                                if (showTrailing) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    trailingLabel!,
-                                    style: CcTypography.caption.copyWith(
-                                      color: caption,
-                                    ),
-                                  ),
-                                ],
-                                if (showIndicator) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  SpaceTrailingIndicator(
-                                    status: status,
-                                    unread: unread,
-                                    leadingHandlesRunning:
-                                        leadingHandlesRunning,
-                                    selected: filled,
-                                  ),
-                                ],
-                              ],
-                            ),
-                            if (_twoLine) ...[
-                              Text(
-                                subtitle!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                // RTL carve-out: a branch name is a git ref.
-                                textDirection: TextDirection.ltr,
-                                style: CcTypography.caption.copyWith(
-                                  color: caption,
-                                ),
-                              ),
-                            ],
-                          ],
+                        child: SpaceRowLabel(
+                          label: label,
+                          labelScrambling: labelScrambling,
+                          labelFontSize: labelFontSize,
+                          contentColor: contentColor,
+                          caption: caption,
+                          filled: filled,
+                          transitioning: transitioning,
+                          status: status,
+                          unread: unread,
+                          leadingHandlesRunning: leadingHandlesRunning,
+                          muted: muted,
+                          subtitle: subtitle,
+                          trailingLabel: trailingLabel,
+                          count: count,
                         ),
                       ),
                     ),

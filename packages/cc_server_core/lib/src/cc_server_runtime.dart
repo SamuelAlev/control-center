@@ -5311,6 +5311,9 @@ Future<CcServer> runCcServer({
     ),
     prMergeConflicts: prSpace.mergeConflicts,
     databaseBackup: databaseBackupService,
+    conversationTitles: conversationTitleService,
+    claudeAccounts: demo?.claudeAccounts ?? claudeAccountStore,
+    credentialBlocks: credentialGateRegistry,
   );
 
   demoReview = demo == null

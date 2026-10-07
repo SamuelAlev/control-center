@@ -1,29 +1,19 @@
-import 'dart:math' as math;
-
-import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
-import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
-import 'package:control_center/features/agents/providers/agent_providers.dart';
-import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/widgets/context_meter_chip.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_header_actions.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_search_dialog.dart';
 import 'package:control_center/features/messaging/providers/conversation_checkpoint_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
-import 'package:control_center/features/messaging/providers/space_autonomy_provider.dart';
-import 'package:control_center/features/messaging/providers/space_checker_provider.dart';
 import 'package:control_center/features/messaging/providers/space_takeover_provider.dart';
 import 'package:control_center/features/presence/presentation/widgets/whos_here_strip.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -96,12 +86,12 @@ class SpaceHeader extends ConsumerWidget {
         ref.watch(takeoverStatusProvider(space.id)).value != null;
     final visitorCount = WhosHereStrip.visitors(ref, space.id).length;
 
-    // Visual order. [_HeaderAction.foldRank] decides which fold into the
+    // Visual order. [SpaceHeaderAction.foldRank] decides which fold into the
     // overflow menu first when the pane is too narrow to show them all.
     final actions = [
       // Spotlight (present) this space to everyone else on the roster
       // (PRD 16 §5).
-      _HeaderAction(
+      SpaceHeaderAction(
         icon: AppIcons.monitor,
         label: presentLabel,
         foldRank: 2,
@@ -113,20 +103,20 @@ class SpaceHeader extends ConsumerWidget {
       ),
       // Take over this space's worktree (PRD 16 §8).
       if (!takeoverActive)
-        _HeaderAction(
+        SpaceHeaderAction(
           icon: AppIcons.userCheck,
           label: l10n.takeoverTooltip,
           foldRank: 1,
           onPressed: () => _beginTakeover(context, ref),
         ),
       if (hasUndoableRevert)
-        _HeaderAction(
+        SpaceHeaderAction(
           icon: AppIcons.rotateCw,
           label: l10n.undoRevert,
           foldRank: 3,
           onPressed: () => _undoRevert(context, ref),
         ),
-      _HeaderAction(
+      SpaceHeaderAction(
         icon: AppIcons.search,
         label: l10n.searchInConversation,
         foldRank: 5,
@@ -135,13 +125,13 @@ class SpaceHeader extends ConsumerWidget {
           builder: (_) => SpaceSearchDialog(spaceId: space.id),
         ),
       ),
-      _HeaderAction(
+      SpaceHeaderAction(
         icon: AppIcons.users,
         label: l10n.manageParticipants,
         foldRank: 4,
         onPressed: onManage,
       ),
-      _HeaderAction(
+      SpaceHeaderAction(
         icon: AppIcons.archive,
         label: l10n.archiveSpace,
         foldRank: 0,
@@ -172,13 +162,13 @@ class SpaceHeader extends ConsumerWidget {
                   _leadingWidth +
                       meterWidth +
                       visitorsWidth +
-                      _HeaderAction.slotWidth;
+                      SpaceHeaderAction.slotWidth;
           final reserved =
               _leadingWidth +
               _titleFloor +
               (showMeter ? meterWidth : 0) +
               visitorsWidth;
-          final split = _HeaderAction.split(
+          final split = SpaceHeaderAction.split(
             actions,
             budget: constraints.maxWidth - reserved,
           );
@@ -232,7 +222,7 @@ class SpaceHeader extends ConsumerWidget {
               // space.
               WhosHereStrip(spaceId: space.id),
               for (final action in split.inline) ...[
-                const SizedBox(width: _actionGap),
+                const SizedBox(width: SpaceHeaderAction.gap),
                 CcTooltip(
                   targetAnchor: Alignment.bottomCenter,
                   followerAnchor: Alignment.topCenter,
@@ -246,8 +236,8 @@ class SpaceHeader extends ConsumerWidget {
                 ),
               ],
               if (split.folded.isNotEmpty) ...[
-                const SizedBox(width: _actionGap),
-                _MoreActionsButton(actions: split.folded),
+                const SizedBox(width: SpaceHeaderAction.gap),
+                SpaceHeaderMoreButton(actions: split.folded),
               ],
             ],
           );
@@ -269,7 +259,6 @@ class SpaceHeader extends ConsumerWidget {
   static const double _meterAgentWidth = 22;
   // PresenceAvatarChip (22 + 2×1.5 padding + 2×1.5 follow ring) + 4 lead.
   static const double _visitorWidth = 32;
-  static const double _actionGap = 4;
 
   /// Undoes the most-recent revert in this conversation (redo): the latest
   /// reverted batch reappears in the live message stream. The toast handle is
@@ -304,444 +293,5 @@ class SpaceHeader extends ConsumerWidget {
     }
     ref.invalidate(takeoverStatusProvider(space.id));
     ref.read(codeServerTabRequestProvider(space.id).notifier).request();
-  }
-}
-
-/// One header action, rendered inline as an icon button or folded into the
-/// overflow menu when the pane is too narrow.
-@immutable
-class _HeaderAction {
-  const _HeaderAction({
-    required this.icon,
-    required this.label,
-    required this.foldRank,
-    required this.onPressed,
-    this.color,
-    this.selected = false,
-  });
-
-  final IconData icon;
-
-  /// Tooltip, accessible name and menu row label.
-  final String label;
-
-  /// Lower ranks fold into the overflow menu first.
-  final int foldRank;
-  final VoidCallback onPressed;
-
-  /// Active-state icon tint (inline only; the menu row uses [selected]).
-  final Color? color;
-  final bool selected;
-
-  /// Inline icon button plus its leading gap.
-  static const double slotWidth = 40 + SpaceHeader._actionGap;
-
-  /// Splits [actions] into what fits [budget] inline and what folds into the
-  /// overflow menu, keeping visual order on both sides. Once anything folds,
-  /// the "More" button itself takes a slot.
-  static ({List<_HeaderAction> inline, List<_HeaderAction> folded}) split(
-    List<_HeaderAction> actions, {
-    required double budget,
-  }) {
-    if (actions.length * slotWidth <= budget) {
-      return (inline: actions, folded: const []);
-    }
-    final fit = math.max(0, (budget / slotWidth).floor() - 1);
-    final byKeep = [...actions]
-      ..sort((a, b) => b.foldRank.compareTo(a.foldRank));
-    final kept = byKeep.take(fit).toSet();
-    return (
-      inline: [
-        for (final a in actions)
-          if (kept.contains(a)) a,
-      ],
-      folded: [
-        for (final a in actions)
-          if (!kept.contains(a)) a,
-      ],
-    );
-  }
-}
-
-/// The "More" icon button holding the header actions that did not fit.
-class _MoreActionsButton extends StatefulWidget {
-  const _MoreActionsButton({required this.actions});
-
-  final List<_HeaderAction> actions;
-
-  @override
-  State<_MoreActionsButton> createState() => _MoreActionsButtonState();
-}
-
-class _MoreActionsButtonState extends State<_MoreActionsButton> {
-  final CcOverlayController _controller = CcOverlayController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    // The trigger is a real button driving the controller, so the menu does
-    // not wrap it in a second, competing tappable.
-    return CcMenu(
-      controller: _controller,
-      toggleOnTargetTap: false,
-      targetAnchor: AlignmentDirectional.bottomEnd,
-      followerAnchor: AlignmentDirectional.topEnd,
-      semanticLabel: l10n.moreLabel,
-      items: [
-        for (final a in widget.actions)
-          CcMenuItem(
-            label: a.label,
-            icon: a.icon,
-            selected: a.selected,
-            onSelected: a.onPressed,
-          ),
-      ],
-      target: CcTooltip(
-        targetAnchor: Alignment.bottomCenter,
-        followerAnchor: Alignment.topCenter,
-        message: l10n.moreLabel,
-        child: CcIconButton(
-          icon: AppIcons.moreHorizontal,
-          semanticLabel: l10n.moreLabel,
-          onPressed: _controller.toggle,
-        ),
-      ),
-    );
-  }
-}
-
-/// Dialog for managing space participants.
-class ManageSpaceDialog extends ConsumerStatefulWidget {
-  /// Creates a new [ManageSpaceDialog].
-  const ManageSpaceDialog({super.key, required this.spaceId});
-
-  /// Space to manage.
-  final String spaceId;
-
-  @override
-  ConsumerState<ManageSpaceDialog> createState() => _ManageSpaceDialogState();
-}
-
-class _ManageSpaceDialogState extends ConsumerState<ManageSpaceDialog> {
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final participants =
-        ref.watch(spaceParticipantsProvider(widget.spaceId)).value ?? const [];
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final agents = workspaceId != null
-        ? ref.watch(workspaceAgentsProvider(workspaceId)).value ?? const []
-        : ref.watch(agentsProvider).value ?? const [];
-    final l10n = AppLocalizations.of(context);
-    final existingIds = participants.map((p) => p.principalId).toSet();
-    final spaceParticipants = participants.where((p) => !p.isUser).toList();
-    final spaceAgentIds = spaceParticipants.map((p) => p.principalId).toSet();
-    final spaceAgents = agents
-        .where((a) => spaceAgentIds.contains(a.id))
-        .toList();
-
-    return CcDialog(
-      title: l10n.manageParticipants,
-      content: SizedBox(
-        width: 360,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (spaceParticipants.isNotEmpty) ...[
-              Text(
-                l10n.currentParticipants,
-                style: CcTypography.caption.copyWith(
-                  color: tokens.textTertiary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...spaceParticipants.map(
-                (p) => _ParticipantRow(
-                  spaceId: widget.spaceId,
-                  participant: p,
-                  onRemove: () => _removeAgent(p.principalId),
-                ),
-              ),
-              const SizedBox(height: 24, child: Center(child: CcDivider())),
-            ],
-            Text(
-              l10n.inviteAgent,
-              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
-            ),
-            const SizedBox(height: 8),
-            _InviteSection(
-              agents: agents,
-              existingIds: existingIds,
-              onInvite: _inviteAgent,
-            ),
-            const SizedBox(height: 24, child: Center(child: CcDivider())),
-            _CheckerSection(spaceId: widget.spaceId, agents: spaceAgents),
-          ],
-        ),
-      ),
-      actions: [
-        CcButton(
-          variant: CcButtonVariant.secondary,
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.close),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _removeAgent(String agentId) async {
-    await ref
-        .read(messagingServiceProvider)
-        .removeParticipant(ref.requireWorkspaceId(), widget.spaceId, agentId);
-  }
-
-  Future<void> _inviteAgent(String agentId) async {
-    await ref
-        .read(messagingServiceProvider)
-        .addAgentToSpace(ref.requireWorkspaceId(), widget.spaceId, agentId);
-  }
-}
-
-class _ParticipantRow extends ConsumerWidget {
-  const _ParticipantRow({
-    required this.spaceId,
-    required this.participant,
-    required this.onRemove,
-  });
-
-  /// The space this participant belongs to — scopes the autonomy read/write.
-  final String spaceId;
-  final SpaceParticipant participant;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final agentAsync = ref.watch(agentDetailProvider(participant.principalId));
-    final name = agentAsync.value?.name ?? '...';
-    final title = agentAsync.value?.title ?? '';
-    final l10n = AppLocalizations.of(context);
-    final autonomy =
-        ref.watch(spaceAutonomyProvider(spaceId)).value ??
-        const <String, AutonomyLevel?>{};
-    final currentLevel = autonomy[participant.principalId];
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final canSetAutonomy =
-        workspaceId != null &&
-        (ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AgentAvatar(
-                agentId: participant.principalId,
-                name: name,
-                size: 24,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: CcTypography.body.copyWith(
-                        color: tokens.textTertiary,
-                      ),
-                    ),
-                    if (title.isNotEmpty)
-                      Text(
-                        title,
-                        style: CcTypography.caption.copyWith(
-                          color: tokens.textTertiary,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              CcTooltip(
-                message: l10n.remove,
-                child: CcIconButton(
-                  icon: AppIcons.x,
-                  semanticLabel: l10n.remove,
-                  onPressed: onRemove,
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(
-              top: 6,
-              start: 34,
-              end: 4,
-            ),
-            child: CcSelect<AutonomyLevel?>(
-              label: l10n.autonomyDialLabel,
-              // The dial decides whether this agent's risky effects are
-              // pre-approved, so it carries the same admin floor as the
-              // guardrail matrix it would otherwise neutralize (the server
-              // enforces it; this keeps the control honest rather than
-              // offering an action that will be refused).
-              enabled: canSetAutonomy,
-              options: [
-                CcSelectOption(value: null, label: l10n.autonomyDefaultOption),
-                CcSelectOption(
-                  value: AutonomyLevel.proposeOnly,
-                  label: l10n.autonomyProposeOnly,
-                ),
-                CcSelectOption(
-                  value: AutonomyLevel.actWithApproval,
-                  label: l10n.autonomyActWithApproval,
-                ),
-                CcSelectOption(
-                  value: AutonomyLevel.actFreely,
-                  label: l10n.autonomyActFreely,
-                ),
-              ],
-              value: currentLevel,
-              onChanged: (level) => setSpaceAutonomy(
-                ref.read(rpcClientProvider),
-                spaceId: spaceId,
-                agentId: participant.principalId,
-                level: level,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The space's checker-agent row (PRD 16 §13): a select over the space's
-/// own agent participants (+ "None"), bound to `checker.get`/
-/// `checker.setForSpace`.
-class _CheckerSection extends ConsumerWidget {
-  const _CheckerSection({required this.spaceId, required this.agents});
-
-  final String spaceId;
-  final List<Agent> agents;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final currentCheckerId = ref.watch(spaceCheckerProvider(spaceId)).value;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CcSelect<String?>(
-          label: l10n.checkerLabel,
-          options: [
-            CcSelectOption(value: null, label: l10n.checkerNone),
-            for (final a in agents) CcSelectOption(value: a.id, label: a.name),
-          ],
-          value: currentCheckerId,
-          onChanged: (agentId) async {
-            await setSpaceChecker(
-              ref.read(rpcClientProvider),
-              spaceId: spaceId,
-              agentId: agentId,
-            );
-            ref.invalidate(spaceCheckerProvider(spaceId));
-          },
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.checkerCaption,
-          style: CcTypography.caption.copyWith(color: context.ds.textTertiary),
-        ),
-      ],
-    );
-  }
-}
-
-class _InviteSection extends StatefulWidget {
-  const _InviteSection({
-    required this.agents,
-    required this.existingIds,
-    required this.onInvite,
-  });
-
-  final List<Agent> agents;
-  final Set<String> existingIds;
-  final ValueChanged<String> onInvite;
-
-  @override
-  State<_InviteSection> createState() => _InviteSectionState();
-}
-
-class _InviteSectionState extends State<_InviteSection> {
-  Agent? _selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final available = widget.agents
-        .where((a) => !widget.existingIds.contains(a.id))
-        .toList();
-    final l10n = AppLocalizations.of(context);
-
-    if (available.isEmpty) {
-      return Text(
-        l10n.allAgentsAlreadyInSpace,
-        style: const TextStyle(fontSize: 12),
-      );
-    }
-
-    return Column(
-      children: [
-        if (available.length <= 5)
-          ...available.map(
-            (a) => CcTile(
-              leading: AgentAvatar(
-                agentId: a.id,
-                name: a.name,
-                size: 22,
-                showHoverCard: false,
-              ),
-              title: a.name,
-              subtitle: a.title.isNotEmpty ? Text(a.title) : null,
-              onTap: () {
-                widget.onInvite(a.id);
-                Navigator.of(context).pop();
-              },
-            ),
-          )
-        else ...[
-          CcSelect<Agent>(
-            value: _selected,
-            options: available
-                .map((a) => CcSelectOption<Agent>(value: a, label: a.name))
-                .toList(),
-            onChanged: (v) => setState(() => _selected = v),
-            hintText: l10n.selectAnAgent,
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: CcButton(
-              onPressed: _selected == null
-                  ? null
-                  : () {
-                      widget.onInvite(_selected!.id);
-                      Navigator.of(context).pop();
-                    },
-              child: Text(l10n.invite),
-            ),
-          ),
-        ],
-      ],
-    );
   }
 }
