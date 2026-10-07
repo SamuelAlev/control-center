@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_ui/cc_ui.dart' show CcFonts;
 import 'package:control_center/core/storage/app_support_path_provider.dart';
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 
-/// Runs once before any test file: temp dir for [AppSupportPathProvider].
+/// Runs once before any test file: temp dir for [AppSupportPathProvider], and
+/// no script-companion FontLoads (see [CcFonts.loadScriptFonts]).
 /// Do NOT call [TestWidgetsFlutterBinding.ensureInitialized] here — hangs the
 /// suite. Prefer `flutter test --timeout 30s`.
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
@@ -16,6 +18,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     appSupportDir.createSync(recursive: true);
   }
   AppSupportPathProvider.setRealAppSupportDirForTesting(appSupportDir);
+  CcFonts.loadScriptFonts = false;
 
   await testMain();
 

@@ -287,7 +287,7 @@ void main() {
           Uri.parse('http://127.0.0.1:$port/cb?code=FAKE$suffix'),
         );
         final response = await request.close();
-        final page = await response.transform(SystemEncoding().decoder).join();
+        final page = await response.transform(const SystemEncoding().decoder).join();
         await _until(
           () => broker.status(start.flowId).state == HarnessOAuthState.error,
         );

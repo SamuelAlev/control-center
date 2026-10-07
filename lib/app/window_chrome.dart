@@ -6,8 +6,17 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/widgets.dart' show Color, Offset, Rect, Size;
-import 'package:nativeapi/nativeapi.dart'
-    show DisplayManager, TitleBarStyle, Window, WindowManager;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show
+        ColorToNative,
+        DisplayManager,
+        OffsetToNative,
+        RectToNative,
+        RectangleToRect,
+        SizeToNative,
+        TitleBarStyle,
+        Window,
+        WindowManager;
 
 /// OS window titles. These double as the routing key in [styleWindowOnShow] /
 /// [persistWindowSnapshot] — the windowing layer matches on title to apply the
@@ -102,9 +111,10 @@ bool isMainWindowTitle(String? title) =>
 
 /// Whether hiding the primary window's title bar ([styleWindowOnShow]) also
 /// takes its window controls away, so the app draws its own
-/// (`WindowCaptionButtons`). macOS keeps the traffic lights over a hidden
-/// title bar. Windows loses its caption buttons with `WS_CAPTION`, and Linux
-/// drops the window decorations altogether.
+/// (`WindowCaptionButtons`). A hidden title bar has no window controls on any
+/// platform, but on macOS [styleWindowOnShow] turns the traffic lights back on
+/// over the transparent bar. Windows loses its caption buttons with
+/// `WS_CAPTION`, and Linux drops the window decorations altogether.
 bool get primaryWindowDrawsOwnCaption =>
     defaultTargetPlatform != TargetPlatform.macOS;
 
@@ -133,7 +143,14 @@ void styleWindowOnShow(Window window, AppPreferences prefs) {
   switch (window.title) {
     case primaryWindowTitle:
       window.titleBarStyle = TitleBarStyle.hidden;
-      window.backgroundColor = _transparent;
+      if (!primaryWindowDrawsOwnCaption) {
+        // Since nativeapi 0.4 a hidden title bar hides the window controls on
+        // every platform, macOS included; the style sets them to hidden, so
+        // this has to come after it. On macOS the content still runs under
+        // the now-transparent bar, and the traffic lights stay the system's.
+        window.isWindowControlButtonsVisible = true;
+      }
+      window.backgroundColor = _transparent.toNative();
       // macOS drags the window ITSELF from the titlebar region — the strip our own title bar
       // draws into, once the style above puts the content under a transparent titlebar.
       // That is why pressing the sidebar toggle, back/forward, a breadcrumb or a popover trigger
@@ -251,8 +268,8 @@ void _restoreMainWindowGeometry(Window window, AppPreferences prefs) {
     // for a screen it could not resolve). Restoring blind is still better than
     // dropping the window at the OS default, but there is nothing to clamp to.
     if (saved != null) {
-      window.setSize(saved.size, false);
-      window.position = saved.topLeft;
+      window.setSize(saved.size.toNative(), false);
+      window.position = saved.topLeft.toNative();
     } else {
       window.center();
     }
@@ -266,7 +283,7 @@ void _restoreMainWindowGeometry(Window window, AppPreferences prefs) {
     saved: saved,
     workAreas: layout.workAreas,
     primaryWorkArea: primaryWorkArea,
-  );
+  ).toNative();
   // Full screen is restored INSTEAD of maximized, never both: `isZoomed`
   // reports true for a full-screen window, so a session that ended full screen
   // has both flags' worth of truth in it and the more specific one wins.
@@ -297,7 +314,7 @@ void _placeServerSetupWindow(Window window) {
     primaryWorkArea: primaryWorkArea,
     defaultSize: serverSetupWindowSize,
     minSize: serverSetupWindowMinSize,
-  );
+  ).toNative();
 }
 
 void _restoreFullScreenLater(int windowId) {
@@ -323,7 +340,7 @@ void _restoreFullScreenLater(int windowId) {
   final workAreas = <Rect>[];
   Rect? primary;
   for (final display in DisplayManager.instance.getAll()) {
-    final workArea = display.workArea;
+    final workArea = display.workArea.toRect();
     if (workArea.isEmpty) {
       continue;
     }
@@ -350,16 +367,17 @@ Rect? _readSavedBounds(AppPreferences prefs) {
 }
 
 void _styleHud(Window window, Size size, Offset Function() resolvePosition) {
-  window.setSize(size, false);
+  final nativeSize = size.toNative();
+  window.setSize(nativeSize, false);
   // Lock the size: min == max plus non-resizable, since min==max alone still
   // leaves macOS resize handles that stick once dragged.
-  window.minimumSize = size;
-  window.maximumSize = size;
+  window.minimumSize = nativeSize;
+  window.maximumSize = nativeSize;
   window.isResizable = false;
   window.titleBarStyle = TitleBarStyle.hidden;
   window.isWindowControlButtonsVisible = false;
   window.isAlwaysOnTop = true;
-  window.backgroundColor = _transparent;
+  window.backgroundColor = _transparent.toNative();
   // The HUDs are mouse-only (drag + buttons / hold-to-stop). Mark them
   // non-focusable so they never become the key window — otherwise, sharing one
   // engine with the main window, the HUD steals keyboard focus on show and text
@@ -370,7 +388,7 @@ void _styleHud(Window window, Size size, Offset Function() resolvePosition) {
   // a re-dress does not read preferences and enumerate displays for an answer
   // it would throw away.
   if (_geometryRestoredWindowIds.add(window.id)) {
-    window.position = resolvePosition();
+    window.position = resolvePosition().toNative();
   }
 }
 

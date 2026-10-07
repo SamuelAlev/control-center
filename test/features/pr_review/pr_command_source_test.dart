@@ -9,10 +9,10 @@ import 'package:control_center/features/pr_review/providers/pr_list_providers.da
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Records [setActive] calls and avoids the real notifier's provider
 /// dependencies (workspace id, prefs, repo list).

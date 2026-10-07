@@ -1,8 +1,9 @@
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../helpers/test_wrap.dart';
 
 void main() {

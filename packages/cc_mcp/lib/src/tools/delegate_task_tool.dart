@@ -14,10 +14,9 @@ import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 class DelegateTaskTool extends McpTool {
   /// Creates a [DelegateTaskTool].
   DelegateTaskTool({
-    required TicketWorkflowService service,
-    required PendingDelegationHops pendingHops,
-  }) : _service = service,
-       _pendingHops = pendingHops;
+    required this._service,
+    required this._pendingHops,
+  });
 
   final TicketWorkflowService _service;
   final PendingDelegationHops _pendingHops;

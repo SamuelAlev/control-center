@@ -1,8 +1,8 @@
 import 'package:cc_ui/cc_ui.dart' show CcTypography;
 import 'package:control_center/core/theme/app_theme.dart';
 import 'package:control_center/core/theme/design_system_tokens.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('AppTheme', () {

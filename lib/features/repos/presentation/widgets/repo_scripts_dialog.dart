@@ -4,13 +4,12 @@ import 'package:cc_domain/core/domain/value_objects/repo_scripts.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
-
 import 'package:control_center/features/repos/providers/repo_script_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shows the per-repo lifecycle scripts editor: a setup script and an archive
 /// script (server-executed shell — see `RepoScripts`), plus the recorded run

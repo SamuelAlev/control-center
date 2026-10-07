@@ -6,9 +6,9 @@ import 'package:control_center/core/infrastructure/audio/audio_input_settings.da
 import 'package:control_center/core/infrastructure/speech/voice_model_control.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/audio_input_row.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/voice_section.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:record/record.dart';
 
 import '../../../../../helpers/test_wrap.dart';

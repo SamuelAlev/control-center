@@ -4,9 +4,9 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// App-side mermaid wiring: the diagram builder is registered on both markdown
 /// registers, the stylesheet is token-driven (and light/dark aware) and the

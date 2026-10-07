@@ -2,7 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/highlighted_code_lines.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A read-only, syntax-highlighted code block with a line-number gutter and a
 /// bounded height (inner scroll past [maxHeight]). Used to render the body of

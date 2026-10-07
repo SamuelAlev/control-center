@@ -7,11 +7,11 @@ import 'package:control_center/features/messaging/presentation/ide/quick_open/qu
 import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart' show MaterialApp, Scaffold;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' show MaterialApp, Scaffold;
 
 import '../../../../helpers/fake_rpc_client.dart';
 

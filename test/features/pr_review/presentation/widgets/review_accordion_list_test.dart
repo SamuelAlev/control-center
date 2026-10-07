@@ -10,9 +10,9 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/pr_review/presentation/widgets/review_accordion_list.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Helpers
 // -----------------------------------------------------------------------------

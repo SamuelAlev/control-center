@@ -9,9 +9,9 @@ import 'package:control_center/features/ticketing/presentation/screens/tickets_s
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fixes the active workspace so the screen renders without the real
 /// workspace-resolution chain.

@@ -18,11 +18,10 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart'
     show PageWrapper;
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_wrap.dart';
 
@@ -238,9 +237,7 @@ Widget _wrapComposeScreen(
     child: MaterialApp.router(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),

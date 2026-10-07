@@ -7,9 +7,9 @@ import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_mention.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _host(Widget child) {
   return ProviderScope(

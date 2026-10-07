@@ -11,10 +11,9 @@ import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Design-system dark tokens, read directly: the mini-player renders in a bare,
 /// frameless window with no [Theme]. Like the focus pill and meeting toolbar, it
@@ -58,12 +57,10 @@ class _SoundscapeMiniPlayerWindowState
         locale: localeOverride,
         supportedLocales: kSupportedAppLocales,
         localeResolutionCallback: resolveAppLocale,
-        // Same flutter/material.dart delegates as ControlCenterApp.
+        // Same material_ui delegates as ControlCenterApp.
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+          ...GlobalMaterialLocalizations.delegates,
         ],
         // This sibling window must ignore the engine's shared platform route
         // (the main window's deep link), so always render the mini-player.

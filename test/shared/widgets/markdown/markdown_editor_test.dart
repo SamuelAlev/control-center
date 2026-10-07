@@ -3,8 +3,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_text_field.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_toolbar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _host(Widget child) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -184,6 +184,162 @@ flowchart TB
       expect(cluster.rect.contains(textBox('Gamma').center), isFalse);
     });
 
+    test('an edge naming a subgraph ends on the box border', () {
+      final scene = layoutOf('''
+flowchart TD
+  X[Xray] --> G
+  subgraph G [Group]
+    A[Alpha]
+    B[Beta]
+  end
+''');
+      final cluster = _clusterBoxes(scene).single;
+      final edge = scene.primitives.whereType<CcMermaidPathPrim>().single;
+      expect((edge.points.last.dy - cluster.top).abs(), lessThan(1.5));
+      expect(
+        edge.points.last.dx,
+        inInclusiveRange(cluster.left, cluster.right),
+      );
+    });
+
+    test('an edge into a member enters through the box border', () {
+      final scene = layoutOf('''
+flowchart TD
+  X[Xray] --> B
+  subgraph G [Group]
+    A[Alpha] --> B[Beta]
+  end
+''');
+      final cluster = _clusterBoxes(scene).single;
+      final beta = scene.primitives
+          .whereType<CcMermaidTextPrim>()
+          .firstWhere((prim) => prim.text == 'Beta')
+          .rect;
+      final edge = scene.primitives.whereType<CcMermaidPathPrim>().firstWhere(
+        (prim) => !cluster.contains(prim.points.first),
+      );
+      expect(edge.points.last.dy, closeTo(_boxAround(scene, beta).top, 1.5));
+      // The route crosses into the box through its top border.
+      var crossings = 0;
+      for (var i = 0; i + 1 < edge.points.length; i++) {
+        final a = edge.points[i];
+        final b = edge.points[i + 1];
+        if (a.dy < cluster.top && b.dy >= cluster.top) {
+          crossings++;
+          expect(a.dx, inInclusiveRange(cluster.left, cluster.right));
+        }
+      }
+      expect(crossings, 1);
+    });
+
+    test('sibling and nested subgraphs never overlap', () {
+      final scene = layoutOf('''
+flowchart TB
+  main --> TUI
+  main --> CLI
+  subgraph FE [Front-ends]
+    direction LR
+    subgraph CLI [cli]
+      program --> commands
+    end
+    subgraph TUI [tui]
+      app
+      runtime
+    end
+  end
+  subgraph FEAT [features]
+    stack --> env
+    env --> auth
+    stack --> auth
+  end
+  CLI --> FEAT
+  TUI --> stack
+  program -.-> auth
+''');
+      final clusters = scene.primitives
+          .whereType<CcMermaidShapePrim>()
+          .where((prim) => prim.role == CcMermaidPaintRole.cluster)
+          .toList();
+      expect(clusters, hasLength(4));
+      Rect titled(String title) {
+        final text = scene.primitives.whereType<CcMermaidTextPrim>().firstWhere(
+          (prim) => prim.text == title,
+        );
+        return clusters
+            .where((c) => c.rect.contains(text.rect.topLeft))
+            .map((c) => c.rect)
+            .reduce((a, b) => a.width * a.height < b.width * b.height ? a : b);
+      }
+
+      final fe = titled('Front-ends');
+      final cli = titled('cli');
+      final tui = titled('tui');
+      final feat = titled('features');
+      for (final inner in [cli, tui]) {
+        expect(
+          fe.contains(inner.topLeft) && fe.contains(inner.bottomRight),
+          isTrue,
+        );
+      }
+      expect(cli.overlaps(tui), isFalse);
+      expect(fe.overlaps(feat), isFalse);
+      // `FE` is linked from outside, so its `direction LR` is ignored and the
+      // two unlinked children sit side by side on one rank.
+      expect((cli.center.dy - tui.center.dy).abs(), lessThan(1));
+      for (final box in _nodeBoxes(scene)) {
+        final inFeat = feat.contains(box.center);
+        expect(inFeat ? feat.contains(box.bottomRight) : true, isTrue);
+      }
+    });
+
+    test('a subgraph with no outside links keeps its own direction', () {
+      final scene = layoutOf('''
+flowchart TB
+  subgraph S [Side]
+    direction LR
+    A[Alpha] --> B[Beta]
+  end
+''');
+      Rect textBox(String label) => scene.primitives
+          .whereType<CcMermaidTextPrim>()
+          .firstWhere((prim) => prim.text == label)
+          .rect;
+      expect(textBox('Alpha').center.dx, lessThan(textBox('Beta').center.dx));
+      expect(
+        (textBox('Alpha').center.dy - textBox('Beta').center.dy).abs(),
+        lessThan(1),
+      );
+    });
+
+    test('edges are routed orthogonally', () {
+      final scene = layoutOf('''
+flowchart TD
+  A[Ingest] --> B{Valid?}
+  B -->|yes| C[Transform]
+  B -->|no| D[Reject]
+  C --> E[(Store)]
+  D --> E
+  E -.->|retry| A
+  subgraph G [Group]
+    C
+    F[Notify]
+  end
+  C --> F
+  F --> E
+''');
+      for (final edge in scene.primitives.whereType<CcMermaidPathPrim>()) {
+        for (var i = 0; i + 1 < edge.points.length; i++) {
+          final a = edge.points[i];
+          final b = edge.points[i + 1];
+          expect(
+            (a.dx - b.dx).abs() < 0.01 || (a.dy - b.dy).abs() < 0.01,
+            isTrue,
+            reason: 'diagonal segment $a → $b',
+          );
+        }
+      }
+    });
+
     test('a cycle terminates and keeps both edges', () {
       final scene = layoutOf('flowchart LR\n A --> B\n B --> A');
       final edges = scene.primitives
@@ -644,6 +800,16 @@ List<Rect> _nodeBoxes(CcMermaidScene scene) => [
             prim.shape != CcMermaidNodeShape.bar))
       prim.rect,
 ];
+
+/// Subgraph boxes in a scene.
+List<Rect> _clusterBoxes(CcMermaidScene scene) => [
+  for (final prim in scene.primitives.whereType<CcMermaidShapePrim>())
+    if (prim.role == CcMermaidPaintRole.cluster) prim.rect,
+];
+
+/// The node box holding [text].
+Rect _boxAround(CcMermaidScene scene, Rect text) =>
+    _nodeBoxes(scene).firstWhere((box) => box.contains(text.center));
 
 /// A ruler with fixed, platform-independent metrics.
 class _FixedRuler extends CcMermaidTextRuler {

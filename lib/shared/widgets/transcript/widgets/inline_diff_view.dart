@@ -3,7 +3,7 @@ import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/diff_colors.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
 import 'package:control_center/shared/widgets/transcript/util/line_diff.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hard tokenize caps per diff side: past either, that side renders plain.
 const int _maxHighlightChars = 60 * 1024;

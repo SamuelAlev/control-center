@@ -301,7 +301,9 @@ class UpdateTicketTool extends McpTool {
     }
 
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     // Parse status first so a bad token fails before any mutation lands.
     final statusArg = arguments['status'];
     TicketStatus? status;

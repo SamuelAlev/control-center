@@ -161,6 +161,31 @@ flowchart TB
       expect(g.nodeById('B')!.clusterId, 'outer');
     });
 
+    test('an edge naming a subgraph links the box, not a new vertex', () {
+      final g = graph('''
+flowchart TB
+  subgraph S [Sub]
+    A
+  end
+  S --> B
+  B --> S
+''');
+      expect(g.nodeById('S'), isNull);
+      expect(g.clusters.single.id, 'S');
+      expect(g.edges.map((e) => '${e.fromId}>${e.toId}'), ['S>B', 'B>S']);
+    });
+
+    test('a labeled vertex sharing a subgraph id stays a vertex', () {
+      final g = graph('''
+flowchart TB
+  subgraph S [Sub]
+    A
+  end
+  S[Real node] --> A
+''');
+      expect(g.nodeById('S')!.lines, ['Real node']);
+    });
+
     test('class assignment and click bindings attach to the node', () {
       final g = graph('''
 flowchart TD

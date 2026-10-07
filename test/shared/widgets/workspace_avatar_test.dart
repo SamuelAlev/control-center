@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:control_center/shared/widgets/workspace_avatar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A minimal valid 1x1 transparent PNG, so [Image.memory] takes its image
 /// branch against real, decodable bytes.

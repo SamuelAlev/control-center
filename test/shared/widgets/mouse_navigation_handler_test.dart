@@ -1,8 +1,8 @@
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pumps a single-route app whose page is wrapped in a
 /// [MouseNavigationHandler], the way the shell wraps every page. Returns the

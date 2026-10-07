@@ -22,8 +22,8 @@ import 'package:control_center/shared/widgets/canvas/canvas_wheel_pan.dart';
 import 'package:control_center/shared/widgets/canvas/canvas_zoom_controls.dart';
 import 'package:control_center/shared/widgets/dot_grid_background.dart';
 import 'package:control_center/shared/widgets/empty_state.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 part 'knowledge_graph_actions.dart';
 part 'knowledge_graph_layout_logic.dart';

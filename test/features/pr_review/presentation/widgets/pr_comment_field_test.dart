@@ -3,9 +3,9 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fake_rpc_client.dart';
 import '../../../../helpers/test_wrap.dart';

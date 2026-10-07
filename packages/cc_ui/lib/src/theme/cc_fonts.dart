@@ -40,6 +40,15 @@ abstract final class CcFonts {
   static List<String> _scriptFallbacks = const [];
   static String? _activeTag;
 
+  /// Whether [activateForLocale] FontLoads the companion's vendored file.
+  ///
+  /// Widget suites turn this off in `flutter_test_config.dart`: the load
+  /// finishes on real I/O after the test body, and the engine's `fontsChange`
+  /// message then schedules a relayout frame that flutter_test reports as an
+  /// animation left running. The fallback list is still selected.
+  @visibleForTesting
+  static bool loadScriptFonts = true;
+
   /// Selects the script companion for [locale] and starts loading its
   /// vendored file (if any). Passing `null` (no [Localizations] ancestor)
   /// clears the fallbacks. Idempotent for the same locale.
@@ -56,7 +65,7 @@ abstract final class CcFonts {
     _activeTag = tag;
     final spec = locale == null ? null : CcScriptFonts.specFor(locale);
     _scriptFallbacks = spec?.fallbackFamilies ?? const [];
-    if (load && spec != null && spec.assetPaths.isNotEmpty) {
+    if (load && loadScriptFonts && spec != null && spec.assetPaths.isNotEmpty) {
       unawaited(CcScriptFonts.ensureLoaded(spec));
     }
   }

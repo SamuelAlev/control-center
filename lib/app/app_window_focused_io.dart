@@ -1,4 +1,4 @@
-import 'package:nativeapi/nativeapi.dart' show WindowManager;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' show WindowManager;
 
 /// Desktop: whether one of this app's windows currently holds keyboard focus.
 ///

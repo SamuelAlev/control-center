@@ -15,11 +15,10 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/misc.dart';
 
 Repo _repo(String id, String owner, String name) {
@@ -134,9 +133,7 @@ Widget _host(List<Override> overrides) {
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),
@@ -289,11 +286,7 @@ void main() {
         child: MaterialApp.router(
           localizationsDelegates: [
             ...AppLocalizations.localizationsDelegates,
-            GlobalMaterialLocalizations
-                .delegate, // ignore: deprecated_member_use
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations
-                .delegate, // ignore: deprecated_member_use
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
@@ -346,11 +339,7 @@ void main() {
         child: MaterialApp.router(
           localizationsDelegates: [
             ...AppLocalizations.localizationsDelegates,
-            GlobalMaterialLocalizations
-                .delegate, // ignore: deprecated_member_use
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations
-                .delegate, // ignore: deprecated_member_use
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Every `Cc*` component cc_ui exports must appear in at least one Widgetbook
-/// use case.
+/// story.
 ///
 /// The gallery calls itself "the living design-system reference", but nothing
 /// checked that claim: five exported components (`CcGauge`, `CcSlider`,
@@ -13,9 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// absence reads as "this component does not exist".
 ///
 /// Source-level (grep), like the RPC-op and action-class ratchets: no need to
-/// build a Widgetbook to know whether a `@UseCase` names a type.
+/// build a Widgetbook to know whether a story names a type.
 void main() {
-  test('every exported cc_ui component has a Widgetbook use case', () {
+  test('every exported cc_ui component has a Widgetbook story', () {
     final root = _repoRoot();
     final barrel = File('${root.path}/packages/cc_ui/lib/cc_ui.dart');
     expect(
@@ -50,14 +50,14 @@ void main() {
     expect(exported, isNotEmpty, reason: 'no exported components found');
 
     // A component counts as catalogued when the gallery MENTIONS it — either
-    // as a `@UseCase(type:)` of its own or rendered inside another
-    // component's entry, which is the honest home for a sub-component
-    // (`CcSidebarItem` lives inside the sidebar's use case; a standalone
-    // entry for it would be a worse reference, not a better one).
-    final useCaseDir = Directory('${root.path}/apps/cc_gallery/lib/use_cases');
+    // as the `ComponentMeta` name of its own stories file or rendered inside
+    // another component's stories, which is the honest home for a
+    // sub-component (`CcSidebarGroup` lives inside the sidebar's stories; a
+    // standalone entry for it would be a worse reference, not a better one).
+    final storiesDir = Directory('${root.path}/apps/cc_gallery/lib/stories');
     final catalogued = <String>{};
     final mentionPattern = RegExp(r'\b(Cc[A-Za-z0-9]+)\b');
-    for (final entity in useCaseDir.listSync()) {
+    for (final entity in storiesDir.listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) {
         continue;
       }
@@ -82,8 +82,8 @@ void main() {
       missing.toList()..sort(),
       isEmpty,
       reason:
-          'These exported cc_ui components have no @UseCase in the gallery. '
-          'Add one to apps/cc_gallery/lib/use_cases/, or add it to '
+          'These exported cc_ui components have no story in the gallery. '
+          'Add one to apps/cc_gallery/lib/stories/, or add it to '
           '`notShowable` above with a reason.',
     );
   });

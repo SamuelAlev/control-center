@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A multiline markdown text field with `@user` and `#issue` autocomplete.
 ///

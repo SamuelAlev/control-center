@@ -3,8 +3,8 @@ import 'package:control_center/features/pr_review/presentation/utils/diff_file_t
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 DiffTreeNode _leaf({
   required String name,

@@ -2,8 +2,8 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_status_badge.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// PR state is surfaced by TWO widgets with a deliberate split:
 ///

@@ -3,9 +3,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/provider_plan_panel.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A notifier that serves a fixed snapshot, standing in for the live poll.
 class _StubUsage extends SubscriptionUsageNotifier {

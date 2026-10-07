@@ -60,7 +60,9 @@ class AssignTicketTool extends McpTool {
       return CallResult.error('Missing or invalid argument: ticket_id');
     }
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     await _service.assign(
       ticketId,
       workspaceId: workspaceId,
@@ -125,7 +127,9 @@ class ReassignTicketTool extends McpTool {
       return CallResult.error('Missing ticket_id or agent_id.');
     }
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     await _service.reassign(
       ticketId,
       workspaceId: workspaceId,
@@ -177,7 +181,9 @@ class AddTicketCollaboratorTool extends McpTool {
       return CallResult.error('Missing ticket_id or agent_id.');
     }
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     await _service.addCollaborator(
       ticketId,
       workspaceId: workspaceId,
@@ -310,7 +316,9 @@ class TicketPrLinkTool extends McpTool {
       return CallResult.error("Invalid action. Expected 'link' or 'unlink'.");
     }
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     final unlinking = rawAction == 'unlink';
     if (unlinking) {
       await _service.unlinkPullRequest(
@@ -385,7 +393,9 @@ class CloseTicketTool extends McpTool {
       return CallResult.error('Missing or invalid argument: ticket_id');
     }
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     await _service.completeTicket(ticketId, workspaceId: workspaceId);
     return CallResult.success(
       jsonEncode({'ticket_id': ticketId, 'status': 'done'}),

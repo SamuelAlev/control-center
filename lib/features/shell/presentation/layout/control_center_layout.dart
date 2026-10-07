@@ -22,10 +22,10 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Root shell layout: a FULL-WIDTH [ShellTitleBar] on top (its bottom hairline
 /// runs edge to edge and, on macOS, its content clears the traffic-light

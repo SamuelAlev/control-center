@@ -185,7 +185,9 @@ class McpToolBridge extends HarnessTool {
     // agent's autonomy or budget envelope.
     if (agentId != null && agentId.isNotEmpty) {
       for (final callerId in const ['from_agent_id', 'delegated_by_agent_id']) {
-        if (props.containsKey(callerId)) scoped[callerId] = agentId;
+        if (props.containsKey(callerId)) {
+          scoped[callerId] = agentId;
+        }
       }
     }
     final convId = context.conversationId;

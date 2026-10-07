@@ -6,6 +6,8 @@
 # Raised 2026-09-22 to current line counts after the files grew past the previous floor.
 # Raised 2026-09-28: demo seeding and template seeds grew past the floor;
 # remote_rpc_catalog lowered by extracting the backup ops pack to extraOps.
+# Raised 2026-10-07: space-branch PR matching and code-server window ops grew
+# the server files; codeServer.openFile/closeFile moved to catalog/code_server_file_ops.dart.
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
 packages/cc_domain/lib/src/dtos/dtos.dart  4179
@@ -22,8 +24,8 @@ packages/cc_infra/lib/src/rigs/rig_service.dart  2976
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2889
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3360
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7957
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7958
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
-packages/cc_server_core/lib/src/local_rpc_server.dart  2429
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16053
+packages/cc_server_core/lib/src/local_rpc_server.dart  2435
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16108
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2563

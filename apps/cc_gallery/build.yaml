@@ -1,0 +1,9 @@
+# widgetbook 4 ships its story generator as builders of the `widgetbook`
+# package itself (`*.stories.dart` -> `*.stories.g.dart` + `components.g.dart`).
+# Its `telemetry` builder reports anonymous usage (a hash of the git email, the
+# repo's first commit and remote URL) after every build; opt out of it.
+targets:
+  $default:
+    builders:
+      widgetbook:telemetry:
+        enabled: false

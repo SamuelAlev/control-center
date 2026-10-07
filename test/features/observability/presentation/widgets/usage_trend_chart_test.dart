@@ -5,8 +5,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/charts/chart_hover.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One series carrying the given daily token totals, one point per day.
 UsageTrendSeries _series(String model, List<int> tokensPerDay) =>

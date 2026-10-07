@@ -8,9 +8,9 @@ import 'package:control_center/features/messaging/presentation/widgets/message_b
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) => SingleChildScrollView(
   child: CcTheme(data: CcThemeData.light(), child: child),

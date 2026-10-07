@@ -8,9 +8,9 @@ import 'package:control_center/features/newsfeed/presentation/screens/newsfeed_s
 import 'package:control_center/features/newsfeed/presentation/widgets/article_grid.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/newsfeed_skeleton.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 // ignore: implementation_imports
 import 'package:riverpod/src/framework.dart' show Override;
 

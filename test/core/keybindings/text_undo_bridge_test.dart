@@ -3,9 +3,9 @@ import 'package:control_center/core/constants/keybindings.dart';
 import 'package:control_center/core/keybindings/keybinding_dispatcher.dart';
 import 'package:control_center/core/keybindings/text_undo_shortcuts.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 /// Text undo/redo: dispatcher bridges ⌘Z/⇧⌘Z to the focused field (framework
 /// shortcuts do not fire under native windowing with a live input connection);
 /// `kTextUndoNeutralizerShortcuts` keeps the bridge the only actor.

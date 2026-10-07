@@ -109,7 +109,7 @@ Future<void> seedDemoSkills({
   await _pinSkills(root);
 }
 
-/// Rolled-up hash of a single `SKILL.md`, matching [SkillBundleService].
+/// Rolled-up hash of a single `SKILL.md`, matching `SkillBundleService`.
 String demoSkillFileHash(List<int> bytes) {
   final fileHash = sha256.convert(bytes).toString();
   return sha256.convert(utf8.encode('SKILL.md:$fileHash')).toString();

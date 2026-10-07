@@ -23,11 +23,10 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart'
     show EditorLayoutPersistence;
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fake_rpc_client.dart';
 
@@ -36,9 +35,7 @@ Widget _wrap(Widget child) {
     child: MaterialApp.router(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),

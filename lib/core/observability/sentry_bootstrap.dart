@@ -2,7 +2,7 @@ import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/storage/native_key_value_backend.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:nativeapi/nativeapi.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' show Preferences;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Sentry DSN for the Control Center project.

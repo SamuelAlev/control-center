@@ -60,10 +60,10 @@ import 'package:control_center/router/guards.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/router/splash_screen.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show MaterialRouteTransitionMixin;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart' show MaterialRouteTransitionMixin;
 
 /// Wraps a route's child with an opaque [GestureDetector] so taps in
 /// transparent areas don't fall through to the route's underlying

@@ -6,9 +6,9 @@ import 'package:control_center/core/storage/sandbox_preferences.dart';
 import 'package:control_center/features/sandboxing/presentation/onboarding_step_sandbox.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/l10n/app_localizations_en.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/test_wrap.dart';
 

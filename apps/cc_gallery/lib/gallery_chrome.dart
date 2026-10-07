@@ -1,8 +1,17 @@
+// The gallery's one deliberate import of the deprecated framework Material
+// library. Widgetbook 4 builds its own chrome (navigation tree, search, addon
+// and args panels) on `package:flutter/material.dart`, and
+// `Config.lightTheme`/`darkTheme` take that library's `ThemeData`, which is a
+// different class from material_ui's. Drop this once widgetbook moves to
+// material_ui. Everything the gallery renders itself stays Material-free.
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart' as legacy;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Widgetbook chrome styling via Material `ThemeData` mapped from cc_ui tokens.
+/// Widgetbook chrome styling via legacy Material `ThemeData` mapped from cc_ui
+/// tokens.
 ///
 /// Widgetbook only exposes `lightTheme`/`darkTheme`; its tree tiles are
 /// `@internal` Material and cannot become `Cc*` widgets. Selected tile uses
@@ -10,13 +19,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// so a solid brand fill would be illegible. Pill radius, accent border,
 /// group eyebrows, search focus ring, and resize separators are unreachable
 /// through `ThemeData`.
-ThemeData galleryChromeTheme(Brightness brightness) {
+legacy.ThemeData galleryChromeTheme(Brightness brightness) {
   final t = brightness == Brightness.dark
       ? DesignSystemTokens.dark()
       : DesignSystemTokens.light();
 
   final scheme =
-      ColorScheme.fromSeed(
+      legacy.ColorScheme.fromSeed(
         seedColor: t.accent,
         brightness: brightness,
       ).copyWith(
@@ -40,7 +49,7 @@ ThemeData galleryChromeTheme(Brightness brightness) {
         onError: t.accentOn,
       );
 
-  final base = ThemeData(
+  final base = legacy.ThemeData(
     useMaterial3: true,
     brightness: brightness,
     colorScheme: scheme,
@@ -54,7 +63,7 @@ ThemeData galleryChromeTheme(Brightness brightness) {
     // Drop the Material ripple chrome-wide so nav rows (and chrome buttons) read
     // like `Cc*` widgets: a subtle `hover` wash, a slightly stronger `hoverStrong`
     // pressed wash, both cc_ui's warm fg overlays rather than the Material tint.
-    splashFactory: NoSplash.splashFactory,
+    splashFactory: legacy.NoSplash.splashFactory,
     hoverColor: t.hover,
     highlightColor: t.hoverStrong,
     focusColor: t.accentSoft,
@@ -66,14 +75,14 @@ ThemeData galleryChromeTheme(Brightness brightness) {
       bodyColor: t.fg,
       displayColor: t.fg,
     ),
-    // Nav-tree glyphs (folder / component / use-case + the expander chevron) are
+    // Nav-tree glyphs (folder / component / story + the expander chevron) are
     // bare `Icon`s that read `IconTheme`. A resting `CcSidebarItem` paints its
     // icon `textSecondary`, so match it. (The tile does not re-color the icon on
     // selection — see the doc note above.)
     iconTheme: IconThemeData(color: t.textSecondary),
     // The navigation and addons panels are Material `Card`s — make them the
     // warm sidebar surface, flat, with no surface tint or margin.
-    cardTheme: CardThemeData(
+    cardTheme: legacy.CardThemeData(
       color: t.sidebar,
       surfaceTintColor: const Color(0x00000000),
       shadowColor: const Color(0x00000000),
@@ -82,17 +91,17 @@ ThemeData galleryChromeTheme(Brightness brightness) {
       shape: const RoundedRectangleBorder(),
     ),
     // The sidebar search field.
-    inputDecorationTheme: InputDecorationThemeData(
+    inputDecorationTheme: legacy.InputDecorationThemeData(
       filled: true,
       fillColor: t.panel,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       hintStyle: TextStyle(color: t.textPlaceholder),
-      enabledBorder: OutlineInputBorder(
+      enabledBorder: legacy.OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: t.borderSoft),
       ),
-      focusedBorder: OutlineInputBorder(
+      focusedBorder: legacy.OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: t.accent, width: 1.5),
       ),
@@ -101,16 +110,18 @@ ThemeData galleryChromeTheme(Brightness brightness) {
 }
 
 /// Branded header pinned to the top of Widgetbook's navigation sidebar (passed
-/// to `Widgetbook.header`). Renders inside the chrome `MaterialApp`, so it reads
-/// colors from the themed [Theme.of] and adapts to light/dark automatically.
+/// to `Config.header`). Renders inside the chrome's legacy `MaterialApp`, which
+/// follows the platform brightness (`ThemeMode.system`), so it reads the
+/// matching cc_ui tokens directly instead of the legacy Material `Theme`.
 class GalleryNavHeader extends StatelessWidget {
   /// Creates the gallery navigation header.
   const GalleryNavHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final t = MediaQuery.platformBrightnessOf(context) == Brightness.dark
+        ? DesignSystemTokens.dark()
+        : DesignSystemTokens.light();
     return Row(
       children: [
         // The brand mark: the figure SVG (tinted white) on the brand orange
@@ -154,17 +165,20 @@ class GalleryNavHeader extends StatelessWidget {
                 'Control Center',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
+                style: CcFonts.ui(
+                  textStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: t.fg,
+                  ),
                 ),
               ),
               Text(
                 'Design system',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
+                style: CcFonts.ui(
+                  textStyle: TextStyle(fontSize: 12, color: t.muted),
                 ),
               ),
             ],

@@ -7,7 +7,7 @@ import 'package:control_center/features/newsfeed/presentation/widgets/save_toggl
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/proxied_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Card representation of an article in the newsfeed grid.
 class ArticleCard extends StatelessWidget {

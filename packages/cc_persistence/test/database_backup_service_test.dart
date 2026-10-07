@@ -596,7 +596,7 @@ void main() {
         try {
           writer.execute('PRAGMA journal_mode = WAL');
           writer.execute(
-            "INSERT INTO pipeline_runs (id, template_id, workspace_id) "
+            'INSERT INTO pipeline_runs (id, template_id, workspace_id) '
             "VALUES ('in-wal', 'tpl', 'ws1')",
           );
           expect(File('$exported-wal').existsSync(), isTrue);
@@ -625,33 +625,33 @@ void main() {
       await seedWorkspace('ws1', agentName: 'Ada');
       final db = workspaces.of('ws1');
       await db.customStatement(
-        "INSERT INTO workspace_invites "
-        "(id, workspace_id, code_hash, created_by, expires_at) "
+        'INSERT INTO workspace_invites '
+        '(id, workspace_id, code_hash, created_by, expires_at) '
         "VALUES ('inv', 'ws1', 'code-hash', 'owner', 4102444800)",
       );
       await db.customStatement(
-        "INSERT INTO pipeline_triggers "
-        "(id, event_type, template_id, workspace_id, webhook_token, enabled) "
+        'INSERT INTO pipeline_triggers '
+        '(id, event_type, template_id, workspace_id, webhook_token, enabled) '
         "VALUES ('trigger', 'webhook', 'tpl', 'ws1', 'webhook-secret', 1)",
       );
       await db.customStatement(
-        "INSERT INTO pipeline_runs (id, template_id, workspace_id) "
+        'INSERT INTO pipeline_runs (id, template_id, workspace_id) '
         "VALUES ('run', 'tpl', 'ws1')",
       );
       await db.customStatement(
-        "INSERT INTO spaces (id, name, workspace_id) "
+        'INSERT INTO spaces (id, name, workspace_id) '
         "VALUES ('space-id', 'Room', 'ws1')",
       );
       await db.customStatement(
-        "INSERT INTO tickets (id, workspace_id, provider, external_key, title) "
+        'INSERT INTO tickets (id, workspace_id, provider, external_key, title) '
         "VALUES ('ticket', 'ws1', 'linear', 'ENG-1', 'Issue')",
       );
       await db.customStatement(
         "INSERT INTO repos (id, name, path) VALUES ('repo', 'Repo', '/repo')",
       );
       await db.customStatement(
-        "INSERT INTO isolated_repos "
-        "(id, workspace_id, space_id, repo_id, path, branch, source_path) "
+        'INSERT INTO isolated_repos '
+        '(id, workspace_id, space_id, repo_id, path, branch, source_path) '
         "VALUES ('checkout', 'ws1', 'space-id', 'repo', '/copy', 'main', '/repo')",
       );
       final exported = await service().exportWorkspace('ws1');
@@ -747,7 +747,7 @@ void main() {
         await workspaces
             .of('ws1')
             .customStatement(
-              "INSERT INTO pipeline_runs (id, template_id, workspace_id) "
+              'INSERT INTO pipeline_runs (id, template_id, workspace_id) '
               "VALUES ('run-1', 'tpl', 'ws1')",
             );
         final exported = await service().exportWorkspace('ws1');

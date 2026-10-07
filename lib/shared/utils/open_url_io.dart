@@ -1,4 +1,4 @@
-import 'package:nativeapi/nativeapi.dart' show UrlOpener;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' show UrlOpener;
 
 /// Desktop implementation of the `openExternalUrl` seam: hands [url] to the OS
 /// default handler via nativeapi's synchronous [UrlOpener].

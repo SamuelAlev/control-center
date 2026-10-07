@@ -1,6 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Verifies that the production wiring — a [CcToastScope] installed in
 /// `MaterialApp.builder` (above the router/navigator overlay) — can actually

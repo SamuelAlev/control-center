@@ -278,7 +278,15 @@ class _StateBuilder {
     return CcMermaidGraph(
       kind: CcMermaidGraphKind.state,
       direction: direction,
-      nodes: List.unmodifiable(_nodes.values),
+      // A transition written before its composite state's block registered
+      // the name as a plain state; the block made it a cluster.
+      nodes: List.unmodifiable(
+        _nodes.values.where(
+          (node) => node.lines.isEmpty
+              ? !_clusters.any((c) => c.id == node.id)
+              : true,
+        ),
+      ),
       edges: List.unmodifiable(_edges),
       clusters: List.unmodifiable(_clusters),
       title: title,

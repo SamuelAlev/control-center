@@ -2,8 +2,8 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/harness_rotation_editor.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets(

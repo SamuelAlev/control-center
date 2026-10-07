@@ -4,10 +4,10 @@ import 'package:control_center/features/plan_studio/presentation/widgets/plan_ca
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_node_visuals.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The longest realistic plan title: a full task sentence, which is what the
 /// planner actually emits ("Add partial staging (hunk/line) to Source Control

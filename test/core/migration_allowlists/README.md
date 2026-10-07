@@ -5,8 +5,8 @@ These files drive the ratcheting rules in
 that track the migration of Material/Cupertino visual widgets onto the in-repo
 `cc_ui` design-system package (`packages/cc_ui`).
 
-- `material_importers.txt` — `lib/` files still importing `package:flutter/material.dart`.
-- `cupertino_importers.txt` — `lib/` files still importing `package:flutter/cupertino.dart`.
+- `material_importers.txt` — `lib/` files still importing `package:material_ui/material_ui.dart` (the framework's deprecated `package:flutter/material.dart` is banned outright).
+- `cupertino_importers.txt` — `lib/` files still importing `package:cupertino_ui/cupertino_ui.dart` (likewise for `package:flutter/cupertino.dart`).
 
 Format: one repo-relative path per line. Blank lines and `#` comments are ignored.
 

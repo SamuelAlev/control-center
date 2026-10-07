@@ -10,9 +10,9 @@ import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Design-system dark tokens, read directly: the pill renders in a bare,
 /// frameless window with no [Theme] (and therefore no `context.designSystem`).

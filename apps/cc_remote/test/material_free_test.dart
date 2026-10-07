@@ -25,7 +25,9 @@ void main() {
     for (final file in _dartSources()) {
       final src = file.readAsStringSync();
       if (src.contains('package:flutter/material.dart') ||
-          src.contains('package:flutter/cupertino.dart')) {
+          src.contains('package:flutter/cupertino.dart') ||
+          src.contains('package:material_ui/') ||
+          src.contains('package:cupertino_ui/')) {
         offenders.add(_short(file));
       }
     }

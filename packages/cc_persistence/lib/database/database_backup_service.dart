@@ -547,7 +547,7 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
       );
       add(
         WorkspaceRouteKind.webhookToken,
-        "SELECT webhook_token FROM pipeline_triggers "
+        'SELECT webhook_token FROM pipeline_triggers '
         "WHERE webhook_token IS NOT NULL AND webhook_token <> ''",
       );
       add(WorkspaceRouteKind.pipelineRun, 'SELECT id FROM pipeline_runs');

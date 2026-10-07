@@ -9,9 +9,9 @@ import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The re-authentication screen an operator lands on when their forge
 /// credential lapses after a completed setup.

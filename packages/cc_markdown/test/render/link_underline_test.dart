@@ -1,6 +1,6 @@
 import 'package:cc_markdown/cc_markdown.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pin for the custom-painted link underline: it must appear in BOTH plain
 /// and selectable documents. The selectable half is the regression — under a

@@ -3,9 +3,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/account_pool_editor.dart';
 import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 // `flutter_riverpod` does not re-export `Override`; `misc.dart` is its public
 // home in riverpod 3.
 import 'package:riverpod/misc.dart' show Override;

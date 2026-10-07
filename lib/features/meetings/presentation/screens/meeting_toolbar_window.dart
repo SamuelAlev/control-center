@@ -13,10 +13,9 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/live_dot.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// How long the user must hold before the recording stops. Long enough that a
 /// stray click can't end a meeting, short enough not to feel like a chore.
@@ -72,12 +71,10 @@ class _MeetingToolbarWindowState extends ConsumerState<MeetingToolbarWindow> {
         debugShowCheckedModeBanner: false,
         locale: localeCode != null ? Locale(localeCode) : null,
         supportedLocales: AppLocalizations.supportedLocales,
-        // Same flutter/material.dart delegates as ControlCenterApp.
+        // Same material_ui delegates as ControlCenterApp.
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+          ...GlobalMaterialLocalizations.delegates,
         ],
         // This sibling window must ignore the engine's current route (the main
         // window's `/workspaces/<id>/…` deep link is shared across windows in
@@ -240,7 +237,9 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
                             onPointerUp: (_) => _onPointerUp(),
                             onPointerCancel: (_) => _onPointerUp(),
                             child: Padding(
-                              padding: const EdgeInsetsDirectional.only(start: 16),
+                              padding: const EdgeInsetsDirectional.only(
+                                start: 16,
+                              ),
                               child: Row(
                                 children: [
                                   paused

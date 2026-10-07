@@ -5,9 +5,9 @@ import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/markdown/file_reference_chip.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The reference is claimed at PARSE time, so the assertions here are about the
 /// AST: the chip is a real node the builder registry can style and make

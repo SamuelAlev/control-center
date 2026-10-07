@@ -1,11 +1,13 @@
 # Enforced by architecture_constraints_test.dart. Migrate to cc_ui + remove.
 # Regenerated to the current baseline (list had drifted again).
-# Shrinking allowlist: files still importing package:flutter/material.dart.
+# Shrinking allowlist: files still importing package:material_ui/material_ui.dart.
 # Updated 2026-09-19 after routing + calendar host Material shows.
 lib/app/control_center_app.dart
 lib/bootstrap/bootstrap_io.dart
 lib/core/theme/app_fonts.dart
 lib/core/theme/app_theme.dart
+# Permanent until third-party widgets leave flutter/material.dart (bridge).
+lib/core/theme/legacy_material_bridge.dart
 lib/core/theme/theme_provider.dart
 lib/features/auth/presentation/screens/api_keys_screen.dart
 lib/features/auth/presentation/screens/onboarding_chrome.dart

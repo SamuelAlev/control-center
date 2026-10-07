@@ -7,10 +7,10 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/routes.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../fakes/fake_filesystem_port.dart';
 import '../../../helpers/fake_rpc_client.dart';

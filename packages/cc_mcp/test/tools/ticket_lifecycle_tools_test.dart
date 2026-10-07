@@ -5,8 +5,8 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
-import 'package:cc_mcp/src/tools/ticket_lifecycle_tools.dart';
 import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
+import 'package:cc_mcp/src/tools/ticket_lifecycle_tools.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -17,8 +17,8 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/shader_background.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The full-screen frame every pre-context auth surface sits in: the shader background, a
 /// centred column capped at a readable width, and the theme toggle in the corner.

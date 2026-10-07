@@ -9,9 +9,9 @@ import 'package:control_center/features/settings/providers/claude_account_provid
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/misc.dart' show Override;
 
 Widget _wrap(Widget child) {

@@ -338,11 +338,19 @@ CcMermaidStyle appMermaidStyle(
       fontSize: compact ? 10.5 : 11.5,
       color: tokens.textSecondary,
     ),
-    nodeFill: tokens.surface,
-    nodeBorder: tokens.borderPrimary,
+    // Nodes, subgraphs and the surface are derived from the text color rather
+    // than the surface ramp: in dark mode `surface`, `bgTertiary` and the
+    // borders sit within a few values of each other, so boxes vanished into
+    // the subgraphs holding them. Nodes stay opaque to cover edge stubs;
+    // subgraph washes are translucent so nesting deepens visibly.
+    nodeFill: Color.alphaBlend(
+      tokens.textPrimary.withValues(alpha: 0.06),
+      tokens.bgSecondary,
+    ),
+    nodeBorder: tokens.textTertiary.withValues(alpha: 0.5),
     accent: tokens.textTertiary,
-    clusterFill: tokens.bgTertiary,
-    clusterBorder: tokens.borderSecondary,
+    clusterFill: tokens.textPrimary.withValues(alpha: 0.03),
+    clusterBorder: tokens.textTertiary.withValues(alpha: 0.3),
     noteFill: tokens.bgTertiary,
     noteBorder: tokens.borderSecondary,
     edgeColor: tokens.textTertiary,

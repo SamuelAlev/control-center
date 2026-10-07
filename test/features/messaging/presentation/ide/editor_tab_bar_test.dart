@@ -6,9 +6,9 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart' show kSecondaryButton, PointerDeviceKind;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show ByteData, FontLoader;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _tabs = [
   EditorTab(kind: 'chat', label: 'A'),
@@ -366,7 +366,14 @@ void main() {
     ).readAsBytesSync();
     final loader = FontLoader('Manrope')
       ..addFont(Future.value(ByteData.sublistView(bytes)));
-    await loader.load();
+    // The engine announces the face with a `fontsChange` system message on
+    // the real event loop. Let it land now and pump its relayout frame, or
+    // that frame is still pending when the test ends and fails it.
+    await tester.runAsync(() async {
+      await loader.load();
+      await Future<void>.delayed(Duration.zero);
+    });
+    await tester.pump();
 
     // Vacuity guard: with the loaded font, w500 must measure wider than w400,
     // otherwise the equality assertions below could never fail.

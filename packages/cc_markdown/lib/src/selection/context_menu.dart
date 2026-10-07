@@ -1,7 +1,7 @@
 // The ONLY file in cc_markdown that imports Material — for the default
 // adaptive selection toolbar. Everything else builds on widgets.dart.
 import 'package:cc_markdown/src/selection/copy_filter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The default selection context menu: the platform-adaptive toolbar with the
 /// copy button wrapped to run the overlay-line clipboard filter after the

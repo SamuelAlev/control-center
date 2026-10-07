@@ -7,9 +7,9 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/service_status/presentation/widgets/service_status_indicator.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_wrap.dart';
 

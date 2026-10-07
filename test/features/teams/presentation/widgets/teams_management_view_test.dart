@@ -7,10 +7,9 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/teams/presentation/widgets/teams_management_view.dart';
 import 'package:control_center/features/teams/providers/team_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Agent _agent(String id, String name) => Agent(
   id: id,
@@ -48,9 +47,7 @@ Widget _wrap({
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),

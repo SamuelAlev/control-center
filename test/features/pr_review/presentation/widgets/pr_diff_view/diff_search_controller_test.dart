@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_search_controller.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 PrFile _testFile({String filename = 'lib/a.dart', String patch = ''}) {
   return PrFile(

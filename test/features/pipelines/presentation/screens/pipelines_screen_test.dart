@@ -6,9 +6,9 @@ import 'package:control_center/features/pipelines/presentation/widgets/pipeline_
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_row.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_wrap.dart';
 

@@ -1,6 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Neutral loading screen shown while the router waits for the onboarding
 /// gate to resolve. Avoids flashing the onboarding flow when the user has

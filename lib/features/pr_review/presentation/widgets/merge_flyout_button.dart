@@ -12,9 +12,9 @@ import 'package:control_center/features/pr_review/presentation/widgets/merge_con
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Readiness is NOT computed here. `evaluatePrMergeReadiness` in cc_domain owns
 // it, because the server needs the same answer to decide whether to raise a

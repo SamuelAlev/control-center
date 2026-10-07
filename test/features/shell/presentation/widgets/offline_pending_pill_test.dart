@@ -3,9 +3,9 @@ import 'package:control_center/core/offline/offline_queue_provider.dart';
 import 'package:control_center/features/shell/presentation/widgets/offline_pending_pill.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _FakeQueueController extends OfflineQueueController {
   _FakeQueueController(this._count);

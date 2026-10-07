@@ -3,9 +3,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/max_parallel_runs_field.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_settings_dialog.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_wrap.dart';
 

@@ -9,8 +9,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart'
     show composerHorizontalMargin;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The steering queue strip: the still-queued steering cards of one conversation, rendered
 /// between the chat trail and the composer.

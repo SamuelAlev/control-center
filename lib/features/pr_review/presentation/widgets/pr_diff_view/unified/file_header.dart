@@ -4,8 +4,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fixed height of a file header row in the unified diff. Sizes the Fenwick
 /// header slot, so it must match the rendered header's height budget.

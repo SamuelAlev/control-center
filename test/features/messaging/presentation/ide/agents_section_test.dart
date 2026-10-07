@@ -9,9 +9,9 @@ import 'package:control_center/features/messaging/presentation/ide/panels/agent_
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 final _t0 = DateTime.utc(2026, 7, 26);
 

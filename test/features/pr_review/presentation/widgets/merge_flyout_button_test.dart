@@ -12,10 +12,11 @@ import 'package:control_center/features/pr_review/providers/pr_merge_conflicts_p
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/review_studio_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../helpers/test_wrap.dart';
 
 PullRequest _pr({

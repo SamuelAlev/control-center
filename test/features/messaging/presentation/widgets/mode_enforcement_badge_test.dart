@@ -12,9 +12,9 @@ import 'package:control_center/features/settings/providers/adapter_preferences_p
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 // `flutter_riverpod` does not re-export `Override`; `misc.dart` is its public
 // home in riverpod 3.
 import 'package:riverpod/misc.dart' show Override;

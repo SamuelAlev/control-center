@@ -6,9 +6,9 @@ import 'package:control_center/features/settings/presentation/widgets/font_previ
 import 'package:control_center/features/settings/providers/font_list_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   late AppPreferences prefs;

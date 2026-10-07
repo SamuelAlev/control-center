@@ -28,21 +28,17 @@ class AskAgentTool extends McpTool {
   AskAgentTool({
     required AgentRepository agents,
     required MessagingRepository messaging,
-    required MessagingPort messagingPort,
-    required PairRateLimiter rateLimiter,
-    required TicketWorkflowService service,
-    required PendingDelegationHops pendingHops,
+    required this._messagingPort,
+    required this._rateLimiter,
+    required this._service,
+    required this._pendingHops,
     DomainEventBus? eventBus,
   }) : _peers = PeerAgentMessaging(
          agents: agents,
          messaging: messaging,
          eventBus: eventBus,
        ),
-       _messaging = messaging,
-       _messagingPort = messagingPort,
-       _rateLimiter = rateLimiter,
-       _service = service,
-       _pendingHops = pendingHops;
+       _messaging = messaging;
 
   final PeerAgentMessaging _peers;
   final MessagingRepository _messaging;
@@ -225,7 +221,9 @@ class AskAgentTool extends McpTool {
       ...ticketChain,
       ...pendingChain.where((id) => !ticketChain.contains(id)),
     ];
-    if (chain.isEmpty || chain.last != fromAgentId) chain.add(fromAgentId);
+    if (chain.isEmpty || chain.last != fromAgentId) {
+      chain.add(fromAgentId);
+    }
     final guard = const DelegationGuards().evaluate(
       chainAgentIds: chain,
       chainDepth: ticketDepth + pendingChain.length - 1,
@@ -234,7 +232,9 @@ class AskAgentTool extends McpTool {
       requestedAutonomy: requestedAutonomy,
       remainingBudgetCents: budget ?? 1,
     );
-    if (!guard.allowed) return CallResult.error(guard.refusal!);
+    if (!guard.allowed) {
+      return CallResult.error(guard.refusal!);
+    }
     if (_pendingHops.wouldCycle(workspaceId, fromAgentId, recipient.id)) {
       return CallResult.error(
         'Delegation refused: cycle detected '

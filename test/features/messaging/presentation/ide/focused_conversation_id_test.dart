@@ -1,10 +1,10 @@
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/general_panel.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 // `flutter_riverpod` does not re-export `Override`; `misc.dart` is its public
 // home in riverpod 3.
 import 'package:riverpod/misc.dart' show Override;

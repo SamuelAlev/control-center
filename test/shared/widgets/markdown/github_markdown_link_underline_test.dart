@@ -3,8 +3,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/github_reference_link_builder.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// App-wired GitHub markdown still uses cc_markdown's offset underline painter
 /// (not the engine's baseline-hugging decoration) under a SelectionArea.

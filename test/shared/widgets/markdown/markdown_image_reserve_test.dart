@@ -3,8 +3,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/github_markdown_preprocessor.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_media_metrics.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A raw `github.com/user-attachments/*` URL: unfetchable by construction (it
 /// resolves only against a browser session cookie), so [MarkdownImage] never

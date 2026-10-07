@@ -17,10 +17,9 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_mention.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 final _t0 = DateTime(2024, 6, 15, 12);
 
@@ -185,7 +184,8 @@ Widget _wrap(
               [
                 IssueComment(
                   id: 22,
-                  body: '## Quality Gate failed\n\n- 77.2% coverage on new code',
+                  body:
+                      '## Quality Gate failed\n\n- 77.2% coverage on new code',
                   user: const PrUser(
                     login: 'sonarqubecloud[bot]',
                     avatarUrl: '',
@@ -268,9 +268,7 @@ Widget _wrap(
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),
@@ -469,37 +467,34 @@ void main() {
       expect(opened, ['845facb1234', 'e07bcc41234']);
     });
 
-    testWidgets(
-      'timeline rail is continuous through conversation cards',
-      (tester) async {
-        tester.view.physicalSize = const Size(800, 4000);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        await tester.pumpWidget(
-          _wrap(
-            CustomScrollView(
-              scrollCacheExtent: const ScrollCacheExtent.pixels(8000),
-              slivers: [
-                PrActivityTimeline(pr: _pr(), prRef: _prRef),
-              ],
-            ),
+    testWidgets('timeline rail is continuous through conversation cards', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        _wrap(
+          CustomScrollView(
+            scrollCacheExtent: const ScrollCacheExtent.pixels(8000),
+            slivers: [PrActivityTimeline(pr: _pr(), prRef: _prRef)],
           ),
-        );
-        await tester.pumpAndSettle(const Duration(seconds: 5));
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
 
-        final connectors = tester
-            .widgetList<PositionedDirectional>(
-              find.byKey(const ValueKey<String>('timeline-connector')),
-            )
-            .toList();
-        expect(connectors, isNotEmpty);
-        // Event bubbles skip the 24px disc; conversation / reply rows
-        // must start at 0 or the rail cuts above every card.
-        expect(connectors.any((p) => p.top == 0), isTrue);
-        expect(connectors.any((p) => p.top == 24), isTrue);
-      },
-    );
+      final connectors = tester
+          .widgetList<PositionedDirectional>(
+            find.byKey(const ValueKey<String>('timeline-connector')),
+          )
+          .toList();
+      expect(connectors, isNotEmpty);
+      // Event bubbles skip the 24px disc; conversation / reply rows
+      // must start at 0 or the rail cuts above every card.
+      expect(connectors.any((p) => p.top == 0), isTrue);
+      expect(connectors.any((p) => p.top == 24), isTrue);
+    });
 
     testWidgets(
       'only on-screen conversations build, even when they start open',
@@ -530,9 +525,7 @@ void main() {
             CustomScrollView(
               controller: controller,
               scrollCacheExtent: const ScrollCacheExtent.pixels(0),
-              slivers: [
-                PrActivityTimeline(pr: _pr(), prRef: _prRef),
-              ],
+              slivers: [PrActivityTimeline(pr: _pr(), prRef: _prRef)],
             ),
             comments: comments,
             reviews: [
@@ -604,9 +597,7 @@ void main() {
             CustomScrollView(
               controller: controller,
               scrollCacheExtent: const ScrollCacheExtent.pixels(0),
-              slivers: [
-                PrActivityTimeline(pr: _pr(), prRef: _prRef),
-              ],
+              slivers: [PrActivityTimeline(pr: _pr(), prRef: _prRef)],
             ),
             comments: const [],
             reviews: const [],

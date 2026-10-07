@@ -4,9 +4,9 @@ import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_pr
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The messaging IDE puts an [EditorTabBar] and the sidebar's
 /// [IdeSidebarViewStrip] side by side, separated only by the resizable divider.

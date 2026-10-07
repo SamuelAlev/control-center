@@ -10,11 +10,7 @@ import 'package:cc_mcp/src/tools/ticket_access.dart';
 /// MCP tool that delegates a ticket through the same guard as `delegate_task`.
 class DelegateTicketTool extends McpTool {
   /// Creates a [DelegateTicketTool].
-  DelegateTicketTool({
-    required TicketWorkflowService service,
-    required PendingDelegationHops pendingHops,
-  }) : _service = service,
-       _pendingHops = pendingHops;
+  DelegateTicketTool({required this._service, required this._pendingHops});
   final TicketWorkflowService _service;
   final PendingDelegationHops _pendingHops;
 
@@ -161,7 +157,9 @@ class FailTicketTool extends McpTool {
       return CallResult.error('Missing ticket_id or error_message.');
     }
     final missing = await ticketMutationError(_service, workspaceId, ticketId);
-    if (missing != null) return missing;
+    if (missing != null) {
+      return missing;
+    }
     await _service.failTicket(ticketId, errorMessage, workspaceId: workspaceId);
     return CallResult.success(
       jsonEncode({'ticket_id': ticketId, 'status': 'failed'}),

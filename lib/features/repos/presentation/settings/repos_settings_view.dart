@@ -3,7 +3,6 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
-
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart'
     show repoAccessForWorkspaceProvider;
 import 'package:control_center/features/repos/presentation/widgets/repo_index_button.dart';
@@ -17,11 +16,11 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
-import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:control_center/shared/widgets/repo_access_banner.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Settings → Repositories: lists, adds and removes the repositories targeted
 /// by the active workspace.

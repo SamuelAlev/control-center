@@ -9,9 +9,9 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_opener.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _TestActiveWorkspaceNotifier extends ActiveWorkspaceIdNotifier {
   _TestActiveWorkspaceNotifier(this._id);

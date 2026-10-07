@@ -1,0 +1,15 @@
+diff --git a/lib/nativeapi.dart b/lib/nativeapi.dart
+index e4814b380c8f407a199005a8a86f912121b95e2c..d539b69b66f2c6f4fae0388e1b0ce71ed157b22f 100644
+--- a/lib/nativeapi.dart
++++ b/lib/nativeapi.dart
+@@ -5,4 +5,9 @@ library;
+ export 'src/generated.dart';
+ 
+ // Hand-written.
+-export 'src/run_native_app.dart';
++// Control Center patch: not exported. runNativeApp() uses the experimental
++// Isolate.create / runSync / runEventLoopSync, which Dart 3.14.0-311 moved out
++// of dart:isolate into the private dart:_vm, so this library no longer
++// compiles on the pinned SDK. The app never calls runNativeApp (and
++// nativeapi_flutter hides it).
++// export 'src/run_native_app.dart';

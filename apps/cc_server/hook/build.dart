@@ -112,8 +112,12 @@ String _repoRoot(BuildInput input) =>
 /// Thins a universal (fat) macOS dylib down to the target architecture,
 /// preserving its leaf name (the runtime loaders open by path, so the bundled
 /// file name must not change). The prebuilt sherpa-onnx / onnxruntime dylibs
-/// ship universal and `dart build cli`'s install-name rewriting rejects
-/// multi-architecture Mach-Os. Same trick as `sqlite_vector`'s hook.
+/// shipped universal, and `code_assets` 2 rejects a multi-architecture Mach-O
+/// asset outright (hooks run once per target architecture) on top of
+/// `dart build cli`'s install-name rewriting refusing one. A thin dylib built
+/// for another architecture than the target fails that validation too, so
+/// stage natives for the architecture being built. Same trick as
+/// `sqlite_vector`'s hook.
 Future<File> _thinIfFat(BuildInput input, File file) async {
   if (input.config.code.targetOS != OS.macOS) {
     return file;

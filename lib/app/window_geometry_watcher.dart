@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:ui' show Rect;
 
-import 'package:nativeapi/nativeapi.dart' show WindowManager;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show RectangleToRect, WindowManager;
 
 /// One window's geometry and window-state at a point in time.
 ///
@@ -69,7 +70,7 @@ List<WindowGeometrySnapshot> captureWindowGeometry(WindowManager manager) {
     snapshots.add(
       WindowGeometrySnapshot(
         title: title,
-        bounds: window.bounds,
+        bounds: window.bounds.toRect(),
         isMaximized: window.isMaximized,
         isFullScreen: window.isFullScreen,
         isMinimized: window.isMinimized,
@@ -81,12 +82,17 @@ List<WindowGeometrySnapshot> captureWindowGeometry(WindowManager manager) {
 
 /// Persists window geometry by polling for it, writing only once a window has stopped
 /// moving.
-/// `WindowMovedEvent` / `WindowResizedEvent` and friends, and this app used to persist from
-/// them — but on macOS they never arrive.
-/// In `cnativeapi`'s window-manager delegate every notification handler's body is commented
-/// out upstream (`window_manager_macos.mm`: `windowDidMove:`, `windowDidResize:`, … all
-/// have their `OnWindowEvent(...)` call disabled), so nothing is ever dispatched to Dart
-/// and the listener that looked like the save side of this feature had in fact never
+///
+/// This app used to persist from `WindowMovedEvent` / `WindowResizedEvent`, and on macOS
+/// those never arrived: the `cnativeapi` it shipped with had every notification handler in
+/// `window_manager_macos.mm` commented out. Current releases (0.2.5 on, including 0.4.1)
+/// observe `windowDidMove:`, `windowDidResize:`, miniaturize, full-screen enter/exit and
+/// derive maximize from a resize that ends zoomed, so the events should now fire on every
+/// desktop platform except Wayland (no moves or minimization reported to clients). Polling
+/// stays anyway: it reads the very state the persist rules key on (`isFullScreen` before
+/// `isMaximized`), needs no per-platform event coverage to be right, and its two-sample
+/// settle check is the debounce an event listener would need as well, since a full-screen
+/// transition sweeps a window through intermediate frames that must not be persisted.
 class WindowGeometryWatcher {
   /// Watches the windows returned by [capture], handing settled snapshots to
   /// [persist]. Both are injected so the polling logic can be tested without a

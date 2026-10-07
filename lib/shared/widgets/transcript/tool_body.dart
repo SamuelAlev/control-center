@@ -13,7 +13,7 @@ import 'package:control_center/shared/widgets/transcript/widgets/code_preview.da
 import 'package:control_center/shared/widgets/transcript/widgets/file_change_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/grep_result_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/tool_image_strip.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One extracted edit: the target file (when known) and the old/new text pair
 /// the diff view needs.

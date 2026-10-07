@@ -4,9 +4,9 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_commits_tab.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) {
   return ProviderScope(

@@ -8,9 +8,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/ide_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A split button + dropdown for opening a pull request's branch in a code
 /// editor / IDE.

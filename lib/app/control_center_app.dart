@@ -4,6 +4,7 @@ import 'package:control_center/core/keybindings/text_undo_shortcuts.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/theme/app_theme.dart';
 import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/core/theme/legacy_material_bridge.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/auth/providers/credential_migration.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
@@ -24,10 +25,9 @@ import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/app_shortcuts.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:material_ui/material_ui.dart';
 
 /// Root application widget: the global shortcut layer wrapping
 /// `MaterialApp.router`, the design-system theme space and the app-wide toast
@@ -130,16 +130,12 @@ class ControlCenterApp extends ConsumerWidget {
         locale: localeOverride,
         supportedLocales: kSupportedAppLocales,
         localeResolutionCallback: resolveAppLocale,
-        // These delegates still come from flutter_localizations: MaterialApp
-        // here is package:flutter/material.dart, and that library looks up its
-        // own MaterialLocalizations. The material_ui / cupertino_ui replacements
-        // register a different type.
+        // material_ui's bundle: its Material and Cupertino localizations plus
+        // the widgets ones. Third-party widgets still on the framework's
+        // deprecated Material library get theirs from [LegacyMaterialBridge].
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-          GlobalWidgetsLocalizations.delegate,
-          // ignore: deprecated_member_use
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         builder: (context, child) {
           // The one chokepoint for intl: bare DateFormat/NumberFormat calls
@@ -174,31 +170,35 @@ class ControlCenterApp extends ConsumerWidget {
                 data: isDark
                     ? CcThemeData.dark(fontFamily: appFontFamily)
                     : CcThemeData.light(fontFamily: appFontFamily),
-                child: Stack(
-                  children: [
-                    Overlay(
-                      initialEntries: [
-                        OverlayEntry(
-                          builder: (context) => CcToastScope(
-                            child: child ?? const SizedBox.shrink(),
+                // Third-party widgets on the deprecated framework Material
+                // library resolve their own Theme/MaterialLocalizations here.
+                child: LegacyMaterialBridge(
+                  child: Stack(
+                    children: [
+                      Overlay(
+                        initialEntries: [
+                          OverlayEntry(
+                            builder: (context) => CcToastScope(
+                              child: child ?? const SizedBox.shrink(),
+                            ),
                           ),
-                        ),
-                        // The app-drawn window controls (desktop windows whose
-                        // native ones went with the hidden title bar), above
-                        // every route and dialog like a real caption. Only the
-                        // buttons hit-test; nothing renders on the web.
-                        OverlayEntry(
-                          builder: (context) => const Align(
-                            alignment: AlignmentDirectional.topEnd,
-                            child: WindowCaptionButtons(),
+                          // The app-drawn window controls (desktop windows whose
+                          // native ones went with the hidden title bar), above
+                          // every route and dialog like a real caption. Only the
+                          // buttons hit-test; nothing renders on the web.
+                          OverlayEntry(
+                            builder: (context) => const Align(
+                              alignment: AlignmentDirectional.topEnd,
+                              child: WindowCaptionButtons(),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    // App-wide shutdown overlay (above every route + toasts),
-                    // driven by server-fed progress during a local-server quit.
-                    const Positioned.fill(child: ServerShutdownOverlay()),
-                  ],
+                        ],
+                      ),
+                      // App-wide shutdown overlay (above every route + toasts),
+                      // driven by server-fed progress during a local-server quit.
+                      const Positioned.fill(child: ServerShutdownOverlay()),
+                    ],
+                  ),
                 ),
               ),
             ),

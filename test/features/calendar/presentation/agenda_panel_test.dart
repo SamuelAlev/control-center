@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:control_center/features/calendar/presentation/widgets/agenda_panel.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/test_wrap.dart';
 

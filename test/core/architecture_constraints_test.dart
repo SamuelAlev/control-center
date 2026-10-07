@@ -782,31 +782,52 @@ void main() {
   // importing the vendor, or deleted) also fails so the lists stay honest.
 
   group('UI vendor isolation — Material', () {
-    test('no flutter/material.dart import outside the migration allowlist', () {
+    test('no material_ui import outside the migration allowlist', () {
       _assertVendorRatchet(
         projectRoot: projectRoot,
         scanDir: 'lib',
-        importNeedle: 'package:flutter/material.dart',
+        importNeedle: 'package:material_ui/material_ui.dart',
         allowlistPath: 'test/core/migration_allowlists/material_importers.txt',
-        vendor: 'flutter/material.dart',
+        vendor: 'material_ui',
       );
+    });
+
+    // The framework copies were deprecated when Material and Cupertino moved
+    // to the material_ui / cupertino_ui packages; the ratchets above track
+    // those, so the legacy libraries are banned outright.
+    test('no deprecated flutter/material.dart or flutter/cupertino.dart', () {
+      // The bridge re-provides Theme/MaterialLocalizations to third-party
+      // widgets still built on the framework copy; it alone may import it.
+      const bridge = 'lib/core/theme/legacy_material_bridge.dart';
+      final offenders = <String>[];
+      for (final rel in _dartFilesRelative(projectRoot, 'lib')) {
+        if (rel == bridge) {
+          continue;
+        }
+        for (final line in File('$projectRoot/$rel').readAsLinesSync()) {
+          final trimmed = line.trimLeft();
+          if ((trimmed.startsWith('import ') ||
+                  trimmed.startsWith('export ')) &&
+              (trimmed.contains('package:flutter/material.dart') ||
+                  trimmed.contains('package:flutter/cupertino.dart'))) {
+            offenders.add(rel);
+          }
+        }
+      }
+      expect(offenders, isEmpty, reason: offenders.join('\n'));
     });
   });
 
   group('UI vendor isolation — Cupertino', () {
-    test(
-      'no flutter/cupertino.dart import outside the migration allowlist',
-      () {
-        _assertVendorRatchet(
-          projectRoot: projectRoot,
-          scanDir: 'lib',
-          importNeedle: 'package:flutter/cupertino.dart',
-          allowlistPath:
-              'test/core/migration_allowlists/cupertino_importers.txt',
-          vendor: 'flutter/cupertino.dart',
-        );
-      },
-    );
+    test('no cupertino_ui import outside the migration allowlist', () {
+      _assertVendorRatchet(
+        projectRoot: projectRoot,
+        scanDir: 'lib',
+        importNeedle: 'package:cupertino_ui/cupertino_ui.dart',
+        allowlistPath: 'test/core/migration_allowlists/cupertino_importers.txt',
+        vendor: 'cupertino_ui',
+      );
+    });
   });
 
   // The import ratchet above is deliberately coarse: a file that legitimately
@@ -958,12 +979,17 @@ void main() {
       const forbidden = <String>[
         'package:flutter/material.dart',
         'package:flutter/cupertino.dart',
+        'package:material_ui/',
+        'package:cupertino_ui/',
         'package:flutter_riverpod',
         'package:riverpod',
         'package:go_router',
         'package:drift',
         'package:dio',
+        // A prefix, so it also catches `package:nativeapi_flutter` (the
+        // Flutter half since nativeapi 0.4); `cnativeapi` is its FFI core.
         'package:nativeapi',
+        'package:cnativeapi',
         'package:path_provider',
         'package:control_center/',
         'app_localizations',
@@ -998,7 +1024,9 @@ void main() {
       // removed predecessor, kept as a tombstone; `package:shiki_flutter` is
       // the current engine and equally forbidden here), or l10n.
       const forbidden = <String>[
+        'package:flutter/material.dart',
         'package:flutter/cupertino.dart',
+        'package:cupertino_ui/',
         'package:flutter_riverpod',
         'package:riverpod',
         'package:go_router',
@@ -1032,10 +1060,10 @@ void main() {
               offenders.add('$rel → $needle');
             }
           }
-          if (trimmed.contains('package:flutter/material.dart') &&
+          if (trimmed.contains('package:material_ui/') &&
               !materialAllowed.contains(rel)) {
             offenders.add(
-              '$rel → package:flutter/material.dart (not allowed '
+              '$rel → package:material_ui (not allowed '
               'outside the selection island)',
             );
           }
@@ -1057,6 +1085,8 @@ void main() {
         'package:control_center/',
         'package:flutter/material.dart',
         'package:flutter/cupertino.dart',
+        'package:material_ui/',
+        'package:cupertino_ui/',
         'package:flutter_riverpod',
         'package:riverpod',
         'package:drift',
@@ -1869,7 +1899,14 @@ bool _isNativeSinkUri(String uri) =>
     // graph and the failure (a CFE abort naming only a package chain) is
     // painful enough to be worth guarding against permanently.
     uri.startsWith('package:onnxruntime') ||
-    uri.startsWith('package:sherpa_onnx');
+    uri.startsWith('package:sherpa_onnx') ||
+    // nativeapi is FFI from its first import: `nativeapi`, the Flutter half
+    // `nativeapi_flutter` (which re-exports it) and the `cnativeapi` bindings
+    // are pub packages the walk never enters, so the directive naming them is
+    // the only place a web leak shows. The desktop reaches them through `_io`
+    // seams (`window_drag_action_io.dart`, `open_url_io.dart`, …).
+    uri.startsWith('package:nativeapi') ||
+    uri.startsWith('package:cnativeapi');
 
 /// Maps each workspace package name to the absolute path of its `lib/` dir,
 /// read from `.dart_tool/package_config.json`. External (pub-cache) packages are

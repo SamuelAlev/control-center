@@ -3,8 +3,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Inline player for third-party video embeds (Loom, …) recognised by a
 /// `VideoEmbedAdapter`. Renders the provider's embed page inside an in-app

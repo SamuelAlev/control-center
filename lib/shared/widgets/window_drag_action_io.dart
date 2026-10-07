@@ -1,7 +1,7 @@
 import 'dart:ui' show Offset;
 
-import 'package:nativeapi/nativeapi.dart'
-    show DisplayManager, WindowManager;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show DisplayManager, OffsetToNative, PointToOffset, WindowManager;
 
 /// Kicks off the platform's native window-move loop on the focused window.
 ///
@@ -36,7 +36,8 @@ void toggleWindowMaximize() {
 /// against an origin a manual move keeps changing, so events still in flight
 /// when a move lands report stale coordinates. The OS's live cursor state
 /// (`NSEvent.mouseLocation`, `GetCursorPos`, GDK) has no such pipelining.
-Offset windowCursorPosition() => DisplayManager.instance.getCursorPosition();
+Offset windowCursorPosition() =>
+    DisplayManager.instance.getCursorPosition().toOffset();
 
 /// Sub-point tolerance for "the window is already there" in [moveWindowTo]:
 /// anything smaller is not a user-visible position change.
@@ -57,8 +58,8 @@ void moveWindowTo(Offset topLeft) {
   if (window == null) {
     return;
   }
-  if ((window.position - topLeft).distance <= _moveEpsilon) {
+  if ((window.position.toOffset() - topLeft).distance <= _moveEpsilon) {
     return;
   }
-  window.position = topLeft;
+  window.position = topLeft.toNative();
 }

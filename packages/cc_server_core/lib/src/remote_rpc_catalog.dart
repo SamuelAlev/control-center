@@ -174,6 +174,7 @@ import 'package:cc_persistence/database/daos/paired_device_dao.dart'
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
+import 'package:cc_server_core/src/catalog/code_server_file_ops.dart';
 import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
@@ -5844,46 +5845,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             return {'saved': saved};
           },
         ),
-        // Switch the file one embedded editor window shows. The client keeps
-        // one window per worktree and moves it between app tabs, so a tab
-        // switch is an `open` command to the bridge in that window (addressed
-        // by its `window_id`) rather than a fresh VS Code boot. Returns
-        // `{sent: bool}` — false when no code-server runs for the worktree.
-        RepoOp(
-          name: 'codeServer.openFile',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['space_id', 'window_id', 'path'],
-          handler: (ctx) async {
-            final line = ctx.args['line'];
-            final sent = await vscode.openFile(
-              workspaceId: ctx.workspaceId!,
-              spaceId: ctx.args['space_id'] as String,
-              repoId: ctx.args['repo_id'] as String? ?? '',
-              windowId: ctx.args['window_id'] as String,
-              path: ctx.args['path'] as String,
-              line: line is num ? line.toInt() : null,
-            );
-            return {'sent': sent};
-          },
-        ),
-        // Close a file in the worktree's editor windows once its app tab
-        // closed, discarding the unsaved buffer when `revert` is set (the
-        // close prompt's "Don't save"). Returns `{sent: bool}`.
-        RepoOp(
-          name: 'codeServer.closeFile',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['space_id', 'path'],
-          handler: (ctx) async {
-            final sent = await vscode.closeFile(
-              workspaceId: ctx.workspaceId!,
-              spaceId: ctx.args['space_id'] as String,
-              repoId: ctx.args['repo_id'] as String? ?? '',
-              path: ctx.args['path'] as String,
-              revert: ctx.args['revert'] == true,
-            );
-            return {'sent': sent};
-          },
-        ),
+        // `openFile`/`closeFile` live in `catalog/code_server_file_ops.dart`
+        // so this file's RepoOp freeze does not grow.
+        ...buildCodeServerFileOps(codeServer: vscode),
       ].map(fullClientOnly),
 
     // Server filesystem tree (agents/skills/conversations) via

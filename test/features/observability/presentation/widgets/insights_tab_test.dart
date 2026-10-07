@@ -6,9 +6,9 @@ import 'package:control_center/features/observability/providers/friction_provide
 import 'package:control_center/features/observability/providers/observability_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Neuters the workspace-id lookup (whose upstream graph pulls in
 /// shared_preferences and Drift) so the run-log override below is the ONLY

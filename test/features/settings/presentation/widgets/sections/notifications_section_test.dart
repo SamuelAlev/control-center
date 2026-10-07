@@ -6,9 +6,10 @@ import 'package:control_center/core/notifications/notification_sound_service.dar
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/notifications_section.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
+
 import '../../../../../helpers/test_wrap.dart';
 
 /// In-memory fake for [NotificationPreferencesPort] with configurable defaults.

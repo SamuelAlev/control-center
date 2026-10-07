@@ -1,14 +1,13 @@
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
 import 'package:cc_ui/cc_ui.dart';
-
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/feed_favicon.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Settings → You → Newsfeed: the signed-in user's feed registry — enable,
 /// refresh, remove and add feeds. The list is per-user; another user's feeds

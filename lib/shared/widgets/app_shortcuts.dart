@@ -8,8 +8,8 @@ import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:control_center/shared/widgets/keyboard_cheatsheet.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Registers the application-wide command handlers (navigation, system
 /// actions and the command palette) with the central [KeybindingDispatcher].

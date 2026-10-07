@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -10,8 +11,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_config_editor.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_field_label.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../helpers/test_wrap.dart';
 
 // ---------------------------------------------------------------------------

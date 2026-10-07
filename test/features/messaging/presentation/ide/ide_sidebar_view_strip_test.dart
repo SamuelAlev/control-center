@@ -6,9 +6,9 @@ import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_pr
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The sidebar rail's contract: icon-only cells for the pinned views, a caret
 /// that always opens the full list, the active view never folded away and a

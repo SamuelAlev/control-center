@@ -3,8 +3,8 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_pa
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_item_palette.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _buildTestApp(WidgetBuilder builder) {
   return MaterialApp(

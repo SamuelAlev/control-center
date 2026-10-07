@@ -12,6 +12,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  material_ui: ^1.6.0
   meta: any
 
 dev_dependencies:

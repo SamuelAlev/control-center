@@ -1,6 +1,13 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../cc_test_app.dart';
+
+/// A loose host: Overlay entries are tight, and the size test measures the
+/// link's own height.
+Widget _host(Widget child) =>
+    ccTestApp(Align(alignment: AlignmentDirectional.topStart, child: child));
 
 void main() {
   group('CcLinkText', () {
@@ -8,23 +15,21 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CcLinkText(
-              'https://tuple.app/c/jsqjD6',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.black,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.black45,
-              ),
+        _host(
+          const CcLinkText(
+            'https://tuple.app/c/abcdef',
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF000000),
+              decoration: TextDecoration.underline,
+              decorationColor: Color(0x73000000),
             ),
           ),
         ),
       );
 
       final text = tester.widget<Text>(find.byType(Text));
-      expect(text.data, 'https://tuple.app/c/jsqjD6');
+      expect(text.data, 'https://tuple.app/c/abcdef');
       // The engine underline (baseline-hugging, descender-crossing) never
       // paints — the custom below-glyph underline replaces it.
       expect(text.style?.decoration, TextDecoration.none);
@@ -34,11 +39,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CcLinkText('alev.dev', style: TextStyle(fontSize: 13)),
-          ),
-        ),
+        _host(const CcLinkText('alev.dev', style: TextStyle(fontSize: 13))),
       );
 
       expect(
@@ -58,9 +59,7 @@ void main() {
       (tester) async {
         const style = TextStyle(fontSize: 12, height: 16 / 12);
         await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: CcLinkText('alev.dev', style: style)),
-          ),
+          _host(const CcLinkText('alev.dev', style: style)),
         );
 
         final textSize = tester.getSize(find.byType(Text));
@@ -72,14 +71,12 @@ void main() {
 
     testWidgets('honours maxLines/overflow pass-through', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CcLinkText(
-              'a link',
-              style: TextStyle(fontSize: 13),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+        _host(
+          const CcLinkText(
+            'a link',
+            style: TextStyle(fontSize: 13),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       );

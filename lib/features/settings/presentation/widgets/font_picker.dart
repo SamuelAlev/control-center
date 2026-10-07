@@ -8,8 +8,8 @@ import 'package:control_center/features/settings/providers/font_list_provider.da
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens a font picker dialog and returns the selected [FontSelection]
 /// or `null` if cancelled.

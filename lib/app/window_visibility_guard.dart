@@ -7,7 +7,8 @@ import 'package:control_center/app/window_chrome.dart' show isMainWindowTitle;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:nativeapi/nativeapi.dart' show WindowManager;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show SizeToNative, WindowManager;
 
 /// Repairs stale [AppLifecycleState.hidden] that leaves a visible window black.
 ///
@@ -258,7 +259,7 @@ bool _nativeNudgeMainWindow() {
       continue;
     }
     final size = window.contentSize;
-    window.contentSize = Size(size.width + 1, size.height);
+    window.contentSize = Size(size.width + 1, size.height).toNative();
     final windowId = window.id;
     Timer(_nudgeHoldDuration, () {
       final stillOpen = WindowManager.instance.get(windowId);

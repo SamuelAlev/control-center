@@ -132,6 +132,9 @@ class _FlowchartBuilder {
   final List<CcMermaidEdge> _edges = [];
   final List<CcMermaidCluster> _clusters = [];
   final List<String> _clusterStack = [];
+
+  /// Ids that were ever given a label or shape, i.e. declared as vertices.
+  final Set<String> _declared = {};
   var _anonymousClusters = 0;
 
   String? get _currentCluster =>
@@ -319,6 +322,9 @@ class _FlowchartBuilder {
   }
 
   void _register(_Vertex vertex) {
+    if (vertex.label != null || vertex.shape != null) {
+      _declared.add(vertex.id);
+    }
     final existing = _nodes[vertex.id];
     final lines = vertex.label == null
         ? (existing?.lines ?? const <String>[])
@@ -578,11 +584,16 @@ class _FlowchartBuilder {
   }
 
   CcMermaidGraph build({String? title}) {
+    // A bare id that names a subgraph (`CLI --> manifest`) links the box
+    // itself, not a vertex of that name.
+    final clusterIds = {for (final cluster in _clusters) cluster.id};
+    bool namesCluster(CcMermaidNode node) =>
+        clusterIds.contains(node.id) && !_declared.contains(node.id);
     // Drop clusters that never captured a node: an author's stray `subgraph`
     // would otherwise paint an empty box.
     final used = <String>{
       for (final node in _nodes.values)
-        if (node.clusterId != null) node.clusterId!,
+        if (node.clusterId != null && !namesCluster(node)) node.clusterId!,
     };
     final live = <CcMermaidCluster>[];
     for (final cluster in _clusters) {
@@ -596,7 +607,11 @@ class _FlowchartBuilder {
     return CcMermaidGraph(
       kind: kind,
       direction: direction,
-      nodes: List.unmodifiable(_nodes.values),
+      nodes: List.unmodifiable(
+        _nodes.values.where(
+          (node) => !(namesCluster(node) && live.any((c) => c.id == node.id)),
+        ),
+      ),
       edges: List.unmodifiable(_edges),
       clusters: List.unmodifiable(live),
       title: title,

@@ -10,9 +10,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_pane.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 final _t0 = DateTime.utc(2026, 7, 26);
 

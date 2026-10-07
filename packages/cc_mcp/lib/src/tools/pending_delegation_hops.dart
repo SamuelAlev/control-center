@@ -12,15 +12,21 @@ class PendingDelegationHops {
   List<String> chain(String workspaceId, String agentId) {
     final edges = _byWorkspace[workspaceId] ?? const <(String, String)>[];
     List<String> visit(String current, Set<String> seen) {
-      if (!seen.add(current)) return [current];
+      if (!seen.add(current)) {
+        return [current];
+      }
       var longest = <String>[current];
       for (final (from, to) in edges) {
-        if (to != current || seen.contains(from)) continue;
+        if (to != current || seen.contains(from)) {
+          continue;
+        }
         final candidate = [
           ...visit(from, {...seen}),
           current,
         ];
-        if (candidate.length > longest.length) longest = candidate;
+        if (candidate.length > longest.length) {
+          longest = candidate;
+        }
       }
       return longest;
     }
@@ -33,10 +39,16 @@ class PendingDelegationHops {
     final edges = _byWorkspace[workspaceId] ?? const <(String, String)>[];
     final seen = <String>{};
     bool visit(String current) {
-      if (current == toAgentId) return true;
-      if (!seen.add(current)) return false;
+      if (current == toAgentId) {
+        return true;
+      }
+      if (!seen.add(current)) {
+        return false;
+      }
       for (final (from, to) in edges) {
-        if (to == current && visit(from)) return true;
+        if (to == current && visit(from)) {
+          return true;
+        }
       }
       return false;
     }
@@ -56,10 +68,14 @@ class PendingDelegationHops {
     edges.add(edge);
     var removed = false;
     return () {
-      if (removed) return;
+      if (removed) {
+        return;
+      }
       removed = true;
       edges.remove(edge);
-      if (edges.isEmpty) _byWorkspace.remove(workspaceId);
+      if (edges.isEmpty) {
+        _byWorkspace.remove(workspaceId);
+      }
     };
   }
 }

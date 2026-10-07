@@ -3,7 +3,7 @@
 // (together with context_menu.dart); parser/AST/render stay widgets-only.
 import 'package:cc_markdown/src/selection/context_menu.dart';
 import 'package:cc_markdown/src/selection/copy_filter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A selection region for markdown content: `SelectionArea` + the
 /// overlay-line copy filter + the adaptive context menu.

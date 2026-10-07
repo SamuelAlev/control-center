@@ -2,9 +2,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/reader_address_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) {
   // A focusable strip above the field so tests can blur the address input

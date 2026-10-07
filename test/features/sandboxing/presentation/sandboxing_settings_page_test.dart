@@ -10,9 +10,9 @@ import 'package:control_center/features/sandboxing/providers/sandboxing_provider
 import 'package:control_center/features/settings/presentation/widgets/sections/system/sandboxing_sections.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 // ignore: implementation_imports
 import 'package:riverpod/src/framework.dart' show Override;
 

@@ -10,10 +10,11 @@ import 'package:control_center/features/messaging/presentation/widgets/message_f
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../helpers/active_workspace.dart';
 
 Widget _wrap(Widget child) => Scaffold(

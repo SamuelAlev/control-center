@@ -87,9 +87,10 @@ void main() {
       install('.nvm/versions/node', 'v20.1.0', 'bin');
 
       final paths = versionManagedBinaryPaths('node', home: home.path).toList();
-      final fnm = p.join(home.path, '.local/share/fnm/node-versions');
+      // The resolver joins with `/` on every platform.
+      final fnm = '${home.path}/.local/share/fnm/node-versions';
       expect(paths, [
-        p.join(home.path, '.nvm/versions/node/v20.1.0/bin/node'),
+        '${home.path}/.nvm/versions/node/v20.1.0/bin/node',
         '$fnm/v26.10.0/installation/bin/node',
         '$fnm/v24.18.0/installation/bin/node',
         '$fnm/v9.11.2/installation/bin/node',

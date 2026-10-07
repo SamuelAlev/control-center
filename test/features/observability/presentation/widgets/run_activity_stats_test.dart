@@ -2,8 +2,8 @@ import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/observability/presentation/widgets/run_activity_stats.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   Future<void> pump(

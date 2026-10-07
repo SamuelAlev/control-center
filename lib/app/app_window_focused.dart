@@ -6,11 +6,10 @@
 /// dart:ffi into the web graph, so the notification path imports this seam
 /// instead — the same reason `focus_primary_window.dart` exists.
 ///
-/// The answer is polled at the moment it is needed rather than tracked: the
-/// `nativeapi` window event handlers do not fire on macOS, so a listener-based
-/// mirror of this state would silently latch at whatever it was when the app
-/// started. A read costs one enumeration of a handful of windows and only
-/// happens when a notification is about to be shown.
+/// The answer is polled at the moment it is needed rather than tracked: a
+/// listener-based mirror of this state would latch wrongly the moment any
+/// platform missed a focus event, and a read costs one enumeration of a handful
+/// of windows and only happens when a notification is about to be shown.
 library;
 
 export 'app_window_focused_io.dart'

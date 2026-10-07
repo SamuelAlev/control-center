@@ -8,8 +8,8 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   // ── UnifiedDiffPaintConfig ───────────────────────────────────────

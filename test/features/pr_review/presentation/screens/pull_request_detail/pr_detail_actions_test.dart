@@ -13,9 +13,9 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/pr_review/providers/pr_review_run_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 PullRequest _pr() => PullRequest(
   id: 1,

@@ -21,8 +21,8 @@ dependencies:
   # cc_server does. The demo runs no agents, but the server's boot preflight
   # still REQUIRES every native (there is no degraded mode), so the demo image
   # stages the same set.
-  hooks: ^1.0.3
-  code_assets: ^1.0.0
+  hooks: ^2.2.0
+  code_assets: ^2.1.0
   path: ^1.9.1
 
 dev_dependencies:

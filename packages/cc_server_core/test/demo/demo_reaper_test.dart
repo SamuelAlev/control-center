@@ -1,4 +1,6 @@
 @Timeout(Duration(minutes: 2))
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -25,7 +27,7 @@ import '../helpers/test_database.dart';
 /// Every redeem seeds a real workspace database (SQLite + FTS + vector_init)
 /// over a drift isolate; on a loaded Windows CI runner that has taken well
 /// over the 30s default and timed out mid-seed, so each test gets a 2-minute
-/// budget like [awaitPool]'s fill deadline below.
+/// budget like `awaitPool`'s fill deadline below.
 void main() {
   late Directory tmp;
   late SeedDatabases dbs;

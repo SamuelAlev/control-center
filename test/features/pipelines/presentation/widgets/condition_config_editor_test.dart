@@ -1,17 +1,15 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/condition_config_editor.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Wraps [child] with the minimal Material + FTheme + l10n shell.
 Widget _wrap(Widget child) {
   return MaterialApp(
     localizationsDelegates: const [
       ...AppLocalizations.localizationsDelegates,
-      GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-      GlobalWidgetsLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
     ],
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('en'),

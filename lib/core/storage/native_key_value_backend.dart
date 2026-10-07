@@ -1,6 +1,6 @@
 import 'package:control_center/core/storage/key_value_backend.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:nativeapi/nativeapi.dart' show Preferences;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' show Preferences;
 
 /// The nativeapi preferences scope this install reads and writes.
 /// nativeapi's no-arg `Preferences()` uses the scope `default`, which lands in a

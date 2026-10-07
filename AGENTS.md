@@ -52,6 +52,7 @@ Use `fvm` for **every** Dart/Flutter invocation. The user owns `fvm flutter run`
 
 ```bash
 fvm flutter pub get
+fvm dart run patchwork apply   # after every pub get: wires patches/*.patch
 fvm flutter analyze
 fvm flutter test --concurrency=1  # root app; other suites use --concurrency=2
 fvm flutter test test/core/architecture_constraints_test.dart --concurrency=1

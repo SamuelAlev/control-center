@@ -76,3 +76,10 @@ runs:
       run: |
         . "$GITHUB_WORKSPACE/scripts/ci/prefer_windows_tar.sh"
         flutter pub get
+        # Committed dependency patches (patches/*.patch, owned by the workspace
+        # root): regenerate the gitignored pubspec_overrides.yaml that points
+        # each patched package at its applied copy, then fail on any stale or
+        # unapplied patch.
+        cd "$GITHUB_WORKSPACE"
+        dart run patchwork apply
+        dart run patchwork doctor

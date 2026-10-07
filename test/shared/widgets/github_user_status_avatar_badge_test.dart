@@ -4,8 +4,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/github_user_profile_header.dart';
 import 'package:control_center/shared/widgets/github_user_status_badge.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _longStatus =
     "I didn't have time to write a short status, so I wrote a long one instead.";

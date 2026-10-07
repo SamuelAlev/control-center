@@ -1,6 +1,6 @@
 import 'package:control_center/features/messaging/presentation/widgets/feed/reverse_follow_physics.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A wildly-variable set of row heights matching the real feed: a mix of 44px
 /// one-liners and 900px multi-thousand-px agent transcripts. The alternating

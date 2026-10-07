@@ -3,9 +3,9 @@ import 'package:control_center/features/calendar/presentation/calendar_view_mode
 import 'package:control_center/features/calendar/presentation/widgets/calendar_all_day_gutter.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_kalender_host.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_overflow_overlay.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kalender/kalender.dart' as k;
+import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/test_wrap.dart';
 

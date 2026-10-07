@@ -8,9 +8,9 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:control_center/shared/widgets/canvas/canvas_zoom_controls.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Agent _agent(String id, String name, String title) => Agent(
   id: id,

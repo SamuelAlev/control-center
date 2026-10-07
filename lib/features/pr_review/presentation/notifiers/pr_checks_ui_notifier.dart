@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
-import 'package:flutter/material.dart' show TabController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart' show TabController;
 
 /// Group of check runs that share a parent workflow.
 ///

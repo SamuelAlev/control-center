@@ -5,9 +5,9 @@ import 'package:control_center/features/settings/presentation/widgets/harness_pr
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   late _FakeHarnessProviderRepository repository;

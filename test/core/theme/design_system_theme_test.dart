@@ -1,8 +1,8 @@
 import 'package:control_center/core/theme/design_system_palette.dart';
 import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('DesignSystemTokens', () {

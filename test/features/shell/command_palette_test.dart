@@ -1,11 +1,12 @@
 import 'dart:async';
+
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A simple fake [CommandSource] for testing.
 class FakeCommandSource implements CommandSource {

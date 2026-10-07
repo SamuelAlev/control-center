@@ -14,9 +14,9 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 // `flutter_riverpod` does not re-export `Override`; `misc.dart` is its public
 // home in riverpod 3.
 import 'package:riverpod/misc.dart' show Override;

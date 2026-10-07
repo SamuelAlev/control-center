@@ -12,9 +12,9 @@ import 'package:control_center/features/user_profiles/presentation/widgets/profi
 import 'package:control_center/features/user_profiles/presentation/widgets/profile_pr_queue_filter.dart';
 import 'package:control_center/features/user_profiles/providers/user_profile_pr_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/misc.dart';
 
 import '../../../../helpers/test_wrap.dart';

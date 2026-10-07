@@ -9,9 +9,9 @@ import 'package:control_center/features/settings/presentation/widgets/sections/s
 import 'package:control_center/features/settings/providers/skill_source_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A RemoteRpcClient stand-in — the fake control below overrides everything.
 class _NoopRpcClient implements RemoteRpcClient {

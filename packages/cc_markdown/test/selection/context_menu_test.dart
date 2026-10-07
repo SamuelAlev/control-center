@@ -1,7 +1,7 @@
 import 'package:cc_markdown/cc_markdown.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Coverage for the clipboard filter and selection scope. The system clipboard
 /// channel is mocked so the awaited read/write in `scheduleClipboardFilter`

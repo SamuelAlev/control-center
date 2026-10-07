@@ -3,8 +3,8 @@ import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/article_card.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) {
   return CcTheme(

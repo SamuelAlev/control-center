@@ -60,12 +60,12 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/syntax/shiki_bootstrap.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:nativeapi/nativeapi.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' show WindowManager;
 
 /// The process-wide observable preferences backend (NSUserDefaults / Registry /
 /// GSettings).
@@ -323,12 +323,12 @@ Future<void> _prepareDesktop() async {
     );
   });
   // The save side of the same feature. It POLLS rather than listening to
-  // `WindowMovedEvent` / `WindowResizedEvent`, which is not a preference: in
-  // cnativeapi's macOS window-manager delegate every notification handler has
-  // its `OnWindowEvent(...)` call commented out upstream, so no window event
-  // is ever dispatched to Dart and the listener that used to live here had
-  // never persisted anything. Zoom and full-screen have no notification at
-  // all, in any version, so those states have to be read either way.
+  // `WindowMovedEvent` / `WindowResizedEvent`: the listener that used to live
+  // here never persisted anything, because the cnativeapi of the time had its
+  // macOS notification handlers commented out. nativeapi 0.4.1 dispatches them
+  // (and full-screen enter/exit), but polling reads exactly the states the
+  // persist rules key on and needs no per-platform event coverage — see
+  // `WindowGeometryWatcher`.
   //
   // Writing only once a window has held still for a tick is what keeps this
   // cheap (one write per drag, not one per frame) and is also what stops a

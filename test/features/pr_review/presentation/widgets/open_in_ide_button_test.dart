@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/ide_editor.dart';
@@ -9,9 +10,10 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/open_in_ide_button.dart';
 import 'package:control_center/features/pr_review/providers/ide_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../helpers/test_wrap.dart';
 
 // ── Test fixtures ──────────────────────────────────────────────────────────

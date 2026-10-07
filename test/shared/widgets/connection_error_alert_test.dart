@@ -3,8 +3,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/server/invite_redeemer.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/connection_error_alert.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(

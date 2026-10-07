@@ -10,8 +10,8 @@ import 'package:control_center/features/orchestration/providers/orchestration_pr
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Renders an orchestration's whole lifecycle as a single card. The message
 /// metadata carries only the orchestration id; the bubble watches the row so

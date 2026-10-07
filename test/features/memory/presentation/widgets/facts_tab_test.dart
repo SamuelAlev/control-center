@@ -6,9 +6,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/memory/presentation/widgets/facts_tab.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// In-memory fact repository returning a fixed list for the workspace.
 class _FakeFactRepository implements MemoryFactRepository {

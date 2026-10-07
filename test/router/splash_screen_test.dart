@@ -1,8 +1,8 @@
 import 'package:control_center/router/splash_screen.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The splash is the first surface a cold start shows and it renders outside
 /// the shell, so it carries no title bar — and the primary window is not

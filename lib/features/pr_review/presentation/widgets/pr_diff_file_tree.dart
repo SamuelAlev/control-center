@@ -7,7 +7,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_sideba
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/ready_auto_scroll.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Horizontal inset of the file-tree filter field. The Diff toolbar uses the
 /// same value so the Tree chip left-aligns with the input below it.

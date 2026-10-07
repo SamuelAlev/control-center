@@ -25,6 +25,6 @@ Decorated single-line `CcTextField` inputs reserve their control height (~40px d
 
 1. Build `lib/src/components/cc_<name>.dart` on `flutter/widgets.dart`, using `context.designSystem` or shared `CcCardTokens`/`CcInputTokens` resolvers.
 2. Export it from `lib/cc_ui.dart` and add a component test under `test/components/`.
-3. Add `apps/cc_gallery/lib/use_cases/cc_<name>_use_cases.dart` with `@widgetbook.UseCase` builders and regenerate its catalogue as described in [the gallery README](../../apps/cc_gallery/README.md).
+3. Add `apps/cc_gallery/lib/stories/cc_<name>.stories.dart` (a `ComponentMeta` plus `$`-prefixed stories) and regenerate its catalogue as described in [the gallery README](../../apps/cc_gallery/README.md).
 
 From `packages/cc_ui`, run `fvm flutter test --concurrency=2` for component and foundation widget tests. The host app's architecture constraints enforce this package's Material and infrastructure isolation.

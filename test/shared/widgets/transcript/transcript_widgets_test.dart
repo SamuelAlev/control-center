@@ -6,8 +6,8 @@ import 'package:control_center/shared/widgets/transcript/widgets/grep_result_bod
 import 'package:control_center/shared/widgets/transcript/widgets/inline_diff_view.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/shimmer_text.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/split_diff_view.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/test_wrap.dart';
 

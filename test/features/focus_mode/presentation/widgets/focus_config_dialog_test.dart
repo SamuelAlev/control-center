@@ -2,9 +2,9 @@ import 'package:cc_domain/features/focus_mode/domain/focus_mode_state.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/focus_mode/presentation/widgets/focus_config_dialog.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_wrap.dart';
 

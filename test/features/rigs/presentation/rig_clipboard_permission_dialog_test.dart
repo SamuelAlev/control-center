@@ -5,10 +5,9 @@ import 'package:control_center/features/rigs/presentation/settings/rig_clipboard
 import 'package:control_center/features/rigs/providers/rig_clipboard_permissions.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('paste into an enclosure is allowed by default', (tester) async {
@@ -131,9 +130,7 @@ Widget _wrap(Widget child, AppPreferences preferences) => ProviderScope(
     key: ValueKey(child.runtimeType),
     localizationsDelegates: [
       ...AppLocalizations.localizationsDelegates,
-      GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+      ...GlobalMaterialLocalizations.delegates,
     ],
     supportedLocales: kSupportedAppLocales,
     locale: const Locale('en'),

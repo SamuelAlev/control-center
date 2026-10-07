@@ -6,9 +6,9 @@ import 'package:control_center/features/subscriptions/providers/subscription_usa
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/ai_brand_logo.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 SubscriptionUsage _usage({
   String providerId = 'claude',

@@ -8,10 +8,9 @@ import 'package:control_center/features/rigs/presentation/rig_tab_close.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 RigView _rig({
   String id = 'r-1',
@@ -60,10 +59,7 @@ class _RecordingRigRepository extends RemoteRigRepository {
 }
 
 class _Harness extends ConsumerWidget {
-  const _Harness({
-    required this.args,
-    required this.onResult,
-  });
+  const _Harness({required this.args, required this.onResult});
 
   final Map<String, Object?> args;
   final void Function(bool result) onResult;
@@ -113,16 +109,16 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: [
             ...AppLocalizations.localizationsDelegates,
-            GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           home: CcTheme(
             data: CcThemeData.light(),
             child: CcToastScope(
-              child: Scaffold(body: _Harness(args: args, onResult: onResult)),
+              child: Scaffold(
+                body: _Harness(args: args, onResult: onResult),
+              ),
             ),
           ),
         ),

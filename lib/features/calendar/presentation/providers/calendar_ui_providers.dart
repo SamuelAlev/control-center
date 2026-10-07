@@ -10,8 +10,8 @@ import 'package:control_center/features/calendar/presentation/utils/calendar_for
 import 'package:control_center/features/calendar/providers/calendar_sync_providers.dart';
 import 'package:control_center/features/calendar/providers/google_auth_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart' show DateTimeRange;
 
 /// The persisted calendar view mode (month / week / agenda).
 final calendarViewModeProvider =

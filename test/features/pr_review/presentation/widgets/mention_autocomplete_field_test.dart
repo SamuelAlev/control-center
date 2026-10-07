@@ -4,10 +4,10 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/mention_autocomplete_field.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_wrap.dart';
 

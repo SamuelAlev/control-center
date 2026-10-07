@@ -26,9 +26,9 @@ import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The "General" IDE-sidebar panel: a session dashboard showing the active
 /// conversation's PULL REQUESTS (the linked PR, when there is one), TODOS,

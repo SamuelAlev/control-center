@@ -141,8 +141,12 @@ Iterable<String> _versionedBins(
   }
   final List<String> versions;
   try {
-    versions = dir.listSync().whereType<Directory>().map((d) => d.path).toList()
-      ..sort(compareVersionDirs);
+    // Rebuild each path from its name so the separator stays `/` like the
+    // root: on Windows `listSync` joins with `\`.
+    versions = [
+      for (final d in dir.listSync().whereType<Directory>())
+        '$root/${_lastSegment(d.path)}',
+    ]..sort(compareVersionDirs);
   } on FileSystemException {
     return;
   }
@@ -177,8 +181,11 @@ int compareVersionDirs(String a, String b) {
   return a.compareTo(b);
 }
 
+String _lastSegment(String path) =>
+    path.substring(path.lastIndexOf(RegExp(r'[/\\]')) + 1);
+
 List<int>? _versionParts(String path) {
-  final name = path.substring(path.lastIndexOf('/') + 1);
+  final name = _lastSegment(path);
   final match = RegExp(r'^v?(\d+(?:\.\d+)*)').firstMatch(name);
   if (match == null) {
     return null;

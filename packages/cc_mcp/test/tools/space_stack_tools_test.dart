@@ -25,8 +25,9 @@ void main() {
     final wire = jsonDecode(result.content.first.text) as Map<String, dynamic>;
     expect(wire['ok'], isTrue);
     expect(wire['entries'], hasLength(1));
-    expect((wire['entries'] as List).first['branch'], 'main');
-    expect((wire['entries'] as List).first['current'], isTrue);
+    final entry = (wire['entries'] as List).first as Map<String, dynamic>;
+    expect(entry['branch'], 'main');
+    expect(entry['current'], isTrue);
   });
 
   test('stack_cut forwards the part name and surfaces a refusal', () async {

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -12,8 +13,8 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Server review comments for a single file, split into those still anchored to
 /// a live diff row and those the current diff can no longer place.
