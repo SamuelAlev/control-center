@@ -90,6 +90,12 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final seg = widget.segment;
     final canExpand = _hasExpandable(seg);
+    // The blob URL is signed per workspace, and `shared/` may not reach into
+    // a feature to find out which one — so it is read here and passed down.
+    // Watched in this build, not the lazily built body below.
+    final workspaceId = canExpand && seg is ToolSegment
+        ? ref.watch(activeWorkspaceIdProvider)
+        : null;
 
     final summaryRow = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -133,10 +139,17 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           header,
-          if (_open && canExpand)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _detail(context, seg, tokens, t),
+          if (canExpand)
+            CcCollapsible(
+              expanded: _open,
+              // A Builder so a closed row never builds (or parses) its body:
+              // the collapsible only builds its child while it shows.
+              child: Builder(
+                builder: (context) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _detail(context, seg, tokens, workspaceId),
+                ),
+              ),
             ),
         ],
       ),
@@ -258,17 +271,15 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     BuildContext context,
     TranscriptSegment seg,
     DesignSystemTokens tokens,
-    DesignSystemTokens t,
+    String? workspaceId,
   ) {
     if (seg is ToolSegment) {
-      // The blob URL is signed per workspace, and `shared/` may not reach into
-      // a feature to find out which one — so it is read here and passed down.
       return buildToolBody(
         context,
         seg: seg,
         codeFont: widget.codeFont,
         tokens: tokens,
-        workspaceId: ref.watch(activeWorkspaceIdProvider),
+        workspaceId: workspaceId,
       );
     }
     final text = switch (seg) {

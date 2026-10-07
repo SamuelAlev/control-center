@@ -473,71 +473,80 @@ class _ReviewerFlyoutRow extends StatelessWidget {
     final isTeam = candidate.kind == ReviewerKind.team;
     final statusLabel = state == null ? null : _statusLabel(state!, l10n);
 
-    final row = CcTappable(
-      onPressed: onTap,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return Container(
-          color: hovered && !locked
-              ? t.bgPrimaryHover
-              : const Color(0x00000000),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          child: Row(
-            children: [
-              PickerCheckBox(
-                selected: selected,
-                hovered: hovered,
-                locked: locked,
-              ),
-              const SizedBox(width: 10),
-              if (isTeam)
-                GitHubTeamAvatar(
-                  name: candidate.label,
-                  avatarUrl: candidate.avatarUrl ?? '',
-                  size: 22,
-                )
-              else
-                GitHubUserAvatar(
-                  login: candidate.key,
-                  avatarUrl: candidate.avatarUrl,
-                  size: 22,
-                  showHoverCard: false,
-                ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  candidate.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: t.textPrimary,
+    // Checked state on the row itself, so a screen reader says "alice,
+    // checked" rather than leaving the selection to the painted box.
+    final row = MergeSemantics(
+      child: Semantics(
+        checked: selected || locked,
+        child: CcTappable(
+          onPressed: onTap,
+          builder: (context, states) {
+            final hovered = states.contains(WidgetState.hovered);
+            return Container(
+              color: hovered && !locked
+                  ? t.bgPrimaryHover
+                  : const Color(0x00000000),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              child: Row(
+                children: [
+                  PickerCheckBox(
+                    selected: selected,
+                    hovered: hovered,
+                    locked: locked,
                   ),
-                ),
-              ),
-              if (statusLabel != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  statusLabel,
-                  style: TextStyle(fontSize: 12, color: t.textTertiary),
-                ),
-              ],
-              if (locked) ...[
-                const SizedBox(width: 8),
-                CcTooltip(
-                  message: l10n.requiredByCodeOwners,
-                  child: Icon(
-                    AppIcons.shield,
-                    size: 14,
-                    color: t.fgBrandPrimary,
+                  const SizedBox(width: 10),
+                  // The name follows; the avatar's initial would only repeat it.
+                  ExcludeSemantics(
+                    child: isTeam
+                        ? GitHubTeamAvatar(
+                            name: candidate.label,
+                            avatarUrl: candidate.avatarUrl ?? '',
+                            size: 22,
+                          )
+                        : GitHubUserAvatar(
+                            login: candidate.key,
+                            avatarUrl: candidate.avatarUrl,
+                            size: 22,
+                            showHoverCard: false,
+                          ),
                   ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      candidate.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (statusLabel != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(fontSize: 12, color: t.textTertiary),
+                    ),
+                  ],
+                  if (locked) ...[
+                    const SizedBox(width: 8),
+                    CcTooltip(
+                      message: l10n.requiredByCodeOwners,
+                      child: Icon(
+                        AppIcons.shield,
+                        size: 14,
+                        color: t.fgBrandPrimary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
 
     if (isTeam) {

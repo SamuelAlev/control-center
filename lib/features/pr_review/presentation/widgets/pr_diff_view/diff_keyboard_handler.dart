@@ -21,6 +21,8 @@ class PrDiffKeyboardHandler {
     this.onToggleViewedForPath,
     this.onToggleCollapseForPath,
     this.onShowFileTree,
+    this.focusedFileGetter,
+    this.onSteppedToFile,
     this.onCopy,
     this.onClearSelection,
   });
@@ -66,6 +68,13 @@ class PrDiffKeyboardHandler {
   /// Called on `t` (outside a text field, no search open) to switch the sidebar
   /// back to the file-tree mode — mirrors the "show file list (T)" toggle.
   final VoidCallback? onShowFileTree;
+
+  /// Index of the file whose row holds keyboard focus, or null when focus is
+  /// not in the diff. `v`/`c` act on that file before the scrolled-to one.
+  final int? Function()? focusedFileGetter;
+
+  /// Called with the file index once j/k has scrolled to it.
+  final void Function(int index)? onSteppedToFile;
 
   /// Called on Cmd/Ctrl+C (outside a text field) to copy the active diff
   /// selection. Returns true if something was copied.
@@ -180,8 +189,11 @@ class PrDiffKeyboardHandler {
     if (files.isEmpty) {
       return null;
     }
+    final focused = focusedFileGetter?.call();
     final position = activeScrollPositionGetter();
-    if (position != null) {
+    if (focused != null && focused >= 0 && focused < files.length) {
+      focusedFileIndex = focused;
+    } else if (position != null) {
       focusedFileIndex = _findFileAtOffset(position.pixels);
     } else {
       focusedFileIndex = focusedFileIndex.clamp(0, files.length - 1);
@@ -232,6 +244,7 @@ class PrDiffKeyboardHandler {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
     );
+    final stepped = focusedFileIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = targetKey?.currentContext;
       if (ctx != null) {
@@ -241,6 +254,7 @@ class PrDiffKeyboardHandler {
           duration: const Duration(milliseconds: 150),
         );
       }
+      onSteppedToFile?.call(stepped);
     });
   }
 

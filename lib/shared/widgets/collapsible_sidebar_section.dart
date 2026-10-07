@@ -31,8 +31,8 @@ class CollapsibleSidebarSection extends StatefulWidget {
   final String? count;
 
   /// Optional trailing action (e.g. a `+` add affordance). Rendered after the
-  /// count badge; its own gesture wins the arena so tapping it does not toggle
-  /// the section.
+  /// count badge, beside (not inside) the toggle, so tapping it does not
+  /// toggle the section and assistive tech sees two separate controls.
   final Widget? trailing;
 
   /// The section body, revealed/hidden by the header chevron.
@@ -48,67 +48,87 @@ class CollapsibleSidebarSection extends StatefulWidget {
 
 class _CollapsibleSidebarSectionState extends State<CollapsibleSidebarSection> {
   late bool _expanded = widget.initiallyExpanded;
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final hasTrailing = widget.trailing != null;
+    final count = widget.count;
+    // The toggle and the trailing action are siblings, not nested: a button
+    // inside the toggle's button would be one merged node to a screen reader,
+    // and its expanded state has to sit on the node that actually toggles.
+    // The hover wash still spans the whole header, as before.
+    final toggle = MergeSemantics(
+      child: Semantics(
+        expanded: _expanded,
+        child: CcTappable(
+          onPressed: () => setState(() => _expanded = !_expanded),
+          semanticLabel: count == null
+              ? widget.label
+              : '${widget.label}, $count',
+          borderRadius: AppRadii.brSm,
+          builder: (context, states) => Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: AppSpacing.sm,
+              end: hasTrailing ? 0 : AppSpacing.sm,
+              top: 6,
+              bottom: 6,
+            ),
+            child: ExcludeSemantics(
+              child: Row(
+                children: [
+                  Icon(
+                    _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
+                    size: 14,
+                    color: t.textTertiary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(widget.icon, size: 14, color: t.textTertiary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      widget.label.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.6,
+                        color: t.textTertiary,
+                      ),
+                    ),
+                  ),
+                  if (count != null) SidebarSectionCountBadge(label: count),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          expanded: _expanded,
-          label: widget.label,
-          button: true,
-          child: CcTappable(
-            onPressed: () => setState(() => _expanded = !_expanded),
-            semanticButton: false,
-            borderRadius: AppRadii.brSm,
-            builder: (context, states) {
-              final hovered = states.contains(WidgetState.hovered);
-              return DecoratedBox(
-                decoration: BoxDecoration(
-                  color: hovered ? t.hover : t.hover.withValues(alpha: 0),
-                  borderRadius: AppRadii.brSm,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 6,
+        MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _hovered ? t.hover : t.hover.withValues(alpha: 0),
+              borderRadius: AppRadii.brSm,
+            ),
+            child: Row(
+              children: [
+                Expanded(child: toggle),
+                if (hasTrailing)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      start: AppSpacing.xs,
+                      end: AppSpacing.sm,
+                    ),
+                    child: widget.trailing,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _expanded
-                            ? AppIcons.chevronDown
-                            : AppIcons.chevronRight,
-                        size: 14,
-                        color: t.textTertiary,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Icon(widget.icon, size: 14, color: t.textTertiary),
-                      const SizedBox(width: AppSpacing.xs),
-                      Expanded(
-                        child: Text(
-                          widget.label.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                            color: t.textTertiary,
-                          ),
-                        ),
-                      ),
-                      if (widget.count != null)
-                        SidebarSectionCountBadge(label: widget.count!),
-                      if (widget.trailing != null) ...[
-                        const SizedBox(width: AppSpacing.xs),
-                        widget.trailing!,
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            },
+              ],
+            ),
           ),
         ),
         AnimatedSize(

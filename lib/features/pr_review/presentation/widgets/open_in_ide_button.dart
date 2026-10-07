@@ -8,6 +8,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/ide_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
@@ -50,6 +51,16 @@ class OpenInIdeButton extends ConsumerStatefulWidget {
 class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
   final OverlayPortalController _menuCtrl = OverlayPortalController();
   final GlobalKey _anchorKey = GlobalKey();
+
+  /// The chevron that opens the editor menu; focus returns here on close.
+  final FocusNode _menuTriggerFocus = FocusNode(debugLabel: 'ide-menu-trigger');
+
+  /// Wraps the open menu; has focus whenever one of its rows does.
+  final FocusNode _menuFocus = FocusNode(
+    debugLabel: 'ide-menu',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
   Offset? _menuOffset;
 
   /// True while the PR branch is being checked out into its worktree (a fetch
@@ -79,6 +90,8 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     if (_menuCtrl.isShowing) {
       _menuCtrl.hide();
     }
+    _menuTriggerFocus.dispose();
+    _menuFocus.dispose();
     super.dispose();
   }
 
@@ -102,17 +115,37 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
 
   void _toggleMenu() {
     if (_menuCtrl.isShowing) {
-      _menuCtrl.hide();
+      _closeMenu();
       return;
     }
     _computeMenuOffset();
     _menuCtrl.show();
     setState(() {});
+    // Keyboard focus moves onto the first editor row, so the menu is usable
+    // without a pointer; Escape inside it closes it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_menuCtrl.isShowing) {
+        return;
+      }
+      final rows = _menuFocus.traversalDescendants;
+      if (rows.isNotEmpty) {
+        rows.first.requestFocus();
+      }
+    });
   }
 
   void _closeMenu() {
-    if (_menuCtrl.isShowing) {
-      _menuCtrl.hide();
+    if (!_menuCtrl.isShowing) {
+      return;
+    }
+    final focusInside = _menuFocus.hasFocus;
+    _menuCtrl.hide();
+    if (focusInside) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _menuTriggerFocus.requestFocus();
+        }
+      });
     }
   }
 
@@ -221,6 +254,7 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
             _HoverSegment(
               onTap: () => unawaited(_open(effective)),
               tooltip: l10n.openInIde(effective.displayName),
+              semanticLabel: l10n.openInIde(effective.displayName),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(1),
                 bottomLeft: Radius.circular(1),
@@ -250,6 +284,8 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
             ),
             _HoverSegment(
               onTap: _toggleMenu,
+              focusNode: _menuTriggerFocus,
+              semanticLabel: l10n.openInEditorPrompt,
               borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(1),
                 bottomRight: Radius.circular(1),
@@ -303,66 +339,79 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
           left: offset.dx,
           top: offset.dy,
           width: _menuWidth,
-          child: RepaintBoundary(
-            child: Material(
-              color: tokens.bgPrimary,
-              elevation: 0,
-              borderRadius: BorderRadius.circular(4),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.bgPrimary,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: tokens.borderSecondary),
-                  boxShadow: AppShadows.golden,
-                ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 440),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _header(
-                          l10n.openInEditorPrompt,
-                          tokens,
-                          theme,
-                          muted: false,
-                        ),
-                        for (final e in installed)
-                          _menuRow(
-                            e,
-                            enabled: true,
-                            selected: e.id == selectedId,
-                            tokens: tokens,
-                            theme: theme,
-                            bundledLogos: bundledLogos,
-                          ),
-                        if (notInstalled.isNotEmpty) ...[
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                            child: SizedBox(
-                              height: 1,
-                              child: ColoredBox(color: tokens.borderSecondary),
-                            ),
-                          ),
+          child: Focus(
+            focusNode: _menuFocus,
+            onKeyEvent: (_, event) {
+              if (event is KeyDownEvent &&
+                  event.logicalKey == LogicalKeyboardKey.escape) {
+                _closeMenu();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: RepaintBoundary(
+              child: Material(
+                color: tokens.bgPrimary,
+                elevation: 0,
+                borderRadius: BorderRadius.circular(4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tokens.bgPrimary,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: tokens.borderSecondary),
+                    boxShadow: AppShadows.golden,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 440),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                           _header(
-                            l10n.ideNotInstalled.toUpperCase(),
+                            l10n.openInEditorPrompt,
                             tokens,
                             theme,
-                            muted: true,
+                            muted: false,
                           ),
-                          for (final e in notInstalled)
+                          for (final e in installed)
                             _menuRow(
                               e,
-                              enabled: false,
-                              selected: false,
+                              enabled: true,
+                              selected: e.id == selectedId,
                               tokens: tokens,
                               theme: theme,
                               bundledLogos: bundledLogos,
                             ),
+                          if (notInstalled.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                              child: SizedBox(
+                                height: 1,
+                                child: ColoredBox(
+                                  color: tokens.borderSecondary,
+                                ),
+                              ),
+                            ),
+                            _header(
+                              l10n.ideNotInstalled.toUpperCase(),
+                              tokens,
+                              theme,
+                              muted: true,
+                            ),
+                            for (final e in notInstalled)
+                              _menuRow(
+                                e,
+                                enabled: false,
+                                selected: false,
+                                tokens: tokens,
+                                theme: theme,
+                                bundledLogos: bundledLogos,
+                              ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -434,85 +483,91 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     if (!enabled) {
       return row;
     }
-    return _MenuItem(onTap: () => unawaited(_selectAndOpen(e)), child: row);
+    return _MenuItem(
+      onTap: () => unawaited(_selectAndOpen(e)),
+      selected: selected,
+      child: row,
+    );
   }
 }
 
-/// One half of the split button: a tappable area that tints on hover.
-class _HoverSegment extends StatefulWidget {
+/// One half of the split button: a tappable area that tints on hover — a
+/// real button (Tab-reachable, Enter/Space activated, labeled for screen
+/// readers), since both halves are icon-only.
+class _HoverSegment extends StatelessWidget {
   const _HoverSegment({
     required this.onTap,
     required this.borderRadius,
     required this.child,
+    required this.semanticLabel,
     this.tooltip,
+    this.focusNode,
   });
 
   final VoidCallback onTap;
   final BorderRadius borderRadius;
   final Widget child;
+  final String semanticLabel;
   final String? tooltip;
-
-  @override
-  State<_HoverSegment> createState() => _HoverSegmentState();
-}
-
-class _HoverSegmentState extends State<_HoverSegment> {
-  bool _hovered = false;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem!;
-    Widget content = MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: _hovered ? tokens.bgSecondaryHover : Colors.transparent,
-            borderRadius: widget.borderRadius,
-          ),
-          child: Center(widthFactor: 1, child: widget.child),
+    Widget content = CcTappable(
+      onPressed: onTap,
+      focusNode: focusNode,
+      semanticLabel: semanticLabel,
+      borderRadius: borderRadius,
+      builder: (context, states) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: states.contains(WidgetState.hovered)
+              ? tokens.bgSecondaryHover
+              : Colors.transparent,
+          borderRadius: borderRadius,
         ),
+        child: Center(widthFactor: 1, child: ExcludeSemantics(child: child)),
       ),
     );
-    final tooltip = widget.tooltip;
-    if (tooltip != null) {
-      content = CcTooltip(message: tooltip, child: content);
+    final tip = tooltip;
+    if (tip != null) {
+      content = CcTooltip(message: tip, child: content);
     }
     return content;
   }
 }
 
-/// A dropdown menu row that tints on hover.
-class _MenuItem extends StatefulWidget {
-  const _MenuItem({required this.onTap, required this.child});
+/// A dropdown menu row that tints on hover or keyboard focus.
+class _MenuItem extends StatelessWidget {
+  const _MenuItem({
+    required this.onTap,
+    required this.child,
+    this.selected = false,
+  });
 
   final VoidCallback onTap;
   final Widget child;
 
-  @override
-  State<_MenuItem> createState() => _MenuItemState();
-}
-
-class _MenuItemState extends State<_MenuItem> {
-  bool _hovered = false;
+  /// The current default editor — exposed as the row's selected state, not
+  /// only as the trailing checkmark.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem!;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: ColoredBox(
-          color: _hovered ? tokens.bgSecondaryHover : Colors.transparent,
-          child: widget.child,
+    return MergeSemantics(
+      child: Semantics(
+        selected: selected,
+        child: CcTappable(
+          onPressed: onTap,
+          builder: (context, states) => ColoredBox(
+            color:
+                states.contains(WidgetState.hovered) ||
+                    states.contains(WidgetState.focused)
+                ? tokens.bgSecondaryHover
+                : Colors.transparent,
+            child: child,
+          ),
         ),
       ),
     );

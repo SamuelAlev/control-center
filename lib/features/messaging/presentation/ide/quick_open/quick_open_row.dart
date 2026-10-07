@@ -79,23 +79,41 @@ class QuickOpenRow extends StatelessWidget {
             children: [
               Icon(AppIcons.fileCode, size: 14, color: ds.textTertiary),
               const SizedBox(width: AppSpacing.sm),
-              Flexible(
-                child: _HighlightedName(
-                  name: name,
-                  query: query,
-                  style: CcTypography.bodySm.copyWith(color: ds.textPrimary),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              // The name takes its natural width (capped so a long one can't
+              // squeeze out the folder) and the folder fills the rest, keeping
+              // the actions flush with the row's end.
               Expanded(
-                // RTL carve-out: a path reads left-to-right in any locale.
-                child: Text(
-                  dir,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textDirection: TextDirection.ltr,
-                  textAlign: TextAlign.start,
-                  style: CcTypography.caption.copyWith(color: ds.textTertiary),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.6,
+                        ),
+                        child: _HighlightedName(
+                          name: name,
+                          query: query,
+                          style: CcTypography.bodySm.copyWith(
+                            color: ds.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        // RTL carve-out: a path reads left-to-right in any locale.
+                        child: Text(
+                          dir,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.start,
+                          style: CcTypography.caption.copyWith(
+                            color: ds.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               if (selected) ...[

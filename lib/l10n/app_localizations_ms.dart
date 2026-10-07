@@ -15146,4 +15146,134 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Tiada fail dibuka baru-baru ini';
+
+  @override
+  String get diffMarkFileViewed => 'Tandakan sebagai sudah dilihat';
+
+  @override
+  String get diffMarkFileNotViewed => 'Tandakan sebagai belum dilihat';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count penambahan',
+      one: '1 penambahan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pemadaman',
+      one: '1 pemadaman',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, sudah dilihat';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'dinamakan semula daripada $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fail',
+      one: '1 fail',
+    );
+    return '$name, folder, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, sudah dilihat';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Baris ditambah $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Baris dibuang $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Baris $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Hunk $header';
+  }
+
+  @override
+  String get diffLineBlank => 'kosong';
+
+  @override
+  String get diffCommentOnLineAction => 'Ulas baris ini';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path ditandakan sudah dilihat';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path ditandakan belum dilihat';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Baris ditambah: $additions, baris dibuang: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Tutup $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komen',
+    );
+    return '$_temp0';
+  }
 }

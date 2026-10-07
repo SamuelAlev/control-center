@@ -12,6 +12,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -1205,6 +1206,62 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Resolved'), findsOneWidget);
+    });
+  });
+
+  group('keyboard and screen readers', () {
+    testWidgets('Reply… is a button the keyboard can activate', (tester) async {
+      final controller = _createController(_prRef);
+      await tester.pumpWidget(
+        _wrap(PrInlineThreadBlock(thread: _thread(), controller: controller)),
+      );
+      await tester.pump();
+
+      Focus.of(tester.element(find.text('Reply…'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CcTextField), findsOneWidget);
+    });
+
+    testWidgets('a collapsed conversation is a focusable, collapsed '
+        'disclosure', (tester) async {
+      final handle = tester.ensureSemantics();
+      final controller = _createController(_prRef);
+      var expanded = 0;
+      await tester.pumpWidget(
+        _wrap(
+          PrInlineThreadBlock(
+            thread: _thread(),
+            controller: controller,
+            collapsed: true,
+            onToggleCollapsed: () => expanded++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final row = find.bySemanticsLabel(RegExp('^Expand comment'));
+      expect(
+        tester.getSemantics(row),
+        isSemantics(
+          isButton: true,
+          isFocusable: true,
+          hasExpandedState: true,
+          isExpanded: false,
+          hasTapAction: true,
+        ),
+      );
+
+      Focus.of(
+        tester.element(find.byIcon(AppIcons.chevronRight)),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(expanded, 1);
+      handle.dispose();
     });
   });
 }

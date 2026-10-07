@@ -135,20 +135,27 @@ class _ConnectionErrorAlertState extends State<ConnectionErrorAlert> {
               },
             ),
           ),
-          if (_expanded) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              detail,
-              style:
-                  CcFonts.code(
-                    textStyle: CcTypography.caption,
-                    family: context.ccTheme?.monoFontFamily,
-                  ).copyWith(
-                    color: t.textErrorPrimary.withValues(alpha: 0.8),
-                    decoration: TextDecoration.none,
-                  ),
+          CcCollapsible(
+            expanded: _expanded,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  detail,
+                  style:
+                      CcFonts.code(
+                        textStyle: CcTypography.caption,
+                        family: context.ccTheme?.monoFontFamily,
+                      ).copyWith(
+                        color: t.textErrorPrimary.withValues(alpha: 0.8),
+                        decoration: TextDecoration.none,
+                      ),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );

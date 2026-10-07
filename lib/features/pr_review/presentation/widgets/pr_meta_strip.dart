@@ -12,6 +12,7 @@ import 'package:control_center/shared/providers/github_user_profile_provider.dar
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -178,7 +179,17 @@ class _AuthorBadge extends ConsumerWidget {
       );
     }
 
-    return Row(mainAxisSize: MainAxisSize.min, children: children);
+    // One announcement — the name and the login — rather than the avatar's
+    // initial letter followed by each text run.
+    return Semantics(
+      container: true,
+      label: displayName == null
+          ? '@${author.login}'
+          : '$displayName, @${author.login}',
+      child: ExcludeSemantics(
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
   }
 }
 
@@ -318,7 +329,14 @@ class _BranchPair extends StatelessWidget {
           ),
         if (hasBoth) ...[
           const SizedBox(width: AppSpacing.xs),
-          Icon(AppIcons.arrowLeft, size: 14, color: tokens.fgQuaternary),
+          // Decorative: each chip names its role ("base" / "head").
+          ExcludeSemantics(
+            child: Icon(
+              AppIcons.arrowLeft,
+              size: 14,
+              color: tokens.fgQuaternary,
+            ),
+          ),
           const SizedBox(width: AppSpacing.xs),
         ],
         if (headRef.isNotEmpty)
@@ -354,7 +372,6 @@ class _CopyableBranchChip extends StatefulWidget {
 
 class _CopyableBranchChipState extends State<_CopyableBranchChip> {
   bool _copied = false;
-  bool _hovered = false;
   Timer? _timer;
 
   @override
@@ -369,6 +386,14 @@ class _CopyableBranchChipState extends State<_CopyableBranchChip> {
       return;
     }
     setState(() => _copied = true);
+    // The checkmark and tooltip swap are visual only; say it out loud too.
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        AppLocalizations.of(context).copied,
+        Directionality.of(context),
+      ),
+    );
     _timer?.cancel();
     _timer = Timer(const Duration(milliseconds: 1400), () {
       if (mounted) {
@@ -384,53 +409,56 @@ class _CopyableBranchChipState extends State<_CopyableBranchChip> {
 
     return CcTooltip(
       message: _copied ? l10n.copied : widget.tooltip,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onTap: _copy,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: 3,
-            ),
-            decoration: BoxDecoration(
-              color: _hovered ? tokens.bgTertiary : tokens.bgSecondary,
-              border: Border.all(color: tokens.borderSecondary),
-              borderRadius: AppRadii.brSm,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _copied ? AppIcons.check : AppIcons.gitBranch,
-                  size: 12,
-                  color: _copied
-                      ? tokens.fgSuccessSecondary
-                      : tokens.fgQuaternary,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 220),
-                  child: Text(
-                    widget.branch,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: widget.codeFont,
-                      fontSize: 12,
-                      height: 1.2,
-                      color: tokens.textSecondary,
+      // A real button: Tab-reachable and Enter/Space activated, announced as
+      // "Copy head branch name, feature/x".
+      child: CcTappable(
+        onPressed: _copy,
+        semanticLabel: '${widget.tooltip}, ${widget.branch}',
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) {
+          final hovered = states.contains(WidgetState.hovered);
+          return ExcludeSemantics(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 3,
+              ),
+              decoration: BoxDecoration(
+                color: hovered ? tokens.bgTertiary : tokens.bgSecondary,
+                border: Border.all(color: tokens.borderSecondary),
+                borderRadius: AppRadii.brSm,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _copied ? AppIcons.check : AppIcons.gitBranch,
+                    size: 12,
+                    color: _copied
+                        ? tokens.fgSuccessSecondary
+                        : tokens.fgQuaternary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 220),
+                    child: Text(
+                      widget.branch,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: widget.codeFont,
+                        fontSize: 12,
+                        height: 1.2,
+                        color: tokens.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

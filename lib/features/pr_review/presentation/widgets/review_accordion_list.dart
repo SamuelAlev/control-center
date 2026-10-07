@@ -591,41 +591,49 @@ class _DisagreementsPanelState extends State<_DisagreementsPanel> {
           // Rows inside the panel, separated by rules rather than boxed one by
           // one: a card inside a card is exactly what the design system rules
           // out, and three of them stacked read as a pile rather than a list.
-          if (_expanded)
-            for (final d in widget.disagreements) ...[
-              CcDivider(color: tokens.warn.withValues(alpha: 0.25)),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      d.anchor,
-                      style: CcFonts.code(
-                        textStyle: CcTypography.caption,
-                      ).copyWith(color: tokens.textSecondary),
+          CcCollapsible(
+            expanded: _expanded,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final d in widget.disagreements) ...[
+                  CcDivider(color: tokens.warn.withValues(alpha: 0.25)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      d.description,
-                      style: CcTypography.bodySm.copyWith(
-                        color: tokens.textPrimary,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          d.anchor,
+                          style: CcFonts.code(
+                            textStyle: CcTypography.caption,
+                          ).copyWith(color: tokens.textSecondary),
+                        ),
+                        const SizedBox(height: AppSpacing.xxs),
+                        Text(
+                          d.description,
+                          style: CcTypography.bodySm.copyWith(
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xxs),
+                        Text(
+                          '${d.nodeA.senderId} ↔ ${d.nodeB.senderId}',
+                          style: CcTypography.caption.copyWith(
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      '${d.nodeA.senderId} ↔ ${d.nodeB.senderId}',
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );

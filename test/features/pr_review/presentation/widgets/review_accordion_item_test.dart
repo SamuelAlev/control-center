@@ -132,7 +132,7 @@ void main() {
     expect(body(), findsOneWidget);
 
     await tester.tap(find.text('BUG'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(body(), findsNothing);
 
     await tester.tap(find.text('BUG'));

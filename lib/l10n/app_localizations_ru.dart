@@ -15320,4 +15320,143 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Нет недавно открытых файлов';
+
+  @override
+  String get diffMarkFileViewed => 'Отметить как просмотренный';
+
+  @override
+  String get diffMarkFileNotViewed => 'Отметить как непросмотренный';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count добавления',
+      many: '$count добавлений',
+      few: '$count добавления',
+      one: '$count добавление',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count удаления',
+      many: '$count удалений',
+      few: '$count удаления',
+      one: '$count удаление',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, просмотрен';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'переименован из $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файла',
+      many: '$count файлов',
+      few: '$count файла',
+      one: '$count файл',
+    );
+    return '$name, папка, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, просмотрен';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Добавлена строка $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Удалена строка $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Строка $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Фрагмент $header';
+  }
+
+  @override
+  String get diffLineBlank => 'пусто';
+
+  @override
+  String get diffCommentOnLineAction => 'Прокомментировать эту строку';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path отмечен как просмотренный';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path отмечен как непросмотренный';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Добавлено строк: $additions, удалено строк: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Закрыть $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count комментария',
+      many: '$count комментариев',
+      few: '$count комментария',
+      one: '$count комментарий',
+    );
+    return '$_temp0';
+  }
 }

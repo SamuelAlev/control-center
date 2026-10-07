@@ -88,7 +88,15 @@ class _FileLayout {
   _FileLayout({required this.estimatedLines, required this.expanded});
 
   /// Whether the file's body is shown. Collapsed files occupy only the header.
+  /// While an expand/collapse animates this is already the TARGET state; the
+  /// height in between comes from [revealedBody].
   bool expanded;
+
+  /// Body pixels shown while an expand/collapse animates, or null when the
+  /// file rests at [expanded]. The body keeps its full layout underneath; the
+  /// file's height (and so everything below it) is cut to this, and the sliver
+  /// clips the body's rows and slots to the same edge.
+  double? revealedBody;
 
   /// Whether the file's body renders a Markdown or image preview instead of
   /// the diff. Only meaningful while [expanded]. A previewing file paints no
@@ -337,8 +345,11 @@ class PrDiffDocument {
   double get totalExtent => _fenwick.total;
 
   /// Replaces the file list, preserving per-file expanded / comment state for
-  /// files that survive (matched by filename). New dependency lockfiles start
-  /// collapsed; all other new files start expanded.
+  /// files that survive (matched by filename). New dependency lockfiles and
+  /// files the viewer already marked viewed start collapsed; all other new
+  /// files start expanded. A surviving file that turns viewed collapses too:
+  /// the forge's viewed state lands in a later emission than the patches, so
+  /// without this every viewed file would keep its first-emission expansion.
   ///
   /// Returns the indices of surviving files whose patch changed — their
   /// stale structure was dropped so it re-parses from the new patch. Callers
@@ -383,13 +394,20 @@ class PrDiffDocument {
             ..estimatedLines = _estimateLines(f);
           repatched.add(i);
         }
+        if (f.viewerViewedState.isViewed && !old.viewerViewedState.isViewed) {
+          existing
+            ..expanded = false
+            ..revealedBody = null;
+        }
         _layouts.add(existing);
       } else {
         final estimated = _estimateLines(f);
         _layouts.add(
           _FileLayout(
               estimatedLines: estimated,
-              expanded: !_isDependencyLockFile(f.filename),
+              expanded:
+                  !_isDependencyLockFile(f.filename) &&
+                  !f.viewerViewedState.isViewed,
             )
             ..previewing = f.isImage
             ..previewHeight = f.isImage ? 160 : 240,
@@ -410,20 +428,28 @@ class PrDiffDocument {
 
   double _heightOf(int i) {
     final l = _layouts[i];
+    final revealed = l.revealedBody;
+    if (revealed != null) {
+      return headerHeight +
+          math.min(revealed, _bodyHeightOf(l)) +
+          fileSeparator;
+    }
     if (!l.expanded) {
       return headerHeight + fileSeparator;
     }
+    return headerHeight + _bodyHeightOf(l) + fileSeparator;
+  }
+
+  /// Full body height of [l] when expanded (between header and separator).
+  double _bodyHeightOf(_FileLayout l) {
     if (l.previewing) {
       // A previewing file paints no code rows. Its body is the measured
       // preview slot (Markdown or image), plus any file-level composer.
-      return headerHeight + l.previewHeight + l.commentTotal + fileSeparator;
+      return l.previewHeight + l.commentTotal;
     }
     // effectiveVisualRows == lineCount in scroll mode (byte-identical to the
     // pre-wrap formula); the wrapped row count in wrap mode.
-    return headerHeight +
-        l.effectiveVisualRows * lineHeight +
-        l.commentTotal +
-        fileSeparator;
+    return l.effectiveVisualRows * lineHeight + l.commentTotal;
   }
 
   void _rebuildFenwick() {
@@ -473,7 +499,9 @@ class PrDiffDocument {
     var maxCols = 0;
     for (var i = 0; i < _layouts.length; i++) {
       final l = _layouts[i];
-      if (l.expanded && l.structure != null && l._maxDisplayCols > maxCols) {
+      if ((l.expanded || l.revealedBody != null) &&
+          l.structure != null &&
+          l._maxDisplayCols > maxCols) {
         maxCols = l._maxDisplayCols;
       }
     }
@@ -503,8 +531,24 @@ class PrDiffDocument {
   /// Total height of file [i] (header + body when expanded).
   double heightOfFile(int i) => _heightOf(i);
 
-  /// Whether file [i] is expanded.
+  /// Whether file [i] is expanded — the target state while it animates.
   bool isExpanded(int i) => _layouts[i].expanded;
+
+  /// Whether file [i]'s body is on screen at all: expanded, or mid-animation
+  /// in either direction. Rows paint and body slots exist while this holds.
+  bool showsBody(int i) =>
+      _layouts[i].expanded || _layouts[i].revealedBody != null;
+
+  /// Whether file [i] is mid expand/collapse, its body clipped at
+  /// [bodyClipBottomOf].
+  bool isRevealing(int i) => _layouts[i].revealedBody != null;
+
+  /// Full body height of file [i] as if expanded, whatever its state.
+  double bodyHeightOf(int i) => _bodyHeightOf(_layouts[i]);
+
+  /// Document offset where file [i]'s visible body ends (its separator top).
+  double bodyClipBottomOf(int i) =>
+      offsetOfFile(i) + _heightOf(i) - fileSeparator;
 
   /// Whether file [i] renders a Markdown preview instead of the diff body.
   bool isPreviewing(int i) => _layouts[i].previewing;
@@ -851,15 +895,33 @@ class PrDiffDocument {
     );
   }
 
-  /// Toggles or sets file [i]'s expanded state, refreshing its height.
-  /// Returns true if the state changed.
-  bool setExpanded(int i, {required bool expanded}) {
-    if (_layouts[i].expanded == expanded) {
+  /// Sets file [i]'s expanded state, refreshing its height. Returns true if
+  /// the state changed.
+  ///
+  /// Settles any running reveal at the new state, unless [revealedBody] is
+  /// given: then the file starts animating from that many body pixels, and the
+  /// caller drives it with [setRevealedBody] and ends it with a null.
+  bool setExpanded(int i, {required bool expanded, double? revealedBody}) {
+    final l = _layouts[i];
+    if (l.expanded == expanded && l.revealedBody == revealedBody) {
       return false;
     }
-    _layouts[i].expanded = expanded;
+    final changed = l.expanded != expanded;
+    l
+      ..expanded = expanded
+      ..revealedBody = revealedBody;
     _refreshHeight(i);
-    return true;
+    return changed;
+  }
+
+  /// Sets how many body pixels of file [i] show while it animates; null
+  /// settles it at its expanded state.
+  void setRevealedBody(int i, double? pixels) {
+    if (_layouts[i].revealedBody == pixels) {
+      return;
+    }
+    _layouts[i].revealedBody = pixels;
+    _refreshHeight(i);
   }
 
   /// Sets file [i]'s Markdown-preview state, refreshing its height. Returns true

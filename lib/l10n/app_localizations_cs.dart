@@ -15291,4 +15291,143 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Žádné nedávno otevřené soubory';
+
+  @override
+  String get diffMarkFileViewed => 'Označit jako zobrazené';
+
+  @override
+  String get diffMarkFileNotViewed => 'Označit jako nezobrazené';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count přidání',
+      many: '$count přidání',
+      few: '$count přidání',
+      one: '1 přidání',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count odebrání',
+      many: '$count odebrání',
+      few: '$count odebrání',
+      one: '1 odebrání',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, zobrazeno';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'přejmenováno z $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count souborů',
+      many: '$count souboru',
+      few: '$count soubory',
+      one: '1 soubor',
+    );
+    return '$name, složka, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, zobrazeno';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Přidaný řádek $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Odebraný řádek $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Řádek $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Blok $header';
+  }
+
+  @override
+  String get diffLineBlank => 'prázdný';
+
+  @override
+  String get diffCommentOnLineAction => 'Okomentovat tento řádek';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path označeno jako zobrazené';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path označeno jako nezobrazené';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Přidané řádky: $additions, odebrané řádky: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Zavřít $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentářů',
+      many: '$count komentáře',
+      few: '$count komentáře',
+      one: '1 komentář',
+    );
+    return '$_temp0';
+  }
 }

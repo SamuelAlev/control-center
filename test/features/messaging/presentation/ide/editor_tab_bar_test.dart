@@ -6,7 +6,8 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart' show kSecondaryButton, PointerDeviceKind;
-import 'package:flutter/services.dart' show ByteData, FontLoader;
+import 'package:flutter/services.dart'
+    show ByteData, FontLoader, LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -38,6 +39,7 @@ Widget _harness({
   List<Widget Function(Color color)?>? leadings,
   List<Widget Function(Color color)?>? trailings,
   String? fontFamily,
+  TextDirection textDirection = TextDirection.ltr,
 }) {
   final labels = [for (final t in tabs) t.label];
   return MaterialApp(
@@ -53,18 +55,21 @@ Widget _harness({
               width: 600,
               child: DefaultTextStyle.merge(
                 style: TextStyle(fontFamily: fontFamily),
-                child: EditorTabBar(
-                  leafId: 'leaf-0',
-                  tabs: tabs,
-                  labels: labels,
-                  leadings: leadings,
-                  trailings: trailings,
-                  selectedIndex: selectedIndex,
-                  onTabSelected: onTabSelected,
-                  onReorderDrop: onReorderDrop,
-                  dirty: dirty,
-                  onTabClosed: onTabClosed,
-                  onTabContextMenu: onTabContextMenu,
+                child: Directionality(
+                  textDirection: textDirection,
+                  child: EditorTabBar(
+                    leafId: 'leaf-0',
+                    tabs: tabs,
+                    labels: labels,
+                    leadings: leadings,
+                    trailings: trailings,
+                    selectedIndex: selectedIndex,
+                    onTabSelected: onTabSelected,
+                    onReorderDrop: onReorderDrop,
+                    dirty: dirty,
+                    onTabClosed: onTabClosed,
+                    onTabContextMenu: onTabContextMenu,
+                  ),
                 ),
               ),
             ),
@@ -460,5 +465,104 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(label), findsNWidgets(3));
+  });
+
+  group('keyboard and screen readers', () {
+    FocusNode tabNode(WidgetTester tester, String label) => tester
+        .widget<Focus>(
+          find.ancestor(
+            of: _label(label),
+            matching: find.byWidgetPredicate(
+              (w) => w is Focus && w.focusNode?.debugLabel == 'editor-tab',
+            ),
+          ),
+        )
+        .focusNode!;
+
+    testWidgets('each tab is a tab node carrying its selected state', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _harness(
+          onTabSelected: (_) {},
+          onReorderDrop: (_, _) {},
+          selectedIndex: 1,
+        ),
+      );
+
+      expect(
+        tester.getSemantics(_label('B')),
+        isSemantics(
+          label: 'B',
+          hasSelectedState: true,
+          isSelected: true,
+          hasTapAction: true,
+          isFocusable: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(_label('A')),
+        isSemantics(hasSelectedState: true, isSelected: false),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the strip is one Tab stop: the selected tab', (tester) async {
+      await tester.pumpWidget(
+        _harness(
+          onTabSelected: (_) {},
+          onReorderDrop: (_, _) {},
+          selectedIndex: 1,
+        ),
+      );
+
+      expect(tabNode(tester, 'A').skipTraversal, isTrue);
+      expect(tabNode(tester, 'B').skipTraversal, isFalse);
+      expect(tabNode(tester, 'C').skipTraversal, isTrue);
+    });
+
+    testWidgets('arrows move focus along the strip; Enter selects', (
+      tester,
+    ) async {
+      final selected = <int>[];
+      await tester.pumpWidget(
+        _harness(onTabSelected: selected.add, onReorderDrop: (_, _) {}),
+      );
+
+      tabNode(tester, 'A').requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(tabNode(tester, 'B').hasPrimaryFocus, isTrue);
+      // Moving focus alone opens nothing: a tab body can be expensive.
+      expect(selected, isEmpty);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(tabNode(tester, 'C').hasPrimaryFocus, isTrue, reason: 'wraps');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(selected, [2]);
+    });
+
+    testWidgets('arrow keys follow reading direction under RTL', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(
+          onTabSelected: (_) {},
+          onReorderDrop: (_, _) {},
+          textDirection: TextDirection.rtl,
+        ),
+      );
+
+      tabNode(tester, 'A').requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(tabNode(tester, 'B').hasPrimaryFocus, isTrue);
+    });
   });
 }

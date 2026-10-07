@@ -15178,4 +15178,135 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Geen recent geopende bestanden';
+
+  @override
+  String get diffMarkFileViewed => 'Markeren als bekeken';
+
+  @override
+  String get diffMarkFileNotViewed => 'Markeren als niet bekeken';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count toevoegingen',
+      one: '1 toevoeging',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verwijderingen',
+      one: '1 verwijdering',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, bekeken';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'hernoemd van $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bestanden',
+      one: '1 bestand',
+    );
+    return '$name, map, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, bekeken';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Toegevoegde regel $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Verwijderde regel $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Regel $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Blok $header';
+  }
+
+  @override
+  String get diffLineBlank => 'leeg';
+
+  @override
+  String get diffCommentOnLineAction => 'Reageren op deze regel';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path gemarkeerd als bekeken';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path gemarkeerd als niet bekeken';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Toegevoegde regels: $additions, verwijderde regels: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return '$tab sluiten';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count opmerkingen',
+      one: '1 opmerking',
+    );
+    return '$_temp0';
+  }
 }

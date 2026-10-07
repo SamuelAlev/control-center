@@ -15125,4 +15125,134 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Son açılan dosya yok';
+
+  @override
+  String get diffMarkFileViewed => 'Görüldü olarak işaretle';
+
+  @override
+  String get diffMarkFileNotViewed => 'Görülmedi olarak işaretle';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ekleme',
+      one: '1 ekleme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count silme',
+      one: '1 silme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, görüldü';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'eski adı $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dosya',
+      one: '1 dosya',
+    );
+    return '$name, klasör, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, görüldü';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Eklenen satır $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Kaldırılan satır $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Satır $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Parça $header';
+  }
+
+  @override
+  String get diffLineBlank => 'boş';
+
+  @override
+  String get diffCommentOnLineAction => 'Bu satıra yorum yap';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path görüldü olarak işaretlendi';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path görülmedi olarak işaretlendi';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Eklenen satırlar: $additions, kaldırılan satırlar: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Kapat: $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count yorum',
+    );
+    return '$_temp0';
+  }
 }

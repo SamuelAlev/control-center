@@ -788,7 +788,7 @@ class _CollapsibleJsonState extends State<_CollapsibleJson> {
               children: [
                 AnimatedRotation(
                   turns: _expanded ? 0 : -0.25,
-                  duration: const Duration(milliseconds: 150),
+                  duration: CcMotion.resolveToggle(context, CcMotion.moderate),
                   child: Icon(
                     AppIcons.chevronDown,
                     size: 14,
@@ -811,10 +811,17 @@ class _CollapsibleJsonState extends State<_CollapsibleJson> {
             ),
           ),
         ),
-        if (_expanded) ...[
-          const SizedBox(height: AppSpacing.xs),
-          _JsonBlock(raw: widget.raw, tokens: tokens),
-        ],
+        CcCollapsible(
+          expanded: _expanded,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.xs),
+              _JsonBlock(raw: widget.raw, tokens: tokens),
+            ],
+          ),
+        ),
       ],
     );
   }

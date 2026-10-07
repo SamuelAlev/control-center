@@ -467,8 +467,10 @@ class DebugRenderer extends ToolRenderer {
         Expanded(
           child: _summaryText(
             context,
-            [op, if (where.isNotEmpty) where].where((p) => p.isNotEmpty)
-                .join(' · '),
+            [
+              op,
+              if (where.isNotEmpty) where,
+            ].where((p) => p.isNotEmpty).join(' · '),
             error: s.isError,
           ),
         ),
@@ -668,15 +670,18 @@ class _ToolCallCardState extends State<ToolCallCard> {
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: header,
             ),
-          if (hasBody && _expanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.sm,
-                0,
-                AppSpacing.sm,
-                AppSpacing.sm,
+          if (hasBody)
+            CcCollapsible(
+              expanded: _expanded,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.sm,
+                  0,
+                  AppSpacing.sm,
+                  AppSpacing.sm,
+                ),
+                child: body,
               ),
-              child: body,
             ),
         ],
       ),

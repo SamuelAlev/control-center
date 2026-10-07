@@ -1115,77 +1115,85 @@ class _ConnectGateState extends State<_ConnectGate> {
                 ],
                 // Pairing disabled server-side = SSO-only onboarding: the manual form
                 // disappears entirely (the toggle stays hidden with it).
-                if ((!_ssoAvailable || _showManual) &&
-                    (_auth?.pairingEnabled ?? true)) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  // A one-time invite code replaces the manual device-id +
-                  // pairing-key pair (same behavior as the desktop
-                  // server-setup screen): redeeming it mints this browser's
-                  // own credential.
-                  _field(
-                    t,
-                    l10n.serverSetupInviteCode,
-                    _invite,
-                    hint: l10n.serverSetupInviteCodeHint,
-                    onChanged: (_) => setState(() {}),
-                    onSubmit: hasInvite,
-                  ),
-                  if (!hasInvite) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    _field(
-                      t,
-                      l10n.webConnectDeviceIdLabel,
-                      _device,
-                      hint: 'web-client',
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _field(
-                      t,
-                      l10n.webConnectPairingKeyLabel,
-                      _psk,
-                      hint: l10n.webConnectPairingKeyHint,
-                      obscure: true,
-                      onSubmit: true,
-                    ),
-                  ],
-                  if (widget.error != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    ConnectionErrorAlert(error: widget.error!),
-                  ],
-                  const SizedBox(height: AppSpacing.md),
-                  // Informed opt-in: the key is sensitive. When checked it is
-                  // kept in this browser's localStorage so a reload
-                  // reconnects; the deploy CSP (web/_headers) limits the
-                  // egress a foothold could use.
-                  Row(
+                CcCollapsible(
+                  expanded:
+                      (!_ssoAvailable || _showManual) &&
+                      (_auth?.pairingEnabled ?? true),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      CcCheckbox(
-                        value: _remember,
-                        onChanged: widget.connecting
-                            ? null
-                            : (v) => setState(() => _remember = v),
-                        semanticLabel: l10n.webConnectStayConnected,
+                      const SizedBox(height: AppSpacing.md),
+                      // A one-time invite code replaces the manual device-id +
+                      // pairing-key pair (same behavior as the desktop
+                      // server-setup screen): redeeming it mints this browser's
+                      // own credential.
+                      _field(
+                        t,
+                        l10n.serverSetupInviteCode,
+                        _invite,
+                        hint: l10n.serverSetupInviteCodeHint,
+                        onChanged: (_) => setState(() {}),
+                        onSubmit: hasInvite,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          l10n.webConnectStayConnectedDetail,
-                          style: CcTypography.bodySm.copyWith(
-                            color: t.textTertiary,
-                          ),
+                      if (!hasInvite) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        _field(
+                          t,
+                          l10n.webConnectDeviceIdLabel,
+                          _device,
+                          hint: 'web-client',
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                        _field(
+                          t,
+                          l10n.webConnectPairingKeyLabel,
+                          _psk,
+                          hint: l10n.webConnectPairingKeyHint,
+                          obscure: true,
+                          onSubmit: true,
+                        ),
+                      ],
+                      if (widget.error != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        ConnectionErrorAlert(error: widget.error!),
+                      ],
+                      const SizedBox(height: AppSpacing.md),
+                      // Informed opt-in: the key is sensitive. When checked it is
+                      // kept in this browser's localStorage so a reload
+                      // reconnects; the deploy CSP (web/_headers) limits the
+                      // egress a foothold could use.
+                      Row(
+                        children: [
+                          CcCheckbox(
+                            value: _remember,
+                            onChanged: widget.connecting
+                                ? null
+                                : (v) => setState(() => _remember = v),
+                            semanticLabel: l10n.webConnectStayConnected,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              l10n.webConnectStayConnectedDetail,
+                              style: CcTypography.bodySm.copyWith(
+                                color: t.textTertiary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      CcButton(
+                        onPressed: widget.connecting ? null : _submit,
+                        variant: CcButtonVariant.primary,
+                        loading: widget.connecting,
+                        fullWidth: true,
+                        child: Text(l10n.connect),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  CcButton(
-                    onPressed: widget.connecting ? null : _submit,
-                    variant: CcButtonVariant.primary,
-                    loading: widget.connecting,
-                    fullWidth: true,
-                    child: Text(l10n.connect),
-                  ),
-                ],
+                ),
               ],
             ),
           ),

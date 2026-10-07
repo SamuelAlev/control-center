@@ -31,8 +31,12 @@ class AgentsInsightSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final rows = ref.watch(insightsPerAgentProvider);
     final selected = ref.watch(obsRunFiltersProvider).agentIds;
-
-    final shown = showAll ? rows : rows.take(_cap).toList();
+    Widget tile(AgentInsightRow row) => _AgentInsightTile(
+      row: row,
+      selected: selected.contains(row.agentId),
+      onTap: () =>
+          ref.read(obsRunFiltersProvider.notifier).toggleAgent(row.agentId),
+    );
 
     return ObsSection(
       title: l10n.obsAgentsTitle,
@@ -41,15 +45,16 @@ class AgentsInsightSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeaderRow(l10n: l10n),
-          for (final row in shown)
-            _AgentInsightTile(
-              row: row,
-              selected: selected.contains(row.agentId),
-              onTap: () => ref
-                  .read(obsRunFiltersProvider.notifier)
-                  .toggleAgent(row.agentId),
+          for (final row in rows.take(_cap)) tile(row),
+          if (rows.length > _cap) ...[
+            CcCollapsible(
+              expanded: showAll,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [for (final row in rows.skip(_cap)) tile(row)],
+              ),
             ),
-          if (rows.length > _cap)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Align(
@@ -66,6 +71,7 @@ class AgentsInsightSection extends ConsumerWidget {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -135,12 +141,7 @@ class _AgentInsightTile extends StatelessWidget {
 
     Widget numCell(String text, double width) => SizedBox(
       width: width,
-      child: Text(
-        text,
-        style: numStyle,
-        textAlign: TextAlign.end,
-        maxLines: 1,
-      ),
+      child: Text(text, style: numStyle, textAlign: TextAlign.end, maxLines: 1),
     );
 
     return Semantics(

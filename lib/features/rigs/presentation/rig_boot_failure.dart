@@ -95,7 +95,10 @@ class _RigBootFailureState extends State<RigBootFailure> {
                       children: [
                         AnimatedRotation(
                           turns: _expanded ? 0.25 : 0,
-                          duration: CcMotion.resolve(context, CcMotion.fast),
+                          duration: CcMotion.resolveToggle(
+                            context,
+                            CcMotion.fast,
+                          ),
                           child: Icon(
                             AppIcons.chevronRight,
                             size: 12,
@@ -125,8 +128,9 @@ class _RigBootFailureState extends State<RigBootFailure> {
                 ),
             ],
           ),
-          if (_expanded)
-            Padding(
+          CcCollapsible(
+            expanded: _expanded,
+            child: Padding(
               padding: const EdgeInsets.only(top: AppSpacing.xs),
               child: ConstrainedBox(
                 key: const Key('rigBootFailureDetails'),
@@ -153,6 +157,7 @@ class _RigBootFailureState extends State<RigBootFailure> {
                 ),
               ),
             ),
+          ),
         ],
       ],
     );

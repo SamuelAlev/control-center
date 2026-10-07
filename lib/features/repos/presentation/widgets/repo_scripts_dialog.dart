@@ -493,31 +493,39 @@ class _RunRowState extends State<_RunRow> {
                 ),
             ],
           ),
-          if (_expanded && run.output.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: ds?.bgSecondary,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: ds?.borderSecondary ?? const Color(0x22000000),
-                ),
-              ),
-              child: SelectionArea(
-                child: Text(
-                  run.output,
-                  style: TextStyle(
-                    fontFamily: CcFonts.codeFamily,
-                    fontSize: 12,
-                    height: 1.45,
-                    color: ds?.textPrimary,
+          if (run.output.isNotEmpty)
+            CcCollapsible(
+              expanded: _expanded,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: ds?.bgSecondary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: ds?.borderSecondary ?? const Color(0x22000000),
+                      ),
+                    ),
+                    child: SelectionArea(
+                      child: Text(
+                        run.output,
+                        style: TextStyle(
+                          fontFamily: CcFonts.codeFamily,
+                          fontSize: 12,
+                          height: 1.45,
+                          color: ds?.textPrimary,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-          ],
         ],
       ),
     );

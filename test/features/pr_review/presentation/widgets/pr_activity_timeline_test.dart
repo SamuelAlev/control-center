@@ -463,6 +463,8 @@ void main() {
       // its own diff link.
       await tester.tap(_richTextContaining('pushed 2 commits'));
       await tester.pump();
+      // Let the commit list finish growing open before tapping into it.
+      await tester.pump(CcMotion.moderate);
       await tester.tap(_richTextContaining('e07bcc4'));
       expect(opened, ['845facb1234', 'e07bcc41234']);
     });

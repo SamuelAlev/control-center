@@ -320,11 +320,14 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
           return Padding(
             key: const ValueKey<String>(_kActivityHeadingKey),
             padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              l10n.activity,
-              style: CcTypography.body.copyWith(
-                fontWeight: FontWeight.w600,
-                color: t.textPrimary,
+            child: Semantics(
+              header: true,
+              child: Text(
+                l10n.activity,
+                style: CcTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: t.textPrimary,
+                ),
               ),
             ),
           );
@@ -453,10 +456,14 @@ class _Avatar extends StatelessWidget {
     if (login.isEmpty) {
       return const _GutterIcon(icon: AppIcons.messageSquare);
     }
-    return GitHubUserAvatar(
-      login: login,
-      avatarUrl: user?.avatarUrl ?? '',
-      size: _kGutterSize,
+    // The card header names the author; the avatar would only add its
+    // initial letter to the announcement.
+    return ExcludeSemantics(
+      child: GitHubUserAvatar(
+        login: login,
+        avatarUrl: user?.avatarUrl ?? '',
+        size: _kGutterSize,
+      ),
     );
   }
 }
@@ -546,7 +553,10 @@ class _GutterIcon extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: t.borderSecondary),
       ),
-      child: Icon(icon, size: 13, color: color ?? t.fgTertiary),
+      // Decorative: the row's own sentence says what happened.
+      child: ExcludeSemantics(
+        child: Icon(icon, size: 13, color: color ?? t.fgTertiary),
+      ),
     );
   }
 }
@@ -952,31 +962,37 @@ class _CommitGroupRowState extends ConsumerState<_CommitGroupRow> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        CcTappable(
-          onPressed: () => setState(() => _expanded = !_expanded),
-          borderRadius: AppRadii.brSm,
-          builder: (context, states) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: _EventSentence(
-                  spans: _eventSpans(context, sentence, mentions),
-                  timestamp: entry.timestamp,
-                ),
+        MergeSemantics(
+          child: Semantics(
+            expanded: _expanded,
+            child: CcTappable(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              borderRadius: AppRadii.brSm,
+              builder: (context, states) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: _EventSentence(
+                      spans: _eventSpans(context, sentence, mentions),
+                      timestamp: entry.timestamp,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
+                    size: 14,
+                    color: states.contains(WidgetState.hovered)
+                        ? t.fgTertiary
+                        : t.fgQuaternary,
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Icon(
-                _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
-                size: 14,
-                color: states.contains(WidgetState.hovered)
-                    ? t.fgTertiary
-                    : t.fgQuaternary,
-              ),
-            ],
+            ),
           ),
         ),
-        if (_expanded)
-          Padding(
+        CcCollapsible(
+          expanded: _expanded,
+          child: Padding(
             padding: const EdgeInsetsDirectional.only(start: 24, top: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1015,6 +1031,7 @@ class _CommitGroupRowState extends ConsumerState<_CommitGroupRow> {
               ],
             ),
           ),
+        ),
       ],
     );
   }
@@ -1095,32 +1112,40 @@ class _ReviewReplyRefs extends ConsumerWidget {
                   CcTappable(
                     onPressed: () => onFollow(reply),
                     semanticLabel: l10n.inReplyTo(reply.thread.path),
-                    builder: (context, states) => Container(
-                      padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
-                      color: states.contains(WidgetState.hovered)
-                          ? t.bgPrimaryHover
-                          : t.bgSecondary,
-                      child: Row(
-                        children: [
-                          Icon(AppIcons.reply, size: 13, color: t.textTertiary),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              l10n.inReplyTo(reply.thread.path),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: CcTypography.caption.copyWith(
-                                color: t.textSecondary,
+                    // The label already says it; the visible copy would read
+                    // the same words twice.
+                    builder: (context, states) => ExcludeSemantics(
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
+                        color: states.contains(WidgetState.hovered)
+                            ? t.bgPrimaryHover
+                            : t.bgSecondary,
+                        child: Row(
+                          children: [
+                            Icon(
+                              AppIcons.reply,
+                              size: 13,
+                              color: t.textTertiary,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                l10n.inReplyTo(reply.thread.path),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: CcTypography.caption.copyWith(
+                                  color: t.textSecondary,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            AppIcons.arrowUp,
-                            size: 12,
-                            color: t.textTertiary,
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Icon(
+                              AppIcons.arrowUp,
+                              size: 12,
+                              color: t.textTertiary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1641,7 +1666,7 @@ class _VerdictChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: fg),
+          ExcludeSemantics(child: Icon(icon, size: 11, color: fg)),
           const SizedBox(width: 4),
           Text(
             label,
@@ -1687,19 +1712,19 @@ class _ClickableAuthorName extends StatelessWidget {
     }
     return GitHubUserHoverTarget(
       login: login,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () {
-            final workspaceId = context.currentWorkspaceId;
-            if (workspaceId == null) {
-              return;
-            }
-            GoRouter.of(context).go(userProfileRoute(workspaceId, login));
-          },
-          behavior: HitTestBehavior.opaque,
-          child: Semantics(button: true, label: displayLogin, child: name),
-        ),
+      // A real button — Tab-reachable, Enter/Space activated — not a bare
+      // gesture with a button label only a pointer could use.
+      child: CcTappable(
+        onPressed: () {
+          final workspaceId = context.currentWorkspaceId;
+          if (workspaceId == null) {
+            return;
+          }
+          GoRouter.of(context).go(userProfileRoute(workspaceId, login));
+        },
+        semanticLabel: displayLogin,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) => ExcludeSemantics(child: name),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/hover_focus_reveal.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/mention_autocomplete_field.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -12,7 +13,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The PR description block: renders [readChild] (the collapsible markdown) in
-/// read mode with a hover-revealed edit pencil (when [canEdit]) and the shared
+/// read mode with an edit pencil shown on hover or keyboard focus (when
+/// [canEdit]) and the shared
 /// GitHub-style Write/Preview [MarkdownEditor] in edit mode (with `@`/`#`
 /// autocomplete). Editing operates on raw markdown — Preview reuses the exact
 /// same renderer as the read view, so there is no GFM round-trip loss.
@@ -55,8 +57,8 @@ class PrBodyEditor extends ConsumerStatefulWidget {
 class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final FocusNode _editButtonFocus = FocusNode(debugLabel: 'edit-pr-body');
   bool _editing = false;
-  bool _hovered = false;
 
   String get _owner => widget.repoFullName.contains('/')
       ? widget.repoFullName.split('/')[0]
@@ -69,7 +71,26 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _editButtonFocus.dispose();
     super.dispose();
+  }
+
+  /// Leaves the editor, putting focus back on whichever control opened it
+  /// when focus was inside the editor — not at the top of the page.
+  void _finishEdit() {
+    final hadFocus =
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorStateOfType<_PrBodyEditorState>() ==
+        this;
+    setState(() => _editing = false);
+    if (!hadFocus) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _editButtonFocus.requestFocus();
+      }
+    });
   }
 
   void _startEdit() {
@@ -96,7 +117,7 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
       return;
     }
     if (error == null) {
-      setState(() => _editing = false);
+      _finishEdit();
     } else {
       toaster.show(
         l10n.failedToUpdateDescription(error),
@@ -107,7 +128,7 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
 
   Future<void> _cancel() async {
     if (_controller.text == widget.initialMarkdown) {
-      setState(() => _editing = false);
+      _finishEdit();
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -131,7 +152,7 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
       ),
     );
     if (discard == true && mounted) {
-      setState(() => _editing = false);
+      _finishEdit();
     }
   }
 
@@ -156,20 +177,24 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
     if (isMarkdownBodyEffectivelyEmpty(widget.initialMarkdown)) {
       return _buildEmptyAffordance(context, t);
     }
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Stack(
+    final l10n = AppLocalizations.of(context);
+    return HoverFocusReveal(
+      builder: (context, revealed) => Stack(
         children: [
           widget.readChild,
-          if (_hovered)
-            PositionedDirectional(
-              top: 0,
-              end: 0,
+          // Always mounted so Tab and screen readers reach it; painted only on
+          // hover or while it has keyboard focus.
+          PositionedDirectional(
+            top: 0,
+            end: 0,
+            child: HoverFocusReveal.fade(
+              revealed: revealed,
               child: CcTooltip(
-                message: AppLocalizations.of(context).editDescription,
+                message: l10n.editDescription,
                 child: CcTappable(
+                  focusNode: _editButtonFocus,
                   onPressed: _startEdit,
+                  semanticLabel: l10n.editDescription,
                   builder: (context, states) => Container(
                     decoration: BoxDecoration(
                       color: t.bgPrimary,
@@ -186,6 +211,7 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
@@ -199,6 +225,7 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: CcTappable(
+        focusNode: _editButtonFocus,
         onPressed: _startEdit,
         builder: (context, states) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),

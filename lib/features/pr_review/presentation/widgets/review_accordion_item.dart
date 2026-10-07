@@ -139,7 +139,12 @@ class _ReviewAccordionItemState extends ConsumerState<ReviewAccordionItem> {
                 pinned: true,
                 delegate: _FindingRowHeader(key: widget.anchorKey, child: row),
               ),
-            if (_open) SliverToBoxAdapter(child: _buildExpandedBody(tokens)),
+            SliverToBoxAdapter(
+              child: CcCollapsible(
+                expanded: _open,
+                child: _buildExpandedBody(tokens),
+              ),
+            ),
           ],
         ),
       );
@@ -151,7 +156,7 @@ class _ReviewAccordionItemState extends ConsumerState<ReviewAccordionItem> {
       child: Column(
         children: [
           if (!widget.alwaysExpanded) row,
-          if (_open) _buildExpandedBody(tokens),
+          CcCollapsible(expanded: _open, child: _buildExpandedBody(tokens)),
         ],
       ),
     );

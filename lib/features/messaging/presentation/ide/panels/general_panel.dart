@@ -557,18 +557,12 @@ class _GoalAccordionState extends State<_GoalAccordion> {
             ),
           ),
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOut,
-          alignment: Alignment.topCenter,
-          child: _expanded
-              ? Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    start: AppSpacing.md,
-                  ),
-                  child: widget.child,
-                )
-              : const SizedBox(width: double.infinity),
+        CcCollapsible(
+          expanded: _expanded,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: AppSpacing.md),
+            child: widget.child,
+          ),
         ),
       ],
     );

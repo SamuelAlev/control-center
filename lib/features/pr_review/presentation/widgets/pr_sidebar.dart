@@ -11,6 +11,7 @@ import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_status_palette.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/assignee_picker_flyout.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/hover_focus_reveal.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/label_picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_complexity_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
@@ -423,65 +424,76 @@ class _FileSummaryRow extends StatelessWidget {
     final name = slash < 0 ? file.filename : file.filename.substring(slash + 1);
     final dir = slash < 0 ? '' : file.filename.substring(0, slash);
 
+    final l10n = AppLocalizations.of(context);
+    // The colored +/− counts read as "plus 12, minus 3" fragments otherwise;
+    // name them, after the file.
+    final semanticLabel = [
+      name,
+      if (dir.isNotEmpty) dir,
+      l10n.prLineChangesSemantics(file.additions, file.deletions),
+    ].join(', ');
+
     return CcTappable(
       onPressed: onTap,
       borderRadius: AppRadii.brSm,
-      semanticLabel: file.filename,
+      semanticLabel: semanticLabel,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-          decoration: BoxDecoration(
-            color: hovered ? t.hover : t.hover.withValues(alpha: 0),
-            borderRadius: AppRadii.brSm,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: CcTypography.caption.copyWith(
-                        color: t.textPrimary,
-                      ),
-                    ),
-                    if (dir.isNotEmpty)
+        return ExcludeSemantics(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+            decoration: BoxDecoration(
+              color: hovered ? t.hover : t.hover.withValues(alpha: 0),
+              borderRadius: AppRadii.brSm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        dir,
+                        name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: CcTypography.caption.copyWith(
-                          color: t.textTertiary,
+                          color: t.textPrimary,
                         ),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (file.additions > 0)
-                Text(
-                  '+${file.additions}',
-                  style: CcTypography.caption.copyWith(
-                    color: ReviewStatusColors.success,
-                    fontWeight: FontWeight.w600,
+                      if (dir.isNotEmpty)
+                        Text(
+                          dir,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: CcTypography.caption.copyWith(
+                            color: t.textTertiary,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              if (file.additions > 0 && file.deletions > 0)
-                const SizedBox(width: 4),
-              if (file.deletions > 0)
-                Text(
-                  '−${file.deletions}',
-                  style: CcTypography.caption.copyWith(
-                    color: ReviewStatusColors.failure,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                if (file.additions > 0)
+                  Text(
+                    '+${file.additions}',
+                    style: CcTypography.caption.copyWith(
+                      color: ReviewStatusColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-            ],
+                if (file.additions > 0 && file.deletions > 0)
+                  const SizedBox(width: 4),
+                if (file.deletions > 0)
+                  Text(
+                    '−${file.deletions}',
+                    style: CcTypography.caption.copyWith(
+                      color: ReviewStatusColors.failure,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -492,7 +504,7 @@ class _FileSummaryRow extends StatelessWidget {
 /// A reviewer rail row. Renders three shapes from one [PrReviewer]: an
 /// individual user, a pending team, or a team merged with the member who
 /// reviewed on its behalf. Code owners carry a shield and no remove affordance.
-class _ReviewerRow extends StatefulWidget {
+class _ReviewerRow extends StatelessWidget {
   const _ReviewerRow({
     required this.reviewer,
     required this.pending,
@@ -506,22 +518,23 @@ class _ReviewerRow extends StatefulWidget {
   final VoidCallback? onRemove;
 
   @override
-  State<_ReviewerRow> createState() => _ReviewerRowState();
-}
-
-class _ReviewerRowState extends State<_ReviewerRow> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final r = widget.reviewer;
+    final r = reviewer;
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final reviewedBy = r is PrTeamReviewer ? r.reviewedBy : null;
+    final name = _label(r);
+    // One announcement per reviewer — who, their verdict, and the facts the
+    // shield and the colored glyph show — instead of a run of fragments
+    // (an initial letter, a name, an unlabeled icon).
+    final semanticLabel = [
+      name,
+      _ReviewerStateDot.labelFor(r.state, l10n),
+      if (reviewedBy != null) l10n.reviewedOnBehalfOf(reviewedBy.login),
+      if (r.isCodeOwner) l10n.requiredByCodeOwners,
+    ].join(', ');
 
-    final Widget content = MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+    final info = ExcludeSemantics(
       child: Row(
         children: [
           if (r.isCodeOwner) ...[
@@ -539,7 +552,7 @@ class _ReviewerRowState extends State<_ReviewerRow> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _label(r),
+                  name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: CcTypography.caption.copyWith(color: t.textPrimary),
@@ -554,18 +567,31 @@ class _ReviewerRowState extends State<_ReviewerRow> {
               ],
             ),
           ),
-          if (widget.pending)
-            const CcSpinner(size: 14)
-          else if (_hovered && widget.onRemove != null)
-            CcTappable(
-              onPressed: widget.onRemove,
-              builder: (context, states) =>
-                  Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
-            )
-          else
-            _ReviewerStateDot(state: r.state),
         ],
       ),
+    );
+
+    Widget row(bool revealed) => Row(
+      children: [
+        Expanded(
+          child: r is PrTeamReviewer
+              // The team row is itself a link; the tappable carries the label.
+              ? info
+              : Semantics(container: true, label: semanticLabel, child: info),
+        ),
+        if (pending)
+          const CcSpinner(size: 14)
+        else
+          _RevealedRemoveSlot(
+            revealed: revealed,
+            label: l10n.removeLabel(name),
+            onRemove: onRemove,
+            resting: ExcludeSemantics(child: _ReviewerStateDot(state: r.state)),
+          ),
+      ],
+    );
+    final Widget content = HoverFocusReveal(
+      builder: (context, revealed) => row(revealed),
     );
 
     if (r is PrUserReviewer) {
@@ -573,17 +599,17 @@ class _ReviewerRowState extends State<_ReviewerRow> {
     }
     final team = r as PrTeamReviewer;
     return GitHubTeamHoverTarget(
-      organization: widget.organization,
+      organization: organization,
       slug: team.slug,
       child: CcTappable(
         onPressed: () => context.go(
           teamProfileRoute(
             context.currentWorkspaceId!,
-            widget.organization,
+            organization,
             team.slug,
           ),
         ),
-        semanticLabel: team.name,
+        semanticLabel: semanticLabel,
         borderRadius: AppRadii.brSm,
         builder: (_, _) => content,
       ),
@@ -594,6 +620,50 @@ class _ReviewerRowState extends State<_ReviewerRow> {
     PrUserReviewer() => r.user.login,
     PrTeamReviewer() => r.name,
   };
+}
+
+/// The trailing slot of a reviewer / assignee row: [resting] (the state glyph,
+/// or nothing) normally, swapped for a remove button on hover or keyboard
+/// focus. The button stays mounted — transparent at rest — so it is reachable
+/// with Tab and by screen readers rather than only under the mouse.
+class _RevealedRemoveSlot extends StatelessWidget {
+  const _RevealedRemoveSlot({
+    required this.revealed,
+    required this.label,
+    required this.onRemove,
+    this.resting,
+  });
+
+  final bool revealed;
+  final String label;
+  final VoidCallback? onRemove;
+  final Widget? resting;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final remove = onRemove;
+    if (remove == null) {
+      return resting ?? const SizedBox.shrink();
+    }
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        if (resting != null)
+          HoverFocusReveal.fade(revealed: !revealed, child: resting!),
+        HoverFocusReveal.fade(
+          revealed: revealed,
+          child: CcTappable(
+            onPressed: remove,
+            semanticLabel: label,
+            borderRadius: AppRadii.brSm,
+            builder: (context, states) =>
+                Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Avatar for a reviewer row: a user avatar, a team logo, or — for a merged
@@ -658,7 +728,7 @@ class _ReviewerAvatar extends StatelessWidget {
 
 /// An assignee rail row: avatar + login, with a hover-revealed remove when
 /// editable. Assignees are never code-owners and are always freely removable.
-class _AssigneeRow extends StatefulWidget {
+class _AssigneeRow extends StatelessWidget {
   const _AssigneeRow({
     required this.user,
     required this.pending,
@@ -670,44 +740,51 @@ class _AssigneeRow extends StatefulWidget {
   final VoidCallback? onRemove;
 
   @override
-  State<_AssigneeRow> createState() => _AssigneeRowState();
-}
-
-class _AssigneeRowState extends State<_AssigneeRow> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     return GitHubUserHoverTarget(
-      login: widget.user.login,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: Opacity(
-          opacity: widget.pending ? 0.5 : 1,
+      login: user.login,
+      child: HoverFocusReveal(
+        builder: (context, revealed) => Opacity(
+          opacity: pending ? 0.5 : 1,
           child: Row(
             children: [
-              GitHubUserAvatar(
-                login: widget.user.login,
-                avatarUrl: widget.user.avatarUrl,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
+              // The login once, not the avatar's initial and then the login.
               Expanded(
-                child: Text(
-                  widget.user.login,
-                  style: CcTypography.caption.copyWith(color: t.textPrimary),
-                  overflow: TextOverflow.ellipsis,
+                child: Semantics(
+                  container: true,
+                  label: user.login,
+                  child: ExcludeSemantics(
+                    child: Row(
+                      children: [
+                        GitHubUserAvatar(
+                          login: user.login,
+                          avatarUrl: user.avatarUrl,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            user.login,
+                            style: CcTypography.caption.copyWith(
+                              color: t.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              if (widget.pending)
+              if (pending)
                 const CcSpinner(size: 14)
-              else if (_hovered && widget.onRemove != null)
-                CcTappable(
-                  onPressed: widget.onRemove,
-                  builder: (context, states) =>
-                      Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
+              else
+                _RevealedRemoveSlot(
+                  revealed: revealed,
+                  label: l10n.removeLabel(user.login),
+                  onRemove: onRemove,
                 ),
             ],
           ),
@@ -929,46 +1006,47 @@ class _ReviewerStateDot extends StatelessWidget {
 
   final PrReviewSubmissionState state;
 
+  /// The words for [state], used by the glyph's tooltip and the row's
+  /// screen-reader label alike.
+  static String labelFor(
+    PrReviewSubmissionState state,
+    AppLocalizations l10n,
+  ) => switch (state) {
+    PrReviewSubmissionState.approved => l10n.approved,
+    PrReviewSubmissionState.changesRequested => l10n.changesRequested,
+    PrReviewSubmissionState.commented => l10n.commented,
+    // Every requested reviewer's row, not only the viewer's: "requested", not
+    // "awaiting your review".
+    PrReviewSubmissionState.pending => l10n.reviewRequested,
+  };
+
   @override
   Widget build(BuildContext context) {
-    final (color, icon, tooltip) = _styleFor(state, context);
+    final (color, icon) = _styleFor(state, context);
     return CcTooltip(
-      message: tooltip,
+      message: labelFor(state, AppLocalizations.of(context)),
       child: Icon(icon, size: 14, color: color),
     );
   }
 
-  (Color, IconData, String) _styleFor(
+  (Color, IconData) _styleFor(
     PrReviewSubmissionState state,
     BuildContext context,
   ) {
-    switch (state) {
-      case PrReviewSubmissionState.approved:
-        return (
-          ReviewStatusColors.success,
-          AppIcons.checkCircle2,
-          AppLocalizations.of(context).approved,
-        );
-      case PrReviewSubmissionState.changesRequested:
-        return (
-          ReviewStatusColors.failure,
-          AppIcons.xCircle,
-          AppLocalizations.of(context).changesRequested,
-        );
-      case PrReviewSubmissionState.commented:
-        return (
-          context.designSystem?.textTertiary ??
-              DesignSystemTokens.light().textTertiary,
-          AppIcons.messageCircle,
-          AppLocalizations.of(context).commented,
-        );
-      case PrReviewSubmissionState.pending:
-        return (
-          context.designSystem?.textTertiary ??
-              DesignSystemTokens.light().textTertiary,
-          AppIcons.clock,
-          AppLocalizations.of(context).awaitingYourReview,
-        );
-    }
+    final muted =
+        context.designSystem?.textTertiary ??
+        DesignSystemTokens.light().textTertiary;
+    return switch (state) {
+      PrReviewSubmissionState.approved => (
+        ReviewStatusColors.success,
+        AppIcons.checkCircle2,
+      ),
+      PrReviewSubmissionState.changesRequested => (
+        ReviewStatusColors.failure,
+        AppIcons.xCircle,
+      ),
+      PrReviewSubmissionState.commented => (muted, AppIcons.messageCircle),
+      PrReviewSubmissionState.pending => (muted, AppIcons.clock),
+    };
   }
 }

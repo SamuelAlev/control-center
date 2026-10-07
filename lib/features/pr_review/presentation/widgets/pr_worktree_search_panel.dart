@@ -273,12 +273,14 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
               _persist();
             },
           ),
-          if (_showFilters)
-            _FilterFields(
+          CcCollapsible(
+            expanded: _showFilters,
+            child: _FilterFields(
               includeController: _includeController,
               excludeController: _excludeController,
               onChanged: _syncFilters,
             ),
+          ),
           Container(height: 1, color: tokens.borderSecondary),
           Expanded(child: body),
         ],

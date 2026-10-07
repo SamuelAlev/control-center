@@ -322,40 +322,51 @@ class _AssigneeFlyoutRow extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return GitHubUserHoverTarget(
       login: user.login,
-      child: CcTappable(
-        onPressed: onTap,
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
-          return Container(
-            color: hovered ? t.bgPrimaryHover : const Color(0x00000000),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            child: Row(
-              children: [
-                PickerCheckBox(selected: selected, hovered: hovered),
-                const SizedBox(width: 10),
-                GitHubUserAvatar(
-                  login: user.login,
-                  avatarUrl: user.avatarUrl,
-                  size: 22,
-                  showHoverCard: false,
+      // Checked state on the row itself, not only on the painted box.
+      child: MergeSemantics(
+        child: Semantics(
+          checked: selected,
+          child: CcTappable(
+            onPressed: onTap,
+            builder: (context, states) {
+              final hovered = states.contains(WidgetState.hovered);
+              return Container(
+                color: hovered ? t.bgPrimaryHover : const Color(0x00000000),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    user.displayLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: t.textPrimary,
+                child: Row(
+                  children: [
+                    PickerCheckBox(selected: selected, hovered: hovered),
+                    const SizedBox(width: 10),
+                    ExcludeSemantics(
+                      child: GitHubUserAvatar(
+                        login: user.login,
+                        avatarUrl: user.avatarUrl,
+                        size: 22,
+                        showHoverCard: false,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        user.displayLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: t.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }

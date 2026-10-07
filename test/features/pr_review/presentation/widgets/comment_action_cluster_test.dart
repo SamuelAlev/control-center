@@ -1,6 +1,8 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/comment_action_cluster.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/test_wrap.dart';
@@ -120,6 +122,74 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Copy link to comment'), findsNothing);
     expect(find.text('Send to agent'), findsOneWidget);
+  });
+
+  group('CommentActionsHost keyboard', () {
+    Widget host() => testWrap(
+      Column(
+        children: [
+          CcButton(onPressed: () {}, child: const Text('before')),
+          SizedBox(
+            width: 400,
+            height: 100,
+            child: CommentActionsHost(
+              actions: (onPinned) => CommentActionCluster(
+                onPinnedChanged: onPinned,
+                onCopyLink: () {},
+                onResolve: () {},
+              ),
+              child: const SizedBox(width: 400, height: 100),
+            ),
+          ),
+          CcButton(onPressed: () {}, child: const Text('after')),
+        ],
+      ),
+    );
+
+    String? focusedButtonText() {
+      final context = FocusManager.instance.primaryFocus?.context;
+      final child = context?.findAncestorWidgetOfExactType<CcButton>()?.child;
+      return child is Text ? child.data : null;
+    }
+
+    String? focusedIconTooltip() => FocusManager.instance.primaryFocus?.context
+        ?.findAncestorWidgetOfExactType<CcIconButton>()
+        ?.tooltip;
+
+    testWidgets('Tab passes through the toolbar instead of cycling in it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host());
+
+      final visited = <String?>[];
+      for (var i = 0; i < 6; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+        visited.add(focusedButtonText() ?? focusedIconTooltip());
+      }
+      // before → entry stub → copy link → resolve → overflow → after. The
+      // toolbar used to be a FocusScope whose closed loop never let go.
+      expect(visited.first, 'before');
+      expect(visited.last, 'after');
+    });
+
+    testWidgets('Enter on the entry stub moves into the toolbar; Escape '
+        'steps back out', (tester) async {
+      await tester.pumpWidget(host());
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab); // before
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab); // entry stub
+      await tester.pumpAndSettle();
+      final entry = FocusManager.instance.primaryFocus;
+      expect(entry?.debugLabel, 'comment-actions-entry');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(focusedIconTooltip(), isNotNull);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus, entry);
+    });
   });
 }
 

@@ -22,13 +22,21 @@ class FocusModality {
   static final FocusModality instance = FocusModality._();
 
   bool _keyboard = false;
+  bool _anyKey = false;
 
   /// Whether the most recent qualifying interaction came from the keyboard.
   bool get isKeyboard => _keyboard;
 
+  /// Whether the most recent key-down or pointer-down was a key, counting
+  /// Cmd/Ctrl/Alt chords that [isKeyboard] ignores. Motion uses this: a
+  /// keyboard-driven state change (Enter on a header, a shortcut) snaps
+  /// instead of animating.
+  bool get lastInputWasKeyboard => _anyKey;
+
   void _handlePointer(PointerEvent event) {
     if (event is PointerDownEvent) {
       _keyboard = false;
+      _anyKey = false;
     }
   }
 
@@ -36,6 +44,7 @@ class FocusModality {
     if (event is! KeyDownEvent) {
       return false;
     }
+    _anyKey = true;
     final keyboard = HardwareKeyboard.instance;
     // Cmd/Ctrl/Alt chords are app shortcuts, not focus traversal — pressing
     // Cmd+Enter to save shouldn't arm the focus ring. Shift is allowed so

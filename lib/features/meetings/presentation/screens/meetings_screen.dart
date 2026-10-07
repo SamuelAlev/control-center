@@ -310,6 +310,9 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
           for (final bucket in MeetingDayBucket.values)
             if (buckets[bucket]?.isNotEmpty ?? false) ...[
               _DaySection(
+                // Keyed so a bucket appearing above keeps each section's
+                // collapse state (and its in-flight animation) with its day.
+                key: ValueKey(bucket),
                 bucket: bucket,
                 meetings: buckets[bucket]!,
                 now: now,
@@ -353,6 +356,7 @@ typedef _MeetingAggregate = ({
 /// the inbox or the pull-request queue rather than like a table sub-head.
 class _DaySection extends StatelessWidget {
   const _DaySection({
+    super.key,
     required this.bucket,
     required this.meetings,
     required this.now,
@@ -405,7 +409,10 @@ class _DaySection extends StatelessWidget {
                     children: [
                       AnimatedRotation(
                         turns: collapsed ? -0.25 : 0,
-                        duration: CcMotion.resolve(context, CcMotion.fast),
+                        duration: CcMotion.resolveToggle(
+                          context,
+                          CcMotion.fast,
+                        ),
                         child: Icon(
                           AppIcons.chevronDown,
                           size: 16,
@@ -431,26 +438,24 @@ class _DaySection extends StatelessWidget {
                 ),
               ),
             ),
-            AnimatedSize(
-              duration: CcMotion.resolve(context, CcMotion.normal),
-              curve: CcMotion.standard,
-              alignment: Alignment.topCenter,
-              child: collapsed
-                  ? const SizedBox(width: double.infinity)
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        CcDivider(color: ds.borderSecondary),
-                        for (var i = 0; i < meetings.length; i++) ...[
-                          if (i > 0) CcDivider(color: ds.borderSoft),
-                          MeetingListRow(
-                            meeting: meetings[i],
-                            now: now,
-                            onTap: () => onOpen(meetings[i]),
-                          ),
-                        ],
-                      ],
+            CcCollapsible(
+              expanded: !collapsed,
+              duration: CcMotion.normal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CcDivider(color: ds.borderSecondary),
+                  for (var i = 0; i < meetings.length; i++) ...[
+                    if (i > 0) CcDivider(color: ds.borderSoft),
+                    MeetingListRow(
+                      meeting: meetings[i],
+                      now: now,
+                      onTap: () => onOpen(meetings[i]),
                     ),
+                  ],
+                ],
+              ),
             ),
             if (collapsed) const SizedBox(height: 2),
           ],

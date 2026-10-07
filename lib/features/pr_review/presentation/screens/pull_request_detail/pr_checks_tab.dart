@@ -186,75 +186,87 @@ class _WorkflowCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CcTappable(
-            onPressed: onToggle,
-            borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(4),
-              bottom: expanded ? Radius.zero : const Radius.circular(4),
-            ),
-            builder: (context, states) => Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-              child: Row(
-                children: [
-                  WorkflowStatusIcon(status: workflow.status, size: 18),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          workflow.name,
-                          style: CcTypography.body
-                              .copyWith(color: tokens.textTertiary)
-                              .copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: tokens.textPrimary,
-                              ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: _summaryFor(context, workflow),
-                                style: CcTypography.caption
-                                    .copyWith(color: tokens.textTertiary)
-                                    .copyWith(
-                                      color: style.color,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                              if (_timeLabelFor(context, workflow)
-                                  case final timeLabel?)
-                                TextSpan(
-                                  text: ' · $timeLabel',
-                                  style: CcTypography.caption.copyWith(
-                                    color: tokens.textTertiary,
+          MergeSemantics(
+            child: Semantics(
+              expanded: expanded,
+              child: CcTappable(
+                onPressed: onToggle,
+                borderRadius: BorderRadius.vertical(
+                  top: const Radius.circular(4),
+                  bottom: expanded ? Radius.zero : const Radius.circular(4),
+                ),
+                builder: (context, states) => Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                  child: Row(
+                    children: [
+                      WorkflowStatusIcon(status: workflow.status, size: 18),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              workflow.name,
+                              style: CcTypography.body
+                                  .copyWith(color: tokens.textTertiary)
+                                  .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: tokens.textPrimary,
                                   ),
-                                ),
-                            ],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: _summaryFor(context, workflow),
+                                    style: CcTypography.caption
+                                        .copyWith(color: tokens.textTertiary)
+                                        .copyWith(
+                                          color: style.color,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  if (_timeLabelFor(context, workflow)
+                                      case final timeLabel?)
+                                    TextSpan(
+                                      text: ' · $timeLabel',
+                                      style: CcTypography.caption.copyWith(
+                                        color: tokens.textTertiary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
+                        size: 16,
+                        color: tokens.textTertiary,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
-                    size: 16,
-                    color: tokens.textTertiary,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-          if (expanded) ...[
-            const CcDivider(),
-            _WorkflowRunBody(prRef: prRef, workflow: workflow),
-          ],
+          CcCollapsible(
+            expanded: expanded,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CcDivider(),
+                _WorkflowRunBody(prRef: prRef, workflow: workflow),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -595,27 +607,37 @@ class _WorkflowRunBodyState extends ConsumerState<_WorkflowRunBody> {
     DesignSystemTokens tokens,
   ) {
     final label = matrixVariationLabel(node.name, c.name);
-    final chip = CcTappable(
-      onPressed: () => setState(() => _selectedChildName = c.name),
-      builder: (context, states) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected ? tokens.bgSecondary : null,
-          border: Border.all(color: tokens.borderSecondary),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _childGlyph(c),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: CcTypography.caption.copyWith(
-                fontWeight: FontWeight.w500,
-                color: tokens.textPrimary,
+    // Selected state and the run's outcome in words — the chip shows both
+    // only as a fill and a colored glyph.
+    final chip = MergeSemantics(
+      child: Semantics(
+        selected: selected,
+        child: CcTappable(
+          onPressed: () => setState(() => _selectedChildName = c.name),
+          semanticLabel: '$label, ${_childStatusLabel(c)}',
+          builder: (context, states) => ExcludeSemantics(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected ? tokens.bgSecondary : null,
+                border: Border.all(color: tokens.borderSecondary),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _childGlyph(c),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: CcTypography.caption.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -624,6 +646,20 @@ class _WorkflowRunBodyState extends ConsumerState<_WorkflowRunBody> {
       return chip;
     }
     return CcTooltip(message: c.name, child: chip);
+  }
+
+  String _childStatusLabel(CheckRun c) {
+    final l10n = AppLocalizations.of(context);
+    if (!c.isComplete) {
+      return c.status == CheckRunStatus.queued ? l10n.queued : l10n.running;
+    }
+    if (c.isSuccess) {
+      return l10n.passed;
+    }
+    if (c.isFailing) {
+      return l10n.failed;
+    }
+    return l10n.neutral;
   }
 
   Widget _childGlyph(CheckRun c) {
@@ -671,6 +707,9 @@ class _WorkflowRunBodyState extends ConsumerState<_WorkflowRunBody> {
 
 class _JobTileState extends ConsumerState<_JobTile> {
   bool _isHovered = false;
+
+  /// Keyboard focus is on "View logs" — it shows then too, not only on hover.
+  bool _logsFocused = false;
   bool _expanded = false;
 
   @override
@@ -761,32 +800,65 @@ class _JobTileState extends ConsumerState<_JobTile> {
                     ),
                     if (widget.job.htmlUrl.isNotEmpty)
                       AnimatedOpacity(
-                        opacity: _isHovered ? 1 : 0,
+                        opacity: _isHovered || _logsFocused ? 1 : 0,
                         duration: const Duration(milliseconds: 150),
-                        child: CcButton(
-                          variant: widget.job.isFailing
-                              ? CcButtonVariant.destructive
-                              : CcButtonVariant.ghost,
-                          size: CcButtonSize.sm,
-                          icon: AppIcons.externalLink,
-                          onPressed: () => openExternalUrl(widget.job.htmlUrl),
-                          child: Text(l10n.viewLogs),
+                        // Transparent at rest, but still a control a screen
+                        // reader can find.
+                        alwaysIncludeSemantics: true,
+                        child: Focus(
+                          canRequestFocus: false,
+                          skipTraversal: true,
+                          includeSemantics: false,
+                          onFocusChange: (focused) =>
+                              setState(() => _logsFocused = focused),
+                          child: CcButton(
+                            variant: widget.job.isFailing
+                                ? CcButtonVariant.destructive
+                                : CcButtonVariant.ghost,
+                            size: CcButtonSize.sm,
+                            icon: AppIcons.externalLink,
+                            onPressed: () =>
+                                openExternalUrl(widget.job.htmlUrl),
+                            child: Text(l10n.viewLogs),
+                          ),
                         ),
                       ),
                     if (expandable) ...[
                       const SizedBox(width: 6),
-                      Icon(
-                        _expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
-                        size: 14,
-                        color: tokens.textTertiary,
+                      // The keyboard / screen-reader toggle: the whole row
+                      // stays clickable, but a bare gesture is not reachable
+                      // with Tab and has no expanded state to announce.
+                      MergeSemantics(
+                        child: Semantics(
+                          expanded: _expanded,
+                          child: CcTappable(
+                            onPressed: () =>
+                                setState(() => _expanded = !_expanded),
+                            semanticLabel: jobNameFor(widget.job),
+                            borderRadius: AppRadii.brSm,
+                            builder: (context, states) => Icon(
+                              _expanded
+                                  ? AppIcons.chevronUp
+                                  : AppIcons.chevronDown,
+                              size: 14,
+                              color: tokens.textTertiary,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
             ),
-            if (_expanded && expandable)
-              JobStepsAccordion(prRef: widget.prRef, checkRun: widget.job),
+            if (expandable)
+              CcCollapsible(
+                expanded: _expanded,
+                child: JobStepsAccordion(
+                  prRef: widget.prRef,
+                  checkRun: widget.job,
+                ),
+              ),
             if (widget.job.isFailing && widget.job.output.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 12, 12),

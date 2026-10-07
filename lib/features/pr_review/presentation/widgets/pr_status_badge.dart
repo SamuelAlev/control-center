@@ -56,7 +56,13 @@ class PrStatusIcon extends StatelessWidget {
     final data = prStatusIconData(pr, context);
     return CcTooltip(
       message: data.label,
-      child: Icon(data.icon, size: size, color: data.color),
+      // The state is otherwise only a glyph and a color to a screen reader.
+      child: Icon(
+        data.icon,
+        size: size,
+        color: data.color,
+        semanticLabel: data.label,
+      ),
     );
   }
 }

@@ -673,7 +673,7 @@ class _StepItem extends StatelessWidget {
               ),
             ),
           ),
-          if (expanded && body != null) body!,
+          if (body != null) CcCollapsible(expanded: expanded, child: body!),
         ],
       ),
     );
@@ -783,7 +783,7 @@ class _FullLogItem extends StatelessWidget {
               ),
             ),
           ),
-          if (expanded) body,
+          CcCollapsible(expanded: expanded, child: body),
         ],
       ),
     );
@@ -856,11 +856,17 @@ class _JobLogBodyState extends ConsumerState<JobLogBody> {
           }
         }),
       );
-      if (!collapsed) {
-        for (final child in node.children) {
-          yield* _nodeRows(child, depth + 1, tokens, codeFont);
-        }
-      }
+      yield CcCollapsible(
+        expanded: !collapsed,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final child in node.children)
+              ..._nodeRows(child, depth + 1, tokens, codeFont),
+          ],
+        ),
+      );
     } else {
       yield _LogLineRow(
         number: node.number,

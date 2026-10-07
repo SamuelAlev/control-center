@@ -365,8 +365,9 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
                 expanded: expanded,
               ),
             ),
-          if (expanded)
-            Padding(
+          CcCollapsible(
+            expanded: expanded,
+            child: Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: widget.streaming
                   ? CcStreamingMarkdown.value(
@@ -402,6 +403,7 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
                           ),
                     ),
             ),
+          ),
         ],
       ),
     );

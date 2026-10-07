@@ -77,27 +77,34 @@ class _AddServerAuthFields extends StatelessWidget {
             ),
           ],
         ],
-        if (showManual) ...[
-          const SizedBox(height: 8),
-          CcTextField(
-            controller: invite,
-            hintText: l10n.serverSetupInviteCodeHint,
-            enabled: !busy,
+        CcCollapsible(
+          expanded: showManual,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              CcTextField(
+                controller: invite,
+                hintText: l10n.serverSetupInviteCodeHint,
+                enabled: !busy,
+              ),
+              const SizedBox(height: 8),
+              CcTextField(
+                controller: device,
+                hintText: l10n.serverRemoteDeviceId,
+                enabled: !busy,
+              ),
+              const SizedBox(height: 8),
+              CcTextField(
+                controller: psk,
+                hintText: l10n.serverRemotePairingKey,
+                obscureText: true,
+                enabled: !busy,
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          CcTextField(
-            controller: device,
-            hintText: l10n.serverRemoteDeviceId,
-            enabled: !busy,
-          ),
-          const SizedBox(height: 8),
-          CcTextField(
-            controller: psk,
-            hintText: l10n.serverRemotePairingKey,
-            obscureText: true,
-            enabled: !busy,
-          ),
-        ],
+        ),
       ],
     );
   }

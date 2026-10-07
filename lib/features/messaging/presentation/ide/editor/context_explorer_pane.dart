@@ -320,17 +320,28 @@ class _Rail extends StatelessWidget {
                 : collapsedKinds.contains(segment.kind),
             onToggleCollapse: () => onToggleCollapse(segment.kind),
           ),
-          if (!collapsedKinds.contains(segment.kind))
-            for (final part in segment.parts)
-              _RailRow(
-                label: part.title,
-                subtitle: part.subtitle,
-                tokens: part.tokens,
-                indent: true,
-                selected: sel?.kind == segment.kind && sel?.partId == part.id,
-                onTap: () =>
-                    onSelect(_ExplorerSelection.part(segment.kind, part.id)),
-              ),
+          CcCollapsible(
+            key: ValueKey(segment.kind),
+            expanded: !collapsedKinds.contains(segment.kind),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final part in segment.parts)
+                  _RailRow(
+                    label: part.title,
+                    subtitle: part.subtitle,
+                    tokens: part.tokens,
+                    indent: true,
+                    selected:
+                        sel?.kind == segment.kind && sel?.partId == part.id,
+                    onTap: () => onSelect(
+                      _ExplorerSelection.part(segment.kind, part.id),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
         if (breakdown.isLoading)
           const Padding(
@@ -398,20 +409,16 @@ class _RailRow extends StatelessWidget {
                 CcTappable(
                   onPressed: onToggleCollapse,
                   semanticLabel: collapsed ? l10n.expand : l10n.collapse,
-                  builder:
-                      (context, states) => Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: Icon(
-                          collapsed
-                              ? AppIcons.chevronRight
-                              : AppIcons.chevronDown,
-                          size: 12,
-                          color:
-                              states.contains(WidgetState.hovered)
-                                  ? t.textSecondary
-                                  : t.textTertiary,
-                        ),
-                      ),
+                  builder: (context, states) => Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: Icon(
+                      collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
+                      size: 12,
+                      color: states.contains(WidgetState.hovered)
+                          ? t.textSecondary
+                          : t.textTertiary,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
               ],

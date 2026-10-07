@@ -104,8 +104,9 @@ class _ReviewNodeBubbleState extends ConsumerState<ReviewNodeBubble> {
                   background: tokens.bgPrimary,
                   divider: _expanded,
                 ),
-                if (_expanded)
-                  _ExpandedBody(
+                CcCollapsible(
+                  expanded: _expanded,
+                  child: _ExpandedBody(
                     message: widget.message,
                     payload: payload,
                     fetchFileContent: widget.fetchFileContent,
@@ -116,6 +117,7 @@ class _ReviewNodeBubbleState extends ConsumerState<ReviewNodeBubble> {
                     pendingStatus: _pendingStatus,
                     tokens: tokens,
                   ),
+                ),
               ],
             ),
           ),

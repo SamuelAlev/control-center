@@ -70,9 +70,7 @@ void main() {
       expect(doc.structureOf(doc.fileCount - 1), isNull);
     });
 
-    testWidgets('marking a file viewed keeps its diff expanded', (
-      tester,
-    ) async {
+    testWidgets('marking a file viewed collapses its diff', (tester) async {
       String? toggledPath;
       bool? toggledViewed;
       await tester.pumpWidget(
@@ -95,7 +93,10 @@ void main() {
 
       expect(toggledPath, 'lib/test.dart');
       expect(toggledViewed, isTrue);
-      expect(find.byIcon(AppIcons.chevronUp), findsOneWidget);
+      // The body folds over the collapse motion; its gap row stays mounted
+      // under the clip until the motion settles.
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byIcon(AppIcons.chevronDown), findsOneWidget);
     });
 
     testWidgets('cmd or ctrl while hovering an empty patch does not throw', (
@@ -275,7 +276,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a viewed file stays expanded and can switch to Preview', (
+    testWidgets('a viewed file starts collapsed and Preview expands it', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -289,8 +290,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Viewed state does not auto-collapse the file.
-      expect(find.byIcon(AppIcons.chevronUp), findsOneWidget);
+      // A file already marked viewed opens collapsed, as on GitHub.
+      expect(find.byIcon(AppIcons.chevronDown), findsOneWidget);
       expect(find.text('Preview'), findsOneWidget);
       expect(find.byType(StyledMarkdownBody), findsNothing);
 
@@ -300,6 +301,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(StyledMarkdownBody), findsOneWidget);
+      expect(find.byIcon(AppIcons.chevronUp), findsOneWidget);
     });
 
     testWidgets('reserves the async content height so the next file does not '

@@ -15289,4 +15289,139 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Niciun fișier deschis recent';
+
+  @override
+  String get diffMarkFileViewed => 'Marchează ca văzut';
+
+  @override
+  String get diffMarkFileNotViewed => 'Marchează ca nevăzut';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de adăugări',
+      few: '$count adăugări',
+      one: '1 adăugare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de ștergeri',
+      few: '$count ștergeri',
+      one: '1 ștergere',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, văzut';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'redenumit din $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de fișiere',
+      few: '$count fișiere',
+      one: '1 fișier',
+    );
+    return '$name, dosar, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, văzut';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Linie adăugată $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Linie eliminată $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Linia $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Secțiune $header';
+  }
+
+  @override
+  String get diffLineBlank => 'goală';
+
+  @override
+  String get diffCommentOnLineAction => 'Comentează această linie';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path marcat ca văzut';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path marcat ca nevăzut';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Linii adăugate: $additions, linii eliminate: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Închide $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '1 comentariu',
+    );
+    return '$_temp0';
+  }
 }

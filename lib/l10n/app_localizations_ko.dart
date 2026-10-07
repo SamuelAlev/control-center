@@ -14797,4 +14797,131 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => '최근에 연 파일이 없습니다';
+
+  @override
+  String get diffMarkFileViewed => '확인함으로 표시';
+
+  @override
+  String get diffMarkFileNotViewed => '확인 안 함으로 표시';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count줄 추가',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count줄 삭제',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, 확인함';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return '$previous에서 이름 변경됨';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '파일 $count개',
+    );
+    return '$name, 폴더, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, 확인함';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return '추가된 줄 $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return '삭제된 줄 $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return '$line번째 줄: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return '헝크 $header';
+  }
+
+  @override
+  String get diffLineBlank => '빈 줄';
+
+  @override
+  String get diffCommentOnLineAction => '이 줄에 댓글 달기';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path을(를) 확인함으로 표시함';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path을(를) 확인 안 함으로 표시함';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return '추가된 줄: $additions, 삭제된 줄: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return '$tab 닫기';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '댓글 $count개',
+    );
+    return '$_temp0';
+  }
 }

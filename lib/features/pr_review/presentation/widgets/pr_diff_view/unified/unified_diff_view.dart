@@ -21,6 +21,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_regex_tester_popover.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot_focus.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_structure_store.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_symbol_popover.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart';
@@ -151,7 +152,8 @@ class UnifiedDiffView extends ConsumerStatefulWidget {
 
 /// State for [UnifiedDiffView]; exposes [jumpToFile] for the file tree.
 class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin
+    implements DiffSlotFocusHost {
   final GlobalKey _sliverKey = GlobalKey();
   late final PrDiffDocument _document;
   late final DiffStructureStore _store;
@@ -316,6 +318,19 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// so the pinned line never reads as a doubled (2px) border.
   final ValueNotifier<int?> _pinnedHeaderFile = ValueNotifier<int?>(null);
 
+  /// Expand/collapse motions in flight, by file index.
+  final Map<int, AnimationController> _fileReveals = {};
+
+  /// Files toggled since the last build whose motion starts in that build —
+  /// see [_setFileExpanded].
+  final Set<int> _pendingFileReveals = {};
+
+  /// Arrow-key focus between the slot children (see [DiffSlotFocus]).
+  final DiffSlotFocus _slotFocus = DiffSlotFocus();
+  late final Map<Type, Action<Intent>> _slotFocusActions = {
+    DirectionalFocusIntent: DiffDirectionalFocusAction(_slotFocus, this),
+  };
+
   /// Stable key so the hover `MouseRegion`'s render object survives overlay
   /// rebuilds (scroll / token-fade) — recreating it would re-fire enter/exit
   /// and clear the hover, making the pill flicker.
@@ -341,6 +356,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       for (var i = 0; i < _slots.length; i++) _slots[i].key: i,
     };
     _slotsRevision = _revision;
+    _slotFocus.prune(_slotIndexByKey.containsKey);
     return _slots;
   }
 
@@ -363,7 +379,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
           height: kFastFileHeaderHeight,
         ),
       );
-      if (!_document.isExpanded(f)) {
+      if (!_document.showsBody(f)) {
         continue;
       }
       if (_document.isPreviewing(f)) {
@@ -1006,9 +1022,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
         }
       },
       onShowFileTree: widget.onShowFileTree,
+      focusedFileGetter: _focusedSlotFile,
+      onSteppedToFile: _followSteppedFile,
       onCopy: _copySelection,
       onClearSelection: _clearSelection,
     );
+    // Expand/collapse motion reads the input modality, so its tracker must
+    // see the first key of the session (see _setFileExpanded).
+    // ignore: unnecessary_statements
+    FocusModality.instance;
     HardwareKeyboard.instance.addHandler(_keyboard.handleGlobalKey);
     HardwareKeyboard.instance.addHandler(_handleGotoModifierKey);
   }
@@ -1038,6 +1060,70 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     }
     final topInset = StickyHeaderInset.of(context);
     return (_document.offsetOfFile(i) - topInset).clamp(0.0, double.infinity);
+  }
+
+  @override
+  List<DiffSlot> get focusSlots => _ensureSlots();
+
+  @override
+  int? slotIndexOfKey(String key) {
+    _ensureSlots();
+    return _slotIndexByKey[key];
+  }
+
+  @override
+  ScrollPosition? get focusScrollPosition =>
+      _activeScrollPosition() ?? Scrollable.maybeOf(context)?.position;
+
+  @override
+  double? slotScrollOffset(int index) => _sliver?.scrollOffsetForSlot(index);
+
+  @override
+  double get pinnedInset => StickyHeaderInset.of(context);
+
+  @override
+  double get headerExtent => _document.headerHeight;
+
+  @override
+  bool get reduceMotion =>
+      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+  @override
+  bool isSlotNavigable(DiffSlot slot) => switch (slot.kind) {
+    DiffSlotKind.header => true,
+    DiffSlotKind.gap => widget.fetchFileContent != null,
+    DiffSlotKind.comment =>
+      widget.inlineCommentsController != null &&
+          _threadBySlotKey[slot.key] != null,
+    DiffSlotKind.composer => _activeComposer != null,
+    // A preview's controls (image modes, links) stay on Tab.
+    DiffSlotKind.preview => false,
+  };
+
+  /// File index of the slot holding keyboard focus, or null when focus is
+  /// outside the diff.
+  int? _focusedSlotFile() {
+    final key = _slotFocus.focusedKey;
+    final index = key == null ? null : _slotIndexByKey[key];
+    return index == null || index >= _slots.length
+        ? null
+        : _slots[index].fileIndex;
+  }
+
+  /// After j/k scrolled to file [fileIndex], carry keyboard focus along when
+  /// it was in the diff, so the next arrow key starts from the file in view.
+  void _followSteppedFile(int fileIndex) {
+    if (!mounted || _slotFocus.focusedKey == null) {
+      return;
+    }
+    final slots = _ensureSlots();
+    if (fileIndex < 0 || fileIndex >= _document.fileCount) {
+      return;
+    }
+    final index = _slotIndexByKey['hdr:${_document.files[fileIndex].filename}'];
+    if (index != null && index < slots.length) {
+      unawaited(_slotFocus.focusSlot(this, index));
+    }
   }
 
   void _openSearch() {
@@ -1164,6 +1250,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       // Two shapes of file-list change land here:
       // The caches keyed by file index — the store's syntax tokens AND the render sliver's
       // laid-out paragraph cache — can now map to a different file or stale line indices.
+      _settleAllFileReveals();
       final fullReset = _needsFullCacheReset(oldWidget.files, widget.files);
       final repatched = _document.setFiles(widget.files);
       if (fullReset) {
@@ -1251,6 +1338,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     _gotoSpan.dispose();
     _hoverRow.dispose();
     _pinnedHeaderFile.dispose();
+    for (final controller in _fileReveals.values) {
+      controller.dispose();
+    }
+    _slotFocus.dispose();
     _search.dispose();
     _store.dispose();
     super.dispose();
@@ -1306,12 +1397,145 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   }
 
   void _toggleExpanded(int index) {
-    final next = !_document.isExpanded(index);
-    _document.setExpanded(index, expanded: next);
-    if (next) {
+    _setFileExpanded(index, expanded: !_document.isExpanded(index));
+  }
+
+  /// Expands or collapses file [index].
+  ///
+  /// A pointer toggle animates the body: it grows from the header on
+  /// [CcMotion.moderate] and shrinks on its exit token, both on
+  /// [CcMotion.standard]. A keyboard toggle snaps (DESIGN.md: keyboard-driven
+  /// disclosure never animates), as do reduced motion and [animate] false
+  /// (jumps that land inside the file need its full geometry at once).
+  ///
+  /// The motion starts in the build this triggers, not here: Enter on a
+  /// focused header reaches this before [FocusModality] has seen the key, so
+  /// [CcMotion.resolveToggle] is only accurate once the frame is building.
+  void _setFileExpanded(
+    int index, {
+    required bool expanded,
+    bool animate = true,
+  }) {
+    final running = _fileReveals.remove(index);
+    running?.dispose();
+    if (expanded) {
       _store.ensureStructure(index);
     }
+    if (!animate) {
+      _pendingFileReveals.remove(index);
+      _document.setExpanded(index, expanded: expanded);
+    } else {
+      // Hold the body at the height it shows now; the build picks it up.
+      final shown =
+          _document.heightOfFile(index) -
+          _document.headerHeight -
+          _document.fileSeparator;
+      _document.setExpanded(index, expanded: expanded, revealedBody: shown);
+      _pendingFileReveals.add(index);
+    }
     setState(() => _revision++);
+  }
+
+  /// Starts (or snaps) the motions [_setFileExpanded] queued. Runs in build.
+  void _startPendingFileReveals() {
+    if (_pendingFileReveals.isEmpty) {
+      return;
+    }
+    final pending = [..._pendingFileReveals];
+    _pendingFileReveals.clear();
+    for (final i in pending) {
+      if (i >= _document.fileCount || !_document.isRevealing(i)) {
+        continue;
+      }
+      final expanded = _document.isExpanded(i);
+      final duration = CcMotion.resolveToggle(context, CcMotion.moderate);
+      final target = _revealTarget(i);
+      if (duration == Duration.zero || target == null) {
+        _document.setRevealedBody(i, null);
+        continue;
+      }
+      final from = math.min(
+        _document.heightOfFile(i) -
+            _document.headerHeight -
+            _document.fileSeparator,
+        target,
+      );
+      final to = expanded ? target : 0.0;
+      final controller = AnimationController(
+        vsync: this,
+        duration: expanded ? duration : CcMotion.exitFor(duration),
+      );
+      _fileReveals[i] = controller;
+      _document.setRevealedBody(i, from);
+      controller
+        ..addListener(() {
+          final t = CcMotion.standard.transform(controller.value);
+          _document.setRevealedBody(i, from + (to - from) * t);
+          _sliver?.markNeedsLayout();
+        })
+        ..addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            _settleFileReveal(i);
+          }
+        })
+        ..forward();
+    }
+  }
+
+  /// Body pixels file [i]'s motion travels, or null when it should snap.
+  ///
+  /// Only the part of the body that can be on screen animates — at most one
+  /// viewport — and the rest lands when the motion settles, below the fold.
+  /// Without the cap a long file's edge would cross the whole viewport in a
+  /// frame. A file whose top is off screen snaps: its header is docked over
+  /// its own rows (or the file is below the fold), so there is no edge in
+  /// view to move.
+  double? _revealTarget(int i) {
+    // The scrollable hosting this sliver: its offsets are what
+    // scrollOffsetForFile measures in.
+    final position = Scrollable.maybeOf(context)?.position;
+    final sliver = _sliver;
+    if (position == null || sliver == null) {
+      return null;
+    }
+    final top = sliver.scrollOffsetForFile(i);
+    final viewTop = position.pixels + StickyHeaderInset.of(context);
+    final viewBottom = position.pixels + position.viewportDimension;
+    if (top < viewTop || top >= viewBottom) {
+      return null;
+    }
+    return math.min(_document.bodyHeightOf(i), position.viewportDimension);
+  }
+
+  /// Ends file [i]'s motion at its target state and drops the body slots of a
+  /// file that finished collapsing.
+  void _settleFileReveal(int i) {
+    _fileReveals.remove(i)?.dispose();
+    if (!mounted) {
+      return;
+    }
+    if (i < _document.fileCount) {
+      _document.setRevealedBody(i, null);
+    }
+    setState(() => _revision++);
+  }
+
+  /// Snaps every motion in flight — before the file list (and so every index)
+  /// changes under them.
+  void _settleAllFileReveals() {
+    for (final entry in _fileReveals.entries) {
+      entry.value.dispose();
+      if (entry.key < _document.fileCount) {
+        _document.setRevealedBody(entry.key, null);
+      }
+    }
+    _fileReveals.clear();
+    for (final i in _pendingFileReveals) {
+      if (i < _document.fileCount) {
+        _document.setRevealedBody(i, null);
+      }
+    }
+    _pendingFileReveals.clear();
   }
 
   /// Toggles file [index] between the diff body and a rendered Markdown
@@ -1326,12 +1550,14 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
         _commentHeights.remove('composer');
         _haltComposerMotion();
       }
-      if (!_document.isExpanded(index)) {
-        _document.setExpanded(index, expanded: true);
-      }
       _store.ensureStructure(index);
     }
     _document.setPreviewing(index, previewing: next);
+    if (next && !_document.isExpanded(index)) {
+      // Expand after the preview is on, so the motion sizes to its body.
+      _setFileExpanded(index, expanded: true);
+      return;
+    }
     setState(() => _revision++);
   }
 
@@ -2022,8 +2248,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
         needsLayout = true;
       }
     }
-    if (!_document.isExpanded(index)) {
-      _document.setExpanded(index, expanded: true);
+    if (!_document.isExpanded(index) || _document.isRevealing(index)) {
+      // A jump lands inside the file, so it opens at full height at once.
+      _setFileExpanded(index, expanded: true, animate: false);
       needsLayout = true;
     }
     _store.ensureStructure(index);
@@ -2943,7 +3170,23 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       }
       _revision++;
     });
+    // Marking a file viewed folds it away, as on GitHub.
+    if (nowViewed && _document.isExpanded(index)) {
+      _setFileExpanded(index, expanded: false);
+    }
     widget.onToggleViewed?.call(path: path, viewed: nowViewed);
+    // `v` toggles without moving focus, and the folded file gives a screen
+    // reader nothing to notice, so say what happened.
+    final l10n = AppLocalizations.of(context);
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        nowViewed
+            ? l10n.diffFileMarkedViewedAnnouncement(path)
+            : l10n.diffFileMarkedNotViewedAnnouncement(path),
+        Directionality.of(context),
+      ),
+    );
   }
 
   /// Expands the gap row at [rawIndex] in file [file] by fetching the file
@@ -3202,6 +3445,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     _syncTabVisibility(TickerMode.valuesOf(context).enabled);
     _ensureReviewOverlay();
     _ensureHScrollbarOverlay();
+    _startPendingFileReveals();
     // Rebuild the slot list (recomputing anchored threads) whenever drafts or
     // replies change.
     final inlineCtl = widget.inlineCommentsController;
@@ -3267,225 +3511,233 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       splitMode: widget.splitView,
     );
 
+    Widget buildSlot(BuildContext context, DiffSlot slot) {
+      switch (slot.kind) {
+        case DiffSlotKind.header:
+          final file = _document.files[slot.fileIndex];
+          final l10n = AppLocalizations.of(context);
+          final svgSource = file.isSvg && file.patch.isNotEmpty;
+          // The docked (pinned) header drops its own top border — the same
+          // flush contract as the first file under a bordered toolbar —
+          // otherwise the line above the pinned position doubles to 2px.
+          return ValueListenableBuilder<int?>(
+            key: ValueKey(slot.key),
+            valueListenable: _pinnedHeaderFile,
+            builder: (_, pinnedFile, _) => FastFileHeader(
+              file: file,
+              expanded: _document.isExpanded(slot.fileIndex),
+              isViewed: _viewed.contains(file.filename),
+              canPreview:
+                  (file.isMarkdown &&
+                      file.status != PrFileStatus.removed &&
+                      widget.fetchFileContent != null) ||
+                  svgSource,
+              isPreview: _document.isPreviewing(slot.fileIndex),
+              onTogglePreview: () => _togglePreview(slot.fileIndex),
+              previewOffLabel: svgSource ? l10n.imageDiffSource : null,
+              previewOnLabel: svgSource ? l10n.imageDiffPictures : null,
+              onToggleExpanded: () => _toggleExpanded(slot.fileIndex),
+              onToggleViewed: widget.onToggleViewed != null
+                  ? () => _toggleViewed(slot.fileIndex)
+                  : null,
+              onAddFileComment: widget.inlineCommentsController != null
+                  ? () => _openFileComment(slot.fileIndex)
+                  : null,
+              onOpenInEditor:
+                  widget.onOpenFileInEditor != null &&
+                      file.status != PrFileStatus.removed
+                  ? () => widget.onOpenFileInEditor!(file.filename)
+                  : null,
+              outdatedComments: _outdatedServerComments(file.filename),
+              showTopBorder:
+                  !(widget.flushTop && slot.fileIndex == 0) &&
+                  pinnedFile != slot.fileIndex,
+            ),
+          );
+        case DiffSlotKind.gap:
+          // A gap that is the file's first display row sits directly under the
+          // file header; one that is the last row sits directly above the next
+          // file's header. In both cases the header's 1px border already
+          // separates them, so drop the abutting gap hairline to avoid a
+          // doubled-thickness line.
+          final int gapLine = slot.anchorDisplayLine;
+          final int lastLine = _document.lineCountOf(slot.fileIndex) - 1;
+          return GapRow(
+            key: ValueKey(slot.key),
+            label: _gapLabel(slot.fileIndex, slot.rawIndex),
+            icon: _gapIcon(slot.fileIndex, slot.rawIndex),
+            enabled: widget.fetchFileContent != null,
+            showTopBorder: gapLine != 0,
+            showBottomBorder: gapLine != lastLine,
+            onTap: () => _expandGap(slot.fileIndex, slot.rawIndex),
+          );
+        case DiffSlotKind.comment:
+          final thread = _threadBySlotKey[slot.key];
+          final ctl = widget.inlineCommentsController;
+          if (thread == null || ctl == null) {
+            return const SizedBox.shrink();
+          }
+          // The diff sliver has no ambient Material, so wrap —
+          // the thread's reply TextField and ink need one. Measurement
+          // stays live (HeightReporter inside MeasuredInlineThread):
+          // opening the reply composer is an inner setState that never
+          // rebuilds this host, so a one-shot post-frame measure would
+          // leave the card overflowing the next file until a highlight
+          // click forced a parent rebuild.
+          return Material(
+            key: ValueKey(slot.key),
+            type: MaterialType.transparency,
+            child: MeasuredInlineThread(
+              thread: thread,
+              controller: ctl,
+              collapsed: !_isThreadOpen(thread),
+              focused: _focusedThreadId == thread.id,
+              resolveBusy: _resolveInFlight.contains(thread.id),
+              canResolve: _canResolveThread(thread),
+              onToggleCollapsed: () => _toggleThreadOpen(thread),
+              onSetResolved: (v) => _setThreadResolved(thread, v),
+              onMeasured: (h) => _onCommentMeasured(thread.id, h),
+            ),
+          );
+        case DiffSlotKind.composer:
+          final req = _activeComposer;
+          final ctl = widget.inlineCommentsController;
+          if (req == null || ctl == null || req.fileIndex != slot.fileIndex) {
+            return const SizedBox.shrink();
+          }
+          // No ambient Material here. The height reporter stays live because
+          // adding or removing suggestion blocks changes the composer after
+          // its first layout.
+          return Material(
+            key: ValueKey(slot.key),
+            type: MaterialType.transparency,
+            child: ComposerReveal(
+              animation: _composerCurve,
+              reducedMotion: _composerReduced,
+              child: HeightReporter(
+                key: ValueKey(_composerOpenSerial),
+                onMeasured: _onComposerContentMeasured,
+                child: req.kind == PrInlineThreadKind.suggestion
+                    ? SuggestionComposer(
+                        originalCode: req.originalCode,
+                        filePath: _document.files[req.fileIndex].filename,
+                        initialComment: req.initialComment,
+                        baseStyle: _baseStyle(
+                          codeFont,
+                          ligatures: codeLigatures,
+                        ),
+                        reviewInProgress: reviewInProgress,
+                        onSubmit: (suggested, comment) => _submitSuggestion(
+                          req,
+                          suggested,
+                          comment,
+                          batched: false,
+                        ),
+                        onSubmitBatched: canBatch
+                            ? (suggested, comment) => _submitSuggestion(
+                                req,
+                                suggested,
+                                comment,
+                                batched: true,
+                              )
+                            : null,
+                        onSendToAgent: (suggested, comment) =>
+                            _sendComposerToAgent(
+                              req,
+                              buildSuggestionBody(comment, suggested),
+                            ),
+                        onCancel: _cancelComposer,
+                      )
+                    : PrCommentComposer(
+                        prRef: widget.inlineCommentsController?.pr,
+                        reviewInProgress: reviewInProgress,
+                        onSuggest: (comment) =>
+                            _switchComposerToSuggestion(req, comment),
+                        onSubmit: (body) =>
+                            _submitComment(req, body, batched: false),
+                        onSubmitBatched: canBatch
+                            ? (body) => _submitComment(req, body, batched: true)
+                            : null,
+                        onSendToAgent: (body) =>
+                            _sendComposerToAgent(req, body),
+                        onCancel: _cancelComposer,
+                      ),
+              ),
+            ),
+          );
+        case DiffSlotKind.preview:
+          final file = _document.files[slot.fileIndex];
+          if (file.isImage) {
+            return Material(
+              key: ValueKey(slot.key),
+              type: MaterialType.transparency,
+              child: HeightReporter(
+                onMeasured: (h) => _onPreviewMeasured(file.filename, h),
+                child: ImageDiffBody(
+                  path: file.filename,
+                  previousPath: file.previousFilename,
+                  status: file.status,
+                  workspaceId: widget.workspaceId ?? '',
+                  baseRef: widget.imageDiffBaseRef ?? '',
+                  headRef: widget.imageDiffHeadRef ?? '',
+                  resolve: widget.resolveImageDiff,
+                  cached: _imageDiffs[file.filename],
+                  onLoaded: (resolved) => _imageDiffs[file.filename] = resolved,
+                  isSvg: file.isSvg,
+                ),
+              ),
+            );
+          }
+          final fetch = widget.fetchFileContent;
+          if (fetch == null) {
+            return const SizedBox.shrink();
+          }
+          // No ambient Material here — wrap so the rendered
+          // markdown's links / code-copy ink have one. The preview loads its
+          // content asynchronously and grows after the first frame, so its
+          // height is reported on EVERY layout (via HeightReporter) — a
+          // one-shot post-frame measure would miss the async growth and leave
+          // the reserved body too short (content would overlap the next file).
+          return Material(
+            key: ValueKey(slot.key),
+            type: MaterialType.transparency,
+            child: HeightReporter(
+              onMeasured: (h) => _onPreviewMeasured(file.filename, h),
+              child: MarkdownPreviewBody(
+                key: ValueKey(slot.key),
+                path: file.filename,
+                fetch: fetch,
+                cachedContent: _previewContent[file.filename],
+                onLoaded: (content) => _previewContent[file.filename] = content,
+                patch: file.patch,
+                status: file.status,
+              ),
+            ),
+          );
+      }
+    }
+
     final delegate = SliverChildBuilderDelegate(
       (context, index) {
         if (index >= slots.length) {
           return null;
         }
         final slot = slots[index];
-        switch (slot.kind) {
-          case DiffSlotKind.header:
-            final file = _document.files[slot.fileIndex];
-            final l10n = AppLocalizations.of(context);
-            final svgSource = file.isSvg && file.patch.isNotEmpty;
-            // The docked (pinned) header drops its own top border — the same
-            // flush contract as the first file under a bordered toolbar —
-            // otherwise the line above the pinned position doubles to 2px.
-            return ValueListenableBuilder<int?>(
-              key: ValueKey(slot.key),
-              valueListenable: _pinnedHeaderFile,
-              builder: (_, pinnedFile, _) => FastFileHeader(
-                file: file,
-                expanded: _document.isExpanded(slot.fileIndex),
-                isViewed: _viewed.contains(file.filename),
-                canPreview:
-                    (file.isMarkdown &&
-                        file.status != PrFileStatus.removed &&
-                        widget.fetchFileContent != null) ||
-                    svgSource,
-                isPreview: _document.isPreviewing(slot.fileIndex),
-                onTogglePreview: () => _togglePreview(slot.fileIndex),
-                previewOffLabel: svgSource ? l10n.imageDiffSource : null,
-                previewOnLabel: svgSource ? l10n.imageDiffPictures : null,
-                onToggleExpanded: () => _toggleExpanded(slot.fileIndex),
-                onToggleViewed: widget.onToggleViewed != null
-                    ? () => _toggleViewed(slot.fileIndex)
-                    : null,
-                onAddFileComment: widget.inlineCommentsController != null
-                    ? () => _openFileComment(slot.fileIndex)
-                    : null,
-                onOpenInEditor:
-                    widget.onOpenFileInEditor != null &&
-                        file.status != PrFileStatus.removed
-                    ? () => widget.onOpenFileInEditor!(file.filename)
-                    : null,
-                outdatedComments: _outdatedServerComments(file.filename),
-                showTopBorder:
-                    !(widget.flushTop && slot.fileIndex == 0) &&
-                    pinnedFile != slot.fileIndex,
-              ),
-            );
-          case DiffSlotKind.gap:
-            // A gap that is the file's first display row sits directly under the
-            // file header; one that is the last row sits directly above the next
-            // file's header. In both cases the header's 1px border already
-            // separates them, so drop the abutting gap hairline to avoid a
-            // doubled-thickness line.
-            final int gapLine = slot.anchorDisplayLine;
-            final int lastLine = _document.lineCountOf(slot.fileIndex) - 1;
-            return GapRow(
-              key: ValueKey(slot.key),
-              label: _gapLabel(slot.fileIndex, slot.rawIndex),
-              icon: _gapIcon(slot.fileIndex, slot.rawIndex),
-              enabled: widget.fetchFileContent != null,
-              showTopBorder: gapLine != 0,
-              showBottomBorder: gapLine != lastLine,
-              onTap: () => _expandGap(slot.fileIndex, slot.rawIndex),
-            );
-          case DiffSlotKind.comment:
-            final thread = _threadBySlotKey[slot.key];
-            final ctl = widget.inlineCommentsController;
-            if (thread == null || ctl == null) {
-              return const SizedBox.shrink();
-            }
-            // The diff sliver has no ambient Material, so wrap —
-            // the thread's reply TextField and ink need one. Measurement
-            // stays live (HeightReporter inside MeasuredInlineThread):
-            // opening the reply composer is an inner setState that never
-            // rebuilds this host, so a one-shot post-frame measure would
-            // leave the card overflowing the next file until a highlight
-            // click forced a parent rebuild.
-            return Material(
-              key: ValueKey(slot.key),
-              type: MaterialType.transparency,
-              child: MeasuredInlineThread(
-                thread: thread,
-                controller: ctl,
-                collapsed: !_isThreadOpen(thread),
-                focused: _focusedThreadId == thread.id,
-                resolveBusy: _resolveInFlight.contains(thread.id),
-                canResolve: _canResolveThread(thread),
-                onToggleCollapsed: () => _toggleThreadOpen(thread),
-                onSetResolved: (v) => _setThreadResolved(thread, v),
-                onMeasured: (h) => _onCommentMeasured(thread.id, h),
-              ),
-            );
-          case DiffSlotKind.composer:
-            final req = _activeComposer;
-            final ctl = widget.inlineCommentsController;
-            if (req == null || ctl == null || req.fileIndex != slot.fileIndex) {
-              return const SizedBox.shrink();
-            }
-            // No ambient Material here. The height reporter stays live because
-            // adding or removing suggestion blocks changes the composer after
-            // its first layout.
-            return Material(
-              key: ValueKey(slot.key),
-              type: MaterialType.transparency,
-              child: ComposerReveal(
-                animation: _composerCurve,
-                reducedMotion: _composerReduced,
-                child: HeightReporter(
-                  key: ValueKey(_composerOpenSerial),
-                  onMeasured: _onComposerContentMeasured,
-                  child: req.kind == PrInlineThreadKind.suggestion
-                      ? SuggestionComposer(
-                          originalCode: req.originalCode,
-                          filePath: _document.files[req.fileIndex].filename,
-                          initialComment: req.initialComment,
-                          baseStyle: _baseStyle(
-                            codeFont,
-                            ligatures: codeLigatures,
-                          ),
-                          reviewInProgress: reviewInProgress,
-                          onSubmit: (suggested, comment) => _submitSuggestion(
-                            req,
-                            suggested,
-                            comment,
-                            batched: false,
-                          ),
-                          onSubmitBatched: canBatch
-                              ? (suggested, comment) => _submitSuggestion(
-                                  req,
-                                  suggested,
-                                  comment,
-                                  batched: true,
-                                )
-                              : null,
-                          onSendToAgent: (suggested, comment) =>
-                              _sendComposerToAgent(
-                                req,
-                                buildSuggestionBody(comment, suggested),
-                              ),
-                          onCancel: _cancelComposer,
-                        )
-                      : PrCommentComposer(
-                          prRef: widget.inlineCommentsController?.pr,
-                          reviewInProgress: reviewInProgress,
-                          onSuggest: (comment) =>
-                              _switchComposerToSuggestion(req, comment),
-                          onSubmit: (body) =>
-                              _submitComment(req, body, batched: false),
-                          onSubmitBatched: canBatch
-                              ? (body) =>
-                                    _submitComment(req, body, batched: true)
-                              : null,
-                          onSendToAgent: (body) =>
-                              _sendComposerToAgent(req, body),
-                          onCancel: _cancelComposer,
-                        ),
-                ),
-              ),
-            );
-          case DiffSlotKind.preview:
-            final file = _document.files[slot.fileIndex];
-            if (file.isImage) {
-              return Material(
-                key: ValueKey(slot.key),
-                type: MaterialType.transparency,
-                child: HeightReporter(
-                  onMeasured: (h) => _onPreviewMeasured(file.filename, h),
-                  child: ImageDiffBody(
-                    path: file.filename,
-                    previousPath: file.previousFilename,
-                    status: file.status,
-                    workspaceId: widget.workspaceId ?? '',
-                    baseRef: widget.imageDiffBaseRef ?? '',
-                    headRef: widget.imageDiffHeadRef ?? '',
-                    resolve: widget.resolveImageDiff,
-                    cached: _imageDiffs[file.filename],
-                    onLoaded: (resolved) =>
-                        _imageDiffs[file.filename] = resolved,
-                    isSvg: file.isSvg,
-                  ),
-                ),
-              );
-            }
-            final fetch = widget.fetchFileContent;
-            if (fetch == null) {
-              return const SizedBox.shrink();
-            }
-            // No ambient Material here — wrap so the rendered
-            // markdown's links / code-copy ink have one. The preview loads its
-            // content asynchronously and grows after the first frame, so its
-            // height is reported on EVERY layout (via HeightReporter) — a
-            // one-shot post-frame measure would miss the async growth and leave
-            // the reserved body too short (content would overlap the next file).
-            return Material(
-              key: ValueKey(slot.key),
-              type: MaterialType.transparency,
-              child: HeightReporter(
-                onMeasured: (h) => _onPreviewMeasured(file.filename, h),
-                child: MarkdownPreviewBody(
-                  key: ValueKey(slot.key),
-                  path: file.filename,
-                  fetch: fetch,
-                  cachedContent: _previewContent[file.filename],
-                  onLoaded: (content) =>
-                      _previewContent[file.filename] = content,
-                  patch: file.patch,
-                  status: file.status,
-                ),
-              ),
-            );
-        }
+        // Every slot child sits under its own focus node so the arrow-key
+        // model can tell which row holds focus and focus a row it scrolled in.
+        return Focus(
+          key: ValueKey(slot.key),
+          focusNode: _slotFocus.nodeFor(slot.key),
+          includeSemantics: false,
+          child: buildSlot(context, slot),
+        );
       },
       childCount: slots.length,
       addAutomaticKeepAlives: false,
       findChildIndexCallback: (key) => _slotIndexByKey[(key as ValueKey).value],
     );
 
-    return UnifiedDiffSliver(
+    final sliver = UnifiedDiffSliver(
       key: _sliverKey,
       delegate: delegate,
       document: _document,
@@ -3503,7 +3755,40 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       onSelectionChanged: _onSelectionChanged,
       onLayoutModeChanged: _onLayoutModeChanged,
       pinnedFileListenable: _pinnedHeaderFile,
+      lineSemanticsLabel: _lineSemanticsLabel(AppLocalizations.of(context)),
+      commentOnLineActionLabel: AppLocalizations.of(
+        context,
+      ).diffCommentOnLineAction,
     );
+    // Arrow keys stay inside the diff (see [DiffSlotFocus]); the traversal
+    // group keeps Tab from interleaving the diff with whatever sits beside it.
+    return FocusTraversalGroup(
+      child: Actions(actions: _slotFocusActions, child: sliver),
+    );
+  }
+
+  DiffLineSemanticsLabel? _lineLabeler;
+  AppLocalizations? _lineLabelerL10n;
+
+  /// Screen-reader label of a painted code row. Memoised per locale so the
+  /// sliver sees the same function across rebuilds.
+  DiffLineSemanticsLabel _lineSemanticsLabel(AppLocalizations l10n) {
+    if (_lineLabeler != null && identical(_lineLabelerL10n, l10n)) {
+      return _lineLabeler!;
+    }
+    _lineLabelerL10n = l10n;
+    return _lineLabeler = (kind, oldLine, newLine, text) {
+      final code = text.trim().isEmpty ? l10n.diffLineBlank : text;
+      return switch (kind) {
+        DiffLineKind.addition => l10n.diffLineAdded(newLine ?? 0, code),
+        DiffLineKind.deletion => l10n.diffLineRemoved(oldLine ?? 0, code),
+        DiffLineKind.hunkHeader => l10n.diffLineHunk(text),
+        DiffLineKind.context || DiffLineKind.expandGap => l10n.diffLineContext(
+          newLine ?? oldLine ?? 0,
+          code,
+        ),
+      };
+    };
   }
 
   /// Layout geometry moved under the slot list — a width/mode change moved

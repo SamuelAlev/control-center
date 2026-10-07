@@ -1,4 +1,5 @@
 import 'package:cc_markdown/cc_markdown.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
@@ -98,8 +99,9 @@ class _AppDetailsViewState extends State<_AppDetailsView> {
             ),
           ),
         ),
-        if (_open)
-          Padding(
+        CcCollapsible(
+          expanded: _open,
+          child: Padding(
             padding: const EdgeInsetsDirectional.only(
               start: 20,
               top: 6,
@@ -107,6 +109,7 @@ class _AppDetailsViewState extends State<_AppDetailsView> {
             ),
             child: widget.renderContext.renderBlocks!(widget.details.children),
           ),
+        ),
       ],
     );
   }

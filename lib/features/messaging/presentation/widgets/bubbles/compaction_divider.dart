@@ -85,20 +85,27 @@ class _CompactionDividerState extends State<CompactionDivider> {
               ),
             ),
           ),
-          if (_expanded) ...[
-            const SizedBox(height: 8),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: tokens.borderSecondary),
-                color: tokens.bgSecondary,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: StyledMarkdownBody(data: widget.message.content),
-              ),
+          CcCollapsible(
+            expanded: _expanded,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: tokens.borderSecondary),
+                    color: tokens.bgSecondary,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: StyledMarkdownBody(data: widget.message.content),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );

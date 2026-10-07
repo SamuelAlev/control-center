@@ -1,6 +1,7 @@
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_sidebar.dart';
 import 'package:cc_ui/src/components/cc_sidebar_item.dart';
+import 'package:cc_ui/src/foundation/cc_collapsible.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -12,7 +13,7 @@ import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:flutter/widgets.dart';
 
 /// Labelled [CcSidebar] section: optional mono eyebrow [label] above [children].
-/// [collapsible]: tappable header + [AnimatedSize] ([CcMotion.moderate]).
+/// [collapsible]: tappable header + [CcCollapsible] body.
 /// Rows sit flush (no gutter — gaps would drop the click cursor). Hover via
 /// [CcFluidHoverTarget]; non-target children are boundaries. Collapsed rail
 /// hides the label.
@@ -113,14 +114,7 @@ class _CcSidebarGroupState extends State<CcSidebarGroup> {
             color: t.textTertiary,
             family: context.ccTheme?.monoFontFamily,
           ),
-          AnimatedSize(
-            duration: CcMotion.resolve(context, CcMotion.moderate),
-            curve: CcMotion.standard,
-            alignment: Alignment.topCenter,
-            child: expanded
-                ? body
-                : const SizedBox(width: double.infinity, height: 0),
-          ),
+          CcCollapsible(expanded: expanded, child: body),
         ],
       ),
     );
@@ -166,7 +160,7 @@ class _GroupHeader extends StatelessWidget {
           Expanded(child: labelWidget),
           if (collapsible)
             AnimatedRotation(
-              duration: CcMotion.resolve(context, CcMotion.moderate),
+              duration: CcMotion.resolveToggle(context, CcMotion.moderate),
               curve: CcMotion.standard,
               turns: expanded ? 0 : -0.25,
               child: Icon(CcIcons.chevronDown, size: 14, color: color),

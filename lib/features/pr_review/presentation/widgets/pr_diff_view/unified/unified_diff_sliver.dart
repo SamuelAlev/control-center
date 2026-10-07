@@ -16,6 +16,7 @@ import 'package:flutter/widgets.dart';
 
 part 'unified_diff_sliver_input.dart';
 part 'unified_diff_sliver_painting.dart';
+part 'unified_diff_sliver_semantics.dart';
 
 /// Per-layout budget for prefetching structure outside the paint window.
 /// On-screen files always parse (they have to paint); cache-window files
@@ -48,6 +49,8 @@ class UnifiedDiffSliver extends SliverMultiBoxAdaptorWidget {
     this.onSelectionChanged,
     this.onLayoutModeChanged,
     this.pinnedFileListenable,
+    this.lineSemanticsLabel,
+    this.commentOnLineActionLabel,
   });
 
   /// The flat document model.
@@ -95,6 +98,14 @@ class UnifiedDiffSliver extends SliverMultiBoxAdaptorWidget {
   /// first file's flush-under-toolbar contract.
   final ValueNotifier<int?>? pinnedFileListenable;
 
+  /// Labels each painted code row for screen readers. Null leaves the code
+  /// rows out of the semantics tree.
+  final DiffLineSemanticsLabel? lineSemanticsLabel;
+
+  /// Label of the "comment on this line" screen-reader action on a code row
+  /// (offered when [onGutterTap] is set).
+  final String? commentOnLineActionLabel;
+
   @override
   RenderUnifiedDiffSliver createRenderObject(BuildContext context) {
     final element = context as SliverMultiBoxAdaptorElement;
@@ -111,7 +122,9 @@ class UnifiedDiffSliver extends SliverMultiBoxAdaptorWidget {
       ..onLayoutModeChanged = onLayoutModeChanged
       ..commentHighlights = commentHighlights
       ..hoveredCommentGroup = hoveredCommentGroup
-      ..pinnedFileListenable = pinnedFileListenable;
+      ..pinnedFileListenable = pinnedFileListenable
+      ..lineSemanticsLabel = lineSemanticsLabel
+      ..commentOnLineActionLabel = commentOnLineActionLabel;
   }
 
   @override
@@ -130,6 +143,8 @@ class UnifiedDiffSliver extends SliverMultiBoxAdaptorWidget {
       ..commentHighlights = commentHighlights
       ..hoveredCommentGroup = hoveredCommentGroup
       ..pinnedFileListenable = pinnedFileListenable
+      ..lineSemanticsLabel = lineSemanticsLabel
+      ..commentOnLineActionLabel = commentOnLineActionLabel
       ..config = config;
   }
 }
@@ -171,6 +186,61 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
   /// Host-owned notifier: the file whose header is currently docked (pinned),
   /// or null. Updated post-frame alongside [geometryListenable].
   ValueNotifier<int?>? pinnedFileListenable;
+
+  DiffLineSemanticsLabel? _lineSemanticsLabel;
+
+  /// Labels each painted code row for screen readers; null omits the rows.
+  set lineSemanticsLabel(DiffLineSemanticsLabel? value) {
+    if (identical(_lineSemanticsLabel, value)) {
+      return;
+    }
+    final changedPresence = (_lineSemanticsLabel == null) != (value == null);
+    _lineSemanticsLabel = value;
+    if (changedPresence) {
+      markNeedsSemanticsUpdate();
+    }
+  }
+
+  /// Label of the "comment on this line" action on each code row.
+  String? commentOnLineActionLabel;
+
+  /// Synthesized code-row nodes by `(filename, rawIndex)`, reused across
+  /// semantics updates so a screen reader's cursor keeps its place.
+  Map<(String, int), SemanticsNode> _lineSemanticsNodes = {};
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    if (_lineSemanticsLabel != null) {
+      // Own a node, so assembleSemanticsNode can add the code-row nodes
+      // beside the slot children's.
+      config.isSemanticBoundary = true;
+    }
+  }
+
+  @override
+  void assembleSemanticsNode(
+    SemanticsNode node,
+    SemanticsConfiguration config,
+    Iterable<SemanticsNode> children,
+  ) {
+    final label = _lineSemanticsLabel;
+    if (label == null) {
+      super.assembleSemanticsNode(node, config, children);
+      return;
+    }
+    // Inverse paint order: the slot children paint over the code.
+    node.updateWith(
+      config: config,
+      childrenInInversePaintOrder: [...children, ...buildLineSemantics(label)],
+    );
+  }
+
+  @override
+  void clearSemantics() {
+    super.clearSemantics();
+    _lineSemanticsNodes = {};
+  }
 
   /// Live horizontal scroll offset (scroll mode). Owned here — not on the
   /// config — so a pan is a cheap [markNeedsPaint] without rebuilding the view
@@ -437,6 +507,12 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
   /// Absolute scroll offset (in the outer scrollable) of file [index]'s top.
   double scrollOffsetForFile(int index) =>
       _precedingScrollExtent + _document.offsetOfFile(index);
+
+  /// Absolute scroll offset of slot [index]'s live top, or null when the slot
+  /// list this sliver holds has no such slot yet.
+  double? scrollOffsetForSlot(int index) => index < 0 || index >= _slots.length
+      ? null
+      : _precedingScrollExtent + liveSlotOffset(index);
 
   /// Scroll offset that reveals file [index] with its header docked just below
   /// the pinned tab strip.
@@ -737,6 +813,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
             )
           : SliverGeometry.zero;
       childManager.didFinishLayout();
+      _markLineSemanticsDirty();
       return;
     }
 
@@ -776,7 +853,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
       );
       var parsedThisPass = false;
       for (var i = firstPaint; i <= lastPaint; i++) {
-        if (_document.isExpanded(i) && _document.structureOf(i) == null) {
+        if (_document.showsBody(i) && _document.structureOf(i) == null) {
           _store.ensureStructure(i);
           parsedThisPass = true;
         }
@@ -785,7 +862,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
         if (i >= firstPaint && i <= lastPaint) {
           continue;
         }
-        if (!_document.isExpanded(i) || _document.structureOf(i) != null) {
+        if (!_document.showsBody(i) || _document.structureOf(i) != null) {
           continue;
         }
         if (parseClock.elapsedMilliseconds >= _kStructureParseBudgetMs) {
@@ -834,7 +911,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
     // Drive colour fetching for visible expanded files.
     final tokenSet = <int>{};
     for (var i = firstFile; i <= lastFile; i++) {
-      if (_document.isExpanded(i)) {
+      if (_document.showsBody(i)) {
         tokenSet.add(i);
       }
     }
@@ -854,14 +931,26 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
     );
 
     childManager.didFinishLayout();
+    _markLineSemanticsDirty();
+  }
+
+  /// The code-row nodes follow the scroll offset and the document, both of
+  /// which only change through layout. Cheap when no screen reader is on.
+  void _markLineSemanticsDirty() {
+    if (_lineSemanticsLabel != null) {
+      markNeedsSemanticsUpdate();
+    }
   }
 
   @override
   double childMainAxisPosition(RenderBox child) {
-    if (indexOf(child) == _stickySlotIndex) {
+    final int index = indexOf(child);
+    if (index == _stickySlotIndex) {
       return _stickyHeaderTop;
     }
-    return childScrollOffset(child)! - constraints.scrollOffset;
+    // Not the laid-out offset: that is clamped for a file mid expand/collapse
+    // (see liveSlotOffset), while the child paints at its natural spot.
+    return naturalSlotOffset(index) - constraints.scrollOffset;
   }
 
   @override
@@ -1014,8 +1103,11 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
     RenderBox? hc = firstChild;
     RenderBox? stickyChild;
     while (hc != null) {
-      if (indexOf(hc) == _stickySlotIndex) {
+      final int index = indexOf(hc);
+      if (index == _stickySlotIndex) {
         stickyChild = hc;
+      } else if (isRevealingBodySlot(index)) {
+        _paintRevealingChild(context, offset, hc, index);
       } else {
         final double mainPos = childMainAxisPosition(hc);
         if (mainPos + paintExtentOf(hc) > 0 &&
@@ -1062,6 +1154,36 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
     }
   }
 
+  /// Paints body slot [child] of a file mid expand/collapse, clipped to the
+  /// file's moving body edge like its code rows.
+  void _paintRevealingChild(
+    PaintingContext context,
+    Offset offset,
+    RenderBox child,
+    int index,
+  ) {
+    final int f = slots[index].fileIndex;
+    final double scrollOffset = constraints.scrollOffset;
+    final double clipTop =
+        _document.offsetOfFile(f) + _document.headerHeight - scrollOffset;
+    final double clipBottom = math.min(
+      _document.bodyClipBottomOf(f) - scrollOffset,
+      constraints.remainingPaintExtent,
+    );
+    final double mainPos = childMainAxisPosition(child);
+    final double top = math.max(clipTop, mainPos);
+    final double bottom = math.min(clipBottom, mainPos + paintExtentOf(child));
+    if (bottom <= top || bottom <= 0) {
+      return;
+    }
+    context.pushClipRect(
+      needsCompositing,
+      offset,
+      Rect.fromLTRB(0, top, constraints.crossAxisExtent, bottom),
+      (ctx, off) => ctx.paintChild(child, off + Offset(0, mainPos)),
+    );
+  }
+
   @override
   bool hitTestChildren(
     SliverHitTestResult result, {
@@ -1093,7 +1215,11 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
 
     RenderBox? child = lastChild;
     while (child != null) {
-      if (!(_stickyPinned && indexOf(child) == _stickySlotIndex) &&
+      final int index = indexOf(child);
+      // A body slot of a file mid expand/collapse may sit under the next
+      // file's header; it takes no input until the motion settles.
+      if (!(_stickyPinned && index == _stickySlotIndex) &&
+          !isRevealingBodySlot(index) &&
           hit(child)) {
         return true;
       }

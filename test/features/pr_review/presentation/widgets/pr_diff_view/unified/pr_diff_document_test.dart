@@ -76,18 +76,33 @@ void main() {
   });
 
   group('PrDiffDocument.setFiles viewed-state expansion', () {
-    test('keeps a surviving file open when viewed state arrives later', () {
+    test('collapses a surviving file when viewed state arrives later', () {
       final doc = _doc();
 
       // 1. The GitHub source yields the file list first, with no viewed state.
-      doc.setFiles([_file('a.dart', _realPatch)]);
+      doc.setFiles([_file('a.dart', _realPatch), _file('b.dart', _realPatch)]);
       expect(doc.isExpanded(0), isTrue);
 
-      // 2. A second load enriches the same file with viewerViewedState=viewed.
+      // 2. A second load enriches the same files with viewerViewedState.
+      doc.setFiles([
+        _file('a.dart', _realPatch, viewed: PrFileViewedState.viewed),
+        _file('b.dart', _realPatch),
+      ]);
+
+      expect(doc.isExpanded(0), isFalse);
+      expect(doc.isExpanded(1), isTrue);
+    });
+
+    test('keeps a manual re-expand of an already-viewed file', () {
+      final doc = _doc();
       doc.setFiles([
         _file('a.dart', _realPatch, viewed: PrFileViewedState.viewed),
       ]);
+      doc.setExpanded(0, expanded: true);
 
+      doc.setFiles([
+        _file('a.dart', _realPatch, viewed: PrFileViewedState.viewed),
+      ]);
       expect(doc.isExpanded(0), isTrue);
     });
 
@@ -105,12 +120,57 @@ void main() {
       expect(doc.isExpanded(0), isFalse);
     });
 
-    test('a file already viewed on first emission starts expanded', () {
+    test('a file already viewed on first emission starts collapsed', () {
       final doc = _doc();
       doc.setFiles([
         _file('a.dart', _realPatch, viewed: PrFileViewedState.viewed),
+        _file('b.dart', _realPatch, viewed: PrFileViewedState.dismissed),
       ]);
-      expect(doc.isExpanded(0), isTrue);
+      expect(doc.isExpanded(0), isFalse);
+      // Dismissed = changed since viewed, so it is not viewed and stays open.
+      expect(doc.isExpanded(1), isTrue);
+    });
+  });
+
+  group('PrDiffDocument expand/collapse reveal', () {
+    test('a revealing file is cut to its revealed body and moves the next', () {
+      final doc = _doc();
+      doc.setFiles([_file('a.dart', _realPatch), _file('b.dart', _realPatch)]);
+      doc.setStructure(0, buildDiffRawLines(_realPatch));
+      final full = doc.heightOfFile(0);
+      final body = doc.bodyHeightOf(0);
+      final collapsed = doc.headerHeight + doc.fileSeparator;
+      expect(full, collapsed + body);
+
+      // Collapsing from the full body: the target flips at once, the height
+      // holds until the motion moves it.
+      doc.setExpanded(0, expanded: false, revealedBody: body);
+      expect(doc.isExpanded(0), isFalse);
+      expect(doc.showsBody(0), isTrue);
+      expect(doc.isRevealing(0), isTrue);
+      expect(doc.heightOfFile(0), full);
+
+      doc.setRevealedBody(0, body / 2);
+      expect(doc.heightOfFile(0), collapsed + body / 2);
+      expect(doc.offsetOfFile(1), collapsed + body / 2);
+      expect(doc.bodyClipBottomOf(0), doc.headerHeight + body / 2);
+
+      // Settling lands on the target state.
+      doc.setRevealedBody(0, null);
+      expect(doc.showsBody(0), isFalse);
+      expect(doc.heightOfFile(0), collapsed);
+    });
+
+    test('setExpanded without a reveal settles a running one', () {
+      final doc = _doc();
+      doc.setFiles([_file('a.dart', _realPatch)]);
+      doc.setExpanded(0, expanded: false, revealedBody: 4);
+      doc.setExpanded(0, expanded: true);
+      expect(doc.isRevealing(0), isFalse);
+      expect(
+        doc.heightOfFile(0),
+        doc.headerHeight + doc.bodyHeightOf(0) + doc.fileSeparator,
+      );
     });
   });
 

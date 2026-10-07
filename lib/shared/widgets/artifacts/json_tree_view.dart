@@ -106,7 +106,8 @@ class _NodeState extends State<_Node> {
               children: [
                 AnimatedRotation(
                   turns: open ? 0 : -0.25,
-                  duration: const Duration(milliseconds: 150),
+                  duration: CcMotion.resolveToggle(context, CcMotion.moderate),
+                  curve: CcMotion.standard,
                   child: Icon(
                     AppIcons.chevronDown,
                     size: 14,
@@ -126,8 +127,9 @@ class _NodeState extends State<_Node> {
             ),
           ),
         ),
-        if (open)
-          Padding(
+        CcCollapsible(
+          expanded: open,
+          child: Padding(
             padding: const EdgeInsetsDirectional.only(start: 16, top: 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,6 +148,7 @@ class _NodeState extends State<_Node> {
               ],
             ),
           ),
+        ),
       ],
     );
   }

@@ -249,83 +249,93 @@ class _ReactionChip extends StatelessWidget {
       group.usernames,
     );
 
-    return CcTooltip(
-      message: tooltip,
-      child: CcTappable(
-        onPressed: onTap,
-        borderRadius: BorderRadius.circular(999),
-        semanticLabel: tooltip,
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
-          final pressed = states.contains(WidgetState.pressed);
+    // One node: the reaction, who reacted and how many, plus whether the
+    // viewer's own reaction is on (pressing toggles it) — the accent tint
+    // alone says that only visually.
+    return MergeSemantics(
+      child: Semantics(
+        toggled: group.userReacted,
+        child: CcTooltip(
+          message: tooltip,
+          child: CcTappable(
+            onPressed: onTap,
+            borderRadius: BorderRadius.circular(999),
+            semanticLabel: '$tooltip, ${group.count}',
+            builder: (context, states) {
+              final hovered = states.contains(WidgetState.hovered);
+              final pressed = states.contains(WidgetState.pressed);
 
-          final Color bg;
-          final Color fg;
-          final Color border;
-          if (group.userReacted) {
-            bg = accent.withValues(
-              alpha: pressed
-                  ? 0.24
-                  : hovered
-                  ? 0.18
-                  : 0.12,
-            );
-            fg = accent;
-            border = accent.withValues(alpha: hovered || pressed ? 0.6 : 0.4);
-          } else {
-            bg = pressed
-                ? tokens.hoverStrong
-                : hovered
-                ? tokens.hover
-                : tokens.borderSecondary.withValues(alpha: 0.5);
-            fg = hovered || pressed ? tokens.fg : tokens.muted;
-            // Alpha-0 border (not null) so the AnimatedContainer lerps.
-            border = const Color(0x00000000);
-          }
+              final Color bg;
+              final Color fg;
+              final Color border;
+              if (group.userReacted) {
+                bg = accent.withValues(
+                  alpha: pressed
+                      ? 0.24
+                      : hovered
+                      ? 0.18
+                      : 0.12,
+                );
+                fg = accent;
+                border = accent.withValues(
+                  alpha: hovered || pressed ? 0.6 : 0.4,
+                );
+              } else {
+                bg = pressed
+                    ? tokens.hoverStrong
+                    : hovered
+                    ? tokens.hover
+                    : tokens.borderSecondary.withValues(alpha: 0.5);
+                fg = hovered || pressed ? tokens.fg : tokens.muted;
+                // Alpha-0 border (not null) so the AnimatedContainer lerps.
+                border = const Color(0x00000000);
+              }
 
-          Widget child = AnimatedContainer(
-            duration: CcMotion.resolve(context, CcMotion.fast),
-            curve: CcMotion.standard,
-            height: _kChipHeight,
-            padding: _kChipPadding,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 12px emoji ≈ the optical size of the 14px outline icon in
-                // the add-reaction pill (emoji glyphs overshoot their point
-                // size); height 1 keeps the line box from inflating the pill.
-                Text(
-                  group.emoji,
-                  style: const TextStyle(fontSize: 12, height: 1),
+              Widget child = AnimatedContainer(
+                duration: CcMotion.resolve(context, CcMotion.fast),
+                curve: CcMotion.standard,
+                height: _kChipHeight,
+                padding: _kChipPadding,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: border),
                 ),
-                const SizedBox(width: 3),
-                Text(
-                  '${group.count}',
-                  style: CcTypography.caption.copyWith(
-                    color: fg,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                    height: 1,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 12px emoji ≈ the optical size of the 14px outline icon in
+                    // the add-reaction pill (emoji glyphs overshoot their point
+                    // size); height 1 keeps the line box from inflating the pill.
+                    Text(
+                      group.emoji,
+                      style: const TextStyle(fontSize: 12, height: 1),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${group.count}',
+                      style: CcTypography.caption.copyWith(
+                        color: fg,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        height: 1,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
+              );
 
-          if (pressed) {
-            child = Transform.translate(
-              offset: const Offset(0, 1),
-              child: child,
-            );
-          }
+              if (pressed) {
+                child = Transform.translate(
+                  offset: const Offset(0, 1),
+                  child: child,
+                );
+              }
 
-          return child;
-        },
+              return ExcludeSemantics(child: child);
+            },
+          ),
+        ),
       ),
     );
   }

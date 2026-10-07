@@ -14626,6 +14626,133 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => '没有最近打开的文件';
+
+  @override
+  String get diffMarkFileViewed => '标记为已查看';
+
+  @override
+  String get diffMarkFileNotViewed => '标记为未查看';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '新增 $count 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '删除 $count 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path，$status，$additions，$deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path，$status，$additions，$deletions，已查看';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return '由 $previous 重命名';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个文件',
+    );
+    return '$name，文件夹，$_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name，$status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name，$status，已查看';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return '新增第 $line 行：$code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return '删除第 $line 行：$code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return '第 $line 行：$code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return '代码块 $header';
+  }
+
+  @override
+  String get diffLineBlank => '空行';
+
+  @override
+  String get diffCommentOnLineAction => '评论此行';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '已将 $path 标记为已查看';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '已将 $path 标记为未查看';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return '新增行数：$additions，删除行数：$deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return '关闭$tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条评论',
+    );
+    return '$_temp0';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -29418,4 +29545,131 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get ideQuickOpenNoRecent => '沒有最近開啟的檔案';
+
+  @override
+  String get diffMarkFileViewed => '標記為已檢視';
+
+  @override
+  String get diffMarkFileNotViewed => '標記為未檢視';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '新增 $count 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '刪除 $count 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path，$status，$additions，$deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path，$status，$additions，$deletions，已檢視';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return '由 $previous 重新命名';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個檔案',
+    );
+    return '$name，資料夾，$_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name，$status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name，$status，已檢視';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return '新增第 $line 行：$code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return '刪除第 $line 行：$code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return '第 $line 行：$code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return '程式碼區塊 $header';
+  }
+
+  @override
+  String get diffLineBlank => '空白行';
+
+  @override
+  String get diffCommentOnLineAction => '評論此行';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '已將 $path 標記為已檢視';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '已將 $path 標記為未檢視';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return '新增行數：$additions，刪除行數：$deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return '關閉$tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 則留言',
+    );
+    return '$_temp0';
+  }
 }

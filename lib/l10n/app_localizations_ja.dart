@@ -14802,4 +14802,132 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => '最近開いたファイルはありません';
+
+  @override
+  String get diffMarkFileViewed => '閲覧済みにする';
+
+  @override
+  String get diffMarkFileNotViewed => '未閲覧にする';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 行追加',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 行削除',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path、$status、$additions、$deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path、$status、$additions、$deletions、閲覧済み';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return '$previous から名前変更';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ファイル',
+    );
+    return '$name、フォルダー、$_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name、$status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name、$status、閲覧済み';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return '追加された行 $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return '削除された行 $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return '$line 行目: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'ハンク $header';
+  }
+
+  @override
+  String get diffLineBlank => '空行';
+
+  @override
+  String get diffCommentOnLineAction => 'この行にコメント';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path を閲覧済みにしました';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path を未閲覧にしました';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return '追加された行: $additions、削除された行: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return '$tab を閉じる';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'コメント $count 件',
+      one: 'コメント 1 件',
+    );
+    return '$_temp0';
+  }
 }

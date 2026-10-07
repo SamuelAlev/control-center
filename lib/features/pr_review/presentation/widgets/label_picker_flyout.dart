@@ -298,35 +298,41 @@ class _LabelFlyoutRow extends StatelessWidget {
         color: tokens.textPrimary,
       ),
     );
-    return CcTappable(
-      onPressed: onTap,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return Container(
-          color: hovered ? tokens.bgPrimaryHover : const Color(0x00000000),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          child: Row(
-            children: [
-              PickerCheckBox(selected: selected, hovered: hovered),
-              const SizedBox(width: 10),
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: swatch,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+    // Checked state on the row itself, not only on the painted box.
+    return MergeSemantics(
+      child: Semantics(
+        checked: selected,
+        child: CcTappable(
+          onPressed: onTap,
+          builder: (context, states) {
+            final hovered = states.contains(WidgetState.hovered);
+            return Container(
+              color: hovered ? tokens.bgPrimaryHover : const Color(0x00000000),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              child: Row(
+                children: [
+                  PickerCheckBox(selected: selected, hovered: hovered),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: swatch,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: label.description.isEmpty
+                        ? name
+                        : CcTooltip(message: label.description, child: name),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: label.description.isEmpty
-                    ? name
-                    : CcTooltip(message: label.description, child: name),
-              ),
-            ],
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

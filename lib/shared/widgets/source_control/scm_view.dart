@@ -113,7 +113,14 @@ class ScmGroup extends StatelessWidget {
           actions: actions,
           tokens: t,
         ),
-        if (!collapsed) ...children,
+        CcCollapsible(
+          expanded: !collapsed,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: children,
+          ),
+        ),
       ],
     );
   }

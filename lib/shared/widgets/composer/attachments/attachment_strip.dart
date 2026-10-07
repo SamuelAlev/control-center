@@ -169,7 +169,7 @@ class _AttachmentCardState extends State<_AttachmentCard> {
 }
 
 /// A picture's own thumbnail, or its kind's glyph.
-class _Thumbnail extends StatelessWidget {
+class _Thumbnail extends StatefulWidget {
   const _Thumbnail({required this.attachment, required this.tokens});
 
   final ComposerAttachment attachment;
@@ -178,8 +178,41 @@ class _Thumbnail extends StatelessWidget {
   static const double _size = 36;
 
   @override
+  State<_Thumbnail> createState() => _ThumbnailState();
+}
+
+class _ThumbnailState extends State<_Thumbnail> {
+  static const double _size = _Thumbnail._size;
+
+  // Held across rebuilds: a MemoryImage is keyed by its byte list's identity,
+  // so a fresh copy per build (every hover) missed the image cache and blanked
+  // the picture while it decoded again.
+  ImageProvider? _provider;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider = _imageProvider();
+  }
+
+  @override
+  void didUpdateWidget(_Thumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final a = widget.attachment;
+    final b = oldWidget.attachment;
+    if (!identical(a.bytes, b.bytes) ||
+        a.path != b.path ||
+        a.mimeType != b.mimeType ||
+        a.label != b.label) {
+      _provider = _imageProvider();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final provider = _imageProvider();
+    final attachment = widget.attachment;
+    final tokens = widget.tokens;
+    final provider = _provider;
     if (provider == null) {
       return SizedBox(
         width: _size,
@@ -204,6 +237,7 @@ class _Thumbnail extends StatelessWidget {
         width: _size,
         height: _size,
         fit: BoxFit.cover,
+        gaplessPlayback: true,
         // Decoded at display size: a 4000px screenshot resampled to 36px would
         // otherwise sit in the image cache at full resolution for a chip.
         errorBuilder: (context, _, _) => SizedBox(
@@ -216,6 +250,7 @@ class _Thumbnail extends StatelessWidget {
   }
 
   ImageProvider? _imageProvider() {
+    final attachment = widget.attachment;
     if (attachmentMediaKind(
           mimeType: attachment.mimeType,
           name: attachment.label,

@@ -64,7 +64,9 @@ Widget _wrap(Widget child, {List<Override> overrides = const []}) {
 Future<void> _expandWorkflow(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
-  await tester.pump();
+  // The seeded card grows open; taps below its header need the full height.
+  await tester.pump(CcMotion.moderate);
+  await tester.pump(CcMotion.moderate);
 }
 
 void main() {
@@ -410,7 +412,7 @@ void main() {
 
     // Manual collapse…
     await tester.tap(find.text('CI'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('Build'), findsNothing);
 
     // …sticks when the same checks arrive again (refetch): the seed is
@@ -491,9 +493,7 @@ void main() {
         ],
       ),
     );
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
+    await _expandWorkflow(tester);
 
     final canvas = find.byType(WorkflowRunCanvas);
     expect(tester.getSize(canvas).height, 280);

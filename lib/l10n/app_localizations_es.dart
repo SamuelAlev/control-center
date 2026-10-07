@@ -15224,6 +15224,137 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'No hay archivos abiertos recientemente';
+
+  @override
+  String get diffMarkFileViewed => 'Marcar como visto';
+
+  @override
+  String get diffMarkFileNotViewed => 'Marcar como no visto';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count adiciones',
+      one: '1 adición',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eliminaciones',
+      one: '1 eliminación',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, visto';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'renombrado desde $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count archivos',
+      one: '1 archivo',
+    );
+    return '$name, carpeta, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, visto';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Línea añadida $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Línea eliminada $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Línea $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Bloque $header';
+  }
+
+  @override
+  String get diffLineBlank => 'vacía';
+
+  @override
+  String get diffCommentOnLineAction => 'Comentar esta línea';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path marcado como visto';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path marcado como no visto';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Líneas añadidas: $additions, líneas eliminadas: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Cerrar $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count comentarios',
+      one: '1 comentario',
+    );
+    return '$_temp0';
+  }
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

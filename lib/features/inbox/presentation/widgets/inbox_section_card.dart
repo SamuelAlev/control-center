@@ -94,41 +94,38 @@ class InboxSectionCard extends ConsumerWidget {
           ),
         ),
         SliverToBoxAdapter(
-          child: AnimatedSize(
-            duration: CcMotion.resolve(context, CcMotion.normal),
-            curve: CcMotion.standard,
-            alignment: Alignment.topCenter,
-            child: !expanded
-                ? const SizedBox(width: double.infinity)
-                : DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: tokens.panel,
-                      border: Border(
-                        left: BorderSide(color: tokens.borderSecondary),
-                        right: BorderSide(color: tokens.borderSecondary),
-                        bottom: BorderSide(color: tokens.borderSecondary),
+          child: CcCollapsible(
+            expanded: expanded,
+            duration: CcMotion.normal,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: tokens.panel,
+                border: Border(
+                  left: BorderSide(color: tokens.borderSecondary),
+                  right: BorderSide(color: tokens.borderSecondary),
+                  bottom: BorderSide(color: tokens.borderSecondary),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _ColumnHeaderRow(),
+                  CcDivider(color: tokens.borderSecondary),
+                  for (final group in groups) ...[
+                    if (group.label != null)
+                      _SubgroupHeaderRow(
+                        label: group.label!,
+                        user: group.user,
+                        count: group.items.length,
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const _ColumnHeaderRow(),
-                        CcDivider(color: tokens.borderSecondary),
-                        for (final group in groups) ...[
-                          if (group.label != null)
-                            _SubgroupHeaderRow(
-                              label: group.label!,
-                              user: group.user,
-                              count: group.items.length,
-                            ),
-                          for (var i = 0; i < group.items.length; i++) ...[
-                            if (i > 0) CcDivider(color: tokens.borderSoft),
-                            InboxPrRow(item: group.items[i]),
-                          ],
-                        ],
-                      ],
-                    ),
-                  ),
+                    for (var i = 0; i < group.items.length; i++) ...[
+                      if (i > 0) CcDivider(color: tokens.borderSoft),
+                      InboxPrRow(item: group.items[i]),
+                    ],
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -296,7 +293,7 @@ class _SectionHeaderRow extends StatelessWidget {
               children: [
                 AnimatedRotation(
                   turns: collapsed ? -0.25 : 0,
-                  duration: CcMotion.resolve(context, CcMotion.fast),
+                  duration: CcMotion.resolveToggle(context, CcMotion.fast),
                   child: Icon(
                     AppIcons.chevronDown,
                     size: 16,

@@ -7,6 +7,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/editable_
 import 'package:control_center/features/pr_review/presentation/widgets/pr_activity_timeline.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/shared/widgets/confined_directional_focus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -115,7 +116,7 @@ class PrOverviewTab extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: sidebar,
+                    child: ConfinedDirectionalFocus(child: sidebar),
                   ),
                 ),
               ],
@@ -127,17 +128,22 @@ class PrOverviewTab extends ConsumerWidget {
               CcResizableRegion(
                 initialExtent: constraints.maxWidth - _sidebarWidth,
                 minExtent: 420,
-                builder: (context) => CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                      sliver: SliverToBoxAdapter(child: header),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      sliver: timeline,
-                    ),
-                  ],
+                // Each pane is its own focus region: Tab finishes the main
+                // column before the sidebar instead of zig-zagging between
+                // them by row, and arrow keys stay inside the pane.
+                builder: (context) => ConfinedDirectionalFocus(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                        sliver: SliverToBoxAdapter(child: header),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        sliver: timeline,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               CcResizableRegion(
@@ -146,9 +152,11 @@ class PrOverviewTab extends ConsumerWidget {
                 maxExtent: 380,
                 builder: (context) => ColoredBox(
                   color: t.bgSecondary,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: sidebar,
+                  child: ConfinedDirectionalFocus(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: sidebar,
+                    ),
                   ),
                 ),
               ),

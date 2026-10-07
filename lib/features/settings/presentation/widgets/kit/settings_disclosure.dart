@@ -78,9 +78,6 @@ class _SettingsDisclosureState extends State<SettingsDisclosure> {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final expanded = _isExpanded;
-    final reducedMotion =
-        (MediaQuery.maybeDisableAnimationsOf(context) ?? false) ||
-        (context.ccTheme?.reducedMotion ?? false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,7 +102,7 @@ class _SettingsDisclosureState extends State<SettingsDisclosure> {
                   // recognise between two similar icons.
                   AnimatedRotation(
                     turns: expanded ? 0.25 : 0,
-                    duration: reducedMotion ? Duration.zero : CcMotion.fast,
+                    duration: CcMotion.resolveToggle(context, CcMotion.fast),
                     curve: CcMotion.standard,
                     child: Icon(
                       AppIcons.chevronRight,
@@ -151,23 +148,15 @@ class _SettingsDisclosureState extends State<SettingsDisclosure> {
             );
           },
         ),
-        // AnimatedSize only over the reveal, and only when motion is allowed —
-        // a settings page that grows by 400px under a cursor is disorienting,
-        // and a page that animates when the user asked it not to is a bug.
-        if (reducedMotion)
-          if (expanded)
-            Padding(padding: widget.childPadding, child: widget.child)
-          else
-            const SizedBox.shrink()
-        else
-          AnimatedSize(
-            duration: CcMotion.normal,
-            curve: CcMotion.standard,
-            alignment: Alignment.topCenter,
-            child: expanded
-                ? Padding(padding: widget.childPadding, child: widget.child)
-                : const SizedBox(width: double.infinity, height: 0),
-          ),
+        // CcCollapsible snaps the size under reduced motion (and on keyboard
+        // toggles) — a settings page that grows by 400px under a cursor is
+        // disorienting, and a page that animates when the user asked it not
+        // to is a bug.
+        CcCollapsible(
+          expanded: expanded,
+          duration: CcMotion.normal,
+          child: Padding(padding: widget.childPadding, child: widget.child),
+        ),
       ],
     );
   }

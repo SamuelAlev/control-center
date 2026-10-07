@@ -88,64 +88,73 @@ class _ReviewFindingAttachmentState extends State<ReviewFindingAttachment> {
           icon: _open ? AppIcons.chevronDown : AppIcons.chevronRight,
           child: Text(widget.title),
         ),
-        if (_open) ...[
-          const SizedBox(height: AppSpacing.xs),
-          // The embedded-artifact anatomy from DESIGN.md: surface fill, square
-          // hairline frame, no radius. Rounded corners here were the loudest
-          // thing marking this surface as off-system.
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: tokens.surface,
-              border: Border.all(color: tokens.borderSecondary),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.mono)
-                  HighlightedCodeLines(
-                    code: widget.body,
-                    languageId: widget.languageId,
-                    builder: (context, lines) => Text.rich(
-                      TextSpan(
-                        style: CcFonts.code(
-                          textStyle: CcTypography.caption,
-                        ).copyWith(color: tokens.textPrimary, height: 1.5),
-                        children: joinCodeLineSpans(lines),
+        CcCollapsible(
+          expanded: _open,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.xs),
+              // The embedded-artifact anatomy from DESIGN.md: surface fill, square
+              // hairline frame, no radius. Rounded corners here were the loudest
+              // thing marking this surface as off-system.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: tokens.surface,
+                  border: Border.all(color: tokens.borderSecondary),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.mono)
+                      HighlightedCodeLines(
+                        code: widget.body,
+                        languageId: widget.languageId,
+                        builder: (context, lines) => Text.rich(
+                          TextSpan(
+                            style: CcFonts.code(
+                              textStyle: CcTypography.caption,
+                            ).copyWith(color: tokens.textPrimary, height: 1.5),
+                            children: joinCodeLineSpans(lines),
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        widget.body,
+                        style: CcTypography.caption.copyWith(
+                          color: tokens.textPrimary,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  Text(
-                    widget.body,
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textPrimary,
-                      height: 1.5,
-                    ),
-                  ),
-                if (widget.copyLabel != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  CcButton(
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: widget.body));
-                      if (context.mounted) {
-                        CcToastScope.maybeOf(context)?.show(
-                          AppLocalizations.of(context).copied,
-                          variant: CcToastVariant.success,
-                        );
-                      }
-                    },
-                    size: CcButtonSize.sm,
-                    variant: CcButtonVariant.secondary,
-                    icon: AppIcons.copy,
-                    child: Text(widget.copyLabel!),
-                  ),
-                ],
-              ],
-            ),
+                    if (widget.copyLabel != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      CcButton(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: widget.body),
+                          );
+                          if (context.mounted) {
+                            CcToastScope.maybeOf(context)?.show(
+                              AppLocalizations.of(context).copied,
+                              variant: CcToastVariant.success,
+                            );
+                          }
+                        },
+                        size: CcButtonSize.sm,
+                        variant: CcButtonVariant.secondary,
+                        icon: AppIcons.copy,
+                        child: Text(widget.copyLabel!),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ],
     );
   }

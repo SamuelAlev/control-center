@@ -274,19 +274,14 @@ class _SpaceFoldersListState extends ConsumerState<SpaceFoldersList> {
         ),
       );
       children.add(
-        AnimatedSize(
+        CcCollapsible(
           key: ValueKey('children-${folder.id}'),
-          duration: CcMotion.resolve(context, CcMotion.moderate),
-          curve: CcMotion.standard,
-          alignment: Alignment.topCenter,
-          child: expanded || filter.isNotEmpty
-              ? CcSidebarBranch(
-                  children: [
-                    for (final space in members)
-                      _draggableSpace(space, available),
-                  ],
-                )
-              : const SizedBox(width: double.infinity, height: 0),
+          expanded: expanded || filter.isNotEmpty,
+          child: CcSidebarBranch(
+            children: [
+              for (final space in members) _draggableSpace(space, available),
+            ],
+          ),
         ),
       );
     }
@@ -460,7 +455,10 @@ class _FolderRowState extends ConsumerState<_FolderRow> {
                     ),
                     child: widget.hasSpaces
                         ? AnimatedRotation(
-                            duration: CcMotion.resolve(context, CcMotion.fast),
+                            duration: CcMotion.resolveToggle(
+                              context,
+                              CcMotion.fast,
+                            ),
                             turns: widget.expanded
                                 ? 0
                                 : Directionality.of(context) ==

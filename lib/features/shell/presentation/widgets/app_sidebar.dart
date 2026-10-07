@@ -242,7 +242,7 @@ class _SpacesNavSlot extends StatelessWidget {
 /// degrades to a plain nav item.
 ///
 /// [CcSidebarItem] is a flat row with no nesting, so the accordion is composed
-/// here from a header [CcSidebarItem] plus an [AnimatedSize]-gated
+/// here from a header [CcSidebarItem] plus a [CcCollapsible]-gated
 /// [CcSidebarBranch] (tree rail, flush children, nested hover). The composite
 /// is not itself a [CcFluidHoverTarget], so the enclosing group treats it as
 /// a hover boundary: the header row and the nested branch keep their own
@@ -316,55 +316,45 @@ class _TicketsAccordionState extends ConsumerState<_TicketsAccordion> {
           ),
           onPressed: () => GoRouter.of(context).go(ticketsRoute(wsId)),
         ),
-        AnimatedSize(
-          duration: CcMotion.resolve(context, CcMotion.moderate),
-          curve: CcMotion.standard,
-          alignment: Alignment.topCenter,
-          child: expanded
-              ? CcSidebarBranch(
-                  children: [
-                    CcSidebarItem(
-                      icon: AppIcons.list,
-                      label: l10n.allTickets,
-                      selected: _ticketsActive,
-                      onPressed: () =>
-                          GoRouter.of(context).go(ticketsRoute(wsId)),
-                    ),
-                    for (final p in projects)
-                      () {
-                        final selected =
-                            widget.location == projectOverviewRoute(wsId, p.id);
-                        return CcSidebarItem(
-                          icon: AppIcons.dot,
-                          label: p.name,
-                          selected: selected,
-                          badge: ProjectGlyph(
-                            color: p.color,
-                            onBrandFill: selected,
-                          ),
-                          onPressed: () => GoRouter.of(
-                            context,
-                          ).go(projectOverviewRoute(wsId, p.id)),
-                        );
-                      }(),
-                    CcSidebarItem(
-                      icon: AppIcons.plus,
-                      label: l10n.newProject,
-                      onPressed: () async {
-                        final id = await showProjectDialog(
-                          context,
-                          workspaceId: wsId,
-                        );
-                        if (id != null && context.mounted) {
-                          GoRouter.of(
-                            context,
-                          ).go(projectOverviewRoute(wsId, id));
-                        }
-                      },
-                    ),
-                  ],
-                )
-              : const SizedBox(width: double.infinity, height: 0),
+        CcCollapsible(
+          expanded: expanded,
+          child: CcSidebarBranch(
+            children: [
+              CcSidebarItem(
+                icon: AppIcons.list,
+                label: l10n.allTickets,
+                selected: _ticketsActive,
+                onPressed: () => GoRouter.of(context).go(ticketsRoute(wsId)),
+              ),
+              for (final p in projects)
+                () {
+                  final selected =
+                      widget.location == projectOverviewRoute(wsId, p.id);
+                  return CcSidebarItem(
+                    icon: AppIcons.dot,
+                    label: p.name,
+                    selected: selected,
+                    badge: ProjectGlyph(color: p.color, onBrandFill: selected),
+                    onPressed: () => GoRouter.of(
+                      context,
+                    ).go(projectOverviewRoute(wsId, p.id)),
+                  );
+                }(),
+              CcSidebarItem(
+                icon: AppIcons.plus,
+                label: l10n.newProject,
+                onPressed: () async {
+                  final id = await showProjectDialog(
+                    context,
+                    workspaceId: wsId,
+                  );
+                  if (id != null && context.mounted) {
+                    GoRouter.of(context).go(projectOverviewRoute(wsId, id));
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -387,8 +377,8 @@ class _ExpandChevron extends StatelessWidget {
       onPressed: onTap,
       semanticLabel: expanded ? l10n.collapse : l10n.expand,
       builder: (context, states) => AnimatedRotation(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeInOut,
+        duration: CcMotion.resolveToggle(context, CcMotion.moderate),
+        curve: CcMotion.standard,
         turns: expanded ? 0 : -0.25,
         child: Icon(
           AppIcons.chevronDown,

@@ -341,7 +341,10 @@ class _JobRowState extends State<_JobRow> {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     AnimatedRotation(
-                      duration: CcMotion.normal,
+                      duration: CcMotion.resolveToggle(
+                        context,
+                        CcMotion.normal,
+                      ),
                       curve: CcMotion.standard,
                       turns: _expanded ? 0 : -0.25,
                       child: Icon(
@@ -370,19 +373,16 @@ class _JobRowState extends State<_JobRow> {
               ],
             ),
           ),
-          AnimatedSize(
-            duration: CcMotion.resolve(context, CcMotion.normal),
-            curve: CcMotion.standard,
-            alignment: Alignment.topCenter,
-            child: _expanded
-                ? Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      start: 24,
-                      top: AppSpacing.sm,
-                    ),
-                    child: _Placements(jobId: job.id),
-                  )
-                : const SizedBox(width: double.infinity),
+          CcCollapsible(
+            expanded: _expanded,
+            duration: CcMotion.normal,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(
+                start: 24,
+                top: AppSpacing.sm,
+              ),
+              child: _Placements(jobId: job.id),
+            ),
           ),
         ],
       ),

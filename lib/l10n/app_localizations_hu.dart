@@ -15188,4 +15188,134 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Nincsenek nemrég megnyitott fájlok';
+
+  @override
+  String get diffMarkFileViewed => 'Megjelölés megtekintettként';
+
+  @override
+  String get diffMarkFileNotViewed => 'Megjelölés nem megtekintettként';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hozzáadás',
+      one: '1 hozzáadás',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count törlés',
+      one: '1 törlés',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, megtekintve';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'átnevezve erről: $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fájl',
+      one: '1 fájl',
+    );
+    return '$name, mappa, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, megtekintve';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Hozzáadott sor $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Eltávolított sor $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return '$line. sor: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Szakasz $header';
+  }
+
+  @override
+  String get diffLineBlank => 'üres';
+
+  @override
+  String get diffCommentOnLineAction => 'Megjegyzés ehhez a sorhoz';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path megtekintettként megjelölve';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path nem megtekintettként megjelölve';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Hozzáadott sorok: $additions, eltávolított sorok: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return '$tab bezárása';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count megjegyzés',
+    );
+    return '$_temp0';
+  }
 }

@@ -452,32 +452,40 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
                     ),
                   ],
                 ),
-                if (_view.showFilters) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  CcTextField(
-                    controller: _includeController,
-                    hintText: l10n.ideSearchFilesToInclude,
-                    size: CcTextFieldSize.sm,
-                    prefix: Icon(
-                      AppIcons.listFilter,
-                      size: 14,
-                      color: t.textTertiary,
-                    ),
-                    onChanged: _syncFilters,
+                CcCollapsible(
+                  expanded: _view.showFilters,
+                  maintainState: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: AppSpacing.xs),
+                      CcTextField(
+                        controller: _includeController,
+                        hintText: l10n.ideSearchFilesToInclude,
+                        size: CcTextFieldSize.sm,
+                        prefix: Icon(
+                          AppIcons.listFilter,
+                          size: 14,
+                          color: t.textTertiary,
+                        ),
+                        onChanged: _syncFilters,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      CcTextField(
+                        controller: _excludeController,
+                        hintText: l10n.ideSearchFilesToExclude,
+                        size: CcTextFieldSize.sm,
+                        prefix: Icon(
+                          AppIcons.filterX,
+                          size: 14,
+                          color: t.textTertiary,
+                        ),
+                        onChanged: _syncFilters,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  CcTextField(
-                    controller: _excludeController,
-                    hintText: l10n.ideSearchFilesToExclude,
-                    size: CcTextFieldSize.sm,
-                    prefix: Icon(
-                      AppIcons.filterX,
-                      size: 14,
-                      color: t.textTertiary,
-                    ),
-                    onChanged: _syncFilters,
-                  ),
-                ],
+                ),
               ],
             ],
           ),

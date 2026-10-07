@@ -15096,4 +15096,134 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Không có tệp nào được mở gần đây';
+
+  @override
+  String get diffMarkFileViewed => 'Đánh dấu đã xem';
+
+  @override
+  String get diffMarkFileNotViewed => 'Đánh dấu chưa xem';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dòng thêm',
+      one: '1 dòng thêm',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dòng xóa',
+      one: '1 dòng xóa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, đã xem';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'đổi tên từ $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tệp',
+      one: '1 tệp',
+    );
+    return '$name, thư mục, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, đã xem';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Dòng đã thêm $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Dòng đã xóa $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Dòng $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Khối $header';
+  }
+
+  @override
+  String get diffLineBlank => 'trống';
+
+  @override
+  String get diffCommentOnLineAction => 'Bình luận dòng này';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return 'Đã đánh dấu $path là đã xem';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return 'Đã đánh dấu $path là chưa xem';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Dòng đã thêm: $additions, dòng đã xóa: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Đóng $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bình luận',
+    );
+    return '$_temp0';
+  }
 }

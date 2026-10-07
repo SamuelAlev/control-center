@@ -3,6 +3,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/reaction_
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// Hover toolbar for one comment: react, copy link when the comment has a
@@ -279,7 +280,14 @@ class CommentActionsHost extends StatefulWidget {
 }
 
 class _CommentActionsHostState extends State<CommentActionsHost> {
-  final FocusScopeNode _scope = FocusScopeNode(debugLabel: 'comment-actions');
+  /// Has focus whenever a toolbar button does. A plain node, not a
+  /// [FocusScope]: a scope's closed-loop Tab edge kept keyboard focus cycling
+  /// through the toolbar buttons with no way past the comment.
+  final FocusNode _group = FocusNode(
+    debugLabel: 'comment-actions',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
   final FocusNode _entry = FocusNode(debugLabel: 'comment-actions-entry');
   bool _hover = false;
   bool _keyboard = false;
@@ -288,37 +296,76 @@ class _CommentActionsHostState extends State<CommentActionsHost> {
   @override
   void initState() {
     super.initState();
-    _scope.addListener(_syncKeyboard);
+    _group.addListener(_syncKeyboard);
     _entry.addListener(_syncKeyboard);
   }
 
   @override
   void dispose() {
-    _scope.removeListener(_syncKeyboard);
+    _group.removeListener(_syncKeyboard);
     _entry.removeListener(_syncKeyboard);
-    _scope.dispose();
+    _group.dispose();
     _entry.dispose();
     super.dispose();
   }
 
+  bool get _focusInside => _group.hasFocus || _entry.hasFocus;
+
   void _syncKeyboard() {
-    final inside = _scope.focusedChild != null || _entry.hasFocus;
+    final inside = _focusInside;
     if (inside == _keyboard || !mounted) {
-      if (!inside) {
-        // Focus moved from the entry stub to a toolbar button a frame later.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          final still = _scope.focusedChild != null || _entry.hasFocus;
-          if (still != _keyboard) {
-            setState(() => _keyboard = still);
-          }
-        });
-      }
       return;
     }
-    setState(() => _keyboard = inside);
+    if (!inside) {
+      // Focus moves from the entry stub to a toolbar button a frame later;
+      // only hide once it has really left both.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_focusInside && _keyboard) {
+          setState(() => _keyboard = false);
+        }
+      });
+      return;
+    }
+    setState(() => _keyboard = true);
+  }
+
+  /// Reveals the toolbar and moves focus onto its first button — the entry
+  /// stub's activation, from Enter/Space or a screen reader's tap.
+  void _openToolbar() {
+    setState(() => _keyboard = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final buttons = _group.traversalDescendants;
+      if (buttons.isNotEmpty) {
+        buttons.first.requestFocus();
+      }
+    });
+  }
+
+  KeyEventResult _onEntryKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter ||
+        key == LogicalKeyboardKey.space) {
+      _openToolbar();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// Escape inside the toolbar steps back to the entry stub.
+  KeyEventResult _onToolbarKey(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      _entry.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   bool get _touch => switch (defaultTargetPlatform) {
@@ -336,17 +383,20 @@ class _CommentActionsHostState extends State<CommentActionsHost> {
         clipBehavior: Clip.none,
         children: [
           widget.child,
-          // One tab stop per comment. Focusing it reveals the toolbar; the
-          // buttons themselves stay out of the tab order until then, so a
-          // long timeline is not a run of invisible stops.
+          // One tab stop per comment. Focusing it reveals the toolbar and
+          // Enter/Space (or a screen reader's activate) moves into it; the
+          // buttons themselves stay out of the tab order until then, so a long
+          // timeline is not a run of invisible stops.
           PositionedDirectional(
             top: widget.toolbarTop,
             end: 4,
             child: Focus(
               focusNode: _entry,
+              onKeyEvent: _onEntryKey,
               child: Semantics(
                 button: true,
                 label: AppLocalizations.of(context).commentActions,
+                onTap: _openToolbar,
                 child: const SizedBox(width: 1, height: 1),
               ),
             ),
@@ -361,18 +411,15 @@ class _CommentActionsHostState extends State<CommentActionsHost> {
                 duration: CcMotion.resolve(context, CcMotion.fast),
                 curve: CcMotion.standard,
                 child: Focus(
-                  canRequestFocus: show,
-                  skipTraversal: !show,
+                  focusNode: _group,
                   descendantsAreFocusable: show,
-                  child: FocusScope(
-                    node: _scope,
-                    child: widget.actions((pinned) {
-                      if (!mounted || pinned == _pinned) {
-                        return;
-                      }
-                      setState(() => _pinned = pinned);
-                    }),
-                  ),
+                  onKeyEvent: _onToolbarKey,
+                  child: widget.actions((pinned) {
+                    if (!mounted || pinned == _pinned) {
+                      return;
+                    }
+                    setState(() => _pinned = pinned);
+                  }),
                 ),
               ),
             ),

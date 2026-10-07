@@ -805,4 +805,175 @@ void main() {
       expect(tapped, [1]);
     });
   });
+
+  group('PrSidebar accessibility', () {
+    List<Override> editableWith(
+      PrSidebar sidebar,
+      List<PrReviewer> reviewers,
+    ) => [
+      ..._overrides(sidebar, reviewers),
+      prRepoRowProvider(_prRef).overrideWith((ref) => _repo()),
+      prRepositoryProvider(
+        _prRef,
+      ).overrideWith((ref) => const EmptyPrReviewRepository()),
+      forgeCapabilitiesProvider.overrideWith((ref) async => kForgeCapabilities),
+    ];
+
+    testWidgets('a reviewer row is one announcement: name and verdict', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final alice = _user('alice');
+      await tester.pumpWidget(
+        _wrap(
+          PrSidebar(
+            pr: _pr(requestedReviewers: [alice]),
+            prRef: _prRef,
+          ),
+          reviewers: [
+            _reviewer(alice, state: PrReviewSubmissionState.approved),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(find.bySemanticsLabel('alice, Approved'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('a pending reviewer reads "Review requested", not "your"', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final bob = _user('bob');
+      await tester.pumpWidget(
+        _wrap(
+          PrSidebar(
+            pr: _pr(requestedReviewers: [bob]),
+            prRef: _prRef,
+          ),
+          reviewers: [_reviewer(bob)],
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(find.bySemanticsLabel('bob, Review requested'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('remove reviewer is reachable without hovering and shows on '
+        'keyboard focus', (tester) async {
+      final handle = tester.ensureSemantics();
+      final alice = _user('alice');
+      final sidebar = PrSidebar(
+        pr: _pr(requestedReviewers: [alice]),
+        prRef: _prRef,
+        canEdit: true,
+      );
+      final container = ProviderContainer(
+        overrides: editableWith(sidebar, [_reviewer(alice)]),
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_wrap(sidebar, container: container));
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      // No pointer anywhere: the button is still in the tree, labeled and
+      // focusable — it was only built under the mouse before.
+      final remove = find.bySemanticsLabel('Remove alice');
+      expect(remove, findsOneWidget);
+      expect(
+        tester.getSemantics(remove),
+        isSemantics(
+          label: 'Remove alice',
+          isButton: true,
+          isFocusable: true,
+          hasTapAction: true,
+        ),
+      );
+
+      final xIcon = find.byIcon(AppIcons.x);
+      double opacity() => tester
+          .widget<Opacity>(
+            find.ancestor(of: xIcon, matching: find.byType(Opacity)).first,
+          )
+          .opacity;
+      expect(opacity(), 0);
+
+      Focus.of(tester.element(xIcon)).requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(opacity(), 1);
+      handle.dispose();
+    });
+
+    testWidgets('a section header exposes its expanded state on the toggle', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final alice = _user('alice');
+      await tester.pumpWidget(
+        _wrap(
+          PrSidebar(
+            pr: _pr(requestedReviewers: [alice]),
+            prRef: _prRef,
+          ),
+          reviewers: [_reviewer(alice)],
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      final header = find.bySemanticsLabel('Reviewers, 1');
+      expect(
+        tester.getSemantics(header),
+        isSemantics(
+          isButton: true,
+          hasExpandedState: true,
+          isExpanded: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(find.text('REVIEWERS'));
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+      expect(
+        tester.getSemantics(header),
+        isSemantics(hasExpandedState: true, isExpanded: false),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a changed-file row names its line counts', (tester) async {
+      final handle = tester.ensureSemantics();
+      final pr = _pr();
+      final files = <PrFile>[
+        PrFile(
+          filename: 'lib/src/a.dart',
+          status: PrFileStatus.modified,
+          additions: 12,
+          deletions: 3,
+          patch: '',
+        ),
+      ];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._overrides(PrSidebar(pr: pr, prRef: _prRef), const []),
+            prFileIndexProvider(
+              _prRef,
+            ).overrideWith((ref) => Stream.value(files)),
+          ],
+          child: _app(PrSidebar(pr: pr, prRef: _prRef)),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(
+        find.bySemanticsLabel(
+          'a.dart, lib/src, Lines added: 12, lines removed: 3',
+        ),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+  });
 }

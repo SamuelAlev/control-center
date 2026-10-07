@@ -51,16 +51,13 @@ class _AdapterEnforcementSectionState extends State<AdapterEnforcementSection> {
           tokens: t,
           onToggle: () => setState(() => _expanded = !_expanded),
         ),
-        // AnimatedSize over an empty box rather than a Visibility: the collapsed
-        // state costs no layout for five rows plus prose and the open/close
-        // reads as one motion instead of a jump.
-        AnimatedSize(
-          duration: CcMotion.resolve(context, CcMotion.normal),
-          curve: CcMotion.standard,
-          alignment: Alignment.topCenter,
-          child: _expanded
-              ? _EnforcementDetail(enforcement: enforcement, tokens: t)
-              : const SizedBox(width: double.infinity),
+        // CcCollapsible rather than a Visibility: the collapsed state costs no
+        // layout for five rows plus prose and the open/close reads as one
+        // motion instead of a jump.
+        CcCollapsible(
+          expanded: _expanded,
+          duration: CcMotion.normal,
+          child: _EnforcementDetail(enforcement: enforcement, tokens: t),
         ),
       ],
     );
@@ -154,7 +151,7 @@ class _EnforcementHeader extends StatelessWidget {
                 ],
                 AnimatedRotation(
                   turns: expanded ? 0 : -0.25,
-                  duration: CcMotion.resolve(context, CcMotion.fast),
+                  duration: CcMotion.resolveToggle(context, CcMotion.fast),
                   child: Icon(
                     AppIcons.chevronDown,
                     size: 14,

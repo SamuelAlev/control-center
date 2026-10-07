@@ -74,9 +74,6 @@ class SettingsEntityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final reducedMotion =
-        (MediaQuery.maybeDisableAnimationsOf(context) ?? false) ||
-        (context.ccTheme?.reducedMotion ?? false);
 
     final header = CcTappable(
       onPressed: _expandable ? () => onExpandedChanged!(!expanded) : null,
@@ -162,7 +159,7 @@ class SettingsEntityRow extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 AnimatedRotation(
                   turns: expanded ? 0.25 : 0,
-                  duration: reducedMotion ? Duration.zero : CcMotion.fast,
+                  duration: CcMotion.resolveToggle(context, CcMotion.fast),
                   curve: CcMotion.standard,
                   child: Icon(
                     AppIcons.chevronRight,
@@ -181,9 +178,15 @@ class SettingsEntityRow extends StatelessWidget {
       return header;
     }
 
-    final open = onExpandedChanged == null || expanded;
-    final body = open
-        ? Padding(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        header,
+        CcCollapsible(
+          expanded: onExpandedChanged == null || expanded,
+          duration: CcMotion.normal,
+          child: Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(
               AppSpacing.lg + 28 + AppSpacing.md,
               0,
@@ -191,23 +194,8 @@ class SettingsEntityRow extends StatelessWidget {
               AppSpacing.lg,
             ),
             child: detail,
-          )
-        : const SizedBox(width: double.infinity, height: 0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        header,
-        if (reducedMotion)
-          body
-        else
-          AnimatedSize(
-            duration: CcMotion.normal,
-            curve: CcMotion.standard,
-            alignment: Alignment.topCenter,
-            child: body,
           ),
+        ),
       ],
     );
   }

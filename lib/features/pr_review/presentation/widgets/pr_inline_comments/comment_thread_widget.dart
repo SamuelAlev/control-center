@@ -203,9 +203,9 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                   const SizedBox(width: 2),
                 ],
                 Text(
-                  thread.entries.length == 1
-                      ? '1 comment'
-                      : '${thread.entries.length} comments',
+                  AppLocalizations.of(
+                    context,
+                  ).threadCommentCount(thread.entries.length),
                   style: CcTypography.caption.copyWith(
                     color: tokens.textTertiary,
                     fontWeight: FontWeight.w600,
@@ -401,30 +401,35 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                 ),
               )
             else
-              GestureDetector(
-                onTap: () {
+              // A real button: the reply stub was a bare gesture, so a
+              // keyboard user had no way to start a reply.
+              CcTappable(
+                onPressed: () {
                   setState(() => _replying = true);
                   WidgetsBinding.instance.addPostFrameCallback(
                     (_) => _replyFocus.requestFocus(),
                   );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                  child: Row(
-                    children: [
-                      Icon(
-                        AppIcons.messageSquare,
-                        size: 14,
-                        color: tokens.textTertiary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context).replyEllipsis,
-                        style: CcTypography.caption.copyWith(
+                semanticLabel: AppLocalizations.of(context).replyEllipsis,
+                builder: (context, states) => ExcludeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          AppIcons.messageSquare,
+                          size: 14,
                           color: tokens.textTertiary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          AppLocalizations.of(context).replyEllipsis,
+                          style: CcTypography.caption.copyWith(
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -460,8 +465,6 @@ class _CollapsedThreadRow extends StatefulWidget {
 }
 
 class _CollapsedThreadRowState extends State<_CollapsedThreadRow> {
-  bool _hovered = false;
-
   /// The comment's first meaningful line, with markdown noise and a
   /// ```suggestion fence flattened to a label — a preview that is three
   /// backticks tells the reader nothing.
@@ -494,24 +497,26 @@ class _CollapsedThreadRowState extends State<_CollapsedThreadRow> {
     final author = thread.entries.isEmpty ? null : thread.entries.first;
     final replies = thread.entries.length - 1;
     final preview = _preview(context);
-    return Semantics(
-      button: true,
-      label: l10n.expandComment,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onExpand,
-          child: Container(
+    // A focusable, collapsed disclosure: "Expand comment, collapsed, alice,
+    // <preview>, 2 replies, Resolved". It was a bare gesture before, so a
+    // collapsed (or resolved) conversation could not be opened from the
+    // keyboard at all.
+    return MergeSemantics(
+      child: Semantics(
+        expanded: false,
+        child: CcTappable(
+          onPressed: widget.onExpand,
+          semanticLabel: l10n.expandComment,
+          builder: (context, states) => Container(
             height: kCollapsedThreadHeight,
             margin: widget.embedded
                 ? EdgeInsets.zero
                 : const EdgeInsets.fromLTRB(12, 6, 12, 8),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: _hovered ? tokens.bgPrimaryHover : tokens.bgPrimary,
+              color: states.contains(WidgetState.hovered)
+                  ? tokens.bgPrimaryHover
+                  : tokens.bgPrimary,
               border: widget.embedded
                   ? null
                   : Border.all(
@@ -528,11 +533,14 @@ class _CollapsedThreadRowState extends State<_CollapsedThreadRow> {
                   color: tokens.textTertiary,
                 ),
                 const SizedBox(width: 6),
-                GitHubUserAvatar(
-                  login: author?.author ?? '?',
-                  avatarUrl: author?.authorAvatarUrl,
-                  size: 18,
-                  showHoverCard: false,
+                // The author's name follows; skip the avatar's initial.
+                ExcludeSemantics(
+                  child: GitHubUserAvatar(
+                    login: author?.author ?? '?',
+                    avatarUrl: author?.authorAvatarUrl,
+                    size: 18,
+                    showHoverCard: false,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 ConstrainedBox(
@@ -999,11 +1007,14 @@ class _SyncBadge extends StatelessWidget {
       return CcTooltip(message: error ?? label, child: pill);
     }
 
+    final retryLabel = error ?? AppLocalizations.of(context).clickToRetry;
     return CcTooltip(
-      message: error ?? AppLocalizations.of(context).clickToRetry,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(onTap: onRetry, child: pill),
+      message: retryLabel,
+      // Focusable, so a failed post can be retried from the keyboard.
+      child: CcTappable(
+        onPressed: onRetry,
+        semanticLabel: '$label, $retryLabel',
+        builder: (context, states) => ExcludeSemantics(child: pill),
       ),
     );
   }

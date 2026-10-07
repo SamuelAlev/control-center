@@ -445,26 +445,33 @@ class _AddFeedFormState extends ConsumerState<_AddFeedForm> {
             ],
           ),
         ),
-        if (_showAdvanced) ...[
-          const SizedBox(height: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.userAgent),
-              const SizedBox(height: 6),
-              CcTextField(hintText: l10n.mozillaUserAgent, controller: _uaCtrl),
-              const SizedBox(height: 6),
-              Text(
-                l10n.userAgentDescription,
-                style: CcTypography.caption.copyWith(
-                  color:
-                      tokens?.textTertiary ??
-                      theme.colorScheme.onSurfaceVariant,
+        CcCollapsible(
+          expanded: _showAdvanced,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(top: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.userAgent),
+                const SizedBox(height: 6),
+                CcTextField(
+                  hintText: l10n.mozillaUserAgent,
+                  controller: _uaCtrl,
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  l10n.userAgentDescription,
+                  style: CcTypography.caption.copyWith(
+                    color:
+                        tokens?.textTertiary ??
+                        theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
         if (_error != null) ...[
           const SizedBox(height: 12),
           Text(

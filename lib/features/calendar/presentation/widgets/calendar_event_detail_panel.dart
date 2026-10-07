@@ -459,9 +459,9 @@ class _ParticipantsSectionState extends State<_ParticipantsSection> {
     // Show everyone when there's barely more than the preview — hiding a single
     // row behind a toggle is more friction than it's worth.
     final collapsible = sorted.length > _kParticipantPreview + 1;
-    final visible = (!collapsible || _expanded)
-        ? sorted
-        : sorted.sublist(0, _kParticipantPreview);
+    final preview = collapsible
+        ? sorted.sublist(0, _kParticipantPreview)
+        : sorted;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,9 +510,20 @@ class _ParticipantsSectionState extends State<_ParticipantsSection> {
           ],
         ),
         const SizedBox(height: 8),
-        for (final attendee in visible)
+        for (final attendee in preview)
           _ParticipantRow(attendee: attendee, l10n: l10n),
-        if (collapsible)
+        if (collapsible) ...[
+          CcCollapsible(
+            expanded: _expanded,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final attendee in sorted.skip(_kParticipantPreview))
+                  _ParticipantRow(attendee: attendee, l10n: l10n),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsetsDirectional.only(start: 25, top: 2),
             child: GestureDetector(
@@ -532,6 +543,7 @@ class _ParticipantsSectionState extends State<_ParticipantsSection> {
               ),
             ),
           ),
+        ],
       ],
     );
   }

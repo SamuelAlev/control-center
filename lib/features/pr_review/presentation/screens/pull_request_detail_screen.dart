@@ -1623,19 +1623,25 @@ class _ErrorStateState extends ConsumerState<_ErrorState> {
                   ),
                 ],
               ),
-              if (_showDetails) ...[
-                const SizedBox(height: 16),
-                CcSelectionRegion(
-                  child: Text(
-                    widget.error.toString(),
-                    textAlign: TextAlign.center,
-                    style: CcTypography.caption.copyWith(
-                      color: t.textTertiary,
-                      fontFamily: CcFonts.codeFamily,
+              CcCollapsible(
+                expanded: _showDetails,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 16),
+                    CcSelectionRegion(
+                      child: Text(
+                        widget.error.toString(),
+                        textAlign: TextAlign.center,
+                        style: CcTypography.caption.copyWith(
+                          color: t.textTertiary,
+                          fontFamily: CcFonts.codeFamily,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
         ),

@@ -15270,4 +15270,135 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Δεν υπάρχουν πρόσφατα αρχεία';
+
+  @override
+  String get diffMarkFileViewed => 'Σήμανση ως προβεβλημένο';
+
+  @override
+  String get diffMarkFileNotViewed => 'Σήμανση ως μη προβεβλημένο';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count προσθήκες',
+      one: '1 προσθήκη',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count διαγραφές',
+      one: '1 διαγραφή',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, προβεβλημένο';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'μετονομάστηκε από $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count αρχεία',
+      one: '1 αρχείο',
+    );
+    return '$name, φάκελος, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, προβεβλημένο';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Γραμμή που προστέθηκε $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Γραμμή που αφαιρέθηκε $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Γραμμή $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Τμήμα $header';
+  }
+
+  @override
+  String get diffLineBlank => 'κενή';
+
+  @override
+  String get diffCommentOnLineAction => 'Σχολιασμός αυτής της γραμμής';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return 'Το $path σημάνθηκε ως προβεβλημένο';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return 'Το $path σημάνθηκε ως μη προβεβλημένο';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Γραμμές που προστέθηκαν: $additions, γραμμές που αφαιρέθηκαν: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Κλείσιμο $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count σχόλια',
+      one: '1 σχόλιο',
+    );
+    return '$_temp0';
+  }
 }

@@ -15127,4 +15127,135 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'אין קבצים שנפתחו לאחרונה';
+
+  @override
+  String get diffMarkFileViewed => 'סימון כנצפה';
+
+  @override
+  String get diffMarkFileNotViewed => 'סימון כלא נצפה';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הוספות',
+      one: 'הוספה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count מחיקות',
+      one: 'מחיקה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, נצפה';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'שם שונה מ-$previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count קבצים',
+      one: 'קובץ אחד',
+    );
+    return '$name, תיקייה, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, נצפה';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'שורה שנוספה $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'שורה שהוסרה $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'שורה $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'מקטע $header';
+  }
+
+  @override
+  String get diffLineBlank => 'ריקה';
+
+  @override
+  String get diffCommentOnLineAction => 'הוספת תגובה לשורה זו';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path סומן כנצפה';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path סומן כלא נצפה';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'שורות שנוספו: $additions, שורות שהוסרו: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'סגירת $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count תגובות',
+      one: 'תגובה אחת',
+    );
+    return '$_temp0';
+  }
 }

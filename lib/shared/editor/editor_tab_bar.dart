@@ -5,6 +5,8 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart'
     show kMiddleMouseButton, PointerSignalEvent, PointerScrollEvent;
+import 'package:flutter/semantics.dart' show SemanticsRole;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
@@ -158,6 +160,12 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// Per-cell keys so a hovering drag can measure tab boundaries.
   List<GlobalKey> _tabKeys = const [];
 
+  /// Per-tab keyboard focus. The strip is ONE Tab stop — the selected tab;
+  /// the others skip traversal and are reached with the arrow keys (the
+  /// roving-focus pattern of a tab list), so Tab moves past the strip instead
+  /// of walking every tab.
+  final List<FocusNode> _tabFocus = [];
+
   /// Drives horizontal scrolling of the tab strip.
   final ScrollController _scrollController = ScrollController();
 
@@ -178,7 +186,62 @@ class _EditorTabBarState extends State<EditorTabBar> {
   void dispose() {
     _endDragShield();
     _scrollController.dispose();
+    for (final node in _tabFocus) {
+      node.dispose();
+    }
     super.dispose();
+  }
+
+  void _ensureFocusNodes(int count) {
+    while (_tabFocus.length < count) {
+      _tabFocus.add(FocusNode(debugLabel: 'editor-tab'));
+    }
+    while (_tabFocus.length > count) {
+      _tabFocus.removeLast().dispose();
+    }
+    for (var i = 0; i < count; i++) {
+      _tabFocus[i].skipTraversal = i != widget.selectedIndex;
+    }
+  }
+
+  /// Arrow keys move focus along the strip (wrapping), Home/End jump to its
+  /// ends, Enter/Space select. Moving focus does not select: opening a tab can
+  /// boot a rig or spawn a shell, so that waits for an explicit activation.
+  KeyEventResult _onTabKey(int index, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final count = widget.tabs.length;
+    final key = event.logicalKey;
+    if (event is KeyDownEvent &&
+        (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter ||
+            key == LogicalKeyboardKey.space)) {
+      widget.onTabSelected(index);
+      return KeyEventResult.handled;
+    }
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    int? target;
+    if (key == LogicalKeyboardKey.arrowRight) {
+      target = rtl ? index - 1 : index + 1;
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      target = rtl ? index + 1 : index - 1;
+    } else if (key == LogicalKeyboardKey.home) {
+      target = 0;
+    } else if (key == LogicalKeyboardKey.end) {
+      target = count - 1;
+    }
+    if (target == null || count == 0) {
+      return KeyEventResult.ignored;
+    }
+    final next = target % count;
+    final node = _tabFocus[next];
+    node.requestFocus();
+    final cell = _tabKeys[next].currentContext;
+    if (cell != null) {
+      Scrollable.ensureVisible(cell);
+    }
+    return KeyEventResult.handled;
   }
 
   /// While a tab is being dragged, drop a transparent [PointerInterceptor] over
@@ -313,6 +376,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     _ensureKeys(widget.tabs.length);
+    _ensureFocusNodes(widget.tabs.length);
     // The strip carries the continuous bottom rule (the divider under the tabs).
     // Inactive tabs sit ON that rule; the ACTIVE tab paints a bottom border in
     // the body color that overpaints the rule, so it visually "opens" onto its
@@ -455,156 +519,178 @@ class _EditorTabBarState extends State<EditorTabBar> {
         ? t.bgPrimary
         : (hovered ? t.hover : const Color(0x00000000));
 
+    final focusNode = _tabFocus[index];
     final cell = KeyedSubtree(
       key: _tabKeys[index],
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = index),
-        onExit: (_) =>
-            setState(() => _hovered = _hovered == index ? null : _hovered),
-        child: GestureDetector(
-          onTap: () => widget.onTabSelected(index),
-          // Right-click opens the menu WITHOUT selecting the tab, so closing a
-          // tab from its menu never first loads its body (a rig boots, a PTY
-          // spawns, a diff re-scrolls). The tab is washed for the menu's
-          // lifetime instead — see [_openContextMenu].
-          onSecondaryTapUp: widget.onTabContextMenu == null
-              ? null
-              : (details) => _openContextMenu(index, details.globalPosition),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxTabWidth),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: background,
-                border: BorderDirectional(
-                  end: BorderSide(color: t.borderPrimary),
-                  // The strip's single divider line is the editor body's top
-                  // border (drawn by the host). The active tab alone paints its
-                  // own bottom rule in the body color so it visually "opens" onto
-                  // the content; inactive tabs have no bottom border — otherwise
-                  // the line doubles against the body's top border.
-                  bottom: selected
-                      ? BorderSide(color: t.bgPrimary)
-                      : BorderSide.none,
-                ),
+      // A tab to assistive tech — selected or not, activated by tap — and a
+      // keyboard stop with a visible focus ring (see [_onTabKey]).
+      child: Semantics(
+        container: true,
+        role: SemanticsRole.tab,
+        selected: selected,
+        child: Focus(
+          focusNode: focusNode,
+          onKeyEvent: (_, event) => _onTabKey(index, event),
+          child: FocusRing(
+            focusNode: focusNode,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) => setState(() => _hovered = index),
+              onExit: (_) => setState(
+                () => _hovered = _hovered == index ? null : _hovered,
               ),
-              // The accent rule is an overlay (not a border) so selecting a tab
-              // doesn't inset — and thus nudge — the label.
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    // widthFactor: 1 makes the cell shrink-wrap its content (up to
-                    // the ConstrainedBox's maxWidth) instead of expanding to fill
-                    // the full 220px; heightFactor stays null so it still centers
-                    // vertically in the strip.
-                    child: Center(
-                      widthFactor: 1,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (leading != null) ...[
-                            leading(labelColor),
-                            const SizedBox(width: 6),
-                          ] else if (widget.icons case final icons?) ...[
-                            Icon(icons[index], size: 14, color: labelColor),
-                            const SizedBox(width: 6),
-                          ],
-                          // The selected label is medium (w500), which measures
-                          // wider than the resting w400 — Manrope is a variable
-                          // font, so weight really changes advance widths. An
-                          // invisible w500 twin reserves the selected width up
-                          // front, so switching tabs restyles the label without
-                          // resizing the cell (which would shift every tab to
-                          // its right).
-                          Flexible(
-                            child: CcTooltip(
-                              message: widget.labels[index],
-                              // Below the strip: the bar sits under the window
-                              // chrome, so a tooltip above it has nowhere to go.
-                              placement: CcTooltipPlacement.bottom,
-                              child: Stack(
-                                alignment: AlignmentDirectional.centerStart,
-                                children: [
-                                  ExcludeSemantics(
-                                    child: Opacity(
-                                      opacity: 0,
-                                      child: Text(
-                                        widget.labels[index],
-                                        maxLines: 1,
-                                        softWrap: false,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
+              child: GestureDetector(
+                onTap: () => widget.onTabSelected(index),
+                // Right-click opens the menu WITHOUT selecting the tab, so closing a
+                // tab from its menu never first loads its body (a rig boots, a PTY
+                // spawns, a diff re-scrolls). The tab is washed for the menu's
+                // lifetime instead — see [_openContextMenu].
+                onSecondaryTapUp: widget.onTabContextMenu == null
+                    ? null
+                    : (details) =>
+                          _openContextMenu(index, details.globalPosition),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: _maxTabWidth),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: background,
+                      border: BorderDirectional(
+                        end: BorderSide(color: t.borderPrimary),
+                        // The strip's single divider line is the editor body's top
+                        // border (drawn by the host). The active tab alone paints its
+                        // own bottom rule in the body color so it visually "opens" onto
+                        // the content; inactive tabs have no bottom border — otherwise
+                        // the line doubles against the body's top border.
+                        bottom: selected
+                            ? BorderSide(color: t.bgPrimary)
+                            : BorderSide.none,
+                      ),
+                    ),
+                    // The accent rule is an overlay (not a border) so selecting a tab
+                    // doesn't inset — and thus nudge — the label.
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          // widthFactor: 1 makes the cell shrink-wrap its content (up to
+                          // the ConstrainedBox's maxWidth) instead of expanding to fill
+                          // the full 220px; heightFactor stays null so it still centers
+                          // vertically in the strip.
+                          child: Center(
+                            widthFactor: 1,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (leading != null) ...[
+                                  leading(labelColor),
+                                  const SizedBox(width: 6),
+                                ] else if (widget.icons case final icons?) ...[
+                                  Icon(
+                                    icons[index],
+                                    size: 14,
+                                    color: labelColor,
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                // The selected label is medium (w500), which measures
+                                // wider than the resting w400 — Manrope is a variable
+                                // font, so weight really changes advance widths. An
+                                // invisible w500 twin reserves the selected width up
+                                // front, so switching tabs restyles the label without
+                                // resizing the cell (which would shift every tab to
+                                // its right).
+                                Flexible(
+                                  child: CcTooltip(
+                                    message: widget.labels[index],
+                                    // Below the strip: the bar sits under the window
+                                    // chrome, so a tooltip above it has nowhere to go.
+                                    placement: CcTooltipPlacement.bottom,
+                                    child: Stack(
+                                      alignment:
+                                          AlignmentDirectional.centerStart,
+                                      children: [
+                                        ExcludeSemantics(
+                                          child: Opacity(
+                                            opacity: 0,
+                                            child: Text(
+                                              widget.labels[index],
+                                              maxLines: 1,
+                                              softWrap: false,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        Text(
+                                          widget.labels[index],
+                                          maxLines: 1,
+                                          softWrap: false,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: selected
+                                                ? CcTypography.mediumWeight
+                                                : CcTypography.regularWeight,
+                                            color: labelColor,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Text(
-                                    widget.labels[index],
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: selected
-                                          ? CcTypography.mediumWeight
-                                          : CcTypography.regularWeight,
+                                ),
+                                if (trailing != null) ...[
+                                  const SizedBox(width: 6),
+                                  trailing(labelColor),
+                                ],
+                                // Close / dirty affordance: the slot is always reserved
+                                // (so the label never shifts). Hovering shows the close
+                                // button; otherwise a dirty tab shows an unsaved-changes
+                                // dot, a selected clean tab shows the close button and an
+                                // unselected clean tab shows nothing — VS Code behaviour.
+                                if (widget.onTabClosed != null) ...[
+                                  const SizedBox(width: 6),
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: _buildTabAffordance(
+                                      index: index,
+                                      hovered: hovered,
+                                      selected: selected,
                                       color: labelColor,
                                     ),
                                   ),
                                 ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (selected)
+                          // Accent underline at the BOTTOM — matches the sidebar's
+                          // CcTabs indicator so the two tab strips read as aligned
+                          // (both underline the active tab) rather than one over-lining
+                          // and the other under-lining. Offset by the 1px rule the
+                          // strip draws under itself, exactly as CcTabs does, so the two
+                          // accents land on the same scanline; the selected cell's
+                          // body-colored bottom border then stays visible below it,
+                          // breaking the rule so the tab "opens" onto its content.
+                          Positioned(
+                            bottom: 1,
+                            left: 0,
+                            right: 0,
+                            child: IgnorePointer(
+                              child: SizedBox(
+                                height: 2,
+                                child: ColoredBox(color: t.accent),
                               ),
                             ),
                           ),
-                          if (trailing != null) ...[
-                            const SizedBox(width: 6),
-                            trailing(labelColor),
-                          ],
-                          // Close / dirty affordance: the slot is always reserved
-                          // (so the label never shifts). Hovering shows the close
-                          // button; otherwise a dirty tab shows an unsaved-changes
-                          // dot, a selected clean tab shows the close button and an
-                          // unselected clean tab shows nothing — VS Code behaviour.
-                          if (widget.onTabClosed != null) ...[
-                            const SizedBox(width: 6),
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: _buildTabAffordance(
-                                index: index,
-                                hovered: hovered,
-                                selected: selected,
-                                color: labelColor,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                      ],
                     ),
                   ),
-                  if (selected)
-                    // Accent underline at the BOTTOM — matches the sidebar's
-                    // CcTabs indicator so the two tab strips read as aligned
-                    // (both underline the active tab) rather than one over-lining
-                    // and the other under-lining. Offset by the 1px rule the
-                    // strip draws under itself, exactly as CcTabs does, so the two
-                    // accents land on the same scanline; the selected cell's
-                    // body-colored bottom border then stays visible below it,
-                    // breaking the rule so the tab "opens" onto its content.
-                    Positioned(
-                      bottom: 1,
-                      left: 0,
-                      right: 0,
-                      child: IgnorePointer(
-                        child: SizedBox(
-                          height: 2,
-                          child: ColoredBox(color: t.accent),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
           ),
@@ -679,6 +765,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
     if (hovered) {
       return _TabCloseButton(
         color: color,
+        tabLabel: widget.labels[index],
         onTap: () => widget.onTabClosed!(index),
       );
     }
@@ -688,6 +775,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
     if (selected) {
       return _TabCloseButton(
         color: color,
+        tabLabel: widget.labels[index],
         onTap: () => widget.onTabClosed!(index),
       );
     }
@@ -728,9 +816,17 @@ class _DirtyDot extends StatelessWidget {
 /// over the cell's select gesture and its opaque hit-test keeps a drag from
 /// starting on it.
 class _TabCloseButton extends StatelessWidget {
-  const _TabCloseButton({required this.color, required this.onTap});
+  const _TabCloseButton({
+    required this.color,
+    required this.tabLabel,
+    required this.onTap,
+  });
 
   final Color color;
+
+  /// The tab's label, so the button is announced as "Close Overview" rather
+  /// than a bare "Close" beside every tab.
+  final String tabLabel;
   final VoidCallback onTap;
 
   @override
@@ -743,7 +839,7 @@ class _TabCloseButton extends StatelessWidget {
       semanticLabel: Localizations.of<AppLocalizations>(
         context,
         AppLocalizations,
-      )?.close,
+      )?.closeTabNamed(tabLabel),
       borderRadius: BorderRadius.circular(3),
       builder: (context, states) => DecoratedBox(
         decoration: BoxDecoration(

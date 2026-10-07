@@ -15139,4 +15139,135 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Inga nyligen öppnade filer';
+
+  @override
+  String get diffMarkFileViewed => 'Markera som granskad';
+
+  @override
+  String get diffMarkFileNotViewed => 'Markera som inte granskad';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tillägg',
+      one: '1 tillägg',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count borttagningar',
+      one: '1 borttagning',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, granskad';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'bytt namn från $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filer',
+      one: '1 fil',
+    );
+    return '$name, mapp, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, granskad';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Tillagd rad $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Borttagen rad $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Rad $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Avsnitt $header';
+  }
+
+  @override
+  String get diffLineBlank => 'tom';
+
+  @override
+  String get diffCommentOnLineAction => 'Kommentera den här raden';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path markerad som granskad';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path markerad som inte granskad';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Tillagda rader: $additions, borttagna rader: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Stäng $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kommentarer',
+      one: '1 kommentar',
+    );
+    return '$_temp0';
+  }
 }

@@ -74,6 +74,7 @@ export 'package:cc_ui/src/components/cc_truncated_text.dart';
 export 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 // Foundation.
 export 'package:cc_ui/src/foundation/cc_browser_text_menu.dart';
+export 'package:cc_ui/src/foundation/cc_collapsible.dart';
 export 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 export 'package:cc_ui/src/foundation/cc_elevation.dart';
 export 'package:cc_ui/src/foundation/cc_fluid_hover.dart';

@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/primitives/focus_modality.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/widgets.dart';
 
@@ -81,6 +82,15 @@ abstract final class CcMotion {
   /// Alias of [resolve] for call sites that want the travel intent named.
   static Duration resolveTravel(BuildContext context, Duration duration) =>
       resolve(context, duration);
+
+  /// Travel for a user toggle (a disclosure chevron, an accordion): like
+  /// [resolve], but also [Duration.zero] when the toggle came from the
+  /// keyboard ([FocusModality.lastInputWasKeyboard]), so keyboard-driven
+  /// changes snap. Read it in the `build` that the toggle triggers.
+  static Duration resolveToggle(BuildContext context, Duration duration) =>
+      FocusModality.instance.lastInputWasKeyboard
+      ? Duration.zero
+      : resolve(context, duration);
 
   /// Opacity (and color washes): [duration], or [fade] when reduced so
   /// presence still reports.

@@ -15340,4 +15340,151 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'لا توجد ملفات مفتوحة مؤخرًا';
+
+  @override
+  String get diffMarkFileViewed => 'وضع علامة كمعروض';
+
+  @override
+  String get diffMarkFileNotViewed => 'وضع علامة كغير معروض';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count إضافة',
+      many: '$count إضافة',
+      few: '$count إضافات',
+      two: 'إضافتان',
+      one: 'إضافة واحدة',
+      zero: 'لا إضافات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عملية حذف',
+      many: '$count عملية حذف',
+      few: '$count عمليات حذف',
+      two: 'حذفان',
+      one: 'حذف واحد',
+      zero: 'لا حذف',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path، $status، $additions، $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path، $status، $additions، $deletions، معروض';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'أُعيدت تسميته من $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ملف',
+      many: '$count ملفًا',
+      few: '$count ملفات',
+      two: 'ملفان',
+      one: 'ملف واحد',
+      zero: 'لا ملفات',
+    );
+    return '$name، مجلد، $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name، $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name، $status، معروض';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'سطر مضاف $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'سطر محذوف $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'السطر $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'مقطع $header';
+  }
+
+  @override
+  String get diffLineBlank => 'فارغ';
+
+  @override
+  String get diffCommentOnLineAction => 'التعليق على هذا السطر';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return 'تم وضع علامة على $path كمعروض';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return 'تم وضع علامة على $path كغير معروض';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'الأسطر المضافة: $additions، الأسطر المحذوفة: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'إغلاق $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تعليق',
+      many: '$count تعليقًا',
+      few: '$count تعليقات',
+      two: 'تعليقان',
+      one: 'تعليق واحد',
+      zero: 'لا تعليقات',
+    );
+    return '$_temp0';
+  }
 }

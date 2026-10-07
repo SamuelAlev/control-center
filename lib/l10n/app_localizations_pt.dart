@@ -15206,6 +15206,137 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'Nenhum arquivo aberto recentemente';
+
+  @override
+  String get diffMarkFileViewed => 'Marcar como visto';
+
+  @override
+  String get diffMarkFileNotViewed => 'Marcar como não visto';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count adições',
+      one: '1 adição',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count exclusões',
+      one: '1 exclusão',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path, $status, $additions, $deletions, visto';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'renomeado de $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arquivos',
+      one: '1 arquivo',
+    );
+    return '$name, pasta, $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name, $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name, $status, visto';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'Linha adicionada $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'Linha removida $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'Linha $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'Bloco $header';
+  }
+
+  @override
+  String get diffLineBlank => 'vazia';
+
+  @override
+  String get diffCommentOnLineAction => 'Comentar nesta linha';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path marcado como visto';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path marcado como não visto';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'Linhas adicionadas: $additions, linhas removidas: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'Fechar $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count comentários',
+      one: '1 comentário',
+    );
+    return '$_temp0';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

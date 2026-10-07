@@ -153,7 +153,10 @@ class _PipelineRunWaterfallState extends State<PipelineRunWaterfall> {
                       children: [
                         AnimatedRotation(
                           turns: _expanded ? 0 : -0.25,
-                          duration: const Duration(milliseconds: 150),
+                          duration: CcMotion.resolveToggle(
+                            context,
+                            CcMotion.moderate,
+                          ),
                           child: Icon(
                             AppIcons.chevronDown,
                             size: 14,
@@ -187,16 +190,27 @@ class _PipelineRunWaterfallState extends State<PipelineRunWaterfall> {
                 ),
               ),
             ),
-            if (_expanded) ...[
-              const CcDivider(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: _maxBarsHeight),
-                  child: SingleChildScrollView(child: bars),
-                ),
+            CcCollapsible(
+              expanded: _expanded,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CcDivider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: _maxBarsHeight,
+                      ),
+                      child: SingleChildScrollView(child: bars),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),

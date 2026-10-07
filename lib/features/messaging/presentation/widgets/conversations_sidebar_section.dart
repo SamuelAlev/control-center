@@ -158,7 +158,7 @@ class ConversationsSidebarSection extends ConsumerWidget {
 ///
 /// [CcSidebarGroup] renders the same eyebrow + chevron treatment when
 /// `collapsible`, but has no slot for a trailing action, so the header is
-/// composed here (matching the group's eyebrow styling) and an [AnimatedSize]
+/// composed here (matching the group's eyebrow styling) and a [CcCollapsible]
 /// gates a label-less [CcSidebarGroup] holding the items.
 class _SidebarSection extends StatefulWidget {
   const _SidebarSection({
@@ -260,16 +260,13 @@ class _SidebarSectionState extends State<_SidebarSection> {
             );
           },
         ),
-        // Collapsible sections animate their body. Spaces stay open: an
-        // AnimatedSize here restarts while a card inside is changing height.
+        // Collapsible sections animate their body; once open, CcCollapsible
+        // follows the group's height directly, so a card changing height
+        // inside never re-animates. Spaces stay open and skip the clip.
         if (widget.collapsible)
-          AnimatedSize(
-            duration: CcMotion.resolve(context, CcMotion.normal),
-            curve: CcMotion.standard,
-            alignment: Alignment.topCenter,
-            child: expanded
-                ? CcSidebarGroup(children: widget.children)
-                : const SizedBox(width: double.infinity, height: 0),
+          CcCollapsible(
+            expanded: expanded,
+            child: CcSidebarGroup(children: widget.children),
           )
         else
           CcSidebarGroup(children: widget.children),
@@ -310,7 +307,7 @@ class _SectionChevron extends StatelessWidget {
           height: kCcSidebarItemExtent,
           child: Center(
             child: AnimatedRotation(
-              duration: CcMotion.normal,
+              duration: CcMotion.resolveToggle(context, CcMotion.normal),
               curve: CcMotion.standard,
               turns: expanded ? 0 : -0.25,
               child: Icon(AppIcons.chevronDown, size: 14, color: color),

@@ -25647,6 +25647,142 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No recently opened files'**
   String get ideQuickOpenNoRecent;
+
+  /// Tooltip and screen-reader name of the PR diff file header button that marks the file as viewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as viewed'**
+  String get diffMarkFileViewed;
+
+  /// Tooltip and screen-reader name of the PR diff file header button that clears the viewed mark.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as not viewed'**
+  String get diffMarkFileNotViewed;
+
+  /// Number of added lines in a diff, read by screen readers in place of the green "+N".
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 addition} other{{count} additions}}'**
+  String diffAdditionsCount(int count);
+
+  /// Number of removed lines in a diff, read by screen readers in place of the red "−N".
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 deletion} other{{count} deletions}}'**
+  String diffDeletionsCount(int count);
+
+  /// Screen-reader label of a PR diff file header. status is e.g. "Modified"; additions/deletions are diffAdditionsCount/diffDeletionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{path}, {status}, {additions}, {deletions}'**
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  );
+
+  /// Screen-reader label of a PR diff file header for a file the reviewer marked viewed.
+  ///
+  /// In en, this message translates to:
+  /// **'{path}, {status}, {additions}, {deletions}, viewed'**
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  );
+
+  /// Screen-reader status of a renamed file in the PR diff; previous is the old path.
+  ///
+  /// In en, this message translates to:
+  /// **'renamed from {previous}'**
+  String diffFileRenamedFrom(String previous);
+
+  /// Screen-reader label of a folder row in the PR diff file tree.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, folder, {count, plural, =1{1 file} other{{count} files}}'**
+  String diffTreeFolderSemantics(String name, int count);
+
+  /// Screen-reader label of a file row in the PR diff file tree; status is e.g. "Added".
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, {status}'**
+  String diffTreeFileSemantics(String name, String status);
+
+  /// Screen-reader label of a file row in the PR diff file tree that the reviewer marked viewed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, {status}, viewed'**
+  String diffTreeFileSemanticsViewed(String name, String status);
+
+  /// Screen-reader label of an added code line in the PR diff.
+  ///
+  /// In en, this message translates to:
+  /// **'Added line {line}: {code}'**
+  String diffLineAdded(int line, String code);
+
+  /// Screen-reader label of a removed code line in the PR diff.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed line {line}: {code}'**
+  String diffLineRemoved(int line, String code);
+
+  /// Screen-reader label of an unchanged code line in the PR diff.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}: {code}'**
+  String diffLineContext(int line, String code);
+
+  /// Screen-reader label of a diff hunk header row ("@@ -1,4 +1,5 @@ ...").
+  ///
+  /// In en, this message translates to:
+  /// **'Hunk {header}'**
+  String diffLineHunk(String header);
+
+  /// Read by screen readers in place of an empty code line in the PR diff.
+  ///
+  /// In en, this message translates to:
+  /// **'blank'**
+  String get diffLineBlank;
+
+  /// Screen-reader action on a PR diff code line that opens the inline comment composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment on this line'**
+  String get diffCommentOnLineAction;
+
+  /// Screen-reader announcement after marking a PR diff file viewed.
+  ///
+  /// In en, this message translates to:
+  /// **'{path} marked as viewed'**
+  String diffFileMarkedViewedAnnouncement(String path);
+
+  /// Screen-reader announcement after clearing a PR diff file's viewed mark.
+  ///
+  /// In en, this message translates to:
+  /// **'{path} marked as not viewed'**
+  String diffFileMarkedNotViewedAnnouncement(String path);
+
+  /// Screen-reader summary of a changed file's added/removed line counts in the PR sidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines added: {additions}, lines removed: {deletions}'**
+  String prLineChangesSemantics(int additions, int deletions);
+
+  /// Accessible name of a workbench tab's close button.
+  ///
+  /// In en, this message translates to:
+  /// **'Close {tab}'**
+  String closeTabNamed(String tab);
+
+  /// Number of comments in a code review conversation, shown in its header.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
+  String threadCommentCount(int count);
 }
 
 class _AppLocalizationsDelegate

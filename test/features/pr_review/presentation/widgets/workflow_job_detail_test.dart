@@ -56,7 +56,7 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.text('Install deps'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     // Child rows are hidden…
     expect(find.text('installing...'), findsNothing);

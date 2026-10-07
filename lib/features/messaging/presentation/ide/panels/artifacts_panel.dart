@@ -145,58 +145,63 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
               ),
             ],
           ),
-          if (_open)
-            revisions.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(14),
-                child: Center(child: CcSpinner()),
-              ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  l10n.artifactUnavailable,
-                  style: AppTextStyles.bodySmall(
-                    tokens,
-                  ).copyWith(color: tokens.textTertiary),
+          CcCollapsible(
+            expanded: _open,
+            // A Builder so a closed card never decodes its revision: the
+            // collapsible only builds its child while it shows.
+            child: Builder(
+              builder: (context) => revisions.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Center(child: CcSpinner()),
                 ),
-              ),
-              data: (list) {
-                if (list.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                final shown = _pinnedRevision == null
-                    ? list.last
-                    : list.firstWhere(
-                        (r) => r.revisionNumber == _pinnedRevision,
-                        orElse: () => list.last,
-                      );
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const CcDivider(),
-                    if (list.length > 1)
-                      ArtifactRevisionPicker(
-                        revisions: list,
-                        selected: shown.revisionNumber,
-                        isHead: shown.id == list.last.id,
-                        onSelect: (n) => setState(
-                          () => _pinnedRevision = n == list.last.revisionNumber
-                              ? null
-                              : n,
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    l10n.artifactUnavailable,
+                    style: AppTextStyles.bodySmall(
+                      tokens,
+                    ).copyWith(color: tokens.textTertiary),
+                  ),
+                ),
+                data: (list) {
+                  if (list.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  final shown = _pinnedRevision == null
+                      ? list.last
+                      : list.firstWhere(
+                          (r) => r.revisionNumber == _pinnedRevision,
+                          orElse: () => list.last,
+                        );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const CcDivider(),
+                      if (list.length > 1)
+                        ArtifactRevisionPicker(
+                          revisions: list,
+                          selected: shown.revisionNumber,
+                          isHead: shown.id == list.last.id,
+                          onSelect: (n) => setState(
+                            () => _pinnedRevision =
+                                n == list.last.revisionNumber ? null : n,
+                          ),
+                          onRestore: () => _restore(shown),
                         ),
-                        onRestore: () => _restore(shown),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: ArtifactView(
+                          document: decodeArtifactRevision(shown),
+                          compact: true,
+                        ),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: ArtifactView(
-                        document: decodeArtifactRevision(shown),
-                        compact: true,
-                      ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
+          ),
         ],
       ),
     );

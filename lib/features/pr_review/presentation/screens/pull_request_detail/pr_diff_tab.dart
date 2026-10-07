@@ -22,6 +22,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/pr_review/providers/pr_tree_width_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/confined_directional_focus.dart';
 import 'package:control_center/shared/widgets/ready_auto_scroll.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -302,7 +303,16 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final splitView = ref.watch(prDiffSplitViewProvider);
     return Column(
       children: [
-        _buildToolbar(context, treeVisible: treeVisible, splitView: splitView),
+        // Toolbar, file tree and diff are separate panes for the keyboard:
+        // arrow keys stay within the focused pane and Tab finishes one pane
+        // before the next (see [ConfinedDirectionalFocus]).
+        ConfinedDirectionalFocus(
+          child: _buildToolbar(
+            context,
+            treeVisible: treeVisible,
+            splitView: splitView,
+          ),
+        ),
         Expanded(
           child: _buildFiles(
             context,
@@ -385,32 +395,49 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
             ),
             const SizedBox(width: 16),
           ],
-          Icon(AppIcons.fileText, size: 14, color: t.textTertiary),
-          const SizedBox(width: 6),
-          Text(
-            l10n.diffFilesCount(fileCount),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: t.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '+$additions',
-            style: const TextStyle(
-              color: ReviewStatusColors.success,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '−$deletions',
-            style: const TextStyle(
-              color: ReviewStatusColors.failure,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+          // Read as one phrase with the counts in words; the glyph-prefixed
+          // numbers alone read as "plus 12" / "minus 3" with no subject.
+          Semantics(
+            container: true,
+            label: [
+              l10n.diffFilesCount(fileCount),
+              l10n.diffAdditionsCount(additions),
+              l10n.diffDeletionsCount(deletions),
+            ].join(', '),
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(AppIcons.fileText, size: 14, color: t.textTertiary),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.diffFilesCount(fileCount),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: t.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '+$additions',
+                    style: const TextStyle(
+                      color: ReviewStatusColors.success,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '−$deletions',
+                    style: const TextStyle(
+                      color: ReviewStatusColors.failure,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -485,18 +512,20 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final files = _filesForChrome();
 
-    final diffScroll = ColoredBox(
-      color: t.bgPrimary,
-      child: PrimaryScrollController(
-        controller: _scrollController,
-        child: CcScrollbar(
+    final diffScroll = ConfinedDirectionalFocus(
+      child: ColoredBox(
+        color: t.bgPrimary,
+        child: PrimaryScrollController(
           controller: _scrollController,
-          thumbVisibility: true,
-          child: ReadyAutoScroll(
+          child: CcScrollbar(
             controller: _scrollController,
-            child: CustomScrollView(
+            thumbVisibility: true,
+            child: ReadyAutoScroll(
               controller: _scrollController,
-              slivers: [_buildFilesSliver(splitView: splitView)],
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [_buildFilesSliver(splitView: splitView)],
+              ),
             ),
           ),
         ),
@@ -533,18 +562,20 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
               initialExtent: treeExtent,
               minExtent: 160,
               maxExtent: maxTree,
-              builder: (context) => ColoredBox(
-                color: t.bgPrimary,
-                child: TreeOverlay(
-                  pr: widget.pr,
-                  prRef: widget.prRef,
-                  diffKey: _diffKey,
-                  mode: _sidebarMode,
-                  searchFocusToken: _searchFocusToken,
-                  onOpenSearch: _requestSidebarSearch,
-                  onShowFileTree: _showFileTree,
-                  onOpenFileInEditor:
-                      widget.onOpenFileInEditor ?? (_, {int? line}) {},
+              builder: (context) => ConfinedDirectionalFocus(
+                child: ColoredBox(
+                  color: t.bgPrimary,
+                  child: TreeOverlay(
+                    pr: widget.pr,
+                    prRef: widget.prRef,
+                    diffKey: _diffKey,
+                    mode: _sidebarMode,
+                    searchFocusToken: _searchFocusToken,
+                    onOpenSearch: _requestSidebarSearch,
+                    onShowFileTree: _showFileTree,
+                    onOpenFileInEditor:
+                        widget.onOpenFileInEditor ?? (_, {int? line}) {},
+                  ),
                 ),
               ),
             ),

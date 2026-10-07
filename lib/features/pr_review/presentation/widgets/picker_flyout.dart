@@ -7,8 +7,9 @@ import 'package:flutter/widgets.dart';
 /// panel anchored under the section header (via [link]), a title, a search
 /// field and a scrollable [list] area. There is no save button — closing the
 /// flyout (barrier tap or Esc) calls [onClose], where the caller applies the
-/// diff.
-class PickerFlyoutPanel extends StatelessWidget {
+/// diff. Closing hands keyboard focus back to whatever held it when the flyout
+/// opened (the `+` trigger), instead of dropping it with the search field.
+class PickerFlyoutPanel extends StatefulWidget {
   /// Creates a [PickerFlyoutPanel].
   const PickerFlyoutPanel({
     super.key,
@@ -47,8 +48,49 @@ class PickerFlyoutPanel extends StatelessWidget {
   final Widget list;
 
   @override
+  State<PickerFlyoutPanel> createState() => _PickerFlyoutPanelState();
+}
+
+class _PickerFlyoutPanelState extends State<PickerFlyoutPanel> {
+  /// Focus when the flyout opened — the trigger, for a keyboard user. The
+  /// search field only takes focus a frame later.
+  FocusNode? _returnFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _returnFocus = FocusManager.instance.primaryFocus;
+  }
+
+  @override
+  void dispose() {
+    final target = _returnFocus;
+    // The search field unmounts with the panel; once that settles, put focus
+    // back where it was unless the close itself moved it somewhere real.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final current = FocusManager.instance.primaryFocus;
+      final lost =
+          current == null ||
+          current is FocusScopeNode ||
+          current == widget.searchFocus;
+      if (lost && target != null && target.context != null) {
+        target.requestFocus();
+      }
+    });
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final link = widget.link;
+    final title = widget.title;
+    final searchController = widget.searchController;
+    final searchFocus = widget.searchFocus;
+    final hintText = widget.hintText;
+    final onQueryChanged = widget.onQueryChanged;
+    final onClose = widget.onClose;
+    final list = widget.list;
     return Stack(
       children: [
         Positioned.fill(
@@ -86,12 +128,15 @@ class PickerFlyoutPanel extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: t.textPrimary,
+                      child: Semantics(
+                        header: true,
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: t.textPrimary,
+                          ),
                         ),
                       ),
                     ),

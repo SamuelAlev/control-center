@@ -78,10 +78,7 @@ class NotificationsSection extends ConsumerWidget {
               _GroupHeader(group: group),
               for (final cat in NotificationCategory.values.where(
                 (c) => c.group == group,
-              )) ...[
-                const SizedBox(height: 8),
-                _CategoryRow(category: cat),
-              ],
+              )) ...[const SizedBox(height: 8), _CategoryRow(category: cat)],
               if (group == NotificationCategoryGroup.pullRequests) ...[
                 const SizedBox(height: 8),
                 const _MutedReposRow(),
@@ -165,9 +162,9 @@ class _MutedReposRowState extends ConsumerState<_MutedReposRow> {
         : (ref.watch(reposForWorkspaceProvider(workspaceId)).asData?.value ??
               const <Repo>[]);
     final forgeRepos = repos.where((r) => r.hasForgeRemote).toList()
-      ..sort((a, b) => a.fullName.toLowerCase().compareTo(
-        b.fullName.toLowerCase(),
-      ));
+      ..sort(
+        (a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
+      );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -187,14 +184,22 @@ class _MutedReposRowState extends ConsumerState<_MutedReposRow> {
             ),
           ),
         ),
-        if (_expanded)
-          for (final repo in forgeRepos) ...[
-            const SizedBox(height: 8),
-            _MutedRepoToggle(
-              repoFullName: repo.fullName,
-              muted: muted.contains(repo.fullName.toLowerCase()),
-            ),
-          ],
+        CcCollapsible(
+          expanded: _expanded,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final repo in forgeRepos) ...[
+                const SizedBox(height: 8),
+                _MutedRepoToggle(
+                  repoFullName: repo.fullName,
+                  muted: muted.contains(repo.fullName.toLowerCase()),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 /// as a real widget so it gets native hover + cursor feedback.
 // RTL carve-out: diff canvas — gap rows align to the LTR code gutter and the
 // h-scrollbar/overlays position in pixel space.
-class GapRow extends StatefulWidget {
+class GapRow extends StatelessWidget {
   /// Creates a [GapRow].
   const GapRow({
     super.key,
@@ -39,35 +39,28 @@ class GapRow extends StatefulWidget {
   final bool showBottomBorder;
 
   @override
-  State<GapRow> createState() => _GapRowState();
-}
-
-class _GapRowState extends State<GapRow> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.ds;
     final hoverBg = tokens.bgPrimaryHover;
     final surface = tokens.bgPrimary;
-    return MouseRegion(
-      cursor: widget.enabled ? SystemMouseCursors.click : MouseCursor.defer,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.enabled ? widget.onTap : null,
-        child: Container(
+    // A real tappable, not a bare gesture detector: keyboard users reach it
+    // with Tab or the diff's arrow keys and expand it with Enter/Space, and a
+    // screen reader announces it as a button.
+    return CcTappable(
+      onPressed: enabled ? onTap : null,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        return Container(
           height: kDiffLineHeight,
           padding: const EdgeInsets.only(left: 16),
           alignment: Alignment.centerLeft,
           decoration: BoxDecoration(
-            color: _hovered ? hoverBg : surface,
+            color: hovered ? hoverBg : surface,
             border: Border(
-              top: widget.showTopBorder
+              top: showTopBorder
                   ? BorderSide(color: tokens.borderSecondary, width: 0.5)
                   : BorderSide.none,
-              bottom: widget.showBottomBorder
+              bottom: showBottomBorder
                   ? BorderSide(color: tokens.borderSecondary, width: 0.5)
                   : BorderSide.none,
             ),
@@ -75,18 +68,20 @@ class _GapRowState extends State<GapRow> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                widget.icon,
-                size: 12,
-                color: _hovered ? tokens.fgSecondaryHover : tokens.fgTertiary,
+              ExcludeSemantics(
+                child: Icon(
+                  icon,
+                  size: 12,
+                  color: hovered ? tokens.fgSecondaryHover : tokens.fgTertiary,
+                ),
               ),
               const SizedBox(width: 6),
               Text(
-                widget.label,
+                label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: CcTypography.caption.copyWith(
-                  color: _hovered
+                  color: hovered
                       ? tokens.textSecondaryHover
                       : tokens.textTertiary,
                   height: 1,
@@ -94,8 +89,8 @@ class _GapRowState extends State<GapRow> {
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

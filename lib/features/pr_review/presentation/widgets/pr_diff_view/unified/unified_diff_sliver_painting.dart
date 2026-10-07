@@ -84,7 +84,31 @@ extension _UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
   /// sliver acts on is re-derived from the document instead. Intra-file
   /// geometry is exact at build time (a file only gets body slots once parsed),
   /// so each slot kind can be recomputed directly.
+  ///
+  /// A body slot of a file mid expand/collapse is clamped to the file's clipped
+  /// body edge: its natural spot can sit below the next file's header, and the
+  /// lazy-list machinery needs offsets sorted. It still paints at
+  /// [naturalSlotOffset], under the clip.
   double liveSlotOffset(int index) {
+    final double natural = naturalSlotOffset(index);
+    final slot = slots[index];
+    if (slot.kind == DiffSlotKind.header ||
+        !_document.isRevealing(slot.fileIndex)) {
+      return natural;
+    }
+    return math.min(natural, _document.bodyClipBottomOf(slot.fileIndex));
+  }
+
+  /// Whether slot [index] is body content of a file mid expand/collapse —
+  /// painted under the file's body clip and never hit-testable.
+  bool isRevealingBodySlot(int index) {
+    final slot = slots[index];
+    return slot.kind != DiffSlotKind.header &&
+        _document.isRevealing(slot.fileIndex);
+  }
+
+  /// Where slot [index] sits in the document with its file fully laid out.
+  double naturalSlotOffset(int index) {
     final slot = slots[index];
     switch (slot.kind) {
       case DiffSlotKind.header:
@@ -327,15 +351,32 @@ extension _UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
       if (fileTop >= bandBottom) {
         break;
       }
-      if (_document.isExpanded(f) && !_document.isPreviewing(f)) {
+      final bool revealing = _document.isRevealing(f);
+      if (_document.showsBody(f) && !_document.isPreviewing(f)) {
         final raw = _document.structureOf(f);
         if (raw != null && raw.length > 0) {
           final painter = painterFor(f);
           final double bodyTop = fileTop + headerHeight;
-          final double fileBottom = fileTop + _document.heightOfFile(f);
+          final double fileBottom = revealing
+              ? _document.bodyClipBottomOf(f)
+              : fileTop + _document.heightOfFile(f);
           final double segTop = math.max(bandTop, bodyTop);
           final double segBottom = math.min(bandBottom, fileBottom);
           if (segBottom > segTop) {
+            if (revealing) {
+              // Mid expand/collapse: the rows keep their place and the body's
+              // bottom edge moves, so cut the last partial row at that edge.
+              canvas
+                ..save()
+                ..clipRect(
+                  Rect.fromLTRB(
+                    0,
+                    segTop - scrollOffset,
+                    width,
+                    segBottom - scrollOffset,
+                  ),
+                );
+            }
             final int firstLine = _document.lineAtFileLocalY(
               f,
               segTop - fileTop,
@@ -401,10 +442,13 @@ extension _UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
                 landingEndCol: landingHit ? landing.endCol : null,
               );
             }
+            if (revealing) {
+              canvas.restore();
+            }
           }
         }
       }
-      if (_document.isExpanded(f)) {
+      if (_document.showsBody(f)) {
         final double contentBottom =
             fileTop + _document.heightOfFile(f) - _document.fileSeparator;
         if (contentBottom >= bandTop && contentBottom <= bandBottom) {

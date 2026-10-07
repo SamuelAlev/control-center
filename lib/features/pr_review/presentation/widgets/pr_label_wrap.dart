@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/hover_focus_reveal.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -81,16 +82,14 @@ class _RemovableLabelChip extends StatefulWidget {
 }
 
 class _RemovableLabelChipState extends State<_RemovableLabelChip> {
-  bool _hovered = false;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Row(
+    // The remove button stays mounted (transparent at rest) so Tab and screen
+    // readers reach it, not only the mouse.
+    return HoverFocusReveal(
+      builder: (context, revealed) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           CcColorTag(
@@ -107,14 +106,19 @@ class _RemovableLabelChipState extends State<_RemovableLabelChip> {
             height: 16,
             child: widget.pending
                 ? const Center(child: CcSpinner(size: 12))
-                : _hovered
-                ? CcTappable(
-                    onPressed: widget.onRemove,
-                    semanticLabel: l10n.removeLabel(widget.label.name),
-                    builder: (context, states) =>
-                        Icon(AppIcons.x, size: 14, color: tokens.fgQuaternary),
-                  )
-                : const SizedBox.shrink(),
+                : HoverFocusReveal.fade(
+                    revealed: revealed,
+                    child: CcTappable(
+                      onPressed: widget.onRemove,
+                      semanticLabel: l10n.removeLabel(widget.label.name),
+                      borderRadius: AppRadii.brSm,
+                      builder: (context, states) => Icon(
+                        AppIcons.x,
+                        size: 14,
+                        color: tokens.fgQuaternary,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),

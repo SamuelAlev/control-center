@@ -15069,4 +15069,135 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get ideQuickOpenNoRecent => 'هیچ فایلی اخیراً باز نشده است';
+
+  @override
+  String get diffMarkFileViewed => 'علامت‌گذاری به‌عنوان دیده‌شده';
+
+  @override
+  String get diffMarkFileNotViewed => 'علامت‌گذاری به‌عنوان دیده‌نشده';
+
+  @override
+  String diffAdditionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count افزودن',
+      one: '۱ افزودن',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffDeletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count حذف',
+      one: '۱ حذف',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String diffFileSemantics(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path، $status، $additions، $deletions';
+  }
+
+  @override
+  String diffFileSemanticsViewed(
+    String path,
+    String status,
+    String additions,
+    String deletions,
+  ) {
+    return '$path، $status، $additions، $deletions، دیده‌شده';
+  }
+
+  @override
+  String diffFileRenamedFrom(String previous) {
+    return 'تغییر نام از $previous';
+  }
+
+  @override
+  String diffTreeFolderSemantics(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فایل',
+      one: '۱ فایل',
+    );
+    return '$name، پوشه، $_temp0';
+  }
+
+  @override
+  String diffTreeFileSemantics(String name, String status) {
+    return '$name، $status';
+  }
+
+  @override
+  String diffTreeFileSemanticsViewed(String name, String status) {
+    return '$name، $status، دیده‌شده';
+  }
+
+  @override
+  String diffLineAdded(int line, String code) {
+    return 'خط افزوده $line: $code';
+  }
+
+  @override
+  String diffLineRemoved(int line, String code) {
+    return 'خط حذف‌شده $line: $code';
+  }
+
+  @override
+  String diffLineContext(int line, String code) {
+    return 'خط $line: $code';
+  }
+
+  @override
+  String diffLineHunk(String header) {
+    return 'بخش $header';
+  }
+
+  @override
+  String get diffLineBlank => 'خالی';
+
+  @override
+  String get diffCommentOnLineAction => 'نظر دادن روی این خط';
+
+  @override
+  String diffFileMarkedViewedAnnouncement(String path) {
+    return '$path به‌عنوان دیده‌شده علامت خورد';
+  }
+
+  @override
+  String diffFileMarkedNotViewedAnnouncement(String path) {
+    return '$path به‌عنوان دیده‌نشده علامت خورد';
+  }
+
+  @override
+  String prLineChangesSemantics(int additions, int deletions) {
+    return 'خطوط افزوده‌شده: $additions، خطوط حذف‌شده: $deletions';
+  }
+
+  @override
+  String closeTabNamed(String tab) {
+    return 'بستن $tab';
+  }
+
+  @override
+  String threadCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نظر',
+      one: '1 نظر',
+    );
+    return '$_temp0';
+  }
 }

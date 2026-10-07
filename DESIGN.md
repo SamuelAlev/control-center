@@ -231,6 +231,7 @@ This is the visual contract for the client and site. [PRODUCT.md](PRODUCT.md) ow
 - Sidebar row hover may reveal trailing actions; each action paints its active wash only when its own target is hovered, pressed or open.
 - Every interactive element retains a 2px accent focus outline at 2px offset and a 3px soft-accent halo or an equally visible replacement. Inputs are ~40px filled wells with a bottom underline, and use a whole-field 2px outline on focus/error/warning without shifting layout.
 - `CcMotion` uses fast 80ms (exit 60), moderate 160ms (exit 120), slow 240ms (exit 160); standard/emphasized easing has no bounce. Reduced motion drops travel/scale but preserves a short state-signaling fade. Running bars/dots settle or stop; content never waits for an entrance animation to become readable. Motion and color report real state, not decoration.
+- Expand/collapse animates its height on pointer input: `CcMotion.moderate` in, its exit token out, `CcMotion.standard` easing (`CcCollapsible`, or `CcMotion.resolveToggle` for custom render code such as the diff sliver). A keyboard-triggered toggle (Enter/Space on a header, arrow keys, a shortcut) always snaps. Read the modality in the build the toggle triggers, not in the callback: a focused button hears Enter before `FocusModality` does.
 
 ## Component conventions
 

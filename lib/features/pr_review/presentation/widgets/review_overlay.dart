@@ -51,6 +51,16 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   final TextEditingController _commentCtrl = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
   final _buttonKey = GlobalKey();
+
+  /// The Review button, which gets focus back when the panel closes.
+  final FocusNode _buttonFocus = FocusNode(debugLabel: 'review-button');
+
+  /// Wraps the panel; has focus whenever a control inside it does.
+  final FocusNode _panelFocus = FocusNode(
+    debugLabel: 'review-panel',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
   Timer? _draftTimer;
   bool _draftLoaded = false;
   bool _saving = false;
@@ -77,6 +87,8 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     _commentCtrl.removeListener(_onCommentChanged);
     _commentCtrl.dispose();
     _commentFocus.dispose();
+    _buttonFocus.dispose();
+    _panelFocus.dispose();
     super.dispose();
   }
 
@@ -200,7 +212,17 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     if (saveDraft) {
       unawaited(_saveDraft());
     }
+    final focusInside = _panelFocus.hasFocus;
     _popupCtrl.hide();
+    if (focusInside) {
+      // Back to the Review button rather than to the top of the page with
+      // the unmounted composer.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _buttonFocus.requestFocus();
+        }
+      });
+    }
   }
 
   /// Wide enough for the three verdicts to sit on ONE row without any of them
@@ -479,6 +501,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
       overlayChildBuilder: _buildOverlay,
       child: CcButton(
         key: _buttonKey,
+        focusNode: _buttonFocus,
         onPressed: _toggle,
         size: CcButtonSize.sm,
         variant: isChangesRequested
@@ -512,7 +535,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
           top: offset.dy,
           width: _overlayWidth,
           child: Focus(
-            canRequestFocus: false,
+            focusNode: _panelFocus,
             onKeyEvent: (_, event) {
               if (event is KeyDownEvent &&
                   event.logicalKey == LogicalKeyboardKey.escape) {
@@ -537,11 +560,14 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        l10n.finishYourReview,
-                        style: CcTypography.body.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tokens.textPrimary,
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          l10n.finishYourReview,
+                          style: CcTypography.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: tokens.textPrimary,
+                          ),
                         ),
                       ),
                       // The queued comments are the review. Naming them here —
