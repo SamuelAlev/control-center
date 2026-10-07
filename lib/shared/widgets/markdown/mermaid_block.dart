@@ -304,9 +304,7 @@ class _CopyDiagramButtonState extends State<_CopyDiagramButton> {
       color: tokens.textTertiary,
       tooltip: _copied ? l10n.copied : l10n.copy,
       onPressed: () {
-        Clipboard.setData(
-          ClipboardData(text: '```mermaid\n${widget.source}\n```'),
-        );
+        Clipboard.setData(ClipboardData(text: widget.source));
         setState(() => _copied = true);
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {

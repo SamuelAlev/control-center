@@ -22,28 +22,28 @@ class WhosHereStrip extends ConsumerWidget {
   /// The space this header belongs to.
   final String spaceId;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  /// Who the strip shows for [spaceId]: everyone but me whose presence
+  /// targets the space. Empty in solo mode. Hosts read it to reserve the
+  /// strip's width before laying out around it.
+  static List<ParticipantPresence> visitors(WidgetRef ref, String spaceId) {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     if (workspaceId == null) {
-      return const SizedBox.shrink();
+      return const [];
     }
     final roster =
         ref.watch(presenceRosterProvider(workspaceId)).value ?? const [];
     final myUserId = ref.watch(currentUserIdProvider);
-
-    final others = [
+    return [
       for (final p in roster)
-        if (!(p.principal is UserPrincipal && p.principal.id == myUserId)) p,
+        if (!(p.principal is UserPrincipal && p.principal.id == myUserId) &&
+            _targetsSpace(p, spaceId))
+          p,
     ];
-    if (others.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  }
 
-    final here = [
-      for (final p in others)
-        if (_targetsSpace(p, spaceId)) p,
-    ];
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final here = visitors(ref, spaceId);
     if (here.isEmpty) {
       return const SizedBox.shrink();
     }

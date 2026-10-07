@@ -182,6 +182,10 @@ void main() {
     expect(find.byIcon(AppIcons.chevronDown), findsNWidgets(2));
     await tester.tap(find.byIcon(AppIcons.chevronDown).first);
     await tester.pump();
+    // The collapse animates (CcCollapsible keeps the rows mounted while they
+    // slide under the clip); let it finish before asserting they're gone.
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
     expect(find.byIcon(AppIcons.chevronRight), findsOneWidget);
     expect(find.text('Base instructions'), findsNothing);
 

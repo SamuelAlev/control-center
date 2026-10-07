@@ -669,6 +669,104 @@ void main() {
     });
   });
 
+  group('SpaceHeader narrow pane', () {
+    // CcIconButton paints its glyph through CcIcon, so match the button's own
+    // icon rather than an Icon descendant.
+    Finder button(IconData icon) =>
+        find.byWidgetPredicate((w) => w is CcIconButton && w.icon == icon);
+
+    Future<void> pumpAt(
+      WidgetTester tester,
+      double width, {
+      VoidCallback? onArchive,
+      List<SpaceParticipant> participants = const [],
+    }) async {
+      // Tall enough for the More menu to open below the band.
+      tester.view.physicalSize = Size(width, 400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            spaceParticipantsProvider(
+              'ch-1',
+            ).overrideWith((ref) => Stream.value(participants)),
+            agentDetailProvider('agent-1').overrideWith((ref) async => agent),
+            agentDetailProvider('agent-2').overrideWith((ref) async => agent2),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SpaceHeader(
+                  space: testSpace,
+                  onManage: () {},
+                  onArchive: onArchive ?? () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    // 390 is the reported overflow (a 358px row once the band's padding is
+    // paid); 300 and 160 are a split editor and a pane dragged nearly shut.
+    for (final width in [390.0, 300.0, 160.0]) {
+      for (final agents in [
+        [agentParticipant],
+        [agentParticipant, agentParticipant2],
+      ]) {
+        testWidgets('${width.toInt()}px, ${agents.length} agent(s): '
+            'no overflow', (tester) async {
+          await pumpAt(tester, width, participants: agents);
+
+          expect(tester.takeException(), isNull);
+          expect(button(AppIcons.moreHorizontal), findsOneWidget);
+        });
+      }
+    }
+
+    testWidgets('a wide pane keeps every action inline', (tester) async {
+      await pumpAt(tester, 800, participants: [agentParticipant]);
+
+      expect(button(AppIcons.moreHorizontal), findsNothing);
+      expect(button(AppIcons.archive), findsOneWidget);
+    });
+
+    testWidgets('search stays inline and archive folds first', (tester) async {
+      await pumpAt(tester, 390, participants: [agentParticipant]);
+
+      expect(button(AppIcons.search), findsOne);
+      expect(button(AppIcons.archive), findsNothing);
+    });
+
+    testWidgets('a folded action runs from the More menu', (tester) async {
+      var archived = false;
+      await pumpAt(
+        tester,
+        300,
+        participants: [agentParticipant],
+        onArchive: () => archived = true,
+      );
+
+      await tester.tap(button(AppIcons.moreHorizontal));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive space'));
+      await tester.pumpAndSettle();
+
+      expect(archived, isTrue);
+    });
+  });
+
   group('ManageSpaceDialog', () {
     testWidgets('renders manage dialog for channel', (tester) async {
       tester.view.physicalSize = const Size(800, 600);

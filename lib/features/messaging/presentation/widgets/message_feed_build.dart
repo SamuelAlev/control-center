@@ -69,7 +69,9 @@ extension _BuildMethods on _SpaceMessageFeedState {
           suppressOldestSeparator: window.hasMore,
           readFrontier: _readFrontier,
         );
+        final previousItems = _items;
         _items = items;
+        _shiftExtentsForNewRows(previousItems, items);
 
         if (isVisible) {
           _maybeConsumePendingFocus();
@@ -102,7 +104,6 @@ extension _BuildMethods on _SpaceMessageFeedState {
           child: NotificationListener<UserScrollNotification>(
             onNotification: (n) {
               if (n.direction != ScrollDirection.idle) {
-                _watchingOwnTurn = false;
                 if (_follow.mode == FeedFollowMode.following) {
                   _follow.mode = FeedFollowMode.free;
                 }
@@ -154,6 +155,35 @@ extension _BuildMethods on _SpaceMessageFeedState {
         );
       },
     );
+  }
+
+  /// Tells the list about rows that landed at the newest end since the last
+  /// build.
+  ///
+  /// The list caches measured extents by index, and in a reverse list the
+  /// newest row is index 0 — so an arrival shifts every row up one index and,
+  /// unannounced, each inherits its neighbour's extent. The resulting layout
+  /// error is invisible on the live edge but nudges a reader browsing history
+  /// by the height difference on every turn that lands below the fold.
+  ///
+  /// Runs after [_items] is updated: the list estimates the new rows' extents
+  /// through [_estimateRowExtent], which reads it.
+  void _shiftExtentsForNewRows(List<FeedItem> before, List<FeedItem> items) {
+    final previous = before.isEmpty ? null : before.last;
+    if (previous is! MessageItem ||
+        !_listController.isAttached ||
+        _listController.isLocked) {
+      return;
+    }
+    final at = items.lastIndexWhere(
+      (it) => it is MessageItem && it.message.id == previous.message.id,
+    );
+    if (at < 0) {
+      return;
+    }
+    for (var i = at + 1; i < items.length; i++) {
+      _listController.addItem(0);
+    }
   }
 
   Widget _buildItem(

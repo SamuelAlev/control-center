@@ -786,4 +786,153 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
   });
+
+  testWidgets('sending on the live edge stays locked to the bottom', (
+    tester,
+  ) async {
+    final window = StreamController<({List<Message> messages, bool hasMore})>();
+    addTearDown(window.close);
+    await _pumpLiveFeed(tester, window);
+
+    final history = _tallSpace();
+    window.add((messages: history, hasMore: false));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(_feedPosition(tester).pixels, 0);
+
+    final sent = [...history, _sent(history)];
+    window.add((messages: sent, hasMore: false));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(_feedPosition(tester).pixels, 0);
+    expect(find.text('just sent', findRichText: true), findsOneWidget);
+
+    // The answer grows in at the live edge and the view keeps following it.
+    for (final content in [
+      'Partial',
+      List.filled(40, 'A long streamed answer line.').join('\n\n'),
+    ]) {
+      window.add((messages: [...sent, _reply(sent, content)], hasMore: false));
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(_feedPosition(tester).pixels, 0);
+    }
+    expect(find.text('Jump to latest'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+  });
+
+  testWidgets('sending while reading history leaves the view where it is', (
+    tester,
+  ) async {
+    final window = StreamController<({List<Message> messages, bool hasMore})>();
+    addTearDown(window.close);
+    await _pumpLiveFeed(tester, window);
+
+    final history = _tallSpace();
+    window.add((messages: history, hasMore: false));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+
+    // Read back into history (reverse list ⇒ dragging down goes older), then
+    // let the user-scroll compensation hold expire in real time.
+    await tester.drag(_feedScrollable, const Offset(0, 400));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+    expect(_feedPosition(tester).pixels, greaterThan(0));
+
+    // A turn landing below the fold first: the drag left the newest row
+    // unbuilt, and the arrival that builds it again corrects its stale
+    // extent. What's under test is a reader settled in the scrollback.
+    final settled = [...history, _reply(history, 'earlier', id: 'earlier')];
+    window.add((messages: settled, hasMore: false));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    final reading = find.text('Message 55', findRichText: true);
+    final before = tester.getTopLeft(reading).dy;
+
+    // Sending doesn't pull the reader down to their turn. Rows that land below
+    // the fold are laid out against estimated extents, so allow the small
+    // settle when one is first measured — far less than the row being read.
+    final sent = [...settled, _sent(settled)];
+    window.add((messages: sent, hasMore: false));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(tester.getTopLeft(reading).dy, closeTo(before, 24));
+    expect(find.text('just sent', findRichText: true), findsNothing);
+
+    // The answer streaming in below the fold holds them in place too.
+    for (final content in [
+      'Partial',
+      List.filled(40, 'A long streamed answer line.').join('\n\n'),
+    ]) {
+      window.add((messages: [...sent, _reply(sent, content)], hasMore: false));
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(tester.getTopLeft(reading).dy, closeTo(before, 24));
+    }
+    expect(find.text('Jump to latest'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+  });
 }
+
+/// Pumps a feed fed by [window] at 400×600, with no unread cursor.
+Future<void> _pumpLiveFeed(
+  WidgetTester tester,
+  StreamController<({List<Message> messages, bool hasMore})> window,
+) async {
+  tester.view.physicalSize = const Size(400, 600);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        activeWorkspaceIdOverride(),
+        spaceFeedWindowedProvider((
+          spaceId: 'ch-1',
+          conversationId: 'ch-1',
+        )).overrideWith((ref) => window.stream),
+        spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
+        codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
+        spaceUserLastReadAtProvider(
+          'ch-1',
+        ).overrideWith((ref) => Stream.value(null)),
+        spaceReadRepositoryProvider.overrideWithValue(
+          _FakeSpaceReadRepository(),
+        ),
+        agentDetailProvider('agent-1').overrideWith((ref) async => null),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: _wrap(
+          const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
+        ),
+      ),
+    ),
+  );
+}
+
+Message _sent(List<Message> before) => Message(
+  id: 'sent',
+  spaceId: 'ch-1',
+  conversationId: 'ch-1',
+  senderId: 'user',
+  senderType: SenderType.user,
+  content: 'just sent',
+  messageType: MessageType.text,
+  createdAt: before.last.createdAt.add(const Duration(minutes: 1)),
+);
+
+Message _reply(List<Message> before, String content, {String id = 'reply'}) =>
+    Message(
+      id: id,
+      spaceId: 'ch-1',
+      conversationId: 'ch-1',
+      senderId: 'agent-1',
+      senderType: SenderType.agent,
+      content: content,
+      messageType: MessageType.text,
+      createdAt: before.last.createdAt.add(const Duration(minutes: 2)),
+    );

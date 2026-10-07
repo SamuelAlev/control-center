@@ -648,11 +648,7 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
 
     final l10n = AppLocalizations.of(context);
     final labeled = codeBlockHasLanguage(language);
-    final copyButton = _CopyCodeButton(
-      code: code,
-      language: language,
-      overlay: !labeled,
-    );
+    final copyButton = _CopyCodeButton(code: code, overlay: !labeled);
     // RTL carve-out: source code is left-to-right whatever the app locale
     // (policy: code, diffs and terminals never mirror), so the code CONTENT —
     // the scrollable and its physical overlay-copy reserve — is pinned LTR
@@ -753,14 +749,9 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
 }
 
 class _CopyCodeButton extends StatefulWidget {
-  const _CopyCodeButton({
-    required this.code,
-    this.language,
-    this.overlay = false,
-  });
+  const _CopyCodeButton({required this.code, this.overlay = false});
 
   final String code;
-  final String? language;
 
   /// When true the button sits on the code body (unlabeled fence) and uses
   /// a bordered fill so it stays readable over the tokens. Ghost in the
@@ -788,11 +779,7 @@ class _CopyCodeButtonState extends State<_CopyCodeButton> {
           ? AppLocalizations.of(context).copied
           : AppLocalizations.of(context).copy,
       onPressed: () {
-        final lang = widget.language;
-        final wrapped = codeBlockHasLanguage(lang)
-            ? '```${lang!.trim()}\n${widget.code}\n```'
-            : '```\n${widget.code}\n```';
-        Clipboard.setData(ClipboardData(text: wrapped));
+        Clipboard.setData(ClipboardData(text: widget.code));
         setState(() => _copied = true);
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {

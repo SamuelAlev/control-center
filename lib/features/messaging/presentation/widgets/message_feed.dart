@@ -44,9 +44,10 @@ const Duration _precalcIdleDelay = Duration(milliseconds: 700);
 /// rendered bottom-up via a reverse list so follow-bottom and streaming growth
 /// stay anchored without scroll jumps.
 ///
-/// Follow behavior implements the message-scroller model: new turns settle
-/// near the top of the viewport (anchored mode), the live edge is only
-/// followed while the reader is on it and any interaction releases following.
+/// Follow behavior implements the message-scroller model: the live edge is
+/// followed while the reader is on it — including across their own sends — and
+/// any interaction releases following. A reader browsing history is held in
+/// place as turns land below the fold.
 ///
 /// Opening the chat — and returning to it after the pane was hidden — lands on
 /// the live edge instantly: no scroll animation, no anchor hunt, the newest
@@ -147,11 +148,6 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   /// during a hidden spell (or below the fold) still is.
   DateTime? _readFrontier;
 
-  /// True from the moment the reader sends a turn until their next deliberate
-  /// scroll or a hide. [_anchorTo] parks their own message near the top, which
-  /// leaves [FollowState.mode] `anchored` even though they are sitting there
-  /// watching the answer stream into the space below it.
-  bool _watchingOwnTurn = false;
   String? _lastStampedNewestId;
 
   Timer? _cursorDebounce;
@@ -262,13 +258,6 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
           _landOnLiveEdge();
         }
       });
-    }
-    if (!isVisible) {
-      // Away: nothing arriving now is witnessed, so the next arrival must not
-      // inherit the send-and-watch grace. The frontier itself simply stops
-      // advancing (the window listener only runs while visible), which is what
-      // makes turns that land during the nap genuinely unread.
-      _watchingOwnTurn = false;
     }
     _wasVisible = isVisible;
 

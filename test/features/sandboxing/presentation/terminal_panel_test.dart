@@ -15,6 +15,7 @@ import 'package:control_center/features/sandboxing/presentation/terminal_session
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -602,6 +603,73 @@ void main() {
         // Let the tap gesture's double-tap disambiguation timer expire so no
         // timer is pending when the binding verifies invariants.
         await tester.pump(const Duration(seconds: 1));
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('a drag selection takes focus so ⌘C copies it', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        await setLargeViewport(tester);
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+
+        final space = _FakeChannel();
+        final client = RemoteRpcClient(space)..start();
+        // Something else holds focus first — the chat composer, in the app.
+        final elsewhere = FocusNode();
+        addTearDown(elsewhere.dispose);
+        await tester.pumpWidget(
+          _terminalWrap(
+            Column(
+              children: [
+                Focus(focusNode: elsewhere, child: const SizedBox(height: 20)),
+                const Expanded(child: TerminalPanel(session: session)),
+              ],
+            ),
+            rpcClient: client,
+          ),
+        );
+        await tester.pumpAndSettle();
+        space.pushOutput(utf8.encode('hello world\r\n'));
+        await tester.pump();
+        elsewhere.requestFocus();
+        await tester.pump();
+
+        // A quick mouse drag: the drag wins the arena before xterm's tap-down
+        // (its only focus request) fires.
+        final origin = tester.getTopLeft(find.byType(TerminalView));
+        final drag = await tester.startGesture(
+          origin + const Offset(4, 6),
+          kind: PointerDeviceKind.mouse,
+        );
+        await drag.moveBy(const Offset(40, 0));
+        await drag.moveBy(const Offset(10, 0));
+        await drag.up();
+        await tester.pump();
+
+        expect(elsewhere.hasFocus, isFalse);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+        await tester.pump();
+
+        expect(copied, startsWith('hello'));
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }

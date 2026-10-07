@@ -1,9 +1,9 @@
 part of 'message_feed.dart';
 
 extension _ScrollingMethods on _SpaceMessageFeedState {
-  /// Handles window changes after the first emission: anchors the user's just
-  /// sent turn near the top and counts agent arrivals that happen while the
-  /// reader is away from the live edge.
+  /// Handles window changes after the first emission: keeps a just-sent turn on
+  /// the live edge when the reader was there and counts agent arrivals that
+  /// happen while the reader is away from it.
   void _onWindowChanged(({List<Message> messages, bool hasMore})? next) {
     final msgs = next?.messages ?? const [];
     // Fresh rows to build; anything measured off the back of this emission
@@ -30,19 +30,18 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
       return;
     }
     if (newest.isUser) {
-      // The user just sent: they're engaged. Park their turn near the top so
-      // the agent's answer streams into the space below.
-      _newWhileAway = 0;
-      _watchingOwnTurn = true;
-      _advanceReadFrontier(newest.createdAt);
-      _anchorTo(newest.id, animate: true);
+      // The user just sent. On the live edge they stay locked to it, so their
+      // turn and the answer streaming in below it remain in view. Reading
+      // history, they stay put: the physics holds their lines while the new
+      // turn lands below the fold.
+      if (_follow.mode == FeedFollowMode.following || _isAtLiveEdge) {
+        _reengageFollowing();
+        _landOnLiveEdge();
+      }
     } else if (!afterReveal) {
-      if (_follow.mode == FeedFollowMode.following ||
-          _watchingOwnTurn ||
-          _isAtLiveEdge) {
+      if (_follow.mode == FeedFollowMode.following || _isAtLiveEdge) {
         // Present and watching — pinned to the live edge (by follow mode or by
-        // simply sitting on it, which is where a short space always is), or
-        // parked on the turn they just sent with the answer arriving below it.
+        // simply sitting on it, which is where a short space always is).
         // This is read, not new: don't draw a divider over it, don't count it as
         // missed and do advance the server cursor so the sidebar stops flagging
         // the space the reader is sitting in.
@@ -253,7 +252,7 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
     if (!mounted) {
       return;
     }
-      _set(() => _highlightedMessageId = messageId);
+    _set(() => _highlightedMessageId = messageId);
     _highlightTimer?.cancel();
     _highlightTimer = Timer(const Duration(milliseconds: 1200), () {
       _highlightTimer = null;

@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -120,7 +121,9 @@ void main() {
         // A downloadable family: its bytes are never in flight in a test, so
         // the fallback chain is the only thing rendering the text.
         _buildTestApp(fontFamily: 'Inter', (context) {
-          final fallback = appMarkdownStyle(context).paragraph?.fontFamilyFallback;
+          final fallback = appMarkdownStyle(
+            context,
+          ).paragraph?.fontFamilyFallback;
           expect(fallback, isNotNull);
           expect(
             fallback,
@@ -261,6 +264,44 @@ void main() {
       // Copy stays available, overlaid on the body (GitHub unlabeled fence).
       expect(find.byType(CcIconButton), findsOneWidget);
     });
+
+    for (final language in ['bash', null]) {
+      testWidgets('copy puts only the code on the clipboard ($language)', (
+        tester,
+      ) async {
+        String? clipboard;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              clipboard =
+                  (call.arguments as Map<dynamic, dynamic>)['text'] as String;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+
+        await tester.pumpWidget(
+          _buildTestApp((context) {
+            return Directionality(
+              textDirection: TextDirection.ltr,
+              child: buildSharedCodeBlock(context, 'cd /tmp\nls', language),
+            );
+          }),
+        );
+        await tester.tap(find.byType(CcIconButton));
+        await tester.pump();
+        expect(clipboard, 'cd /tmp\nls');
+        // Let the "copied" reset timer fire.
+        await tester.pump(const Duration(seconds: 2));
+      });
+    }
 
     testWidgets('a blank language string is treated as unlabeled', (
       tester,

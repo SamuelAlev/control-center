@@ -211,6 +211,12 @@ class TerminalSessionView extends ConsumerStatefulWidget {
 class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
   final TerminalController _termCtl = TerminalController();
 
+  /// The terminal's keyboard focus, owned here so a pointer-down can claim it.
+  /// xterm only focuses itself from a TAP: a mouse drag wins the gesture
+  /// arena before the tap fires, so drag-selecting output left focus on
+  /// whatever held it before and ⌘C copied from there instead.
+  final FocusNode _focusNode = FocusNode(debugLabel: 'terminal');
+
   /// The transport to the server's rig file lane, for an enclosed terminal.
   /// Null on a host-shell terminal, which needs no transfer at all.
   RigTransferClient? _transferClient;
@@ -456,6 +462,7 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
   void dispose() {
     _transferClient?.close();
     _termCtl.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -556,6 +563,8 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
   ///    ABOVE the terminal because that is where the intent resolves, and it
   ///    has to be a DIFFERENT intent type because xterm's own handler, which
   ///    is below, would otherwise shadow it.
+  ///  * [Listener] focuses the terminal on any pointer-down, so a drag
+  ///    selection is copied by the terminal's ⌘C (see [_focusNode]).
   Widget _terminalSurface(
     TerminalSessionController controller,
     TerminalTheme termTheme,
@@ -585,24 +594,32 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
           // xterm's painter or its selection gestures.
           child: Directionality(
             textDirection: TextDirection.ltr,
-            child: TerminalView(
-              controller.terminal,
-              controller: _termCtl,
-              autofocus: true,
-              onKeyEvent: controller.onKeyEvent,
-              shortcuts: _shortcuts,
-              theme: termTheme,
-              backgroundOpacity: 0,
-              // Fira Code renders visually large for its point size (tall
-              // x-height, wide advance); 12/1.25 matches the density of native
-              // terminal emulators (ghostty, iTerm) where 13/1.35 read ~2pt
-              // oversized.
-              textStyle: CcTerminalStyle(
-                family: codeFont,
-                fontSize: 12,
-                height: 1.25,
+            child: Listener(
+              onPointerDown: (_) {
+                if (!_focusNode.hasFocus) {
+                  _focusNode.requestFocus();
+                }
+              },
+              child: TerminalView(
+                controller.terminal,
+                controller: _termCtl,
+                focusNode: _focusNode,
+                autofocus: true,
+                onKeyEvent: controller.onKeyEvent,
+                shortcuts: _shortcuts,
+                theme: termTheme,
+                backgroundOpacity: 0,
+                // Fira Code renders visually large for its point size (tall
+                // x-height, wide advance); 12/1.25 matches the density of native
+                // terminal emulators (ghostty, iTerm) where 13/1.35 read ~2pt
+                // oversized.
+                textStyle: CcTerminalStyle(
+                  family: codeFont,
+                  fontSize: 12,
+                  height: 1.25,
+                ),
+                padding: const EdgeInsets.all(2),
               ),
-              padding: const EdgeInsets.all(2),
             ),
           ),
         ),
