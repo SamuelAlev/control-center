@@ -3,7 +3,7 @@ title: Arquitetura
 description: Como o Control Center é estruturado com um modelo de servidor de cliente fino, Clean Architecture orientada a features e portas e adaptadores.
 dateModified: 2026-09-19
 slug: pt-BR/manual/conceitos/arquitetura
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Visão geral
@@ -58,7 +58,7 @@ A feature **`guardrails`** coloca sua camada de domínio em `cc_domain/features/
 - Entidades principais: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identidade e multijogador: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Entidades de memória: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Objetos de valor compartilhados: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Objetos de valor compartilhados: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Portas compartilhadas: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Serviços de domínio: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + tipos de evento (workspace/agente, PR/revisão, mensagens, tickets, pipeline, orquestração, memória, calendário/reuniões, identidade e associação, observabilidade)

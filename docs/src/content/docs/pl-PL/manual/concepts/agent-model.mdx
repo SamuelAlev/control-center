@@ -2,12 +2,12 @@
 title: Model agentów
 description: Czym agent naprawdę jest w Control Center, które z jego pól zmieniają zachowanie i jak adapter, na którym działa, decyduje o tym, co można wyegzekwować.
 slug: pl-PL/podrecznik/koncepcje/model-agentow
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Czym jest agent?
 
-Agent to nazwany aktor z personą, zestawem skillów, adapterem, na którym działa, oraz zestawem uprawnień. Agenci są podmiotami w tym samym sensie co ludzie: są autorami wiadomości, posiadają zgłoszenia, zostawiają recenzje i pojawiają się na tej samej liście. To oni wykonują pracę.
+Agent to nazwany aktor z personą, zestawem skillów i adapterem, na którym działa. Agenci są podmiotami w tym samym sensie co ludzie: są autorami wiadomości, posiadają zgłoszenia, zostawiają recenzje i pojawiają się na tej samej liście. To oni wykonują pracę.
 
 Każdy agent należy do dokładnie jednego obszaru roboczego. To twardy niezmiennik — `agent.workspaceId` nigdy nie jest puste, to właśnie obszar roboczy agenta wybiera plik bazy danych, do którego trafiają jego wiersze, a utworzenie agenta bez obszaru roboczego jest odrzucane.
 
@@ -26,7 +26,6 @@ Agent to także katalog. Jego definicja znajduje się w `agents/<slug>/AGENTS.md
 | `modelId`               | Który model w obrębie tego adaptera                                                                                            |
 | `effort`                | Poziom rozumowania, czerpany ze słownictwa samego wybranego modelu                                                             |
 | `contextSize`           | Nadpisanie rozmiaru okna kontekstu                                                                                             |
-| `capabilities`          | Flagi poświadczeń i ruchu wychodzącego, sprawdzane przy uruchomieniu                                                           |
 | `silenceTimeoutMinutes` | Nadpisanie na poziomie agenta (1–240) dla watchdoga ciszy                                                                      |
 | `reportsTo`             | Identyfikator agenta nadrzędnego — łańcuch podległości, który rysuje schemat organizacyjny                                     |
 
@@ -53,16 +52,11 @@ Skille repozytorium są wczytywane dla **każdego** adaptera, nie tylko dla wbud
 
 ## Uprawnienia
 
-Uprawnienia decydują o tym, co uruchomienie _otrzymuje_, a nie o tym, czego pozwala mu dotknąć system plików. Broker poświadczeń sprawdza je przy starcie: jeśli dane uprawnienie jest wyłączone, pasujący token po prostu nie zostaje wstrzyknięty.
+Agent nie ma własnych flag uprawnień. O tym, czy może utworzyć commit, wykonać push, otworzyć pull request, zapisywać do trackera albo sięgać do sieci, decydują [guardraile akcji](/pl-PL/podrecznik/koncepcje/guardraile/) — zezwól, zapytaj najpierw lub odmów, w zakresie obszaru roboczego, agenta lub przestrzeni — i te same reguły obowiązują niezależnie od tego, który adapter go uruchamia.
 
-- **Push to repo** — warunkuje wstrzyknięcie tokenu GitHub używanego przez `git push`.
-- **GitHub API** — warunkuje wstrzyknięcie `GH_TOKEN` i ruch wychodzący do api.github.com.
-- **Ticketing** — warunkuje klucz API dostawcy zgłoszeń i ruch wychodzący do jego domen.
-- **Network egress** — dowolne żądania wychodzące.
+To, co uruchomienie _otrzymuje_, nie zmienia się wraz z tymi regułami. Uruchomienie w worktree GitHuba zawsze dostaje token GitHub tylko do odczytu, a o push pyta się w chwili, gdy następuje: konfiguracja gita agenta kieruje każdy push do GitHuba przez Control Center, który przed przekazaniem go dalej stosuje regułę **Push do zdalnego repozytorium**.
 
-Uruchomienie odczytuje je z wiersza samego agenta. Gdy agent ich nie ma, obowiązuje stały, zachowawczy zestaw domyślny: trzy flagi poświadczeń wyłączone, ruch wychodzący włączony. Przełącznik „Uprawnienia piaskownicy” w formularzu agenta wybiera między tym zestawem domyślnym a niestandardowym zestawem zapisanym na agencie.
-
-Drugą połowę tej historii, w tym to, co jest egzekwowane na poziomie systemu plików, a co nie, znajdziesz w sekcji [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
+Jak to działa, w tym co jest egzekwowane na poziomie systemu plików, a co nie, znajdziesz w sekcji [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 
 ## O tym, co da się wyegzekwować, decyduje adapter
 
@@ -71,7 +65,7 @@ Polem o największych konsekwencjach na agencie jest jego adapter, ponieważ tra
 | Transport        | Adaptery                  | Co egzekwuje Control Center                                                                                                                                                                                                                                                 |
 | ---------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Wbudowany harness | Control Center (built-in) | Wszystko. Powierzchnia narzędzi jest _budowana_ z trybu, więc niedozwolone narzędzie jest niewidoczne, a nie tylko odrzucane; każde wywołanie przechodzi przez bramę zatwierdzeń i guardraile działań; kontrakt ukończenia potrafi ponaglić, a następnie uznać za nieudane uruchomienie, które kończy się bez swojego rezultatu |
-| Claude CLI       | Claude Code               | Tylko narzędzia `mcp__*`, które są mu udostępniane. Własne narzędzia Claude'a do czytania, zapisu, edycji i powłoki działają w jego procesie i pozostają niewidoczne — a uruchamia się go z `--dangerously-skip-permissions`, bo nieinteraktywne `claude -p` inaczej zawieszałoby się na zawsze na własnym pytaniu    |
+| Claude CLI       | Claude Code               | Narzędzia `mcp__*`, które są mu udostępniane, oraz jego polecenia `Bash`, które hook przed wykonaniem wysyła do polityki akcji. Własne narzędzia Claude'a do czytania, zapisu i edycji działają w jego procesie i pozostają niewidoczne — a uruchamia się go z `--dangerously-skip-permissions`, bo nieinteraktywne `claude -p` inaczej zawieszałoby się na zawsze na własnym pytaniu    |
 
 Konkretnie: **tylko wbudowany harness obsługuje subagentów, sterowanie w trakcie uruchomienia, pauzę i wznowienie (a więc i przejęcie) oraz strukturalne egzekwowanie trybu.** Claude Code nie ma żadnego z nich.
 

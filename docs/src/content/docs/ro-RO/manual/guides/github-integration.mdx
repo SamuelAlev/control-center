@@ -2,7 +2,7 @@
 title: Configurează integrarea GitHub
 description: Autentifică-te pe GitHub pentru ca zona PR, înregistrarea repo-urilor și rulările agenților să funcționeze.
 slug: ro-RO/manual/ghiduri-practice/integrare-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Acest ghid acoperă părțile specifice GitHub ale configurării. GitHub este unul
@@ -80,7 +80,7 @@ proprietarului serverului, apoi mediul.
 | Rulările de verificare          | API-ul GitHub Checks                                                                                          |
 | Publicarea revizuirilor   | Un pas care necesită aprobarea utilizatorului și care publică revizuirea ta pe PR                                                             |
 | Înregistrarea repo-urilor   | Un checkout este acceptat dacă remote-ul său `origin` indică spre github.com — sau spre gitlab.com / bitbucket.org          |
-| Accesul agenților la GitHub | Brokerul de credențiale injectează tokenul ca `GH_TOKEN` / `GITHUB_TOKEN`, condiționat de capabilitățile agentului      |
+| Accesul agenților la GitHub | Brokerul de credențiale injectează un token doar pentru citire ca `GH_TOKEN` / `GITHUB_TOKEN`; push-urile trec prin Control Center |
 | Notificări  | O interogare pe server a inbox-ului tău de notificări GitHub generează „menționat într-un pull request" și „revizuire solicitată" |
 | Profilurile utilizatorilor       | Carduri de profil la hover și filtrarea PR-urilor după autor                                                                |
 
@@ -101,8 +101,10 @@ fiecare două minute.
 
 ## Află cum acționează agenții pe GitHub
 
-- Un agent primește un token GitHub doar dacă are **Permite apeluri GitHub API** sau
-  **Permite git push**. Vezi
+- Un agent care lucrează într-un worktree GitHub primește întotdeauna un token
+  GitHub doar pentru citire. Un push trece prin Control Center, care întreabă
+  regula **Push către un remote** și apoi îl transmite cu un token de scriere pe
+  care agentul nu îl deține niciodată. Vezi
   [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
 - Commit-urile făcute de un agent sunt atribuite **agentului** — numele afișat plus
   ` (agent)`, la o adresă sintetică indexată după id-ul agentului — niciodată unui om.
@@ -112,10 +114,11 @@ fiecare două minute.
   token larg. Instalarea este rezolvată pornind de la **proprietarul** repo-ului
   rulării, așa că o singură aplicație instalată pe mai multe conturi se limitează
   corect la contul pe care îl atinge rularea. Fără o aplicație, agenții primesc
-  tokenul din mediu
-- O rulare cerută de un membru autentificat acționează sub identitatea GitHub **a
-  acelui membru** — credențialul lui este inclus după mediul brokerului, așa că un
-  commit sau un comentariu făcut de un agent pentru el îi este atribuibil lui
+  tokenul din mediu, care nu poate fi restrâns doar la citire: regula de push
+  leagă atunci `git push`, dar nu și codul care folosește tokenul direct
+- Tokenul este întotdeauna al brokerului, niciodată al membrului care face
+  cererea. Tokenul serverului este reținut de la o rulare care acționează pentru
+  un membru care nu este proprietarul și nu a conectat GitHub
 
 ## Depanare
 

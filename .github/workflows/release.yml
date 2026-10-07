@@ -88,14 +88,21 @@ jobs:
         with:
           persist-credentials: false
 
+      # Background: the SDK install needs none of it.
+      - name: Install create-dmg + AEC build tools (meson/ninja)
+        id: build-tools
+        background: true
+        run: brew install create-dmg meson ninja
+
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
       - name: Use CocoaPods (disable Swift Package Manager for a reliable clean build)
         run: flutter config --no-enable-swift-package-manager
 
-      - name: Install create-dmg + AEC build tools (meson/ninja)
-        run: brew install create-dmg meson ninja
+      # meson/ninja build natives on a cache miss.
+      - name: Wait for build tools
+        wait: [build-tools]
 
       - name: Prepare release build
         uses: $/.github/actions/prepare-release-build
@@ -130,28 +137,30 @@ jobs:
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: bash scripts/release/cc_server_package.sh "$VERSION" macos
 
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: |
-            Control-Center-${{ env.VERSION }}-arm64.dmg
-            cc_server-${{ env.VERSION }}-macos-arm64.tar.gz
+      # Read-only over finished files: no ordering between them.
+      - parallel:
+          - name: Attest build provenance
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-path: |
+                Control-Center-${{ env.VERSION }}-arm64.dmg
+                cc_server-${{ env.VERSION }}-macos-arm64.tar.gz
 
-      - name: Upload macOS artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: macos
-          path: |
-            Control-Center-*-arm64.dmg
-          if-no-files-found: error
+          - name: Upload macOS artifacts
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: macos
+              path: |
+                Control-Center-*-arm64.dmg
+              if-no-files-found: error
 
-      - name: Upload standalone cc_server (macOS)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cc_server-macos
-          path: |
-            cc_server-*-macos-*.tar.gz
-          if-no-files-found: error
+          - name: Upload standalone cc_server (macOS)
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: cc_server-macos
+              path: |
+                cc_server-*-macos-*.tar.gz
+              if-no-files-found: error
 
   build-windows:
     needs: prepare
@@ -175,16 +184,25 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Flutter
-        uses: $/.github/actions/setup-flutter
-
+      # Background: the SDK install needs neither. MSVC's environment reaches
+      # later steps only after the wait below.
       - name: Set up MSVC developer environment
+        id: msvc
+        background: true
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: x64
 
       - name: Install AEC build tools (meson/ninja)
+        id: build-tools
+        background: true
         run: pip install meson ninja
+
+      - name: Set up Flutter
+        uses: $/.github/actions/setup-flutter
+
+      - name: Wait for MSVC and build tools
+        wait: [msvc, build-tools]
 
       - name: Prepare release build
         uses: $/.github/actions/prepare-release-build
@@ -222,30 +240,32 @@ jobs:
         shell: bash
         run: bash scripts/release/cc_server_package.sh "$VERSION" windows
 
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: |
-            dist/Control-Center-*-x64-setup.exe
-            dist/Control-Center-*-windows-x64.zip
-            cc_server-*-windows-x64.zip
+      # Read-only over finished files: no ordering between them.
+      - parallel:
+          - name: Attest build provenance
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-path: |
+                dist/Control-Center-*-x64-setup.exe
+                dist/Control-Center-*-windows-x64.zip
+                cc_server-*-windows-x64.zip
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: windows
-          path: |
-            dist/Control-Center-*-x64-setup.exe
-            dist/Control-Center-*-windows-x64.zip
-          if-no-files-found: error
+          - name: Upload Windows artifacts
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: windows
+              path: |
+                dist/Control-Center-*-x64-setup.exe
+                dist/Control-Center-*-windows-x64.zip
+              if-no-files-found: error
 
-      - name: Upload standalone cc_server (Windows)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cc_server-windows
-          path: |
-            cc_server-*-windows-*.zip
-          if-no-files-found: error
+          - name: Upload standalone cc_server (Windows)
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: cc_server-windows
+              path: |
+                cc_server-*-windows-*.zip
+              if-no-files-found: error
 
   build-linux:
     needs: prepare
@@ -301,10 +321,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Flutter
-        uses: $/.github/actions/setup-flutter
-
+      # Background: the SDK install and pub get need none of it. setup-flutter
+      # runs no apt here, so there is no dpkg lock contention.
       - name: Install Linux build dependencies
+        id: build-deps
+        background: true
         run: |
           sudo apt-get -o Acquire::Retries=3 update
           # libayatana-appindicator3-dev: tray CMake fails without it.
@@ -329,6 +350,14 @@ jobs:
           python3 -m pip install --user meson
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Set up Flutter
+        uses: $/.github/actions/setup-flutter
+
+      # Prepare runs `dart run tool/...`, which builds native assets (GTK), and
+      # builds natives on a cache miss (meson, ninja).
+      - name: Wait for Linux build dependencies
+        wait: [build-deps]
+
       - name: Prepare release build
         uses: $/.github/actions/prepare-release-build
         with:
@@ -345,49 +374,55 @@ jobs:
       - name: Package (bundle + AppImage + zsync + tarball + checksums)
         run: bash scripts/release/linux_package.sh "$VERSION"
 
-      # Feeds the cc-server image. Reuses the bundle linux_package.sh built.
-      - name: Package standalone cc_server
-        run: bash scripts/release/cc_server_package.sh "$VERSION" linux
+      # Separate bundles, dist/ dirs and archives. cc_server only copies the
+      # bundle linux_package.sh built; cc_demo_server runs its own
+      # `dart build cli`, so it is the longer of the two.
+      - parallel:
+          # Feeds the cc-server image. Reuses the bundle linux_package.sh built.
+          - name: Package standalone cc_server
+            run: bash scripts/release/cc_server_package.sh "$VERSION" linux
 
-      # Separate binary, not a flag on cc_server. Feeds the cc-server-demo image.
-      - name: Package standalone cc_demo_server
-        run: bash scripts/release/cc_demo_server_package.sh "$VERSION"
+          # Separate binary, not a flag on cc_server. Feeds the cc-server-demo image.
+          - name: Package standalone cc_demo_server
+            run: bash scripts/release/cc_demo_server_package.sh "$VERSION"
 
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: |
-            Control-Center-${{ env.VERSION }}-x86_64.AppImage
-            Control-Center-${{ env.VERSION }}-x86_64.AppImage.zsync
-            Control-Center-${{ env.VERSION }}-linux-x64.tar.gz
-            cc_server-${{ env.VERSION }}-linux-x64.tar.gz
-            cc_demo_server-${{ env.VERSION }}-linux-x64.tar.gz
+      # Read-only over finished files: no ordering between them.
+      - parallel:
+          - name: Attest build provenance
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-path: |
+                Control-Center-${{ env.VERSION }}-x86_64.AppImage
+                Control-Center-${{ env.VERSION }}-x86_64.AppImage.zsync
+                Control-Center-${{ env.VERSION }}-linux-x64.tar.gz
+                cc_server-${{ env.VERSION }}-linux-x64.tar.gz
+                cc_demo_server-${{ env.VERSION }}-linux-x64.tar.gz
 
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: linux
-          path: |
-            Control-Center-*-x86_64.AppImage
-            Control-Center-*-x86_64.AppImage.zsync
-            Control-Center-*-linux-x64.tar.gz
-          if-no-files-found: error
+          - name: Upload Linux artifacts
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: linux
+              path: |
+                Control-Center-*-x86_64.AppImage
+                Control-Center-*-x86_64.AppImage.zsync
+                Control-Center-*-linux-x64.tar.gz
+              if-no-files-found: error
 
-      - name: Upload standalone cc_server (Linux)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cc_server-linux
-          path: |
-            cc_server-*-linux-*.tar.gz
-          if-no-files-found: error
+          - name: Upload standalone cc_server (Linux)
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: cc_server-linux
+              path: |
+                cc_server-*-linux-*.tar.gz
+              if-no-files-found: error
 
-      - name: Upload standalone cc_demo_server (Linux)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cc_demo_server-linux
-          path: |
-            cc_demo_server-*-linux-*.tar.gz
-          if-no-files-found: error
+          - name: Upload standalone cc_demo_server (Linux)
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: cc_demo_server-linux
+              path: |
+                cc_demo_server-*-linux-*.tar.gz
+              if-no-files-found: error
 
   release:
     needs: [prepare, build-macos, build-windows, build-linux]
@@ -498,17 +533,19 @@ jobs:
           dart run tool/gen_deploy_manifest.dart build/web
           dart run tool/gen_deploy_manifest.dart apps/cc_remote/build/web
 
-      - name: Download standalone cc_server (Linux)
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: cc_server-linux
-          path: artifacts/cc_server-linux
+      # Different artifacts into different directories: nothing shared.
+      - parallel:
+          - name: Download standalone cc_server (Linux)
+            uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+            with:
+              name: cc_server-linux
+              path: artifacts/cc_server-linux
 
-      - name: Download standalone cc_demo_server (Linux)
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: cc_demo_server-linux
-          path: artifacts/cc_demo_server-linux
+          - name: Download standalone cc_demo_server (Linux)
+            uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+            with:
+              name: cc_demo_server-linux
+              path: artifacts/cc_demo_server-linux
 
       - name: Stage docker build contexts
         shell: bash
@@ -524,6 +561,8 @@ jobs:
           cp -R build/web/. docker/web/site/
           cp -R apps/cc_remote/build/web/. docker/cc_remote/site/
 
+      # Login stays after every Flutter build: dependency build hooks run in
+      # those steps and must not find a GHCR credential on disk.
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -534,98 +573,103 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Build + push cc-server image
-        id: cc_server
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: docker/cc_server
-          push: true
-          tags: |
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-server:${{ env.VERSION }}
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-server:latest
-          # Sigstore attestation is attached in the next step.
-          provenance: false
+      # Independent contexts and tags on one BuildKit builder. Sigstore
+      # attestations are attached in the group below (provenance: false here).
+      - parallel:
+          - name: Build + push cc-server image
+            id: cc_server
+            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            with:
+              context: docker/cc_server
+              push: true
+              tags: |
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-server:${{ env.VERSION }}
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-server:latest
+              provenance: false
 
-      - name: Attest cc-server image
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-server
-          subject-digest: ${{ steps.cc_server.outputs.digest }}
-          push-to-registry: true
+          - name: Build + push cc-server-demo image
+            id: cc_server_demo
+            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            with:
+              context: docker/cc_demo_server
+              # Shared Dockerfile; CC_SERVER_BINARY selects the binary.
+              file: docker/cc_server/Dockerfile
+              build-args: |
+                CC_SERVER_BINARY=cc_demo_server
+              push: true
+              tags: |
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo:${{ env.VERSION }}
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo:latest
+              provenance: false
 
-      - name: Build + push cc-server-demo image
-        id: cc_server_demo
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: docker/cc_demo_server
-          # Shared Dockerfile; CC_SERVER_BINARY selects the binary.
-          file: docker/cc_server/Dockerfile
-          build-args: |
-            CC_SERVER_BINARY=cc_demo_server
-          push: true
-          tags: |
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo:${{ env.VERSION }}
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo:latest
-          provenance: false
+          - name: Build + push web client image
+            id: web
+            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            with:
+              context: docker/web
+              push: true
+              tags: |
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp:${{ env.VERSION }}
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp:latest
+              provenance: false
 
-      - name: Attest cc-server-demo image
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo
-          subject-digest: ${{ steps.cc_server_demo.outputs.digest }}
-          push-to-registry: true
+          - name: Build + push phone PWA image
+            id: remote
+            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            with:
+              context: docker/cc_remote
+              push: true
+              tags: |
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote:${{ env.VERSION }}
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote:latest
+              provenance: false
 
-      - name: Build + push web client image
-        id: web
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: docker/web
-          push: true
-          tags: |
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp:${{ env.VERSION }}
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp:latest
-          provenance: false
+          # Compiles in-image: no natives, no monorepo context.
+          - name: Build + push signaling relay image
+            id: signaling
+            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            with:
+              context: apps/cc_signaling_server
+              push: true
+              tags: |
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server:${{ env.VERSION }}
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server:latest
+              provenance: false
 
-      - name: Attest web client image
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp
-          subject-digest: ${{ steps.web.outputs.digest }}
-          push-to-registry: true
+      # After the build group: each attestation needs its image's digest, and
+      # a background step's outputs exist only once its group has joined.
+      - parallel:
+          - name: Attest cc-server image
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-server
+              subject-digest: ${{ steps.cc_server.outputs.digest }}
+              push-to-registry: true
 
-      - name: Build + push phone PWA image
-        id: remote
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: docker/cc_remote
-          push: true
-          tags: |
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote:${{ env.VERSION }}
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote:latest
-          provenance: false
+          - name: Attest cc-server-demo image
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo
+              subject-digest: ${{ steps.cc_server_demo.outputs.digest }}
+              push-to-registry: true
 
-      - name: Attest phone PWA image
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote
-          subject-digest: ${{ steps.remote.outputs.digest }}
-          push-to-registry: true
+          - name: Attest web client image
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp
+              subject-digest: ${{ steps.web.outputs.digest }}
+              push-to-registry: true
 
-      # Compiles in-image: no natives, no monorepo context.
-      - name: Build + push signaling relay image
-        id: signaling
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: apps/cc_signaling_server
-          push: true
-          tags: |
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server:${{ env.VERSION }}
-            ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server:latest
-          provenance: false
+          - name: Attest phone PWA image
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote
+              subject-digest: ${{ steps.remote.outputs.digest }}
+              push-to-registry: true
 
-      - name: Attest signaling relay image
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server
-          subject-digest: ${{ steps.signaling.outputs.digest }}
-          push-to-registry: true
+          - name: Attest signaling relay image
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server
+              subject-digest: ${{ steps.signaling.outputs.digest }}
+              push-to-registry: true

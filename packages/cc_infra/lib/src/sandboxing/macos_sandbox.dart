@@ -195,6 +195,12 @@ abstract final class MacosSandbox {
       if (socksProxyPort != null) {
         lines.add('(allow network* (remote tcp "localhost:$socksProxyPort"))');
       }
+      // The server's own agent endpoint (MCP, the agent run gateway). Named
+      // explicitly rather than left to the `(local ip)` allowance above, so
+      // the profile says what it relies on.
+      for (final port in config.network.loopbackPorts) {
+        lines.add('(allow network* (remote tcp "localhost:$port"))');
+      }
       // DNS resolution via macOS mDNSResponder.
       lines.add(
         '(allow network-outbound (literal "/private/var/run/mDNSResponder"))',

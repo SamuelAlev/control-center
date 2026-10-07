@@ -41,17 +41,25 @@ jobs:
         with:
           persist-credentials: false
 
+      # GTK headers for the native-asset build. Background: the SDK download
+      # and pub get need none of it. The apt hosts above are for this.
+      - name: Install system packages (GTK)
+        id: system-packages
+        background: true
+        uses: $/.github/actions/linux-desktop-deps
+
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
-        with:
-          # cnativeapi's build hook (tool/ scripts and root tests build native assets).
-          linux-desktop-deps: "true"
 
       # Not a dev_dependency: nothing imports it.
       - name: Install coverage formatter
         run: |
           dart pub global activate coverage
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      # The suites build native assets.
+      - name: Wait for system packages
+        wait: [system-packages]
 
       # A failing suite does not fail this job; ci.yml already reports it.
       - name: Measure

@@ -2,7 +2,7 @@
 title: Gérer les clés API
 description: Où vit chaque identifiant — votre compte d’utilisateur sur le serveur, le serveur lui-même ou une CLI externe — et comment le définir, en effectuer la rotation ou le supprimer.
 slug: fr-CA/manuel/guides/cles-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Ce guide vous montre où est stocké chaque identifiant utilisé par Control Center
@@ -82,9 +82,10 @@ authentifier.
 Votre clé est stockée sur le serveur en fonction de votre identifiant
 d’utilisateur, comme celle de la forge. Le serveur conserve séparément sa propre
 clé Linear (**Applications fournisseur**), et c’est elle que la synchronisation
-des tickets utilise quand aucun humain n’a rien demandé. Une clé reçue par un
-agent n’est injectée que lorsque l’agent possède la capacité **Autoriser les
-appels API de tickets**. Voir
+des tickets utilise quand aucun humain n’a rien demandé. Aucune clé de tickets
+n’est injectée dans le bac à sable d’un agent ; les agents écrivent les tickets
+via les outils de Control Center, qui interrogent la règle **Écrire dans un
+outil de suivi externe**. Voir
 [Configurer l’intégration Linear](/fr-CA/manuel/guides/integration-linear/).
 
 ## Effectuer une rotation ou révoquer

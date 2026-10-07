@@ -1,6 +1,5 @@
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
@@ -37,9 +36,14 @@ import 'package:cc_natives/cc_natives.dart';
 /// The caller adds the `task` tool afterwards when the run may spawn
 /// subagents — nesting depth is a per-run property, so it is deliberately not
 /// baked in here.
+///
+/// [networkEnabled] is the run's network posture, resolved from the "network
+/// egress" policy rule when the run starts: a deny takes the network away from
+/// the sandbox and the web tools alike.
 HarnessToolRegistry buildHarnessToolRegistry({
   required Mode mode,
-  required AgentCapabilities caps,
+  required bool networkEnabled,
+  List<int> loopbackPorts = const [],
   required Map<String, String> env,
   String? workspaceId,
   String? agentId,
@@ -64,7 +68,8 @@ HarnessToolRegistry buildHarnessToolRegistry({
 }) {
   final commandRunner = SandboxedHarnessCommandRunner(
     mode: mode,
-    capabilities: caps,
+    networkEnabled: networkEnabled,
+    loopbackPorts: loopbackPorts,
     sandboxManager: sandboxManager,
     confirmationPort: confirmationPort,
     execGrantService: execGrantService,
@@ -100,9 +105,9 @@ HarnessToolRegistry buildHarnessToolRegistry({
       FileSearchTool(fileSearch: fileSearch),
       // `todo_write` comes from the bridged MCP `TodoWriteTool` (persisted,
       // per-conversation); the bridge injects `conversation_id`.
-      // Web tools honor the agent's network capability and block SSRF targets.
-      WebFetchTool(allowNetwork: caps.canAccessNetwork),
-      WebSearchTool(allowNetwork: caps.canAccessNetwork),
+      // Web tools honor the run's network posture and block SSRF targets.
+      WebFetchTool(allowNetwork: networkEnabled),
+      WebSearchTool(allowNetwork: networkEnabled),
       CheckpointTool(),
       RewindTool(),
       BashTool(commandRunner),

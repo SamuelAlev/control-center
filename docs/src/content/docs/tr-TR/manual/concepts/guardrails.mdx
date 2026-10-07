@@ -2,7 +2,7 @@
 title: Korumalar — her değiştirici eylem için tek ilke
 description: Control Center her ajan yan etkisini neden tek bir izin/soru/ret motorundan geçiriyor, ActionClass sınıflandırması bilinçli olarak nasıl küçük kalıyor ve özerklik kadranı gerçekte neyi değiştiriyor.
 slug: tr-TR/kilavuz/kavramlar/korumalar
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Control Center'daki ajanlar dosya silebilir, dal push edebilir, pull request
@@ -234,8 +234,7 @@ Bir yapılandırmaya güvenmeden önce okunmaya değer iki kayıt var. Yerleşik
 süreç içi dosya araçlarının **sandbox'ta çalışmadığını** bildirir — sahip olduğu
 tek dosya sistemi sınırı araç yüzeyi ve bu ilke motorudur. Claude Code, kendi
 araç çağrılarının **yakalanamadığını** bildirir; çünkü
-`--dangerously-skip-permissions` ile başlatılır. Control Center yalnızca `mcp__*`
-çağrılarını görür; kendi read, write, edit ve shell araçları görünmeden çalışır.
+`--dangerously-skip-permissions` ile başlatılır. Control Center `mcp__*` çağrılarını ve bir hook aracılığıyla `Bash` komut satırlarını görür; kendi read, write ve edit araçları ise görünmeden çalışır.
 
 Ayarlar ekranı bu matrisi gösterir; çünkü bir koruma sistemi için affedilmez tek
 hata, var olmayan bir kapsamı iddia etmektir.

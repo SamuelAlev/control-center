@@ -2,7 +2,7 @@
 title: 设置 Linear 集成
 description: 在服务器上存储 Linear API 密钥，让智能体可以调用 Linear，并为新工单选择 Linear 作为工单服务商。
 slug: zh-CN/手册/操作指南/linear-集成
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 把你的 Linear API 密钥粘贴到服务器上，并关联到你的用户，就像连接代码托管平台
@@ -13,8 +13,8 @@ sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 
 **工单 API 密钥**位于 **设置 → 工作区 → 通用** 的**工单系统**卡片上。它把密钥按
 你的用户 id 存储在服务器上。服务器用于无人值守工作的密钥来自 `LINEAR_API_KEY`
-或**提供商应用**卡片，并且只有当该智能体具备**允许工单 API 调用**能力时，才会
-作为 `TICKETING_API_KEY` 注入。
+或**提供商应用**卡片。智能体的沙盒中不会放入任何工单密钥：智能体通过 Control
+Center 自己的工具写工单，这些工具会先询问**写入外部跟踪器**规则。
 
 ## 将新工单标记为 Linear
 

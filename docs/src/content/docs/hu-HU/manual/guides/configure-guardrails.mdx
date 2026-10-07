@@ -2,7 +2,7 @@
 title: Korlátok konfigurálása
 description: Állítson be engedélyező, előbb kérdező és tiltó szabályokat az ügynökműveletekhez, tesztelje őket a „mi lenne, ha?” próbával, és hangolja térenként az autonómiát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Ez az útmutató megmutatja, hogyan konfigurálja a korlátokat: azokat a
@@ -136,11 +136,13 @@ funkció alkalmazáson belüli változata: hatásosztályonként megmondja, hogy
 egyes futtatók elkapják-e a szabálykapunál, a homokozóra hagyják-e, vagy
 egyáltalán nem tudják elfogni.
 
-- **A Claude Code adapter** a saját eszközhívásainál nincs kapuzva. A Claude
-  Code `--dangerously-skip-permissions` kapcsolóval indul, így az olvasó, író,
-  szerkesztő és bash hívásai soha nem haladnak át az őrszem előtt. Amit ennél
-  az adapternél kapuzunk, az az MCP eszközfelszín, amelyet visszahív, és az a
-  shellparancs, amelyet a Control Center az indításához létrehoz.
+- **A Claude Code adapter** a saját eszközhívásainál csak részben van kapuzva.
+  A Claude Code `--dangerously-skip-permissions` kapcsolóval indul, így az
+  olvasó, író és szerkesztő hívásai soha nem haladnak át az őrszem előtt. A bash
+  parancsai egy hookon keresztül jutnak el hozzá, amely besorolja a parancssort,
+  a pushai pedig – mint minden ügynöké – a push-átjárón mennek át. Az MCP
+  eszközfelszín, amelyet visszahív, és az a shellparancs, amelyet a Control
+  Center az indításához létrehoz, szintén kapuzott.
 - **Egy mód saját kimeneti igéje** (`submit_plan`, `propose_orchestration`)
   rögzített, és soha nem lehet megtiltani – különben egy mód szerkezetileg
   képtelen lenne előállítani az egyetlen szállítható kimenetét.

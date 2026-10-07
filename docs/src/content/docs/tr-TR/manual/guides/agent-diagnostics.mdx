@@ -2,7 +2,7 @@
 title: Bir ajanı tanılama
 description: Bir ajan çalıştırma üretmeyi bıraktığında çalıştırma günlüğü, adaptör yoklaması, sunucu durumu ve ana makine tanılamaları üzerinden ilerleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-tanilama
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Bu kılavuz, bir ajanın neden çalıştırma üretmediğini nasıl bulacağınızı gösterir.
@@ -60,19 +60,18 @@ Bir değişiklik "testlerde çalışıyor ama uygulamada çalışmıyor" olduğu
 
 **Ayarlar → Sunucu → Tanılama ve gizlilik** (`/settings/server/diagnostics`), ana makine düzeyindeki sayfadır. Şunları içerir:
 
-- **Korumalı alan** — ana anahtar, algılanan arka uç, bir kurulum ipucu ve varsayılan yetenek anahtarları. Sunucudan yalnızca algılanan arka uç gelir; aşağıdaki Dikkat bölümüne bakın. Sıfırlama denetimi yoktur.
+- **Korumalı alan** — ana anahtar, algılanan arka uç ve bir kurulum ipucu. Sunucudan yalnızca algılanan arka uç gelir; aşağıdaki Dikkat bölümüne bakın. Sıfırlama denetimi yoktur.
 - **Anlamsal arama** — cihaz üzerindeki gömme modelinin yaşam döngüsü: kurulu, yüzdeyle indiriliyor, kurulu değil veya kurulum hatası. Model kurulana kadar bellek ve kod araması yalnızca anahtar sözcükle çalışır.
 - **Sistem davranışı** — ajanlar çalışırken bilgisayarı uyanık tut.
-- **Senkronizasyon motoru** — biletler, mesajlaşma ve notlar için depo başına kapatma anahtarları. Bunlar, tam anlık görüntü aboneliklerine dönmek için acil durum çıkış kapılarıdır; bir değişiklik yalnızca yeni abonelikleri etkiler, bu nedenle ancak yeniden yüklemeden sonra tümüyle etkili olur.
 - **Log düzeyi** — bir hatayı yeniden üretmeden önce yükseltin.
 - **Gizlilik** — ham diff içeriğinin ajanın modeline iletilip iletilmeyeceği ve çökme raporlarının gönderilip gönderilmeyeceği.
 
 :::caution[Bu bölüm ana makineyi bildirir; denetimleri istemci tarafındadır]
-Algılama ve uygulama artık uyuşuyor: algılayıcı yerel bir arka uç bildiriyorsa, o ana makinedeki ajan çalıştırmaları gerçekten onun içine alınır. Ancak bu bölümdeki tek canlı şey algılayıcıdır. Ana anahtar, arka uç seçici ve varsayılan yetenek anahtarları cihazınızda saklanan tercihlerdir ve sunucu bunların hiçbirini okumaz — sunucunun kendi anahtarı `--sandbox`'tır (varsayılan olarak `on`, vazgeçmek için `off`) ve "Çalışma alanı varsayılanını kullan" olarak bırakılan her ajan için sunucu kendi tutucu varsayılanına döner: git push yok, GitHub API yok, biletleme anahtarı yok, ağ açık.
+Algılama ve uygulama artık uyuşuyor: algılayıcı yerel bir arka uç bildiriyorsa, o ana makinedeki ajan çalıştırmaları gerçekten onun içine alınır. Ancak bu bölümdeki tek canlı şey algılayıcıdır. Ana anahtar ve arka uç seçici cihazınızda saklanan tercihlerdir ve sunucu bunların hiçbirini okumaz — sunucunun kendi anahtarı `--sandbox`'tır (varsayılan olarak `on`, vazgeçmek için `off`).
 
 Dolayısıyla buradaki bir uyarı üzerinde durmaya değer, ancak genellikle bir ajanın başarısız olmasının nedeni değildir. Sunucunun hangi durumda olduğunu doğrulamak için başlangıç günlüğünü okuyun: arka uç notuyla birlikte `agent sandbox ON`, bir kurulum ipucuyla `no OS-native agent sandbox on this host` ya da `agent sandbox DISABLED by --sandbox off` yazar. `GET /healthz` hiçbir sandbox alanı taşımaz.
 
-Arka ucun olmadığı yerlerde — Windows'ta her zaman, `bwrap` ve `socat` olmadan Linux veya WSL2'de — çalıştırmalar sandbox'a **alınmaz** ve onları sınırlayan şeyler şunlardır: konuşmanın kendi checkout'u, içine hangi kimlik bilgilerinin üretileceğini denetleyen yetenekler, eylem korumaları, ortam temizliği ve modunun izin verdiği araç yüzeyi.
+Arka ucun olmadığı yerlerde — Windows'ta her zaman, `bwrap` ve `socat` olmadan Linux veya WSL2'de — çalıştırmalar sandbox'a **alınmaz** ve onları sınırlayan şeyler şunlardır: konuşmanın kendi checkout'u, salt okunur forge belirteci ve push ağ geçidi, eylem korumaları, ortam temizliği ve modunun izin verdiği araç yüzeyi.
 :::
 
 ## Sık karşılaşılan hatalar
@@ -83,7 +82,7 @@ CLI'yi **sunucu ana makinesine** kurun, ardından Model sağlayıcıları sayfas
 
 ### Ajan push yapamıyor veya pull request açamıyor
 
-Belirleyici olan yetenekleridir. **Ayarlar → Çalışma alanı → Ajanlar** → ajan → **Sandbox izinleri** yolunu açın, anahtarı açın ve **git push'a izin ver** ile **GitHub API çağrılarına izin ver** seçeneklerini etkinleştirin. Anahtarı "Çalışma alanı varsayılanını kullan" olarak bırakmak, ajana bunların hiçbirini vermez.
+Git'in ya da ajanın ne yazdırdığını okuyun. `Control Center policy: …`, bir eylem kuralının bunu reddettiği ya da bir onayın yanıtsız kaldığı anlamına gelir: **Ayarlar → Çalışma alanı → Ajan izinleri** altında **Uzak depoya push et** ve **Pull request aç** kurallarını denetleyin. Git, Control Center'ın push edebilen bir GitHub kimlik bilgisi olmadığını söylüyorsa GitHub App'i o depoya kurun ya da GitHub'ı bağlayın.
 
 ### Anlamsal arama işe yarar bir şey döndürmüyor
 

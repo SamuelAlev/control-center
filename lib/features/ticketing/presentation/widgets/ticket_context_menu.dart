@@ -164,7 +164,7 @@ List<_MenuEntry> _buildEntries({
         label: ticketPriorityLabel(l10n, p),
         selected: p == ticket.priority,
         onTap: () {
-          patchTicketOptimistic(
+          patchTicketFields(
             ref,
             workspaceId: workspaceId,
             ticketId: ticket.id,

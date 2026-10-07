@@ -2,7 +2,7 @@
 title: Modalità
 description: Perché è uno spazio, non un agente, a portare una modalità; che cosa garantisce ciascuna delle quattro modalità; e dove quella garanzia è strutturale anziché solo dichiarata nel prompt.
 slug: it-IT/manuale/concetti/modalita
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Che cos'è una modalità
@@ -77,7 +77,7 @@ La risoluzione in sé è semplice. Il dispatcher legge la colonna `mode` dello s
 
 La superficie degli strumenti di una modalità è costruita e applicata dall'**harness integrato**. È l'unico trasporto in grado di rendere uno strumento invisibile anziché semplicemente negato, di sottoporre a un gate ogni chiamata prima che venga eseguita e di osservare un contratto di completamento.
 
-Sul trasporto Claude Code una modalità diversa da chat viene passata come `--permission-mode plan`. Claude lo rispetta per convenzione; i suoi strumenti di lettura, scrittura, modifica e shell vengono eseguiti senza essere visti. Per quel trasporto la modalità è un'indicazione, non un confine di Control Center — vedi [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/).
+Sul trasporto Claude Code una modalità diversa da chat viene passata come `--permission-mode plan`. Claude lo rispetta per convenzione; i suoi strumenti di lettura, scrittura e modifica vengono eseguiti senza essere visti e i suoi comandi di shell li controlla solo un hook che legge la riga di comando. Per quel trasporto la modalità è un'indicazione, non un confine di Control Center — vedi [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/).
 
 Le liste di autorizzazione vincolano gli strumenti di livello scrittura e superiore. Il livello di lettura dell'harness integrato raggiunge comunque strumenti che nessuna lista nomina; su Claude Code, uno strumento omesso dalla lista di autorizzazione viene rifiutato che il server lo abbia o no.
 

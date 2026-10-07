@@ -129,7 +129,7 @@ _setup() {
   final source = LocalGitPrDiffSource(
     git: git,
     filesystem: fs,
-    githubToken: 'tok',
+    githubTokenFor: (_, _) async => 'tok',
   );
   return (dir: dir, git: git, fs: fs, source: source);
 }

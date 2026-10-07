@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_window_usage.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/context_meter_chip.dart';
@@ -143,6 +144,51 @@ void main() {
     expect(find.text('2k / 256k'), findsOneWidget);
     // The flyout stays closed until tapped.
     expect(find.text('Context usage'), findsNothing);
+  });
+
+  testWidgets('a reported reading replaces the estimate in chip and flyout', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ..._overrides(),
+          conversationTokenTotalsProvider(_spaceId).overrideWith(
+            (ref) => Stream.value(
+              const ConversationTokenTotals(
+                tokens: 310000,
+                chars: 11,
+                reportedContextTokens: 150000,
+                reportedWindowTokens: 1000000,
+              ),
+            ),
+          ),
+        ],
+        child: _wrap(
+          const ContextMeterChip(spaceId: _spaceId, agentId: _agentId),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // The provider's count against the window the run used — not the 310k
+    // transcript estimate, not the inspection's 256k.
+    expect(find.text('150k / 1M'), findsOneWidget);
+
+    await tester.tap(find.text('150k / 1M'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text("Reported by the model's last call"), findsOneWidget);
+    // A measured total carries no tilde.
+    expect(find.text('150K / 1M tokens'), findsOneWidget);
   });
 
   testWidgets('tap opens the flyout with the breakdown and See more opens the '

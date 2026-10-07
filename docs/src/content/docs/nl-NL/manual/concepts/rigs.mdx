@@ -2,7 +2,7 @@
 title: Rigs en omhullingen
 description: Waarom agenten wegwerpmachines krijgen in plaats van jouw computer — de isolatiegrenzen, weergavekanalen, inloggegevens, poorten en levenscyclus.
 slug: nl-NL/handleiding/concepten/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Een **rig** is een wegwerpmachine die een agent in realtime aanstuurt — een
@@ -173,13 +173,20 @@ hoeveel het er was — nooit wat erin stond.
 
 ## Inloggegevens staan nooit in de gast
 
-`git push` werkt vanuit een ingesloten terminal, en toch bewaart de gast geen
+`git push` werkt vanuit een ingesloten terminal die jij hebt geopend, en toch bewaart de gast geen
 forge-token. Hij heeft één geheim per VM, waarvan de enige bevoegdheid is om de
 broker voor inloggegevens van de host — via een tunnel die de host beheert —
 te *vragen* om een kortlevend token met repo-scope, per bewerking, met
 snelheidslimiet, begrensd door dezelfde host-allowlist als egress, en
 ingetrokken zodra de rig sluit. Een machine die is gebouwd om weggegooid te
 worden, mag niets bevatten dat het stelen waard is.
+
+Wat dat token mag, ligt vast wanneer de rig opent. Een terminal-rig die een
+persoon opent, krijgt een token met schrijfrechten, begrensd door de eigen
+forge-toegang van dat lid. Een rig die een agent heeft geopend, krijgt er een met
+alleen leesrechten: een git-credential-helper kan een push niet van een fetch
+onderscheiden, dus de pushregel kan in een gast niet per push worden
+geraadpleegd, zoals de agentrun-gateway dat op de host doet.
 
 ## De worktree in een rig is een satelliet
 

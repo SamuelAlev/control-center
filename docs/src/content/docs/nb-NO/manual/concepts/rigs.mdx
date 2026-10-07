@@ -2,7 +2,7 @@
 title: Stasjoner og isolerte miljøer
 description: Hvorfor agenter får kastbare maskiner i stedet for datamaskinen din — isolasjonsgrensene, visningsbanene, legitimasjonen, portene og livssyklusen.
 slug: nb-NO/handbok/konsepter/stasjoner
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 En **stasjon** er en kastbar maskin som en agent styrer i sanntid — en
@@ -157,13 +157,20 @@ sa.
 
 ## Legitimasjon bor aldri i gjesten
 
-`git push` fungerer fra en isolert terminal, men gjesten lagrer ingen
+`git push` fungerer fra en isolert terminal du har åpnet, men gjesten lagrer ingen
 kodeverttoken. Den holder én hemmelighet per VM, hvis eneste kraft er å *spørre*
 vertens legitimasjonsmegler — over en tunnel verten kontrollerer — om et
 kortlevd token begrenset til repoet, per operasjon, hastighetsbegrenset,
 avgrenset av samme tillatelsesliste for verter som utgående trafikk, og
 tilbakekalt i det øyeblikket stasjonen lukkes. En maskin bygget for å kastes, må
 ikke inneholde noe som er verdt å stjele.
+
+Hva det tokenet får gjøre, er bestemt når stasjonen åpnes. En terminalstasjon
+som en person åpner, får et token med skrivetilgang, avgrenset av det
+medlemmets egen tilgang til kodeverten. En stasjon som en agent har åpnet, får
+et som bare kan lese: en credential helper for git kan ikke skille en push fra
+en fetch, så push-regelen kan ikke spørres per push inne i en gjest slik
+agentkjøringsgatewayen gjør det på verten.
 
 ## Worktreet i en stasjon er en satellitt
 

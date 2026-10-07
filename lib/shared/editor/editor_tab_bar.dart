@@ -46,13 +46,15 @@ class EditorTabBar extends StatefulWidget {
     this.leadings,
     this.trailings,
     this.dirty,
+    this.scrambling,
     this.inlineActions = const [],
     this.actions = const [],
   }) : assert(labels.length == tabs.length),
        assert(icons == null || icons.length == labels.length),
        assert(leadings == null || leadings.length == labels.length),
        assert(trailings == null || trailings.length == labels.length),
-       assert(dirty == null || dirty.length == labels.length);
+       assert(dirty == null || dirty.length == labels.length),
+       assert(scrambling == null || scrambling.length == labels.length);
 
   /// Id of the leaf this bar belongs to (carried in drag payloads).
   final String leafId;
@@ -81,6 +83,12 @@ class EditorTabBar extends StatefulWidget {
   /// close slot shows a filled dot instead of being empty; hovering the tab
   /// still swaps to the close button. Must match [labels] length when provided.
   final List<bool>? dirty;
+
+  /// Optional per-tab "label still being worked out" flag (a conversation
+  /// title a model is generating). A scrambling tab churns the letters of its
+  /// label until the flag clears, then settles into it. Must match [labels]
+  /// length when provided.
+  final List<bool>? scrambling;
 
   /// Index of the selected tab.
   final int selectedIndex;
@@ -624,11 +632,11 @@ class _EditorTabBarState extends State<EditorTabBar> {
                                             ),
                                           ),
                                         ),
-                                        Text(
+                                        CcScrambleText(
                                           widget.labels[index],
-                                          maxLines: 1,
-                                          softWrap: false,
-                                          overflow: TextOverflow.ellipsis,
+                                          scrambling:
+                                              widget.scrambling?[index] ??
+                                              false,
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: selected

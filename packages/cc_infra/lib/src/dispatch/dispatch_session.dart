@@ -9,7 +9,6 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
@@ -42,8 +41,11 @@ import 'package:cc_harness/slash_command.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
+import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/context/snapcompact_compactor.dart';
+import 'package:cc_infra/src/detection/acp_models_service.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
+import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
@@ -73,6 +75,7 @@ part 'dispatch_session_acp.dart';
 part 'dispatch_session_harness.dart';
 part 'dispatch_session_subagent.dart';
 part 'dispatch_session_claude_cli.dart';
+part 'dispatch_session_gateway.dart';
 
 /// A session that dispatches and manages a single sandboxed agent run.
 /// Default per-run priced cost cap, in cents: what one unattended segment of
@@ -111,6 +114,7 @@ class DispatchSession implements SteeringSessionView {
     this.wakeContext,
     this.silenceTimeoutMinutes,
     this.effortLevel,
+    this.contextWindowTokens,
     this.agentConfigDir,
     this.adapterArgsOverride = const [],
     this.adapterEnvOverride = const {},
@@ -242,6 +246,12 @@ class DispatchSession implements SteeringSessionView {
   /// agent's model-driven effort. Passed to the backend's buildArgs.
   final String? effortLevel;
 
+  /// The agent's configured context window in tokens, or null to use the
+  /// model's. The built-in harness caps its own window here; for Claude Code,
+  /// whose window comes from the `--model` id, it is only what readings are
+  /// measured against.
+  final int? contextWindowTokens;
+
   /// Per-adapter argv appended after the backend's own args (e.g. YOLO /
   /// skip-permissions flags).
   final List<String> adapterArgsOverride;
@@ -293,7 +303,7 @@ class DispatchSession implements SteeringSessionView {
   /// agent's) attached set, in its configured order, with the round-robin
   /// position and any cooling-off keys already applied. Null leaves the chain
   /// exactly as it was before pools existed.
-  final Future<List<String>?> Function({
+  final Future<AccountPoolOrder> Function({
     String? workspaceId,
     String? agentId,
     required String providerId,
@@ -314,7 +324,7 @@ class DispatchSession implements SteeringSessionView {
   /// Checked inside the Claude transport only, so a workspace whose pool is
   /// spent can still run an agent on a different adapter — the pool describes
   /// one runner's credentials, not the workspace's ability to work.
-  final ClaudeAccountRefusal? claudeAccountsSpent;
+  final AccountPoolRefusal? claudeAccountsSpent;
 
   /// Resolves a CLI binary name to its absolute path. Defaults to the real
   /// [resolveBinaryPath] host probe; tests inject a stub so the dispatch flow
@@ -332,6 +342,21 @@ class DispatchSession implements SteeringSessionView {
 
   /// Handle to the scoped credential minted for this run.
   String? credHandle;
+
+  /// This run's registration with the agent run gateway: the push proxy and
+  /// the Claude Code hook endpoint that put the action policy between the
+  /// agent's shell and the forge. Null when no gateway is wired or reachable —
+  /// the run then has no push path at all, which fails closed.
+  AgentRunLease? _gatewayLease;
+
+  /// Whether the run's sandbox gets a network, resolved from the "network
+  /// egress" rule when the run starts. A sandbox can only be on or off, so
+  /// "ask first" leaves it on; the harness web tools still ask per call.
+  bool _networkEnabled = true;
+
+  /// The gateway's loopback port, which every sandbox of this run must reach
+  /// (a Linux sandbox has its own network namespace; it is bridged in).
+  List<int> get _gatewayLoopbackPorts => [?_gatewayLease?.base.port];
 
   /// Subscription to sandbox events from the underlying process.
   StreamSubscription<SandboxEvent>? eventsSub;
@@ -638,17 +663,6 @@ class DispatchSession implements SteeringSessionView {
     _gitIdentityEnv = env;
   }
 
-  /// Translates capabilities into environment variables for the sandboxed
-  /// process (e.g. disabling git push when not permitted).
-  static Map<String, String> capabilityEnv(AgentCapabilities caps) {
-    final env = <String, String>{};
-    if (!caps.canPushToRepo) {
-      env['GIT_ASKPASS'] = '/usr/bin/false';
-      env['GIT_TERMINAL_PROMPT'] = '0';
-    }
-    return env;
-  }
-
   /// Writable bind-mount host paths this session could grant exec on (RO mounts
   /// excluded — opening them would widen the sandbox with no binary to run).
   List<String> _execGrantCandidateRoots() => [
@@ -936,7 +950,7 @@ class DispatchSession implements SteeringSessionView {
   /// 127 — never throws.
   Future<void> run() async {
     try {
-      final caps = await _capabilitiesFor(agentId);
+      _networkEnabled = await _resolveNetworkEnabled();
 
       // Resolve the worktree's GitHub coordinates so the broker can mint a
       // fine-grained App installation token scoped to exactly this repo.
@@ -946,7 +960,7 @@ class DispatchSession implements SteeringSessionView {
       String? repoOwner;
       String? repoName;
       final inspector = deps.repoInspector;
-      if (inspector != null && (caps.canCallGitHubApi || caps.canPushToRepo)) {
+      if (inspector != null) {
         try {
           final info = await inspector.inspect(agentDirHostPath);
           if (info.forge == ForgeHost.github) {
@@ -958,9 +972,12 @@ class DispatchSession implements SteeringSessionView {
         }
       }
 
+      // READ scope: the agent's own environment can read the repo and work
+      // with pull requests, never push. A push goes through the gateway,
+      // which asks the "Push to a remote" rule first.
       final scoped = await deps.broker.mint(
         conversationId: conversationId ?? 'unknown',
-        capabilities: caps,
+        scope: ForgeTokenScope.read,
         repoOwner: repoOwner,
         repoName: repoName,
         // The member who asked for this run. It bounds the run's forge
@@ -971,6 +988,8 @@ class DispatchSession implements SteeringSessionView {
         workspaceId: workspaceId,
       );
       credHandle = scoped.handle;
+
+      await _openGatewayLease(repoOwner: repoOwner, repoName: repoName);
 
       // Resolve the per-run git identity + requester credentials before any
       // transport launches, so every merged env carries them. (After the
@@ -985,7 +1004,7 @@ class DispatchSession implements SteeringSessionView {
       final sandboxSessionId =
           '$agentSessionPrefix$agentKey::$convKey::${mode.name}';
 
-      await _openRunLog(caps: caps);
+      await _openRunLog();
 
       final backend = deps.backendRegistry.backendFor(cliName);
       if (backend == null) {
@@ -1011,15 +1030,14 @@ class DispatchSession implements SteeringSessionView {
       switch (backend.transport) {
         case AdapterTransport.claudeCli:
           await _runClaudeCli(
-            caps: caps,
             scoped: scoped,
             sandboxSessionId: sandboxSessionId,
             wsId: wsId,
           );
         case AdapterTransport.acp:
-          await _runAcp(caps: caps, scopedNotes: scoped.notes);
+          await _runAcp(scopedNotes: scoped.notes);
         case AdapterTransport.harness:
-          await _runHarness(caps: caps, scoped: scoped, wsId: wsId);
+          await _runHarness(scoped: scoped, wsId: wsId);
       }
       onScheduleCooldown(sandboxSessionId);
     } on Object catch (e) {
@@ -1083,12 +1101,11 @@ class DispatchSession implements SteeringSessionView {
   }
 
   /// Builds the base harness tool registry (built-in filesystem/command tools
-  /// first, then bridged CC MCP tools) for a given [mode]/[caps]/[env]. The
+  /// first, then bridged CC MCP tools) for a given [mode]/[env]. The
   /// `task` tool is NOT added here — the top-level run adds it explicitly and
   /// subagents deliberately omit it so nesting is capped at one level.
   HarnessToolRegistry _buildHarnessRegistry({
     required Mode mode,
-    required AgentCapabilities caps,
     required Map<String, String> env,
   }) {
     // The `eval` bridge resolves tools against the registry being built, which
@@ -1097,7 +1114,8 @@ class DispatchSession implements SteeringSessionView {
     late final HarnessToolRegistry registry;
     registry = buildHarnessToolRegistry(
       mode: mode,
-      caps: caps,
+      networkEnabled: _networkEnabled,
+      loopbackPorts: _gatewayLoopbackPorts,
       env: env,
       workspaceId: workspaceId,
       agentId: agentId,
@@ -1225,6 +1243,9 @@ class DispatchSession implements SteeringSessionView {
             leadCredential = rotation.first;
           }
         }
+      } on _AccountPoolRefused {
+        // Not best-effort: the pool said this run must not start.
+        rethrow;
       } on Object catch (_) {
         // Rotation is best-effort; the primary still works.
         rotation = const [];
@@ -1326,15 +1347,22 @@ class DispatchSession implements SteeringSessionView {
     List<ProviderCredential> stored,
   ) async {
     final resolve = onResolveHarnessRotation;
-    if (resolve == null || stored.length < 2) {
+    // Consulted even for ONE stored key: a pool naming only removed keys must
+    // refuse, not quietly run on whatever key is left.
+    if (resolve == null || stored.isEmpty) {
       return stored;
     }
-    final order = await resolve(
+    final answer = await resolve(
       workspaceId: workspaceId,
       agentId: agentId,
       providerId: providerId,
       credentialIds: [for (final c in stored) c.credentialId],
     );
+    final refusal = answer.refusal;
+    if (refusal != null) {
+      throw _AccountPoolRefused(providerId, refusal);
+    }
+    final order = answer.order;
     if (order == null || order.isEmpty) {
       return stored;
     }
@@ -1575,6 +1603,54 @@ class DispatchSession implements SteeringSessionView {
     return _resolveHarnessCredential(providerId);
   }
 
+  /// Parks this run until [refused]'s pool stops refusing it, and reports
+  /// whether it did.
+  ///
+  /// False when no gate is wired, when the operator cancels, or when the wait
+  /// times out — each falls through to the refusal as the run's failure.
+  Future<bool> _gateOnHarnessPool(_AccountPoolRefused refused) async {
+    final gate = deps.credentialGate;
+    final resolve = onResolveHarnessRotation;
+    if (gate == null || resolve == null) {
+      return false;
+    }
+    final detail = refused.toString();
+    addEvent(DebugEvent(content: detail));
+    final outcome = await gate.awaitCredentials(
+      RunCredentialBlockRequest(
+        lane: RunCredentialLane.harness,
+        reason: refused.refusal.reason,
+        detail: detail,
+        runLogId: runLogId,
+        providerId: refused.providerId,
+        accountIds: refused.refusal.accountIds,
+        availableAt: refused.refusal.earliestReset,
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: conversationId,
+        agentId: agentId,
+        agentName: agentName,
+      ),
+      // Re-asking the pool IS the probe: an edit to it lands in workspace
+      // settings, which only a fresh read observes.
+      recheck: () async {
+        final stored =
+            await deps.harnessCredentialStore?.credentialsFor(
+              refused.providerId,
+            ) ??
+            const <ProviderCredential>[];
+        final answer = await resolve(
+          workspaceId: workspaceId,
+          agentId: agentId,
+          providerId: refused.providerId,
+          credentialIds: [for (final c in stored) c.credentialId],
+        );
+        return answer.refusal == null;
+      },
+    );
+    return outcome == RunCredentialOutcome.resolved;
+  }
+
   /// Resolves the full credential for a harness provider (API key or OAuth):
   /// per-adapter env override → caller env → server credential store → process
   /// environment. The store may return an OAuth credential; the provider factory
@@ -1656,7 +1732,6 @@ class DispatchSession implements SteeringSessionView {
   /// fallback) — never the requesting member's own token, so nothing an agent
   /// does on the forge is authored as the human who asked for the run.
   Map<String, String> _mergedEnv({
-    required AgentCapabilities caps,
     required Map<String, String> scopedEnv,
     required Map<String, String> backendEnv,
   }) {
@@ -1666,14 +1741,18 @@ class DispatchSession implements SteeringSessionView {
       ...scopedEnv,
       ...backendEnv,
       ...adapterEnvOverride,
-      ...capabilityEnv(caps),
       if (wakeContext != null) ...wakeContext!.toEnvironment(),
       // Which Claude Code account this run signs in as. It is the LAST word on
       // the config dir — an `adapterEnvOverride` naming a different one would
       // point the CLI somewhere the sandbox never made writable, which fails
       // as a mid-run token refresh error rather than as a visible mistake.
-      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
+      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty) ...{
         'CLAUDE_CONFIG_DIR': claudeConfigDir!,
+        // The account's long-lived token, when it has one, is its credential
+        // for the same reason: the operator picked the account, so a token
+        // configured elsewhere must not sign the run in as someone else.
+        claudeLongLivedTokenEnvKey: ?readClaudeLongLivedToken(claudeConfigDir!),
+      },
     };
     // …and it survives the re-assertion below, because the broker's scoped env
     // carries forge credentials, never a runner config dir.
@@ -1684,6 +1763,13 @@ class DispatchSession implements SteeringSessionView {
     // `adapterEnvOverride`'s own doc promised the opposite ("caller/broker env
     // still wins for security-critical keys"). Now it does.
     merged.addAll(scopedEnv);
+    // The gateway's git config goes on top of everything: an adapter's own
+    // `GIT_CONFIG_*` entries are appended to, never replaced, and nothing a
+    // caller sets can unroute a push from the policy.
+    final lease = _gatewayLease;
+    if (lease != null) {
+      merged.addAll(lease.environment(merged));
+    }
     return merged;
   }
 
@@ -1711,7 +1797,36 @@ class DispatchSession implements SteeringSessionView {
         return true;
       }
     }
-    return File('$dir/.credentials.json').existsSync();
+    return File('$dir/.credentials.json').existsSync() ||
+        readClaudeLongLivedToken(dir) != null;
+  }
+
+  /// [base] re-pointed at ONE account of a multi-account run.
+  ///
+  /// The token has to move with the config dir. [_mergedEnv] exported the
+  /// FIRST account's token, and a failover attempt on an account without one
+  /// would otherwise sign in as the account it is failing over from — exactly
+  /// the plan that just ran out.
+  Map<String, String> _envForClaudeAccount(
+    Map<String, String> base,
+    String configDir,
+  ) {
+    if (configDir.isEmpty) {
+      return base;
+    }
+    final env = {...base, 'CLAUDE_CONFIG_DIR': configDir};
+    final token = readClaudeLongLivedToken(configDir);
+    final first = claudeConfigDir;
+    final inherited = first == null || first.isEmpty
+        ? null
+        : readClaudeLongLivedToken(first);
+    if (token != null) {
+      env[claudeLongLivedTokenEnvKey] = token;
+    } else if (inherited != null &&
+        env[claudeLongLivedTokenEnvKey] == inherited) {
+      env.remove(claudeLongLivedTokenEnvKey);
+    }
+    return env;
   }
 
   /// Directories the runner keeps its own state in, writable in every mode.
@@ -1732,7 +1847,7 @@ class DispatchSession implements SteeringSessionView {
 
   /// Builds a [SandboxConfig] for the current dispatch using the policy
   /// resolver + config builder. Used by the ACP transport.
-  Future<SandboxConfig> _buildSandboxConfig(AgentCapabilities caps) async {
+  Future<SandboxConfig> _buildSandboxConfig() async {
     final home = Platform.environment['HOME'] ?? '';
     final wsId = workspaceId ?? '';
     final agentKey = (agentId != null && agentId!.isNotEmpty)
@@ -1746,16 +1861,15 @@ class DispatchSession implements SteeringSessionView {
       agentId: agentId,
       bindMounts: _bindMounts(),
       guestWorkdir: agentDirHostPath,
-      networkEnabled: caps.canAccessNetwork,
+      networkEnabled: _networkEnabled,
       mode: mode,
-      capabilities: caps,
       protectedPaths: await _protectedPaths(),
       runnerStateDirs: _runnerStateDirs,
       execGrantRoots: await _resolveExecGrantRoots(wsId),
+      loopbackPorts: _gatewayLoopbackPorts,
     );
     final policy = const SandboxPolicyResolver().resolve(
       spec: spec,
-      capabilities: caps,
       homeDir: home.isNotEmpty ? home : null,
       runDir: '$agentDirHostPath/.cc-runs/$sessionId',
     );
@@ -1830,11 +1944,7 @@ class DispatchSession implements SteeringSessionView {
     _cancelSilenceWatchdog();
     _claudeParser = null;
     await _teardownAcp();
-    final cred = credHandle;
-    if (cred != null) {
-      await deps.broker.revoke(cred);
-      credHandle = null;
-    }
+    await _releaseRunCredentials();
     _closeController();
   }
 
@@ -1861,11 +1971,7 @@ class DispatchSession implements SteeringSessionView {
     // NDJSON `end` record. Idempotent — the normal completion path calls it too.
     await _closeRunLog(error: 'terminated by user request');
     _failRun('Terminated by user request');
-    final cred = credHandle;
-    if (cred != null) {
-      await deps.broker.revoke(cred);
-      credHandle = null;
-    }
+    await _releaseRunCredentials();
     unawaited(eventsSub?.cancel());
     eventsSub = null;
     _closeController();
@@ -2035,15 +2141,12 @@ class DispatchSession implements SteeringSessionView {
         final v = event.violation;
         final summary = v == null
             ? '[sandbox] denied operation'
-            : '[sandbox] denied ${v.action} on ${v.target}'
-                  '${v.suggestedCapability == null ? '' : ' '
-                            '(grant ${v.suggestedCapability} to allow)'}';
+            : '[sandbox] denied ${v.action} on ${v.target}';
         addEvent(
           SandboxViolationEvent(
             content: summary,
             action: v?.action,
             target: v?.target,
-            suggestedCapability: v?.suggestedCapability,
           ),
         );
         if (v != null) {
@@ -2117,11 +2220,7 @@ class DispatchSession implements SteeringSessionView {
               ),
       );
     }
-    final cred = credHandle;
-    if (cred != null) {
-      unawaited(deps.broker.revoke(cred));
-      credHandle = null;
-    }
+    unawaited(_releaseRunCredentials());
     unawaited(eventsSub?.cancel());
     eventsSub = null;
     _closeController();
@@ -2483,7 +2582,7 @@ class DispatchSession implements SteeringSessionView {
     await _flushLastOutput();
   }
 
-  Future<void> _openRunLog({required AgentCapabilities caps}) async {
+  Future<void> _openRunLog() async {
     await _logWriter.open(
       agentDirHostPath: agentDirHostPath,
       agentId: agentId,
@@ -2492,7 +2591,6 @@ class DispatchSession implements SteeringSessionView {
       ticketId: ticketId,
       cliName: cliName,
       modelId: modelId,
-      capabilities: caps,
     );
     final path = _logWriter.logPath;
     if (path != null) {
@@ -2556,23 +2654,6 @@ class DispatchSession implements SteeringSessionView {
       controller.close();
     }
   }
-
-  Future<AgentCapabilities> _capabilitiesFor(String? agentId) async {
-    final ws = workspaceId;
-    if (agentId != null && ws != null && ws.isNotEmpty) {
-      try {
-        final agent = await deps.agentRepo.getById(ws, agentId);
-        if (agent?.capabilities != null) {
-          return agent!.capabilities!;
-        }
-      } catch (_) {
-        CcInfraLog.warning(
-          'DispatchSession: Failed to fetch agent capabilities: $agentId',
-        );
-      }
-    }
-    return deps.defaultCaps;
-  }
 }
 
 /// A [SubagentSpawner] backed by a closure, so the `task` tool can spawn a
@@ -2608,4 +2689,17 @@ class _ClosureSubagentSpawner implements SubagentSpawner {
 
   @override
   Future<SubagentResult> spawn(SubagentSpawnRequest request) => _run(request);
+}
+
+/// Thrown out of harness provider assembly when the scope's account pool
+/// refuses the run, so the session can park it on the credential gate instead
+/// of building a provider on a credential the pool rules out.
+class _AccountPoolRefused implements Exception {
+  _AccountPoolRefused(this.providerId, this.refusal);
+
+  final String providerId;
+  final AccountPoolRefusal refusal;
+
+  @override
+  String toString() => harnessPoolRefusalDetail(providerId, refusal);
 }

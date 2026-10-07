@@ -2,13 +2,13 @@
 title: Backends de sandbox
 description: Os backends de sandbox, onde são aplicados e todos os objetos de valor que o runtime da sandbox utiliza.
 slug: pt-PT/manual/referencia/backends-de-sandbox
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Se uma execução é isolada numa sandbox depende do anfitrião]
 O `cc_server` sonda o anfitrião uma vez no arranque e envolve o despacho de agentes no backend nativo quando a sonda reporta um disponível e `--sandbox` não está em `off`. Ambas as costuras de despacho são envolvidas: a CLI do Claude Code através da porta de sandbox, e o ACP mais a ferramenta `bash` do harness integrado através do gestor de sandbox.
 
-Onde a sonda não reporta nenhum backend — **no Windows, sempre**, e no Linux ou no WSL2 sem `bwrap` e `socat` — as execuções de agentes **não são** isoladas numa sandbox. O ACP e a ferramenta `bash` do harness continuam a arrancar com saneamento do ambiente; o Claude Code passa pelo `NoSandboxAdapter` e herda o ambiente do anfitrião. As fronteiras restantes são a própria worktree da execução (copy-on-write onde o `rift` é incluído; `git worktree` no Windows), as credenciais condicionadas por capacidades, mediadas em cada lançamento e revogadas na desmontagem, a política de comandos por modo, as [barreiras de ação](/pt-PT/manual/conceitos/barreiras/) unificadas (fail-closed), o saneamento do ambiente nos percursos do ACP e do `bash` do harness, e a superfície de ferramentas que o seu modo permite.
+Onde a sonda não reporta nenhum backend — **no Windows, sempre**, e no Linux ou no WSL2 sem `bwrap` e `socat` — as execuções de agentes **não são** isoladas numa sandbox. O ACP e a ferramenta `bash` do harness continuam a arrancar com saneamento do ambiente; o Claude Code passa pelo `NoSandboxAdapter` e herda o ambiente do anfitrião. As fronteiras restantes são a própria worktree da execução (copy-on-write onde o `rift` é incluído; `git worktree` no Windows), um token de forge só de leitura, mediado em cada lançamento e revogado na desmontagem, os pushes que têm de passar a regra de push no gateway de execuções de agentes, a política de comandos por modo, as [barreiras de ação](/pt-PT/manual/conceitos/barreiras/) unificadas (fail-closed), o saneamento do ambiente nos percursos do ACP e do `bash` do harness, e a superfície de ferramentas que o seu modo permite.
 
 As ferramentas de ficheiros em processo do harness (read, write, edit, apply patch, search, find, search_files) ficam fora da sandbox em todos os anfitriões: correm no processo do servidor, pelo que só o `bash` é envolvido.
 :::
@@ -100,7 +100,7 @@ Sem isolamento numa sandbox. O processo corre diretamente no anfitrião, com o a
 
 O terminal é isolado numa sandbox segundo regras próprias, e não pela sonda de despacho. O `defaultBackend` do `TerminalSessionService` é `none` e o `cc_server` não o substitui, pelo que uma sessão de terminal corre a shell do anfitrião a menos que o cliente peça explicitamente `native` — o painel de terminal do desktop não o faz.
 
-Quando é pedido `native`, a shell é envolvida através do `SandboxManager` sob um perfil de terminal fixo: o `$HOME` e o diretório de trabalho da sessão são graváveis, a rede está aberta e é negada a leitura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains`. O condicionamento por capacidades não se aplica — é uma questão de despacho. Se o envolvimento não for suportado, a sessão falha em vez de mostrar um distintivo nativo num PTY com a shell do anfitrião.
+Quando é pedido `native`, a shell é envolvida através do `SandboxManager` sob um perfil de terminal fixo: o `$HOME` e o diretório de trabalho da sessão são graváveis, a rede está aberta e é negada a leitura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains`. O token de forge só de leitura e o gateway de push não se aplicam — são questões de despacho. Se o envolvimento não for suportado, a sessão falha em vez de mostrar um distintivo nativo num PTY com a shell do anfitrião.
 
 ## Saída de rede
 
@@ -109,9 +109,9 @@ Quando uma sandbox é lançada, o acesso de rede de saída é imposto por proxie
 - O runtime da sandbox corre um proxy HTTP/HTTPS e um proxy SOCKS5 em `127.0.0.1` dentro do processo do `cc_server`, **um par por sessão restrita** (`http_proxy.dart`, `socks_proxy.dart`). As execuções simultâneas não partilham um par.
 - Os processos em sandbox recebem variáveis de ambiente de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → o proxy HTTP, `ALL_PROXY` → o proxy SOCKS; `GIT_SSH_COMMAND` encaminha o git por SSH através do proxy SOCKS). No Linux, o namespace de rede não é partilhado, pelo que os proxies são a única saída; no macOS, a sandbox partilha o loopback do anfitrião e fala diretamente com eles.
 - O anfitrião de destino de cada ligação é comparado com a lista de permissões de domínios da sessão; tudo o resto é negado. Há duas formas de wildcard, cada uma com exatamente um `*`: um `*.example.com` à esquerda corresponde a qualquer subdomínio (incluindo `a.b.example.com`), mas não ao domínio de topo em si; um `bedrock.*.amazonaws.com` com o wildcard no meio corresponde exatamente a um rótulo (`bedrock.us-east-1.amazonaws.com`, não `bedrock.evil.attacker.amazonaws.com`).
-- A lista de permissões é resolvida por sessão a partir da base curada (`kBaselineAllowedDomains`: fornecedores de LLM, alojamento de Git, registos de pacotes), mais os domínios do GitHub quando o agente tem capacidades de GitHub ou de push, mais o `SandboxSpec.egressAllowlist`. O resolvedor também aceita domínios de fornecedores de tickets quando o agente pode chamar o sistema de tickets, mas o percurso de despacho nunca passa essa lista (nem entradas `egressAllowlist` adicionais), pelo que, na prática, todas as execuções recebem a base mais os domínios do GitHub que as suas capacidades lhes concedem.
+- A lista de permissões é resolvida por sessão a partir da base curada (`kBaselineAllowedDomains`: fornecedores de LLM, alojamento de Git, registos de pacotes), mais os domínios do GitHub (`kGithubDomains`), mais o `SandboxSpec.egressAllowlist`. O percurso de despacho nunca passa entradas `egressAllowlist` adicionais, pelo que, na prática, todas as execuções recebem a base mais o GitHub.
 - Uma lista fixa de negações (`kBaselineDeniedDomains`: pontos finais de metadados da cloud, destinos de telemetria) tem precedência sobre todas as autorizações.
-- `networkEnabled: false` (ou um agente sem a capacidade de rede) continua a iniciar os proxies por sessão, mas a lista de permissões fica vazia, pelo que todas as ligações de saída são recusadas.
+- `networkEnabled: false` continua a iniciar os proxies por sessão, mas a lista de permissões fica vazia, pelo que todas as ligações de saída são recusadas. O despacho define-o quando a execução arranca a partir da regra **Aceder à rede**: negar desliga a rede; permitir e perguntar primeiro mantêm-na ligada.
 
 ## SandboxSpec
 
@@ -123,11 +123,10 @@ A especificação passada a `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id do espaço de trabalho proprietário                                                                                                       |
 | `agentId`         | `String?`                                   | Agente atualmente associado à sandbox, se existir                                                                                           |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Montagens anfitrião→convidado; a sandbox só vê os caminhos do anfitrião aqui listados                                                        |
-| `networkEnabled`  | `bool` (predefinido `true`)                 | Combinado com a capacidade de rede do agente. Quando está desligado, os proxies por sessão ainda arrancam, mas a lista de permissões fica vazia, pelo que todas as ligações de saída são recusadas |
-| `egressAllowlist` | `List<String>` (predefinido `[]`)           | Domínios de saída adicionais permitidos; wildcards suportados (`*.example.com`, mais uma forma intermédia com um rótulo). O despacho nunca preenche isto, pelo que uma execução envolvida recebe a base curada mais os domínios do GitHub que as suas capacidades lhe concedem |
+| `networkEnabled`  | `bool` (predefinido `true`)                 | Definido no despacho a partir da regra de saída de rede (desligado só quando esta resolve para negar). Quando está desligado, os proxies por sessão ainda arrancam, mas a lista de permissões fica vazia, pelo que todas as ligações de saída são recusadas |
+| `egressAllowlist` | `List<String>` (predefinido `[]`)           | Domínios de saída adicionais permitidos; wildcards suportados (`*.example.com`, mais uma forma intermédia com um rótulo). O despacho nunca preenche isto, pelo que uma execução envolvida recebe a base curada mais os domínios do GitHub |
 | `guestWorkdir`    | `String?`                                   | Diretório de trabalho predefinido dentro da sandbox; cada chamada `exec` pode substituí-lo                                                      |
 | `mode`            | `Mode` (predefinido `chat`)                 | Recorta as regras de escrita no sistema de ficheiros: `chat` mantém as montagens bind graváveis; `review`, `plan` e `orchestrate` são só de leitura |
-| `capabilities`    | `AgentCapabilities` (predefinido `safeDefault`) | Deriva a decisão de ligar/desligar a rede e os domínios de saída do GitHub. Os domínios de tickets são um argumento do resolvedor que o percurso de despacho nunca fornece |
 | `protectedPaths`  | `List<String>` (predefinido `[]`)           | Caminhos do anfitrião que nunca podem ser graváveis dentro da sandbox, em nenhum modo                                                     |
 | `runnerStateDirs` | `List<String>` (predefinido `[]`)           | Diretórios do anfitrião onde o runner guarda o seu próprio estado, graváveis em todos os modos (o atual é uma `CLAUDE_CONFIG_DIR` gerida pelo Control Center) |
 | `execGrantRoots`  | `List<String>` (predefinido `[]`)           | Árvores de diretórios aprovadas pelo operador que reabrem o bloqueio de execução em diretórios graváveis no macOS. O Linux ignora-as — o bwrap não tem nenhum bloqueio de execução no `$HOME` para reabrir |
@@ -185,7 +184,6 @@ Devolvido por `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | O verbo negado (por exemplo, `file-read*`, `network-outbound`)             |
 | `target`              | `String`  | Caminho ou anfitrião que foi alvo da operação negada                       |
-| `suggestedCapability` | `String?` | O indicador de capacidade que permitiria esta ação (por exemplo, `canCallGitHubApi`) |
 | `raw`                 | `String?` | Linha de registo em bruto, útil para depuração                             |
 
 ## Ver também

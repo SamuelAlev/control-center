@@ -5,7 +5,8 @@ import 'package:widgetbook/widgetbook.dart';
 
 part 'cc_radio.stories.g.dart';
 
-/// Stories for [CcRadio] — the design system's single-select radio control.
+/// Stories for [CcRadio] — the design system's single-select radio control —
+/// and [CcRadioGroup], which adds arrow-key navigation across a set of them.
 ///
 /// The stories below are listed under `Components → Inputs → CcRadio` (the
 /// `ComponentMeta` name and bracketed `path` segments). The builders return the
@@ -34,6 +35,11 @@ final $Playground = _PlaygroundStory(
 );
 
 final $Group = _Story(args: _Args.fixed(preview: ccRadioGroupStory));
+
+final $KeyboardGroup = _Story(
+  name: 'Keyboard group',
+  args: _Args.fixed(preview: ccRadioKeyboardGroupStory),
+);
 
 final $States = _Story(args: _Args.fixed(preview: ccRadioStatesStory));
 
@@ -123,6 +129,13 @@ Widget ccRadioGroupStory(BuildContext context) {
   return const Center(child: _RadioGroupDemo());
 }
 
+/// The same choice wrapped in a [CcRadioGroup]: `Tab` lands on the selected
+/// radio and the arrow keys move the selection, wrapping at the ends and
+/// skipping the disabled option.
+Widget ccRadioKeyboardGroupStory(BuildContext context) {
+  return const Center(child: _KeyboardGroupDemo());
+}
+
 /// Interactive playground — toggle selection and the disabled treatment.
 Widget ccRadioPlaygroundStory(
   BuildContext context,
@@ -180,6 +193,86 @@ class _RadioGroupDemoState extends State<_RadioGroupDemo> {
             label: entry.$2,
             onChanged: (v) => setState(() => _group = v),
           ),
+      ],
+    );
+  }
+}
+
+/// A [CcRadioGroup] with its labels in a column beside it. The group takes
+/// bare [CcRadio]s, so each label row matches a radio's height.
+class _KeyboardGroupDemo extends StatefulWidget {
+  const _KeyboardGroupDemo();
+
+  @override
+  State<_KeyboardGroupDemo> createState() => _KeyboardGroupDemoState();
+}
+
+class _KeyboardGroupDemoState extends State<_KeyboardGroupDemo> {
+  static const _options = [
+    ('sonnet', 'Claude Sonnet', true),
+    ('opus', 'Claude Opus', true),
+    ('fable', 'Claude Fable (unavailable)', false),
+    ('haiku', 'Claude Haiku', true),
+  ];
+
+  /// Matches [CcRadio]'s fixed diameter.
+  static const double _rowExtent = 18;
+
+  String _group = 'sonnet';
+
+  void _select(String value) => setState(() => _group = value);
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem!;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CcRadioGroup<String>(
+              groupValue: _group,
+              onChanged: _select,
+              children: [
+                for (final (value, label, enabled) in _options)
+                  CcRadio<String>(
+                    value: value,
+                    groupValue: _group,
+                    onChanged: enabled ? _select : null,
+                    semanticLabel: label,
+                  ),
+              ],
+            ),
+            const SizedBox(width: 10),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final (_, label, enabled) in _options)
+                  SizedBox(
+                    height: _rowExtent,
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        label,
+                        style: CcTypography.bodySm.copyWith(
+                          color: enabled ? t.textPrimary : t.textDisabled,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          'Tab into the group, then use the arrow keys.',
+          style: CcTypography.caption.copyWith(color: t.textTertiary),
+        ),
       ],
     );
   }

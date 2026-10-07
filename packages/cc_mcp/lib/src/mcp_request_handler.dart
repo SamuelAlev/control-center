@@ -21,11 +21,20 @@ import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 /// `tools/list_changed` fan-out and every request hits the same auth posture.
 class McpRequestHandler {
   /// Creates a handler over [dispatcher] with the given auth [config].
-  McpRequestHandler({required McpConfig config, required this.dispatcher})
-    : _activeConfig = config;
+  McpRequestHandler({
+    required McpConfig config,
+    required this.dispatcher,
+    this.agentRoutes,
+  }) : _activeConfig = config;
 
   /// Dispatcher that routes incoming JSON-RPC tool requests.
   final McpToolDispatcher dispatcher;
+
+  /// Serves `/agent/…` — the agent run gateway (push proxy, Claude Code hook)
+  /// that sandboxed agents reach on the same loopback port as MCP. It
+  /// authenticates with its own per-run secret and refuses non-loopback
+  /// callers itself, so the MCP bearer token does not apply. Null 404s them.
+  final Future<void> Function(HttpRequest request)? agentRoutes;
 
   McpConfig _activeConfig;
 
@@ -57,8 +66,19 @@ class McpRequestHandler {
     _activeConfig = config;
   }
 
+  /// Whether [path] is served by this handler: the MCP transport plus the
+  /// [agentRoutes] under `/agent/`.
+  static bool serves(String path) =>
+      path == '/mcp' || path == '/sse' || path.startsWith('/agent/');
+
   /// Routes [request] to the MCP transport handlers. Unknown paths 404.
   Future<void> handle(HttpRequest request) async {
+    final agent = agentRoutes;
+    if (agent != null && request.uri.path.startsWith('/agent/')) {
+      await agent(request);
+      return;
+    }
+
     _addCorsHeaders(request, request.response);
 
     if (request.method == 'OPTIONS') {

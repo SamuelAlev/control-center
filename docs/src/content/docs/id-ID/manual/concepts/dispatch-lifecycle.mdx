@@ -2,7 +2,7 @@
 title: Siklus hidup pengiriman agen
 description: Apa yang terjadi antara pesan yang masuk dan penutupan log run — perakitan prompt, worktree, identitas, apa yang membatasi sebuah run, dan bagaimana hasilnya dicatat secara jujur.
 slug: id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Apa itu pengiriman
@@ -65,7 +65,7 @@ Dua identitas diselesaikan per run, sebelum proses apa pun diluncurkan.
 
 Karena penimpaan per adapter didahulukan, ia diam-diam mengalahkan akun penyedia yang terhubung di aplikasi. Jika sebuah run menagih ke akun yang salah, penimpaan itulah tempat pertama yang perlu diperiksa. Kredensial penyedia bersifat global per host — dibagi ke seluruh ruang kerja pada instalasi tersebut.
 
-Token yang dibatasi kemampuan (GitHub, tiket) berasal dari broker kredensial, yang hanya menyuntikkan apa yang diizinkan oleh kemampuan run. Lihat [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/).
+Token GitHub milik run berasal dari broker kredensial: token hanya-baca yang bercakupan repo milik worktree. Push melewati gateway run agen, yang menanyakan aturan **Push ke remote** sebelum meneruskannya, dan tidak ada kunci tiket yang disuntikkan. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/).
 
 ## Peluncuran
 
@@ -76,9 +76,9 @@ Run dijalankan dengan worktree-nya sebagai direktori kerja dan — untuk Claude 
 
 Bila tidak ada backend, run **tidak** di-sandbox dan tidak ada hal lain yang berubah sebagai kompensasi. Artinya Windows selalu demikian (tanpa pembungkusan native — `microvm` adalah jalur terpisah yang digerbangi pemeriksaan, untuk terminal dan rig) serta Linux atau WSL2 tanpa `bwrap` dan `socat` di `PATH`. Server menyebutkan status mana yang berlaku di baris log saat startup, dan `--sandbox off` untuk keluar secara sengaja.
 
-Dua celah tetap ada meski sandbox aktif. Alat berkas dalam proses milik harness (read, write, edit, apply patch, search, find, search_files) berjalan di dalam proses server, jadi tidak ada profil yang membatasinya — batasnya adalah pengurungan jalur milik alat itu sendiri ditambah pagar pengaman. Dan Claude Code diluncurkan dengan `--dangerously-skip-permissions`, sehingga panggilan berkas dan shell-nya sendiri tidak digerbangi oleh Control Center; sandbox OS adalah batas di sekelilingnya.
+Dua celah tetap ada meski sandbox aktif. Alat berkas dalam proses milik harness (read, write, edit, apply patch, search, find, search_files) berjalan di dalam proses server, jadi tidak ada profil yang membatasinya — batasnya adalah pengurungan jalur milik alat itu sendiri ditambah pagar pengaman. Dan Claude Code diluncurkan dengan `--dangerously-skip-permissions`, sehingga panggilan berkasnya sendiri tidak digerbangi oleh Control Center, dan perintah shell-nya hanya oleh hook yang membaca baris perintah; sandbox OS adalah batas di sekelilingnya.
 
-Batas lainnya berlaku di setiap host, dengan atau tanpa sandbox: worktree milik run (copy-on-write di tempat `rift` disertakan; `git worktree` di Windows), kredensial yang dibatasi kemampuan dan dijembatani per peluncuran lalu dicabut saat pembongkaran, pagar pengaman aksi terpadu (fail-closed — keputusan `prompt` tanpa penyetuju yang terhubung akan ditolak), serta permukaan alat yang diizinkan mode percakapan. ACP dan `bash` di harness tetap menyanitasi lingkungan; Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host.
+Batas lainnya berlaku di setiap host, dengan atau tanpa sandbox: worktree milik run (copy-on-write di tempat `rift` disertakan; `git worktree` di Windows), token forge hanya-baca yang dijembatani per peluncuran lalu dicabut saat pembongkaran, push yang harus lolos aturan push di gateway run agen, pagar pengaman aksi terpadu (fail-closed — keputusan `prompt` tanpa penyetuju yang terhubung akan ditolak), serta permukaan alat yang diizinkan mode percakapan. ACP dan `bash` di harness tetap menyanitasi lingkungan; Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host.
 :::
 
 ## Aliran peristiwa

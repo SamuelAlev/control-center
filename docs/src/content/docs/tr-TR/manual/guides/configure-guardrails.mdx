@@ -2,7 +2,7 @@
 title: Korumaları yapılandırma
 description: Ajan eylemleri için izin ver, önce sor ve reddet kuralları belirleyin; bunları Ne olur? sondasıyla sınayın ve alan bazında özerkliği ayarlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Bu kılavuz, korumaları nasıl yapılandıracağınızı gösterir: bir ajanın eyleminin
@@ -132,11 +132,13 @@ içi sürümüdür: her etki sınıfı için, her çalıştırıcının onu ilke
 yakalayıp yakalamadığını, sandbox'a bıraktığını veya hiç engelleyemediğini
 söyler.
 
-- **Claude Code adaptörü** kendi araç çağrılarında kapıya tabi değildir. Claude
-  Code `--dangerously-skip-permissions` ile başlatılır, dolayısıyla read, write,
-  edit ve bash çağrıları hiçbir zaman korumadan geçmez. Bu adaptör için kapıya
-  tabi olan şey, geri çağırdığı MCP araç yüzeyi ve Control Center'ın onu
-  başlatmak için çalıştırdığı shell komutudur.
+- **Claude Code adaptörü** kendi araç çağrılarında yalnızca kısmen kapıya
+  tabidir. Claude Code `--dangerously-skip-permissions` ile başlatılır,
+  dolayısıyla read, write ve edit çağrıları hiçbir zaman korumadan geçmez. bash
+  komutları korumaya komut satırını sınıflandıran bir hook aracılığıyla ulaşır
+  ve push'ları her ajanınki gibi push ağ geçidinden geçer. Geri çağırdığı MCP
+  araç yüzeyi ve Control Center'ın onu başlatmak için çalıştırdığı shell komutu
+  da kapıya tabidir.
 - **Bir modun kendi çıktı fiili** (`submit_plan`, `propose_orchestration`)
   sabitlenmiştir ve hiçbir zaman reddedilemez — aksi halde bir mod, tek
   çıktısını yapısal olarak üretemezdi.

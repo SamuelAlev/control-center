@@ -2,7 +2,7 @@
 title: Konfigurera räcken
 description: Ange regler för tillåt, fråga först och neka för agenters åtgärder, testa dem med Tänk om-proben och finjustera autonomin per yta.
 slug: sv-SE/handbok/how-to-guider/konfigurera-racken
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Den här guiden visar hur du konfigurerar räcken: reglerna som avgör om en
@@ -130,11 +130,13 @@ Tabellen **Var regler verkställs** längst ned på samma sida är appversionen 
 detta: per effektklass säger den om varje körare fångar den vid policygrinden,
 lämnar den till sandlådan eller inte kan fånga den alls.
 
-- **Claude Code-adaptern** grindas inte för sina egna verktygsanrop. Claude
-  Code startas med `--dangerously-skip-permissions`, så dess anrop för läsning,
-  skrivning, redigering och bash passerar aldrig genom skyddet. Det som grindas
-  för den adaptern är den MCP-verktygsyta den anropar tillbaka till och det
-  shellkommando som Control Center startar för att lansera den.
+- **Claude Code-adaptern** grindas bara delvis för sina egna verktygsanrop.
+  Claude Code startas med `--dangerously-skip-permissions`, så dess anrop för
+  läsning, skrivning och redigering passerar aldrig genom skyddet. Dess
+  bash-kommandon når det via en hook som klassificerar kommandoraden, och dess
+  pushar går genom pushgatewayen som alla agenters. Även den MCP-verktygsyta den
+  anropar tillbaka till och det shellkommando som Control Center startar för att
+  lansera den grindas.
 - **Ett läges eget utdataverb** (`submit_plan`, `propose_orchestration`) är
   låst och kan aldrig nekas – annars skulle ett läge vara strukturellt
   oförmöget att producera sin enda leverabel.

@@ -361,6 +361,69 @@ void main() {
       expect(MessagingDao.conversationCharCountsSql, isNot(contains('json_extract')));
       expect(MessagingDao.conversationCharCountsSql, isNot(contains('metadata')));
     });
+
+    test('the newest reported context reading rides with the totals', () async {
+      Future<void> expectReading(int? tokens, int? window) => repo
+          .watchConversationTokens('ws-1', 'a', 'a')
+          .firstWhere(
+            (t) =>
+                t.reportedContextTokens == tokens &&
+                t.reportedWindowTokens == window,
+          )
+          .timeout(const Duration(seconds: 2));
+
+      await repo.sendMessage(
+        workspaceId: 'ws-1',
+        spaceId: 'a',
+        conversationId: 'a',
+        content: 'hi',
+        senderId: 'user-1',
+        senderType: 'user',
+        id: 'u-1',
+      );
+      // No run has reported yet: the meter falls back to its estimate.
+      await expectReading(null, null);
+
+      await repo.sendMessage(
+        workspaceId: 'ws-1',
+        spaceId: 'a',
+        conversationId: 'a',
+        content: '',
+        senderId: 'agent-1',
+        senderType: 'agent',
+        messageType: 'agent_turn',
+        metadata: {
+          'transcriptChars': 380000,
+          'context': {'tokens': 120000, 'window': 1000000},
+        },
+        id: 'turn-1',
+      );
+      await expectReading(120000, 1000000);
+
+      // A streaming flush moves the reading without touching the list
+      // projection, the way the stream processor writes mid-turn.
+      await repo.flushStreamingMessage(
+        'ws-1',
+        'turn-1',
+        metadata: {
+          'transcriptChars': 400000,
+          'context': {'tokens': 131000, 'window': 1000000},
+        },
+        projectList: false,
+      );
+      await expectReading(131000, 1000000);
+
+      final rows = await dbs
+          .of('ws-1')
+          .customSelect(
+            'EXPLAIN QUERY PLAN ${MessagingDao.latestContextReadingSql}',
+            variables: [Variable.withString('a')],
+          )
+          .get();
+      final plan = rows.map((r) => r.data.values.join(' ')).join('\n');
+      expect(plan, contains('idx_conversation_messages_context_reading'));
+      expect(plan, contains('USING COVERING INDEX'));
+    });
   });
 
   group('emission dedup (_distinctRows)', () {

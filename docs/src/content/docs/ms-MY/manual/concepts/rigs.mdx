@@ -2,7 +2,7 @@
 title: Stesen dan persekitaran terasing
 description: Mengapa ejen mendapat mesin pakai buang dan bukan komputer anda — sempadan pengasingan, lorong paparan, kelayakan, port dan kitaran hayat.
 slug: ms-MY/manual-pengguna/konsep/stesen
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Sebuah **stesen** ialah mesin pakai buang yang dipandu ejen secara masa nyata —
@@ -168,13 +168,20 @@ banyak kandungannya — tidak pernah apa isinya.
 
 ## Kelayakan tidak pernah tinggal dalam tetamu
 
-`git push` berfungsi dari terminal terasing, namun tetamu tidak menyimpan
+`git push` berfungsi dari terminal terasing yang anda buka, namun tetamu tidak menyimpan
 sebarang token hos kod. Ia memegang satu rahsia bagi setiap VM yang
 satu-satunya kuasanya ialah *meminta* kepada broker kelayakan hos — melalui
 terowong yang dikawal hos — token berjangka pendek yang berskop repo, bagi
 setiap operasi, dihadkan kadarnya, dibatasi oleh senarai kebenaran hos yang sama
 seperti keluar, dan dibatalkan sebaik sahaja stesen ditutup. Mesin yang dibina
 untuk dibuang tidak boleh mengandungi apa-apa yang berharga untuk dicuri.
+
+Apa yang boleh dilakukan oleh token itu ditetapkan apabila stesen dibuka. Stesen
+terminal yang dibuka oleh manusia mendapat token tulis, dibatasi oleh akses hos
+kod ahli itu sendiri. Stesen yang dibuka oleh ejen mendapat token baca sahaja:
+pembantu kelayakan git tidak dapat membezakan push daripada fetch, jadi
+peraturan push tidak boleh ditanya bagi setiap push di dalam tetamu seperti
+yang dilakukan oleh gerbang larian ejen pada hos.
 
 ## Worktree dalam stesen ialah satelit
 

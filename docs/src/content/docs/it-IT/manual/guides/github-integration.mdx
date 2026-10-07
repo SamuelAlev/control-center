@@ -2,7 +2,7 @@
 title: Configura l'integrazione GitHub
 description: Accedi a GitHub perché la superficie delle PR, la registrazione dei repo e le esecuzioni degli agenti funzionino.
 slug: it-IT/manuale/guide/integrazione-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Questa guida copre le parti della configurazione specifiche di GitHub. GitHub è
@@ -81,7 +81,7 @@ credenziale del proprietario del server, infine l'ambiente.
 | Esecuzioni dei controlli | L'API Checks di GitHub                                                                                        |
 | Pubblicazione delle revisioni | Un passaggio attivato dall'utente che pubblica la tua revisione sulla PR                                 |
 | Registrazione dei repo  | Un checkout viene accettato se il suo remote `origin` punta a github.com — o a gitlab.com / bitbucket.org      |
-| Accesso GitHub degli agenti | Il broker delle credenziali inietta il token come `GH_TOKEN` / `GITHUB_TOKEN`, vincolato dalle capacità dell'agente |
+| Accesso GitHub degli agenti | Il broker delle credenziali inietta un token di sola lettura come `GH_TOKEN` / `GITHUB_TOKEN`; i push passano da Control Center |
 | Ping delle notifiche    | Un polling lato server della tua casella delle notifiche GitHub genera «menzionato in una pull request» e «revisione richiesta» |
 | Profili utente          | Schede del profilo al passaggio del mouse e filtro delle PR per autore                                         |
 
@@ -101,8 +101,10 @@ di aggiornamento. Gli stati si aggiornano da soli ogni due minuti.
 
 ## Sapere come agiscono gli agenti su GitHub
 
-- Un agente ottiene un token GitHub solo se ha **Consenti chiamate API GitHub** o
-  **Consenti git push**. Vedi
+- Un agente che lavora in un worktree GitHub riceve sempre un token GitHub di
+  sola lettura. Un push passa da Control Center, che interroga la regola
+  **Eseguire il push a un remoto** e poi lo inoltra con un token di scrittura che
+  l'agente non possiede mai. Vedi
   [Configura le policy del sandbox](/it-IT/manuale/guide/policy-sandbox/)
 - I commit creati da un agente sono attribuiti **all'agente** — il nome
   visualizzato più ` (agent)`, a un indirizzo sintetico derivato dall'id
@@ -113,11 +115,12 @@ di aggiornamento. Gli stati si aggiornano da soli ogni due minuti.
   consegnare un token ampio. L'installazione viene risolta dal **proprietario**
   del repo dell'esecuzione, quindi un'unica app installata su più account si
   limita correttamente a quello che l'esecuzione tocca. Senza un'app, gli agenti
-  ricevono il token dell'ambiente
-- Un'esecuzione richiesta da un membro che ha effettuato l'accesso agisce con
-  l'identità GitHub **di quel membro** — la sua credenziale viene unita dopo
-  l'ambiente del broker, quindi un commit o un commento che un agente fa per lui
-  è a lui attribuibile
+  ricevono il token dell'ambiente, che non può essere limitato alla sola
+  lettura: la regola di push vincola allora `git push`, ma non il codice che usa
+  direttamente il token
+- Il token è sempre quello del broker, mai quello del membro richiedente. Il
+  token del server viene trattenuto a un'esecuzione che agisce per un membro che
+  non è il proprietario e non ha collegato GitHub
 
 ## Risoluzione dei problemi
 

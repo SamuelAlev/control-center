@@ -6,11 +6,13 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
+import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/review_artifact/pr_review_artifact_tab.dart';
@@ -21,6 +23,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_file_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_layout_codec.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_overview_tab.dart';
+import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_quick_open.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_rig_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_kinds.dart';
@@ -46,6 +49,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/editor/editor_dirty_support.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
+import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_group.dart';
 import 'package:control_center/shared/editor/editor_workspace.dart';
@@ -532,6 +536,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
     _bodyHost.reconcile(_layout.allTabs());
     _pruneTerminalTitles();
+    _recordRecentFile();
     // EditorWorkspace already listens to the layout and rebuilds only the
     // workbench. A host setState here duplicated that rebuild and needlessly
     // rebuilt the timer banner and every visited body on each selection.
@@ -785,25 +790,91 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   /// any agent edits and surface in Source Control. Deduped by path so
   /// re-opening the same file refocuses; [line] (1-based) deep-links a location
   /// (best-effort). Replaces the former plain-text quick editor; the legacy
-  /// `pr.file` kind stays decodable for old persisted layouts.
-  void _openFileInEditor(String path, {int? line, String? leafId}) {
+  /// `pr.file` kind stays decodable for old persisted layouts. [toSide] opens
+  /// it in a new pane split off to the right instead (quick open's ⌘↵).
+  void _openFileInEditor(
+    String path, {
+    int? line,
+    String? leafId,
+    String? repoId,
+    bool toSide = false,
+  }) {
     final slash = path.lastIndexOf('/');
     final basename = slash >= 0 ? path.substring(slash + 1) : path;
+    final repo = (repoId != null && repoId.isNotEmpty) ? repoId : _prRepoId;
+    EditorTab build() => EditorTab(
+      kind: PrTabKinds.codeServer,
+      label: basename,
+      icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
+      args: {
+        'path': path,
+        'repoId': ?repo,
+        if (line != null && line > 0) 'line': line,
+      },
+      dedupKey: 'pr.codeServer:$path',
+    );
+    if (toSide) {
+      _layout.openInSplit(_layout.activeLeafId, build(), DropEdge.right);
+      return;
+    }
     _layout.focusOrOpenInLeaf(
       leafId ?? _layout.activeLeafId,
       (t) => t.kind == PrTabKinds.codeServer && t.args['path'] == path,
-      () => EditorTab(
-        kind: PrTabKinds.codeServer,
-        label: basename,
-        icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
-        args: {
-          'path': path,
-          if (_prRepoId != null) 'repoId': _prRepoId,
-          if (line != null && line > 0) 'line': line,
-        },
-        dedupKey: 'pr.codeServer:$path',
-      ),
+      build,
     );
+  }
+
+  /// Shows the ⌘P picker over the PR worktree and opens the pick in the
+  /// editor. The picker waits out the worktree's provisioning itself, so this
+  /// is safe on a pull request nothing has checked out yet.
+  Future<void> _quickOpen() async {
+    // A demo has no checkout to search and no editor to open into.
+    if (ref.read(isDemoServerProvider)) {
+      return;
+    }
+    final choice = await showPrQuickOpen(
+      context,
+      workspaceId: widget.prRef.workspaceId,
+      pr: widget.pr,
+    );
+    if (choice == null || !mounted) {
+      return;
+    }
+    _openFileInEditor(
+      choice.file.path,
+      repoId: choice.file.repoId,
+      toSide: choice.toSide,
+    );
+  }
+
+  /// Feeds quick open's recent list for this PR: the file a code-server tab
+  /// shows, once it is the focused tab of the active pane — the same rule the
+  /// messaging IDE records by. Keyed by the PR's space, which is one-to-one
+  /// with the pull request, so each PR remembers its own files.
+  void _recordRecentFile() {
+    final controller = _layout.activeLeaf.controller;
+    if (controller.isEmpty) {
+      return;
+    }
+    final tab = controller.tabs[controller.selectedIndex];
+    final path = tab.args['path'];
+    if (tab.kind != PrTabKinds.codeServer || path is! String || path.isEmpty) {
+      return;
+    }
+    final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+    if (spaceId == null) {
+      return;
+    }
+    final repoId = tab.args['repoId'] as String? ?? _prRepoId ?? '';
+    final args = (workspaceId: widget.prRef.workspaceId, spaceId: spaceId);
+    // Layout changes can land mid-frame; a provider write must not.
+    scheduleMicrotask(() {
+      if (mounted) {
+        ref
+            .read(recentFilesProvider(args).notifier)
+            .touch(repoId: repoId, path: path);
+      }
+    });
   }
 
   /// Whether [tab] is a code-server file tab with unsaved changes (drives the
@@ -1228,6 +1299,13 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     );
     if (hasCodeServerTab) {
       final spaceId = ref.watch(prSpaceProvider(widget.pr)).value;
+      // A restored file tab is focused before the space id is known, and
+      // nothing else re-reports it once it is.
+      ref.listen(prSpaceProvider(widget.pr), (previous, next) {
+        if (previous?.value == null && next.value != null) {
+          _recordRecentFile();
+        }
+      });
       if (spaceId != null) {
         ref.listen<AsyncValue<CodeServerOpenEvent>>(
           codeServerOpenRequestsProvider(spaceId),
@@ -1269,6 +1347,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           ref.read(prDetailPollingProvider(widget.prRef).notifier).refreshAll(),
         ),
         'pr.detail-close-tab': () => unawaited(_closeActiveTab()),
+        'pr.detail-quick-open': () => unawaited(_quickOpen()),
       },
       child: Column(
         children: [
@@ -1334,6 +1413,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                     // when something is actually closed — the PR views to bring
                     // back. See [_reopenGroup] for why the variable-length group
                     // is last.
+                    // No bare editor row: an editor tab is a FILE, opened from
+                    // ⌘P, the diff tree or Source control.
                     newTabMenuItems: (leafId) => [
                       CcMenuItem.section(l10n.ideMenuSectionTools),
                       CcMenuItem(
@@ -1341,30 +1422,15 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                         icon: PrTabKinds.iconFor(PrTabKinds.terminal),
                         onSelected: () {
                           _layout.setActiveLeaf(leafId);
-                          // A fresh terminal each time (no dedupKey) — multiple
-                          // shells on the same PR worktree are useful.
+                          // A fresh terminal each time — multiple shells on the
+                          // same PR worktree are useful — under its own key so
+                          // `?tab=` can name this one.
                           _layout.openInActiveLeaf(
                             EditorTab(
                               kind: PrTabKinds.terminal,
                               label: l10n.terminal,
                               icon: PrTabKinds.iconFor(PrTabKinds.terminal),
-                            ),
-                          );
-                        },
-                      ),
-                      CcMenuItem(
-                        label: l10n.ideCodeServer,
-                        icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
-                        onSelected: () {
-                          _layout.setActiveLeaf(leafId);
-                          _layout.focusOrOpenInLeaf(
-                            leafId,
-                            (t) => t.kind == PrTabKinds.codeServer,
-                            () => EditorTab(
-                              kind: PrTabKinds.codeServer,
-                              label: l10n.ideCodeServer,
-                              icon: PrTabKinds.iconFor(PrTabKinds.codeServer),
-                              dedupKey: PrTabKinds.codeServer,
+                              dedupKey: instanceTabKey(PrTabKinds.terminal),
                             ),
                           );
                         },
@@ -1379,6 +1445,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                               kind: PrTabKinds.browser,
                               label: l10n.ideWebBrowser,
                               icon: PrTabKinds.iconFor(PrTabKinds.browser),
+                              dedupKey: instanceTabKey(PrTabKinds.browser),
                             ),
                           );
                         },
@@ -1407,6 +1474,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                                 label: l10n.terminal,
                                 icon: PrTabKinds.iconFor(PrTabKinds.terminal),
                                 args: const {'backend': 'microvm'},
+                                dedupKey: instanceTabKey(PrTabKinds.terminal),
                               ),
                             );
                           },

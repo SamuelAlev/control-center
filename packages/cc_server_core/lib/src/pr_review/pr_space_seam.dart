@@ -58,7 +58,7 @@ PrSpaceSeam buildPrSpaceSeam({
   })
   ensureReviewSpace,
   required AgentRepository agents,
-  required GitHubApiClient github,
+  required GitHubApiClient Function(String workspaceId, String owner) githubFor,
   required Future<Repo> Function(String workspaceId, String owner, String repo)
   resolveLinkedRepo,
   required ForgeCredentials credentials,
@@ -105,8 +105,11 @@ PrSpaceSeam buildPrSpaceSeam({
   final mergeConflicts = !enabled
       ? null
       : PrMergeConflictService(
-          refs: (owner, repo, prNumber) async {
-            final gh = await github.pr.getPullRequest(owner, repo, prNumber);
+          refs: (workspaceId, owner, repo, prNumber) async {
+            final gh = await githubFor(
+              workspaceId,
+              owner,
+            ).pr.getPullRequest(owner, repo, prNumber);
             if (gh == null) {
               return null;
             }

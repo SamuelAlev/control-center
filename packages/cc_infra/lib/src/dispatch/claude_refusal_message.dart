@@ -12,7 +12,7 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 /// (an account count, a reset instant the plan reported) are the server's own,
 /// and the string lands in a run transcript beside the CLI's own output rather
 /// than in a widget.
-String claudeRefusalDetail(ClaudeAccountRefusal refusal) {
+String claudeRefusalDetail(AccountPoolRefusal refusal) {
   final n = refusal.accountIds.length;
   switch (refusal.reason) {
     case RunCredentialReason.planSpent:
@@ -36,6 +36,12 @@ String claudeRefusalDetail(ClaudeAccountRefusal refusal) {
                     'sign-in that has' : "this Claude Code account's sign-in has"} '
           'expired and cannot renew itself. Sign in again from '
           'Settings → Adapters → Claude Code.';
+    case RunCredentialReason.accountsRemoved:
+      return accountPoolRemovedDetail(
+        tag: 'claude',
+        noun: 'Claude Code account',
+        count: n,
+      );
     case RunCredentialReason.signedOut:
     case RunCredentialReason.noCredential:
       return '[claude] ${n > 1 ? 'no attached Claude Code account is signed '
@@ -44,3 +50,37 @@ String claudeRefusalDetail(ClaudeAccountRefusal refusal) {
           '`claude auth login` against its config directory.';
   }
 }
+
+/// The sentence for a harness run whose pool for [providerId] refused it.
+///
+/// Only [RunCredentialReason.accountsRemoved] reaches here today — an
+/// all-spent harness pool is handed to the fallback chain rather than refused
+/// — but every reason gets a sentence so a new refusal cannot land blank.
+String harnessPoolRefusalDetail(
+  String providerId,
+  AccountPoolRefusal refusal,
+) => switch (refusal.reason) {
+  RunCredentialReason.accountsRemoved => accountPoolRemovedDetail(
+    tag: 'harness',
+    noun: '"$providerId" key',
+    count: refusal.accountIds.length,
+  ),
+  _ =>
+    '[harness] no "$providerId" key attached to this agent or workspace '
+        'can serve this run.',
+};
+
+/// The one wording for a pool that names only removed credentials, whatever
+/// the lane — so the dialog reads the same whichever runner was held.
+///
+/// Never falls back to a default credential: the pool was configured to keep
+/// the run off whatever is not on it.
+String accountPoolRemovedDetail({
+  required String tag,
+  required String noun,
+  required int count,
+}) =>
+    '[$tag] ${count > 1 ? 'every $noun attached to this agent or workspace '
+              'has' : 'the $noun attached to this agent or workspace has'} '
+    'been removed from the server. Attach another one in the account rotation '
+    'settings, or clear the list to use the default.';

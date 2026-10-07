@@ -31,7 +31,10 @@ final subscriptionUsageProvider =
 /// Notifier that fetches subscription usage and refreshes it on a timer.
 class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
   Timer? _timer;
-  bool _fetching = false;
+
+  /// The fetch currently running, and whether it skips the server caches.
+  Future<void>? _inFlight;
+  bool _inFlightForced = false;
 
   @override
   Future<List<SubscriptionUsage>> build() async {
@@ -62,13 +65,17 @@ class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
     return _fetch();
   }
 
-  Future<List<SubscriptionUsage>> _fetch() =>
-      ref.read(subscriptionsRepositoryProvider).fetchUsage();
+  Future<List<SubscriptionUsage>> _fetch({bool force = false}) =>
+      ref.read(subscriptionsRepositoryProvider).fetchUsage(force: force);
 
-  /// Force-refresh from the UI (e.g. when the user opens the pill). Keeps the
-  /// last snapshot on screen while the fetch runs — never blanks the popover
-  /// with a value-less loading state. No-op while a fetch is already running.
-  Future<void> refresh() => _run();
+  /// Refresh from the UI (e.g. when the user opens the pill). Keeps the last
+  /// snapshot on screen while the fetch runs — never blanks the popover with a
+  /// value-less loading state. No-op while a fetch is already running.
+  ///
+  /// [force] is the flyout's refresh button: the server skips its usage
+  /// caches instead of answering from a reading up to five minutes old.
+  /// Opening the pill does not force — it happens far too often for that.
+  Future<void> refresh({bool force = false}) => _run(force: force);
 
   /// Timer-driven background refresh: never blanks and never spins.
   Future<void> _refreshSilent() => _run();
@@ -77,23 +84,39 @@ class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
   /// refreshes can't double-spawn the Codex process or race to clobber a newer
   /// result. On failure the last good snapshot is retained (the chip stays
   /// populated); a first-load failure (no prior data) surfaces the error.
-  Future<void> _run() async {
-    if (_fetching) {
-      return;
-    }
-    _fetching = true;
-    final prior = state.value;
-    try {
-      final next = await AsyncValue.guard(_fetch);
-      if (next.hasValue) {
-        state = next;
-      } else if (prior != null) {
-        state = AsyncData(prior);
-      } else {
-        state = next;
+  ///
+  /// A FORCED run that finds an unforced one in flight waits for it and then
+  /// goes: dropping it would make the refresh button do nothing whenever it is
+  /// clicked right after the flyout opened, which is exactly when it is.
+  Future<void> _run({bool force = false}) async {
+    final running = _inFlight;
+    if (running != null) {
+      if (!force || _inFlightForced) {
+        return running;
       }
+      await running;
+      return _run(force: true);
+    }
+    final run = _fetchInto(force: force);
+    _inFlight = run;
+    _inFlightForced = force;
+    try {
+      await run;
     } finally {
-      _fetching = false;
+      _inFlight = null;
+      _inFlightForced = false;
+    }
+  }
+
+  Future<void> _fetchInto({required bool force}) async {
+    final prior = state.value;
+    final next = await AsyncValue.guard(() => _fetch(force: force));
+    if (next.hasValue) {
+      state = next;
+    } else if (prior != null) {
+      state = AsyncData(prior);
+    } else {
+      state = next;
     }
   }
 }

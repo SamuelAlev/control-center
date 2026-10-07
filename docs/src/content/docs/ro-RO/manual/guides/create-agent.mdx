@@ -2,7 +2,7 @@
 title: Creează și configurează un agent
 description: Adaugă un agent într-un spațiu de lucru, dă-i un adaptor, un model, abilități și permisiuni și confirmă că rulează.
 slug: ro-RO/manual/ghiduri-practice/creeaza-agent
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Acest ghid arată cum să adaugi un agent într-un spațiu de lucru și să îl configurezi până când poate rula cu adevărat.
@@ -68,19 +68,12 @@ Aici nu alegi abilitățile proprii ale unui repo. Un repo care le livrează (î
 
 ## Acordă permisiuni
 
-**Permisiuni sandbox** pornește pe „Folosește implicitul spațiului de lucru". Activează comutatorul pentru a le seta pentru acest agent, apoi comută:
+Un agent nu are comutatoare de permisiuni proprii. Ce poate trimite, deschide, fuziona sau accesa stabilesc regulile de acțiune din **Setări → Spațiu de lucru → Permisiuni agent**, unde o regulă poate fi limitată la acest agent. Implicit, un push, un pull request, o revizuire sau fuziune și o scriere într-un tracker te întreabă fiecare mai întâi, iar accesul la rețea este permis.
 
-- **Permite git push** — injectează tokenul GitHub de care are nevoie agentul pentru a face push
-- **Permite apeluri GitHub API** — îi permite agentului să citească PR-uri, issues și metadate de repo
-- **Permite apeluri ticketing API** — injectează cheia providerului de ticketing
-- **Permite accesul general la rețea** — activează și instrumentele `web_fetch` și `web_search` ale harness-ului încorporat
+Tokenul GitHub al agentului este întotdeauna doar pentru citire. Un push trece prin Control Center, care întreabă regula **Push către un remote** înainte de a-l transmite. Vezi [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/) pentru cum ajunge fiecare regulă la o rulare.
 
-Fiecare comutator este verificat de brokerul de acreditări la lansarea rulării: o capacitate oprită înseamnă pur și simplu că tokenul corespunzător nu este niciodată emis în mediul rulării.
-
-:::caution[Implicitul spațiului de lucru înseamnă setul conservator al serverului]
-Un agent lăsat pe „Folosește implicitul spațiului de lucru" rulează cu git push, GitHub API și ticketing toate **oprite** și rețeaua **pornită**. Valorile implicite ale capacităților afișate la Setări → Server → Diagnosticări și confidențialitate sunt o preferință de client. Dacă vrei ca un agent să facă push sau să deschidă PR-uri, activează comutatorul și acordă capacitățile în mod explicit.
-
-Aceste capacități controlează acreditările și instrumentele harness-ului, un strat separat de sandbox-ul sistemului de operare. `cc_server` învelește rulările agenților în sandbox-ul gazdei acolo unde există unul — Windows nu are niciun backend nativ, iar Linux și WSL2 au nevoie de `bwrap` și `socat`. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru setul complet de granițe.
+:::note[Regulile și sandbox-ul sistemului de operare sunt straturi separate]
+Regulile decid ce poate face un agent; sandbox-ul sistemului de operare limitează unde pot citi, scrie și se pot conecta procesele lui. `cc_server` învelește rulările agenților în sandbox-ul gazdei acolo unde există unul — Windows nu are niciun backend nativ, iar Linux și WSL2 au nevoie de `bwrap` și `socat`. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru setul complet de granițe.
 :::
 
 ## Verifică dacă rulează

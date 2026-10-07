@@ -2,7 +2,7 @@
 title: Rigs and enclosures
 description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
 slug: en-GB/manual/concepts/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 A **rig** is a disposable machine an agent drives in real time — a browser,
@@ -155,12 +155,18 @@ it said.
 
 ## Credentials never live in the guest
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
+`git push` works from an enclosed terminal you opened, yet the guest stores no
+forge token. It holds one per-VM secret whose only power is to *ask* the host's
 credential broker — over a tunnel the host controls — for a short-lived,
 repo-scoped token, per operation, rate-limited, bounded by the same host
 allowlist as egress, and revoked the moment the rig closes. A machine built
 to be thrown away must contain nothing worth stealing.
+
+What that token may do is fixed when the rig opens. A terminal rig opened by a
+person gets a write-scoped token, bounded by that member's own forge access. A
+rig an agent opened gets a read-only one: a git credential helper cannot tell a
+push from a fetch, so the push rule cannot be asked per push inside a guest the
+way the agent run gateway asks it on the host.
 
 ## The worktree in a rig is a satellite
 

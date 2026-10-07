@@ -3,7 +3,7 @@ title: "Architektur"
 description: "Wie Control Center aufgebaut ist: Thin Client über einem Headless-Server, Clean Architecture nach Features sowie Ports und Adapter."
 dateModified: 2026-09-19
 slug: de-DE/handbuch/konzepte/architektur
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Überblick
@@ -58,7 +58,7 @@ Das Feature **`guardrails`** legt seine Domänenschicht in `cc_domain/features/g
 - Kernentitäten: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identität und Multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Gedächtnis-Entitäten: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Gemeinsame Wertobjekte: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Gemeinsame Wertobjekte: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Gemeinsame Ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Domänendienste: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` und Ereignistypen (Arbeitsbereich/Agent, PR/Review, Nachrichten, Tickets, Pipeline, Orchestrierung, Gedächtnis, Kalender/Besprechungen, Identität und Mitgliedschaft, Observability)

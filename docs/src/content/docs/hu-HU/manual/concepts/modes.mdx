@@ -2,7 +2,7 @@
 title: Módok
 description: Miért a tér, és nem az ügynök hordozza a módot; mit garantál a négy mód mindegyike; és hol strukturális ez a garancia, nem csupán a promptban előírt.
 slug: hu-HU/kezikonyv/fogalmak/modok
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Mi a mód
@@ -77,7 +77,7 @@ Maga a feloldás egyszerű. A dispatcher a tér `mode` oszlopát olvassa; egy t�
 
 Egy mód eszközfelületét a **beépített harness** építi fel és érvényesíti. Ez az egyetlen transzport, amely egy eszközt láthatatlanná tud tenni a puszta megtagadás helyett, minden hívást meg tud kapuzni a lefutása előtt, és meg tud figyelni egy teljesítési szerződést.
 
-A Claude Code transzporton egy nem csevegés mód `--permission-mode plan` formában kerül átadásra. A Claude ezt konvenció szerint betartja; a saját olvasó-, író-, szerkesztő- és shell-eszközei láthatatlanul futnak. Ennél a transzportnál a mód útmutatás, nem a Control Center határa — lásd: [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
+A Claude Code transzporton egy nem csevegés mód `--permission-mode plan` formában kerül átadásra. A Claude ezt konvenció szerint betartja; a saját olvasó-, író- és szerkesztőeszközei láthatatlanul futnak, a shellparancsait pedig csak egy hook ellenőrzi, amely a parancssort olvassa. Ennél a transzportnál a mód útmutatás, nem a Control Center határa — lásd: [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
 
 Az engedélyezési listák az írási szintű és annál magasabb szintű eszközöket korlátozzák. A beépített harness olvasási szintje továbbra is eléri azokat az eszközöket, amelyeket egyetlen lista sem nevez meg; a Claude Code-on egy, az engedélyezési listából kimaradt eszköz elutasításra kerül, akár rendelkezik vele a szerver, akár nem.
 

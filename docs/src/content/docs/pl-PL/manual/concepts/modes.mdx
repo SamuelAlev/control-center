@@ -2,7 +2,7 @@
 title: Tryby
 description: Dlaczego tryb należy do przestrzeni, a nie do agenta; co gwarantuje każdy z czterech trybów; i gdzie ta gwarancja jest strukturalna, a nie tylko wyrażona w promptcie.
 slug: pl-PL/podrecznik/koncepcje/tryby
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Czym jest tryb
@@ -77,7 +77,7 @@ Samo rozstrzyganie jest proste. Dyspozytor odczytuje kolumnę `mode` przestrzeni
 
 Powierzchnię narzędzi trybu buduje i egzekwuje **wbudowany harness**. To jedyny transport, który potrafi uczynić narzędzie niewidocznym, a nie tylko zabronionym, objąć bramką każde wywołanie, zanim zostanie wykonane, i obserwować kontrakt wykonania.
 
-W transporcie Claude Code tryb inny niż czat jest przekazywany jako `--permission-mode plan`. Claude respektuje to na zasadzie konwencji; jego własne narzędzia odczytu, zapisu, edycji i powłoki działają niewidocznie. Dla tego transportu tryb jest wskazówką, a nie granicą Control Center — zobacz [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/).
+W transporcie Claude Code tryb inny niż czat jest przekazywany jako `--permission-mode plan`. Claude respektuje to na zasadzie konwencji; jego własne narzędzia odczytu, zapisu i edycji działają niewidocznie, a polecenia powłoki sprawdza tylko hook, który czyta wiersz poleceń. Dla tego transportu tryb jest wskazówką, a nie granicą Control Center — zobacz [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/).
 
 Listy dozwolonych ograniczają narzędzia poziomu zapisu i wyższego. Poziom odczytu wbudowanego harnessu nadal sięga narzędzi, których nie wymienia żadna lista; w Claude Code narzędzie pominięte na liście dozwolonych jest odrzucane niezależnie od tego, czy serwer je ma.
 

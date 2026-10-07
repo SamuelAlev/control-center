@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
+import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
@@ -29,7 +29,8 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// Creates a [SandboxedHarnessCommandRunner].
   SandboxedHarnessCommandRunner({
     required this._mode,
-    required this._capabilities,
+    required this._networkEnabled,
+    this._loopbackPorts = const [],
     this.sandboxManager,
     this.confirmationPort,
     this.execGrantService,
@@ -83,7 +84,15 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   final String? spaceId;
 
   final Mode _mode;
-  final AgentCapabilities _capabilities;
+
+  /// The run's network posture, resolved from the "network egress" rule when
+  /// the run started.
+  final bool _networkEnabled;
+
+  /// Host loopback ports the command must reach — the agent run gateway that
+  /// `git push` is routed through. See `SandboxSpec.loopbackPorts`.
+  final List<int> _loopbackPorts;
+
   final Map<String, String> _baseEnv;
   final int _maxOutputChars;
 
@@ -107,9 +116,15 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     // loosen a mode preset that forbids the effect outright.
     final guard = actionGuard;
     if (guard != null && workspaceId != null) {
+      // `processSpawn` for running anything at all, plus whatever the command
+      // line itself does — so "Open a pull request: ask first" asks about
+      // `gh pr create` typed here as well as about the MCP tool.
       final verdict = await guard.check(
         workspaceId: workspaceId!,
-        classes: const {ActionClass.processSpawn},
+        classes: {
+          ActionClass.processSpawn,
+          ...const ShellActionClassifier().classify(command),
+        },
         command: command,
         spaceId: spaceId,
         agentId: agentId,
@@ -334,15 +349,14 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       agentId: agentId,
       bindMounts: [SandboxBindMount(hostPath: cwd, guestPath: cwd)],
       guestWorkdir: cwd,
-      networkEnabled: _capabilities.canAccessNetwork,
+      networkEnabled: _networkEnabled,
       mode: _mode,
-      capabilities: _capabilities,
       protectedPaths: await _protectedPaths?.call() ?? const [],
       execGrantRoots: await _execGrantRoots(cwd),
+      loopbackPorts: _loopbackPorts,
     );
     final policy = const SandboxPolicyResolver().resolve(
       spec: spec,
-      capabilities: _capabilities,
       homeDir: (home != null && home.isNotEmpty) ? home : null,
       runDir: '$cwd/.cc-runs/$sessionId',
     );

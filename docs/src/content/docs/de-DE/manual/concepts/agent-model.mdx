@@ -2,12 +2,12 @@
 title: Das Agentenmodell
 description: Was ein Agent in Control Center tatsächlich ist, welche seiner Felder das Verhalten ändern und wie der Adapter, auf dem er läuft, bestimmt, was sich durchsetzen lässt.
 slug: de-DE/handbuch/konzepte/agentenmodell
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Was ist ein Agent?
 
-Ein Agent ist ein benannter Akteur mit einer Persona, einem Satz Skills, einem Adapter, auf dem er läuft, und einem Satz Befugnisse. Agenten sind Prinzipale im selben Sinn wie Menschen. Agenten verfassen Nachrichten, besitzen Tickets, hinterlassen Reviews und stehen auf derselben Liste. Die Arbeit erledigen sie.
+Ein Agent ist ein benannter Akteur mit einer Persona, einem Satz Skills und einem Adapter, auf dem er läuft. Agenten sind Prinzipale im selben Sinn wie Menschen. Agenten verfassen Nachrichten, besitzen Tickets, hinterlassen Reviews und stehen auf derselben Liste. Die Arbeit erledigen sie.
 
 Jeder Agent gehört zu genau einem Arbeitsbereich. Das ist eine harte Invariante: `agent.workspaceId` ist nicht null, der eigene Arbeitsbereich des Agenten wählt die Datenbankdatei, in der seine Zeilen landen, und das Anlegen eines Agenten ohne Arbeitsbereich wird abgelehnt.
 
@@ -26,7 +26,6 @@ Ein Agent ist auch ein Verzeichnis. Seine Definition liegt unter `agents/<slug>/
 | `modelId`               | Welches Modell innerhalb dieses Adapters                                              |
 | `effort`                | Denkstufe, aus dem eigenen Vokabular des gewählten Modells                            |
 | `contextSize`           | Überschreibung des Kontextfensters                                                    |
-| `capabilities`          | Flags für Zugangsdaten und ausgehenden Verkehr, geprüft beim Start                   |
 | `silenceTimeoutMinutes` | Überschreibung je Agent (1–240) für die Stilleüberwachung                             |
 | `reportsTo`             | ID des übergeordneten Agenten, die Berichtslinie, die das Organigramm zeichnet       |
 
@@ -51,18 +50,13 @@ Die Eingrenzung ist eine Entscheidung über das Kontextbudget. Der Skill-Index s
 
 Repo-Skills werden für **jeden** Adapter geladen, nicht nur für den eingebauten Harness. Die Skills des aktiven Repos werden ins Arbeitsverzeichnis des Agenten materialisiert, also auf den Pfad, den Claude Code schon absucht; derselbe Index wird in die `AGENTS.md` geschrieben, die der eingebaute Harness liest. Die Skills eines Repos durchlaufen denselben Scan, der im Zweifel schließt, wie ein installierter Skill, bevor irgendetwas davon geschieht. Ein ausgechecktes Repo ist geklonter Inhalt, und sein Frontmatter erreicht einen Prompt.
 
-## Befugnisse
+## Berechtigungen
 
-Befugnisse regeln, was einem Lauf _gereicht_ wird, nicht, was das Dateisystem ihn anfassen lässt. Der Zugangsdaten-Broker prüft sie beim Start: Ist eine Befugnis aus, wird das passende Token schlicht nicht injiziert.
+Ein Agent trägt keine eigenen Berechtigungs-Flags. Ob er committen, pushen, einen Pull Request öffnen, in einen Tracker schreiben oder das Netzwerk erreichen darf, entscheiden die [Aktions-Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) — zulassen, zuerst fragen oder verweigern, im Geltungsbereich Arbeitsbereich, Agent oder Bereich —, und dieselben Regeln gelten, egal welcher Adapter ihn ausführt.
 
-- **Push ins Repo:** steuert die Injektion des GitHub-Tokens für `git push`.
-- **GitHub API:** steuert die Injektion von `GH_TOKEN` und den Ausgang zu api.github.com.
-- **Tickets:** steuert den API-Schlüssel des Ticketing-Anbieters und den Ausgang zu seinen Domains.
-- **Netzwerkausgang:** beliebige ausgehende Anfragen.
+Was einem Lauf _gereicht_ wird, ändert sich mit diesen Regeln nicht. Ein Lauf in einem GitHub-Worktree bekommt immer ein GitHub-Token, das nur lesen darf, und nach einem Push wird gefragt, wenn er passiert: Die Git-Konfiguration des Agenten schickt jeden GitHub-Push durch Control Center, das die Regel **Zu einem Remote pushen** anwendet, bevor es ihn weiterleitet.
 
-Ein Lauf löst sie aus der eigenen Zeile des Agenten auf. Hat der Agent keine, gilt ein festes, zurückhaltendes Standardverhalten: die drei Zugangsdaten-Flags aus, der Netzwerkausgang an. Der Schalter „Sandbox-Berechtigungen“ im Agentenformular wählt zwischen diesem Rückfall und einem eigenen Satz, der am Agenten gespeichert ist.
-
-Die andere Hälfte, einschließlich dessen, was auf Dateisystemebene durchgesetzt wird und was nicht, steht unter [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
+Wie das funktioniert, einschließlich dessen, was auf Dateisystemebene durchgesetzt wird und was nicht, steht unter [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
 
 ## Der Adapter entscheidet, was sich durchsetzen lässt
 
@@ -71,7 +65,7 @@ Das folgenreichste Feld eines Agenten ist sein Adapter, denn der Transport des A
 | Transport            | Adapter                   | Was Control Center durchsetzt                                                                                                                                                                                                                                              |
 | -------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Eingebauter Harness  | Control Center (built-in) | Alles. Die Werkzeugfläche wird aus dem Modus _gebaut_, ein unerlaubtes Werkzeug ist deshalb unsichtbar und nicht bloß verweigert; jeder Aufruf passiert das Freigabetor und die Schutzregeln für Aktionen; der Abschlussvertrag kann anmahnen und danach einen Lauf scheitern lassen, der ohne sein Lieferergebnis endet |
-| Claude CLI           | Claude Code               | Nur die `mcp__*`-Werkzeuge, die ihm gereicht werden. Claudes eigene Werkzeuge zum Lesen, Schreiben, Bearbeiten und für die Shell leben in seinem Prozess und laufen ungesehen, und gestartet wird er mit `--dangerously-skip-permissions`, weil ein nicht interaktives `claude -p` sonst endlos an seiner eigenen Rückfrage hängen bliebe |
+| Claude CLI           | Claude Code               | Die `mcp__*`-Werkzeuge, die ihm gereicht werden, und seine `Bash`-Befehle, die ein Hook vor der Ausführung an die Aktionsrichtlinie schickt. Claudes eigene Werkzeuge zum Lesen, Schreiben und Bearbeiten leben in seinem Prozess und laufen ungesehen, und gestartet wird er mit `--dangerously-skip-permissions`, weil ein nicht interaktives `claude -p` sonst endlos an seiner eigenen Rückfrage hängen bliebe |
 
 Konkret unterstützt **nur der eingebaute Harness** Subagenten, Lenken mitten im Lauf, Pause und Fortsetzen (und damit die Übernahme) sowie die strukturelle Durchsetzung des Modus. Claude Code kann nichts davon.
 

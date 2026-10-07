@@ -2,7 +2,7 @@
 title: Glossar
 description: Definitionen der zentralen Begriffe in Control Center.
 slug: de-DE/handbuch/referenz/glossar
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'Ein KI-Arbeiter mit Identität, Rolle, Skills und Fähigkeiten. Gehört zu genau einem Arbeitsbereich. Der zentrale Akteur im System.'],
+['Agent', 'Ein KI-Arbeiter mit Identität, Rolle, Skills und einem Adapter. Gehört zu genau einem Arbeitsbereich. Der zentrale Akteur im System.'],
 ['Adapter', 'Der Runner, der einen Agenten-Turn ausführt. Zwei werden ausgeliefert: Control Center (built-in), der prozessinterne Harness, der mit den Modellanbietern spricht, und Claude Code über die CLI claude. Cursor, Codex und die anderen Modellanbieter hängen am eingebauten Adapter, nicht als eigene Runner.'],
 ['Arbeitsbereich', 'Der oberste Isolationsmandant. Fasst Agenten, Repos, Bereiche, Tickets, Gedächtnis und Pipelines zusammen. Die Isolation ist strukturell, nicht bloß Konvention: jeder Arbeitsbereich hat seine eigene SQLite-Datei, deshalb kompiliert ein Lesen über Arbeitsbereiche hinweg nicht. Jede Route in der App beginnt mit /workspaces/:workspaceId.'],
 ['Code-Host', 'Ein Code-Host: GitHub, GitLab oder Bitbucket Cloud. Eine Eigenschaft jedes Repos, beim Registrieren vom Remote origin gelesen. Ein Arbeitsbereich kann Repos auf allen dreien halten.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Groß- und kleinschreibungsunabhängige Menge von Skill-Kennungen, die beim Start einer Ausführung passenden Kontext in die Prompts schreibt.'],
 ['Skill-Quelle', 'Ein GitHub-Repository, das je Arbeitsbereich als Skill-Katalog registriert ist. Von Konstruktion an unvertrauenswürdig: die Metadaten des Repositorys dienen nur der Anzeige, und jede Installation durchläuft das im Fehlerfall geschlossene Scan-Tor, bevor irgendein Inhalt auf die Platte oder in einen Prompt gelangt.'],
 ['skills-lock.json', 'Das Manifest der installierten Skills je Arbeitsbereich: je Skill das Quell-Repository, der Pfad im Repo, der Commit, an den er geheftet ist, und ein zusammengefasster Inhalts-Hash. Installationen, Aktualisierungen und Deinstallationen halten es aktuell; verify_skills prüft es gegen die Platte.'],
-['AgentCapabilities', 'Vier Flags (Push ins Repo, GitHub-API, Ticketing, ausgehender Netzverkehr), aufgelöst je Ausführung: zuerst der Standard des Agenten, dann der Standard des Benutzers, mit einer Überschreibung je Unterhaltung. Durchsetzung durch Abwesenheit, denn eine abgeschaltete Fähigkeit heißt, dass Token oder Ausgang schlicht nie eingesetzt werden.'],
+['Gateway für Agentenläufe', 'Ein Loopback-Endpunkt auf cc_server, der die Aktionsrichtlinie in die Sandbox eines Agenten trägt. Jeder GitHub-Push eines Agenten wird dorthin umgeleitet, gegen die Regel Zu einem Remote pushen geprüft und mit einem Schreib-Token weitergeleitet, das der Agent nie besitzt; die Bash-Befehle von Claude Code werden über einen Hook am selben Endpunkt geprüft.'],
 ['Modus', 'chat, plan, review oder orchestrate. Gespeichert je Bereich, deshalb kann ein Agent in verschiedenen Bereichen in verschiedenen Modi sein; jede Unterhaltung eines Bereichs teilt ihn. Steuert den System-Prompt, die Schreibregeln der Sandbox und die Zulassungsliste der MCP-Tools.'],
 ['SandboxBackend', 'microvm (eine gekapselte VM, das einzige Backend mit Kernel-Grenze, für interaktive Terminals), native (das betriebssystemeigene Seatbelt unter macOS, bubblewrap unter Linux und WSL2) oder none. Einmal beim Start geprüft; native umhüllt die Agenten-Ausführung, wenn es verfügbar ist. Windows hat kein natives Backend, und Linux braucht bwrap plus socat, deshalb laufen Läufe dort ohne Umhüllung; --sandbox off schaltet bewusst ab.'],
 ['Rig', 'Eine Wegwerfmaschine, die ein Agent in Echtzeit steuert: ein gekapselter Browser oder Linux-Desktop, ein vom Host verwalteter Android-Emulator oder iOS-Simulator, oder ein gekapseltes Terminal. Live beobachtet über eine eigene Spur in voller Auflösung, mit serverseitig erzwungener Übernahme. An eine Unterhaltung gebunden, sodass der Tab des Menschen und das Werkzeug des Agenten eine Maschine ansprechen.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Cent) für einen einzelnen Agentenlauf.'],
 ['WakeReason', 'Warum ein Agent gestartet wurde. Sechs Werte: Nutzernachricht, Ticketzuweisung, erneute Ausführung durch die Wiederherstellung nach einem Fehler, abgeschlossenes untergeordnetes Ticket, geplanter Folge-Heartbeat und Pipeline-Schritt.'],
 ['SandboxPort', 'Steuert den Lebenszyklus der Sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Stellt begrenzte, an Fähigkeiten gebundene Zugangsdaten für den Start der Sandbox aus und widerruft sie beim Aufräumen.'],
+['CredentialBrokerPort', 'Stellt begrenzte Zugangsdaten für den Start der Sandbox aus (nur Lesen für die Umgebung eines Agenten, Schreiben nur für den Push-Pfad auf dem Server) und widerruft sie beim Aufräumen.'],
 ['GitRepoInspectorPort', 'Liest Metadaten (Owner, Repo, Branch) aus einem lokalen Git-Repo-Pfad.'],
 ['EmbeddingPort', 'Erzeugt Text-Embedding-Vektoren mit Einheitsnorm für die semantische Suche.'],
 ['NotificationPort', 'Zeigt native Desktop-Benachrichtigungen und beachtet die Sperre nach Kategorie und Route.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Kernentitäten
 
-**Agent**: Ein KI-Arbeiter mit Identität, Rolle, Skills und Fähigkeiten. Gehört zu genau einem Arbeitsbereich. Der zentrale Akteur im System.
+**Agent**: Ein KI-Arbeiter mit Identität, Rolle, Skills und einem Adapter. Gehört zu genau einem Arbeitsbereich. Der zentrale Akteur im System.
 
 **Adapter**: Der Runner, der einen Agenten-Turn ausführt. Zwei werden ausgeliefert: **Control Center (built-in)**, der prozessinterne Harness, der mit den Modellanbietern spricht, und **Claude Code** über `claude -p`. Cursor, Codex, Anthropic, OpenAI und die übrigen sind Anbieter auf dem eingebauten Adapter, keine eigenen CLIs. Siehe [Adapter und Modelle verwalten](/de-DE/handbuch/anleitungen/adapter/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Das Manifest der installierten Skills je Arbeitsbereich: je Skill das Quell-Repository, der Pfad im Repo, der Commit, an den er geheftet ist, und ein zusammengefasster Inhalts-Hash. Installationen, Aktualisierungen und Deinstallationen halten es aktuell; `verify_skills` prüft es gegen die Platte.
 
-**AgentCapabilities**: Vier Flags (Push ins Repo, GitHub-API, Ticketing, ausgehender Netzverkehr), aufgelöst je Ausführung: Standard des Agenten, dann Standard des Benutzers, mit einer Überschreibung je Unterhaltung. Durchsetzung durch Abwesenheit: eine abgeschaltete Fähigkeit heißt, dass Token oder Ausgang schlicht nie eingesetzt werden.
+**Gateway für Agentenläufe**: Ein Loopback-Endpunkt auf `cc_server`, der die Aktionsrichtlinie in die Sandbox eines Agenten trägt. Jeder GitHub-Push eines Agenten wird dorthin umgeleitet, gegen die Regel **Zu einem Remote pushen** geprüft und mit einem Schreib-Token weitergeleitet, das der Agent nie besitzt; die `Bash`-Befehle von Claude Code werden über einen Hook am selben Endpunkt geprüft. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
 
 **Modus**: `chat`, `plan`, `review` oder `orchestrate`. Gespeichert **je Bereich**, deshalb kann ein Agent in verschiedenen Bereichen in verschiedenen Modi sein; jede Unterhaltung eines Bereichs teilt ihn. Steuert den System-Prompt, die Schreibregeln der Sandbox und die Zulassungsliste der MCP-Tools. Der Composer bietet nur `chat`, `plan` und `orchestrate`; `chat` heißt „Agent“.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Steuert den Lebenszyklus der Sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Stellt begrenzte, an Fähigkeiten gebundene Zugangsdaten für den Start der Sandbox aus und widerruft sie beim Aufräumen.
+**CredentialBrokerPort**: Stellt begrenzte Zugangsdaten für den Start der Sandbox aus — nur Lesen für die Umgebung eines Agenten, Schreiben nur für den Push-Pfad auf dem Server — und widerruft sie beim Aufräumen.
 
 **GitRepoInspectorPort**: Liest Metadaten (Owner, Repo, Branch) aus einem lokalen Git-Repo-Pfad.
 

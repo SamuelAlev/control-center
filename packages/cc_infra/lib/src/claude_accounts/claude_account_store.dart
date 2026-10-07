@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
+import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -16,7 +17,10 @@ String? _hostClaudeHome() => Platform.environment['HOME'];
 /// sidecar `accounts.json` (dir IS the account — one place to delete).
 ///
 /// Never performs login: operator runs `claude auth login` with
-/// `CLAUDE_CONFIG_DIR` set. Does not mint Claude Code tokens from another app.
+/// `CLAUDE_CONFIG_DIR` set, or pastes the token `claude setup-token` printed
+/// (see [setLongLivedToken]). Does not mint Claude Code tokens from another
+/// app, and never copies the operator's own `~/.claude` login: two copies of
+/// one rotating refresh token sign each other out.
 class ClaudeAccountStore {
   /// Creates a store rooted at [dataDir].
   ///
@@ -113,8 +117,8 @@ class ClaudeAccountStore {
   /// UNSANDBOXED and shows the account signed in, while the run reads it from
   /// inside a profile that denies `~/Library/Keychains` and finds nothing.
   ///
-  /// The unsuffixed `Claude Code-credentials` is the same value for the
-  /// no-config-dir case, which is what [bootstrapFromKeychain] reads.
+  /// The unsuffixed `Claude Code-credentials` is the operator's own
+  /// no-config-dir login, which this store deliberately never reads.
   static String keychainServiceFor(String configDir) =>
       'Claude Code-credentials-'
       '${sha256.convert(utf8.encode(configDir)).toString().substring(0, 8)}';
@@ -123,7 +127,6 @@ class ClaudeAccountStore {
 
   /// Absolute `CLAUDE_CONFIG_DIR` for [accountId].
   String configDirFor(String accountId) => p.join(_root, accountId);
-
 
   /// Every registered account, in creation order, WITHOUT probing the CLI.
   ///
@@ -167,16 +170,21 @@ class ClaudeAccountStore {
         // exact disagreement that made the bug so confusing.
         await syncCredentialFromKeychain(a.id);
         final expiry = credentialExpiry(a.id);
+        final dir = configDirFor(a.id);
+        final tokenSavedAt = claudeLongLivedTokenSavedAt(dir);
         final probed = (await _withStatus(a)).copyWith(
           credentialExpiresAt: expiry,
           clearCredentialExpiresAt: expiry == null,
+          usesLongLivedToken: readClaudeLongLivedToken(dir) != null,
+          longLivedTokenSavedAt: tokenSavedAt,
+          clearLongLivedTokenSavedAt: tokenSavedAt == null,
         );
         // `claude auth status` reads the credential's SHAPE, not whether the
         // provider still honours it, so it keeps saying "logged in" about a
         // directory whose token expired hours ago. Fold in the failure a run
         // actually observed, or Settings and dispatch disagree again: three
         // green rows and every run failing on one of them.
-        if (_authFailurePending(probed, configDirFor(a.id))) {
+        if (_authFailurePending(probed, dir)) {
           return probed.copyWith(
             loggedIn: false,
             statusError:
@@ -442,7 +450,6 @@ class ClaudeAccountStore {
     await _writeRegistry(remaining);
   }
 
-
   /// What [AccountSelector] needs to know about every registered account.
   ///
   /// "Spent" is the union of two signals with different characters, and both
@@ -580,10 +587,22 @@ class ClaudeAccountStore {
   /// the file, and an in-sandbox refresh writes the file directly. So the flag
   /// clears itself the moment the account could work again, and no operator
   /// ever has to find a "clear this" button.
+  ///
+  /// An account on a long-lived token is judged by the TOKEN file instead: it
+  /// is the credential runs use, and pasting a new one is its re-login.
   bool _authFailurePending(ClaudeAccount account, String dir) {
     final failedAt = account.authFailedAt;
     if (failedAt == null) {
       return false;
+    }
+    if (readClaudeLongLivedToken(dir) != null) {
+      try {
+        return !claudeLongLivedTokenFile(
+          dir,
+        ).statSync().modified.isAfter(failedAt);
+      } on Object {
+        return true;
+      }
     }
     try {
       final file = File(p.join(dir, '.credentials.json'));
@@ -602,7 +621,13 @@ class ClaudeAccountStore {
   /// When the credential in [accountId]'s directory stops being accepted, or
   /// null if none / no expiry. Reads envelope `expiresAt` (`claude auth status`
   /// only reports shape). Does not refresh — CLI renews on run; report only.
+  ///
+  /// Null for an account on a long-lived token: the file credential beside it
+  /// is no longer what runs use, so its expiry says nothing about the account.
   DateTime? credentialExpiry(String accountId) {
+    if (readClaudeLongLivedToken(configDirFor(accountId)) != null) {
+      return null;
+    }
     try {
       final file = File(p.join(configDirFor(accountId), '.credentials.json'));
       if (!file.existsSync()) {
@@ -672,7 +697,6 @@ class ClaudeAccountStore {
   /// reported reset time.
   static const Duration defaultCooldown = Duration(minutes: 30);
 
-
   /// The accounts a dispatch may use, in the order it should try them.
   ///
   /// [pool] is the workspace's (or agent's) attached set; [pinnedAccountId] is
@@ -734,8 +758,21 @@ class ClaudeAccountStore {
       cursor: cursor,
     );
     switch (choice) {
+      case AccountsRemoved(:final accountIds):
+        // Refused, NOT the default account. The pool exists to keep this scope
+        // off the accounts it does not name, and the default is usually one of
+        // those. The gate re-resolves, so attaching a live account resumes it.
+        return ClaudeDispatchPlan(
+          candidates: const [],
+          allSpent: (
+            reason: RunCredentialReason.accountsRemoved,
+            accountIds: accountIds,
+            earliestReset: null,
+          ),
+        );
       case AccountPoolUnset():
-        // Every id in the pool names a deleted account.
+        // Unreachable — the empty pool returned above — but the selector's
+        // answer for it is the server default, so say so rather than throw.
         final fallback =
             accounts.where((a) => a.isDefault).firstOrNull ?? accounts.first;
         final refusal = await _refusalFor(fallback.id, availability: avail);
@@ -764,19 +801,11 @@ class ClaudeAccountStore {
             earliestReset: earliestReset,
           ),
         );
-      case AccountChosen(:final accountId, :final cursor):
-        // The chosen account first, then every OTHER usable one in pool order
-        // as failover. Pool order, not rotation order: once the first choice
-        // has failed the question is no longer "whose turn is it" but "which
-        // of these can finish the work".
-        final ordered = <String>[
-          accountId,
-          for (final id in pool.accountIds)
-            if (id != accountId &&
-                (avail[id]?.signedIn ?? false) &&
-                !(avail[id]?.spent ?? true))
-              id,
-        ];
+      case AccountChosen(:final cursor):
+        // The chosen account first, then every OTHER usable one as failover —
+        // the selector's order, shared with the harness lane. Standbys are
+        // dropped: re-running a turn on a spent account only spends it again.
+        final ordered = choice.order;
         final candidates = <({String accountId, String configDir})>[];
         for (final id in ordered) {
           candidates.add((accountId: id, configDir: await _preparedDir(id)));
@@ -794,7 +823,7 @@ class ClaudeAccountStore {
   /// [availability] is threaded in when the caller already computed the map;
   /// the probe behind it costs a keychain read per account and, for a live
   /// account, a usage lookup.
-  Future<ClaudeAccountRefusal?> _refusalFor(
+  Future<AccountPoolRefusal?> _refusalFor(
     String accountId, {
     Map<String, AccountAvailability>? availability,
   }) async {
@@ -869,28 +898,29 @@ class ClaudeAccountStore {
     return plan.active?.configDir;
   }
 
-
   /// Mirrors [accountId]'s keychain credential into `.credentials.json` (the
   /// only form a sandboxed run can read — macOS sandbox denies Keychains).
   ///
   /// Never clobbers a newer file credential (in-sandbox refresh can write a
   /// fresher `expiresAt`). Copy only when missing/unreadable/older. Returns
   /// whether the dir holds a usable credential; never throws.
+  ///
+  /// Only ever the account's OWN namespaced item. Following the operator's
+  /// unsuffixed `~/.claude` item instead (what a keychain-seeded account used
+  /// to do) put one rotating refresh token in two places, and whichever
+  /// refreshed first signed the other out — the operator's own Claude Code,
+  /// every morning. An account on a long-lived token skips the mirror
+  /// entirely: that token is its credential, and it never refreshes.
   Future<bool> syncCredentialFromKeychain(String accountId) async {
     final dir = configDirFor(accountId);
+    if (readClaudeLongLivedToken(dir) != null) {
+      return true;
+    }
     final file = File(p.join(dir, '.credentials.json'));
     if (!Platform.isMacOS) {
       return file.existsSync();
     }
-    var blob = await _readKeychainItem(keychainServiceFor(dir));
-    if (blob == null && await _tracksDefaultLogin(accountId)) {
-      // The seeded account has no keychain item of its own — nothing ever
-      // logged into its directory — so it follows the one it was copied from.
-      // Without this it is frozen at the moment of seeding and 401s as soon as
-      // that snapshot expires, while the operator's own Claude Code keeps
-      // renewing the item right next to it.
-      blob = await _readKeychainCredential();
-    }
+    final blob = await _readKeychainItem(keychainServiceFor(dir));
     if (blob == null) {
       return file.existsSync();
     }
@@ -949,15 +979,15 @@ class ClaudeAccountStore {
     }
   }
 
-
-  /// Runs `claude auth status --json` against [account]'s directory.
+  /// Runs `claude auth status --json` against [account]'s directory, with the
+  /// account's long-lived token exported exactly as a run would see it.
   Future<ClaudeAccount> _withStatus(ClaudeAccount account) async {
     try {
-      final result = await _runProcess(
-        claudeExecutable,
-        const ['auth', 'status', '--json'],
-        environment: {'CLAUDE_CONFIG_DIR': configDirFor(account.id)},
-      ).timeout(statusTimeout);
+      final result = await _runProcess(claudeExecutable, const [
+        'auth',
+        'status',
+        '--json',
+      ], environment: runEnvironmentFor(account.id)).timeout(statusTimeout);
       final stdout = (result.stdout as String?)?.trim() ?? '';
       if (stdout.isEmpty) {
         return account.copyWith(
@@ -1007,111 +1037,126 @@ class ClaudeAccountStore {
     environment: {'CLAUDE_CONFIG_DIR': configDirFor(accountId)},
   );
 
+  /// The argv a terminal runs to mint a long-lived token for this account.
+  ///
+  /// Interactive like [loginCommand] — it opens a browser — but it writes no
+  /// credential: it prints a token, and the operator pastes that into
+  /// [setLongLivedToken]. Scoped to the account directory anyway, so nothing
+  /// it does lands in the operator's own `~/.claude`.
+  ({List<String> argv, Map<String, String> environment}) setupTokenCommand(
+    String accountId,
+  ) => (
+    argv: [claudeExecutable, 'setup-token'],
+    environment: {'CLAUDE_CONFIG_DIR': configDirFor(accountId)},
+  );
 
-  /// Seeds a first account from the macOS Keychain, once, when none exist.
-  ///
-  /// Without this the sandbox fix would itself log the operator out: before it,
-  /// runs read the keychain (or tried to); after it, they read a config dir
-  /// that has never seen a login. Copying the blob the CLI already stores makes
-  /// the change invisible on an installed machine.
-  ///
-  /// Returns the seeded account, or null when there was nothing to seed (a
-  /// non-macOS host, no keychain item, or accounts already exist). Never
-  /// throws — a failed bootstrap leaves the operator at "sign in", which is
-  /// correct, just less pleasant.
-  Future<ClaudeAccount?> bootstrapFromKeychain() async {
-    if (!Platform.isMacOS) {
-      return null;
-    }
-    if ((await list()).isNotEmpty) {
-      return null;
-    }
-    final blob = await _readKeychainCredential();
-    if (blob == null) {
-      return null;
-    }
-    var account = await create(label: 'Keychain account');
-    account = account.copyWith(tracksDefaultLogin: true);
-    await _writeRegistry([
-      for (final a in await list())
-        if (a.id == account.id) account else a,
-    ]);
-    final dir = configDirFor(account.id);
-    final file = File(p.join(dir, '.credentials.json'));
-    file.writeAsStringSync(blob, flush: true);
-    await _chmod600(file.path);
-    _seedIdentity(dir);
-    CcInfraLog.info(
-      'ClaudeAccountStore: seeded Claude Code account ${account.id} from the '
-      'macOS Keychain (the sandbox cannot read the keychain).',
-    );
-    return (await _withStatus(account)).copyWith();
+  /// The environment a `claude` process needs to run as [accountId]: its
+  /// config dir and, when it has one, its long-lived token.
+  Map<String, String> runEnvironmentFor(String accountId) {
+    final dir = configDirFor(accountId);
+    final token = readClaudeLongLivedToken(dir);
+    return {'CLAUDE_CONFIG_DIR': dir, claudeLongLivedTokenEnvKey: ?token};
   }
 
-  /// Copies the signed-in identity from the default `~/.claude.json` into a
-  /// seeded account directory.
+  /// Stores [token] (from `claude setup-token`) as [accountId]'s credential.
   ///
-  /// The credential alone is not enough to be RECOGNIZED. `claude auth status`
-  /// reads the email, org and plan from `.claude.json`'s `oauthAccount`, and a
-  /// directory we seeded has never run a login to write one — so the account
-  /// worked but reported `email: null`, and the roster showed it as "Keychain
-  /// account" next to two rows named by their address. The credential we copied
-  /// IS the default login's, so the default login's identity is the right one
-  /// to copy with it.
+  /// From then on runs authenticate with it instead of the interactive login,
+  /// so the keychain mirror stops and the account stops depending on a
+  /// rotating refresh token. Pasting a fresh token is also how an account that
+  /// 401'd on an expired one is repaired, so a recorded auth failure clears.
   ///
-  /// Best-effort by design: a missing or unreadable `~/.claude.json` costs a
-  /// generic label, never the account.
-  void _seedIdentity(String configDir) {
-    final home = claudeHome();
-    if (home == null || home.isEmpty) {
-      return;
-    }
-    try {
-      final source = File(p.join(home, '.claude.json'));
-      if (!source.existsSync()) {
-        return;
-      }
-      final decoded = jsonDecode(source.readAsStringSync());
-      if (decoded is! Map || decoded['oauthAccount'] is! Map) {
-        return;
-      }
-      final target = File(p.join(configDir, '.claude.json'));
-      // Merge rather than overwrite: the CLI may already have written machine
-      // state here, and replacing the file would discard it.
-      final existing = target.existsSync()
-          ? jsonDecode(target.readAsStringSync())
-          : <String, dynamic>{};
-      final merged = <String, dynamic>{
-        if (existing is Map<String, dynamic>) ...existing,
-        'oauthAccount': decoded['oauthAccount'],
-      };
-      target.writeAsStringSync(jsonEncode(merged), flush: true);
-      unawaited(_chmod600(target.path));
-    } on Object catch (e) {
-      CcInfraLog.warning(
-        'ClaudeAccountStore: could not seed the account identity: $e',
+  /// Throws [ArgumentError] for an unknown account or a value that is not a
+  /// setup token.
+  Future<void> setLongLivedToken(String accountId, String token) async {
+    final trimmed = token.trim();
+    if (!isWellFormedClaudeLongLivedToken(trimmed)) {
+      throw ArgumentError.value(
+        '(redacted)',
+        'token',
+        'not a `claude setup-token` token (expected sk-ant-oat01-…)',
       );
     }
+    final accounts = await list();
+    if (!accounts.any((a) => a.id == accountId)) {
+      throw ArgumentError.value(accountId, 'accountId', 'unknown account');
+    }
+    final dir = configDirFor(accountId);
+    Directory(dir).createSync(recursive: true);
+    await _chmod700(dir);
+    writeClaudeLongLivedToken(dir, trimmed, at: now());
+    await _chmod600(claudeLongLivedTokenFile(dir).path);
+    _usageCache.remove(dir);
+    await _writeRegistry([
+      for (final a in accounts)
+        if (a.id == accountId) a.copyWith(clearAuthFailure: true) else a,
+    ]);
   }
 
-  Future<bool> _tracksDefaultLogin(String accountId) async {
-    for (final a in await list()) {
-      if (a.id == accountId) {
-        return a.tracksDefaultLogin;
-      }
+  /// Drops [accountId]'s long-lived token; runs fall back to whatever
+  /// interactive login its directory holds.
+  Future<void> clearLongLivedToken(String accountId) async {
+    if (!(await list()).any((a) => a.id == accountId)) {
+      return;
     }
-    return false;
+    final dir = configDirFor(accountId);
+    deleteClaudeLongLivedToken(dir);
+    _usageCache.remove(dir);
   }
 
-  /// Reads the default (no-config-dir) credential, or null.
-  Future<String?> _readKeychainCredential() async {
-    for (final service in const ['Claude Code-credentials', 'claudeAiOauth']) {
-      final blob = await _readKeychainItem(service);
-      if (blob != null) {
-        return blob;
+  /// Retires the account an older build seeded from the operator's own
+  /// `~/.claude` keychain login.
+  ///
+  /// That account held a COPY of the operator's credential, refresh token
+  /// included. Refresh tokens rotate on use, so the first run that renewed the
+  /// copy revoked the operator's own, and their Claude Code asked them to sign
+  /// in again — and the next sign-in was copied straight back in, so it
+  /// happened again the next day. The copy is deleted (the operator's original
+  /// is untouched in the keychain) and the account is left signed out until it
+  /// gets its own login or a long-lived token.
+  ///
+  /// Idempotent: the marker is dropped from the registry once handled.
+  /// Returns the ids it retired. Never throws.
+  Future<List<String>> retireDefaultLoginCopies() async {
+    final retired = <String>[];
+    try {
+      final file = _registryFile;
+      if (!file.existsSync()) {
+        return retired;
       }
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is! List) {
+        return retired;
+      }
+      for (final row in decoded) {
+        if (row is Map && row['tracks_default_login'] == true) {
+          final id = row['id'];
+          if (id is String && id.isNotEmpty) {
+            retired.add(id);
+          }
+        }
+      }
+      if (retired.isEmpty) {
+        return retired;
+      }
+      for (final id in retired) {
+        final copy = File(p.join(configDirFor(id), '.credentials.json'));
+        if (copy.existsSync()) {
+          copy.deleteSync();
+        }
+      }
+      // `toRegistryJson` no longer writes the marker, so a rewrite drops it.
+      await _writeRegistry(await list());
+      CcInfraLog.info(
+        'ClaudeAccountStore: retired ${retired.join(', ')}, which mirrored the '
+        "operator's own Claude Code login and signed it out on every refresh. "
+        'Sign it in on its own or give it a long-lived token.',
+      );
+    } on Object catch (e) {
+      CcInfraLog.warning(
+        'ClaudeAccountStore: could not retire the keychain-seeded account: $e',
+      );
     }
-    return null;
+    return retired;
   }
 
   /// Reads one generic-password item, accepting it only if it parses as the
@@ -1144,7 +1189,6 @@ class ClaudeAccountStore {
     }
     return null;
   }
-
 
   Future<void> _writeRegistry(List<ClaudeAccount> accounts) async {
     Directory(_root).createSync(recursive: true);
@@ -1240,7 +1284,7 @@ class ClaudeDispatchPlan {
   /// `claude auth login`, and an unrenewable credential looks signed in right
   /// up until it 401s. It is also what the credential gate branches on to build
   /// the right dialog.
-  final ClaudeAccountRefusal? allSpent;
+  final AccountPoolRefusal? allSpent;
 
   /// The account this run starts on, or null.
   ({String accountId, String configDir})? get active =>

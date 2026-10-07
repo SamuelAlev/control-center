@@ -57,6 +57,7 @@ import 'package:control_center/features/user_profiles/presentation/screens/user_
 import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/guards.dart';
+import 'package:control_center/router/popup_route_tracker.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/router/splash_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -227,6 +228,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
+    // Dialogs open on this navigator; root-overlay layers watch the count.
+    observers: [ref.read(rootPopupRoutesProvider)],
     initialLocation: splashRoute,
     refreshListenable: gateNotifier,
     redirect: (context, state) => onboardingGuard(

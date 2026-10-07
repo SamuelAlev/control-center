@@ -85,7 +85,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   /// facts the credential gate decides between: a directory to run in, or a
   /// refusal to report.
   String? lastClaudeConfigDir;
-  ClaudeAccountRefusal? lastClaudeAccountsSpent;
+  AccountPoolRefusal? lastClaudeAccountsSpent;
 
   @override
   DispatchHandle start({
@@ -108,6 +108,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     Map<String, String>? environment,
     List<String>? imagePaths,
     String? effortLevel,
+    int? contextWindowTokens,
     String? agentConfigDir,
     List<String>? adapterArgsOverride,
     Map<String, String>? adapterEnvOverride,
@@ -117,8 +118,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     onClaudeAccountExhausted,
     Future<void> Function({required String accountId, String? reason})?
     onClaudeAccountAuthFailed,
-    ClaudeAccountRefusal? claudeAccountsSpent,
-    Future<List<String>?> Function({
+    AccountPoolRefusal? claudeAccountsSpent,
+    Future<AccountPoolOrder> Function({
       String? workspaceId,
       String? agentId,
       required String providerId,

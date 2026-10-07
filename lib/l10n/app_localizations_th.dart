@@ -2638,15 +2638,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get allow => 'อนุญาต';
 
   @override
-  String get allowGitPush => 'อนุญาต git push';
-
-  @override
-  String get allowGithubApi => 'อนุญาตการเรียก GitHub API';
-
-  @override
-  String get allowNetwork => 'อนุญาตการเข้าถึงเครือข่ายทั่วไป';
-
-  @override
   String get apiKeys => 'คีย์ API';
 
   @override
@@ -3047,9 +3038,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get currentParticipants => 'ผู้เข้าร่วมปัจจุบัน';
 
   @override
-  String get customCapabilitiesDescription => 'คำอธิบายความสามารถที่กำหนดเอง';
-
-  @override
   String get customSystemPrompt => 'พรอมต์ระบบที่กำหนดเองสำหรับเอเจนต์นี้...';
 
   @override
@@ -3065,9 +3053,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get deactivate => 'ปิดใช้';
-
-  @override
-  String get defaultCapabilities => 'ความสามารถเริ่มต้น · สเปซใหม่';
 
   @override
   String get defaultChat => 'แชทเริ่มต้น';
@@ -3471,10 +3456,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get forward => 'ไปข้างหน้า';
 
   @override
-  String get gatesGithubPatPush =>
-      'ควบคุมการฉีด GitHub PAT จำเป็นเพื่อให้เอเจนต์พุชได้';
-
-  @override
   String get general => 'ทั่วไป';
 
   @override
@@ -3539,6 +3520,11 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'ขัดข้อง';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'สถานะบริการ';
@@ -3999,6 +3985,9 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get navSettings => 'การตั้งค่า';
+
+  @override
+  String get exitSettings => 'ออกจากการตั้งค่า';
 
   @override
   String networkBlockCount(int count) {
@@ -4509,10 +4498,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get react => 'แสดงปฏิกิริยา';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'ให้เอเจนต์อ่าน PR, issue และเมตาดาต้าของรีโพสิทอรี';
-
-  @override
   String get readerPreferences => 'ค่ากำหนดตัวอ่าน';
 
   @override
@@ -4764,9 +4749,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'แซนด์บ็อกซ์เนทีฟมีในตัวบน macOS — ใช้ Apple Seatbelt (`sandbox-exec`) ไม่ต้องติดตั้ง';
-
-  @override
-  String get sandboxPermissions => 'สิทธิ์แซนด์บ็อกซ์';
 
   @override
   String get sandboxUnsupported =>
@@ -5349,9 +5331,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get useSandbox => 'ใช้แซนด์บ็อกซ์';
 
   @override
-  String get useWorkspaceDefault => 'ใช้ค่าเริ่มต้นของเวิร์กสเปซ';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5393,10 +5372,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'การแยกแบบอ่อน — ขอบเขตเนมสเปซเท่านั้น ไม่มีขอบเขตเคอร์เนล';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'เมื่อปิด แซนด์บ็อกซ์จะบูตโดยไม่มีเส้นทางเริ่มต้น';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6602,14 +6577,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get pipelineRunNoRepos => 'ยังไม่มีรีโพสิทอรีในเวิร์กสเปซนี้';
 
   @override
-  String get allowTicketingApi => 'อนุญาตการเรียก ticketing API';
-
-  @override
   String get ticketingApiKey => 'คีย์ API ของตั๋วงาน';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'ฉีดคีย์ API ของผู้ให้บริการตั๋วงานเข้าแซนด์บ็อกซ์';
 
   @override
   String get ticketingProvider => 'ผู้ให้บริการตั๋วงาน';
@@ -8958,28 +8926,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'คอมพิวเตอร์อาจหลับได้แม้เอเจนต์กำลังทำงาน';
-
-  @override
-  String get syncEngineSectionTitle => 'เอนจินซิงค์';
-
-  @override
-  String get syncEngineDescription =>
-      'ตั๋วงาน ข้อความ และโน้ตอัปเดตแบบสดผ่านการเปลี่ยนแปลงเล็กๆ แทนสแนปช็อตเต็ม ปิดสวิตช์จะให้คลังนั้นถอยไปโหมดสแนปช็อตเต็ม — โหลดแอปใหม่เพื่อให้การเปลี่ยนแปลงมีผล';
-
-  @override
-  String get syncEngineTicketsTitle => 'ตั๋วงาน';
-
-  @override
-  String get syncEngineMessagingTitle => 'ข้อความ';
-
-  @override
-  String get syncEngineNotesTitle => 'โน้ต';
-
-  @override
-  String get syncEngineOnSubtitle => 'ซิงค์เดลต้าแบบสดทำงานอยู่';
-
-  @override
-  String get syncEngineOffSubtitle => 'ใช้ซิงค์แบบสแนปช็อตเต็ม';
 
   @override
   String get spaces => 'สเปซ';
@@ -12869,23 +12815,21 @@ class AppLocalizationsTh extends AppLocalizations {
       'ไม่บังคับ — เว้นว่างแล้วโมเดลชื่อจะตั้งให้อัตโนมัติ';
 
   @override
-  String get conversationTitlesSectionTitle => 'ชื่อการสนทนา';
+  String get shortTaskOff => 'ปิด';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'เลือกตัวรันที่ตั้งชื่อการสนทนาใหม่ในเวิร์กสเปซนี้อัตโนมัติ ชื่อจะปิดจนกว่าจะเลือกอะแดปเตอร์ และมีผลกับทุกสมาชิก';
+  String get shortTaskUnavailable =>
+      'เลือกโมเดลสำหรับงานสั้นในการตั้งค่า → อะแดปเตอร์เพื่อใช้สิ่งนี้';
 
   @override
-  String get conversationTitlesModelLabel => 'โมเดลชื่อ';
+  String get conversationTitleGenerate => 'สร้าง';
 
   @override
-  String get conversationTitlesAdapterLabel => 'อะแดปเตอร์';
+  String get conversationTitleNoMessages =>
+      'ส่งข้อความก่อน ชื่อจะสร้างจากข้อความนั้น';
 
   @override
-  String get conversationTitlesAdapterHint => 'ปิด';
-
-  @override
-  String get conversationTitlesAdapterOff => 'ปิด';
+  String get conversationTitleGenerateFailed => 'สร้างชื่อไม่ได้ ลองอีกครั้ง';
 
   @override
   String get startThread => 'เริ่มเธรด';
@@ -13049,6 +12993,15 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'การสนทนา';
+
+  @override
+  String get contextSegmentRunner => 'พรอมต์ของตัวรัน เครื่องมือ และงานในรอบ';
+
+  @override
+  String get contextUsageMeasured => 'รายงานโดยการเรียกโมเดลครั้งล่าสุด';
+
+  @override
+  String get contextUsageEstimated => 'ค่าประมาณจนกว่าการรันจะรายงานการใช้งาน';
 
   @override
   String get contextExplorerTitle => 'บริบท';
@@ -13435,12 +13388,15 @@ class AppLocalizationsTh extends AppLocalizations {
       'โพรเซสและการเขียนไฟล์ของเอเจนต์เกิดที่ไหนจริง';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'อัตโนมัติเลือกอันที่แข็งสุดที่โฮสต์นี้รองรับ ตรึงอันหนึ่งเพื่อไม่ให้เปลี่ยนเอง';
+  String get sandboxGroupAgentActions => 'สิ่งที่เอเจนต์ทำได้';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'รูที่เจาะผ่านขอบ แต่ละอันคือสิ่งที่เอเจนต์ที่แยกยังทำกับโลกภายนอกได้';
+  String get sandboxGroupAgentActionsDescription =>
+      'การพุช การเปิด pull request และการเข้าถึงเครือข่าย จะอนุญาต ถามก่อน หรือปฏิเสธ กำหนดได้ในสิทธิ์ของเอเจนต์';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'อัตโนมัติเลือกอันที่แข็งสุดที่โฮสต์นี้รองรับ ตรึงอันหนึ่งเพื่อไม่ให้เปลี่ยนเอง';
 
   @override
   String get sandboxSummaryInForce => 'มีผล';
@@ -13581,6 +13537,26 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'รันสิ่งนี้ในเทอร์มินัลบนเซิร์ฟเวอร์ จะเปิดเบราว์เซอร์เพื่อลงชื่อเข้าใช้ให้เสร็จ และเขียนข้อมูลรับรองลงไดเรกทอรีของบัญชีนี้';
+
+  @override
+  String get claudeAccountLongLivedToken => 'โทเค็นระยะยาว';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'ใช้โทเค็นระยะยาว';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'แทนที่โทเค็นระยะยาว';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'นำโทเค็นระยะยาวออก';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'การลงชื่อเข้าใช้ปกติต้องต่ออายุและอาจหมดอายุภายในคืนเดียว โทเค็นระยะยาวจะคงการลงชื่อเข้าใช้ไว้ประมาณหนึ่งปี เรียกใช้คำสั่งนี้ในเทอร์มินัล ทำให้เสร็จในเบราว์เซอร์ แล้ววางโทเค็นที่แสดงออกมา';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'นี่ไม่ใช่โทเค็นจาก claude setup-token โทเค็นจะขึ้นต้นด้วย sk-ant-oat01-';
 
   @override
   String get claudeAccountSignedOut => 'ลงชื่อออกแล้ว';
@@ -14004,10 +13980,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'เปิดในแอปเริ่มต้น';
-
-  @override
-  String get asideUnavailable =>
-      'ตั้งโมเดลครั้งเดียวในการตั้งค่าเวิร์กสเปซเพื่อใช้สิ่งนี้';
 
   @override
   String get asideEmpty => 'ยังไม่มีอะไรให้ทำงานต่อ';
@@ -14544,6 +14516,21 @@ class AppLocalizationsTh extends AppLocalizations {
   String get credentialGateOpenSettings => 'เปิดการตั้งค่า';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'บัญชี Claude Code ที่แนบไว้ถูกนำออกแล้ว';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'แนบบัญชีอื่นในการตั้งค่าบัญชีของเอเจนต์นี้หรือของเวิร์กสเปซ หรือล้างรายการเพื่อใช้บัญชีเริ่มต้น การรันจะดำเนินต่อเอง';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'บัญชีทั้งหมดในรายการนี้ถูกนำออกจากเซิร์ฟเวอร์แล้ว แนบบัญชีอื่น หรือล้างรายการ';
+
+  @override
+  String get accountPoolClear => 'ล้างรายการ';
+
+  @override
   String get selectModel => 'เลือกโมเดล';
 
   @override
@@ -14974,6 +14961,10 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'ค้นหาไฟล์ของการสนทนาตามชื่อและเปิดหนึ่งไฟล์ในแท็บ';
+
+  @override
+  String get prQuickOpenDescription =>
+      'ค้นหาไฟล์ของ pull request ตามชื่อและเปิดหนึ่งไฟล์ในแท็บ';
 
   @override
   String get ideQuickOpenHint => 'ค้นหาไฟล์ตามชื่อ';

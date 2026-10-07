@@ -2,7 +2,7 @@
 title: Give an agent a machine to test on
 description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
 slug: en-GB/manual/guides/use-rigs
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 A **rig** is a throwaway machine an agent opens when it needs to actually try
@@ -186,9 +186,10 @@ What changes:
 - Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
 - The network is deny-by-default. Only hosts on the rig's allowlist are
   reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- `git push` still works in a terminal you opened. The rig has no stored
+  credential; it asks the server for a short-lived one per operation, bounded
+  by your own forge access, and that token is revoked when the rig closes. A
+  rig an agent opened gets a read-only credential, so it can fetch but not push.
 
 What to know:
 

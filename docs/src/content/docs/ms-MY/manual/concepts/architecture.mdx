@@ -3,7 +3,7 @@ title: Seni bina
 description: Bagaimana Control Center distrukturkan dengan model pelayan klien nipis, Clean Architecture berteraskan ciri serta port dan penyesuai.
 dateModified: 2026-09-19
 slug: ms-MY/manual-pengguna/konsep/seni-bina
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Gambaran keseluruhan
@@ -58,7 +58,7 @@ Ciri **`guardrails`** meletakkan lapisan domainnya dalam `cc_domain/features/gua
 - Entiti teras: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identiti dan multipemain: `User`, `Principal` (tersegel `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Entiti memori: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Objek nilai dikongsi: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Objek nilai dikongsi: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Port dikongsi: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Perkhidmatan domain: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + jenis acara (ruang kerja/ejen, PR/semakan, pemesejan, penetikan, pipeline, orkestrasi, memori, kalendar/mesyuarat, identiti dan keahlian, kebolehcerapan)

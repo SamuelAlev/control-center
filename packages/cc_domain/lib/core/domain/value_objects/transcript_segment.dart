@@ -143,7 +143,6 @@ sealed class TranscriptSegment {
           message: json['message'] as String? ?? '',
           action: json['action'] as String?,
           target: json['target'] as String?,
-          suggestedCapability: json['suggestedCapability'] as String?,
           startedAt: startedAt,
           durationMs: durationMs,
         );
@@ -474,7 +473,6 @@ class ViolationSegment extends TranscriptSegment {
     required this.message,
     this.action,
     this.target,
-    this.suggestedCapability,
     required super.startedAt,
     super.durationMs,
   });
@@ -488,9 +486,6 @@ class ViolationSegment extends TranscriptSegment {
   /// Target of the denied action.
   final String? target;
 
-  /// Capability the user could grant to allow this.
-  final String? suggestedCapability;
-
   @override
   Map<String, dynamic> toJson() => {
     'type': 'violation',
@@ -498,7 +493,6 @@ class ViolationSegment extends TranscriptSegment {
     'message': message,
     if (action != null) 'action': action,
     if (target != null) 'target': target,
-    if (suggestedCapability != null) 'suggestedCapability': suggestedCapability,
     if (durationMs != null) 'durationMs': durationMs,
   };
 
@@ -509,12 +503,10 @@ class ViolationSegment extends TranscriptSegment {
           message == other.message &&
           action == other.action &&
           target == other.target &&
-          suggestedCapability == other.suggestedCapability &&
           startedAt == other.startedAt;
 
   @override
-  int get hashCode =>
-      Object.hash(message, action, target, suggestedCapability, startedAt);
+  int get hashCode => Object.hash(message, action, target, startedAt);
 }
 
 /// Decodes a transcript from a persisted `metadata['segments']` value.

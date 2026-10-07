@@ -1,20 +1,21 @@
 ---
 title: Configurer les politiques de bac à sable
-description: Ce qui limite une exécution d’agent, comment savoir si le bac à sable du système d’exploitation l’encapsule et quels réglages de capacités le serveur lit réellement.
+description: Ce qui limite une exécution d’agent, comment savoir si le bac à sable du système d’exploitation l’encapsule et comment les règles d’action décident de ce qu’un agent peut pousser ou atteindre.
 slug: fr-FR/manuel/guides/politiques-de-bac-a-sable
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Le fait qu’une exécution d’agent soit isolée dans un bac à sable se décide sur le
-serveur, au démarrage (`--sandbox`). L’interrupteur **Activer le bac à sable**, le
-sélecteur **Back-end** et les interrupteurs **Capacités par défaut · nouvelles
-conversations** sous **Paramètres → Serveur → Diagnostics et confidentialité**
-sont des préférences stockées sur votre appareil. La détection d’hôte de la carte
-**Bac à sable** indique ce que l’hôte du serveur peut encapsuler.
+serveur, au démarrage (`--sandbox`). L’interrupteur **Activer le bac à sable** et
+le sélecteur **Back-end** sous **Paramètres → Serveur → Diagnostics et
+confidentialité** sont des préférences stockées sur votre appareil. La détection
+d’hôte de la carte **Bac à sable** indique ce que l’hôte du serveur peut
+encapsuler.
 
-Deux contrôles atteignent une exécution, et ce guide couvre les deux : les
-**Permissions du sandbox** par agent ci-dessous et le flag `--sandbox` du serveur
-lui-même.
+Deux contrôles atteignent une exécution, et ce guide couvre les deux : les
+règles d’action sous **Paramètres → Espace de travail → Autorisations des
+agents**, qui décident de ce qu’un agent peut pousser, ouvrir ou atteindre, et
+le flag `--sandbox` du serveur lui-même.
 
 ## Ce qui limite une exécution d’agent
 
@@ -26,7 +27,7 @@ tiennent sur tout hôte.
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Le bac à sable du système d’exploitation | Seatbelt sous macOS, bubblewrap sous Linux et WSL2. Encapsule la CLI Claude Code, les adaptateurs ACP et l’outil `bash` du harnais. **Absent sous Windows et sous Linux sans `bwrap` et `socat`** |
 | Son propre arbre de travail | Chaque conversation reçoit une copie de travail en copie sur écriture. La copie de travail d’origine est intégrée à l’exécution comme chemin en refus d’écriture, et c’est le bac à sable qui l’applique |
-| Des identifiants délivrés par le courtier | Le courtier d’identifiants émet un environnement par exécution à partir des capacités de l’agent et le révoque au démontage. Pas de capacité, pas de jeton dans l’environnement |
+| Des identifiants délivrés par le courtier | Le courtier d’identifiants émet un environnement par exécution et le révoque au démontage. Son jeton GitHub peut lire mais pas pousser : un push passe par Control Center, qui interroge d’abord la règle de push |
 | Les garde-fous des actions | Chaque outil de mutation déclare ses classes d’effets et le garde-fou les résout avant l’exécution de l’appel. Un `prompt` sans approbateur connecté est refusé |
 | L’assainissement de l’environnement | ACP et l’outil `bash` du harnais reçoivent un environnement filtré. Claude Code via `NoSandboxAdapter` hérite de l’environnement de l’hôte |
 | La surface d’outils du mode | Un mode en lecture seule retire purement et simplement les outils qui mutent l’arbre de travail et épingle le verbe de sortie propre au mode pour qu’il puisse tout de même livrer |
@@ -37,8 +38,7 @@ Trois choses restent plus faibles qu’elles n’en ont l’air :
   d’achèvement et les règles structurelles des modes. L’adaptateur Claude Code, non.
   Claude Code en particulier est lancé avec `--dangerously-skip-permissions`,
   parce qu’un `claude -p` non interactif se bloquerait sinon indéfiniment sur sa
-  propre invite — les appels de lecture, d’écriture, d’édition et de bash de
-  Claude ne sont donc ni vus ni filtrés par Control Center. Là où le bac à sable
+  propre invite — les appels de lecture, d’écriture et d’édition de Claude ne sont donc ni vus ni filtrés par Control Center, et ses commandes bash ne sont vérifiées que par un hook qui lit la ligne de commande. Là où le bac à sable
   est actif, c’est la frontière qui les entoure.
 - Les outils de fichiers in-process du harnais (read, write, edit, apply patch,
   search, find, search_files) s’exécutent dans le processus du serveur, si bien
@@ -51,48 +51,69 @@ Trois choses restent plus faibles qu’elles n’en ont l’air :
   l’environnement de l’hôte via `NoSandboxAdapter`. Le serveur le signale dans son
   journal de démarrage. Vérifiez le vôtre ci-dessous.
 
-## Définir les capacités d’un agent
+## Décider de ce qu’un agent peut pousser
 
-C’est le seul contrôle de capacités que le serveur lit. Il s’applique par agent et
-décide de ce que le courtier d’identifiants place dans l’environnement de cet
-agent.
+Il n’existe aucun interrupteur par agent pour git push, GitHub, les tickets ou
+le réseau. Chacun est une règle d’action :
 
-1. Ouvrez **Paramètres → Espace de travail → Agents**
-2. Sélectionnez l’agent dans la liste
-3. Sous l’onglet **Paramètres**, faites défiler jusqu’à **Permissions du sandbox**
-4. Activez l’interrupteur — la légende de la ligne ne dit plus **Utiliser la valeur par défaut de l’espace de travail**
-5. Réglez les quatre interrupteurs :
+| Règle                                     | Valeur par défaut | Ce qu’elle couvre                                                                   |
+| ----------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| **Pousser vers un dépôt distant**         | Demander d’abord  | Chaque `git push` vers GitHub, quel que soit l’adaptateur                           |
+| **Ouvrir une pull request**               | Demander d’abord  | `gh pr create` et les outils de pull request                                        |
+| **Publier une revue ou fusionner**        | Demander d’abord  | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                       |
+| **Écrire dans un outil de suivi externe** | Demander d’abord  | Les écritures de tickets via les outils de Control Center et `gh issue`             |
+| **Accéder au réseau**                     | Autoriser         | Si le bac à sable dispose d’un réseau, et les outils web du harnais                 |
 
-| Interrupteur                           | Ce qu’il contrôle                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Autoriser git push**               | Désactivé, l’exécution reçoit `GIT_ASKPASS=/usr/bin/false` et `GIT_TERMINAL_PROMPT=0`, si bien qu’un push ne peut pas demander d’identifiant                                                                                                                   |
-| **Autoriser les appels API GitHub**       | Conjointement avec **Autoriser git push**, détermine si le courtier injecte le jeton GitHub sous la forme `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Autoriser les appels API de tickets**    | Détermine si le courtier injecte `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Autoriser l’accès réseau général** | Là où le bac à sable est actif, il s’agit d’une véritable barrière de sortie : désactivé, la liste d’autorisation de l’exécution est vide et toute requête sortante est refusée au niveau du proxy. Là où il n’y a pas de backend, il est consigné sur l’exécution mais ne bloque rien de ce que fait un processus lancé |
+1. Ouvrez **Paramètres → Espace de travail → Autorisations des agents**
+2. Choisissez la portée — **Espace de travail**, **Agent** ou **Espace** — puis,
+   sur la ligne de la règle, choisissez **Autoriser**, **Demander d’abord** ou
+   **Refuser**
 
-6. Enregistrez
+Les règles de push limitées à des branches, comme une règle qui refuse les push
+vers `main`, s’appliquent aussi : voir [Garde-fous](/fr-FR/manuel/concepts/garde-fous/).
 
-Point de contrôle : rouvrez l’agent et l’interrupteur est toujours activé avec
-vos réglages — un ensemble de capacités enregistré fait l’aller-retour par le
-serveur, et un agent qui n’en a aucun retombe sur la valeur par défaut
-conservatrice (push désactivé, API GitHub désactivée, tickets désactivés, réseau
-activé).
+Point de contrôle : demandez à l’agent de pousser une branche. Avec **Demander
+d’abord**, vous recevez une demande d’approbation qui nomme le dépôt et les refs ;
+avec **Refuser**, git affiche
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Deux façons dont cela vous rattrape]
-La légende dit **Utiliser la valeur par défaut de l’espace de travail**, mais il
-n’existe aucun réglage de capacités au niveau de l’espace de travail que le
-serveur lise. Un agent dont l’interrupteur est désactivé reçoit la valeur par
-défaut conservatrice intégrée.
+Comment chaque règle atteint l’exécution :
 
-Par ailleurs, l’identifiant GitHub de l’exécution est toujours celui du courtier —
-un jeton d’installation de GitHub App limité au dépôt, ou le repli sur le PAT de
-l’environnement — jamais le jeton stocké du membre demandeur. `actingUserId` est
-transmis pour que le courtier puisse *retenir* le PAT du serveur vis-à-vis d’un
-membre qui n’est pas propriétaire et qui n’a pas connecté GitHub ; il ne fusionne
-pas un jeton personnel par-dessus une capacité désactivée. Ne traitez pas
-**Autoriser les appels API GitHub** comme une frontière de sortie stricte sur un
-hôte dépourvu de bac à sable du système d’exploitation : un processus lancé peut
-encore atteindre le réseau.
+- **Le push** est appliqué par ce que détient l’exécution. Son jeton GitHub est
+  un jeton d’installation de GitHub App en lecture seule, qui peut lire le
+  contenu et travailler avec les pull requests. Sa configuration git envoie
+  chaque push GitHub à une passerelle en boucle locale sur `cc_server`, qui
+  interroge la règle et ne transmet le push qu’ensuite, avec un jeton
+  d’écriture que l’agent ne voit jamais. La passerelle ne transmet qu’au dépôt
+  propre à l’arbre de travail ou à un dépôt GitHub lié à l’espace de travail.
+  Cela vaut pour tous les adaptateurs.
+- **Les pull requests et les tickets depuis un shell** sont reconnus à leur
+  ligne de commande, dans l’outil `bash` du harnais et, via un hook, dans
+  l’outil `Bash` de Claude Code. Un agent qui cache la commande (un script,
+  `eval`, un appel d’API direct) passe ce contrôle, mais pas la passerelle de
+  push.
+- **Les clés de tickets** ne sont jamais placées dans le bac à sable. Les agents
+  écrivent les tickets via les outils MCP de Control Center, qui interrogent la
+  règle.
+- **Le réseau** est résolu une seule fois, au démarrage de l’exécution.
+  **Refuser** désactive le réseau du bac à sable ; **Autoriser** et **Demander
+  d’abord** le laissent activé, et avec **Demander d’abord** les outils
+  `web_fetch` et `web_search` du harnais continuent de demander à chaque appel.
+  Tant que le réseau est activé, GitHub figure toujours sur la liste
+  d’autorisation de sortie.
+
+:::caution[Sans GitHub App, la règle de push n’est qu’indicative]
+Sans GitHub App configurée, l’exécution reçoit le jeton d’accès personnel de
+repli, qu’il est impossible de restreindre à la lecture seule. `git push` passe
+toujours par la passerelle et la règle, mais du code qui utilise directement le
+jeton peut pousser en la contournant. Configurez la GitHub App pour que la
+règle soit contraignante.
+
+L’identifiant GitHub de l’exécution est toujours celui du courtier — un jeton
+d’installation de GitHub App limité au dépôt, ou le PAT de repli — jamais le
+jeton stocké du membre demandeur. Le PAT du serveur est retenu pour une
+exécution qui agit pour un membre qui n’est pas propriétaire et n’a pas
+connecté GitHub.
 :::
 
 ## Vérifier si vos exécutions d’agent sont isolées
@@ -168,10 +189,13 @@ l’ordre de résolution complet.
 
 ### Un agent ne peut pas pousser et je ne l’ai jamais refusé
 
-Vérifiez les **Permissions du sandbox** de l’agent. Un agent sans ensemble de
-capacités personnalisé reçoit la valeur par défaut conservatrice, où **Autoriser
-git push** est désactivé — le courtier n’injecte donc aucun jeton GitHub et git
-n’a aucun moyen de s’authentifier.
+Lisez ce que git a affiché. `Control Center policy: …` signifie qu’une règle a
+refusé le push ou qu’un **Demander d’abord** est resté sans réponse.
+`… is not linked to this workspace` signifie que le push vise un dépôt qui
+n’est ni celui de l’arbre de travail ni lié à l’espace de travail.
+`Control Center has no GitHub credential that can push …` signifie que la
+GitHub App n’est pas installée sur ce dépôt et qu’aucun identifiant de repli
+n’a pu pousser : installez l’App sur ce dépôt ou connectez GitHub.
 
 ### La carte Bac à sable ne signale aucun bac à sable natif
 

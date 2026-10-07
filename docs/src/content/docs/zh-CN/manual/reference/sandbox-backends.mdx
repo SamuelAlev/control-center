@@ -2,13 +2,13 @@
 title: 沙盒后端
 description: 各个沙盒后端、它们各自在何处生效，以及沙盒运行时用到的每一个值对象。
 slug: zh-CN/手册/参考/沙盒后端
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[一次运行是否被沙盒包裹取决于主机]
 `cc_server` 在启动时探测主机一次，只要探测报告有可用的后端且 `--sandbox` 不为 `off`，就用原生后端包裹智能体派发。两处派发接缝都会被包裹：Claude Code CLI 经由沙盒端口，ACP 加内置运行器的 `bash` 工具则经由沙盒管理器。
 
-在探测报告没有后端的地方——**Windows 始终如此**，以及没有 `bwrap` 和 `socat` 的 Linux 或 WSL2——智能体运行**不会**被沙盒包裹。ACP 和运行器的 `bash` 工具仍会在净化过的环境中启动；Claude Code 则经由 `NoSandboxAdapter` 继承主机环境。其余的边界包括：这次运行自己的工作树（随附 `rift` 的地方用写时复制；Windows 上用 `git worktree`）、按能力门控并在每次启动时中介签发、在拆除时吊销的凭据、按模式的命令策略、统一的[操作护栏](/zh-CN/手册/概念/护栏/)（失败即关闭）、ACP 和运行器 `bash` 路径上的环境净化，以及它的模式所允许的工具面。
+在探测报告没有后端的地方——**Windows 始终如此**，以及没有 `bwrap` 和 `socat` 的 Linux 或 WSL2——智能体运行**不会**被沙盒包裹。ACP 和运行器的 `bash` 工具仍会在净化过的环境中启动；Claude Code 则经由 `NoSandboxAdapter` 继承主机环境。其余的边界包括：这次运行自己的工作树（随附 `rift` 的地方用写时复制；Windows 上用 `git worktree`）、在每次启动时中介签发、在拆除时吊销的只读代码托管令牌、必须在智能体运行网关通过推送规则的推送、按模式的命令策略、统一的[操作护栏](/zh-CN/手册/概念/护栏/)（失败即关闭）、ACP 和运行器 `bash` 路径上的环境净化，以及它的模式所允许的工具面。
 
 运行器的进程内文件工具（read、write、edit、apply patch、search、find、search_files）在每一种主机上都位于沙盒之外：它们运行在服务器进程内部，因此只有 `bash` 被包裹。
 :::
@@ -83,7 +83,7 @@ Bubblewrap 可以遮蔽一个已存在的路径，但无法禁止可写绑定内
 
 终端按自己的规则被沙盒包裹，而不是由派发探测决定。`TerminalSessionService` 的 `defaultBackend` 是 `none`，而 `cc_server` 不会覆盖它，因此终端会话运行的是主机 shell，除非客户端显式请求 `native`——桌面端的终端面板不会这么做。
 
-请求 `native` 时，shell 会在一个固定的终端配置下经由 `SandboxManager` 包裹：`$HOME` 和会话的工作目录可写，网络开放，而 `~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh` 和 `~/Library/Keychains` 被拒绝读取。能力门控不适用——那是派发关心的事。如果无法进行包裹，会话会失败，而不是在主机 shell 的 PTY 上显示一个原生徽标。
+请求 `native` 时，shell 会在一个固定的终端配置下经由 `SandboxManager` 包裹：`$HOME` 和会话的工作目录可写，网络开放，而 `~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh` 和 `~/Library/Keychains` 被拒绝读取。只读代码托管令牌和推送网关不适用——那是派发关心的事。如果无法进行包裹，会话会失败，而不是在主机 shell 的 PTY 上显示一个原生徽标。
 
 ## 网络出站
 
@@ -92,9 +92,9 @@ Bubblewrap 可以遮蔽一个已存在的路径，但无法禁止可写绑定内
 - 沙盒运行时在 `cc_server` 进程内部于 `127.0.0.1` 上运行一个 HTTP/HTTPS 代理和一个 SOCKS5 代理，**每个受限会话一对**（`http_proxy.dart`、`socks_proxy.dart`）。并发运行不共享同一对。
 - 被沙盒包裹的进程会收到代理环境变量（`HTTP_PROXY`/`HTTPS_PROXY` → HTTP 代理，`ALL_PROXY` → SOCKS 代理；`GIT_SSH_COMMAND` 让 git-over-SSH 走 SOCKS 代理）。在 Linux 上网络命名空间是未共享的，因此代理是唯一的出路；在 macOS 上沙盒与主机共享回环，可以直接与它们通信。
 - 每个连接的目标主机都会与会话的域名允许列表比对；其他一切都被拒绝。有两种通配符形式，各自恰好含一个 `*`：前缀式 `*.example.com` 匹配任意子域名（包括 `a.b.example.com`），但不匹配裸域本身；中间标签式 `bedrock.*.amazonaws.com` 恰好匹配一个标签（`bedrock.us-east-1.amazonaws.com`，而不是 `bedrock.evil.attacker.amazonaws.com`）。
-- 允许列表按会话从经过筛选的基线（`kBaselineAllowedDomains`：LLM 提供方、Git 托管、软件包注册表）解析而来，再加上智能体具备 GitHub 或推送能力时的 GitHub 域名，以及 `SandboxSpec.egressAllowlist`。解析器还会在智能体可以调用工单系统时接受工单提供方域名，但派发路径从不传入那份列表（也不传入额外的 `egressAllowlist` 条目），因此实际上每次运行得到的都是基线加上其能力所赢得的 GitHub 域名。
+- 允许列表按会话从经过筛选的基线（`kBaselineAllowedDomains`：LLM 提供方、Git 托管、软件包注册表）解析而来，再加上 GitHub 域名（`kGithubDomains`），以及 `SandboxSpec.egressAllowlist`。派发路径从不传入额外的 `egressAllowlist` 条目，因此实际上每次运行得到的都是基线加上 GitHub。
 - 一份固定的拒绝列表（`kBaselineDeniedDomains`：云元数据端点、遥测接收端）优先于所有允许项。
-- `networkEnabled: false`（或一个没有网络能力的智能体）仍会启动按会话的代理，但允许列表为空，因此所有出站连接都会被拒绝。
+- `networkEnabled: false` 仍会启动按会话的代理，但允许列表为空，因此所有出站连接都会被拒绝。派发在运行开始时根据**访问网络**规则设置该值：拒绝会关闭网络，允许和先询问会让它保持开启。
 
 ## SandboxSpec
 
@@ -106,11 +106,10 @@ Bubblewrap 可以遮蔽一个已存在的路径，但无法禁止可写绑定内
 | `workspaceId` | `String` | 所属工作区 id |
 | `agentId` | `String?` | 当前绑定到该沙盒的智能体（如果有） |
 | `bindMounts` | `List<SandboxBindMount>` | 主机→客户机挂载；沙盒只会看到这里列出的主机路径 |
-| `networkEnabled` | `bool`（默认 `true`） | 与智能体的网络能力合并。关闭时，按会话的代理仍会启动，但允许列表为空，因此所有出站连接都会被拒绝 |
-| `egressAllowlist` | `List<String>`（默认 `[]`） | 额外允许的出站域名；支持通配符（`*.example.com`，外加一种单标签的中间形式）。派发从不填充它，因此被包裹的运行得到的是经过筛选的基线加上其能力所赢得的 GitHub 域名 |
+| `networkEnabled` | `bool`（默认 `true`） | 派发时根据网络出站规则设置（只有解析为拒绝时才关闭）。关闭时，按会话的代理仍会启动，但允许列表为空，因此所有出站连接都会被拒绝 |
+| `egressAllowlist` | `List<String>`（默认 `[]`） | 额外允许的出站域名；支持通配符（`*.example.com`，外加一种单标签的中间形式）。派发从不填充它，因此被包裹的运行得到的是经过筛选的基线加上 GitHub 域名 |
 | `guestWorkdir` | `String?` | 沙盒内的默认工作目录；单次 `exec` 调用可以覆盖它 |
 | `mode` | `Mode`（默认 `chat`） | 划定文件系统写入规则：`chat` 保持绑定挂载可写；`review`、`plan` 和 `orchestrate` 为只读 |
-| `capabilities` | `AgentCapabilities`（默认 `safeDefault`） | 推导网络的开/关决定和 GitHub 出站域名。工单域名是解析器的一个参数，而派发路径从不提供它 |
 | `protectedPaths` | `List<String>`（默认 `[]`） | 在任何模式下都绝不允许在沙盒内可写的主机路径 |
 | `runnerStateDirs` | `List<String>`（默认 `[]`） | 运行器存放自身状态的主机目录，在所有模式下都可写（当前是 Control Center 管理的 `CLAUDE_CONFIG_DIR`） |
 | `execGrantRoots` | `List<String>`（默认 `[]`） | 运维人员批准、用来在 macOS 上重新打开可写目录 exec 阻止的目录树。Linux 忽略它们——bwrap 没有可供重新打开的 `$HOME` exec 阻止 |
@@ -168,7 +167,6 @@ Bubblewrap 可以遮蔽一个已存在的路径，但无法禁止可写绑定内
 | --- | --- | --- |
 | `action` | `String` | 被拒绝的动词（例如 `file-read*`、`network-outbound`） |
 | `target` | `String` | 被拒绝操作的目标路径或主机 |
-| `suggestedCapability` | `String?` | 能解除这项操作的能力标志（例如 `canCallGitHubApi`） |
 | `raw` | `String?` | 原始日志行，便于调试 |
 
 ## 另见

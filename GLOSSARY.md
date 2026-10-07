@@ -4,7 +4,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Core Domain Entities (Shared Kernel)
 
-- **Agent:** AI worker with a workspace identity, role, capabilities, skills and optional reporting relationship. Each agent belongs to exactly one workspace. A **DiscoveredAgent** is an on-disk `AGENTS.md` definition not yet registered as an agent.
+- **Agent:** AI worker with a workspace identity, role, skills and optional reporting relationship. Each agent belongs to exactly one workspace. A **DiscoveredAgent** is an on-disk `AGENTS.md` definition not yet registered as an agent.
 - **Workspace:** soft-deletable top-level tenant for agents, repositories, spaces, tickets and memory.
 - **Repo:** registered Git checkout scoped to one workspace. Registering the same path in another workspace creates a separate repo record; GitHub remote is optional. **GitRepoInfo** is inspected checkout/remote metadata, not a registration.
 - **IsolatedRepo:** per-space branch/worktree provisioned from a registered repo, distinct from its source checkout. `rift` supplies copy-on-write isolation where available; Windows uses `git worktree` as its backend. A failed CoW provision does not switch to a source-mutating fallback.
@@ -177,7 +177,6 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **ParticipantPresence:** ephemeral, never-persisted human/agent awareness; repo-grant filtered before fan-out. **PresenceLocus:** tagged position in a space, file, PR, ticket or plan node.
 - **Follow / steer / take-over / hand-back:** follow another viewport; redirect a running agent via conversation; pause at a turn boundary to edit its worktree; send the change summary before resuming. Paused state survives restart.
 - **Autonomy dial:** per-space/agent `propose-only`, `act-with-approval` or `act-freely` profile over action guardrails; risky actions still require the policy gate.
-- **syncSeq / sync_changes:** durable workspace mutation sequence and delta log, unlike ephemeral presence. Server receipt order resolves writes; missed deltas trigger pull, then a snapshot if recovery fails.
 
 ## Plan Studio Bounded Context
 
@@ -206,6 +205,8 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **ActionClass:** closed taxonomy of effects (file mutation, git/PR mutation, network, secret access, package/process/workspace/enclosure actions). Tools declare effect classes; unknown classes do not gain implicit permission.
 - **ActionPolicyRule:** scoped `allow`, `prompt` or `deny`; resolution order is space > agent > workspace > mode preset > built-in default, then longest command prefix and most restrictive rule. **ActionDecision / PolicyResolver:** stable within a turn; an unanswerable prompt is denied and multi-class actions take the most restrictive decision.
 - **Adapter honesty matrix:** records what each runtime can actually enforce at MCP, native CLI and sandbox layers; CC cannot intercept every external CLI action.
+- **Agent run gateway:** loopback `/agent/` endpoint through which the action policy reaches code inside an agent's sandbox. Hard half: every GitHub push is rewritten to it, checked against `gitPush` (refs included) and forwarded on a server-held write token. Soft half: `ShellActionClassifier` maps shell command lines (harness `bash`, Claude Code's PreToolUse hook) to action classes; a hidden command evades it, a push cannot.
+- **ForgeTokenScope:** `read` (contents read + pull requests, what an agent's environment holds) or `write` (push; held only by the gateway or a human-opened terminal rig). There is no "none": permission is the policy's call, not token withholding.
 
 ## Agent Peer Messaging & Delegation
 
@@ -222,7 +223,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Value Objects (Shared Kernel)
 
-- **IdeEditor:** installed/local-editor catalog entry, not a code-server session. **AgentCapabilities / AgentSkills / AgentRole:** agent permission flags, case-insensitive skill identifiers and role used in prompts/governance/memory.
+- **IdeEditor:** installed/local-editor catalog entry, not a code-server session. **AgentSkills / AgentRole:** case-insensitive skill identifiers and role used in prompts/governance/memory. Agents carry no permission flags; what they may do is action policy.
 - **Mode:** `chat`, `review`, `plan`, `orchestrate`; constrains prompt, writes and tool access per conversation. Plan/review are read-only; orchestrate may propose work but execution waits for approval. **SandboxBackend / SandboxSpec / SandboxBindMount / SandboxHandle / SandboxState / SandboxEvent / SandboxViolation:** host isolation selection, launch contract, mounted path, running handle/lifecycle and event/denial record.
 - **RunCost / RetryMeta / WakeReason / WakeContext:** token/cost aggregate, attempt lineage and reason/context for dispatch. **RepoIsolationBackend:** `rift` or Windows `gitWorktree` (also possible on legacy persisted rows). **MemoryPermission:** `none`, `read`, `write`. **AppLocale:** locale/display metadata.
 
@@ -230,7 +231,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 Ports are domain contracts implemented by infrastructure; `packages/cc_domain/lib/core/domain/ports/` holds shared ports and each feature's `domain/ports/` its own. Key boundaries:
 
-- **SandboxPort / CredentialBrokerPort / ConfirmationPort / AgentQuestionPort:** sandbox lifecycle, per-launch scoped credentials with revocation, privileged-action approval and inline agent questions.
+- **SandboxPort / CredentialBrokerPort / ConfirmationPort / AgentQuestionPort:** sandbox lifecycle, per-launch `ForgeTokenScope`d credentials with revocation, privileged-action approval and inline agent questions.
 - **GitRepoInspectorPort / GitCommandPort / RepoIsolationPort / RepoWorkspaceProvisionerPort / WorkspaceFilesystemPort:** checkout inspection, Git execution, isolated worktree creation and per-space filesystem management. Provision failure must not mutate the source checkout.
 - **RunLogStorePort / EmbeddingPort / NotificationPort / NotificationPreferencesPort / ProcessControlPort / ModeResolver:** run storage, optional vectorization, desktop notifications/preferences, process control and mode lookup.
 - **AgentBackend / AgentDispatchPort / MessagingPort / TicketProviderPort / PipelineEnginePort / DispatchReviewersPort / SchemaValidatorPort / SandboxDetectorPort / DoctorPort / GitHubCliPort / ProcessDetectionPort / McpServerPort / McpTool / TicketWorkflowPort:** feature-specific seams, named by the feature that consumes them; inspect the corresponding `domain/ports/` for signatures.

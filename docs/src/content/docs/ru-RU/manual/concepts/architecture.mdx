@@ -3,7 +3,7 @@ title: "Архитектура"
 description: "Как устроен Control Center: модель тонкого клиента с сервером, Clean Architecture с приоритетом функций и порты и адаптеры."
 dateModified: 2026-09-19
 slug: ru-RU/руководство/понятия/архитектура
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Обзор
@@ -58,7 +58,7 @@ feature_name/
 - Основные сущности: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Идентичность и совместная работа: `User`, `Principal` (запечатанный `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Сущности памяти: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Общие объекты-значения: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Общие объекты-значения: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Общие порты: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Доменные сервисы: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + типы событий (рабочее пространство/агент, PR/ревью, сообщения, тикеты, конвейер, оркестрация, память, календарь/встречи, идентичность и членство, наблюдаемость)

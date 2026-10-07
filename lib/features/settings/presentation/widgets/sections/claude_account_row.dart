@@ -1,10 +1,11 @@
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/claude_account_sign_in_dialogs.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/services.dart';
+import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -66,6 +67,13 @@ class ClaudeAccountRow extends ConsumerWidget {
                         variant: CcBadgeVariant.neutral,
                       ),
                     ],
+                    // The sign-in that does not lapse overnight. The hover
+                    // card dates it: a setup token lasts about a year, and
+                    // the CLI does not say exactly when it ends.
+                    if (account.usesLongLivedToken) ...[
+                      const SizedBox(width: 6),
+                      _tokenBadge(l10n, account.longLivedTokenSavedAt),
+                    ],
                     // Warning badges are for a login a human has to repair.
                     // A lapsed access token with a live refresh token is the
                     // overnight state the CLI renews on the next run — same
@@ -116,12 +124,31 @@ class ClaudeAccountRow extends ConsumerWidget {
             semanticLabel: account.label,
             items: [
               CcMenuItem(
+                label: account.usesLongLivedToken
+                    ? l10n.claudeAccountReplaceLongLivedToken
+                    : l10n.claudeAccountUseLongLivedToken,
+                icon: AppIcons.keyRound,
+                onSelected: () =>
+                    showClaudeLongLivedTokenDialog(context, ref, account),
+              ),
+              CcMenuItem(
                 label: account.loggedIn
                     ? l10n.claudeAccountSignInAgain
                     : l10n.claudeAccountSignIn,
                 icon: AppIcons.externalLink,
                 onSelected: () => showClaudeLoginCommand(context, ref, account),
               ),
+              if (account.usesLongLivedToken)
+                CcMenuItem(
+                  label: l10n.claudeAccountRemoveLongLivedToken,
+                  icon: AppIcons.x,
+                  onSelected: () async {
+                    await ref
+                        .read(claudeAccountsRepositoryProvider)
+                        .clearToken(account.id);
+                    ref.invalidate(claudeAccountsProvider);
+                  },
+                ),
               CcMenuItem(
                 label: l10n.claudeAccountMakeDefault,
                 icon: AppIcons.check,
@@ -150,6 +177,16 @@ class ClaudeAccountRow extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _tokenBadge(AppLocalizations l10n, DateTime? savedAt) {
+    final badge = CcBadge(
+      label: l10n.claudeAccountLongLivedToken,
+      variant: CcBadgeVariant.neutral,
+    );
+    return savedAt == null
+        ? badge
+        : AppTimestamp(dateTime: savedAt, child: badge);
   }
 
   /// Identity plus remaining quota. A lapsed-but-renewable sign-in is a
@@ -205,98 +242,4 @@ class ClaudeAccountRow extends ConsumerWidget {
     await ref.read(claudeAccountsRepositoryProvider).remove(account.id);
     ref.invalidate(claudeAccountsProvider);
   }
-}
-
-/// Shows the exact `claude auth login` invocation for [account], ready to copy.
-///
-/// Control Center does not run it: the login opens a browser and binds a
-/// loopback callback, neither of which a sandboxed shell can do — and on a
-/// remote server the browser belongs to whoever is sitting at it. Handing over
-/// the command (with `CLAUDE_CONFIG_DIR` already set to the right directory) is
-/// the honest version of that.
-Future<void> showClaudeLoginCommand(
-  BuildContext context,
-  WidgetRef ref,
-  ClaudeAccount account,
-) async {
-  final l10n = AppLocalizations.of(context);
-  final cmd = await ref
-      .read(claudeAccountsRepositoryProvider)
-      .loginCommand(account.id);
-  if (cmd == null || !context.mounted) {
-    return;
-  }
-  final line = [
-    for (final e in cmd.environment.entries) '${e.key}=${_shellQuote(e.value)}',
-    ...cmd.argv.map(_shellQuote),
-  ].join(' ');
-
-  await showCcDialog<void>(
-    context: context,
-    builder: (context) {
-      final t = context.designSystem ?? DesignSystemTokens.light();
-      return CcDialog(
-        title: l10n.claudeAccountSignIn,
-        onClose: () => Navigator.of(context).pop(),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.claudeAccountSignInHint,
-              style: TextStyle(fontSize: 12, color: t.fgSecondary),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: t.bgTertiary,
-                borderRadius: AppRadii.brLg,
-              ),
-              // Plain Text, not SelectableText: cc_ui builds on
-              // flutter/widgets.dart only and the copy button below is the
-              // affordance anyway.
-              child: Text(
-                line,
-                style: CcFonts.code(
-                  textStyle: TextStyle(fontSize: 12, color: t.fgPrimary),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          CcButton(
-            variant: CcButtonVariant.secondary,
-            icon: AppIcons.copy,
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: line));
-            },
-            child: Text(l10n.copy),
-          ),
-          CcButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // The login happens outside this app, so nothing tells us when
-              // it finished — re-read on dismiss, which is the moment the
-              // operator believes they are done.
-              ref.invalidate(claudeAccountsProvider);
-            },
-            child: Text(l10n.close),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-/// POSIX-quotes one argv element so a path with a space survives a paste.
-String _shellQuote(String s) {
-  if (s.isEmpty) {
-    return "''";
-  }
-  if (RegExp(r'^[A-Za-z0-9_\-./=:@%+,]+$').hasMatch(s)) {
-    return s;
-  }
-  return "'${s.replaceAll("'", r"'\''")}'";
 }

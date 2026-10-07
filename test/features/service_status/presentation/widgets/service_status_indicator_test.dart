@@ -4,8 +4,10 @@ import 'package:cc_domain/features/service_status/domain/entities/github_service
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/service_status/presentation/widgets/service_status_badge.dart';
 import 'package:control_center/features/service_status/presentation/widgets/service_status_indicator.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -106,11 +108,23 @@ class _PendingNotifier extends ServiceStatusesNotifier {
   Future<void> refresh() async {}
 }
 
+/// Every service signed in — the default, so each test sees all four rows.
+const _everyService = {
+  StatusService.github,
+  StatusService.claude,
+  StatusService.openai,
+  StatusService.kimi,
+};
+
 /// Wraps the entry in a [ProviderScope] with the combined status provider
 /// overridden (all operational by default), plus `testWrap` infrastructure.
-Widget _wrap({ServiceStatusesNotifier? notifier}) {
+Widget _wrap({
+  ServiceStatusesNotifier? notifier,
+  Set<StatusService> inUse = _everyService,
+}) {
   return ProviderScope(
     overrides: [
+      servicesInUseProvider.overrideWithValue(inUse),
       serviceStatusProvider.overrideWith(
         () => notifier ?? _DataNotifier(_statuses()),
       ),
@@ -330,6 +344,31 @@ void main() {
       expect(find.byType(CcDivider), findsOneWidget);
     });
 
+    testWidgets(
+      'an incident card on an operational page still gets a divider',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            notifier: _DataNotifier(
+              _statuses(
+                github: _status(
+                  GitHubStatusIndicator.none,
+                  incidents: [_incident('Incident with Git Operations')],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(serviceStatusLabel());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Incident with Git Operations'), findsOneWidget);
+        expect(find.byType(CcDivider), findsOneWidget);
+      },
+    );
+
     testWidgets('shows incidents when a provider has them', (tester) async {
       await tester.pumpWidget(
         _wrap(
@@ -482,6 +521,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            servicesInUseProvider.overrideWithValue(_everyService),
             rpcClientProvider.overrideWithValue(
               _StatusRpcClientFake(() {
                 callCount++;
@@ -518,6 +558,168 @@ void main() {
 
       expect(dotsOf(tokens.success), findsWidgets);
       expect(dotsOf(tokens.muted), findsNothing);
+    });
+  });
+
+  group('faulty service logos', () {
+    List<AiBrand?> stackedBrands(WidgetTester tester) => tester
+        .widgetList<AiBrandLogo>(
+          find.descendant(
+            of: find.byType(ServiceLogoStack),
+            matching: find.byType(AiBrandLogo),
+          ),
+        )
+        .map((logo) => logo.brand)
+        .toList();
+
+    testWidgets('a healthy row draws the dot alone', (tester) async {
+      await tester.pumpWidget(_wrap());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ServiceLogoStack), findsNothing);
+      expect(find.byType(ServiceStatusDot), findsOneWidget);
+    });
+
+    testWidgets('the row leads its dot with the faulty services, in order', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          notifier: _DataNotifier(
+            _statuses(
+              claude: GitHubStatusIndicator.minor,
+              kimi: GitHubStatusIndicator.major,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(stackedBrands(tester), [AiBrand.claude, AiBrand.kimi]);
+      // The stack sits on the dot's start side.
+      expect(
+        tester.getCenter(find.byType(ServiceLogoStack)).dx,
+        lessThan(tester.getCenter(find.byType(ServiceStatusDot)).dx),
+      );
+    });
+
+    testWidgets('the icon-only rail keeps the bare dot', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            servicesInUseProvider.overrideWithValue(_everyService),
+            serviceStatusProvider.overrideWith(
+              () =>
+                  _DataNotifier(_statuses(claude: GitHubStatusIndicator.minor)),
+            ),
+          ],
+          child: testWrap(
+            const CcSidebarScope(
+              collapsed: true,
+              child: ServiceStatusSidebarEntry(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ServiceLogoStack), findsNothing);
+      expect(find.byType(ServiceStatusDot), findsOneWidget);
+    });
+
+    testWidgets('three services fit without a count', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          const ServiceLogoStack(
+            brands: [AiBrand.github, AiBrand.claude, AiBrand.codex],
+            ringColor: Color(0xFFFFFFFF),
+          ),
+        ),
+      );
+
+      expect(stackedBrands(tester), [
+        AiBrand.github,
+        AiBrand.claude,
+        AiBrand.codex,
+      ]);
+      expect(find.textContaining('+'), findsNothing);
+    });
+
+    testWidgets('past three, two marks and an N+ count', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          const ServiceLogoStack(
+            brands: [
+              AiBrand.github,
+              AiBrand.claude,
+              AiBrand.codex,
+              AiBrand.kimi,
+              AiBrand.gemini,
+            ],
+            ringColor: Color(0xFFFFFFFF),
+          ),
+        ),
+      );
+
+      expect(stackedBrands(tester), [AiBrand.github, AiBrand.claude]);
+      expect(find.text('3+'), findsOneWidget);
+    });
+
+    testWidgets('every flyout row carries its service logo', (tester) async {
+      await tester.pumpWidget(_wrap());
+      await tester.pumpAndSettle();
+      await tester.tap(serviceStatusLabel());
+      await tester.pumpAndSettle();
+
+      final brands = tester
+          .widgetList<AiBrandLogo>(find.byType(AiBrandLogo))
+          .map((logo) => logo.brand);
+      expect(brands, [
+        AiBrand.github,
+        AiBrand.claude,
+        AiBrand.codex,
+        AiBrand.kimi,
+      ]);
+    });
+  });
+
+  group('services in use', () {
+    const noKimi = {
+      StatusService.github,
+      StatusService.claude,
+      StatusService.openai,
+    };
+
+    testWidgets('the flyout leaves out a service nobody signed in to', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(inUse: noKimi));
+      await tester.pumpAndSettle();
+      await tester.tap(serviceStatusLabel());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Claude'), findsOneWidget);
+      expect(find.text('Kimi'), findsNothing);
+    });
+
+    testWidgets('an unused service neither colours the dot nor stacks', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          inUse: noKimi,
+          notifier: _DataNotifier(
+            _statuses(kimi: GitHubStatusIndicator.critical),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ServiceLogoStack), findsNothing);
+      final dot = tester.widget<ServiceStatusDot>(
+        find.byType(ServiceStatusDot),
+      );
+      expect(dot.color, DesignSystemTokens.light().success);
     });
   });
 }

@@ -2,7 +2,7 @@
 title: Glossaire
 description: Définitions des termes clés employés dans Control Center.
 slug: fr-FR/manuel/reference/glossaire
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'Un travailleur IA doté d’une identité, d’un rôle, de skills et de capacités. Appartient à un seul espace de travail. L’acteur principal du système.'],
+['Agent', 'Un travailleur IA doté d’une identité, d’un rôle, de skills et d’un adaptateur. Appartient à un seul espace de travail. L’acteur principal du système.'],
 ['Adaptateur', 'L’exécuteur qui joue un tour d’agent. Deux sont livrés : Control Center (built-in) — le harnais en processus qui parle aux fournisseurs de modèles — et Claude Code par la CLI claude. Cursor, Codex et les autres fournisseurs de modèles se rattachent à l’adaptateur intégré, et non comme exécuteurs distincts.'],
 ['Espace de travail', 'Le locataire d’isolation de niveau supérieur. Regroupe les agents, les dépôts, les espaces, les tickets, la mémoire et les pipelines. L’isolation est structurelle, et non conventionnelle : chaque espace de travail a son propre fichier SQLite, de sorte qu’une lecture entre espaces de travail ne compile pas. Chaque route de l’application est préfixée par /workspaces/:workspaceId.'],
 ['Forge', 'Un hébergeur de code — GitHub, GitLab ou Bitbucket Cloud. Une propriété de chaque dépôt, lue dans son dépôt distant origin au moment de l’enregistrement. Un espace de travail peut contenir des dépôts sur les trois.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Ensemble insensible à la casse d’identifiants de skills qui injectent le contexte pertinent dans les prompts au moment du lancement.'],
 ['Source de skills', 'Un dépôt GitHub enregistré par espace de travail comme catalogue de skills. Non fiable par construction : les métadonnées du dépôt servent uniquement à l’affichage, et chaque installation passe la barrière d’analyse à refus par défaut avant qu’un contenu n’atteigne le disque ou un prompt.'],
 ['skills-lock.json', 'Le manifeste par espace de travail des skills installés : pour chacun, son dépôt source, son chemin dans le dépôt, le commit auquel il est épinglé et un condensé de contenu cumulé. Les installations, les mises à jour et les désinstallations le tiennent à jour ; verify_skills le vérifie contre le disque.'],
-['AgentCapabilities', 'Quatre indicateurs (pousser vers le dépôt, API GitHub, billetterie, sortie réseau) résolus à chaque lancement : valeur par défaut de l’agent, puis valeur par défaut de l’utilisateur, avec une dérogation par conversation. Appliqués par absence, puisqu’une capacité désactivée signifie que le jeton ou la sortie réseau n’est simplement jamais injecté.'],
+['Passerelle d’exécution d’agent', 'Un point de terminaison en boucle locale sur cc_server qui applique la politique d’action à l’intérieur du bac à sable d’un agent. Chaque push GitHub d’un agent y est redirigé, vérifié par rapport à la règle Pousser vers un dépôt distant et transmis avec un jeton d’écriture que l’agent ne détient jamais ; les commandes Bash de Claude Code sont vérifiées via un hook sur le même point de terminaison.'],
 ['Mode', 'chat, plan, review ou orchestrate. Conservé par espace, de sorte qu’un même agent peut être dans des modes différents selon l’espace ; toutes les conversations d’un espace le partagent. Contrôle le prompt système, les règles d’écriture du bac à sable et la liste d’autorisation d’outils MCP.'],
 ['SandboxBackend', 'microvm (une VM close — le seul backend doté d’une frontière de noyau, appliqué aux terminaux interactifs), native (Seatbelt propre au système sous macOS, bubblewrap sous Linux et WSL2) ou none. Sondé une fois au démarrage ; native enveloppe le lancement d’agent lorsqu’il est disponible. Windows n’a pas de backend natif et Linux a besoin de bwrap et de socat, de sorte que les exécutions y sont sans enveloppe ; --sandbox off y renonce délibérément.'],
 ['Rig', 'Une machine jetable qu’un agent pilote en temps réel : un navigateur ou un bureau Linux clos, un émulateur Android ou un simulateur iOS géré par l’hôte, ou un terminal clos. Observée en direct par sa propre voie à pleine résolution, avec la prise de contrôle imposée côté serveur. Propre à une conversation, de sorte que l’onglet humain et l’outil d’agent s’adressent à une même machine.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Décompte des jetons et des coûts (jetons d’entrée, jetons de sortie, coût estimé en cents) pour une seule exécution d’agent.'],
 ['WakeReason', 'Pourquoi un agent a été lancé. Six valeurs : message d’un utilisateur, attribution d’un ticket, relance de récupération après un échec, ticket enfant terminé, battement de relance planifié et étape de pipeline.'],
 ['SandboxPort', 'Gère le cycle de vie du bac à sable (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Émet des identifiants à portée limitée et assujettis aux capacités pour le lancement du bac à sable, et les révoque au démontage.'],
+['CredentialBrokerPort', 'Émet des identifiants à portée limitée pour le lancement du bac à sable (en lecture seule pour l’environnement d’un agent, en écriture uniquement pour le chemin de push côté serveur) et les révoque au démontage.'],
 ['GitRepoInspectorPort', 'Extrait les métadonnées (propriétaire, dépôt, branche) d’un chemin de dépôt Git local.'],
 ['EmbeddingPort', 'Produit des vecteurs d’embedding de texte à norme unitaire pour la recherche sémantique.'],
 ['NotificationPort', 'Affiche des notifications de bureau natives en respectant le filtrage par catégorie et par route.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Entités principales
 
-**Agent** : Un travailleur IA doté d’une identité, d’un rôle, de skills et de capacités. Appartient à un seul espace de travail. L’acteur principal du système.
+**Agent** : Un travailleur IA doté d’une identité, d’un rôle, de skills et d’un adaptateur. Appartient à un seul espace de travail. L’acteur principal du système.
 
 **Adaptateur** : L’exécuteur qui joue un tour d’agent. Deux sont livrés : **Control Center (built-in)** — le harnais en processus qui parle aux fournisseurs de modèles — et **Claude Code** par `claude -p`. Cursor, Codex, Anthropic, OpenAI et les autres sont des fournisseurs sur l’adaptateur intégré, et non des CLI distinctes. Voir [Gérer les adaptateurs et les modèles](/fr-FR/manuel/guides/adaptateurs/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json** : Le manifeste par espace de travail des skills installés : pour chacun, son dépôt source, son chemin dans le dépôt, le commit auquel il est épinglé et un condensé de contenu cumulé. Les installations, les mises à jour et les désinstallations le tiennent à jour ; `verify_skills` le vérifie contre le disque.
 
-**AgentCapabilities** : Quatre indicateurs (pousser vers le dépôt, API GitHub, billetterie, sortie réseau) résolus à chaque lancement — valeur par défaut de l’agent → valeur par défaut de l’utilisateur, avec une dérogation par conversation. Appliqués par absence : une capacité désactivée signifie que le jeton ou la sortie réseau n’est simplement jamais injecté.
+**Passerelle d’exécution d’agent** : Un point de terminaison en boucle locale sur `cc_server` qui applique la politique d’action à l’intérieur du bac à sable d’un agent. Chaque push GitHub d’un agent y est redirigé, vérifié par rapport à la règle **Pousser vers un dépôt distant** et transmis avec un jeton d’écriture que l’agent ne détient jamais ; les commandes `Bash` de Claude Code sont vérifiées via un hook sur le même point de terminaison. Voir [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/).
 
 **Mode** : `chat`, `plan`, `review` ou `orchestrate`. Conservé **par espace**, de sorte qu’un même agent peut être dans des modes différents selon l’espace ; toutes les conversations d’un espace le partagent. Contrôle le prompt système, les règles d’écriture du bac à sable et la liste d’autorisation d’outils MCP. Le compositeur n’offre que `chat`, `plan` et `orchestrate` ; `chat` porte l’étiquette « Agent ».
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort** : Gère le cycle de vie du bac à sable (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort** : Émet des identifiants à portée limitée et assujettis aux capacités pour le lancement du bac à sable, et les révoque au démontage.
+**CredentialBrokerPort** : Émet des identifiants à portée limitée pour le lancement du bac à sable — en lecture seule pour l’environnement d’un agent, en écriture uniquement pour le chemin de push côté serveur — et les révoque au démontage.
 
 **GitRepoInspectorPort** : Extrait les métadonnées (propriétaire, dépôt, branche) d’un chemin de dépôt Git local.
 

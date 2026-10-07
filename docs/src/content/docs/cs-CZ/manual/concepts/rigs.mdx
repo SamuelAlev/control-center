@@ -2,7 +2,7 @@
 title: Stanice a izolovaná prostředí
 description: Proč agenti dostanou jednorázové stroje místo vašeho počítače — hranice izolace, kanály zobrazení, přihlašovací údaje, porty a životní cyklus.
 slug: cs-CZ/prirucka/koncepty/stanice
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 **Stanice** je jednorázový stroj, který agent řídí v reálném čase — prohlížeč,
@@ -149,13 +149,20 @@ k vložení došlo a jak byl velký — nikdy to, co říkal.
 
 ## Přihlašovací údaje v hostu nikdy nežijí
 
-`git push` z izolovaného terminálu funguje, a přesto host neukládá žádný token
+`git push` z izolovaného terminálu, který sis otevřel, funguje, a přesto host neukládá žádný token
 forge. Drží jedno tajemství na VM, jehož jediná moc je *požádat* broker
 přihlašovacích údajů na hostiteli — tunelem, který hostitel ovládá — o
 krátkodobý token vázaný na repozitář, na každou operaci, s omezením četnosti,
 ohraničený stejným seznamem povolených hostitelů jako odchozí provoz a zrušený
 v okamžiku, kdy se stanice zavře. Stroj určený k vyhození v sobě nesmí mít nic,
 co stojí za ukradení.
+
+Co ten token smí, se určí při otevření stanice. Terminálová stanice, kterou
+otevře člověk, dostane token se zápisem, ohraničený vlastním přístupem toho
+člena k forge. Stanice, kterou otevřel agent, dostane token jen pro čtení:
+pomocník gitu pro přihlašovací údaje nerozezná push od fetche, takže se uvnitř
+hosta nedá ptát pravidla pro push u každého pushe tak, jak to dělá brána běhů
+agentů na hostiteli.
 
 ## Worktree ve stanici je satelit
 

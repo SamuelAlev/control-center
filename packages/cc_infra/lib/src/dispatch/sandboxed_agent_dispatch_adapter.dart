@@ -9,7 +9,6 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
@@ -29,6 +28,7 @@ import 'package:cc_harness/tools.dart' show FileSearchPort;
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
+import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
@@ -54,7 +54,6 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     AgentRunLogRepository? runLogRepository,
     TodoRepository? todoRepository,
     RunTranscriptRecorder? runTranscriptRecorder,
-    AgentCapabilities defaultCapabilities = AgentCapabilities.safeDefault,
     DomainEventBus? eventBus,
     Future<String?> Function(
       String, {
@@ -83,6 +82,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     kernelLauncherFactory,
     this.autonomyResolver,
     ActionGuardService? actionGuard,
+    AgentRunGateway? agentRunGateway,
     McpToolRegistry? mcpRegistry,
     SkillScanPort? skillScanner,
     ProviderCredentialStore? harnessCredentialStore,
@@ -110,7 +110,6 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          runLogRepo: runLogRepository,
          todoRepo: todoRepository,
          runTranscriptRecorder: runTranscriptRecorder,
-         defaultCaps: defaultCapabilities,
          eventBus: eventBus,
          mcpConfigPathResolver: mcpConfigPathResolver,
          protectedPathsResolver: protectedPathsResolver,
@@ -126,6 +125,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          debugSupervisor: debugSupervisor,
          kernelLauncherFactory: kernelLauncherFactory,
          actionGuard: actionGuard,
+         agentRunGateway: agentRunGateway,
          autonomyResolver: autonomyResolver,
          mcpRegistry: mcpRegistry,
          skillScanner: skillScanner,
@@ -208,6 +208,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     Map<String, String>? environment,
     List<String>? imagePaths,
     String? effortLevel,
+    int? contextWindowTokens,
     String? agentConfigDir,
     List<String>? adapterArgsOverride,
     Map<String, String>? adapterEnvOverride,
@@ -217,8 +218,8 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     onClaudeAccountExhausted,
     Future<void> Function({required String accountId, String? reason})?
     onClaudeAccountAuthFailed,
-    ClaudeAccountRefusal? claudeAccountsSpent,
-    Future<List<String>?> Function({
+    AccountPoolRefusal? claudeAccountsSpent,
+    Future<AccountPoolOrder> Function({
       String? workspaceId,
       String? agentId,
       required String providerId,
@@ -263,6 +264,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       mode: mode ?? Mode.chat,
       silenceTimeoutMinutes: silenceTimeoutMinutes,
       effortLevel: effortLevel,
+      contextWindowTokens: contextWindowTokens,
       adapterArgsOverride: adapterArgsOverride ?? const [],
       adapterEnvOverride: adapterEnvOverride ?? const {},
       claudeConfigDir: claudeConfigDir,

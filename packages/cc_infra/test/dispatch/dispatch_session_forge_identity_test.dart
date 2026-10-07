@@ -8,7 +8,6 @@ import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
@@ -55,17 +54,19 @@ class _NoopSandbox implements SandboxPort {
 /// (and was not) told about the run.
 class _RecordingBroker implements CredentialBrokerPort {
   final List<({String? repoOwner, String? repoName})> mints = [];
+  final List<ForgeTokenScope> scopes = [];
 
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
     String? workspaceId,
   }) async {
     mints.add((repoOwner: repoOwner, repoName: repoName));
+    scopes.add(scope);
     return const ScopedCredentials(
       handle: 'h',
       environment: {'GH_TOKEN': 'broker-token', 'GITHUB_TOKEN': 'broker-token'},
@@ -149,7 +150,6 @@ class _ScriptedLoop implements AgentLoop {
 }
 
 ({DispatchSession session, _RecordingBroker broker}) _buildSession({
-  required AgentCapabilities caps,
   GitRepoInspectorPort? inspector,
   String? requestedByUserId,
 }) {
@@ -164,7 +164,6 @@ class _ScriptedLoop implements AgentLoop {
     broker: broker,
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: _UnusedRunLogRepo(),
-    defaultCaps: caps,
     eventBus: null,
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),
@@ -202,11 +201,8 @@ class _ScriptedLoop implements AgentLoop {
 }
 
 void main() {
-  const githubCaps = AgentCapabilities(canCallGitHubApi: true);
-
   test('the broker mint receives the worktree GitHub coordinates', () async {
     final h = _buildSession(
-      caps: githubCaps,
       inspector: _FakeInspector(
         const GitRepoInfo(
           path: '/tmp/worktree',
@@ -226,7 +222,6 @@ void main() {
 
   test('a non-GitHub origin mints with no coordinates', () async {
     final h = _buildSession(
-      caps: githubCaps,
       inspector: _FakeInspector(
         const GitRepoInfo(
           path: '/tmp/worktree',
@@ -245,7 +240,7 @@ void main() {
 
   test('a cwd that is not a repo still dispatches, uncoordinated', () async {
     final inspector = _FakeInspector(null);
-    final h = _buildSession(caps: githubCaps, inspector: inspector);
+    final h = _buildSession(inspector: inspector);
 
     await h.session.run();
 
@@ -253,24 +248,24 @@ void main() {
     expect(h.broker.mints.single, (repoOwner: null, repoName: null));
   });
 
-  test('capabilities without GitHub access never inspect the repo', () async {
-    final inspector = _FakeInspector(
-      const GitRepoInfo(
-        path: '/tmp/worktree',
-        forge: ForgeHost.github,
-        owner: 'acme',
-        repoName: 'widgets',
-        branch: 'main',
-      ),
-    );
-    final h = _buildSession(
-      caps: AgentCapabilities.safeDefault,
-      inspector: inspector,
-    );
+  test(
+    'the run always mints a READ token — pushes go through the gateway',
+    () async {
+      final inspector = _FakeInspector(
+        const GitRepoInfo(
+          path: '/tmp/worktree',
+          forge: ForgeHost.github,
+          owner: 'acme',
+          repoName: 'widgets',
+          branch: 'main',
+        ),
+      );
+      final h = _buildSession(inspector: inspector);
 
-    await h.session.run();
+      await h.session.run();
 
-    expect(inspector.inspections, 0);
-    expect(h.broker.mints.single, (repoOwner: null, repoName: null));
-  });
+      expect(inspector.inspections, 1);
+      expect(h.broker.scopes.single, ForgeTokenScope.read);
+    },
+  );
 }

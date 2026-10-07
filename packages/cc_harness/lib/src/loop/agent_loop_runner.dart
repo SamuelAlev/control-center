@@ -687,12 +687,19 @@ class AgentLoopRunner implements AgentLoop {
             );
             continue;
           }
+          await persistTranscript();
           yield LoopDone(
             LoopDoneReason.contractUnmet,
             unmetContractId: ledger.contract!.id,
           );
           return;
         }
+        // The run's final answer is in [history] but no later turn start
+        // will save it, so save it here. A model that answered with no tool
+        // calls leaves no dangling `tool_use`, which makes this a clean
+        // boundary. Without it the next run resumed from the turn BEFORE
+        // the answer and the model never saw its own last reply.
+        await persistTranscript();
         yield const LoopDone(LoopDoneReason.completed);
         return;
       }

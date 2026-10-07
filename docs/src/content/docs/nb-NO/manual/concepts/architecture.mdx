@@ -2,7 +2,7 @@
 title: Arkitektur
 description: Hvordan Control Center er strukturert med en tynnklient- og servermodell, funksjonsorientert Clean Architecture og porter og adaptere.
 slug: nb-NO/handbok/konsepter/arkitektur
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Oversikt
@@ -57,7 +57,7 @@ To navngitte unntak er verdt å kjenne:
 - Kjerneentiteter: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identitet og flerbruker: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Minneentiteter: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Delte verdiobjekter: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Delte verdiobjekter: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Delte porter: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Domenetjenester: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + hendelsestyper (arbeidsområde/agent, PR/gjennomgang, meldinger, saker, pipeline, orkestrering, minne, kalender/møter, identitet og medlemskap, observabilitet)

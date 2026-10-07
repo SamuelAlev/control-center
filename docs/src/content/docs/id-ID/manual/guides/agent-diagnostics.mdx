@@ -2,7 +2,7 @@
 title: Diagnosis agen
 description: Telusuri log run, pemeriksaan adapter, status server, dan diagnostik host saat agen berhenti menghasilkan run.
 slug: id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Panduan ini menunjukkan cara mengetahui mengapa sebuah agen tidak menghasilkan run.
@@ -60,19 +60,18 @@ Dua hal yang perlu diketahui ketika sebuah perubahan "berhasil di pengujian teta
 
 **Pengaturan → Server → Diagnostik & privasi** (`/settings/server/diagnostics`) adalah halaman tingkat host. Halaman ini memuat:
 
-- **Sandboxing** — tombol utama, backend yang terdeteksi, petunjuk instalasi, dan tombol kemampuan default. Hanya backend yang terdeteksi yang berasal dari server; lihat peringatan di bawah. Tidak ada kontrol reset.
+- **Sandboxing** — tombol utama, backend yang terdeteksi, dan petunjuk instalasi. Hanya backend yang terdeteksi yang berasal dari server; lihat peringatan di bawah. Tidak ada kontrol reset.
 - **Pencarian semantik** — siklus hidup model embedding di perangkat: terpasang, sedang diunduh dengan persentase, belum terpasang, atau galat instalasi. Sampai model tersebut terpasang, pencarian memori dan kode tetap hanya berdasarkan kata kunci.
 - **Perilaku sistem** — jaga komputer tetap terjaga saat agen berjalan.
-- **Mesin sinkronisasi** — tombol pemutus per penyimpanan untuk tiket, perpesanan, dan catatan. Ini adalah jalur keluar darurat untuk kembali ke langganan snapshot penuh; perubahan hanya memengaruhi langganan baru, jadi efek penuhnya baru terasa setelah muat ulang.
 - **Level log** — naikkan sebelum mereproduksi kegagalan.
 - **Privasi** — apakah konten diff mentah boleh diteruskan ke model agen dan apakah laporan kerusakan dikirim.
 
 :::caution[Bagian ini melaporkan host, dan kontrolnya ada di sisi klien]
-Deteksi dan penegakan kini sejalan: di tempat detektor melaporkan backend native, run agen di host itu benar-benar dibungkus olehnya. Tetapi detektor adalah satu-satunya hal yang aktif di bagian ini. Tombol utama, pemilih backend, dan tombol kemampuan default adalah preferensi yang disimpan di perangkat Anda dan server tidak membaca satu pun darinya — sakelar milik server sendiri adalah `--sandbox` (`on` secara default, `off` untuk tidak ikut) dan untuk agen apa pun yang dibiarkan pada "Gunakan default ruang kerja" server jatuh ke default konservatifnya: tanpa git push, tanpa API GitHub, tanpa kunci ticketing, jaringan aktif.
+Deteksi dan penegakan kini sejalan: di tempat detektor melaporkan backend native, run agen di host itu benar-benar dibungkus olehnya. Tetapi detektor adalah satu-satunya hal yang aktif di bagian ini. Tombol utama dan pemilih backend adalah preferensi yang disimpan di perangkat Anda dan server tidak membaca satu pun darinya — sakelar milik server sendiri adalah `--sandbox` (`on` secara default, `off` untuk tidak ikut).
 
 Jadi peringatan di sini layak ditindaklanjuti, tetapi biasanya bukan penyebab agen gagal. Untuk memastikan kondisi server, bacalah log startup-nya: log mencetak `agent sandbox ON` dengan catatan backend, `no OS-native agent sandbox on this host` dengan petunjuk instalasi, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tidak memuat kolom sandbox.
 
-Di tempat yang tidak ada backend — Windows selalu, Linux atau WSL2 tanpa `bwrap` dan `socat` — run **tidak** di-sandbox dan yang membatasinya adalah checkout milik percakapan itu sendiri, kemampuan yang menjadi gerbang bagi kredensial mana yang diterbitkan ke dalamnya, pagar pengaman tindakan, sanitasi lingkungan, dan permukaan alat yang diizinkan modenya.
+Di tempat yang tidak ada backend — Windows selalu, Linux atau WSL2 tanpa `bwrap` dan `socat` — run **tidak** di-sandbox dan yang membatasinya adalah checkout milik percakapan itu sendiri, token forge hanya-baca dan gateway push, pagar pengaman tindakan, sanitasi lingkungan, dan permukaan alat yang diizinkan modenya.
 :::
 
 ## Kegagalan umum
@@ -83,7 +82,7 @@ Instal CLI **di host server**, lalu klik **Segarkan** di halaman Penyedia model.
 
 ### Agen tidak dapat push atau membuka pull request
 
-Kemampuannya adalah gerbangnya. Buka **Pengaturan → Ruang kerja → Agen** → agen → **Izin sandbox**, nyalakan tombolnya dan aktifkan **Izinkan git push** dan **Izinkan panggilan API GitHub**. Membiarkan tombol pada "Gunakan default ruang kerja" tidak memberi agen satu pun dari itu.
+Baca apa yang dicetak git atau agen. `Control Center policy: …` berarti sebuah aturan aksi menolaknya atau persetujuan tidak dijawab: periksa **Push ke remote** dan **Buka pull request** di **Pengaturan → Ruang kerja → Izin agen**. Jika git menyatakan Control Center tidak punya kredensial GitHub yang dapat push, pasang GitHub App di repo itu atau hubungkan GitHub.
 
 ### Pencarian semantik tidak mengembalikan apa pun yang berguna
 

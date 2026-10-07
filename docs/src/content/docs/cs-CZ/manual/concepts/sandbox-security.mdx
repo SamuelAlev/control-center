@@ -2,7 +2,7 @@
 title: Sandbox a zabezpečení
 description: Co dnes agenta v Control Center skutečně omezuje, kam až sahá sandbox operačního systému a které hranice drží na hostiteli bez backendu.
 slug: cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Kam sandbox operačního systému sahá a kam ne]
@@ -20,8 +20,7 @@ Dvě skuliny zůstanou i se sandboxem a stojí za to si je podržet:
   serveru, takže se obalí jen `bash`. Omezuje je omezení cest v samotných
   nástrojích a guardraily akcí.
 - **Claude Code se spouští s `--dangerously-skip-permissions`**, protože
-  neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu. Jeho
-  volání souborů a shellu proto nehlídají guardraily Control Center. Kolem
+  neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu. Jeho volání souborů proto nehlídají guardraily Control Center a jeho příkazy shellu jen hook, který čte příkazový řádek. Kolem
   nich je hranicí sandbox operačního systému.
   :::
 
@@ -86,9 +85,7 @@ vyhodnotí jako _denied_: otázka, na kterou nikdo nemůže odpovědět, není n
 ano. Viz [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/) pro model
 rozhodování.
 
-**Pověření vázaná na schopnosti a očištěné prostředí.** Pověření se vystaví
-při každém spuštění z příznaků schopností konverzace a odeberou se, když běh
-skončí. ACP, `bash` harnessu a Claude Code pod nativním obalem dostanou
+**Pověření od brokera a očištěné prostředí.** Pověření se vystaví při každém spuštění a odeberou se, když běh skončí, a token GitHub, který běh drží, umí číst, ale ne pushovat — viz „Push jde přes Control Center“ níže. ACP, `bash` harnessu a Claude Code pod nativním obalem dostanou
 prostředí očištěné od vektorů injekce dynamického linkeru a interpretu
 (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND`
 a příbuzné), než se proces spustí. Claude Code přes `NoSandboxAdapter` dědí
@@ -116,35 +113,68 @@ Vyhraje nejpřísnější rozhodnutí.
 Claude Code použitý jako adaptér je případ, kde sandbox nese největší váhu.
 Control Center ho spouští s `--dangerously-skip-permissions`, protože
 neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu ke
-schválení. Jeho čtení, zápis, úpravy a volání shellu probíhají v jeho vlastním
-procesu a Control Center je nikdy nevidí. K bráně dojdou jen nástroje
-`mcp__*`, které obsluhuje samotné Control Center. Kde backend je, ta neviděná
+schválení. Jeho čtení, zápis a úpravy probíhají v jeho vlastním procesu a Control Center je nikdy nevidí. Jeho volání `Bash` jdou před spuštěním na hook na serveru, který zařadí příkazový řádek a zeptá se odpovídajícího pravidla, a nástroje `mcp__*`, které obsluhuje Control Center, procházejí bránou jako obvykle. Kde backend je, ta neviděná
 volání pořád probíhají uvnitř obalu sandboxu, takže hranicí kolem nich je
 operační systém. Kde není, není tam nic. Každý adaptér to uvádí ve své matici
 vynucení. Viz [matice upřímnosti
 adaptéru](/cs-CZ/prirucka/koncepty/guardraily/#matice-upřímnosti-adaptéru).
 
-## Schopnosti se vynucují nepřítomností
+## Push jde přes Control Center
 
-Konverzace nese čtyři příznaky schopností: push do repozitáře, volání GitHub
-API, volání poskytovatele ticketů a přístup k síti. Nekontrolují se ve chvíli,
-kdy agent jedná. Zkontroluje je jednou, při spuštění, broker přihlašovacích
-údajů. Vypnutá schopnost znamená, že se odpovídající token do prostředí prostě
-nikdy nevloží.
+Příznaky oprávnění pro jednotlivé agenty neexistují. Jestli agent smí vytvořit
+commit, pushovat, otevřít pull request, zapisovat do trackeru nebo sahat na
+síť, rozhodují [guardraily](/cs-CZ/prirucka/koncepty/guardraily/) — povolit, nejdřív se
+zeptat nebo zakázat — a stejná pravidla platí bez ohledu na to, který adaptér
+agenta spouští.
 
-To je celý mechanismus a stojí za to ho říct rovnou, protože režim selhání
-není ten, který lidé čekají. Vypnutí „GitHub API“ nevyrobí zprávu „schopnost
-zamítnuta“. Uvnitř agenta vznikne obyčejné `401`, protože není žádný
-`GH_TOKEN`, který by se poslal. Agent to klidně popíše jako problém
-s přihlašovacími údaji. Vynucení nepřítomností je odolné, není tu kontrola,
-kterou by šlo obejít, ale je tiché a agent neví, proč selhal.
+Push je akce, která musí vydržet i proti agentovi, který se snaží pravidlo
+obejít, takže se vynucuje tím, co agent drží, ne tím, co spouští. S
+nakonfigurovanou GitHub App dostane běh ve worktree GitHubu instalační token
+vázaný na repozitář, který umí číst obsah a pracovat s pull requesty, ale
+neumí pushovat. Konfigurace gitu běhu přepíše každou URL pro push na GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) na **bránu
+běhů agentů**, loopback endpoint na `cc_server`. Brána přečte, které refy push
+aktualizuje, zeptá se pravidla **Odeslat na remote** — takže platí i pravidlo
+omezené na větve, třeba „zakázat push na `main`“ — a teprve pak push předá na
+GitHub se zapisovacím tokenem, který si pro ten účel vystaví a agentovi ho
+nikdy nedá. Odmítnutý push se ukáže přímo ve výstupu gitu:
 
-Příznak sítě se chová stejně. Když je vypnutý, nástroje harnessu `web_fetch`
-a `web_search` odmítnou každé volání a seznam povolených u proxy
-sandboxovaného startu je prázdný, takže se odmítne každé odchozí spojení.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Při úklidu běhu se pověření odeberou, takže získaný údaj nepřežije běh, který
-ho vystavil.
+Brána předává push jen do vlastního repozitáře worktree nebo do repozitáře na
+GitHubu propojeného s pracovním prostorem. Fetch jde přímo na GitHub se
+čtecím tokenem.
+
+Ostatní příkazy shellu narazí na měkčí bránu. Nástroj `bash` harnessu a přes
+hook i nástroj `Bash` v Claude Code zařadí každý příkazový řádek a zeptají se
+pravidla, pod které spadá: `git commit`, `merge`, `rebase`, `cherry-pick`,
+`revert` a `am` jsou **Vytvořit commit**; `gh pr create` je **Otevřít pull
+request**; `gh pr merge`, `review`, `comment` a `close` jsou **Zveřejnit
+kontrolu nebo sloučení**; `gh issue create`, `edit`, `comment` a `close` jsou
+**Zápis do externího trackeru**; instalace balíčků jsou **Nainstalovat
+balíček**; `curl` a `wget` jsou **Přístup k síti**. Pozná to běžný zápis akce
+a agent odhodlaný ji schovat (`eval`, soubor se skriptem, přímé volání API) to
+dokáže. Push na tom nezávisí.
+
+:::caution[Bez GitHub App je pravidlo pro push jen doporučení]
+Bez nakonfigurované GitHub App sáhne broker po osobním přístupovém tokenu,
+který nejde omezit jen na čtení. Pravidlo pořád platí pro `git push`, protože
+git pošle push na bránu, ale kód, který token z prostředí použije přímo, může
+pushnout mimo ni.
+:::
+
+Do sandboxu se nevkládá žádný API klíč ticketingu. Agenti zapisují tickety přes
+nástroje MCP v Control Center, které se ptají pravidla **Zápis do externího
+trackeru**.
+
+Pravidlo **Přístup k síti** se přečte jednou, při startu běhu. Síť sandboxu je
+buď zapnutá, nebo vypnutá, takže zakázat ji vypne, zatímco povolit a nejdřív se
+zeptat ji nechají zapnutou; nástroje harnessu `web_fetch` a `web_search` se
+pořád ptají při každém volání. Při úklidu běhu se pověření odeberou spolu s
+každým zapisovacím tokenem, který brána vystavila, takže získaný údaj běh
+nepřežije.
 
 ## Co sandbox přidává a kde končí
 
@@ -207,29 +237,25 @@ vypadal, že to zakazuje.
 
 Síť v sandboxu je seznam povolených **domén** pro každou relaci a vynucují ho
 loopback proxy v procesu. Odchozí provoz je ve výchozím stavu zakázaný. Když
-je schopnost sítě vypnutá, proxy se pořád spustí, ale seznam povolených je
-prázdný, takže se odmítne každé odchozí spojení. Když je zapnutá, resolver
-sestaví seznam povolených z vybraného základu (poskytovatelé LLM API, hosting
-gitu, registry balíčků, katalog modelů) a z domén GitHubu, které agentovi
-vynese schopnost GitHub nebo push, a porovná s ním cílového hostitele každého
-spojení. Zástupné znaky fungují (`*.example.com` odpovídá subdoménám, ne
-apexu). Samostatný seznam vždy zamítnutých má přednost před seznamem
+je síť vypnutá, proxy se pořád spustí, ale seznam povolených je prázdný, takže
+se odmítne každé odchozí spojení. Když je zapnutá, resolver sestaví seznam
+povolených z vybraného základu (poskytovatelé LLM API, hosting gitu, registry
+balíčků, katalog modelů) a z domén GitHubu a porovná s ním cílového hostitele
+každého spojení. Zástupné znaky fungují (`*.example.com` odpovídá subdoménám,
+ne apexu). Samostatný seznam vždy zamítnutých má přednost před seznamem
 povolených a pokrývá endpointy metadat cloudu a cíle telemetrie. Co se
 _nastavit nedá_, je samotný seznam. Specifikace nese pole `egressAllowlist`
-pro další domény a háček na doménu ticketů, ale cesta odeslání ani jedno
-nenaplní, takže v praxi každý běh dostane základ plus domény odvozené ze
-schopností a nic navíc.
+pro další domény, ale cesta odeslání ho nenaplní, takže v praxi každý běh
+dostane základ plus GitHub a nic navíc.
 
 Zamítnutí jsou na macOS pozorovatelná. Monitor čte systémový log a hledá
 zamítnutí Sandboxu, odfiltruje známý šum, sloučí vlny opakovaných pokusů
-a každé vynese jako `SandboxViolation` s tím, co se zkoušelo a která schopnost
-by to odblokovala. Na Linuxu cesta obalu parsuje stderr a hledá `EPERM`,
+a každé vynese jako `SandboxViolation` s tím, co se zkoušelo a co se zablokovalo. Na Linuxu cesta obalu parsuje stderr a hledá `EPERM`,
 `Operation not permitted` a `Permission denied` a vypíše stejný typ události.
 Odposlech systémového logu tam není. Dorazí na vlastní proud událostí běhu,
 takže se odepřené systémové volání ukáže v přepisu, ne jen v logu. Telemetrie
 existuje jen dokud nativní sandbox proces opravdu obaluje. Na hostiteli bez
-backendu není co pozorovat. Se schopnostmi to taky nesouvisí. Porušení
-pochází z odepřeného systémového volání, nikdy z vyhledání schopnosti.
+backendu není co pozorovat. S guardraily to taky nesouvisí. Porušení pochází z odepřeného systémového volání, nikdy z vyhledání pravidla.
 
 ## Potvrzení přicházejí z guardrailů, ne ze sandboxu
 
@@ -259,5 +285,5 @@ místo, které říká, co se dá zkontrolovat ručně.
 
 ## Související návody
 
-- [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/): příznaky schopností a podoba souborového systému
+- [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/): pravidla akcí, vynucení pushů a podoba souborového systému
 - [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/): co kontroly diagnostiky pokrývají

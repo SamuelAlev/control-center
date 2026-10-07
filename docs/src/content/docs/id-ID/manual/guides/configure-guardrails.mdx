@@ -2,7 +2,7 @@
 title: Konfigurasi pagar pengaman
 description: Tetapkan aturan izinkan, tanyakan dulu, dan tolak untuk tindakan agen, uji aturannya dengan “Bagaimana jika?”, dan sesuaikan otonomi per space.
 slug: id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Panduan ini menunjukkan cara mengonfigurasi pagar pengaman: aturan yang
@@ -134,12 +134,14 @@ versi dalam aplikasi dari hal ini: untuk setiap kelas efek, tabel itu menyatakan
 apakah setiap runner menangkapnya di gerbang kebijakan, membiarkannya ke
 sandbox, atau tidak dapat mencegatnya sama sekali.
 
-- **Adapter Claude Code** tidak melewati gerbang untuk panggilan alatnya
-  sendiri. Claude Code dijalankan dengan `--dangerously-skip-permissions`,
-  sehingga panggilan baca, tulis, edit, dan bash-nya tidak pernah melewati
-  pagar pengaman. Yang melewati gerbang untuk adapter itu adalah permukaan alat
-  MCP yang dipanggilnya kembali dan perintah shell yang dijalankan Control
-  Center untuk memulainya.
+- **Adapter Claude Code** hanya sebagian melewati gerbang untuk panggilan
+  alatnya sendiri. Claude Code dijalankan dengan
+  `--dangerously-skip-permissions`, sehingga panggilan baca, tulis, dan edit-nya
+  tidak pernah melewati pagar pengaman. Perintah bash-nya mencapai pagar
+  pengaman melalui hook yang mengklasifikasikan baris perintah, dan push-nya
+  melewati gateway push seperti milik agen mana pun. Permukaan alat MCP yang
+  dipanggilnya kembali dan perintah shell yang dijalankan Control Center untuk
+  memulainya juga melewati gerbang.
 - **Verba keluaran milik sebuah mode** (`submit_plan`, `propose_orchestration`)
   dipakukan dan tidak pernah dapat ditolak — jika tidak, sebuah mode secara
   struktural tidak akan mampu menghasilkan satu-satunya keluarannya.

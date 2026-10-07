@@ -2,7 +2,7 @@
 title: API-sleutels beheren
 description: Waar elk inloggegeven staat — je gebruikersaccount op de server, de server zelf of een externe CLI — en hoe je het instelt, roteert en verwijdert.
 slug: nl-NL/handleiding/gidsen/api-sleutels
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Deze gids laat zien waar elk inloggegeven dat Control Center gebruikt wordt
@@ -80,8 +80,9 @@ valt niets te authenticeren.
 Je sleutel wordt, net als die voor de forge, op de server bij je gebruikers-id
 opgeslagen. De server houdt zijn eigen Linear-sleutel apart (**Provider-apps**),
 en die wordt gebruikt voor ticketsynchronisatie wanneer geen mens erom vroeg.
-Een sleutel die een agent ontvangt, wordt alleen geïnjecteerd wanneer de agent
-de mogelijkheid **Ticketing-API-aanroepen toestaan** heeft. Zie
+In de sandbox van een agent wordt geen ticketingsleutel geïnjecteerd; agenten
+schrijven tickets via de tools van Control Center, die de regel **Naar een
+externe tracker schrijven** raadplegen. Zie
 [Linear-integratie instellen](/nl-NL/handleiding/gidsen/linear-integratie/).
 
 ## Roteren of intrekken

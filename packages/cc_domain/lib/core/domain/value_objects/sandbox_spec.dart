@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:collection/collection.dart';
 
@@ -51,10 +50,10 @@ class SandboxSpec {
     this.egressAllowlist = const [],
     this.guestWorkdir,
     this.mode = Mode.chat,
-    this.capabilities = AgentCapabilities.safeDefault,
     this.protectedPaths = const [],
     this.runnerStateDirs = const [],
     this.execGrantRoots = const [],
+    this.loopbackPorts = const [],
   });
 
   /// Stable id for the sandbox session (typically the space id).
@@ -76,8 +75,7 @@ class SandboxSpec {
   final bool networkEnabled;
 
   /// Optional egress allowlist (domain names). When [networkEnabled] is true
-  /// and this list is empty, the sandbox can reach a curated baseline plus
-  /// whatever the agent's capabilities add (GitHub, ticketing provider).
+  /// the sandbox can reach a curated baseline plus GitHub plus these.
   /// Wildcards supported (`*.example.com`).
   final List<String> egressAllowlist;
 
@@ -90,11 +88,6 @@ class SandboxSpec {
   /// sandbox's filesystem `allowWrite` rules: chat keeps the existing
   /// behaviour, review/plan/orchestrate are read-only on the bind mounts.
   final Mode mode;
-
-  /// Capabilities the agent has in this sandbox. Used by the policy resolver
-  /// to derive the egress domain allowlist (GitHub / ticketing) and the
-  /// network on/off decision. Defaults to the conservative [AgentCapabilities.safeDefault].
-  final AgentCapabilities capabilities;
 
   /// Host paths that must never be writable inside this sandbox, in any mode —
   /// the ORIGINAL registered repo checkouts. Agents work exclusively in
@@ -132,6 +125,12 @@ class SandboxSpec {
   /// Linux ignores this: bwrap has no `$HOME` exec block to re-open.
   final List<String> execGrantRoots;
 
+  /// Host loopback ports the sandboxed process must reach whatever the
+  /// network posture — the server's own agent endpoint (MCP and the agent run
+  /// gateway). macOS shares the host loopback; a Linux sandbox has its own
+  /// network namespace, so each port is bridged in at the same number.
+  final List<int> loopbackPorts;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -151,7 +150,6 @@ class SandboxSpec {
           ) &&
           guestWorkdir == other.guestWorkdir &&
           mode == other.mode &&
-          capabilities == other.capabilities &&
           const ListEquality<String>().equals(
             protectedPaths,
             other.protectedPaths,
@@ -163,7 +161,8 @@ class SandboxSpec {
           const ListEquality<String>().equals(
             execGrantRoots,
             other.execGrantRoots,
-          );
+          ) &&
+          const ListEquality<int>().equals(loopbackPorts, other.loopbackPorts);
 
   @override
   int get hashCode => Object.hash(
@@ -175,9 +174,9 @@ class SandboxSpec {
     Object.hashAll(egressAllowlist),
     guestWorkdir,
     mode,
-    capabilities,
     Object.hashAll(protectedPaths),
     Object.hashAll(runnerStateDirs),
     Object.hashAll(execGrantRoots),
+    Object.hashAll(loopbackPorts),
   );
 }

@@ -14,6 +14,16 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_walkthr
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
 
+/// Resolves the GitHub client a review is published on: [actingUserId]'s own
+/// credential when set, else the workspace's background identity for
+/// [owner]'s repos.
+typedef GitHubPrClientResolver =
+    GitHubPrClient Function(
+      String? actingUserId, {
+      required String workspaceId,
+      required String owner,
+    });
+
 /// Publishes a workspace's structured review findings to GitHub as a single
 /// pull-request review: inline line-anchored comments plus a verdict summary.
 ///
@@ -26,11 +36,13 @@ class ReviewPublisherService implements ReviewPublisherPort {
   /// Creates a [ReviewPublisherService].
   ///
   /// [githubPrClientFor] resolves the client to submit on, given the acting
-  /// user. Resolved per publish rather than held: the review a person presses
-  /// "publish" on has to arrive under THEIR account, and the one an agent
-  /// auto-publishes under the server's — one captured client cannot be both.
+  /// user, the workspace and the repo owner. Resolved per publish rather than
+  /// held: the review a person presses "publish" on has to arrive under THEIR
+  /// account, and the one an agent auto-publishes under the workspace's
+  /// background identity — one captured client cannot be both, and that
+  /// identity depends on the workspace's GitHub mode and the repo's owner.
   ReviewPublisherService({
-    required GitHubPrClient Function(String? actingUserId) githubPrClientFor,
+    required GitHubPrClientResolver githubPrClientFor,
     required this._messaging,
     required this._reviewSpaces,
     BuildGitHubReviewUseCase? buildReview,
@@ -39,7 +51,7 @@ class ReviewPublisherService implements ReviewPublisherPort {
        _buildReview = buildReview ?? const BuildGitHubReviewUseCase(),
        _computeVerdict = computeVerdict ?? const ComputeReviewVerdictUseCase();
 
-  final GitHubPrClient Function(String? actingUserId) _githubFor;
+  final GitHubPrClientResolver _githubFor;
   final MessagingRepository _messaging;
   final ReviewSpaceRepository _reviewSpaces;
   final BuildGitHubReviewUseCase _buildReview;
@@ -106,7 +118,11 @@ class ReviewPublisherService implements ReviewPublisherPort {
       // points at — a comment on code that has already moved on is the most
       // trust-destroying thing a reviewer can leave.
       anchors: await _anchorIndex(
-        github: _githubFor(actingUserId),
+        github: _githubFor(
+          actingUserId,
+          workspaceId: workspaceId,
+          owner: owner,
+        ),
         owner: owner,
         repo: repo,
         prNumber: association.prNumber,
@@ -114,7 +130,11 @@ class ReviewPublisherService implements ReviewPublisherPort {
     );
 
     final submitted = await _submit(
-      github: _githubFor(actingUserId),
+      github: _githubFor(
+        actingUserId,
+        workspaceId: workspaceId,
+        owner: owner,
+      ),
       owner: owner,
       repo: repo,
       prNumber: association.prNumber,

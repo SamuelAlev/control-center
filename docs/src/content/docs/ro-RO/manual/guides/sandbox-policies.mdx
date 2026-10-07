@@ -1,19 +1,19 @@
 ---
 title: Configurează politicile de sandbox
-description: Ce constrânge o rulare de agent, cum îți dai seama dacă sandbox-ul sistemului de operare o învelește și ce setări de capabilități citește de fapt serverul.
+description: Ce constrânge o rulare de agent, cum îți dai seama dacă sandbox-ul sistemului de operare o învelește și cum decid regulile de acțiune ce poate trimite sau accesa un agent.
 slug: ro-RO/manual/ghiduri-practice/politici-sandbox
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Dacă o rulare de agent este sandboxată se decide pe server, la pornire
-(`--sandbox`). Comutatorul **Activează sandboxing-ul**, selectorul **Backend** și
-comutatoarele **Capabilități implicite · spații noi** din **Setări → Server →
-Diagnosticări și confidențialitate** sunt preferințe stocate pe dispozitivul tău.
-Detectarea gazdei din cardul **Sandboxing** raportează ce poate înveli gazda
-serverului.
+(`--sandbox`). Comutatorul **Activează sandboxing-ul** și selectorul **Backend**
+din **Setări → Server → Diagnosticări și confidențialitate** sunt preferințe
+stocate pe dispozitivul tău. Detectarea gazdei din cardul **Sandboxing**
+raportează ce poate înveli gazda serverului.
 
-Două controale ajung la o rulare și acest ghid le acoperă pe amândouă:
-**Permisiuni sandbox** per agent de mai jos și flag-ul `--sandbox` al
+Două controale ajung la o rulare și acest ghid le acoperă pe amândouă: regulile
+de acțiune din **Setări → Spațiu de lucru → Permisiuni agent**, care decid ce
+poate trimite, deschide sau accesa un agent, și flag-ul `--sandbox` al
 serverului.
 
 ## Ce constrânge o rulare de agent
@@ -25,7 +25,7 @@ operare și este singurul condiționat — celelalte cinci rezistă pe orice gaz
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sandbox-ul sistemului de operare | Seatbelt pe macOS, bubblewrap pe Linux și WSL2. Învelește CLI-ul Claude Code, adaptoarele ACP și instrumentul `bash` al harness-ului. **Absent pe Windows și pe Linux fără `bwrap` și `socat`** |
 | Propriul worktree           | Fiecare conversație primește un checkout copy-on-write. Checkout-ul original este inclus în rulare ca o cale cu scrierea interzisă, iar sandbox-ul este cel care impune asta                            |
-| Acreditări emise de broker  | Brokerul de acreditări emite un mediu per rulare din capabilitățile agentului și îl revocă la desființare. Fără capabilitate, niciun token în mediu                                               |
+| Acreditări emise de broker  | Brokerul de acreditări emite un mediu per rulare și îl revocă la desființare. Tokenul GitHub din el poate citi, dar nu poate face push: un push trece prin Control Center, care întreabă mai întâi regula de push |
 | Guardrail-uri de acțiuni    | Fiecare instrument care modifică starea își declară clasele de efect, iar garda le rezolvă înainte ca apelul să ruleze. Un `prompt` fără niciun aprobator conectat este refuzat                      |
 | Sanitizarea mediului        | ACP și instrumentul `bash` al harness-ului primesc un mediu filtrat. Claude Code prin `NoSandboxAdapter` moștenește mediul gazdei                                                                   |
 | Suprafața de instrumente a modului | Un mod doar pentru citire elimină de tot instrumentele care modifică worktree-ul și fixează verbul de ieșire al modului, ca să poată livra totuși                                            |
@@ -36,8 +36,7 @@ Trei lucruri rămân mai slabe decât par:
   finalizare și regulile structurale ale modurilor. Adaptorul Claude Code nu.
   Claude Code în special este lansat cu `--dangerously-skip-permissions`, pentru
   că un `claude -p` neinteractiv s-ar bloca altfel la nesfârșit pe propriul
-  prompt — așa că apelurile lui de citire, scriere, editare și bash nu sunt nici
-  văzute, nici filtrate de Control Center. Acolo unde sandbox-ul este pornit, el
+  prompt — așa că apelurile lui de citire, scriere și editare nu sunt nici văzute, nici filtrate de Control Center, iar comenzile lui bash sunt verificate doar de un hook care citește linia de comandă. Acolo unde sandbox-ul este pornit, el
   este granița din jurul lor.
 - Instrumentele de fișiere în proces ale harness-ului (read, write, edit, apply
   patch, search, find, search_files) rulează în interiorul procesului
@@ -50,46 +49,65 @@ Trei lucruri rămân mai slabe decât par:
   comenzi; Claude Code moștenește mediul gazdei prin `NoSandboxAdapter`.
   Serverul spune asta în jurnalul său de pornire. Verifică-l pe al tău mai jos.
 
-## Setează capabilitățile unui agent
+## Decide ce poate trimite un agent
 
-Acesta este singurul control de capabilități pe care îl citește serverul. Este
-per agent și decide ce pune brokerul de acreditări în mediul acelui agent.
+Nu există un comutator per agent pentru git push, GitHub, ticketing sau rețea.
+Fiecare este o regulă de acțiune:
 
-1. Mergi la **Setări → Spațiu de lucru → Agenți**
-2. Selectează agentul din listă
-3. În fila **Setări**, derulează până la **Permisiuni sandbox**
-4. Pornește comutatorul — legenda rândului se schimbă din **Folosește
-   implicitul spațiului de lucru**
-5. Setează cele patru comutatoare:
+| Regulă                                   | Implicit încorporat | Ce acoperă                                                                   |
+| ---------------------------------------- | ------------------- | ---------------------------------------------------------------------------- |
+| **Push către un remote**                 | Întreabă întâi      | Fiecare `git push` către GitHub, indiferent de adaptor                       |
+| **Deschide un pull request**             | Întreabă întâi      | `gh pr create` și instrumentele de pull request                              |
+| **Publică o revizuire sau o fuziune**    | Întreabă întâi      | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                |
+| **Scrie într-un tracker extern**         | Întreabă întâi      | Scrieri de tichete prin instrumentele Control Center și `gh issue`           |
+| **Accesează rețeaua**                    | Permite             | Dacă sandbox-ul are rețea, și instrumentele web ale harness-ului             |
 
-| Comutator                        | Ce controlează                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Permite git push**             | Cu acesta oprit, rularea primește `GIT_ASKPASS=/usr/bin/false` și `GIT_TERMINAL_PROMPT=0`, așa că un push nu poate cere o acreditare                                                                                                             |
-| **Permite apeluri GitHub API**   | Împreună cu **Permite git push**, controlează dacă brokerul injectează tokenul GitHub ca `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                              |
-| **Permite apeluri ticketing API** | Controlează dacă brokerul injectează `TICKETING_API_KEY`                                                                                                                                                                                         |
-| **Permite accesul general la rețea** | Acolo unde sandbox-ul este pornit, aceasta este o poartă reală de ieșire: cu ea oprită, lista de permisiuni a rulării este goală și fiecare cerere către exterior este refuzată la proxy. Acolo unde nu există backend, este înregistrată pe rulare, dar nu blochează nimic din ce face un proces lansat |
+1. Mergi la **Setări → Spațiu de lucru → Permisiuni agent**
+2. Alege domeniul de aplicare — **Spațiu de lucru**, **Agent** sau **Spațiu** —
+   și, pe rândul regulii, alege **Permite**, **Întreabă întâi** sau **Refuză**
 
-6. Salvează
+Se aplică și regulile de push limitate la ramuri, cum ar fi una care refuză
+push-ul pe `main`: vezi [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/).
 
-Punct de control: redeschide agentul și comutatorul este încă pornit, cu
-comutatoarele tale — un set de capabilități salvat face un dus-întors prin
-server, iar un agent fără niciunul se întoarce la implicitul conservator (push
-oprit, API GitHub oprit, ticketing oprit, rețea pornită).
+Punct de control: cere-i agentului să facă push unei ramuri. Cu **Întreabă
+întâi** primești o aprobare care numește depozitul și ref-urile; cu **Refuză**,
+git afișează `! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Două capcane]
-Legenda spune **Folosește implicitul spațiului de lucru**, dar nu există nicio
-setare de capabilități la nivel de spațiu de lucru pe care să o citească
-serverul. Un agent cu comutatorul oprit primește implicitul conservator
-încorporat.
+Cum ajunge fiecare regulă la rulare:
 
-Separat, acreditarea GitHub a rulării este întotdeauna doar a brokerului — un
-token de instalare GitHub App limitat la depozit, sau varianta de rezervă PAT
-din mediu — niciodată tokenul stocat al membrului care face cererea.
-`actingUserId` este transmis pentru ca brokerul să poată *reține* PAT-ul
-serverului de la un membru care nu este proprietarul și nu a conectat GitHub;
-nu îmbină un token personal peste o capabilitate oprită. Nu trata **Permite
-apeluri GitHub API** ca pe o graniță strictă de ieșire pe o gazdă fără sandbox
-al sistemului de operare: un proces lansat poate ajunge totuși la rețea.
+- **Push-ul** este impus prin ce deține rularea. Tokenul ei GitHub este un token
+  de instalare GitHub App doar pentru citire, care poate citi conținut și lucra
+  cu pull request-uri. Configurația ei git trimite fiecare push către GitHub
+  unui gateway de loopback pe `cc_server`, care întreabă regula și abia apoi
+  transmite push-ul cu un token de scriere pe care agentul nu îl vede niciodată.
+  Gateway-ul transmite doar către depozitul propriu al worktree-ului sau către
+  un depozit GitHub legat de spațiul de lucru. Asta e valabil pentru orice
+  adaptor.
+- **Pull request-urile și issue-urile dintr-un shell** sunt recunoscute după
+  linia de comandă, în instrumentul `bash` al harness-ului și, printr-un hook,
+  în instrumentul `Bash` al Claude Code. Un agent care ascunde comanda (un
+  script, `eval`, un apel direct la API) trece de această verificare, dar nu de
+  gateway-ul de push.
+- **Cheile de ticketing** nu sunt puse niciodată în sandbox. Agenții scriu
+  tichete prin instrumentele MCP ale Control Center, care întreabă regula.
+- **Rețeaua** este rezolvată o singură dată, când pornește rularea. **Refuză**
+  oprește rețeaua sandbox-ului; **Permite** și **Întreabă întâi** o lasă
+  pornită, iar cu **Întreabă întâi** instrumentele `web_fetch` și `web_search`
+  ale harness-ului întreabă în continuare la fiecare apel. Cât timp rețeaua este
+  pornită, GitHub este mereu pe lista de permisiuni de ieșire.
+
+:::caution[Fără GitHub App, regula de push este doar orientativă]
+Fără un GitHub App configurat, rularea primește tokenul de acces personal de
+rezervă, care nu poate fi restrâns doar la citire. `git push` trece în
+continuare prin gateway și prin regulă, dar codul care folosește direct tokenul
+poate face push ocolind-o. Configurează GitHub App ca regula să fie
+obligatorie.
+
+Acreditarea GitHub a rulării este întotdeauna doar a brokerului — un token de
+instalare GitHub App limitat la depozit, sau PAT-ul de rezervă — niciodată
+tokenul stocat al membrului care face cererea. PAT-ul serverului este reținut
+de la o rulare care acționează pentru un membru care nu este proprietarul și nu
+a conectat GitHub.
 :::
 
 ## Verifică dacă rulările agenților tăi sunt sandboxate
@@ -168,10 +186,13 @@ pentru ordinea completă de rezolvare.
 
 ### Un agent nu poate face push și nu am refuzat niciodată asta
 
-Verifică **Permisiuni sandbox** ale agentului. Un agent fără un set personalizat
-de capabilități primește implicitul conservator, în care **Permite git push**
-este oprit — așa că brokerul nu injectează niciun token GitHub și git nu are cum
-să se autentifice.
+Citește ce a afișat git. `Control Center policy: …` înseamnă că o regulă a
+refuzat push-ul sau că un **Întreabă întâi** a rămas fără răspuns.
+`… is not linked to this workspace` înseamnă că push-ul țintește un depozit care
+nu este nici cel al worktree-ului, nici legat de spațiul de lucru.
+`Control Center has no GitHub credential that can push …` înseamnă că GitHub
+App nu este instalat pe acel depozit și nicio acreditare de rezervă nu a putut
+face push: instalează aplicația pe depozit sau conectează GitHub.
 
 ### Cardul Sandboxing nu raportează niciun sandbox nativ
 

@@ -19,8 +19,9 @@ Two gaps survive the sandbox and are worth holding in mind:
   the tools themselves plus the action guardrails.
 - **Claude Code is launched with `--dangerously-skip-permissions`**, because a
   non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+  Its file calls are therefore not gated by Control Center's guardrails and
+  its shell commands only by a hook that reads the command line — the OS
+  sandbox is the boundary around them.
   :::
 
 ## Why isolation matters here
@@ -83,9 +84,9 @@ prompt, or deny before the call runs. A `prompt` with no approver connected
 resolves to _denied_ — a question nobody can answer is never a yes. See
 [Guardrails](/manual/concepts/guardrails/) for the resolution model.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
+**Brokered credentials and a sanitized environment.** Credentials are minted
+per launch and revoked when the run ends, and the GitHub token a run holds can
+read but cannot push — see "Pushes go through Control Center" below. ACP, harness `bash` and Claude Code under the native wrap get an
 environment stripped of the dynamic-linker and interpreter injection vectors
 (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
 their kin) before the process starts. Claude Code through `NoSandboxAdapter`
@@ -115,35 +116,67 @@ decision winning.
 Claude Code, when used as an adapter, is the case where the sandbox carries the
 most weight. Control Center launches it with `--dangerously-skip-permissions`,
 because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
+approval prompt. Its read, write and edit calls happen inside its own process
+and Control Center never sees them. Its `Bash` calls are sent, before they run,
+to a hook on the server that classifies the command line and asks the matching
+rule, and the `mcp__*` tools Control Center serves are gated as usual. Where a backend
 exists, those unseen calls still happen inside the sandbox wrap, so the OS is
 the boundary around them. Where none does, nothing is. Each adapter states this
 in its enforcement matrix — see [the adapter honesty
 matrix](/manual/concepts/guardrails/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## Pushes go through Control Center
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+There are no per-agent permission flags. Whether an agent may commit, push,
+open a pull request, write to a tracker or reach the network is the
+[guardrails'](/manual/concepts/guardrails/) call — allow, ask first or deny —
+and the same rules apply whichever adapter runs the agent.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+A push is the action that has to hold even against an agent working around a
+rule, so it is enforced by what the agent holds rather than by what it runs.
+With a GitHub App configured, a run in a GitHub worktree gets a repo-scoped
+installation token that can read contents and work with pull requests but
+cannot push. The run's git configuration rewrites every GitHub push URL
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) to the
+**agent run gateway**, a loopback endpoint on `cc_server`. The gateway reads
+which refs the push updates, asks the **Push to a remote** rule — so a
+branch-constrained rule such as "deny pushes to `main`" applies — and only then
+forwards the push to GitHub on a write token it mints for that purpose and
+never hands to the agent. A refused push shows up in git's own output:
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+The gateway forwards pushes only to the worktree's own repo or a GitHub repo
+linked to the workspace. Fetches go straight to GitHub on the read token.
+
+Other shell commands meet a softer gate. The harness `bash` tool, and Claude
+Code's `Bash` tool through a hook, classify each command line and ask the rule
+it falls under: `git commit`, `merge`, `rebase`, `cherry-pick`, `revert` and
+`am` are **Create a commit**; `gh pr create` is **Open a pull request**;
+`gh pr merge`, `review`, `comment` and `close` are **Publish a review or
+merge**; `gh issue create`, `edit`, `comment` and `close` are **Write to an
+external tracker**; package installs are **Install a package**; `curl` and
+`wget` are **Access the network**. This recognizes the conventional spelling of
+an action, and an agent determined to hide one (`eval`, a script file, a raw
+API call) can. Pushes do not depend on it.
+
+:::caution[Without a GitHub App the push rule is advisory]
+With no GitHub App configured, the broker falls back to a personal access
+token, which cannot be narrowed to read-only. The rule still holds for
+`git push`, because git sends the push to the gateway, but code that uses the
+token in the environment directly can push around it.
+:::
+
+No ticketing API key is placed in a sandbox. Agents write tickets through
+Control Center's MCP tools, which ask **Write to an external tracker**.
+
+The **Access the network** rule is read once, when the run starts. A sandbox's
+network is either on or off, so a deny turns it off while allow and ask first
+leave it on; the harness's `web_fetch` and `web_search` tools still ask per
+call. Credentials are revoked when the run tears down, together with any write
+token the gateway minted, so a handle does not outlive the run.
 
 ## What the sandbox adds and where it stops
 
@@ -209,30 +242,27 @@ really `/private/var/folders/…` — so a checkout reached through either would
 have been writable while the profile appeared to forbid it.
 
 Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
+in-process loopback proxies. Egress is default-deny: with the network off, the
+proxies still start but their allowlist is empty, so every outbound connection
+is refused. With it on, the resolver builds the allowlist from a curated
+baseline — LLM API providers, git hosting, package registries, the model
+catalogue — plus GitHub's domains and matches every connection's target host
+against it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
 separate always-denied list wins over the allowlist and covers cloud metadata
 endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+the spec carries an `egressAllowlist` field for extra domains, but nothing in
+the dispatch path populates it, so in practice every run gets the baseline plus
+GitHub and nothing more.
 
 Denials, on macOS, are observable: a monitor taps the system log for Sandbox
 denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
+`SandboxViolation` naming what was attempted and what was blocked. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
 and `Permission denied` and emits the same event type — there is no system-log
 tap. Those arrive on the run's own event stream, so a denied syscall shows up in
 the transcript rather than only in a log. The telemetry only exists while a
 native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+there is nothing to observe. It is also unrelated to the guardrails: a
+violation comes from a denied syscall, never from a rule lookup.
 
 ## Confirmations come from the guardrails, not the sandbox
 
@@ -262,5 +292,5 @@ that states what can be checked by hand.
 
 ## Related guides
 
-- [Configure sandbox policies](/manual/guides/sandbox-policies/): capability flags and filesystem posture
+- [Configure sandbox policies](/manual/guides/sandbox-policies/): action rules, push enforcement and filesystem posture
 - [Run agent diagnostics](/manual/guides/agent-diagnostics/): what the diagnostic checks cover

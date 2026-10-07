@@ -2615,15 +2615,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get allow => '허용';
 
   @override
-  String get allowGitPush => 'git push 허용';
-
-  @override
-  String get allowGithubApi => 'GitHub API 호출 허용';
-
-  @override
-  String get allowNetwork => '일반 네트워크 접근 허용';
-
-  @override
   String get apiKeys => 'API 키';
 
   @override
@@ -3017,9 +3008,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get currentParticipants => '현재 참가자';
 
   @override
-  String get customCapabilitiesDescription => '커스텀 기능 설명';
-
-  @override
   String get customSystemPrompt => '이 에이전트의 커스텀 시스템 프롬프트...';
 
   @override
@@ -3035,9 +3023,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deactivate => '비활성화';
-
-  @override
-  String get defaultCapabilities => '기본 기능 · 새 스페이스';
 
   @override
   String get defaultChat => '기본 채팅';
@@ -3437,9 +3422,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get forward => '앞으로';
 
   @override
-  String get gatesGithubPatPush => 'GitHub PAT 주입을 제어합니다. 에이전트가 푸시하려면 필요합니다.';
-
-  @override
   String get general => '일반';
 
   @override
@@ -3504,6 +3486,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => '중단';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => '서비스 상태';
@@ -3954,6 +3941,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get navSettings => '설정';
+
+  @override
+  String get exitSettings => '설정 나가기';
 
   @override
   String networkBlockCount(int count) {
@@ -4452,9 +4442,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get react => '리액션';
 
   @override
-  String get readPrsIssuesMetadata => '에이전트가 PR, 이슈, 리포지토리 메타데이터를 읽을 수 있습니다.';
-
-  @override
   String get readerPreferences => '리더 환경설정';
 
   @override
@@ -4705,9 +4692,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'macOS의 네이티브 샌드박스는 기본 제공되며 Apple Seatbelt(`sandbox-exec`)를 사용합니다. 설치가 필요하지 않습니다.';
-
-  @override
-  String get sandboxPermissions => '샌드박스 권한';
 
   @override
   String get sandboxUnsupported =>
@@ -5288,9 +5272,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get useSandbox => '샌드박스 사용';
 
   @override
-  String get useWorkspaceDefault => '워크스페이스 기본값 사용';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5330,9 +5311,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weakIsolationDescription => '약한 격리 - 네임스페이스 경계만 적용되며 커널 경계는 없습니다.';
-
-  @override
-  String get whenOffNoDefaultRoute => '끄면 샌드박스가 기본 라우트 없이 부팅됩니다.';
 
   @override
   String get whenOffServerStaysStopped => '끄면 직접 시작할 때까지 서버가 중지된 상태로 유지됩니다.';
@@ -6520,13 +6498,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pipelineRunNoRepos => '이 워크스페이스에 아직 저장소가 없습니다.';
 
   @override
-  String get allowTicketingApi => '티켓팅 API 호출 허용';
-
-  @override
   String get ticketingApiKey => '티켓팅 API 키';
-
-  @override
-  String get ticketingApiKeySubtitle => '티켓팅 제공자의 API 키를 샌드박스에 주입합니다.';
 
   @override
   String get ticketingProvider => '티켓팅 제공자';
@@ -8848,28 +8820,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keepAwakeOffSubtitle => '에이전트가 작업 중이어도 컴퓨터가 절전 모드로 전환될 수 있습니다';
-
-  @override
-  String get syncEngineSectionTitle => '동기화 엔진';
-
-  @override
-  String get syncEngineDescription =>
-      '티켓, 메시징, 노트가 전체 스냅샷이 아닌 작은 증분 변경으로 실시간 업데이트됩니다. 토글을 끄면 해당 저장소가 전체 스냅샷 모드로 돌아갑니다. 변경 사항을 적용하려면 앱을 다시 로드하세요.';
-
-  @override
-  String get syncEngineTicketsTitle => '티켓';
-
-  @override
-  String get syncEngineMessagingTitle => '메시징';
-
-  @override
-  String get syncEngineNotesTitle => '노트';
-
-  @override
-  String get syncEngineOnSubtitle => '실시간 델타 동기화가 활성 상태입니다';
-
-  @override
-  String get syncEngineOffSubtitle => '전체 스냅샷 동기화를 사용합니다';
 
   @override
   String get spaces => '스페이스';
@@ -12712,23 +12662,19 @@ class AppLocalizationsKo extends AppLocalizations {
       '선택 사항 — 비워 두면 제목 모델이 자동으로 이름을 붙입니다';
 
   @override
-  String get conversationTitlesSectionTitle => '대화 제목';
+  String get shortTaskOff => '꺼짐';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      '이 워크스페이스의 새 대화에 자동으로 제목을 붙일 러너를 선택하세요. 어댑터를 고르기 전까지 제목은 꺼져 있으며, 모든 멤버에게 적용됩니다.';
+  String get shortTaskUnavailable => '이 기능을 사용하려면 설정 → 어댑터에서 짧은 작업 모델을 선택하세요';
 
   @override
-  String get conversationTitlesModelLabel => '제목 모델';
+  String get conversationTitleGenerate => '생성';
 
   @override
-  String get conversationTitlesAdapterLabel => '어댑터';
+  String get conversationTitleNoMessages => '먼저 메시지를 보내세요. 제목은 그 메시지로 생성됩니다.';
 
   @override
-  String get conversationTitlesAdapterHint => '꺼짐';
-
-  @override
-  String get conversationTitlesAdapterOff => '꺼짐';
+  String get conversationTitleGenerateFailed => '제목을 생성하지 못했습니다. 다시 시도하세요.';
 
   @override
   String get startThread => '스레드 시작';
@@ -12890,6 +12836,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => '대화';
+
+  @override
+  String get contextSegmentRunner => '러너 프롬프트, 도구 및 턴 작업';
+
+  @override
+  String get contextUsageMeasured => '모델의 마지막 호출이 보고한 값';
+
+  @override
+  String get contextUsageEstimated => '실행이 사용량을 보고할 때까지의 추정치';
 
   @override
   String get contextExplorerTitle => '컨텍스트';
@@ -13263,12 +13218,15 @@ class AppLocalizationsKo extends AppLocalizations {
       '에이전트의 프로세스와 파일 쓰기가 실제로 일어나는 위치입니다.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      '이 호스트가 지원하는 가장 강력한 방식을 자동으로 선택합니다. 하나를 고정하면 임의로 바뀌지 않습니다.';
+  String get sandboxGroupAgentActions => '에이전트가 할 수 있는 일';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      '경계를 통과하도록 연 예외입니다. 각각은 격리된 에이전트가 외부에서 여전히 할 수 있는 작업입니다.';
+  String get sandboxGroupAgentActionsDescription =>
+      '푸시, 풀 리퀘스트 열기, 네트워크 접근을 허용할지, 먼저 물어볼지, 거부할지는 에이전트 권한에서 설정합니다.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      '이 호스트가 지원하는 가장 강력한 방식을 자동으로 선택합니다. 하나를 고정하면 임의로 바뀌지 않습니다.';
 
   @override
   String get sandboxSummaryInForce => '적용 중';
@@ -13409,6 +13367,26 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       '서버의 터미널에서 실행하세요. 브라우저가 열려 로그인을 완료하고, 자격 증명을 이 계정의 디렉터리에 저장합니다.';
+
+  @override
+  String get claudeAccountLongLivedToken => '장기 토큰';
+
+  @override
+  String get claudeAccountUseLongLivedToken => '장기 토큰 사용';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => '장기 토큰 교체';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => '장기 토큰 제거';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      '일반 로그인은 갱신이 필요하며 하룻밤 사이에 만료될 수 있습니다. 장기 토큰은 약 1년 동안 로그인 상태를 유지합니다. 터미널에서 이 명령을 실행하고 브라우저에서 완료한 다음 출력된 토큰을 붙여 넣으세요.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'claude setup-token에서 받은 토큰이 아닙니다. 토큰은 sk-ant-oat01-로 시작합니다.';
 
   @override
   String get claudeAccountSignedOut => '로그아웃됨';
@@ -13829,9 +13807,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => '기본 앱으로 열기';
-
-  @override
-  String get asideUnavailable => '이 기능을 사용하려면 워크스페이스 설정에서 원샷 모델을 지정하세요';
 
   @override
   String get asideEmpty => '아직 작업할 내용이 없습니다';
@@ -14361,6 +14336,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get credentialGateOpenSettings => '설정 열기';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      '연결된 Claude Code 계정이 삭제되었습니다';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      '이 에이전트나 워크스페이스의 계정 설정에서 다른 계정을 연결하거나, 목록을 비워 기본 계정을 사용하세요. 실행은 자동으로 이어집니다.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      '이 목록의 계정이 모두 서버에서 삭제되었습니다. 다른 계정을 연결하거나 목록을 비우세요.';
+
+  @override
+  String get accountPoolClear => '목록 비우기';
+
+  @override
   String get selectModel => '모델 선택';
 
   @override
@@ -14782,6 +14772,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get ideQuickOpenDescription => '대화의 파일을 이름으로 검색하고 탭에서 엽니다';
+
+  @override
+  String get prQuickOpenDescription => '풀 리퀘스트의 파일을 이름으로 검색하고 탭에서 엽니다';
 
   @override
   String get ideQuickOpenHint => '이름으로 파일 검색';

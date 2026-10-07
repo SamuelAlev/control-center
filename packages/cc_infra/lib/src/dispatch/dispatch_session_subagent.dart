@@ -37,7 +37,6 @@ extension _DispatchSessionSubagent on DispatchSession {
     required int depth,
     required SubagentType? parentType,
     required String? parentRunId,
-    required AgentCapabilities baseCaps,
     required Map<String, String> env,
     required LlmProviderPort parentProvider,
     required String parentProviderId,
@@ -71,7 +70,6 @@ extension _DispatchSessionSubagent on DispatchSession {
       mode: subProfile.surface.maxTier == ToolApprovalTier.exec
           ? Mode.chat
           : Mode.plan,
-      caps: baseCaps,
       env: env,
     );
 
@@ -119,7 +117,6 @@ extension _DispatchSessionSubagent on DispatchSession {
               depth: depth + 1,
               parentType: subProfile.type,
               parentRunId: childRunId,
-              baseCaps: baseCaps,
               env: env,
               parentProvider: childProvider,
               parentProviderId: childProviderId,

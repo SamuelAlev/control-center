@@ -2,7 +2,7 @@
 title: Agentenkonfiguration
 description: Jedes Feld der Agenten-Entität und die Enums, die sie verwendet.
 slug: de-DE/handbuch/referenz/agentenkonfiguration
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Flags, die sie verwendet. Wie du einen Agenten in der App anlegst oder bearbeitest, steht Schritt für Schritt unter [Einen Agenten erstellen und konfigurieren](/de-DE/handbuch/anleitungen/agent-erstellen/).
@@ -26,7 +26,6 @@ Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Fl
 | `effort`                | `String?`              | Nein         | ID der Denkstufe (z. B. `'low'`, `'xhigh'`), aus den `thinkingLevels` des gewählten Modells                                                                                                           |
 | `contextSize`           | `int?`                 | Nein         | Maximale Größe des Kontextfensters                                                                                                                                                                    |
 | `role`                  | `AgentRole?`           | Nein         | Agentenrolle                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | Nein         | Standard der Befugnisse je Agent; ist der Wert null, gilt beim Dispatch der Standard auf Benutzerebene, und eine Unterhaltung kann ihn weiterhin überschreiben                                       |
 | `monthlyBudgetCents`    | `int`                  | Nein         | Monatliche Ausgabenobergrenze in Cent (Standard `0`, unbegrenzt)                                                                                                                                      |
 | `silenceTimeoutMinutes` | `int?`                 | Nein         | Überschreibung des Stille-Timeouts in Minuten; null oder ein Wert von 1–240 (per Assertion im Konstruktor)                                                                                            |
 | `maxConcurrentTasks`    | `int`                  | Nein         | Standard `1`. Kapazitätszahl, die das Präsenzmodell meldet (laufende und wartende Anzahlen werden damit verglichen)                                                                            |
@@ -69,18 +68,9 @@ Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Fl
 | `paused`   | Gesetzt vom harten Budgetstopp. Sichtbar in der Präsenzliste; die Ausführung nimmt weiter Arbeit an |
 | `archived` | Stillgelegt und aus den aktiven Listen ausgeblendet                                        |
 
-## Flags von AgentCapabilities
+## Berechtigungen
 
-Je Dispatch aufgelöst: der Standard des Agenten, bei null der Standard auf Benutzerebene, und darüber eine Überschreibung je Unterhaltung. Durchgesetzt durch Abwesenheit: Der Zugangsdaten-Broker stellt schlicht nichts aus und injiziert nichts, was eine abgeschaltete Befugnis abdeckt.
-
-| Flag               | Typ    | Standard | Beschreibung                                                                                                |
-| ------------------ | ------ | -------- | ----------------------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`  | Pusht Commits auf das Remote; gibt zusammen mit `canCallGitHubApi` die Injektion des GitHub-Tokens frei    |
-| `canCallGitHubApi` | `bool` | `false`  | Ruft api.github.com auf; gibt die Injektion von `GH_TOKEN` und die GitHub-Domains für ausgehenden Verkehr frei |
-| `canCallTicketing` | `bool` | `false`  | Ruft die API des Ticketing-Anbieters auf; gibt die Injektion des API-Schlüssels und dessen Domains für ausgehenden Verkehr frei |
-| `canAccessNetwork` | `bool` | `true`   | Beliebiger ausgehender Verkehr. Gibt außerdem die Werkzeuge `web_fetch` und `web_search` des Harness frei   |
-
-`AgentCapabilities.safeDefault` sind die vier Konstruktorstandards. `legacyDefault` (alle vier true) nutzt nur die Migration, die Unterhaltungen nachgetragen hat, die angelegt wurden, bevor es Befugnisse gab. Ein fehlerhafter oder leerer gespeicherter Blob wird auf `safeDefault` geparst; der alte Schlüssel `canCallLinear` wird als `canCallTicketing` gelesen.
+Ein Agent trägt keine Berechtigungs-Flags. Pushen, Pull Requests öffnen und veröffentlichen, in einen Tracker schreiben und ausgehender Netzwerkverkehr sind Aktionsklassen (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`), die die [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) im Geltungsbereich Arbeitsbereich, Agent oder Bereich auflösen. Das GitHub-Token eines Laufs darf immer nur lesen; Pushes laufen durch das Gateway für Agentenläufe, das vor dem Weiterleiten die Regel `gitPush` fragt.
 
 ## AgentSkills
 

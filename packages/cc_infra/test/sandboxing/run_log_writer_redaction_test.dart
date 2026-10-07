@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
 import 'package:test/test.dart';
@@ -24,7 +23,6 @@ void main() {
     await w.open(
       agentDirHostPath: dir.path,
       cliName: 'test',
-      capabilities: const AgentCapabilities(),
     );
     w.logEvent(
       ToolResultEvent(
@@ -45,7 +43,6 @@ void main() {
     await w.open(
       agentDirHostPath: dir.path,
       cliName: 'test',
-      capabilities: const AgentCapabilities(),
     );
     w.logEvent(TextEvent(content: 'here is the key $token, use it'));
     await w.close(); // flushes the coalesce buffer
@@ -60,7 +57,6 @@ void main() {
     await w.open(
       agentDirHostPath: dir.path,
       cliName: 'test',
-      capabilities: const AgentCapabilities(),
     );
     await w.close(
       exitCode: 128,

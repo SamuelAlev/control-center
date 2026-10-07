@@ -2,7 +2,7 @@
 title: Kitaran hayat penghantaran ejen
 description: Apa yang berlaku antara ketibaan mesej dan penutupan log larian — pemasangan prompt, worktree, identiti, apa yang membatasi larian dan bagaimana hasilnya direkodkan secara jujur.
 slug: ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Apakah itu penghantaran
@@ -65,7 +65,7 @@ Dua identiti diselesaikan bagi setiap larian, sebelum mana-mana proses dilancark
 
 Kerana pengatasan per-penyesuai datang dahulu, ia secara senyap mengalahkan akaun penyedia yang disambungkan dalam apl. Jika sesuatu larian dibilkan ke akaun yang salah, pengatasan itu tempat pertama untuk dilihat. Kelayakan penyedia adalah global hos — dikongsi merentas setiap ruang kerja pada pemasangan itu.
 
-Token berpagar kebolehan (GitHub, penetikan) datang daripada broker kelayakan, yang menyuntik hanya apa yang dibenarkan oleh kebolehan larian itu. Lihat [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/).
+Token GitHub larian datang daripada broker kelayakan: token baca sahaja yang berskop repo worktree. Push melalui gerbang larian ejen, yang bertanya kepada peraturan **Push ke remote** sebelum memajukannya, dan tiada kunci penetikan disuntik. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
 
 ## Pelancaran
 
@@ -76,9 +76,9 @@ Larian dilancarkan dengan worktree-nya sebagai direktori kerja dan — untuk Cla
 
 Di mana tiada bahagian belakang, larian **tidak** dikotak pasirkan dan tiada apa-apa lagi berubah untuk mengimbanginya. Itu bermakna Windows sentiasa (tiada balutan natif — `microvm` ialah laluan berasingan yang dipagari kuar untuk terminal dan stesen) dan Linux atau WSL2 tanpa `bwrap` dan `socat` pada `PATH`. Pelayan menamakan keadaan yang ia berada pada baris log permulaannya dan `--sandbox off` menarik diri secara sengaja.
 
-Dua jurang kekal dalam kotak pasir walaupun ia dihidupkan. Alat fail dalam proses harness (read, write, edit, apply patch, search, find, search_files) berjalan di dalam proses pelayan, jadi tiada profil mengekangnya — batasnya ialah pembatasan laluan alat itu sendiri serta guardrail. Dan Claude Code dilancarkan dengan `--dangerously-skip-permissions`, jadi panggilan fail dan shell-nya sendiri tidak dipagari oleh Control Center; kotak pasir OS ialah sempadan di sekelilingnya.
+Dua jurang kekal dalam kotak pasir walaupun ia dihidupkan. Alat fail dalam proses harness (read, write, edit, apply patch, search, find, search_files) berjalan di dalam proses pelayan, jadi tiada profil mengekangnya — batasnya ialah pembatasan laluan alat itu sendiri serta guardrail. Dan Claude Code dilancarkan dengan `--dangerously-skip-permissions`, jadi panggilan failnya sendiri tidak dipagari oleh Control Center, dan perintah shell-nya hanya oleh hook yang membaca baris perintah; kotak pasir OS ialah sempadan di sekelilingnya.
 
-Batasan selebihnya kekal pada setiap hos, berkotak pasir atau tidak: worktree larian itu sendiri (salin-semasa-tulis di mana `rift` dihantar; `git worktree` pada Windows), kelayakan berpagar kebolehan yang diurus melalui broker bagi setiap pelancaran dan dibatalkan semasa pembongkaran, guardrail tindakan bersatu (gagal-tertutup — keputusan `prompt` tanpa pelulus yang bersambung ditolak) dan permukaan alat yang dibenarkan oleh modus perbualan itu. ACP dan `bash` harness masih mensanitasi persekitaran; Claude Code melalui `NoSandboxAdapter` mewarisi persekitaran hos.
+Batasan selebihnya kekal pada setiap hos, berkotak pasir atau tidak: worktree larian itu sendiri (salin-semasa-tulis di mana `rift` dihantar; `git worktree` pada Windows), token hos kod baca sahaja yang diurus melalui broker bagi setiap pelancaran dan dibatalkan semasa pembongkaran, push yang mesti melepasi peraturan push di gerbang larian ejen, guardrail tindakan bersatu (gagal-tertutup — keputusan `prompt` tanpa pelulus yang bersambung ditolak) dan permukaan alat yang dibenarkan oleh modus perbualan itu. ACP dan `bash` harness masih mensanitasi persekitaran; Claude Code melalui `NoSandboxAdapter` mewarisi persekitaran hos.
 :::
 
 ## Penstriman

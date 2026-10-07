@@ -22,8 +22,4 @@ class TokenEstimator {
   /// Estimated token count for a raw character count. Always `>= 0`.
   int estimateChars(int chars) =>
       chars <= 0 ? 0 : (chars / charsPerToken).ceil();
-
-  /// Converts a character budget (CC's `Agent.contextSize`, measured in
-  /// characters) into an estimated token window for the same content.
-  int windowTokensFromChars(int chars) => (chars / charsPerToken).floor();
 }

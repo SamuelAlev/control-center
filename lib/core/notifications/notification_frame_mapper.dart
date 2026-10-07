@@ -133,11 +133,13 @@ String _wsRoute(String? workspaceId, String Function(String) build) =>
 
 /// Deep-links to a specific space when both the workspace and space are
 /// known, falling back to the space list (or the workspace picker) so the
-/// URL still resolves. The space id in the URL is the source of truth for
-/// the open conversation.
+/// URL still resolves. The space id in the URL selects the space; a known
+/// [conversationId] rides as `?tab=` so the tap opens THAT conversation rather
+/// than the space's standing one.
 String _spaceDeepLink(
   String? workspaceId,
   String? spaceId, {
+  String? conversationId,
   String? messageId,
 }) {
   if (workspaceId == null) {
@@ -146,7 +148,12 @@ String _spaceDeepLink(
   if (spaceId == null) {
     return spacesRoute(workspaceId);
   }
-  return spaceRoute(workspaceId, spaceId, messageId: messageId);
+  return spaceRoute(
+    workspaceId,
+    spaceId,
+    messageId: messageId,
+    tab: conversationId == null ? null : conversationTabKey(conversationId),
+  );
 }
 
 /// Deep-links to the PR detail screen when the frame identifies the PR
@@ -544,6 +551,7 @@ AppNotification? _messageReceived(Map<String, dynamic> p, String? me) {
     route: _spaceDeepLink(
       workspaceId,
       spaceId,
+      conversationId: p['conversation_id'] as String?,
       messageId: p['message_id'] as String?,
     ),
     workspaceId: workspaceId,

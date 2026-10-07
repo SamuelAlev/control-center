@@ -2,13 +2,13 @@
 title: Backend sandbox
 description: Các backend sandbox, nơi chúng được áp dụng và mọi value object mà runtime sandbox sử dụng.
 slug: vi-VN/so-tay/tham-chieu/backend-sandbox
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Việc một lượt chạy có được sandbox hay không phụ thuộc vào máy chủ]
 `cc_server` dò máy chủ một lần lúc khởi động và bọc việc điều phối agent trong backend gốc khi bước dò báo có một backend khả dụng và `--sandbox` không phải `off`. Cả hai đường nối điều phối đều được bọc: CLI Claude Code qua cổng sandbox, và ACP cùng công cụ `bash` của harness tích hợp qua trình quản lý sandbox.
 
-Nơi bước dò báo không có backend — **Windows thì luôn vậy** và Linux hay WSL2 thiếu `bwrap` và `socat` — các lượt chạy agent **không** được sandbox. ACP và công cụ `bash` của harness vẫn được spawn với môi trường đã làm sạch; Claude Code đi qua `NoSandboxAdapter` và kế thừa môi trường của máy chủ. Những ranh giới còn lại là cây làm việc riêng của lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), thông tin xác thực được kiểm soát theo khả năng, do broker cấp theo từng lần khởi chạy và thu hồi khi kết thúc, chính sách lệnh theo từng chế độ, [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) hợp nhất (đóng-khi-lỗi), việc làm sạch môi trường trên các đường ACP và `bash` của harness, và bề mặt công cụ mà chế độ của nó cho phép.
+Nơi bước dò báo không có backend — **Windows thì luôn vậy** và Linux hay WSL2 thiếu `bwrap` và `socat` — các lượt chạy agent **không** được sandbox. ACP và công cụ `bash` của harness vẫn được spawn với môi trường đã làm sạch; Claude Code đi qua `NoSandboxAdapter` và kế thừa môi trường của máy chủ. Những ranh giới còn lại là cây làm việc riêng của lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), một token forge chỉ đọc, do broker cấp theo từng lần khởi chạy và thu hồi khi kết thúc, các lần push phải vượt qua quy tắc push tại cổng lượt chạy agent, chính sách lệnh theo từng chế độ, [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) hợp nhất (đóng-khi-lỗi), việc làm sạch môi trường trên các đường ACP và `bash` của harness, và bề mặt công cụ mà chế độ của nó cho phép.
 
 Các công cụ tệp in-process của harness (read, write, edit, apply patch, search, find, search_files) nằm ngoài sandbox trên mọi máy chủ: chúng chạy trong tiến trình máy chủ, nên chỉ `bash` được bọc.
 :::
@@ -99,7 +99,7 @@ Không có sandbox. Tiến trình chạy trực tiếp trên máy chủ với qu
 
 Terminal được sandbox theo những quy tắc riêng của nó, không theo bước dò của đường điều phối. `defaultBackend` của `TerminalSessionService` là `none` và `cc_server` không ghi đè nó, nên một phiên terminal chạy shell của máy chủ trừ khi máy khách yêu cầu `native` một cách tường minh — còn bảng terminal của ứng dụng desktop thì không.
 
-Khi `native` được yêu cầu, shell được bọc qua `SandboxManager` dưới một profile terminal cố định: `$HOME` và thư mục làm việc của phiên có thể ghi, mạng mở và `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` cùng `~/Library/Keychains` bị từ chối đọc. Việc kiểm soát theo khả năng không áp dụng ở đây — đó là chuyện của đường điều phối. Nếu việc bọc không được hỗ trợ, phiên sẽ thất bại thay vì hiển thị một nhãn native trên một PTY là shell của máy chủ.
+Khi `native` được yêu cầu, shell được bọc qua `SandboxManager` dưới một profile terminal cố định: `$HOME` và thư mục làm việc của phiên có thể ghi, mạng mở và `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` cùng `~/Library/Keychains` bị từ chối đọc. Token forge chỉ đọc và cổng push không áp dụng ở đây — đó là chuyện của đường điều phối. Nếu việc bọc không được hỗ trợ, phiên sẽ thất bại thay vì hiển thị một nhãn native trên một PTY là shell của máy chủ.
 
 ## Egress mạng
 
@@ -108,9 +108,9 @@ Khi một sandbox được khởi chạy, quyền truy cập mạng ra ngoài đ
 - Runtime sandbox chạy một proxy HTTP/HTTPS và một proxy SOCKS5 trên `127.0.0.1` bên trong tiến trình `cc_server`, **một cặp cho mỗi phiên bị giới hạn** (`http_proxy.dart`, `socks_proxy.dart`). Các lượt chạy đồng thời không dùng chung một cặp.
 - Các tiến trình được sandbox nhận các biến môi trường proxy (`HTTP_PROXY`/`HTTPS_PROXY` → proxy HTTP, `ALL_PROXY` → proxy SOCKS; `GIT_SSH_COMMAND` định tuyến git-qua-SSH qua proxy SOCKS). Trên Linux, namespace mạng không được chia sẻ, nên các proxy là lối ra duy nhất; trên macOS, sandbox dùng chung loopback của máy chủ và nói chuyện trực tiếp với chúng.
 - Máy chủ đích của mỗi kết nối được đối chiếu với danh sách cho phép tên miền của phiên; mọi thứ khác đều bị từ chối. Có hai dạng ký tự đại diện, mỗi dạng có đúng một dấu `*`: dạng đứng đầu `*.example.com` khớp với mọi tên miền con (kể cả `a.b.example.com`) nhưng không khớp với chính tên miền gốc; dạng ở nhãn giữa `bedrock.*.amazonaws.com` khớp với đúng một nhãn (`bedrock.us-east-1.amazonaws.com`, không khớp `bedrock.evil.attacker.amazonaws.com`).
-- Danh sách cho phép được phân giải theo từng phiên từ đường cơ sở được tuyển chọn (`kBaselineAllowedDomains`: các nhà cung cấp LLM, nơi lưu trữ Git, các registry gói), cộng với các tên miền GitHub khi agent có khả năng GitHub hoặc push, cộng với `SandboxSpec.egressAllowlist`. Bộ phân giải cũng chấp nhận các tên miền nhà cung cấp phiếu khi agent có thể gọi hệ thống phiếu, nhưng đường điều phối không bao giờ truyền danh sách đó (hay các mục `egressAllowlist` bổ sung), nên trên thực tế mọi lượt chạy đều nhận đường cơ sở cộng với các tên miền GitHub mà khả năng của nó kiếm được.
+- Danh sách cho phép được phân giải theo từng phiên từ đường cơ sở được tuyển chọn (`kBaselineAllowedDomains`: các nhà cung cấp LLM, nơi lưu trữ Git, các registry gói), cộng với các tên miền GitHub (`kGithubDomains`), cộng với `SandboxSpec.egressAllowlist`. Đường điều phối không bao giờ truyền các mục `egressAllowlist` bổ sung, nên trên thực tế mọi lượt chạy đều nhận đường cơ sở cộng với GitHub.
 - Một danh sách từ chối cố định (`kBaselineDeniedDomains`: các endpoint metadata của cloud, các điểm thu thập telemetry) có quyền ưu tiên hơn mọi lệnh cho phép.
-- `networkEnabled: false` (hoặc một agent không có khả năng mạng) vẫn khởi động các proxy theo phiên, nhưng danh sách cho phép rỗng nên mọi kết nối ra ngoài đều bị từ chối.
+- `networkEnabled: false` vẫn khởi động các proxy theo phiên, nhưng danh sách cho phép rỗng nên mọi kết nối ra ngoài đều bị từ chối. Đường điều phối đặt giá trị này khi lượt chạy bắt đầu, dựa trên quy tắc **Truy cập mạng**: từ chối sẽ tắt mạng, cho phép và hỏi trước giữ mạng bật.
 
 ## SandboxSpec
 
@@ -122,11 +122,10 @@ Khi một sandbox được khởi chạy, quyền truy cập mạng ra ngoài đ
 | `workspaceId`     | `String`                                    | Id của không gian làm việc sở hữu                                                                                                           |
 | `agentId`         | `String?`                                   | Agent hiện đang được gắn với sandbox, nếu có                                                                                                 |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Các mount máy chủ→khách; sandbox chỉ nhìn thấy những đường dẫn máy chủ được liệt kê ở đây                                                    |
-| `networkEnabled`  | `bool` (mặc định `true`)                    | Kết hợp với khả năng mạng của agent. Khi tắt, các proxy theo phiên vẫn khởi động nhưng danh sách cho phép rỗng nên mọi kết nối ra ngoài đều bị từ chối |
-| `egressAllowlist` | `List<String>` (mặc định `[]`)              | Các tên miền egress được phép bổ sung; hỗ trợ ký tự đại diện (`*.example.com`, cùng dạng một nhãn ở giữa). Đường điều phối không bao giờ điền vào trường này, nên một lượt chạy được bọc sẽ nhận đường cơ sở được tuyển chọn cộng với các tên miền GitHub mà khả năng của nó kiếm được |
+| `networkEnabled`  | `bool` (mặc định `true`)                    | Được đặt lúc điều phối từ quy tắc egress mạng (chỉ tắt khi quy tắc phân giải thành từ chối). Khi tắt, các proxy theo phiên vẫn khởi động nhưng danh sách cho phép rỗng nên mọi kết nối ra ngoài đều bị từ chối |
+| `egressAllowlist` | `List<String>` (mặc định `[]`)              | Các tên miền egress được phép bổ sung; hỗ trợ ký tự đại diện (`*.example.com`, cùng dạng một nhãn ở giữa). Đường điều phối không bao giờ điền vào trường này, nên một lượt chạy được bọc sẽ nhận đường cơ sở được tuyển chọn cộng với các tên miền GitHub |
 | `guestWorkdir`    | `String?`                                   | Thư mục làm việc mặc định bên trong sandbox; từng lệnh gọi `exec` riêng lẻ có thể ghi đè nó                                                 |
 | `mode`            | `Mode` (mặc định `chat`)                    | Khoét ra các quy tắc ghi vào hệ thống tệp: `chat` giữ các bind mount ở chế độ có thể ghi; `review`, `plan` và `orchestrate` chỉ đọc          |
-| `capabilities`    | `AgentCapabilities` (mặc định `safeDefault`) | Suy ra quyết định bật/tắt mạng và các tên miền egress GitHub. Tên miền phiếu là một đối số của bộ phân giải mà đường điều phối không bao giờ cung cấp |
 | `protectedPaths`  | `List<String>` (mặc định `[]`)              | Các đường dẫn máy chủ không bao giờ được phép ghi bên trong sandbox, ở bất kỳ chế độ nào                                                    |
 | `runnerStateDirs` | `List<String>` (mặc định `[]`)              | Các thư mục máy chủ mà runner lưu trạng thái riêng của nó, có thể ghi ở mọi chế độ (hiện tại là một `CLAUDE_CONFIG_DIR` do Control Center quản lý) |
 | `execGrantRoots`  | `List<String>` (mặc định `[]`)              | Các cây thư mục được người vận hành phê duyệt, mở lại lệnh chặn exec trong thư mục có thể ghi trên macOS. Linux bỏ qua chúng — bwrap không có lệnh chặn exec `$HOME` nào để mở lại |
@@ -184,7 +183,6 @@ Mọi đường dẫn từ chối đọc và từ chối ghi đều được ph�
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Động từ bị từ chối (ví dụ `file-read*`, `network-outbound`)                |
 | `target`              | `String`  | Đường dẫn hoặc máy chủ là đích của thao tác bị từ chối                     |
-| `suggestedCapability` | `String?` | Cờ khả năng sẽ cho phép hành động này (ví dụ `canCallGitHubApi`)           |
 | `raw`                 | `String?` | Dòng log thô, hữu ích khi gỡ lỗi                                           |
 
 ## Xem thêm

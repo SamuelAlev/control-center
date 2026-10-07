@@ -2,7 +2,7 @@
 title: Moduri
 description: De ce un spațiu, nu un agent, poartă un mod; ce garantează fiecare dintre cele patru moduri; și unde acea garanție este structurală, nu doar sugerată prin prompt.
 slug: ro-RO/manual/concepte/moduri
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Ce este un mod
@@ -77,7 +77,7 @@ Rezolvarea în sine este simplă. Dispecerul citește coloana `mode` a spațiulu
 
 Suprafața de instrumente a unui mod este construită și aplicată de **harness-ul integrat**. Este singurul transport care poate face un instrument invizibil, nu doar refuzat, care poate pune o poartă în fața fiecărui apel înainte ca acesta să ruleze și care poate observa un contract de finalizare.
 
-Pe transportul Claude Code, un mod care nu este chat este transmis ca `--permission-mode plan`. Claude respectă acest lucru prin convenție; propriile sale instrumente de citire, scriere, editare și shell rulează fără să fie văzute. Pentru acel transport, modul este o îndrumare, nu o graniță a Control Center — vezi [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/).
+Pe transportul Claude Code, un mod care nu este chat este transmis ca `--permission-mode plan`. Claude respectă acest lucru prin convenție; propriile sale instrumente de citire, scriere și editare rulează fără să fie văzute, iar comenzile sale de shell sunt verificate doar de un hook care citește linia de comandă. Pentru acel transport, modul este o îndrumare, nu o graniță a Control Center — vezi [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/).
 
 Listele de permisiuni restricționează instrumentele de nivel de scriere și peste. Nivelul de citire al harness-ului integrat ajunge totuși la instrumente pe care nu le numește nicio listă; pe Claude Code, un instrument omis de lista de permisiuni este refuzat indiferent dacă serverul îl are sau nu.
 

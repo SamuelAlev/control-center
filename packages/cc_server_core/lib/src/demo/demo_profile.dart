@@ -679,6 +679,9 @@ class DemoProfile {
     'credential_gate.watchBlocked',
     'conversation.watchForSpace',
     'conversation.watchThreadSummaries',
+    // In-memory titling flags; a demo never runs the titling pass, so the
+    // tabs subscribe to an always-empty set instead of erroring.
+    'conversation.watchTitleGenerating',
     'dictation.watchPartials',
     'goals.watchForWorkspace',
     'invites.watchForWorkspace',
@@ -772,7 +775,6 @@ class DemoProfile {
     'terminal.watchPorts',
     'server_settings.watch',
     'space_read.watchUserLastReadAt',
-    'sync.watch',
     'team.watchMembersOf',
     'team.watchTeamsForWorkspace',
     'ticket_link.watchForTicket',

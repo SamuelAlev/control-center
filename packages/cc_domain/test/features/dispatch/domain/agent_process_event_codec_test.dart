@@ -39,4 +39,32 @@ void main() {
       expect((back as DoneEvent).outcome, isNull);
     });
   });
+
+  group('AgentProcessEventCodec context-window events', () {
+    test('a reading survives the fleet wire round-trip', () {
+      final wire = AgentProcessEventCodec.toWire(
+        ContextWindowEvent(
+          contextTokens: 153013,
+          windowTokens: 1000000,
+          compactions: 2,
+        ),
+      );
+      expect(wire['kind'], 'contextWindow');
+
+      final back = AgentProcessEventCodec.fromWire(wire) as ContextWindowEvent;
+      expect(back.contextTokens, 153013);
+      expect(back.windowTokens, 1000000);
+      expect(back.compactions, 2);
+    });
+
+    test('an unknown window stays unknown', () {
+      final wire = AgentProcessEventCodec.toWire(
+        ContextWindowEvent(contextTokens: 10),
+      );
+      expect(wire.containsKey('windowTokens'), isFalse);
+
+      final back = AgentProcessEventCodec.fromWire(wire) as ContextWindowEvent;
+      expect(back.windowTokens, isNull);
+    });
+  });
 }

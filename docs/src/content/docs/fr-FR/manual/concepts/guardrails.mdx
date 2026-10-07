@@ -2,7 +2,7 @@
 title: Garde-fous — une politique unique pour chaque action qui modifie l’état
 description: Pourquoi Control Center fait passer chaque effet de bord d’un agent par un moteur unique d’autorisation, de demande ou de refus, pourquoi la taxonomie des ActionClasses reste volontairement restreinte et ce que le cadran d’autonomie change réellement.
 slug: fr-FR/manuel/concepts/garde-fous
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Les agents de Control Center peuvent supprimer des fichiers, pousser des
@@ -253,9 +253,7 @@ Le harnais intégré déclare que ses outils de fichiers exécutés dans son pro
 processus ne sont **pas** placés dans un bac à sable — la surface d’outils et ce
 moteur de politiques constituent sa seule frontière en matière de système de
 fichiers. Claude Code déclare que ses propres appels d’outils ne sont **pas**
-interceptables, car il est lancé avec `--dangerously-skip-permissions` ; Control
-Center ne voit que ses appels `mcp__*`, et ses propres outils de lecture,
-d’écriture, d’édition et de shell s’exécutent sans être vus.
+interceptables, car il est lancé avec `--dangerously-skip-permissions` ; Control Center voit ses appels `mcp__*` et, via un hook, ses lignes de commande `Bash`, tandis que ses propres outils de lecture, d’écriture et d’édition s’exécutent sans être vus.
 
 L’écran des paramètres affiche cette matrice, car le seul échec impardonnable
 pour un système de garde-fous est de revendiquer une couverture qui n’existe

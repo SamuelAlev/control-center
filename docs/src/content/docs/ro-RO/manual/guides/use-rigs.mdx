@@ -2,7 +2,7 @@
 title: Oferă unui agent o mașină pe care să testeze
 description: Oferă unui agent un browser, un desktop, un emulator Android sau un Simulator iOS de unică folosință — urmărite live, cu controale pe care le poți prelua.
 slug: ro-RO/manual/ghiduri-practice/foloseste-statii
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 O **stație** este o mașină de unică folosință pe care un agent o deschide când
@@ -203,9 +203,12 @@ Ce se schimbă:
 - Rețeaua este refuzată implicit. Doar gazdele din lista de permisiuni a
   stației sunt accesibile, iar totul trece printr-o poartă care impune acest
   lucru.
-- `git push` funcționează în continuare. Stația nu are nicio credențială
-  stocată; cere serverului una de scurtă durată per operație, iar acel token
-  este revocat când stația se închide.
+- `git push` funcționează în continuare într-un terminal pe care l-ai deschis tu.
+  Stația nu are nicio credențială stocată; cere serverului una de scurtă durată
+  per operație, limitată de propriul tău acces la platforma de cod, iar acel
+  token este revocat când stația se închide. O stație deschisă de un agent
+  primește o credențială doar pentru citire, așa că poate face fetch, dar nu
+  push.
 
 Ce trebuie să știi:
 

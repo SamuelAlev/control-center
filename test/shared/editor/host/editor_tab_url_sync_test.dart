@@ -38,6 +38,26 @@ void main() {
     });
   });
 
+  group('instanceTabKey', () {
+    test('names one tab of a stackable kind, never two', () {
+      final a = instanceTabKey('terminal');
+      final b = instanceTabKey('terminal');
+      expect(a, startsWith('terminal:'));
+      expect(a, isNot(b));
+    });
+
+    test('tells same-kind siblings apart in the URL', () {
+      final layout = layoutWith([
+        tab('terminal', dedupKey: 'terminal:t1'),
+        tab('terminal', dedupKey: 'terminal:t2'),
+      ]);
+      expect(focusEditorTabByKey(layout, 'terminal:t2'), isTrue);
+      expect(layout.activeLeaf.controller.selectedIndex, 1);
+      expect(focusEditorTabByKey(layout, 'terminal:t1'), isTrue);
+      expect(layout.activeLeaf.controller.selectedIndex, 0);
+    });
+  });
+
   group('focusEditorTabByKey', () {
     test('focuses the tab whose key matches', () {
       final layout = layoutWith([
@@ -52,6 +72,15 @@ void main() {
       final layout = layoutWith([tab('chat'), tab('terminal')]);
       expect(focusEditorTabByKey(layout, 'terminal'), isTrue);
       expect(layout.activeLeaf.controller.selectedIndex, 1);
+    });
+
+    test('a bare-kind key from an older link still finds a keyed tab', () {
+      final layout = layoutWith([
+        tab('chat', dedupKey: 'chat:c1'),
+        tab('terminal', dedupKey: 'terminal:t1'),
+      ]);
+      expect(focusEditorTabByKey(layout, 'terminal'), isTrue);
+      expect(activeEditorTabKey(layout), 'terminal:t1');
     });
 
     test('returns false and keeps the selection on a stale key', () {

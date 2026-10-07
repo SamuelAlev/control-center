@@ -56,6 +56,10 @@ class ServerMcpControl implements McpServerControl {
   final File _file;
 
   McpConfig _config = const McpConfig(enabled: true);
+
+  /// Serves `/agent/…` on every listener the MCP surface is mounted on. Set
+  /// by the runtime before the surface starts; see [McpRequestHandler.agentRoutes].
+  Future<void> Function(HttpRequest request)? agentRoutes;
   McpRequestHandler? _handler;
   McpHttpServer? _companion;
   McpHostServer? _mainServer;
@@ -150,6 +154,7 @@ class ServerMcpControl implements McpServerControl {
     final handler = McpRequestHandler(
       config: McpConfig(token: _config.token, enabled: true),
       dispatcher: _dispatcher,
+      agentRoutes: agentRoutes,
     );
     final main = _mainServer;
     // Bind the companion first so a bind failure (port in use) aborts before
@@ -224,6 +229,19 @@ class ServerMcpControl implements McpServerControl {
     await _startSurface();
   }
 
+  /// Where a server-spawned agent reaches this host over loopback — the same
+  /// port [writeAgentMcpConfig] points it at. Starts the surface first, as
+  /// dispatch does, because the agent run gateway rides it whether or not the
+  /// operator enabled MCP for external clients.
+  Future<Uri> agentLoopbackBase() async {
+    await ensureRunningForDispatch();
+    return Uri.parse('http://127.0.0.1:$_agentPort');
+  }
+
+  int get _agentPort => (_companion?.isRunning ?? false)
+      ? _companionPort
+      : (_mainServer?.boundPort ?? loopbackPort);
+
   /// Fans `notifications/tools/list_changed` out to connected SSE clients.
   /// The runtime wires this to [McpToolRegistry.onToolsChanged].
   void notifyToolsChanged() => _handler?.notifyToolsListChanged();
@@ -253,12 +271,9 @@ class ServerMcpControl implements McpServerControl {
     };
     // Agents always dial loopback: the companion when one is bound (TLS
     // topology / no main listener), the main listener's port otherwise.
-    final port = (_companion?.isRunning ?? false)
-        ? _companionPort
-        : (_mainServer?.boundPort ?? loopbackPort);
     final server = <String, dynamic>{
       'type': 'http',
-      'url': 'http://127.0.0.1:$port/mcp',
+      'url': 'http://127.0.0.1:$_agentPort/mcp',
       'headers': headers,
     };
     await _writeJson(target, {

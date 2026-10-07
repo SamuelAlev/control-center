@@ -70,4 +70,30 @@ void main() {
       },
     );
   });
+
+  test('watchByPr resolves a PR associated twice to its newest row', () async {
+    // Nothing makes the forge id unique, and `watchSingleOrNull` over two
+    // rows used to error — the PR could never resolve its space again.
+    for (final (id, at) in [
+      ('old', DateTime.utc(2026)),
+      ('new', DateTime.utc(2026, 2)),
+    ]) {
+      await seedSpace('space-$id');
+      await db.reviewSpaceDao.insertAssociation(
+        ReviewSpacesTableCompanion.insert(
+          id: id,
+          spaceId: 'space-$id',
+          workspaceId: 'ws-a',
+          prExternalId: 'PR_NODE_1',
+          prNumber: 1,
+          repoFullName: 'octo/repo',
+          createdAt: Value(at),
+        ),
+      );
+    }
+
+    final found = await db.reviewSpaceDao.watchByPr('ws-a', 'PR_NODE_1').first;
+
+    expect(found?.spaceId, 'space-new');
+  });
 }

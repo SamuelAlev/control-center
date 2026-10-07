@@ -18,7 +18,6 @@ extension _ClaudeCliMethods on DispatchSession {
   /// [AgentProcessEvent]s; the prompt is fed via stdin. `claude -p` draws
   /// from the same Claude Code subscription quota as interactive mode.
   Future<void> _runClaudeCli({
-    required AgentCapabilities caps,
     required ScopedCredentials scoped,
     required String sandboxSessionId,
     required String wsId,
@@ -70,7 +69,8 @@ extension _ClaudeCliMethods on DispatchSession {
           '[claude] this Claude Code account is signed out '
           '($claudeConfigDir). Sign in from Settings → Adapters → '
           'Claude Code, or run `claude auth login` with '
-          'CLAUDE_CONFIG_DIR set to that directory.';
+          'CLAUDE_CONFIG_DIR set to that directory, or give it a long-lived '
+          'token from `claude setup-token`.';
       // Signed-out is the one Claude verdict this session can gate itself: the
       // account is already resolved, so its directory is in the sandbox's
       // writable set and a `claude auth login` into that SAME directory lands
@@ -113,6 +113,11 @@ extension _ClaudeCliMethods on DispatchSession {
       modelId: modelId,
       permissionMode: _claudePermissionMode(mode),
       mcpConfigPath: mcpConfigPath,
+      // The action policy's hook on Claude's own `Bash` tool. It still runs
+      // under `--dangerously-skip-permissions` (a PreToolUse deny wins in
+      // every permission mode), which is what lets "ask first" reach a
+      // runner whose own prompt gate is off.
+      settingsJson: _gatewayLease?.claudeHookSettings(),
     );
 
     final handle = await onResolveHandle(
@@ -123,12 +128,12 @@ extension _ClaudeCliMethods on DispatchSession {
         agentId: agentId,
         bindMounts: _bindMounts(),
         guestWorkdir: agentDirHostPath,
-        networkEnabled: caps.canAccessNetwork,
+        networkEnabled: _networkEnabled,
         mode: mode,
-        capabilities: caps,
         protectedPaths: await _protectedPaths(),
         runnerStateDirs: _runnerStateDirs,
         execGrantRoots: await _resolveExecGrantRoots(wsId),
+        loopbackPorts: _gatewayLoopbackPorts,
       ),
       emit: addEvent,
     );
@@ -162,7 +167,6 @@ extension _ClaudeCliMethods on DispatchSession {
     }
 
     final mergedEnv = _mergedEnv(
-      caps: caps,
       scopedEnv: scoped.environment,
       backendEnv: const {},
     );
@@ -190,6 +194,8 @@ extension _ClaudeCliMethods on DispatchSession {
       final attempt = attempts[i];
       ClaudeTerminalError? terminal;
       var producedOutput = false;
+      // Claude Code's own auto-compactions in this attempt.
+      var compactions = 0;
 
       _claudeToolNames.clear();
       _claudeParser = ClaudeStreamJsonParser(
@@ -222,6 +228,29 @@ extension _ClaudeCliMethods on DispatchSession {
           // [HarnessCostCalculator]: the CLI already knows which model served
           // (including the auxiliary calls it makes on its own) and reports the
           // total, where a models.dev lookup would have to guess. Deliberately
+          // Occupancy, not spend: the size of the newest main-thread call,
+          // measured against the agent's configured window, else the one the
+          // `--model` id runs with. A setting the model cannot honour is
+          // shown as set — the run, not the meter, is where it fails.
+          onCallUsage: (u) => addEvent(
+            ContextWindowEvent(
+              contextTokens: u.contextTokens,
+              windowTokens:
+                  contextWindowTokens ??
+                  AcpModelsService.claudeCodeContextWindow(modelId),
+              compactions: compactions,
+            ),
+          ),
+          onCompactBoundary: (preTokens) {
+            compactions++;
+            addEvent(
+              DebugEvent(
+                content:
+                    '[claude] auto-compacted its context'
+                    '${preTokens == null ? '' : ' from $preTokens tokens'}',
+              ),
+            );
+          },
           // NOT gated on `producedOutput` — usage is accounting, not output, and
           // an attempt that spent tokens and then failed over to the next
           // account must still be counted. The accumulator downstream sums
@@ -250,11 +279,7 @@ extension _ClaudeCliMethods on DispatchSession {
       exitCode = await deps.sandbox.exec(
         handle,
         argv,
-        env: {
-          ...mergedEnv,
-          if (attempt.configDir.isNotEmpty)
-            'CLAUDE_CONFIG_DIR': attempt.configDir,
-        },
+        env: _envForClaudeAccount(mergedEnv, attempt.configDir),
         onPid: (forkedPid) {
           _onPidAvailable(forkedPid);
           addEvent(

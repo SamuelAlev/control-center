@@ -47,6 +47,7 @@ import 'package:control_center/features/pr_review/providers/diff_view_settings_p
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/popup_route_tracker.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:flutter/rendering.dart';
@@ -967,6 +968,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     _composerReveal
       ..addListener(_onComposerTick)
       ..addStatusListener(_onComposerStatus);
+    _popups.open.addListener(_syncAffordances);
     _document = PrDiffDocument(
       lineHeight: kDiffLineHeight,
       headerHeight: kFastFileHeaderHeight,
@@ -1320,6 +1322,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
 
   @override
   void dispose() {
+    _popups.open.removeListener(_syncAffordances);
     _composerReveal
       ..removeListener(_onComposerTick)
       ..removeStatusListener(_onComposerStatus);
@@ -2452,7 +2455,21 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// "+" pill appearing on the Overview tab wherever diff rows would be).
   /// The editor body host wraps bodies in `TickerMode(enabled: isVisible)`,
   /// which is exactly the signal to mirror.
+  ///
+  /// The same root overlay also sits above every DIALOG, so this is false
+  /// while one is open too ([_popups]) — otherwise the "+" pill, the avatars
+  /// and the hover tracking paint through the ⌘P picker or a confirm prompt.
   bool _tabVisible = true;
+
+  /// The enclosing [TickerMode], as of the last build.
+  bool _tickerEnabled = true;
+
+  /// Popup routes open on the root navigator — the one dialogs push onto.
+  late final PopupRouteTracker _popups = ref.read(rootPopupRoutesProvider);
+
+  /// Recomputes [_tabVisible] from the tab's visibility and open dialogs.
+  void _syncAffordances() =>
+      _syncTabVisibility(_tickerEnabled && _popups.open.value == 0);
 
   /// Syncs [_tabVisible] from the enclosing [TickerMode] (called from
   /// `build`). Overlay entries are ancestors-by-scope, so they are only
@@ -3442,7 +3459,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     final codeFont = ref.watch(codeFontFamilyProvider);
     final codeLigatures = ref.watch(codeFontLigaturesProvider);
     final overflowMode = ref.watch(diffOverflowModeProvider);
-    _syncTabVisibility(TickerMode.valuesOf(context).enabled);
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
+    _syncAffordances();
     _ensureReviewOverlay();
     _ensureHScrollbarOverlay();
     _startPendingFileReveals();

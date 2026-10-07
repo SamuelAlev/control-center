@@ -2,7 +2,7 @@
 title: Rigs et enceintes
 description: Pourquoi les agents obtiennent des machines jetables plutôt que votre ordinateur — les frontières d’isolation, les voies d’affichage, les identifiants, les ports et le cycle de vie.
 slug: fr-FR/manuel/concepts/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Un **rig** est une machine jetable qu’un agent pilote en temps réel — un navigateur, un
@@ -158,12 +158,19 @@ consigne qu’un collage a eu lieu et son volume — jamais son contenu.
 
 ## Les identifiants ne vivent jamais dans l’invité
 
-`git push` fonctionne depuis un terminal isolé, et pourtant l’invité ne stocke aucun jeton de
+`git push` fonctionne depuis un terminal isolé que vous avez ouvert, et pourtant l’invité ne stocke aucun jeton de
 forge. Il détient un secret par VM dont le seul pouvoir est de *demander* au courtier
 d’identifiants de l’hôte — via un tunnel contrôlé par l’hôte — un jeton de courte durée et
 limité au dépôt, pour chaque opération, avec limitation de débit, borné par la même liste
 d’hôtes autorisés que la sortie réseau, et révoqué dès la fermeture du rig. Une machine conçue
 pour être jetée ne doit contenir rien qui vaille la peine d’être volé.
+
+Ce que ce jeton peut faire est fixé à l’ouverture du rig. Un rig de terminal
+ouvert par une personne reçoit un jeton en écriture, borné par l’accès à la
+forge de ce membre. Un rig ouvert par un agent en reçoit un en lecture seule :
+un assistant d’identifiants git ne sait pas distinguer un push d’un fetch, donc
+la règle de push ne peut pas être interrogée à chaque push dans un invité,
+comme le fait la passerelle d’exécution d’agent sur l’hôte.
 
 ## L’arbre de travail d’un rig est un satellite
 

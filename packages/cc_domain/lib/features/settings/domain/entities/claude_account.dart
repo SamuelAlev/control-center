@@ -11,7 +11,8 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 ///
 /// Only [id] and [label] are CC's. [email], [orgName], [subscriptionType],
 /// [loggedIn] are read back from `claude auth status --json` against this
-/// directory — never written by us (the operator runs `claude auth login`).
+/// directory — never written by us (the operator runs `claude auth login`, or
+/// pastes the token `claude setup-token` prints).
 class ClaudeAccount {
   /// Creates a [ClaudeAccount].
   const ClaudeAccount({
@@ -27,7 +28,8 @@ class ClaudeAccount {
     this.authFailedAt,
     this.authFailedReason,
     this.credentialExpiresAt,
-    this.tracksDefaultLogin = false,
+    this.usesLongLivedToken = false,
+    this.longLivedTokenSavedAt,
   });
 
   /// Reads the RPC wire shape.
@@ -48,7 +50,10 @@ class ClaudeAccount {
     credentialExpiresAt: DateTime.tryParse(
       json['credential_expires_at'] as String? ?? '',
     ),
-    tracksDefaultLogin: json['tracks_default_login'] as bool? ?? false,
+    usesLongLivedToken: json['uses_long_lived_token'] as bool? ?? false,
+    longLivedTokenSavedAt: DateTime.tryParse(
+      json['long_lived_token_saved_at'] as String? ?? '',
+    ),
   );
 
   /// Stable opaque id. Also the directory name under the accounts root, so it
@@ -131,18 +136,19 @@ class ClaudeAccount {
   /// reported, never repaired: the fix is `claude auth login`.
   final DateTime? credentialExpiresAt;
 
-  /// Whether this account IS the operator's own `~/.claude` login, seeded from
-  /// the unsuffixed keychain item rather than signed in through its own
-  /// directory.
+  /// Whether runs on this account authenticate with a long-lived token from
+  /// `claude setup-token` rather than the interactive login's credential.
   ///
-  /// It matters for refresh. A directory the CLI logged into owns a keychain
-  /// item named after it, and the CLI renews that item — so mirroring keeps the
-  /// account fresh. A SEEDED directory has no such item: nothing renews it, and
-  /// the snapshot silently expires (measured: expired at 21:57 while the
-  /// default item was good until 05:54, and every run on it then 401s). So this
-  /// one account follows the default item instead, which is what it is a copy
-  /// of.
-  final bool tracksDefaultLogin;
+  /// The interactive credential carries a rotating refresh token, so any two
+  /// copies of it (the keychain item and the file a sandboxed run reads) race,
+  /// and the loser is signed out. A setup token never refreshes, so an account
+  /// on one stays signed in until the token itself lapses, about a year later.
+  /// Read from the account directory on every list, never stored here.
+  final bool usesLongLivedToken;
+
+  /// When the long-lived token was saved. The CLI does not report a setup
+  /// token's expiry, so this is the date the operator can reason from.
+  final DateTime? longLivedTokenSavedAt;
 
   /// Whether the account is cooling off at [now] (defaults to the wall clock).
   bool isRateLimited([DateTime? now]) {
@@ -188,7 +194,9 @@ class ClaudeAccount {
     bool clearAuthFailure = false,
     DateTime? credentialExpiresAt,
     bool clearCredentialExpiresAt = false,
-    bool? tracksDefaultLogin,
+    bool? usesLongLivedToken,
+    DateTime? longLivedTokenSavedAt,
+    bool clearLongLivedTokenSavedAt = false,
   }) => ClaudeAccount(
     id: id,
     label: label ?? this.label,
@@ -208,7 +216,10 @@ class ClaudeAccount {
     credentialExpiresAt: clearCredentialExpiresAt
         ? null
         : (credentialExpiresAt ?? this.credentialExpiresAt),
-    tracksDefaultLogin: tracksDefaultLogin ?? this.tracksDefaultLogin,
+    usesLongLivedToken: usesLongLivedToken ?? this.usesLongLivedToken,
+    longLivedTokenSavedAt: clearLongLivedTokenSavedAt
+        ? null
+        : (longLivedTokenSavedAt ?? this.longLivedTokenSavedAt),
   );
 
   /// What the on-disk registry stores: only the fields Control Center owns.
@@ -233,7 +244,6 @@ class ClaudeAccount {
     // back into the account that just refused it.
     if (authFailedAt != null) 'auth_failed_at': authFailedAt!.toIso8601String(),
     if (authFailedReason != null) 'auth_failed_reason': authFailedReason,
-    if (tracksDefaultLogin) 'tracks_default_login': true,
   };
 
   /// The RPC wire shape.
@@ -255,7 +265,11 @@ class ClaudeAccount {
     // `logged_in` would.
     if (credentialExpiresAt != null)
       'credential_expires_at': credentialExpiresAt!.toIso8601String(),
-    if (tracksDefaultLogin) 'tracks_default_login': true,
+    // Whether a token is present, never the token: the client only ever sees
+    // identity and quota.
+    if (usesLongLivedToken) 'uses_long_lived_token': true,
+    if (longLivedTokenSavedAt != null)
+      'long_lived_token_saved_at': longLivedTokenSavedAt!.toIso8601String(),
   };
 
   @override
@@ -275,7 +289,8 @@ class ClaudeAccount {
           authFailedAt == other.authFailedAt &&
           authFailedReason == other.authFailedReason &&
           credentialExpiresAt == other.credentialExpiresAt &&
-          tracksDefaultLogin == other.tracksDefaultLogin;
+          usesLongLivedToken == other.usesLongLivedToken &&
+          longLivedTokenSavedAt == other.longLivedTokenSavedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -291,7 +306,8 @@ class ClaudeAccount {
     authFailedAt,
     authFailedReason,
     credentialExpiresAt,
-    tracksDefaultLogin,
+    usesLongLivedToken,
+    longLivedTokenSavedAt,
   );
 }
 

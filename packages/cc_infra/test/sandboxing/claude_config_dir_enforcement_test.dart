@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
@@ -71,14 +70,12 @@ void main() {
           guestWorkdir: work.path,
           networkEnabled: false,
           mode: mode,
-          capabilities: AgentCapabilities.safeDefault,
           protectedPaths: protectedPaths,
           runnerStateDirs: runnerStateDirs,
         );
         final config = await buildSandboxConfigFromPolicy(
           const SandboxPolicyResolver().resolve(
             spec: spec,
-            capabilities: AgentCapabilities.safeDefault,
             homeDir: Platform.environment['HOME'],
             runDir: '${work.path}/.cc-runs/$session',
           ),

@@ -18,7 +18,6 @@ AgentsTableData _makeRow({
   bool strictMode = false,
   String? effort,
   int? contextSize,
-  String sandboxCapabilitiesJson = '',
   String commandPolicyJson = '',
   String? role,
   int monthlyBudgetCents = 0,
@@ -43,7 +42,6 @@ AgentsTableData _makeRow({
   strictMode: strictMode,
   effort: effort,
   contextSize: contextSize,
-  sandboxCapabilitiesJson: sandboxCapabilitiesJson,
   commandPolicyJson: commandPolicyJson,
   role: role,
   monthlyBudgetCents: monthlyBudgetCents,
@@ -129,31 +127,6 @@ void main() {
       final agent = mapper.toDomain(row);
       expect(agent.skills.toList(), isEmpty);
     });
-
-    test(
-      'capabilities is null when sandboxCapabilitiesJson is empty',
-      timeout: const Timeout.factor(2),
-      () {
-        final row = _makeRow(sandboxCapabilitiesJson: '');
-        final agent = mapper.toDomain(row);
-        expect(agent.capabilities, isNull);
-      },
-    );
-
-    test(
-      'parses capabilities from JSON string',
-      timeout: const Timeout.factor(2),
-      () {
-        const json =
-            '{"canPushToRepo":true,"canCallGitHubApi":false,"canCallTicketing":true,"canAccessNetwork":true}';
-        final row = _makeRow(sandboxCapabilitiesJson: json);
-        final agent = mapper.toDomain(row);
-        expect(agent.capabilities, isNotNull);
-        expect(agent.capabilities!.canPushToRepo, isTrue);
-        expect(agent.capabilities!.canCallGitHubApi, isFalse);
-        expect(agent.capabilities!.canCallTicketing, isTrue);
-      },
-    );
 
     test(
       'role is null for unrecognized string',

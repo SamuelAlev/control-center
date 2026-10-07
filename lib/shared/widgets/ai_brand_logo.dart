@@ -33,6 +33,10 @@ enum AiBrand {
   /// Google Gemini, and Gemma.
   gemini('gemini'),
 
+  /// GitHub. Not an AI brand: the service status surfaces draw it beside the
+  /// AI providers whose status pages they poll.
+  github('github'),
+
   /// Grok models.
   grok('grok'),
 

@@ -1020,9 +1020,6 @@
     "description": "Locale string for allSources"
   },
   "allow": "Toestaan",
-  "allowGitPush": "git push toestaan",
-  "allowGithubApi": "GitHub API-aanroepen toestaan",
-  "allowNetwork": "Algemene netwerktoegang toestaan",
   "apiKeys": "API-sleutels",
   "appFont": "App-lettertype",
   "appLogLevelDebugDescription": "Voegt gedetailleerde traces toe - voor ontwikkeling.",
@@ -1266,17 +1263,12 @@
   "@currentParticipants": {
     "description": "Current participants"
   },
-  "customCapabilitiesDescription": "Aangepaste mogelijkheden voor deze agent",
-  "@customCapabilitiesDescription": {
-    "description": "Locale string for customCapabilitiesDescription"
-  },
   "customSystemPrompt": "Aangepaste systeem-prompt voor deze agent...",
   "daysAgo": "{count, plural, =1{1 dag geleden} other{{count} dagen geleden}}",
   "deactivate": "Deactiveren",
   "@deactivate": {
     "description": "Button to deactivate a policy"
   },
-  "defaultCapabilities": "Standaardmogelijkheden · nieuwe gesprekken",
   "defaultChat": "Standaard-chat",
   "defaultRunners": "Standaard-runners",
   "delete": "Verwijderen",
@@ -1546,7 +1538,6 @@
     "description": "Confirm button in focus mode config dialog"
   },
   "forward": "Doorsturen",
-  "gatesGithubPatPush": "Stuurt GitHub PAT-injectie aan. Vereist om de agent te laten pushen.",
   "general": "Algemeen",
   "githubLink": "GitHub-link",
   "claudeStatusFetchFailed": "Kon status.claude.com niet bereiken",
@@ -1567,6 +1558,7 @@
   "serviceStatusMinorIssues": "Kleine problemen",
   "serviceStatusOperational": "Operationeel",
   "serviceStatusOutage": "Storing",
+  "serviceStatusOverflowCount": "{count}+",
   "serviceStatusTitle": "Servicestatus",
   "serviceStatusUnknown": "Onbekend",
   "lastChecked": "Gecontroleerd {time}",
@@ -1927,6 +1919,7 @@
   },
   "navObservability": "Observeerbaarheid",
   "navSettings": "Instellingen",
+  "exitSettings": "Instellingen verlaten",
   "networkBlockCount": "{count} netwerkblokkades",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2392,7 +2385,6 @@
   "questionLabel": "VRAAG",
   "queued": "In wachtrij",
   "react": "Reageren",
-  "readPrsIssuesMetadata": "Stelt de agent in staat PR's, issues en repository-metadata te lezen.",
   "readerPreferences": "Lezersvoorkeuren",
   "reasoningEffort": "Reasoning-inspanning",
   "@reasoningEffort": {
@@ -2533,10 +2525,6 @@
   "sandboxMacosBuiltIn": "Native sandbox is ingebouwd in macOS — gebruikt Apple Seatbelt (`sandbox-exec`). Geen installatie vereist.",
   "@sandboxMacosBuiltIn": {
     "description": "Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required."
-  },
-  "sandboxPermissions": "Sandbox-machtigingen",
-  "@sandboxPermissions": {
-    "description": "Locale string for sandboxPermissions"
   },
   "sandboxUnsupported": "Native sandbox wordt op dit platform nog niet ondersteund. Val terug op \"Geen isolatie\".",
   "@sandboxUnsupported": {
@@ -3035,10 +3023,6 @@
   "@useSandbox": {
     "description": "Locale string for useSandbox"
   },
-  "useWorkspaceDefault": "Werkruimtestandaard gebruiken",
-  "@useWorkspaceDefault": {
-    "description": "Locale string for useWorkspaceDefault"
-  },
   "userAgent": "User-Agent",
   "userAgentDescription": "Laat leeg om de standaard app User-Agent te gebruiken. Sommige sites blokkeren niet-browser User-Agents.",
   "usersLabel": "Gebruikers",
@@ -3064,7 +3048,6 @@
   "@weakIsolationDescription": {
     "description": "Weak isolation - namespace boundary only, no kernel boundary."
   },
-  "whenOffNoDefaultRoute": "Als dit uit staat, start de sandbox zonder een standaardroute.",
   "whenOffServerStaysStopped": "Als dit uit staat, blijft de server gestopt totdat je hem start.",
   "speechModel": "Spraakmodel",
   "speechModelHint": "Gebruikt voor vergadertranscriptie en de composer-microfoon.",
@@ -3739,9 +3722,7 @@
   "triggerDisabledTag": "uit",
   "pipelineInputTypeRepo": "Repository",
   "pipelineRunNoRepos": "Nog geen repository's in deze werkruimte.",
-  "allowTicketingApi": "Ticketing-API-aanroepen toestaan",
   "ticketingApiKey": "Ticketing-API-sleutel",
-  "ticketingApiKeySubtitle": "Injecteert de API-sleutel van de ticketingprovider in de sandbox.",
   "ticketingProvider": "Ticketingprovider",
   "connectGitHubAndTicketing": "Verbind een codehost zodat Control Center je pull requests, issues en reviews kan lezen. Verbind optioneel een ticketingprovider. Gegevens staan op je server, nooit op deze machine.",
   "triggerEventTicketAssigned": "Ticket toegewezen",
@@ -4430,13 +4411,6 @@
   "keepAwakeTitle": "Computer wakker houden terwijl agents draaien",
   "keepAwakeOnSubtitle": "De computer gaat niet in slaapstand terwijl een agent werkt",
   "keepAwakeOffSubtitle": "De computer kan in slaapstand gaan, zelfs terwijl een agent werkt",
-  "syncEngineSectionTitle": "Synchronisatie-engine",
-  "syncEngineDescription": "Tickets, berichten en notities worden live bijgewerkt via kleine incrementele wijzigingen in plaats van volledige snapshots. Als je een schakelaar uitzet, valt dat onderdeel terug op de volledige-snapshotmodus — herlaad de app om de wijziging door te voeren.",
-  "syncEngineTicketsTitle": "Tickets",
-  "syncEngineMessagingTitle": "Berichten",
-  "syncEngineNotesTitle": "Notities",
-  "syncEngineOnSubtitle": "Live delta-synchronisatie is actief",
-  "syncEngineOffSubtitle": "Volledige-snapshotsynchronisatie wordt gebruikt",
   "spaces": "Ruimtes",
   "spacesHomeDescription": "Kies een ruimte uit de lijst of start een nieuwe.",
   "noSpacesYet": "Nog geen ruimtes",
@@ -7049,12 +7023,11 @@
   "newConversation": "Nieuw gesprek",
   "untitledConversation": "Gesprek zonder titel",
   "conversationTitleOptionalHint": "Optioneel — laat leeg en het titelmodel geeft automatisch een naam",
-  "conversationTitlesSectionTitle": "Gesprekstitels",
-  "conversationTitlesSectionCaption": "Kies de runner die nieuwe gesprekken in deze werkruimte automatisch een naam geeft. Titels staan uit tot er een adapter is gekozen en gelden voor elk lid.",
-  "conversationTitlesModelLabel": "Titelmodel",
-  "conversationTitlesAdapterLabel": "Adapter",
-  "conversationTitlesAdapterHint": "Uit",
-  "conversationTitlesAdapterOff": "Uit",
+  "shortTaskOff": "Uit",
+  "shortTaskUnavailable": "Kies een model voor korte taken in Instellingen → Adapters om dit te gebruiken",
+  "conversationTitleGenerate": "Genereren",
+  "conversationTitleNoMessages": "Stuur eerst een bericht. De titel wordt daaruit gegenereerd.",
+  "conversationTitleGenerateFailed": "Kan geen titel genereren. Probeer het opnieuw.",
   "startThread": "Thread starten",
   "deleteSpaceConfirm": "Deze ruimte verwijderen? Alle berichten gaan verloren.",
   "threadTabTitle": "Thread: {title}",
@@ -7100,6 +7073,9 @@
   "contextSegmentSubagents": "Subagentdefinities",
   "contextSegmentMemory": "Geheugen",
   "contextSegmentConversation": "Gesprek",
+  "contextSegmentRunner": "Runner-prompt, tools en werk in de beurt",
+  "contextUsageMeasured": "Gemeld door de laatste modelaanroep",
+  "contextUsageEstimated": "Geschat tot een run het gebruik meldt",
   "contextExplorerTitle": "Context",
   "contextExplorerEverything": "Alles",
   "contextExplorerSelectPart": "Selecteer een deel om de inhoud te inspecteren",
@@ -7257,8 +7233,9 @@
   "sandboxSummaryHost": "Host",
   "sandboxGroupIsolation": "Isolatie",
   "sandboxGroupIsolationDescription": "Waar de processen en bestandsschrijfacties van een agent daadwerkelijk plaatsvinden.",
+  "sandboxGroupAgentActions": "Wat agents mogen doen",
+  "sandboxGroupAgentActionsDescription": "Of pushen, een pull request openen en toegang tot het netwerk worden toegestaan, eerst gevraagd of geweigerd, wordt ingesteld in de agentmachtigingen.",
   "sandboxBackendFieldDescription": "Automatisch kiest de sterkste die deze host ondersteunt. Zet er een vast zodat hij niet onder je vandaan verandert.",
-  "sandboxCapabilitiesDescription": "De gaten die in de grens zijn geprikt. Elk daarvan is iets wat een geïsoleerde agent nog met de buitenwereld kan doen.",
   "sandboxSummaryInForce": "Van kracht",
   "rigsInstallHintLabel": "Zo installeer je het",
   "rigsStarting": "Starten",
@@ -7305,6 +7282,12 @@
   "claudeAccountSignIn": "Aanmelden",
   "claudeAccountSignInAgain": "Opnieuw aanmelden",
   "claudeAccountSignInHint": "Voer dit uit in een terminal op de server. Er wordt een browser geopend om het aanmelden te voltooien en de referentie wordt in de map van dit account geschreven.",
+  "claudeAccountLongLivedToken": "Langlevend token",
+  "claudeAccountUseLongLivedToken": "Een langlevend token gebruiken",
+  "claudeAccountReplaceLongLivedToken": "Langlevend token vervangen",
+  "claudeAccountRemoveLongLivedToken": "Langlevend token verwijderen",
+  "claudeAccountLongLivedTokenHint": "Een gewone aanmelding moet worden vernieuwd en kan van de ene op de andere dag verlopen. Een langlevend token blijft ongeveer een jaar aangemeld. Voer dit uit in een terminal, rond af in de browser en plak daarna het token dat wordt getoond.",
+  "claudeAccountLongLivedTokenInvalid": "Dat is geen token van claude setup-token. Het begint met sk-ant-oat01-.",
   "claudeAccountSignedOut": "Afgemeld",
   "claudeAccountExpired": "Aanmelding verlopen",
   "claudeAccountExpiredDetail": "De aanmelding is om {when} verlopen. Meld je opnieuw aan om dit account te gebruiken.",
@@ -7599,7 +7582,6 @@
   "attachmentPreviewUnsupported": "Geen voorbeeld voor dit bestandstype",
   "attachmentTooLargeToPreview": "Te groot voor een voorbeeld",
   "attachmentOpenExternally": "Openen in standaardapp",
-  "asideUnavailable": "Stel een one-shot model in bij de instellingen om dit te gebruiken",
   "asideEmpty": "Nog niets om mee te werken",
   "asideFailed": "Kon geen antwoord krijgen",
   "handoffTitle": "Overdracht",
@@ -7786,6 +7768,10 @@
   "credentialGateAccountsTried": "Geprobeerde accounts",
   "credentialGateClaudeSignInHint": "Meld je aan via Instellingen → Adapters → Claude Code, of voer de aanmeldopdracht uit in een terminal. De run pikt het vanzelf op.",
   "credentialGateOpenSettings": "Instellingen openen",
+  "credentialGateAccountsRemovedTitle": "De gekoppelde Claude Code-accounts zijn verwijderd",
+  "credentialGateAccountsRemovedHint": "Koppel een ander account in de accountinstellingen van deze agent of de workspace, of maak de lijst leeg om het standaardaccount te gebruiken. De run gaat vanzelf verder.",
+  "accountPoolAllRemoved": "Alle accounts in deze lijst zijn van de server verwijderd. Koppel een ander account of maak de lijst leeg.",
+  "accountPoolClear": "Lijst leegmaken",
   "selectModel": "Model selecteren",
   "allModels": "Alle modellen",
   "noModelsMatchSearch": "Geen modellen komen overeen met je zoekopdracht",
@@ -7994,6 +7980,7 @@
   "sandboxCheckAgain": "Opnieuw controleren",
   "ideQuickOpen": "Ga naar bestand",
   "ideQuickOpenDescription": "Zoek de bestanden van het gesprek op naam en open er een in een tabblad",
+  "prQuickOpenDescription": "Zoek de bestanden van de pull request op naam en open er een in een tabblad",
   "ideQuickOpenHint": "Bestanden zoeken op naam",
   "ideQuickOpenRecentlyOpened": "Recent geopend",
   "ideQuickOpenOpenToSide": "Aan de zijkant openen",

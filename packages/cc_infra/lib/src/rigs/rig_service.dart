@@ -1816,21 +1816,21 @@ class RigService implements RigPort, RigPortsPort {
       workspaceId: rig.workspaceId,
       conversationId: rig.conversationId ?? rig.id,
       secret: machine.guestSecret,
-      // The rig's OWN capabilities, not a default: with
-      // `AgentCapabilities.safeDefault` the broker mints nothing and every
-      // request is refused, which is the right floor for an agent-opened rig.
-      // A terminal rig carries the operator's capabilities, which is what
-      // makes `git push` work there and nowhere else.
-      capabilities: rig.spec.capabilities,
+      // The rig's OWN scope, not a default: an agent-opened rig reads, which
+      // is the right floor — a guest's credential helper cannot tell a push
+      // from a fetch, so the push rule cannot be asked per push in there. A
+      // terminal rig is a human at a shell and carries write, which is what
+      // makes `git push` work there.
+      scope: rig.spec.forgeTokenScope,
       repoOwner: rig.spec.repoOwner,
       repoName: rig.spec.repoName,
       // Whose forge access the guest's credentials are bounded by. The spec's
-      // capability flags are a ceiling, not an authorization.
+      // scope is a ceiling, not an authorization.
       actingUserId: rig.spec.openedByUserId,
       // The credential allowlist and the egress allowlist are one policy: a
       // host the guest cannot reach must never be one we hand it a token for.
       // Note the direction of the implication — being reachable does NOT by
-      // itself grant a credential; `capabilities` above is what does.
+      // itself grant a credential; `scope` above is what does.
       allowedHosts: rig.spec.egressAllowlist
           .where((h) => !h.startsWith('*'))
           .toSet(),
@@ -1969,13 +1969,13 @@ class RigService implements RigPort, RigPortsPort {
       workspaceId: rig.workspaceId,
       conversationId: rig.conversationId ?? rig.id,
       secret: machine.guestSecret,
-      // Same floor as the QEMU path: the rig's OWN capabilities, so an
-      // agent-opened rig mints nothing by default.
-      capabilities: rig.spec.capabilities,
+      // Same floor as the QEMU path: the rig's OWN scope, so an agent-opened
+      // rig reads by default.
+      scope: rig.spec.forgeTokenScope,
       repoOwner: rig.spec.repoOwner,
       repoName: rig.spec.repoName,
       // Whose forge access the guest's credentials are bounded by. The spec's
-      // capability flags are a ceiling, not an authorization.
+      // scope is a ceiling, not an authorization.
       actingUserId: rig.spec.openedByUserId,
       // The credential allowlist and the egress allowlist are one policy: a
       // host the guest cannot reach must never be one we hand it a token for.

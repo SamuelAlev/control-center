@@ -2,7 +2,7 @@
 title: Modos
 description: Por que um espaço, e não um agente, carrega um modo; o que cada um dos quatro modos garante; e onde essa garantia é estrutural, em vez de apenas sugerida no prompt.
 slug: pt-BR/manual/conceitos/modos
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## O que é um modo
@@ -77,7 +77,7 @@ A resolução em si é simples. O dispatcher lê a coluna `mode` do espaço; um 
 
 A superfície de ferramentas de um modo é construída e aplicada pelo **harness integrado**. Ele é o único transporte capaz de tornar uma ferramenta invisível em vez de apenas negá-la, de colocar um portão em cada chamada antes de ela rodar e de observar um contrato de conclusão.
 
-No transporte do Claude Code, um modo diferente de chat é passado como `--permission-mode plan`. O Claude respeita isso por convenção; as próprias ferramentas de leitura, escrita, edição e shell dele rodam sem serem vistas. Para esse transporte, o modo é orientação, não uma fronteira do Control Center — consulte [O modelo de agentes](/pt-BR/manual/conceitos/modelo-de-agentes/).
+No transporte do Claude Code, um modo diferente de chat é passado como `--permission-mode plan`. O Claude respeita isso por convenção; as próprias ferramentas de leitura, escrita e edição dele rodam sem serem vistas, e os comandos de shell dele só são verificados por um hook que lê a linha de comando. Para esse transporte, o modo é orientação, não uma fronteira do Control Center — consulte [O modelo de agentes](/pt-BR/manual/conceitos/modelo-de-agentes/).
 
 As listas de permissões restringem as ferramentas de nível de escrita e acima. O nível de leitura do harness integrado ainda alcança ferramentas que nenhuma lista nomeia; no Claude Code, uma ferramenta omitida pela lista de permissões é recusada independentemente de o servidor tê-la ou não.
 

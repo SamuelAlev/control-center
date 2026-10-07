@@ -2,7 +2,7 @@
 title: Einen Agenten erstellen und konfigurieren
 description: Füge einem Arbeitsbereich einen Agenten hinzu, gib ihm Adapter, Modell, Skills und Berechtigungen und prüfe, dass er läuft.
 slug: de-DE/handbuch/anleitungen/agent-erstellen
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Diese Anleitung zeigt dir, wie du einem Arbeitsbereich einen Agenten hinzufügst und ihn so einrichtest, dass er wirklich läuft.
@@ -68,19 +68,12 @@ Die eigenen Skills eines Repos wählst du hier nicht. Bringt ein Repo sie mit (i
 
 ## Berechtigungen vergeben
 
-**Sandbox-Berechtigungen** steht anfangs auf „Arbeitsbereichsstandard verwenden“. Schalte den Schalter ein, um sie für diesen Agenten festzulegen, und schalte dann um:
+Ein Agent hat keine eigenen Berechtigungsschalter. Was er pushen, öffnen, mergen oder erreichen darf, legen die Aktionsregeln unter **Einstellungen → Arbeitsbereich → Agent-Berechtigungen** fest, wo sich eine Regel auf diesen Agenten beschränken lässt. Ab Werk fragen ein Push, ein Pull Request, eine Review oder ein Merge und ein Schreibvorgang im Tracker jeweils zuerst dich, und Netzwerkzugriff ist zugelassen.
 
-- **git push erlauben** — legt das GitHub-Token, das der Agent zum Pushen braucht, in die Umgebung
-- **GitHub-API-Aufrufe erlauben** — lässt den Agenten PRs, Issues und Repo-Metadaten lesen
-- **Ticketing-API-Aufrufe zulassen** — legt den Schlüssel des Ticketing-Anbieters in die Umgebung
-- **Allgemeinen Netzwerkzugriff erlauben** — schaltet außerdem `web_fetch` und `web_search` des eingebauten Harness frei
+Das GitHub-Token des Agenten darf immer nur lesen. Ein Push läuft durch Control Center, das vor dem Weiterleiten die Regel **Zu einem Remote pushen** fragt. Wie jede Regel einen Lauf erreicht, steht unter [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/).
 
-Jeden Schalter prüft der Zugangsdaten-Broker beim Start des Laufs: Ist eine Befugnis aus, wird das passende Token schlicht nie in die Umgebung gelegt.
-
-:::caution[Arbeitsbereichsstandard heißt die zurückhaltenden Vorgaben des Servers]
-Ein Agent, der auf „Arbeitsbereichsstandard verwenden“ bleibt, läuft mit git push, GitHub-API und Ticketing **aus** und Netzwerk **an**. Die voreingestellten Befugnisse unter Einstellungen → Server → Diagnose und Datenschutz sind eine Einstellung auf dem Client. Soll ein Agent pushen oder Pull Requests öffnen, schalte den Schalter ein und vergib die Befugnisse ausdrücklich.
-
-Diese Befugnisse sind das Tor für Zugangsdaten und Harness-Werkzeuge, eine eigene Schicht neben der OS-Sandbox. `cc_server` hüllt Agentenläufe in die Sandbox des Hosts, wo es eine gibt — Windows hat kein natives Backend, und Linux und WSL2 brauchen `bwrap` und `socat`. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) für sämtliche Grenzen.
+:::note[Regeln und die OS-Sandbox sind getrennte Schichten]
+Die Regeln entscheiden, was ein Agent tun darf; die OS-Sandbox begrenzt, wo seine Prozesse lesen, schreiben und sich verbinden können. `cc_server` hüllt Agentenläufe in die Sandbox des Hosts, wo es eine gibt — Windows hat kein natives Backend, und Linux und WSL2 brauchen `bwrap` und `socat`. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) für sämtliche Grenzen.
 :::
 
 ## Prüfen, dass er läuft

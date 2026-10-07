@@ -2,7 +2,7 @@
 title: Diagnosticar un agente
 description: Recorre el registro de ejecuciones, la sonda del adaptador, el estado del servidor y el diagnóstico del host cuando un agente deja de generar ejecuciones.
 slug: es-MX/manual/guias/diagnosticar-agente
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Esta guía te muestra cómo averiguar por qué un agente no está generando ejecuciones.
@@ -60,19 +60,18 @@ Dos cosas que conviene saber cuando un cambio «funciona en las pruebas pero no 
 
 **Ajustes → Servidor → Diagnóstico y privacidad** (`/settings/server/diagnostics`) es la página de nivel de host. Incluye:
 
-- **Aislamiento** — el interruptor maestro, el backend detectado, una sugerencia de instalación y los interruptores de capacidades predeterminadas. Del servidor solo procede el backend detectado; consulta la advertencia de abajo. No hay ningún control de restablecimiento.
+- **Aislamiento** — el interruptor maestro, el backend detectado y una sugerencia de instalación. Del servidor solo procede el backend detectado; consulta la advertencia de abajo. No hay ningún control de restablecimiento.
 - **Búsqueda semántica** — el ciclo de vida del modelo de embeddings en el dispositivo: instalado, descargándose con un porcentaje, no instalado o un error de instalación. Hasta que esté instalado, la memoria y la búsqueda de código siguen siendo solo por palabras clave.
 - **Comportamiento del sistema** — mantener la computadora despierta mientras se ejecutan agentes.
-- **Motor de sincronización** — interruptores de emergencia por almacén para tickets, mensajería y notas. Son vías de escape de emergencia para volver a las suscripciones de instantánea completa; un cambio solo afecta a las suscripciones nuevas, así que surte pleno efecto después de recargar.
 - **Nivel de registro** — súbelo antes de reproducir una falla.
 - **Privacidad** — si el contenido de los diffs sin procesar puede reenviarse al modelo del agente y si se envían reportes de fallas.
 
 :::caution[Esta sección reporta el host, pero sus controles están del lado del cliente]
-La detección y la aplicación ahora coinciden: cuando el detector reporta un backend nativo, las ejecuciones de agentes en ese host realmente van envueltas en él. Pero el detector es lo único vivo de esta sección. El interruptor maestro, el selector de backend y los interruptores de capacidades predeterminadas son preferencias almacenadas en tu dispositivo, y el servidor no lee ninguno de ellos: el interruptor propio del servidor es `--sandbox` (`on` por defecto, `off` para desactivarlo) y, para cualquier agente que se deje en «Usar valor por defecto del espacio de trabajo», el servidor recurre a su valor predeterminado conservador: sin git push, sin API de GitHub, sin clave de tickets y con la red activada.
+La detección y la aplicación ahora coinciden: cuando el detector reporta un backend nativo, las ejecuciones de agentes en ese host realmente van envueltas en él. Pero el detector es lo único vivo de esta sección. El interruptor maestro y el selector de backend son preferencias almacenadas en tu dispositivo, y el servidor no lee ninguno de ellos: el interruptor propio del servidor es `--sandbox` (`on` por defecto, `off` para desactivarlo).
 
 Así que una advertencia aquí vale la pena atenderla, pero no suele ser la razón por la que un agente está fallando. Para confirmar en qué estado está el servidor, lee su registro de arranque: imprime `agent sandbox ON` con la nota del backend, `no OS-native agent sandbox on this host` con una sugerencia de instalación, o `agent sandbox DISABLED by --sandbox off`. `GET /healthz` no incluye ningún campo de sandbox.
 
-Donde no hay backend —Windows siempre, Linux o WSL2 sin `bwrap` y `socat`— las ejecuciones **no** están dentro de un sandbox, y lo que las limita es el propio checkout de la conversación, las capacidades que controlan qué credenciales se emiten en él, las barandillas de acciones, la sanitización del entorno y la superficie de herramientas que permite su modo.
+Donde no hay backend —Windows siempre, Linux o WSL2 sin `bwrap` y `socat`— las ejecuciones **no** están dentro de un sandbox, y lo que las limita es el propio checkout de la conversación, su token de forja de solo lectura y la pasarela de push, las barandillas de acciones, la sanitización del entorno y la superficie de herramientas que permite su modo.
 :::
 
 ## Fallas comunes
@@ -83,7 +82,7 @@ Instala la CLI **en el host del servidor** y luego haz clic en **Actualizar** en
 
 ### El agente no puede hacer push ni abrir una pull request
 
-Sus capacidades son la compuerta. Abre **Ajustes → Espacio de trabajo → Agentes** → el agente → **Permisos del sandbox**, activa el interruptor y habilita **Permitir git push** y **Permitir llamadas a la API de GitHub**. Si dejas el interruptor en «Usar valor por defecto del espacio de trabajo», el agente no obtiene ninguna de ellas.
+Lee lo que han mostrado git o el agente. `Control Center policy: …` significa que una regla de acción lo denegó o que una aprobación quedó sin respuesta: revisa **Enviar a un remoto** y **Abrir una pull request** en **Ajustes → Espacio de trabajo → Permisos de agentes**. Si git dice que Control Center no tiene ninguna credencial de GitHub que pueda hacer push, instala la GitHub App en ese repositorio o conecta GitHub.
 
 ### La búsqueda semántica no devuelve nada útil
 

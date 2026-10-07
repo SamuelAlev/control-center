@@ -2,7 +2,7 @@
 title: Guardrail — una sola policy per ogni azione che modifica lo stato
 description: Perché Control Center instrada ogni effetto collaterale di un agente attraverso un unico motore allow/prompt/deny, perché la tassonomia ActionClass resta piccola di proposito e cosa cambia davvero il selettore dell'autonomia.
 slug: it-IT/manuale/concetti/guardrail
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Gli agenti in Control Center possono eliminare file, fare push di branch,
@@ -250,9 +250,7 @@ integrato dichiara che i suoi strumenti per i file nel processo **non** sono
 isolati nella sandbox — la superficie degli strumenti e questo motore di policy
 sono l'unico confine del filesystem che ha. Claude Code dichiara che le sue
 stesse chiamate agli strumenti **non** sono intercettabili, perché viene
-avviato con `--dangerously-skip-permissions`; Control Center vede solo le sue
-chiamate `mcp__*` e i suoi strumenti di lettura, scrittura, modifica e shell
-vengono eseguiti senza essere visti.
+avviato con `--dangerously-skip-permissions`; Control Center vede le sue chiamate `mcp__*` e, tramite un hook, le sue righe di comando `Bash`, mentre i suoi strumenti di lettura, scrittura e modifica vengono eseguiti senza essere visti.
 
 La schermata delle impostazioni mostra questa matrice, perché l'unico
 fallimento imperdonabile per un sistema di guardrail è dichiarare una copertura

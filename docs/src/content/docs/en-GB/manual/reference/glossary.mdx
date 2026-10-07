@@ -2,7 +2,7 @@
 title: Glossary
 description: Definitions of key terms used throughout Control Center.
 slug: en-GB/manual/reference/glossary
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
+['Agent', 'An AI worker with an identity, role, skills and an adapter. Belongs to exactly one workspace. The primary actor in the system.'],
 ['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
 ['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
 ['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
 ['Skill source', 'A GitHub repository registered per workspace as a skill catalogue. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
 ['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
+['Agent run gateway', 'A loopback endpoint on cc_server that applies the action policy inside an agent\'s sandbox. Every GitHub push an agent makes is routed to it, checked against the Push to a remote rule and forwarded on a write token the agent never holds; Claude Code\'s Bash commands are checked through a hook on the same endpoint.'],
 ['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
 ['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
 ['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
 ['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
 ['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
+['CredentialBrokerPort', 'Mints scoped credentials for sandbox launch (read-only for an agent\'s environment, write only for the server-side push path) and revokes them on teardown.'],
 ['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
 ['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
 ['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Core entities
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**Agent**: An AI worker with an identity, role, skills and an adapter. Belongs to exactly one workspace. The primary actor in the system.
 
 **Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/en-GB/manual/guides/adapters/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**Agent run gateway**: A loopback endpoint on `cc_server` that applies the action policy inside an agent's sandbox. Every GitHub push an agent makes is routed to it, checked against the **Push to a remote** rule and forwarded on a write token the agent never holds; Claude Code's `Bash` commands are checked through a hook on the same endpoint. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/).
 
 **Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: Mints scoped credentials for sandbox launch — read-only for an agent's environment, write only for the server-side push path — and revokes them on teardown.
 
 **GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
 

@@ -1,5 +1,4 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/features/settings/domain/entities/acp_model.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
@@ -8,7 +7,6 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_effort_slider.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_form_dialog.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
-import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/features/settings/providers/model_browser_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
@@ -120,9 +118,6 @@ Widget _wrapAgentForm({
         () => _TestAdapterDetectionNotifier(adapters),
       ),
       agentsProvider.overrideWith((ref) => Stream.value([])),
-      defaultCapabilitiesProvider.overrideWith(
-        (ref) => AgentCapabilities.safeDefault,
-      ),
       appPreferencesProvider.overrideWithValue(prefs),
     ],
     child: CcTheme(
@@ -893,7 +888,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byType(CcSwitch), findsNWidgets(2));
+      // The strict identity check is the only switch left in the form.
+      expect(find.byType(CcSwitch), findsOneWidget);
+      expect(tester.widget<CcSwitch>(find.byType(CcSwitch)).value, isFalse);
     });
 
     testWidgets('toggle renders in on state when agent has strict mode', (
@@ -912,7 +909,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byType(CcSwitch), findsNWidgets(2));
+      expect(find.byType(CcSwitch), findsOneWidget);
+      expect(tester.widget<CcSwitch>(find.byType(CcSwitch)).value, isTrue);
     });
   });
 

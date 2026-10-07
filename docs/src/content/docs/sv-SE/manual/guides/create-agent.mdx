@@ -2,7 +2,7 @@
 title: Skapa och konfigurera en agent
 description: Lägg till en agent i en arbetsyta, ge den en adapter, modell, skills och behörigheter och bekräfta att den körs.
 slug: sv-SE/handbok/how-to-guider/skapa-agent
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Den här guiden visar hur du lägger till en agent i en arbetsyta och konfigurerar den tills den faktiskt kan köra.
@@ -68,19 +68,12 @@ Du väljer inte ett repos egna skills här. Ett repo som levererar dem (i `.agen
 
 ## Bevilja behörigheter
 
-**Sandlådebehörigheter** börjar på ”Använd arbetsytans standard”. Slå på växeln för att ange dem för den här agenten och växla sedan:
+En agent har inga egna behörighetsväxlar. Vad den får pusha, öppna, slå samman eller nå bestäms av åtgärdsreglerna under **Inställningar → Arbetsyta → Agentbehörigheter**, där en regel kan begränsas till den här agenten. Från början frågar en push, en pull request, en granskning eller sammanslagning och en skrivning till ett ärendesystem dig först, var och en, och nätverksåtkomst är tillåten.
 
-- **Tillåt git push** – injicerar GitHub-token som agenten behöver för att pusha
-- **Tillåt GitHub API-anrop** – låter agenten läsa PR:ar, issues och repometadata
-- **Tillåt API-anrop för ärenden** – injicerar ärendeleverantörens nyckel
-- **Tillåt allmän nätverksåtkomst** – aktiverar även den inbyggda harnessens verktyg `web_fetch` och `web_search`
+Agentens GitHub-token kan alltid bara läsa. En push går genom Control Center, som frågar regeln **Pusha till en remote** innan den skickas vidare. Se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/) för hur varje regel når en körning.
 
-Varje växel kontrolleras av brokern när körningen startar: en förmåga som är av betyder helt enkelt att den matchande token aldrig skapas och läggs i körningens miljö.
-
-:::caution[Arbetsytans standard betyder serverns försiktiga uppsättning]
-En agent som lämnas på ”Använd arbetsytans standard” körs med git push, GitHub-API och ärenden **av** och nätverk **på**. Standardförmågorna som visas under Inställningar → Server → Diagnostik och integritet är en inställning på klientsidan. Om du vill att en agent ska pusha eller öppna PR:ar slår du på växeln och beviljar förmågorna uttryckligen.
-
-De här förmågorna reglerar åtkomsten till inloggningsuppgifter och harness-verktyg, vilket är ett separat lager från OS-sandlådan. `cc_server` omsluter agentkörningar i värdens sandlåda där en sådan finns – Windows har ingen inbyggd backend, och Linux och WSL2 behöver `bwrap` och `socat`. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för alla gränser.
+:::note[Regler och OS-sandlådan är separata lager]
+Reglerna avgör vad en agent får göra; OS-sandlådan begränsar var dess processer kan läsa, skriva och ansluta. `cc_server` omsluter agentkörningar i värdens sandlåda där en sådan finns – Windows har ingen inbyggd backend, och Linux och WSL2 behöver `bwrap` och `socat`. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för alla gränser.
 :::
 
 ## Verifiera att den körs

@@ -26,24 +26,30 @@ SubscriptionUsage _usage({
 );
 
 class _FakeUsage extends SubscriptionUsageNotifier {
-  _FakeUsage(this._value);
+  _FakeUsage(this._value, [this._refreshes]);
   final List<SubscriptionUsage> _value;
+
+  /// Every refresh the flyout asked for, by whether it was forced.
+  final List<bool>? _refreshes;
 
   @override
   Future<List<SubscriptionUsage>> build() async => _value;
 
   @override
-  Future<void> refresh() async {}
+  Future<void> refresh({bool force = false}) async => _refreshes?.add(force);
 }
 
 Future<void> _openPill(
   WidgetTester tester,
-  List<SubscriptionUsage> usage,
-) async {
+  List<SubscriptionUsage> usage, {
+  List<bool>? refreshes,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        subscriptionUsageProvider.overrideWith(() => _FakeUsage(usage)),
+        subscriptionUsageProvider.overrideWith(
+          () => _FakeUsage(usage, refreshes),
+        ),
       ],
       child: CcTheme(
         data: CcThemeData.light(),
@@ -66,6 +72,18 @@ Future<void> _openPill(
 }
 
 void main() {
+  testWidgets('the refresh button forces a new reading', (tester) async {
+    // Opening the pill refreshes from the server's cache; the button is the
+    // operator saying "now", so it is the one that skips it.
+    final refreshes = <bool>[];
+    await _openPill(tester, [_usage()], refreshes: refreshes);
+    expect(refreshes, [false], reason: 'opening refreshes, unforced');
+
+    await tester.tap(find.byIcon(AppIcons.refreshCw));
+    await tester.pumpAndSettle();
+    expect(refreshes, [false, true]);
+  });
+
   testWidgets('a single account shows no paging chrome', (tester) async {
     // One login is not something to page through — the arrows would be dead
     // controls, and the account line would repeat what the provider name says.

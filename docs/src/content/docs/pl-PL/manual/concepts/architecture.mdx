@@ -3,7 +3,7 @@ title: Architektura
 description: Jak zbudowany jest Control Center — model serwera z cienkim klientem, Clean Architecture w podejściu feature-first oraz porty i adaptery.
 dateModified: 2026-09-19
 slug: pl-PL/podrecznik/koncepcje/architektura
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Przegląd
@@ -58,7 +58,7 @@ Funkcja **`guardrails`** umieszcza swoją warstwę domenową w `cc_domain/featur
 - Encje podstawowe: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Tożsamość i wieloosobowość: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Encje pamięci: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Współdzielone obiekty wartości: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Współdzielone obiekty wartości: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Współdzielone porty: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Usługi domenowe: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + typy zdarzeń (obszar roboczy/agent, PR/recenzja, wiadomości, zgłoszenia, potok, orkiestracja, pamięć, kalendarz/spotkania, tożsamość i członkostwo, obserwowalność)

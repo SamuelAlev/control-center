@@ -2,7 +2,7 @@
 title: Nastavte guardraily
 description: Nastav pravidla Povolit, Nejdřív se zeptat a Zakázat pro akce agenta, vyzkoušej je sondou Co kdyby a vylaď autonomii na prostor.
 slug: cs-CZ/prirucka/navody/nastaveni-guardrailu
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Tenhle návod ukazuje, jak nastavit guardraily: pravidla, která rozhodují, jestli
@@ -123,11 +123,12 @@ Tabulka **Kde se pravidla vynucují** dole na stejné stránce je verze tohohle
 v aplikaci: u každé třídy efektu říká, jestli ji daný runner chytí na bráně
 politiky, nechá na sandboxu, nebo ji vůbec neumí zachytit.
 
-- **Adaptér Claude Code** není na vlastních voláních nástrojů hlídaný. Claude
-  Code se spouští s `--dangerously-skip-permissions`, takže jeho volání read,
-  write, edit a bash bránou nikdy neprojdou. Co se u toho adaptéru hlídá, je
-  plocha nástrojů MCP, kterou volá zpátky, a příkaz shellu, kterým ho Control
-  Center spouští.
+- **Adaptér Claude Code** je na vlastních voláních nástrojů hlídaný jen zčásti.
+  Claude Code se spouští s `--dangerously-skip-permissions`, takže jeho volání
+  read, write a edit bránou nikdy neprojdou. Jeho příkazy bash se k ní dostanou
+  přes hook, který zařadí příkazový řádek, a jeho pushe jdou přes bránu pro
+  push jako u každého agenta. Hlídá se i plocha nástrojů MCP, kterou volá
+  zpátky, a příkaz shellu, kterým ho Control Center spouští.
 - **Vlastní výstupní sloveso režimu** (`submit_plan`, `propose_orchestration`)
   je připnuté a nejde ho zakázat — jinak by režim strukturálně neuměl doručit
   svůj jediný výstup.

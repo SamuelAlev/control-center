@@ -7,6 +7,7 @@ import 'package:control_center/features/pipelines/providers/pipeline_providers.d
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar.dart';
+import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/soundscape/device_location_reader.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -299,6 +300,110 @@ void main() {
     expect(find.text('WORKSPACE'), findsWidgets);
     expect(find.text('SERVER'), findsWidgets);
     expect(find.text('Filter settings'), findsNothing);
+    // The settings nav replaces the global one rather than sitting beside it.
+    expect(find.text('Inbox'), findsNothing);
+    expect(find.text('Exit settings'), findsOneWidget);
+  });
+
+  Future<GoRouter> pumpShellAt(WidgetTester tester, String location) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final router = shellRouter(
+      const Text('Page Content'),
+      initialLocation: location,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
+          spacesProvider.overrideWith((ref) => Stream.value(const [])),
+          appPreferencesProvider.overrideWithValue(prefs),
+          routerProvider.overrideWithValue(router),
+          workspacesProvider.overrideWith((ref) => Stream.value([])),
+          activeWorkspaceProvider.overrideWith((ref) => null),
+          isOnlineProvider.overrideWithValue(true),
+          offlineQueueControllerProvider.overrideWith(_NoOpOfflineQueue.new),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+    tester.takeException();
+    await tester.pumpAndSettle();
+    return router;
+  }
+
+  testWidgets('settings drills the global sidebar in, and exit returns to '
+      'the page it was opened from', (tester) async {
+    final router = await pumpShellAt(tester, pullRequestsRoute('ws-1'));
+    expect(find.text('Inbox'), findsOneWidget);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routerDelegate.currentConfiguration.uri.path,
+      settingsAppearanceRoute('ws-1'),
+    );
+    expect(find.text('Exit settings'), findsOneWidget);
+    expect(find.text('YOU'), findsOneWidget);
+    // The global nav stays mounted beneath, offstage, to slide back to.
+    expect(find.text('Inbox'), findsNothing);
+    expect(find.text('Inbox', skipOffstage: false), findsOneWidget);
+    // The workspace switcher is the one thing that never moves.
+    expect(find.text('Select a workspace'), findsOneWidget);
+
+    await tester.tap(find.text('Exit settings'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routerDelegate.currentConfiguration.uri.path,
+      pullRequestsRoute('ws-1'),
+    );
+    expect(find.text('Inbox'), findsOneWidget);
+    expect(find.text('Exit settings', skipOffstage: false), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('exit from a settings deep link lands on the inbox', (
+    tester,
+  ) async {
+    final router = await pumpShellAt(tester, settingsAppearanceRoute('ws-1'));
+
+    await tester.tap(find.text('Exit settings'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routerDelegate.currentConfiguration.uri.path,
+      inboxRoute('ws-1'),
+    );
+  });
+
+  testWidgets('the collapsed rail keeps settings as icons with tooltips', (
+    tester,
+  ) async {
+    await prefs.setBool(sidebarCollapsedKey, value: true);
+    await pumpShellAt(tester, settingsAppearanceRoute('ws-1'));
+
+    // Labels give way to icons; each icon names itself in a tooltip.
+    expect(find.text('Exit settings'), findsNothing);
+    Finder inSidebar(Finder f) =>
+        find.descendant(of: find.byType(AppSidebar), matching: f);
+    expect(inSidebar(find.byIcon(AppIcons.chevronLeft)), findsOneWidget);
+    expect(inSidebar(find.byIcon(AppIcons.paintbrushVertical)), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is CcTooltip && w.message == 'Exit settings',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('renders newsfeed content without an inner sidebar', (

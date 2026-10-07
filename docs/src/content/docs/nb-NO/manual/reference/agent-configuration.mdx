@@ -2,7 +2,7 @@
 title: Agentkonfigurasjon
 description: Alle feltene på agententiteten og enumene den bruker.
 slug: nb-NO/handbok/referanse/agentkonfigurasjon
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Denne referansen lister opp alle feltene på agententiteten, i tillegg til enumene og flaggene den bruker. En stegvis gjennomgang av å opprette eller redigere en agent i appen finner du i [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/).
@@ -26,7 +26,6 @@ Denne referansen lister opp alle feltene på agententiteten, i tillegg til enume
 | `effort`                | `String?`              | Nei     | Id for resonneringsnivået (f.eks. `'low'`, `'xhigh'`), hentet fra den valgte modellens `thinkingLevels`                                                                                              |
 | `contextSize`           | `int?`                 | Nei     | Maksimal størrelse på kontekstvinduet                                                                                                                                                               |
 | `role`                  | `AgentRole?`           | Nei     | Agentens rolle                                                                                                                                                                                      |
-| `capabilities`          | `AgentCapabilities?`   | Nei     | Standard for kapasiteter per agent; når den er null, gjelder standarden på brukernivå ved utsending, og en samtale kan fortsatt overstyre                                                             |
 | `monthlyBudgetCents`    | `int`                  | Nei     | Månedlig utgiftstak i cent (standard `0`, ubegrenset)                                                                                                                                               |
 | `silenceTimeoutMinutes` | `int?`                 | Nei     | Overstyring av stillhetsvakten i minutter; må være null eller i området 1–240 (sjekket av konstruktøren)                                                                                            |
 | `maxConcurrentTasks`    | `int`                  | Nei     | Standard `1`. Kapasitetstallet som tilstedeværelsesmodellen rapporterer (antall kjørende og antall i kø sammenlignes med det)                                                                       |
@@ -68,18 +67,9 @@ Denne referansen lister opp alle feltene på agententiteten, i tillegg til enume
 | `paused`   | Settes av budsjettets harde stopp. Vises i tilstedeværelsesoversikten; utsending godtar fortsatt arbeid |
 | `archived` | Trukket tilbake og skjult fra aktive oversikter                                       |
 
-## AgentCapabilities-flaggene
+## Tillatelser
 
-Løses opp per utsending: agentens standard, med fallback til standarden på brukernivå når den er null, og med en overstyring per samtale på toppen. Håndheves gjennom fravær — legitimasjonsmegleren utsteder eller injiserer rett og slett ikke det en avslått kapasitet dekker.
-
-| Flagg              | Type   | Standard | Beskrivelse                                                                              |
-| ------------------ | ------ | -------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`  | Pusher commits til fjernlageret; styrer injeksjonen av GitHub-tokenet sammen med `canCallGitHubApi` |
-| `canCallGitHubApi` | `bool` | `false`  | Kaller api.github.com; styrer injeksjonen av `GH_TOKEN` og GitHubs utgående domener      |
-| `canCallTicketing` | `bool` | `false`  | Kaller saksleverandørens API; styrer injeksjonen av leverandørens API-nøkkel og domenene dens for utgående trafikk |
-| `canAccessNetwork` | `bool` | `true`   | Vilkårlig utgående trafikk. Styrer også harnessets `web_fetch`- og `web_search`-verktøy  |
-
-`AgentCapabilities.safeDefault` består av konstruktørens standardverdier for alle fire. `legacyDefault` (alle fire sanne) brukes bare av migreringen som tilbakefylte samtaler opprettet før kapasitetene fantes. En lagret blob som er feilformet eller tom, tolkes som `safeDefault`; den eldre nøkkelen `canCallLinear` leses som `canCallTicketing`.
+En agent har ingen tillatelsesflagg. Pushing, åpning og publisering av pull requests, skriving til et oppfølgingssystem og utgående nettverkstrafikk er handlingsklasser (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) som [tillatelsesreglene](/nb-NO/handbok/konsepter/tillatelsesregler/) løser opp i omfanget arbeidsområde, agent eller område. GitHub-tokenet til en kjøring er alltid lesebegrenset; pusher går gjennom agentkjøringsgatewayen, som spør `gitPush`-regelen før de sendes videre.
 
 ## AgentSkills
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_infra/cc_infra.dart' show CredentialCooldownStore;
@@ -54,16 +55,13 @@ void main() {
     }
   });
 
-  Future<void> setPool(
-    AccountPool pool, {
-    String? agentId,
-  }) => settings.set(
+  Future<void> setPool(AccountPool pool, {String? agentId}) => settings.set(
     ws,
-    harnessPoolKey(provider, agentId),
+    accountPoolKey(AccountPoolLanes.harness(provider), agentId)!,
     jsonEncode(pool.toJson()),
   );
 
-  Future<List<String>?> order({
+  Future<AccountPoolOrder> resolve({
     String? agentId,
     List<String> credentialIds = const ['a', 'b', 'c'],
   }) => resolveHarnessRotationOrder(
@@ -75,6 +73,18 @@ void main() {
     credentialIds: credentialIds,
   );
 
+  Future<List<String>?> order({
+    String? agentId,
+    List<String> credentialIds = const ['a', 'b', 'c'],
+  }) async {
+    final answer = await resolve(
+      agentId: agentId,
+      credentialIds: credentialIds,
+    );
+    expect(answer.refusal, isNull);
+    return answer.order;
+  }
+
   group('unconfigured', () {
     test('no pool leaves the store order alone', () async {
       // Null, not a reordered list: every install that never opens the screen
@@ -82,20 +92,40 @@ void main() {
       expect(await order(), isNull);
     });
 
-    test('one credential needs no rotation', () async {
+    test('one credential still follows the pool', () async {
+      // Consulted even for one key, so a pool that excludes it can refuse.
       await setPool(const AccountPool(accountIds: ['a']));
-      expect(await order(credentialIds: ['a']), isNull);
+      expect(await order(credentialIds: ['a']), ['a']);
     });
 
-    test('a corrupt pool falls through instead of stopping the dispatch',
-        () async {
-      await settings.set(ws, harnessPoolKey(provider, null), '{ not json');
-      expect(await order(), isNull);
-    });
+    test(
+      'a corrupt pool falls through instead of stopping the dispatch',
+      () async {
+        await settings.set(
+          ws,
+          accountPoolKey(AccountPoolLanes.harness(provider), null)!,
+          '{ not json',
+        );
+        expect(await order(), isNull);
+      },
+    );
+  });
 
-    test('a pool naming only deleted credentials is ignored', () async {
+  group('a pool naming only removed credentials', () {
+    test('refuses, exactly as the Claude Code lane does', () async {
+      // Ignoring it would fall back to every stored key — the ones the pool
+      // was written to keep this scope off.
       await setPool(const AccountPool(accountIds: ['gone', 'also-gone']));
-      expect(await order(), isNull);
+      final answer = await resolve();
+      expect(answer.order, isNull);
+      expect(answer.refusal?.reason, RunCredentialReason.accountsRemoved);
+      expect(answer.refusal?.accountIds, ['gone', 'also-gone']);
+    });
+
+    test('refuses with only one key left on the store', () async {
+      await setPool(const AccountPool(accountIds: ['gone']), agentId: 'ag');
+      final answer = await resolve(agentId: 'ag', credentialIds: ['a']);
+      expect(answer.refusal?.reason, RunCredentialReason.accountsRemoved);
     });
   });
 
@@ -150,12 +180,20 @@ void main() {
       // Two dispatches racing must not read the same cursor and lead with the
       // same credential.
       await order();
-      expect(settings.values['$ws/${harnessCursorKey(provider, null)}'], '1');
+      expect(
+        settings
+            .values['$ws/${accountPoolKey(AccountPoolLanes.harness(provider), null)}.cursor'],
+        '1',
+      );
     });
 
     test('the others stay as fallback behind the leader', () async {
       expect(await order(), ['a', 'b', 'c']);
-      expect(await order(), ['b', 'a', 'c'], reason: 'leader first, pool order after');
+      expect(await order(), [
+        'b',
+        'a',
+        'c',
+      ], reason: 'leader first, pool order after');
     });
   });
 
@@ -167,37 +205,41 @@ void main() {
       expect(await order(), ['a', 'b', 'c']);
     });
 
-    test('an empty agent pool falls back to the workspace, not to nothing',
-        () async {
-      // An empty list is what an editor leaves behind when the last row is
-      // removed; reading it as a deliberate opt-out would stop every run for
-      // that agent.
-      await setPool(const AccountPool(accountIds: ['a', 'b']));
-      await setPool(const AccountPool(), agentId: 'agent-1');
-      expect(await order(agentId: 'agent-1'), ['a', 'b']);
-    });
+    test(
+      'an empty agent pool falls back to the workspace, not to nothing',
+      () async {
+        // An empty list is what an editor leaves behind when the last row is
+        // removed; reading it as a deliberate opt-out would stop every run for
+        // that agent.
+        await setPool(const AccountPool(accountIds: ['a', 'b']));
+        await setPool(const AccountPool(), agentId: 'agent-1');
+        expect(await order(agentId: 'agent-1'), ['a', 'b']);
+      },
+    );
 
-    test('agent and workspace pools keep separate round-robin cursors',
-        () async {
-      await setPool(
-        const AccountPool(
-          accountIds: ['a', 'b'],
-          strategy: AccountRotationStrategy.roundRobin,
-        ),
-      );
-      await setPool(
-        const AccountPool(
-          accountIds: ['b', 'c'],
-          strategy: AccountRotationStrategy.roundRobin,
-        ),
-        agentId: 'agent-1',
-      );
-      // Advancing one must not move the other's position.
-      expect((await order())!.first, 'a');
-      expect((await order(agentId: 'agent-1'))!.first, 'b');
-      expect((await order())!.first, 'b');
-      expect((await order(agentId: 'agent-1'))!.first, 'c');
-    });
+    test(
+      'agent and workspace pools keep separate round-robin cursors',
+      () async {
+        await setPool(
+          const AccountPool(
+            accountIds: ['a', 'b'],
+            strategy: AccountRotationStrategy.roundRobin,
+          ),
+        );
+        await setPool(
+          const AccountPool(
+            accountIds: ['b', 'c'],
+            strategy: AccountRotationStrategy.roundRobin,
+          ),
+          agentId: 'agent-1',
+        );
+        // Advancing one must not move the other's position.
+        expect((await order())!.first, 'a');
+        expect((await order(agentId: 'agent-1'))!.first, 'b');
+        expect((await order())!.first, 'b');
+        expect((await order(agentId: 'agent-1'))!.first, 'c');
+      },
+    );
   });
 
   group('everything cooling off', () {
@@ -209,6 +251,104 @@ void main() {
       await cooldowns.mark(provider, 'a');
       await cooldowns.mark(provider, 'b');
       expect(await order(), ['a', 'b']);
+    });
+  });
+
+  group('prunedAccountPools — one clean-up for every lane', () {
+    String pool(List<String> ids) =>
+        jsonEncode(AccountPool(accountIds: ids).toJson());
+
+    final settings = {
+      'claude_accounts.pool': pool(['gone', 'a', 'b']),
+      'claude_accounts.pool.agent.x': pool(['gone', 'a']),
+      'claude_accounts.pool.agent.y': pool(['b']),
+      'claude_accounts.pool.agent.x.cursor': '3',
+      'harness_accounts.pool.openai': pool(['gone', 'a']),
+      'harness_accounts.pool.openai.agent.x': pool(['gone', 'b']),
+      'harness_accounts.pool.openai-compat': pool(['gone', 'a']),
+      'unrelated': 'value',
+    };
+
+    List<String> ids(String json) => AccountPool.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    ).accountIds;
+
+    test('the Claude lane touches only Claude pools', () {
+      final out = prunedAccountPools(
+        settings,
+        lane: AccountPoolLanes.claudeCode,
+        existing: {'a', 'b'},
+      );
+      expect(out.keys, {
+        'claude_accounts.pool',
+        'claude_accounts.pool.agent.x',
+      });
+      expect(ids(out['claude_accounts.pool']!), ['a', 'b']);
+      expect(ids(out['claude_accounts.pool.agent.x']!), ['a']);
+    });
+
+    test("a harness lane touches only that provider's pools", () {
+      final out = prunedAccountPools(
+        settings,
+        lane: AccountPoolLanes.harness('openai'),
+        existing: {'a', 'b'},
+      );
+      expect(out.keys, {
+        'harness_accounts.pool.openai',
+        'harness_accounts.pool.openai.agent.x',
+      });
+    });
+
+    test('leaves a pool alone rather than emptying it', () {
+      // Emptied, the agent would inherit the workspace's accounts — exactly
+      // the ones it was configured to stay off.
+      expect(
+        prunedAccountPools(
+          {
+            'claude_accounts.pool.agent.x': pool(['gone']),
+          },
+          lane: AccountPoolLanes.claudeCode,
+          existing: {'a'},
+        ),
+        isEmpty,
+      );
+    });
+
+    test('skips a corrupt pool and an unknown lane', () {
+      expect(
+        prunedAccountPools(
+          {'claude_accounts.pool': '{not json'},
+          lane: AccountPoolLanes.claudeCode,
+          existing: {'a'},
+        ),
+        isEmpty,
+      );
+      expect(
+        prunedAccountPools(settings, lane: 'nope', existing: {'a'}),
+        isEmpty,
+      );
+    });
+  });
+
+  group('accountPoolKey', () {
+    test('keeps the keys existing pools were written under', () {
+      expect(
+        accountPoolKey(AccountPoolLanes.claudeCode, null),
+        'claude_accounts.pool',
+      );
+      expect(
+        accountPoolKey(AccountPoolLanes.claudeCode, 'ag'),
+        'claude_accounts.pool.agent.ag',
+      );
+      expect(
+        accountPoolKey(AccountPoolLanes.harness('qwen'), 'ag'),
+        'harness_accounts.pool.qwen.agent.ag',
+      );
+    });
+
+    test('refuses a lane it does not know', () {
+      expect(accountPoolKey('anything', null), isNull);
+      expect(accountPoolKey('harness:', null), isNull);
     });
   });
 }

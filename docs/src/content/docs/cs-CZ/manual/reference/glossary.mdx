@@ -2,7 +2,7 @@
 title: Slovník
 description: Definice klíčových pojmů, které se v Control Center používají.
 slug: cs-CZ/prirucka/referencni-prirucka/slovnik
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'AI pracovník s identitou, rolí, skilly a schopnostmi. Patří právě jednomu pracovnímu prostoru. Hlavní aktér v systému.'],
+['Agent', 'AI pracovník s identitou, rolí, skilly a adaptérem. Patří právě jednomu pracovnímu prostoru. Hlavní aktér v systému.'],
 ['Adaptér', 'Runner, který provede tah agenta. Dodávají se dva: Control Center (built-in), harness v procesu, který mluví s poskytovateli modelů, a Claude Code přes CLI claude. Cursor, Codex a ostatní poskytovatelé modelů se připojují k vestavěnému adaptéru, ne jako samostatné runnery.'],
 ['Pracovní prostor', 'Nejvyšší tenant izolace. Sdružuje agenty, repozitáře, prostory, tickety, paměť a pipeline. Izolace je strukturální, ne jen dohodou: každý pracovní prostor má vlastní soubor SQLite, takže čtení napříč pracovními prostory se nepřeloží. Každá trasa v aplikaci začíná /workspaces/:workspaceId.'],
 ['Hostitel kódu', 'GitHub, GitLab nebo Bitbucket Cloud. Vlastnost každého repozitáře, přečtená z remote origin při registraci. Jeden pracovní prostor může držet repozitáře na všech třech.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Množina identifikátorů skillů bez rozlišení velikosti písmen, která při odeslání vloží do promptů příslušný kontext.'],
 ['Zdroj skillů', 'Repozitář na GitHubu registrovaný v pracovním prostoru jako katalog skillů. Nedůvěryhodný už z konstrukce: metadata repozitáře jsou jen k zobrazení a každá instalace projde bránou skenu, která se při selhání uzavře, než se jakýkoli obsah dostane na disk nebo do promptu.'],
 ['skills-lock.json', 'Manifest nainstalovaných skillů v pracovním prostoru: u každého zdrojový repozitář, cesta v repozitáři, commit, ke kterému je připnutý, a souhrnný hash obsahu. Instalace, aktualizace a odinstalace ho udržují aktuální; verify_skills ho porovná s diskem.'],
-['AgentCapabilities', 'Čtyři příznaky (push do repozitáře, GitHub API, ticketing, odchozí síť), které se rozliší při každém odeslání: nejdřív výchozí stav agenta, pak výchozí stav uživatele, s přepisem na konverzaci. Vynucují se nepřítomností, protože vypnutá schopnost znamená, že se token nebo odchozí provoz prostě nikdy nevloží.'],
+['Brána běhů agentů', 'Loopback endpoint na cc_server, který uplatňuje politiku akcí uvnitř sandboxu agenta. Každý push agenta na GitHub se přesměruje na ni, zkontroluje proti pravidlu Odeslat na remote a předá se zapisovacím tokenem, který agent nikdy nedrží; příkazy Bash v Claude Code se kontrolují přes hook na stejném endpointu.'],
 ['Režim', 'chat, plan, review nebo orchestrate. Ukládá se na prostor, takže jeden agent může být v různých prostorech v různých režimech; všechny konverzace prostoru ho sdílejí. Rozhoduje o systémovém promptu, pravidlech zápisu sandboxu a seznamu povolených nástrojů MCP.'],
 ['SandboxBackend', 'microvm (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), native (nativní Seatbelt operačního systému na macOS, bubblewrap na Linuxu a WSL2) nebo none. Při startu se osondá jednou; native obalí odeslání agenta, když je k dispozici. Windows nativní backend nemá a Linux potřebuje bwrap a socat, takže tam běhy jdou bez obalu; --sandbox off ho vypne schválně.'],
 ['Stanice', 'Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka i nástroj agenta míří na jeden stroj.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v centech) jednoho běhu agenta.'],
 ['WakeReason', 'Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.'],
 ['SandboxPort', 'Řídí životní cyklus sandboxu (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Vystavuje vymezená pověření vázaná na schopnosti pro spuštění sandboxu a při úklidu je odvolá.'],
+['CredentialBrokerPort', 'Vystavuje vymezená pověření pro spuštění sandboxu (jen pro čtení do prostředí agenta, se zápisem jen pro cestu pushe na serveru) a při úklidu je odvolá.'],
 ['GitRepoInspectorPort', 'Z cesty k místnímu Git repozitáři vytáhne metadata (vlastník, repozitář, větev).'],
 ['EmbeddingPort', 'Vyrábí textové vektory embeddingu s jednotkovou normou pro sémantické vyhledávání.'],
 ['NotificationPort', 'Ukazuje nativní oznámení na ploše a respektuje bránu podle kategorie a trasy.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Základní entity
 
-**Agent**: AI pracovník s identitou, rolí, skilly a schopnostmi. Patří právě jednomu pracovnímu prostoru. Hlavní aktér v systému.
+**Agent**: AI pracovník s identitou, rolí, skilly a adaptérem. Patří právě jednomu pracovnímu prostoru. Hlavní aktér v systému.
 
 **Adaptér**: Runner, který provede tah agenta. Dodávají se dva: **Control Center (built-in)**, harness v procesu, který mluví s poskytovateli modelů, a **Claude Code** přes `claude -p`. Cursor, Codex, Anthropic, OpenAI a ostatní jsou poskytovatelé na vestavěném adaptéru, ne samostatná CLI. Viz [Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifest nainstalovaných skillů v pracovním prostoru: u každého zdrojový repozitář, cesta v repozitáři, commit, ke kterému je připnutý, a souhrnný hash obsahu. Instalace, aktualizace a odinstalace ho udržují aktuální; `verify_skills` ho porovná s diskem.
 
-**AgentCapabilities**: Čtyři příznaky (push do repozitáře, GitHub API, ticketing, odchozí síť), které se rozliší při každém odeslání: výchozí stav agenta, pak výchozí stav uživatele, s přepisem na konverzaci. Vynucují se nepřítomností: vypnutá schopnost znamená, že se token nebo odchozí provoz prostě nikdy nevloží.
+**Brána běhů agentů**: Loopback endpoint na `cc_server`, který uplatňuje politiku akcí uvnitř sandboxu agenta. Každý push agenta na GitHub se přesměruje na ni, zkontroluje proti pravidlu **Odeslat na remote** a předá se zapisovacím tokenem, který agent nikdy nedrží; příkazy `Bash` v Claude Code se kontrolují přes hook na stejném endpointu. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 
 **Režim**: `chat`, `plan`, `review` nebo `orchestrate`. Ukládá se **na prostor**, takže jeden agent může být v různých prostorech v různých režimech; všechny konverzace prostoru ho sdílejí. Rozhoduje o systémovém promptu, pravidlech zápisu sandboxu a seznamu povolených nástrojů MCP. Composer nabízí jen `chat`, `plan` a `orchestrate`; `chat` má popisek „Agent“.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Řídí životní cyklus sandboxu (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Vystavuje vymezená pověření vázaná na schopnosti pro spuštění sandboxu a při úklidu je odvolá.
+**CredentialBrokerPort**: Vystavuje vymezená pověření pro spuštění sandboxu — jen pro čtení do prostředí agenta, se zápisem jen pro cestu pushe na serveru — a při úklidu je odvolá.
 
 **GitRepoInspectorPort**: Z cesty k místnímu Git repozitáři vytáhne metadata (vlastník, repozitář, větev).
 

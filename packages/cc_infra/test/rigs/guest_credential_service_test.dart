@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_infra/src/rigs/guest_credential_service.dart';
 import 'package:test/test.dart';
 
@@ -19,7 +18,7 @@ class _FakeBroker implements CredentialBrokerPort {
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
@@ -75,7 +74,7 @@ void main() {
     conversationId: 'conv-1',
     secret: secret,
     allowedHosts: hosts,
-    capabilities: const AgentCapabilities(canPushToRepo: true),
+    scope: ForgeTokenScope.write,
     actingUserId: actingUserId,
   );
 

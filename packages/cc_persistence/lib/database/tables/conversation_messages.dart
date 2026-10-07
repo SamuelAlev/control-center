@@ -66,6 +66,18 @@ class ConversationMessagesTable extends Table {
   IntColumn get transcriptChars =>
       integer().withDefault(const Constant(0))();
 
+  /// `metadata['context']['tokens']`: how full the model's window was on the
+  /// turn's latest call, as the provider reported it. Null on everything that
+  /// is not an agent turn, and on turns whose runner never reported one.
+  ///
+  /// A column for the same reason as [transcriptChars]: the meter re-reads it
+  /// on every streaming flush, which must not parse the turn's metadata JSON.
+  IntColumn get contextTokens => integer().nullable()();
+
+  /// `metadata['context']['window']`: the window [contextTokens] was measured
+  /// against, when the runner knew it.
+  IntColumn get contextWindowTokens => integer().nullable()();
+
   /// The message this one continues from, or null for the first in a branch.
   ///
   /// **This is what makes the conversation a TREE rather than a list, and it is

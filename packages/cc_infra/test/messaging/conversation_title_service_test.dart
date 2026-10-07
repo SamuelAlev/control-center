@@ -1,12 +1,14 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
+import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/conversation_title_model.dart';
+import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -46,13 +48,14 @@ void main() {
     settings: settings,
     conversationRepo: conversations,
     messagingRepo: messaging,
+    settleGrace: Duration.zero,
   );
 
   /// Points the workspace at the built-in harness on [model] — the adapter is
   /// what switches titling on, so every generating test must set it.
   void useHarness([String model = 'anthropic/x']) {
-    settings.values[kConversationTitleAdapterSettingKey] = 'cc-harness';
-    settings.values[kConversationTitleModelSettingKey] = model;
+    settings.values[kShortTaskAdapterSettingKey] = 'cc-harness';
+    settings.values[kShortTaskModelSettingKey] = model;
   }
 
   Conversation conversationWithTitle(String title) => Conversation(
@@ -94,8 +97,8 @@ void main() {
   });
 
   test('empty adapter setting → off', () async {
-    settings.values[kConversationTitleAdapterSettingKey] = '  ';
-    settings.values[kConversationTitleModelSettingKey] = 'anthropic/x';
+    settings.values[kShortTaskAdapterSettingKey] = '  ';
+    settings.values[kShortTaskModelSettingKey] = 'anthropic/x';
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('How do I rebase?')];
 
@@ -106,7 +109,7 @@ void main() {
   });
 
   test('a model with no adapter is not a runner → off', () async {
-    settings.values[kConversationTitleModelSettingKey] = 'anthropic/x';
+    settings.values[kShortTaskModelSettingKey] = 'anthropic/x';
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('How do I rebase?')];
 
@@ -117,7 +120,7 @@ void main() {
   });
 
   test('adapter with no model → runs on the provider default', () async {
-    settings.values[kConversationTitleAdapterSettingKey] = 'cc-harness';
+    settings.values[kShortTaskAdapterSettingKey] = 'cc-harness';
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('How do I rebase?')];
     factory.reply = 'Git rebase question';
@@ -134,8 +137,8 @@ void main() {
   test(
     'unknown adapter id → skipped, never a silent harness fallback',
     () async {
-      settings.values[kConversationTitleAdapterSettingKey] = 'not-an-adapter';
-      settings.values[kConversationTitleModelSettingKey] = 'anthropic/x';
+      settings.values[kShortTaskAdapterSettingKey] = 'not-an-adapter';
+      settings.values[kShortTaskModelSettingKey] = 'anthropic/x';
       conversations.put(conversationWithTitle(''));
       messaging.messages = [humanMessage('How do I rebase?')];
       factory.reply = 'Git rebase question';
@@ -367,6 +370,160 @@ void main() {
     );
     expect(conversations.renames.single.title, 'Git rebase question');
   });
+
+  group('watchGenerating', () {
+    test('flags the conversation while the model runs, then clears', () async {
+      useHarness();
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('How do I rebase?')];
+      factory.reply = 'Git rebase question';
+      final gate = factory.gate = Completer<void>();
+      final service = runner();
+      final seen = <Set<String>>[];
+      final sub = service
+          .watchGenerating(workspaceId: workspaceId, spaceId: spaceId)
+          .listen(seen.add);
+      final otherSpace = <Set<String>>[];
+      final otherSub = service
+          .watchGenerating(workspaceId: workspaceId, spaceId: 'sp2')
+          .listen(otherSpace.add);
+
+      final pass = service.maybeGenerate(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: 'conv-1',
+      );
+      await pumpEventQueue();
+      expect(seen.last, {'conv-1'});
+      expect(conversations.renames, isEmpty);
+
+      gate.complete();
+      await pass;
+      await pumpEventQueue();
+
+      expect(conversations.renames, hasLength(1));
+      expect(seen, [
+        <String>{},
+        {'conv-1'},
+        <String>{},
+      ]);
+      // Scoped to the space: a sibling space's subscriber never sees it.
+      expect(otherSpace, [<String>{}]);
+      await sub.cancel();
+      await otherSub.cancel();
+    });
+
+    test('clears when the model fails', () async {
+      useHarness();
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('How do I rebase?')];
+      factory.error = const LlmError('boom');
+      final service = runner();
+      final seen = <Set<String>>[];
+      final sub = service
+          .watchGenerating(workspaceId: workspaceId, spaceId: spaceId)
+          .listen(seen.add);
+
+      await service.maybeGenerate(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: 'conv-1',
+      );
+      await pumpEventQueue();
+
+      expect(conversations.renames, isEmpty);
+      expect(seen.last, isEmpty);
+      await sub.cancel();
+    });
+
+    test('never flags a conversation that keeps its title', () async {
+      useHarness();
+      conversations.put(conversationWithTitle('Named by hand'));
+      messaging.messages = [humanMessage('How do I rebase?')];
+      final service = runner();
+      final seen = <Set<String>>[];
+      final sub = service
+          .watchGenerating(workspaceId: workspaceId, spaceId: spaceId)
+          .listen(seen.add);
+
+      await service.maybeGenerate(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: 'conv-1',
+      );
+      await pumpEventQueue();
+
+      expect(seen, [<String>{}]);
+      await sub.cancel();
+    });
+  });
+
+  group('suggestTitle', () {
+    Future<ConversationTitleSuggestion> suggest() => runner().suggestTitle(
+      workspaceId: workspaceId,
+      conversationId: 'conv-1',
+    );
+
+    test('returns the sanitized title and renames nothing', () async {
+      useHarness('anthropic/x');
+      // A human-typed title does not block an explicit request.
+      conversations.put(conversationWithTitle('My notes'));
+      messaging.messages = [humanMessage('How do I rebase?')];
+      factory.reply = '"Git rebase question."';
+
+      final result = await suggest();
+
+      expect(
+        result,
+        const ConversationTitleSuggestion(title: 'Git rebase question'),
+      );
+      expect(conversations.renames, isEmpty);
+    });
+
+    test('no short-task runner → unavailable, no call', () async {
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('How do I rebase?')];
+
+      final result = await suggest();
+
+      expect(result.unavailable, isTrue);
+      expect(factory.calls, isEmpty);
+    });
+
+    test('runner that cannot run → unavailable', () async {
+      useHarness('anthropic/x');
+      creds.credential = null;
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('hi')];
+
+      expect((await suggest()).unavailable, isTrue);
+    });
+
+    test('no human message → empty, no call', () async {
+      useHarness('anthropic/x');
+      conversations.put(conversationWithTitle(''));
+
+      final result = await suggest();
+
+      expect(result.empty, isTrue);
+      expect(factory.calls, isEmpty);
+    });
+
+    test('refusal reply → no title', () async {
+      useHarness('anthropic/x');
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('hi')];
+      factory.reply = "Sorry, I can't assist with that.";
+
+      expect(await suggest(), const ConversationTitleSuggestion());
+    });
+
+    test('conversation outside the workspace → NotFoundException', () async {
+      useHarness('anthropic/x');
+
+      await expectLater(suggest(), throwsA(isA<NotFoundException>()));
+    });
+  });
 }
 
 // Fakes
@@ -385,6 +542,9 @@ class _FakeFactory extends HarnessProviderFactory {
   String reply = '';
   LlmError? error;
 
+  /// When set, every completion waits for it before replying.
+  Completer<void>? gate;
+
   final List<_Call> calls = [];
 
   @override
@@ -397,17 +557,24 @@ class _FakeFactory extends HarnessProviderFactory {
     final events = <LlmEvent>[
       if (error != null) error! else LlmTextDelta(reply),
     ];
-    return _RecordingProvider(providerId, model, calls, events);
+    return _RecordingProvider(providerId, model, calls, events, gate);
   }
 }
 
 class _RecordingProvider implements LlmProviderPort {
-  _RecordingProvider(this.providerId, this.model, this.calls, this.events);
+  _RecordingProvider(
+    this.providerId,
+    this.model,
+    this.calls,
+    this.events,
+    this.gate,
+  );
 
   final String providerId;
   final String? model;
   final List<_Call> calls;
   final List<LlmEvent> events;
+  final Completer<void>? gate;
 
   @override
   Stream<LlmEvent> complete({
@@ -416,6 +583,7 @@ class _RecordingProvider implements LlmProviderPort {
     LlmCompleteConfig config = const LlmCompleteConfig(),
   }) async* {
     calls.add(_Call(providerId, model, messages.first.textContent, config));
+    await gate?.future;
     for (final e in events) {
       yield e;
     }

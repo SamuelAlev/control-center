@@ -2,7 +2,7 @@
 title: Zarządzaj kluczami API
 description: Gdzie znajduje się każde poświadczenie — Twoje konto użytkownika na serwerze, sam serwer czy zewnętrzne CLI — oraz jak je ustawić, wymienić i usunąć.
 slug: pl-PL/podrecznik/poradniki/klucze-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Ten poradnik pokazuje, gdzie przechowywane jest każde poświadczenie używane przez
@@ -78,8 +78,9 @@ czego uwierzytelniać.
 Twój klucz jest przechowywany na serwerze przy Twoim identyfikatorze użytkownika,
 podobnie jak klucz hosta kodu. Serwer przechowuje własny klucz Linear osobno
 (**Aplikacje dostawców**) — to na nim działa synchronizacja zgłoszeń, gdy nie poprosił
-o nią żaden człowiek. Klucz przekazywany agentowi jest wstrzykiwany tylko wtedy, gdy
-agent ma uprawnienie **Zezwalaj na wywołania API zgłoszeń**. Zobacz
+o nią żaden człowiek. Do sandboxa agenta nie jest wstrzykiwany żaden klucz
+zgłoszeń; agenci zapisują zgłoszenia przez narzędzia Control Center, które pytają
+regułę **Zapis do zewnętrznego trackera**. Zobacz
 [Skonfiguruj integrację Linear](/pl-PL/podrecznik/poradniki/integracja-linear/).
 
 ## Wymiana i unieważnianie

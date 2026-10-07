@@ -2,7 +2,7 @@
 title: Thiết lập tích hợp GitHub
 description: Đăng nhập GitHub để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Hướng dẫn này đề cập đến những phần dành riêng cho GitHub trong quá trình thiết
@@ -79,7 +79,7 @@ thông tin xác thực của chủ máy chủ, rồi đến môi trường.
 | Các lượt chạy kiểm tra      | API GitHub Checks                                                                                                    |
 | Xuất bản đánh giá           | Một bước do người dùng xác nhận, đăng đánh giá của bạn lên PR                                                        |
 | Đăng ký kho mã              | Một bản checkout được chấp nhận nếu remote `origin` của nó trỏ tới github.com — hoặc tới gitlab.com / bitbucket.org  |
-| Quyền truy cập GitHub của agent | Trình môi giới thông tin xác thực chèn token dưới dạng `GH_TOKEN` / `GITHUB_TOKEN`, được kiểm soát theo khả năng của agent |
+| Quyền truy cập GitHub của agent | Trình môi giới thông tin xác thực chèn một token chỉ đọc dưới dạng `GH_TOKEN` / `GITHUB_TOKEN`; push đi qua Control Center |
 | Tín hiệu thông báo          | Một lượt thăm dò phía máy chủ vào hộp thư thông báo GitHub của bạn tạo ra “Được nhắc trong pull request” và “Đã yêu cầu review” |
 | Hồ sơ người dùng            | Thẻ hồ sơ khi rê chuột và lọc PR theo từng tác giả                                                                    |
 
@@ -98,8 +98,9 @@ cùng nút làm mới. Các trạng thái tự làm mới sau mỗi hai phút.
 
 ## Cách agent hành động trên GitHub
 
-- Một agent chỉ nhận được token GitHub nếu nó có **Cho phép gọi GitHub API** hoặc
-  **Cho phép git push**. Xem
+- Một agent làm việc trong worktree GitHub luôn nhận token GitHub chỉ đọc. Một
+  lần push đi qua Control Center, nơi hỏi quy tắc **Push lên remote** rồi chuyển
+  tiếp nó bằng một token ghi mà agent không bao giờ nắm giữ. Xem
   [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
 - Các commit do agent tạo được ghi là **do agent** — tên hiển thị cộng thêm
   ` (agent)`, tại một địa chỉ tổng hợp được đánh khóa theo id của agent — không
@@ -110,11 +111,11 @@ cùng nút làm mới. Các trạng thái tự làm mới sau mỗi hai phút.
   thay vì đưa ra một token rộng. Bản cài đặt được phân giải từ **owner** kho mã
   của lượt chạy, nên một ứng dụng cài trên nhiều tài khoản sẽ giới hạn đúng theo
   tài khoản mà lượt chạy chạm tới. Không có ứng dụng, agent nhận token của môi
-  trường
-- Một lượt chạy do một thành viên đã đăng nhập yêu cầu sẽ hành động dưới **danh
-  tính GitHub của thành viên đó** — thông tin xác thực của họ được hợp nhất vào
-  sau môi trường của trình môi giới, nên một commit hay bình luận mà agent thực
-  hiện cho họ được ghi nhận cho họ
+  trường, thứ không thể thu hẹp thành chỉ đọc: khi đó quy tắc push ràng buộc
+  `git push`, nhưng không ràng buộc mã dùng trực tiếp token
+- Token luôn thuộc về trình môi giới, không bao giờ là token riêng của thành
+  viên yêu cầu. Token của máy chủ bị giữ lại khỏi một lượt chạy hành động thay
+  một thành viên không phải chủ sở hữu và chưa kết nối GitHub
 
 ## Xử lý sự cố
 

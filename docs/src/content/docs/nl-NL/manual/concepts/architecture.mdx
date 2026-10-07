@@ -3,7 +3,7 @@ title: Architectuur
 description: Hoe Control Center is opgebouwd met een thin-client-servermodel, feature-first Clean Architecture en poorten en adapters.
 dateModified: 2026-09-19
 slug: nl-NL/handleiding/concepten/architectuur
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Overzicht
@@ -58,7 +58,7 @@ De feature **`guardrails`** legt zijn domeinlaag in `cc_domain/features/guardrai
 - Kernentiteiten: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identiteit en multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Geheugenentiteiten: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Gedeelde value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Gedeelde value objects: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Gedeelde poorten: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Domeinservices: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + gebeurtenistypen (werkruimte/agent, PR/review, berichten, ticketing, pipeline, orkestratie, geheugen, agenda/vergaderingen, identiteit en lidmaatschap, observability)

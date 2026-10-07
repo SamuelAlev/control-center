@@ -3,7 +3,7 @@ title: "Архітектура"
 description: "Як Control Center структуровано: модель тонкого клієнта із сервером, Clean Architecture з первинністю фіч і патерн «порти та адаптери»."
 dateModified: 2026-09-19
 slug: uk-UA/керівництво/поняття/архітектура
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Огляд
@@ -58,7 +58,7 @@ feature_name/
 - Основні сутності: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Ідентичність і спільна робота: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Сутності пам’яті: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Спільні об’єкти-значення: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Спільні об’єкти-значення: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Спільні порти: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Доменні сервіси: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + типи подій (робочий простір/агент, PR/перевірка, повідомлення, тікети, конвеєр, оркестрація, пам’ять, календар/зустрічі, ідентичність і членство, спостережуваність)

@@ -1,0 +1,35 @@
+name: Linux desktop dependencies
+description: >
+  Install the GTK 3, X11 and Xi development packages, plus any job-specific
+  apt packages, in one apt transaction. cnativeapi's build hook compiles
+  against them through pkg-config whenever a root-package script or test
+  builds native assets (`dart run tool/...`, `flutter test`, cc_server boot).
+  Needs the Ubuntu apt hosts in the job's harden-runner allowlist.
+
+# Call it with `background: true` before setup-flutter, then `wait` before the
+# first step that builds native assets: the SDK download and `pub get` need
+# none of these. Composite actions cannot hold background steps themselves, so
+# the overlap lives in the calling job. One call per job: a second concurrent
+# apt-get fails on the dpkg lock instead of queueing.
+
+inputs:
+  extra-packages:
+    description: Space-separated apt packages to install in the same transaction.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install apt packages
+      if: runner.os == 'Linux'
+      shell: bash
+      # Inputs via env, not ${{ }} inside run: (template injection).
+      env:
+        EXTRA_PACKAGES: ${{ inputs.extra-packages }}
+      run: |
+        set -euo pipefail
+        read -r -a extra <<< "$EXTRA_PACKAGES"
+        sudo apt-get -o Acquire::Retries=3 update
+        sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+          pkg-config libgtk-3-dev libx11-dev libxi-dev "${extra[@]}"

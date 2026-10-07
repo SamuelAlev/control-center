@@ -3,7 +3,7 @@ title: 架构
 description: Control Center 如何通过瘦客户端服务器模型、以功能为先的整洁架构以及端口与适配器进行组织。
 dateModified: 2026-09-19
 slug: zh-CN/手册/概念/架构
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## 概述
@@ -58,7 +58,7 @@ feature_name/
 - 核心实体：`Agent`、`AgentRunLog`、`Workspace`、`Repo`、`ReviewSpaceAssociation`
 - 身份与多人协作：`User`、`Principal`（密封的 `UserPrincipal` | `AgentPrincipal`）、`WorkspaceMember`、`WorkspaceRole`
 - 记忆实体：`MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
-- 共享值对象：`AgentCapabilities`、`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
+- 共享值对象：`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
 - 共享端口：`SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
 - 领域服务：`MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
 - `DomainEventBus` + 事件类型（工作区/智能体、PR/审查、消息、工单、流水线、编排、记忆、日历/会议、身份与成员关系、可观测性）

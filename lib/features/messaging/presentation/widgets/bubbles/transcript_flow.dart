@@ -12,7 +12,6 @@ import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
-import 'package:control_center/shared/widgets/transcript/widgets/shimmer_text.dart';
 import 'package:flutter/widgets.dart';
 
 /// Agent turn as chronological inline flow (reasoning, tools, answer).
@@ -426,7 +425,7 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
           const SizedBox(width: 6),
           Flexible(
             child: widget.streaming
-                ? ShimmerText(label, style: labelStyle)
+                ? CcShimmerText(label, style: labelStyle)
                 : Text(
                     label,
                     style: labelStyle,
@@ -453,8 +452,9 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
 ///
 /// Quiet, not faint: while a turn is in flight this line is the only thing on
 /// screen reporting what the agent is doing, so it takes a body-grade text token
-/// (`textSecondary`) rather than the annotation-grade tertiary. [ShimmerText]
-/// sweeps *up* from this colour, so it is also the line's contrast floor.
+/// (`textSecondary`) rather than the annotation-grade tertiary. That is the
+/// colour under reduced motion; while it sweeps, [CcShimmerText] rests on its
+/// own AA-clearing floor so the band has room to show.
 class _LiveStatusLine extends StatelessWidget {
   const _LiveStatusLine({required this.segments});
 
@@ -471,7 +471,7 @@ class _LiveStatusLine extends StatelessWidget {
     return Row(
       children: [
         Flexible(
-          child: ShimmerText(liveStatusLabel(segments, l10n), style: style),
+          child: CcShimmerText(liveStatusLabel(segments, l10n), style: style),
         ),
       ],
     );

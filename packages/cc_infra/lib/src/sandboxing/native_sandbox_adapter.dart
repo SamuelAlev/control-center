@@ -323,7 +323,6 @@ class NativeSandboxAdapter implements SandboxPort {
         : null;
     final policy = const SandboxPolicyResolver().resolve(
       spec: spec,
-      capabilities: spec.capabilities,
       homeDir: home.isNotEmpty ? home : null,
       runDir: runDir,
     );

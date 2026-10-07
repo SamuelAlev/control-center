@@ -3,7 +3,7 @@ title: Arhitectură
 description: Cum este structurat Control Center cu un model de server pentru client subțire, Clean Architecture orientată pe funcționalități și modelul porturi și adaptoare.
 dateModified: 2026-09-19
 slug: ro-RO/manual/concepte/arhitectura
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Prezentare generală
@@ -58,7 +58,7 @@ Funcționalitatea **`guardrails`** își pune stratul de domeniu în `cc_domain/
 - Entități de bază: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identitate și multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Entități de memorie: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Obiecte-valoare partajate: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Obiecte-valoare partajate: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Porturi partajate: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Servicii de domeniu: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + tipuri de evenimente (spațiu de lucru/agent, PR/revizuire, mesagerie, tichete, pipeline, orchestrare, memorie, calendar/întâlniri, identitate și apartenență, observabilitate)

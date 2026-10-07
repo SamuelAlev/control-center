@@ -50,6 +50,7 @@ void main() {
       filesystem: fs,
       fetchGitHubSkill:
           ({
+            required workspaceId,
             required owner,
             required repo,
             required path,

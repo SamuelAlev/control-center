@@ -2,7 +2,7 @@
 title: Kelola kunci API
 description: Di mana setiap kredensial disimpan — akun pengguna Anda di server, server itu sendiri, atau CLI eksternal — serta cara menetapkan, merotasi, dan menghapusnya.
 slug: id-ID/panduan-pengguna/panduan-praktis/kunci-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Panduan ini menunjukkan kepada Anda di mana setiap kredensial yang digunakan
@@ -79,8 +79,9 @@ server ini sendiri dan tidak ada yang perlu diautentikasi.
 Kunci Anda disimpan di server dan dikaitkan dengan id pengguna Anda, seperti
 kunci host kode. Server menyimpan kunci Linear-nya sendiri secara terpisah
 (**Aplikasi penyedia**), yang menjadi sandaran sinkronisasi tiket saat tidak ada
-manusia yang meminta. Kunci yang diterima agen hanya disuntikkan ketika agen
-memiliki kemampuan **Izinkan panggilan API ticketing**. Lihat
+manusia yang meminta. Tidak ada kunci ticketing yang disuntikkan ke sandbox
+agen; agen menulis tiket melalui alat Control Center, yang menanyakan aturan
+**Tulis ke pelacak eksternal**. Lihat
 [Siapkan integrasi Linear](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/).
 
 ## Rotasi atau cabut

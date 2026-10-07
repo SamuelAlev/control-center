@@ -3,7 +3,7 @@ title: "Kiến trúc"
 description: "Cách Control Center được tổ chức: mô hình máy khách mỏng trên máy chủ, Clean Architecture hướng tính năng, cổng và adapter."
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/khai-niem/kien-truc
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Tổng quan
@@ -58,7 +58,7 @@ Tính năng **`guardrails`** đặt tầng miền của nó trong `cc_domain/fea
 - Thực thể lõi: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Danh tính và đa người dùng: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Thực thể bộ nhớ: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Đối tượng giá trị dùng chung: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Đối tượng giá trị dùng chung: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Cổng dùng chung: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Dịch vụ miền: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + các loại sự kiện (không gian làm việc/agent, PR/đánh giá, nhắn tin, phiếu, quy trình, điều phối, bộ nhớ, lịch/cuộc họp, danh tính và tư cách thành viên, khả năng quan sát)

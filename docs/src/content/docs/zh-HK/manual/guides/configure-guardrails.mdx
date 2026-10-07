@@ -2,7 +2,7 @@
 title: 設定護欄
 description: 為代理的操作設定允許、先詢問與拒絕規則，以假設情境探測測試，並按空間調整自主程度。
 slug: zh-HK/手冊/操作指南/設定護欄
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 本指南說明如何設定護欄：這些規則決定代理的某項操作是直接執行、先請求核准，還是被拒絕。
@@ -109,10 +109,11 @@ sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 同一頁底部的**規則套用位置**表就是這段內容的應用程式內版本：它會逐一效果類別說明每個執行器是在
 政策閘門攔截它、把它交給沙箱處理，還是根本無法攔截它。
 
-- **Claude Code 配接器**自身的工具呼叫不受把關。Claude Code 以
-  `--dangerously-skip-permissions` 啟動，因此它的 read、write、edit 與 bash 呼叫從不經過這道
-  護欄。該配接器受把關的，是它回呼的 MCP 工具介面，以及 Control Center 為啟動它而衍生的 shell
-  指令。
+- **Claude Code 配接器**自身的工具呼叫只有一部分受把關。Claude Code 以
+  `--dangerously-skip-permissions` 啟動，因此它的 read、write 與 edit 呼叫從不經過這道
+  護欄。它的 bash 指令會經由一個把命令列分類的鉤子抵達護欄，它的推送也和所有代理一樣
+  經過推送閘道。它回呼的 MCP 工具介面，以及 Control Center 為啟動它而衍生的 shell
+  指令，同樣受把關。
 - **模式自身的輸出動詞**（`submit_plan`、`propose_orchestration`）已被釘住，永遠無法被拒絕——
   否則模式在結構上將無法產出它唯一的交付項目。
 - **沙箱是否為這些規則兜底取決於主機。** 當 `cc_server` 找到可用後端時，它會包裹 Claude Code CLI

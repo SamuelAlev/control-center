@@ -2,12 +2,12 @@
 title: Agentmodellen
 description: Hva en agent faktisk er i Control Center, hvilke av feltene dens som endrer atferd, og hvordan adapteren den kjører på avgjør hva som kan håndheves.
 slug: nb-NO/handbok/konsepter/agentmodell
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Hva er en agent?
 
-En agent er en navngitt aktør med en persona, et sett med skills, en adapter å kjøre på og et sett med kapasiteter. Agenter er aktører på samme måte som mennesker: de skriver meldinger, eier saker, legger igjen gjennomganger og vises på den samme oversikten. De er de tingene som gjør arbeid.
+En agent er en navngitt aktør med en persona, et sett med skills og en adapter å kjøre på. Agenter er aktører på samme måte som mennesker: de skriver meldinger, eier saker, legger igjen gjennomganger og vises på den samme oversikten. De er de tingene som gjør arbeid.
 
 Hver agent tilhører nøyaktig ett arbeidsområde. Dette er en hard invariant — `agent.workspaceId` er ikke null, det er agentens eget arbeidsområde som bestemmer hvilken databasefil radene havner i, og å opprette en agent uten arbeidsområde avvises.
 
@@ -26,7 +26,6 @@ En agent er også en mappe. Definisjonen ligger i `agents/<slug>/AGENTS.md` unde
 | `modelId`               | Hvilken modell innenfor den adapteren                                                       |
 | `effort`                | Resonneringsnivå, hentet fra den valgte modellens eget vokabular                       |
 | `contextSize`           | Overstyring av kontekstvinduet                                                               |
-| `capabilities`          | Flagg for påloggingsinformasjon og utgående trafikk, sjekkes ved start                                        |
 | `silenceTimeoutMinutes` | Overstyring per agent (1–240) for stillhetsvakten                                   |
 | `reportsTo`             | Id-en til overordnet agent — rapporteringskjeden organisasjonskartet tegner opp                             |
 
@@ -51,18 +50,13 @@ Avgrensningen er en beslutning om kontekstbudsjettet. Skill-indeksen ligger i pr
 
 Repo-skills lastes for **hver** adapter, ikke bare det innebygde harnesset. Skillene til det aktive repositoriet materialiseres inn i agentens arbeidsmappe, som er stien Claude Code allerede skanner; den samme indeksen settes sammen i `AGENTS.md` som det innebygde harnesset leser. Skillene til et repo passerer den samme skanningen som feiler lukket, som en installert skill gjør, før noe av dette skjer — et utsjekket repo er klonet innhold, og frontmatteren når en prompt.
 
-## Kapasiteter
+## Tillatelser
 
-Kapasiteter styrer hva en kjøring blir _tildelt_, ikke hva filsystemet lar den berøre. Brokeren for påloggingsinformasjon sjekker dem ved start: hvis en kapasitet er av, blir det tilhørende tokenet rett og slett ikke injisert.
+En agent har ingen egne tillatelsesflagg. Om den får opprette en commit, pushe, åpne en pull request, skrive til et oppfølgingssystem eller nå nettverket, avgjøres av [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/) — tillat, spør først eller nekt, i omfanget arbeidsområde, agent eller område — og de samme reglene gjelder uansett hvilken adapter som kjører den.
 
-- **Push til repo** — styrer injeksjonen av GitHub-tokenet som brukes til `git push`.
-- **GitHub API** — styrer injeksjon av `GH_TOKEN` og utgående trafikk til api.github.com.
-- **Saker** — styrer API-nøkkelen til saksleverandøren og utgående trafikk til domenene dens.
-- **Nettverksutgang** — vilkårlige utgående forespørsler.
+Hva en kjøring blir _tildelt_, endres ikke av disse reglene. En kjøring i en GitHub-worktree får alltid et GitHub-token som bare kan lese, og en push blir spurt om i det øyeblikket den skjer: agentens git-konfigurasjon sender hver GitHub-push gjennom Control Center, som bruker regelen **Push til en remote** før den sendes videre.
 
-En kjøring løser dem opp fra agentens egen rad. Når agenten ikke har noen, gjelder en fast, konservativ standard: de tre påloggingsflaggene av, nettverksutgang på. Bryteren «Sandkassetillatelser» i agentskjemaet velger mellom den fallbacken og et egendefinert sett som er lagret på agenten.
-
-Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for den andre halvdelen, inkludert hva som håndheves og ikke håndheves på filsystemnivå.
+Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hvordan det virker, inkludert hva som håndheves og ikke håndheves på filsystemnivå.
 
 ## Adapteren avgjør hva som kan håndheves
 
@@ -71,7 +65,7 @@ Det desidert mest avgjørende feltet på en agent er adapteren, fordi adapterens
 | Transport        | Adaptere                  | Hva Control Center håndhever                                                                                                                                                                                                                                               |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Innebygd harness | Control Center (built-in) | Alt. Verktøyflaten er _bygget_ fra modusen, så et forbudt verktøy er usynlig i stedet for bare avvist; hvert kall passerer godkjenningsporten og tillatelsesreglene for handlinger; fullføringskontrakten kan dytte på og deretter feile en kjøring som avsluttes uten leveransen sin |
-| Claude CLI       | Claude Code               | Bare `mcp__*`-verktøyene den får servert. Claudes egne lese-, skrive-, redigerings- og skallverktøy lever i prosessen dens og kjører usett — og den startes med `--dangerously-skip-permissions`, fordi ikke-interaktiv `claude -p` ellers ville blokkere for alltid på sin egen prompt    |
+| Claude CLI       | Claude Code               | `mcp__*`-verktøyene den får servert, pluss `Bash`-kommandoene dens, som en hook sender til handlingspolicyen før de kjører. Claudes egne lese-, skrive- og redigeringsverktøy lever i prosessen dens og kjører usett — og den startes med `--dangerously-skip-permissions`, fordi ikke-interaktiv `claude -p` ellers ville blokkere for alltid på sin egen prompt    |
 
 Konkret: **bare det innebygde harnesset støtter underagenter, styring midt i en kjøring, pause og gjenopptaking (og dermed overtaking) og strukturell modushåndhevelse.** Claude Code får ingen av disse.
 

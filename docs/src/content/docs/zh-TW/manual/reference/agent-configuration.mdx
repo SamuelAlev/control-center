@@ -2,7 +2,7 @@
 title: 代理設定
 description: 代理實體上的每個欄位，以及它使用的各種列舉。
 slug: zh-TW/手冊/參考/代理設定
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 本參考列出代理實體上的每一個欄位，以及它使用的各種列舉與旗標。若要在應用程式中逐步建立或編輯代理，請見[建立並設定代理](/zh-TW/手冊/操作指南/建立代理/)。
@@ -26,7 +26,6 @@ sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 | `effort`                | `String?`              | 否   | 推論等級 id（例如 `'low'`、`'xhigh'`），取自所選模型的 `thinkingLevels`                                                                                                                             |
 | `contextSize`           | `int?`                 | 否   | 情境視窗的大小上限                                                                                                                                                                                  |
 | `role`                  | `AgentRole?`           | 否   | 代理角色                                                                                                                                                                                            |
-| `capabilities`          | `AgentCapabilities?`   | 否   | 依代理的能力預設值；為 null 時，派送時會套用使用者層級預設值，而對話仍可覆寫                                                                                                                        |
 | `monthlyBudgetCents`    | `int`                  | 否   | 每月支出上限，以美分計（預設 `0`，即不限）                                                                                                                                                          |
 | `silenceTimeoutMinutes` | `int?`                 | 否   | 靜默逾時的覆寫值，以分鐘計；必須為 null 或落在 1–240 之間（由建構函式斷言）                                                                                                                         |
 | `maxConcurrentTasks`    | `int`                  | 否   | 預設 `1`。線上狀態模型所回報的容量數值（執行中與佇列中的計數都會與它比較）                                                                                                                          |
@@ -68,18 +67,9 @@ sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 | `paused`   | 由預算硬性停止設定。會顯示在線上狀態名冊上；派送仍會接受工作               |
 | `archived` | 已退役，並從使用中的名冊中隱藏                                              |
 
-## AgentCapabilities 旗標
+## 權限
 
-每次派送時解析：先取代理的預設值，為 null 時回退至使用者層級預設值，最上層再疊加依對話的覆寫值。強制方式靠的是「不存在」——被停用的能力所涵蓋的內容，憑證仲介根本不會簽發或注入。
-
-| 旗標               | 類型   | 預設值  | 說明                                                                                      |
-| ------------------ | ------ | ------- | ----------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | 將提交推送至遠端；與 `canCallGitHubApi` 一同閘控 GitHub 權杖的注入                        |
-| `canCallGitHubApi` | `bool` | `false` | 呼叫 api.github.com；閘控 `GH_TOKEN` 的注入以及 GitHub 的對外連線網域                     |
-| `canCallTicketing` | `bool` | `false` | 呼叫工單供應商的 API；閘控供應商 API 金鑰的注入及其對外連線網域                            |
-| `canAccessNetwork` | `bool` | `true`  | 任意的對外連線。也會閘控執行環境的 `web_fetch` 與 `web_search` 工具                       |
-
-`AgentCapabilities.safeDefault` 就是這四個欄位的建構函式預設值。`legacyDefault`（四者全為 true）只由那次遷移使用——它回填了能力存在之前所建立的對話。格式錯誤或為空的已儲存資料塊會解析為 `safeDefault`；舊版鍵 `canCallLinear` 會被讀作 `canCallTicketing`。
+代理不帶任何權限旗標。推送、開啟與發佈 pull request、寫入追蹤器以及網路對外連線都是動作類別（`gitPush`、`prCreate`、`prPublish`、`vendorSyncWrite`、`networkEgress`），由[護欄](/zh-TW/手冊/概念/護欄/)在工作區、代理或空間範圍內解析。執行的 GitHub 權杖一律是唯讀範圍；推送經過代理執行閘道，閘道在轉送前會詢問 `gitPush` 規則。
 
 ## AgentSkills
 

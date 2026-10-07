@@ -2,7 +2,7 @@
 title: Lägen
 description: Varför en yta, inte en agent, bär ett läge; vad vart och ett av de fyra lägena garanterar; och var den garantin är strukturell i stället för att bara stå i prompten.
 slug: sv-SE/handbok/koncept/lagen
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Vad ett läge är
@@ -77,7 +77,7 @@ Själva upplösningen är enkel. Dispatcharen läser ytans `mode`-kolumn; en dis
 
 Ett läges verktygsyta byggs och upprätthålls av den **inbyggda harnessen**. Det är den enda transporten som kan göra ett verktyg osynligt i stället för bara nekat, grinda varje anrop innan det körs och observera ett slutförandekontrakt.
 
-På transporten Claude Code skickas ett läge som inte är chatt vidare som `--permission-mode plan`. Claude följer det av konvention; dess egna läs-, skriv-, redigerings- och shellverktyg körs osedda. För den transporten är läget vägledning, inte en gräns från Control Center – se [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/).
+På transporten Claude Code skickas ett läge som inte är chatt vidare som `--permission-mode plan`. Claude följer det av konvention; dess egna läs-, skriv- och redigeringsverktyg körs osedda och dess shellkommandon kontrolleras bara av en hook som läser kommandoraden. För den transporten är läget vägledning, inte en gräns från Control Center – se [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/).
 
 Tillåtelselistorna begränsar verktyg på skrivnivå och uppåt. Den inbyggda harnessens läsnivå når fortfarande verktyg som ingen lista namnger; på Claude Code nekas ett verktyg som tillåtelselistan utelämnar, oavsett om servern har det eller inte.
 

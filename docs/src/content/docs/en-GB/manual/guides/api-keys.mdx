@@ -2,7 +2,7 @@
 title: Manage API keys
 description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
 slug: en-GB/manual/guides/api-keys
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 This guide shows you where each credential Control Center uses is stored and how
@@ -74,8 +74,9 @@ nothing to authenticate to.
 
 Your key is stored on the server against your user id, like the forge one. The
 server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
+ticket sync runs on when no human asked. No ticketing key is injected into an
+agent's sandbox; agents write tickets through Control Center's tools, which ask
+the **Write to an external tracker** rule. See
 [Set up Linear integration](/en-GB/manual/guides/linear-integration/).
 
 ## Rotate or revoke

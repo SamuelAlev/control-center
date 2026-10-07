@@ -23,7 +23,6 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/entities/workspace_invite.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_lifecycle_status.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
@@ -327,7 +326,6 @@ Map<String, dynamic> agentToWire(Agent a) => {
   'effort': ?a.effort,
   'context_size': ?a.contextSize,
   'role': ?a.role?.name,
-  'capabilities': ?a.capabilities?.toJson(),
   'monthly_budget_cents': a.monthlyBudgetCents,
   'silence_timeout_minutes': ?a.silenceTimeoutMinutes,
   'max_concurrent_tasks': a.maxConcurrentTasks,
@@ -341,7 +339,6 @@ Map<String, dynamic> agentToWire(Agent a) => {
 /// Reconstructs an [Agent] from an `AgentDto` wire map (the inverse of
 /// [agentToWire]), used by the `agents.upsert` op.
 Agent agentFromWire(Map<String, dynamic> w) {
-  final caps = w['capabilities'];
   return Agent(
     id: w['id'] as String,
     name: w['name'] as String? ?? '',
@@ -360,9 +357,6 @@ Agent agentFromWire(Map<String, dynamic> w) {
     effort: w['effort'] as String?,
     contextSize: (w['context_size'] as num?)?.toInt(),
     role: w['role'] == null ? null : AgentRole.values.asNameMap()[w['role']],
-    capabilities: caps is Map
-        ? AgentCapabilities.fromJson(caps.cast<String, dynamic>())
-        : null,
     monthlyBudgetCents: (w['monthly_budget_cents'] as num?)?.toInt() ?? 0,
     silenceTimeoutMinutes: (w['silence_timeout_minutes'] as num?)?.toInt(),
     maxConcurrentTasks: (w['max_concurrent_tasks'] as num?)?.toInt() ?? 1,
@@ -2780,75 +2774,52 @@ typedef ReviewedByFetcher =
     Future<Set<String>> Function(List<Repo> repos, String actingUserId);
 
 /// Runs the PR-queue free-text search (the raw [query] string, parsed
-/// server-side) across a workspace's linked [repos] on the SERVER's gh client,
-/// grouped per repo.
+/// server-side) across a workspace's linked [repos] on [workspaceId]'s
+/// background GitHub identity, grouped per repo.
 typedef PrSearchFetcher =
     Future<List<({Repo repo, List<PullRequest> prs})>> Function(
       List<Repo> repos,
-      String query,
-    );
-
-/// Counts the PRs authored by [login] across [repos] on the SERVER's gh client,
-/// split into the profile rail's four buckets (open / draft / merged / closed).
-typedef PrCountsByAuthorFetcher =
-    Future<({int open, int draft, int merged, int closed})> Function(
-      List<Repo> repos,
-      String login,
-    );
+      String query, {
+      required String workspaceId,
+    });
 
 /// Fetches the public members of the GitHub orgs owning [owners] (resolved from
-/// the bound workspace's repos) on the SERVER's gh client, as `GitHubUser` wire
-/// maps (`{login, avatar_url, name}`).
+/// the bound workspace's repos) on [workspaceId]'s GitHub identity, as
+/// `GitHubUser` wire maps (`{login, avatar_url, name}`).
 typedef OrgMembersFetcher =
-    Future<List<Map<String, dynamic>>> Function(List<String> owners);
+    Future<List<Map<String, dynamic>>> Function(
+      List<String> owners, {
+      required String workspaceId,
+    });
 
 /// Bundled SERVER-side GitHub read fetchers for the compose-PR / peek / profile
 /// / pagination surfaces a thin client can no longer fetch itself (it holds no
-/// gh token). Each runs on the host's gh client. The whole record is null when
-/// the host has no gh token — those ops then degrade to empty results /
-/// "connect GitHub on the server". Owner/repo args are validated against the
+/// gh token). Each repo-scoped fetcher takes the bound `workspaceId` so the
+/// read follows that workspace's GitHub identity mode (inherit / own App /
+/// background PAT) rather than whichever install-App installation answers.
+/// A fetcher whose caller or workspace has no GitHub credential degrades to an
+/// empty result, decided per call. Owner/repo args are validated against the
 /// bound workspace's linked repos in the op handler BEFORE the fetch runs
 /// (workspace isolation — a client cannot fan a query at a repo the bound
 /// workspace doesn't own).
 typedef GitHubReadFetchers = ({
-  /// Branch names on `owner/repo`, ordered for the compose pickers (the server
-  /// user's branches first, each group most-recent-commit first).
-  Future<List<String>> Function(String owner, String repo) repoBranches,
-
-  /// The default branch (e.g. `main`) of `owner/repo`.
-  Future<String> Function(String owner, String repo) defaultBranch,
-
-  /// The pull-request templates discovered in `owner/repo`.
-  Future<List<({String name, String body, bool isDefault})>> Function(
-    String owner,
-    String repo,
-  )
-  prTemplates,
-
-  /// The `base...head` comparison on `owner/repo`, or null when unresolvable.
-  Future<
-    ({
-      List<PrFile> files,
-      List<PrCommit> commits,
-      int additions,
-      int deletions,
-      int totalCommits,
-    })?
-  >
-  Function(String owner, String repo, String base, String head)
-  compareBranches,
-
   /// A PR's description payload for the peek panel, or null when unresolvable.
   Future<({String body, String? bodyHtml, int changedFiles, int commitsCount})?>
-  Function(String owner, String repo, int number)
+  Function(
+    String owner,
+    String repo,
+    int number, {
+    required String workspaceId,
+  })
   prContent,
 
   /// Issues/PRs in `owner/repo` matching `query` (the `#`-reference picker).
   Future<List<({int number, String title})>> Function(
     String owner,
     String repo,
-    String query,
-  )
+    String query, {
+    required String workspaceId,
+  })
   searchIssues,
 
   /// [actingUserId]'s own permission on `owner/repo` (admin/write/read/none),
@@ -2883,31 +2854,24 @@ typedef GitHubReadFetchers = ({
   )
   teamProfile,
 
-  /// Workspace-scoped PR activity for one or more GitHub authors.
+  /// Workspace-scoped PR activity for one or more GitHub authors, read on
+  /// [actingUserId]'s credential under [workspaceId]'s GitHub identity mode.
   Future<GitHubProfileActivity> Function(
     List<Repo> repos,
     List<String> logins,
-    String actingUserId,
-  )
+    String actingUserId, {
+    required String workspaceId,
+  })
   profileActivity,
 
   /// A page of open PRs on `owner/repo` (the PR-list "load more").
   Future<({List<PullRequest> prs, bool hasMore})> Function(
     String owner,
     String repo,
-    int page,
-  )
+    int page, {
+    required String workspaceId,
+  })
   openPrPage,
-
-  /// A page of `login`'s merged/closed PRs on `owner/repo` (profile "load
-  /// more").
-  Future<({List<PullRequest> prs, bool hasMore})> Function(
-    String owner,
-    String repo,
-    String login,
-    int page,
-  )
-  closedByAuthorPage,
 });
 
 /// Fetches the raw githubstatus.com `summary.json` map (the `github.serviceStatus`
@@ -2941,11 +2905,13 @@ typedef KimiServiceStatusFetcher = Future<Map<String, dynamic>> Function();
 /// [accounts] is the shared multi-account input — one entry per connected
 /// login, already refreshed. Claude Code accounts are merged in by the host
 /// so every provider pages the same way. Null when the host wires no
-/// fetcher → the op returns an empty list.
+/// fetcher → the op returns an empty list. [force] is a manual refresh: the
+/// host skips its usage caches (down to their rate-limit floor).
 typedef SubscriptionUsageFetcher =
     Future<List<Map<String, dynamic>>> Function(
-      List<SubscriptionUsageAccount> accounts,
-    );
+      List<SubscriptionUsageAccount> accounts, {
+      bool force,
+    });
 
 /// Fetches the 5h/weekly quota for ONE Claude Code account, by config dir.
 ///

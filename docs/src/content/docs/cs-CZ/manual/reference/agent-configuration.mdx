@@ -2,7 +2,7 @@
 title: Konfigurace agentů
 description: Každé pole entity agenta a enumy, které používá.
 slug: cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kterými pracuje. Jak agenta v aplikaci krok za krokem založit nebo upravit, popisuje [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/).
@@ -26,7 +26,6 @@ Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kte
 | `effort`                | `String?`              | Ne      | Id úrovně uvažování (např. `'low'`, `'xhigh'`), brané z `thinkingLevels` vybraného modelu                                                                                  |
 | `contextSize`           | `int?`                 | Ne      | Maximální velikost kontextového okna                                                                                                                                       |
 | `role`                  | `AgentRole?`           | Ne      | Role agenta                                                                                                                                                                |
-| `capabilities`          | `AgentCapabilities?`   | Ne      | Výchozí schopnosti agenta; při null platí při odeslání výchozí stav uživatele a konverzace ho pořád může přepsat                                                           |
 | `monthlyBudgetCents`    | `int`                  | Ne      | Měsíční strop útraty v centech (výchozí `0`, bez omezení)                                                                                                                  |
 | `silenceTimeoutMinutes` | `int?`                 | Ne      | Přepis timeoutu ticha v minutách; musí být null, nebo v rozsahu 1–240 (kontrola v konstruktoru)                                                                           |
 | `maxConcurrentTasks`    | `int`                  | Ne      | Výchozí `1`. Kapacita, kterou hlásí model přítomnosti (počty běžících a čekajících běhů se s ní porovnávají)                                                               |
@@ -68,18 +67,9 @@ Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kte
 | `paused`   | Nastavuje ho tvrdé zastavení rozpočtu. Vidět je na soupisce přítomnosti; odeslání práci pořád bere |
 | `archived` | Vyřazený a skrytý z aktivních soupisek                                                |
 
-## Příznaky AgentCapabilities
+## Oprávnění
 
-Vyhodnocuje se při každém odeslání: výchozí stav agenta, při null výchozí stav na úrovni uživatele a nad tím přepis dané konverzace. Vynucení je nepřítomností. Broker přihlašovacích údajů prostě nevystaví ani nevloží to, co vypnutá schopnost pokrývá.
-
-| Příznak            | Typ    | Výchozí | Popis                                                                                        |
-| ------------------ | ------ | ------- | -------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commitů na remote; spolu s `canCallGitHubApi` řídí vložení tokenu GitHub                |
-| `canCallGitHubApi` | `bool` | `false` | Volání api.github.com; řídí vložení `GH_TOKEN` a odchozí domény GitHub                       |
-| `canCallTicketing` | `bool` | `false` | Volání API poskytovatele ticketů; řídí vložení API klíče poskytovatele a jeho odchozí domény |
-| `canAccessNetwork` | `bool` | `true`  | Libovolný odchozí provoz. Řídí také nástroje harnessu `web_fetch` a `web_search`             |
-
-`AgentCapabilities.safeDefault` jsou všechny čtyři výchozí hodnoty konstruktoru. `legacyDefault` (všechny čtyři true) používá jen migrace, která zpětně doplnila konverzace založené před zavedením schopností. Poškozený nebo prázdný uložený blob se parsuje na `safeDefault`; starý klíč `canCallLinear` se čte jako `canCallTicketing`.
+Agent nemá žádné příznaky oprávnění. Push, otevírání a zveřejňování pull requestů, zápis do trackeru a odchozí síťový provoz jsou třídy akcí (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`), které [guardraily](/cs-CZ/prirucka/koncepty/guardraily/) vyhodnocují v rozsahu pracovního prostoru, agenta nebo prostoru. Token GitHub běhu má vždycky rozsah jen pro čtení; pushe jdou přes bránu běhů agentů, která se před předáním dál zeptá pravidla `gitPush`.
 
 ## AgentSkills
 

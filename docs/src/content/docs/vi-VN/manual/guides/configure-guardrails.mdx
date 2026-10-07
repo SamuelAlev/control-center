@@ -2,7 +2,7 @@
 title: Cấu hình rào chắn
 description: Đặt quy tắc cho phép, hỏi trước và từ chối cho hành động của agent, kiểm thử chúng bằng công cụ thăm dò Nếu như và tinh chỉnh mức tự chủ theo từng space.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Hướng dẫn này chỉ cho bạn cách cấu hình rào chắn: những quy tắc quyết định một
@@ -126,11 +126,13 @@ Bảng **Nơi quy tắc được thực thi** ở cuối cùng trang đó là ph
 dụng của điều này: theo từng lớp hiệu ứng, nó cho biết mỗi trình chạy có bắt được
 nó tại cổng chính sách không, để nó cho sandbox, hay hoàn toàn không thể chặn nó.
 
-- **Adapter Claude Code** không được đặt cổng cho các lệnh gọi công cụ của chính
-  nó. Claude Code được khởi chạy với `--dangerously-skip-permissions`, nên các
-  lệnh gọi read, write, edit và bash của nó không bao giờ đi qua cổng gác. Thứ
-  được đặt cổng cho adapter đó là bề mặt công cụ MCP mà nó gọi ngược vào và lệnh
-  shell mà Control Center khởi tạo để chạy nó.
+- **Adapter Claude Code** chỉ được đặt cổng một phần cho các lệnh gọi công cụ
+  của chính nó. Claude Code được khởi chạy với `--dangerously-skip-permissions`,
+  nên các lệnh gọi read, write và edit của nó không bao giờ đi qua cổng gác. Các
+  lệnh bash của nó tới được cổng gác qua một hook phân loại dòng lệnh, và các lần
+  push của nó đi qua cổng push như của mọi agent. Bề mặt công cụ MCP mà nó gọi
+  ngược vào và lệnh shell mà Control Center khởi tạo để chạy nó cũng được đặt
+  cổng.
 - **Động từ đầu ra của chính một chế độ** (`submit_plan`, `propose_orchestration`)
   được ghim và không bao giờ có thể bị từ chối — nếu không thì một chế độ sẽ không
   thể nào tạo ra sản phẩm bàn giao duy nhất của nó.

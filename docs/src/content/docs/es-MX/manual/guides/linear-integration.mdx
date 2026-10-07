@@ -2,7 +2,7 @@
 title: Configurar la integración de Linear
 description: Guarda una clave de API de Linear en el servidor para que los agentes puedan llamar a Linear, y elige Linear como proveedor de tickets para los tickets nuevos.
 slug: es-MX/manual/guias/integracion-linear
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 Pega una clave de API de Linear en el servidor asociada a tu usuario, igual que
@@ -16,9 +16,10 @@ propia de Control Center, sin necesidad de ningún servicio externo — consulta
 **Clave de API de tickets** está en **Ajustes → Espacio de trabajo → General**,
 en la tarjeta **Tickets**. Guarda la clave en el servidor asociada a tu id de
 usuario. La clave propia del servidor para el trabajo sin supervisión procede de
-`LINEAR_API_KEY` o de la tarjeta **Aplicaciones de proveedor**, y se inyecta
-como `TICKETING_API_KEY` solo cuando ese agente tiene la capacidad **Permitir
-llamadas a la API de tickets**.
+`LINEAR_API_KEY` o de la tarjeta **Aplicaciones de proveedor**. En el entorno
+aislado de un agente no se coloca ninguna clave de tickets: los agentes escriben
+tickets con las herramientas propias de Control Center, que primero preguntan a
+la regla **Escribir en un rastreador externo**.
 
 ## Marcar los tickets nuevos como Linear
 

@@ -2,7 +2,7 @@
 title: Sözlük
 description: Control Center genelinde kullanılan temel terimlerin tanımları.
 slug: tr-TR/kilavuz/referans/sozluk
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Ajan', 'Kimliği, rolü, becerileri ve yetenekleri olan bir YZ çalışanı. Tam olarak tek bir çalışma alanına aittir. Sistemdeki birincil aktör.'],
+['Ajan', 'Kimliği, rolü, becerileri ve bir adaptörü olan bir YZ çalışanı. Tam olarak tek bir çalışma alanına aittir. Sistemdeki birincil aktör.'],
 ['Adaptör', 'Bir ajan turunu yürüten çalıştırıcı. İki tanesi gelir: Control Center (built-in) — model sağlayıcılarıyla konuşan süreç içi harness — ve claude CLI üzerinden Claude Code. Cursor, Codex ve diğer model sağlayıcıları ayrı çalıştırıcılar olarak değil, yerleşik adaptöre bağlanır.'],
 ['Çalışma alanı', 'En üst düzey yalıtım kiracısı. Ajanları, depoları, alanları, biletleri, belleği ve pipeline’ları gruplar. Yalıtım yapısaldır, geleneksel değil: her çalışma alanının kendi SQLite dosyası vardır, bu yüzden çalışma alanları arası bir okuma derlenmez. Uygulama içindeki her rota /workspaces/:workspaceId ile öneklenir.'],
 ['Forge', 'Bir kod barındırıcısı — GitHub, GitLab veya Bitbucket Cloud. Her deponun bir özelliği; kayıt sırasında origin uzak deposundan okunur. Bir çalışma alanı üçünde de depo barındırabilir.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Gönderim anında istemlere ilgili bağlamı enjekte eden, büyük-küçük harf duyarsız beceri tanımlayıcıları kümesi.'],
 ['Beceri kaynağı', 'Çalışma alanı başına beceri kataloğu olarak kaydedilen bir GitHub deposu. Yapısı gereği güvenilmezdir: deponun üst verisi yalnızca görüntüleme amaçlıdır ve her kurulum, herhangi bir içerik diske ya da bir isteme ulaşmadan önce hataya kapalı tarama kapısından geçer.'],
 ['skills-lock.json', 'Kurulu becerilerin çalışma alanı başına manifestosu: her biri için kaynak deposu, depo yolu, sabitlendiği commit ve toplanmış bir içerik karması. Kurulumlar, güncellemeler ve kaldırmalar onu güncel tutar; verify_skills onu diskle karşılaştırır.'],
-['AgentCapabilities', 'Gönderim başına çözümlenen dört bayrak (depoya push, GitHub API, biletleme, ağ çıkışı): önce ajan varsayılanı, sonra kullanıcı varsayılanı ve konuşma başına bir geçersiz kılma. Yokluğuyla uygulanır; çünkü devre dışı bir yetenek, jetonun ya da çıkışın hiç enjekte edilmemesi anlamına gelir.'],
+['Ajan çalıştırma ağ geçidi', 'Eylem politikasını bir ajanın sandbox\'ı içinde uygulayan, cc_server üzerindeki bir loopback uç noktası. Bir ajanın yaptığı her GitHub push\'u buraya yönlendirilir, Uzak depoya push et kuralına göre denetlenir ve ajanın asla elinde tutmadığı bir yazma token\'ıyla iletilir; Claude Code\'un Bash komutları aynı uç noktadaki bir hook aracılığıyla denetlenir.'],
 ['Mode', 'chat, plan, review veya orchestrate. Alan başına saklanır, böylece bir ajan farklı alanlarda farklı modlarda olabilir; bir alandaki her konuşma bunu paylaşır. Sistem istemini, sandbox yazma kurallarını ve MCP araç izin listesini kapılar.'],
 ['SandboxBackend', 'microvm (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), native (macOS’ta işletim sistemine özgü Seatbelt, Linux ve WSL2’de bubblewrap) veya none. Önyüklemede bir kez yoklanır; native, kullanılabilir olduğunda ajan gönderimini sarar. Windows’ta yerel bir arka uç yoktur ve Linux bwrap artı socat gerektirir; bu yüzden oradaki çalıştırmalar sarılmaz; --sandbox off bilinçli olarak vazgeçer.'],
 ['Rig', 'Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine: kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajan aracı tek bir makineyi adresler.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).'],
 ['WakeReason', 'Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.'],
 ['SandboxPort', 'Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı, yetenekle kapılanmış kimlik bilgileri üretir ve sökme sırasında bunları iptal eder.'],
+['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı kimlik bilgileri üretir (bir ajanın ortamı için salt okunur, yazma yalnızca sunucu tarafındaki push yolu için) ve sökme sırasında bunları iptal eder.'],
 ['GitRepoInspectorPort', 'Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.'],
 ['EmbeddingPort', 'Anlamsal arama için birim normlu metin gömme vektörleri üretir.'],
 ['NotificationPort', 'Kategori/rota kapılamasına uyarak yerel masaüstü bildirimleri gösterir.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Çekirdek varlıklar
 
-**Ajan**: Kimliği, rolü, becerileri ve yetenekleri olan bir YZ çalışanı. Tam olarak tek bir çalışma alanına aittir. Sistemdeki birincil aktör.
+**Ajan**: Kimliği, rolü, becerileri ve bir adaptörü olan bir YZ çalışanı. Tam olarak tek bir çalışma alanına aittir. Sistemdeki birincil aktör.
 
 **Adaptör**: Bir ajan turunu yürüten çalıştırıcı. İki tanesi gelir: **Control Center (built-in)** — model sağlayıcılarıyla konuşan süreç içi harness — ve `claude -p` üzerinden **Claude Code**. Cursor, Codex, Anthropic, OpenAI ve geri kalanı, ayrı CLI’lar değil, yerleşik adaptör üzerindeki sağlayıcılardır. Bkz. [Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Kurulu becerilerin çalışma alanı başına manifestosu: her biri için kaynak deposu, depo yolu, sabitlendiği commit ve toplanmış bir içerik karması. Kurulumlar, güncellemeler ve kaldırmalar onu güncel tutar; `verify_skills` onu diskle karşılaştırır.
 
-**AgentCapabilities**: Gönderim başına çözümlenen dört bayrak (depoya push, GitHub API, biletleme, ağ çıkışı) — ajan varsayılanı → kullanıcı varsayılanı, konuşma başına bir geçersiz kılmayla. Yokluğuyla uygulanır: devre dışı bir yetenek, jetonun ya da çıkışın hiçbir zaman enjekte edilmemesi anlamına gelir.
+**Ajan çalıştırma ağ geçidi**: Eylem politikasını bir ajanın sandbox'ı içinde uygulayan, `cc_server` üzerindeki bir loopback uç noktası. Bir ajanın yaptığı her GitHub push'u buraya yönlendirilir, **Uzak depoya push et** kuralına göre denetlenir ve ajanın asla elinde tutmadığı bir yazma token'ıyla iletilir; Claude Code'un `Bash` komutları aynı uç noktadaki bir hook aracılığıyla denetlenir. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 
 **Mode**: `chat`, `plan`, `review` veya `orchestrate`. **Alan başına** saklanır, böylece bir ajan farklı alanlarda farklı modlarda olabilir; bir alandaki her konuşma bunu paylaşır. Sistem istemini, sandbox yazma kurallarını ve MCP araç izin listesini kapılar. Composer yalnızca `chat`, `plan` ve `orchestrate` sunar; `chat` "Ajan" olarak etiketlenir.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Sandbox başlatması için kapsamlı, yetenekle kapılanmış kimlik bilgileri üretir ve sökme sırasında bunları iptal eder.
+**CredentialBrokerPort**: Sandbox başlatması için kapsamlı kimlik bilgileri üretir — bir ajanın ortamı için salt okunur, yazma yalnızca sunucu tarafındaki push yolu için — ve sökme sırasında bunları iptal eder.
 
 **GitRepoInspectorPort**: Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.
 

@@ -152,6 +152,7 @@ void main() {
         filesystem: _TmpFs(tmp.path),
         fetchGitHubSkill:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -251,6 +252,7 @@ void main() {
         ),
         fetchGitHubSkill:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -366,6 +368,7 @@ void main() {
           scanner: _FakeScanPort(rulesVersion: rulesVersion),
           fetchGitHubSkill:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -375,9 +378,20 @@ void main() {
                 ref: ref ?? 'main',
               ),
           latestCommit:
-              ({required owner, required repo, required path, branch}) async =>
+              ({
+                required workspaceId,
+                required owner,
+                required repo,
+                required path,
+                branch,
+              }) async =>
                   latestSha,
-          defaultBranch: ({required owner, required repo}) async => 'main',
+          defaultBranch:
+              ({
+                required workspaceId,
+                required owner,
+                required repo,
+              }) async => 'main',
         );
 
     Future<void> install(SkillBundleService s, {String ref = sha1}) =>
@@ -447,6 +461,7 @@ void main() {
           scanner: _FakeScanPort(),
           fetchGitHubSkill:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,

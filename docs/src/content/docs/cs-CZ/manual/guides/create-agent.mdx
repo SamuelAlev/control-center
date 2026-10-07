@@ -2,7 +2,7 @@
 title: Vytvořte a nakonfigurujte agenta
 description: Přidej agenta do pracovního prostoru, dej mu adaptér, model, skilly a oprávnění a ověř, že běží.
 slug: cs-CZ/prirucka/navody/vytvoreni-agenta
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Tenhle návod ukazuje, jak do pracovního prostoru přidat agenta a nastavit ho tak, aby opravdu běžel.
@@ -68,19 +68,12 @@ Skilly vlastního repozitáře tady nevybíráš. Repozitář, který si je veze
 
 ## Přiděl oprávnění
 
-**Oprávnění sandboxu** začíná na „Použít výchozí pracovního prostoru“. Zapni přepínač, když je chceš nastavit pro tohohle agenta, a pak přepínej:
+Agent nemá vlastní přepínače oprávnění. Co smí pushnout, otevřít, sloučit nebo kam dosáhnout, určují pravidla akcí v **Nastavení → Pracovní prostor → Oprávnění agentů**, kde jde pravidlo omezit na tohohle agenta. Ve výchozím stavu se push, pull request, kontrola nebo sloučení a zápis do trackeru nejdřív zeptají tebe, každý zvlášť, a přístup k síti je povolený.
 
-- **Povolit git push** — vloží token GitHub, který agent potřebuje, aby mohl pushovat
-- **Povolit volání GitHub API** — agent smí číst PR, issues a metadata repozitáře
-- **Povolit volání ticketing API** — vloží klíč poskytovatele ticketů
-- **Povolit obecný přístup k síti** — zároveň zapne nástroje vestavěného harnessu `web_fetch` a `web_search`
+Token GitHub agenta je vždycky jen pro čtení. Push jde přes Control Center, které se před předáním dál zeptá pravidla **Odeslat na remote**. Jak se jednotlivá pravidla dostanou k běhu, popisuje [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/).
 
-Každý přepínač kontroluje broker přihlašovacích údajů při spuštění běhu. Vypnutá schopnost znamená, že se odpovídající token do prostředí běhu nikdy nevloží.
-
-:::caution[Výchozí pracovního prostoru znamená konzervativní sadu serveru]
-Agent ponechaný na „Použít výchozí pracovního prostoru“ běží s git push, GitHub API i ticketingem **vypnutými** a sítí **zapnutou**. Výchozí schopnosti v Nastavení → Server → Diagnostika a soukromí jsou preference na straně klienta. Má-li agent pushovat nebo otevírat PR, zapni přepínač a schopnosti přiděl výslovně.
-
-Tyhle schopnosti pouštějí přihlašovací údaje a nástroje harnessu. To je jiná vrstva než sandbox operačního systému. `cc_server` obalí běhy agenta sandboxem hostitele, pokud tam nějaký je. Windows nativní backend nemá a Linux a WSL2 potřebují `bwrap` a `socat`. Úplnou sadu hranic popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+:::note[Pravidla a sandbox operačního systému jsou samostatné vrstvy]
+Pravidla rozhodují, co agent smí dělat; sandbox operačního systému ohraničuje, kde jeho procesy smějí číst, zapisovat a připojovat se. `cc_server` obalí běhy agenta sandboxem hostitele, pokud tam nějaký je. Windows nativní backend nemá a Linux a WSL2 potřebují `bwrap` a `socat`. Úplnou sadu hranic popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
 ## Ověř, že běží

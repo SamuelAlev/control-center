@@ -2,7 +2,7 @@
 title: GitHub-integratie instellen
 description: Meld je aan bij GitHub zodat het PR-oppervlak, reporegistratie en agentruns werken.
 slug: nl-NL/handleiding/gidsen/github-integratie
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Deze gids behandelt de GitHub-specifieke delen van de installatie. GitHub is een
@@ -80,7 +80,7 @@ inloggegeven van de servereigenaar en dan de omgeving.
 | Check-runs                 | De GitHub Checks API                                                                                           |
 | Review publiceren          | Een door de gebruiker gestarte stap die je review naar de PR plaatst                                           |
 | Reporegistratie            | Een checkout wordt geaccepteerd als zijn `origin`-remote naar github.com wijst — of naar gitlab.com / bitbucket.org |
-| GitHub-toegang voor agenten | De inloggegevensbroker injecteert het token als `GH_TOKEN` / `GITHUB_TOKEN`, begrensd door de mogelijkheden van de agent |
+| GitHub-toegang voor agenten | De inloggegevensbroker injecteert een token met alleen leesrechten als `GH_TOKEN` / `GITHUB_TOKEN`; pushes lopen via Control Center |
 | Meldingspings              | Een poll aan de serverkant van je GitHub-meldingspostvak levert "Vermeld in een pull request" en "Review aangevraagd" op |
 | Gebruikersprofielen        | Profielkaarten bij hover en PR-filtering per auteur                                                            |
 
@@ -99,8 +99,10 @@ knop om te vernieuwen. De statussen vernieuwen vanzelf elke twee minuten.
 
 ## Weet hoe agenten op GitHub handelen
 
-- Een agent krijgt alleen een GitHub-token als hij **GitHub API-aanroepen toestaan** of
-  **git push toestaan** heeft. Zie
+- Een agent die in een GitHub-worktree werkt, krijgt altijd een GitHub-token met
+  alleen leesrechten. Een push loopt via Control Center, dat de regel **Naar een
+  remote pushen** raadpleegt en hem daarna doorstuurt met een schrijftoken dat
+  de agent nooit in handen heeft. Zie
   [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/)
 - Commits die een agent maakt, zijn **als de agent** geschreven — de weergavenaam
   plus ` (agent)`, op een synthetisch adres dat aan de id van de agent is
@@ -111,11 +113,12 @@ knop om te vernieuwen. De statussen vernieuwen vanzelf elke twee minuten.
   breed token weg te geven. De installatie wordt bepaald aan de hand van de
   **eigenaar** van de repo van de run, dus één app die op meerdere accounts is
   geïnstalleerd, is precies gericht op het account dat de run raakt. Zonder app
-  krijgen agenten het omgevingstoken
-- Een run die is aangevraagd door een lid dat is ingelogd, handelt onder **de
-  GitHub-identiteit van dat lid** — het inloggegeven van dat lid wordt na de
-  omgeving van de broker samengevoegd, dus een commit of reactie die een agent
-  voor dat lid plaatst, is aan dat lid toe te schrijven
+  krijgen agenten het omgevingstoken, dat niet tot alleen lezen kan worden
+  beperkt: de pushregel bindt dan `git push`, maar niet code die het token
+  rechtstreeks gebruikt
+- Het token is altijd dat van de broker, nooit het eigen token van het
+  aanvragende lid. Het token van de server wordt achtergehouden voor een run die
+  handelt voor een lid dat niet de eigenaar is en GitHub niet heeft gekoppeld
 
 ## Problemen oplossen
 

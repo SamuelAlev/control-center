@@ -3,7 +3,7 @@ title: สถาปัตยกรรม
 description: โครงสร้างของ Control Center ด้วยโมเดลเซิร์ฟเวอร์และไคลเอนต์แบบบาง สถาปัตยกรรมแบบคลีนที่ยึดฟีเจอร์เป็นหลัก และพอร์ตกับอะแดปเตอร์
 dateModified: 2026-09-19
 slug: th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## ภาพรวม
@@ -58,7 +58,7 @@ feature_name/
 - เอนทิตีหลัก: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - ตัวตนและการทำงานร่วมกันแบบหลายคน: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - เอนทิตีหน่วยความจำ: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- ออบเจกต์ค่าที่ใช้ร่วมกัน: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- ออบเจกต์ค่าที่ใช้ร่วมกัน: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - พอร์ตที่ใช้ร่วมกัน: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - บริการโดเมน: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + ชนิดเหตุการณ์ (เวิร์กสเปซ/เอเจนต์, PR/รีวิว, การส่งข้อความ, ตั๋วงาน, ไปป์ไลน์, การประสานงาน, หน่วยความจำ, ปฏิทิน/การประชุม, ตัวตนและสมาชิกภาพ, การสังเกตการณ์)

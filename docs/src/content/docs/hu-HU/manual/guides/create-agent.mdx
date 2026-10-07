@@ -2,7 +2,7 @@
 title: Ügynök létrehozása és konfigurálása
 description: Adjon hozzá egy ügynököt egy munkaterülethez, lássa el adapterrel, modellel, készségekkel és jogosultságokkal, és győződjön meg róla, hogy fut.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Ez az útmutató bemutatja, hogyan adhat hozzá egy ügynököt egy munkaterülethez, és hogyan konfigurálhatja addig, amíg az ténylegesen futni tud.
@@ -68,19 +68,12 @@ A repók saját készségeit itt nem választja ki. Az a repó, amely ilyeneket 
 
 ## Jogosultságok megadása
 
-A **Homokozó-jogosultságok** a „Munkaterület alapértelmezettje” beállítással indul. Kapcsolja be a kapcsolót, hogy ennek az ügynöknek egyedileg állítsa be őket, majd kapcsolja be az alábbiakat:
+Az ügynöknek nincsenek saját jogosultságkapcsolói. Hogy mit pusholhat, nyithat meg, fésülhet össze vagy érhet el, azt a **Beállítások → Munkaterület → Ügynökjogosultságok** alatti műveleti szabályok határozzák meg, ahol egy szabály erre az ügynökre korlátozható. Alapértelmezés szerint a push, a pull request, az átnézés vagy összefésülés és a követőbe írás egyaránt előbb Önt kérdezi meg, a hálózati hozzáférés pedig engedélyezett.
 
-- **git push engedélyezése** — befecskendezi azt a GitHub-tokent, amelyre az ügynöknek a pushhoz szüksége van
-- **GitHub API-hívások engedélyezése** — lehetővé teszi, hogy az ügynök olvassa a PR-eket, az issue-kat és a repó metaadatait
-- **Jegykezelő API-hívások engedélyezése** — befecskendezi a jegykezelő szolgáltató kulcsát
-- **Általános hálózati hozzáférés engedélyezése** — a beépített harness `web_fetch` és `web_search` eszközét is engedélyezi
+Az ügynök GitHub-tokenje mindig csak olvasásra jogosult. A push a Control Centeren megy át, amely a továbbítás előtt megkérdezi a **Küldés távoli tárolóra** szabályt. Hogy az egyes szabályok hogyan érik el a futást, lásd a [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalon.
 
-Minden kapcsolót a hitelesítőadat-közvetítő ellenőriz a futtatás indításakor: egy kikapcsolt képesség egyszerűen azt jelenti, hogy a hozzá tartozó token soha nem kerül be a futtatás környezetébe.
-
-:::caution[A munkaterület alapértelmezettje a szerver konzervatív készletét jelenti]
-A „Munkaterület alapértelmezettje” beállításon hagyott ügynök a git push, a GitHub API és a jegykezelés tekintetében **kikapcsolva**, a hálózat tekintetében pedig **bekapcsolva** fut. A Beállítások → Szerver → Diagnosztika és adatvédelem alatt látható képesség-alapértelmezések kliensoldali preferenciák. Ha azt szeretné, hogy egy ügynök pusholjon vagy PR-okat nyisson, kapcsolja be a kapcsolót, és adja meg a képességeket kifejezetten.
-
-Ezek a képességek a hitelesítő adatokat és a harness eszközeit szabályozzák, ami külön réteg az operációs rendszer homokozójától. A `cc_server` a gazdagép homokozójába csomagolja az ügynökfuttatásokat, ahol van ilyen — a Windowson nincs natív háttérrendszer, a Linuxnak és a WSL2-nek pedig `bwrap` és `socat` kell. A határok teljes körét lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
+:::note[A szabályok és az operációs rendszer homokozója külön rétegek]
+A szabályok azt döntik el, mit tehet egy ügynök; az operációs rendszer homokozója azt korlátozza, hol olvashatnak, írhatnak és kapcsolódhatnak a folyamatai. A `cc_server` a gazdagép homokozójába csomagolja az ügynökfuttatásokat, ahol van ilyen — a Windowson nincs natív háttérrendszer, a Linuxnak és a WSL2-nek pedig `bwrap` és `socat` kell. A határok teljes körét lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
 :::
 
 ## Ellenőrizze, hogy fut

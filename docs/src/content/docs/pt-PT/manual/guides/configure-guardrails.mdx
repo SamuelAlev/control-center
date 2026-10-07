@@ -2,7 +2,7 @@
 title: Configurar guardrails
 description: Defina regras de permitir, perguntar primeiro e negar para as ações dos agentes, teste-as com a sonda «E se?» e ajuste a autonomia por espaço.
 slug: pt-PT/manual/guias/configurar-guardrails
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Este guia mostra-lhe como configurar as guardrails: as regras que decidem se a
@@ -134,11 +134,14 @@ A tabela **Onde as regras são aplicadas**, no fundo da mesma página, é a vers
 na aplicação disto: por classe de efeito, indica se cada executor a interceta no
 portão de política, se a deixa à sandbox ou se não a consegue intercetar de todo.
 
-- **O adaptador Claude Code** não é controlado nas suas próprias chamadas de
-  ferramentas. O Claude Code é lançado com `--dangerously-skip-permissions`, pelo
-  que as suas chamadas de read, write, edit e bash nunca passam pelo controlo. O
-  que é controlado nesse adaptador é a superfície de ferramentas MCP a que ele
-  chama de volta e o comando de shell que o Control Center lança para o iniciar.
+- **O adaptador Claude Code** só é controlado em parte das suas próprias
+  chamadas de ferramentas. O Claude Code é lançado com
+  `--dangerously-skip-permissions`, pelo que as suas chamadas de read, write e
+  edit nunca passam pelo controlo. Os seus comandos de bash chegam a ele através
+  de um hook que classifica a linha de comandos, e os seus pushes passam pelo
+  gateway de push como os de qualquer agente. São também controlados a
+  superfície de ferramentas MCP a que ele chama de volta e o comando de shell
+  que o Control Center lança para o iniciar.
 - **O verbo de saída de um modo** (`submit_plan`, `propose_orchestration`) está
   fixado e nunca pode ser negado — de outro modo, um modo ficaria estruturalmente
   incapaz de produzir o seu único resultado.

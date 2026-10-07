@@ -36,11 +36,18 @@ enum ContextSegmentKind {
   /// The subagent profiles the `task` tool can spawn.
   subagents,
 
+  /// What an external runner adds on its own and Control Center cannot see:
+  /// Claude Code's system prompt, its built-in tools and MCP schemas, its
+  /// CLAUDE.md files, and the turn's own tool calls. Sized as the remainder
+  /// of the runner's reported context once every known part is subtracted.
+  runner,
+
   /// The memory preamble: active policies, the agent's working-memory notes and
   /// the task-relevant fact shortlist.
   memory,
 
-  /// The live (non-compacted) conversation messages.
+  /// The conversation as the model receives it: the replayed transcript for
+  /// the built-in harness, the capped history block for Claude Code.
   conversation;
 
   /// Parses a wire name, or null when unknown (forward compatibility: a client
@@ -159,15 +166,36 @@ class ContextSegment {
 
 }
 
+/// Who assembles the model's context for an agent, which decides what an
+/// inspection can and cannot see.
+enum ContextRunner {
+  /// Control Center's built-in harness: every part of the request is ours, and
+  /// the conversation is the transcript it replays.
+  harness,
+
+  /// Claude Code (`claude -p`): each run starts fresh with our `<context>`
+  /// prompt and a capped history block, inside Claude Code's own system
+  /// prompt and tools ([ContextSegmentKind.runner]).
+  claudeCode;
+
+  /// Parses a wire name, defaulting to [harness] (what every older server
+  /// inspected).
+  static ContextRunner fromWire(String? wire) =>
+      ContextRunner.values.where((r) => r.name == wire).firstOrNull ??
+      ContextRunner.harness;
+}
+
 /// Everything the server knows about what fills a conversation's context window
-/// for one agent, minus the conversation itself.
+/// for one agent.
 ///
-/// The conversation segment is deliberately NOT here: the client already holds
-/// the space's messages and re-estimating them locally keeps the meter live
-/// (it moves as a turn streams) without an RPC per message. The server owns
-/// exactly what only it can know — the assembled prompt, what is on disk and
-/// the materialized tool surface — which is why this is called the *persistent*
-/// context.
+/// For the built-in harness the conversation segment is NOT here: the client
+/// sizes it, from the provider-reported reading when a run has reported one
+/// and from its own estimate of the messages otherwise. For Claude Code it IS
+/// here, because what the run receives is not the conversation but the capped
+/// history block the dispatch builds from it — only the server can build that.
+/// The server owns exactly what only it can know — the assembled prompt, what
+/// is on disk and the materialized tool surface — which is why this is called
+/// the *persistent* context.
 class ContextInspection {
   /// Creates a [ContextInspection].
   const ContextInspection({
@@ -178,6 +206,7 @@ class ContextInspection {
     required this.mode,
     required this.windowTokens,
     required this.segments,
+    this.runner = ContextRunner.harness,
     this.modelId,
     this.workingDirectory,
     this.hasContent = false,
@@ -191,6 +220,7 @@ class ContextInspection {
         agentId: json['agent_id'] as String? ?? '',
         agentName: json['agent_name'] as String? ?? '',
         mode: json['mode'] as String? ?? 'chat',
+        runner: ContextRunner.fromWire(json['runner'] as String?),
         modelId: json['model_id'] as String?,
         workingDirectory: json['working_directory'] as String?,
         windowTokens: (json['window_tokens'] as num?)?.toInt() ?? 0,
@@ -218,6 +248,9 @@ class ContextInspection {
   /// tool surface, so a breakdown is only meaningful alongside it.
   final String mode;
 
+  /// Who assembles the context, and therefore which segments are knowable.
+  final ContextRunner runner;
+
   /// The agent's configured model, when set.
   final String? modelId;
 
@@ -225,7 +258,8 @@ class ContextInspection {
   /// and skills were read. Null when nothing has been provisioned yet.
   final String? workingDirectory;
 
-  /// The agent's context window in tokens.
+  /// The window, in tokens, the agent's runs actually get: the model's,
+  /// capped by the agent's own setting. Zero when unknown.
   final int windowTokens;
 
   /// Whether [segments] carry their parts' verbatim text.
@@ -254,6 +288,7 @@ class ContextInspection {
     'agent_id': agentId,
     'agent_name': agentName,
     'mode': mode,
+    'runner': runner.name,
     if (modelId != null) 'model_id': modelId,
     if (workingDirectory != null) 'working_directory': workingDirectory,
     'window_tokens': windowTokens,

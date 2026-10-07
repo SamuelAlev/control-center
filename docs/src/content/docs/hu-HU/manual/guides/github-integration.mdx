@@ -2,7 +2,7 @@
 title: GitHub-integráció beállítása
 description: Jelentkezzen be a GitHubra, hogy a PR-felület, a repóregisztráció és az ügynökfuttatások működjenek.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Ez az útmutató a beállítás GitHub-specifikus részeit tárgyalja. A GitHub a három
@@ -85,7 +85,7 @@ szervertulajdonos hitelesítő adatát, végül a környezetet.
 | Check-futtatások | A GitHub Checks API |
 | Átnézés közzététele | Felhasználó által indított lépés, amely közzéteszi az átnézését a PR-ben |
 | Repóregisztráció | Egy checkout akkor fogadható el, ha az `origin` remote-ja a github.com-ra mutat — vagy a gitlab.com / bitbucket.org oldalra |
-| Ügynök GitHub-hozzáférése | A hitelesítőadat-bróker `GH_TOKEN` / `GITHUB_TOKEN` néven injektálja a tokent, az ügynök képességei által szabályozva |
+| Ügynök GitHub-hozzáférése | A hitelesítőadat-bróker csak olvasásra jogosult tokent injektál `GH_TOKEN` / `GITHUB_TOKEN` néven; a pushok a Control Centeren mennek át |
 | Értesítési jelzések | A GitHub-értesítési postaládájának szerveroldali lekérdezése „Említve egy pull requestben” és „Átnézést kértek” értesítéseket vált ki |
 | Felhasználói profilok | Profilkártyák rámutatáskor és a PR-ek szerző szerinti szűrése |
 
@@ -106,8 +106,10 @@ kétpercenként.
 
 ## Hogyan lépnek fel az ügynökök a GitHubon
 
-- Egy ügynök csak akkor kap GitHub-tokent, ha rendelkezik a **GitHub API-hívások
-  engedélyezése** vagy a **git push engedélyezése** képességgel. Lásd a
+- Egy GitHub-worktree-ben dolgozó ügynök mindig csak olvasásra jogosult
+  GitHub-tokent kap. A push a Control Centeren megy át, amely megkérdezi a
+  **Küldés távoli tárolóra** szabályt, majd egy olyan írási tokennel továbbítja,
+  amely soha nincs az ügynök birtokában. Lásd a
   [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalt
 - Az ügynök által létrehozott commitok **az ügynökként** szerzőzöttek — a
   megjelenített név plusz ` (agent)`, az ügynök azonosítójából származó
@@ -118,10 +120,12 @@ kétpercenként.
   átadása helyett. A telepítést a futtatás repójának **tulajdonosa** alapján
   oldja fel, így egy több fiókra telepített alkalmazás pontosan arra a fiókra
   korlátozódik, amelyet a futtatás érint. Alkalmazás nélkül az ügynökök a
-  környezeti tokent kapják
-- Egy bejelentkezett tag által kért futtatás **az adott tag** GitHub-identitása
-  alatt cselekszik — a hitelesítő adatát a bróker környezete után fésüli össze,
-  így az ügynök általa tett commitja vagy megjegyzése neki tulajdonítható
+  környezeti tokent kapják, amelyet nem lehet csak olvasásra korlátozni: a
+  push-szabály ekkor a `git push`-ra érvényes, de a tokent közvetlenül használó
+  kódra nem
+- A token mindig a brókeré, soha nem a kérő tag sajátja. A szerver tokenjét a
+  bróker visszatartja attól a futtatástól, amely olyan tag nevében jár el, aki
+  nem a tulajdonos, és nem csatlakoztatta a GitHubot
 
 ## Hibakeresés
 

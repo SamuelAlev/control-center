@@ -2,7 +2,7 @@
 title: Guardrail-uri — o politică pentru fiecare acțiune care modifică starea
 description: De ce Control Center trece fiecare efect secundar al agenților printr-un singur motor de tip permite/întreabă/refuză, de ce taxonomia ActionClass rămâne mică în mod deliberat și ce schimbă cu adevărat cadranul de autonomie.
 slug: ro-RO/manual/concepte/guardrail-uri
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agenții din Control Center pot șterge fișiere, pot face push pe ramuri, pot
@@ -241,9 +241,7 @@ Harness-ul încorporat declară că instrumentele lui de fișiere din proces **n
 sunt în sandbox — suprafața de instrumente și acest motor de politică sunt
 singura graniță de sistem de fișiere pe care o are. Claude Code declară că
 propriile apeluri de instrumente **nu** sunt interceptabile, pentru că este
-lansat cu `--dangerously-skip-permissions`; Control Center vede doar apelurile
-lui `mcp__*`, iar instrumentele lui de citire, scriere, editare și shell rulează
-nevăzute.
+lansat cu `--dangerously-skip-permissions`; Control Center vede apelurile lui `mcp__*` și, printr-un hook, liniile lui de comandă `Bash`, în timp ce instrumentele lui de citire, scriere și editare rulează nevăzute.
 
 Ecranul de setări arată această matrice, pentru că singurul eșec de neiertat
 pentru un sistem de guardrail-uri este să pretindă o acoperire care nu există.

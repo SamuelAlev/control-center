@@ -2,7 +2,7 @@
 title: Kotak pasir dan keselamatan
 description: Apa yang sebenarnya membataskan ejen dalam Control Center hari ini, sejauh mana kotak pasir OS menjangkau dan sempadan mana yang kekal pada hos yang tiada bahagian belakang.
 slug: ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Di mana kotak pasir OS menjangkau dan tidak menjangkau]
@@ -21,8 +21,7 @@ Dua jurang terus wujud melepasi kotak pasir dan wajar diingati:
   dalam alat itu sendiri serta guardrail tindakan.
 - **Claude Code dilancarkan dengan `--dangerously-skip-permissions`**, kerana
   `claude -p` bukan interaktif akan tersekat selama-lamanya pada gesaan
-  kelulusannya sendiri. Oleh itu panggilan fail dan shell-nya tidak dipagari
-  oleh guardrail Control Center — kotak pasir OS ialah sempadan di sekelilingnya.
+  kelulusannya sendiri. Oleh itu panggilan failnya tidak dipagari oleh guardrail Control Center, dan perintah shell-nya hanya oleh hook yang membaca baris perintah — kotak pasir OS ialah sempadan di sekelilingnya.
   :::
 
 ## Mengapa pengasingan penting di sini
@@ -91,9 +90,7 @@ kepada benarkan, tanya dahulu, atau tolak sebelum panggilan itu dijalankan. Satu
 yang tiada siapa dapat jawab tidak pernah menjadi ya. Lihat
 [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) untuk model penyelesaiannya.
 
-**Kelayakan berpagar keupayaan dan persekitaran yang disanitasi.** Kelayakan
-ditempa setiap pelancaran daripada bendera keupayaan perbualan dan ditarik balik
-apabila larian tamat. ACP, `bash` harness dan Claude Code di bawah balutan natif
+**Kelayakan melalui broker dan persekitaran yang disanitasi.** Kelayakan ditempa setiap pelancaran dan ditarik balik apabila larian tamat, dan token GitHub yang dipegang larian boleh membaca tetapi tidak boleh push — lihat "Push melalui Control Center" di bawah. ACP, `bash` harness dan Claude Code di bawah balutan natif
 mendapat persekitaran yang dilucutkan vektor suntikan pemaut dinamik dan
 penterjemah (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`,
 `GIT_SSH_COMMAND` dan seumpamanya) sebelum proses bermula. Claude Code melalui
@@ -124,36 +121,71 @@ paling ketat yang menang.
 Claude Code, apabila digunakan sebagai penyesuai, ialah kes yang kotak pasir
 memikul beban paling berat. Control Center melancarkannya dengan
 `--dangerously-skip-permissions`, kerana `claude -p` bukan interaktif akan
-tersekat selama-lamanya pada gesaan kelulusannya sendiri. Panggilan baca, tulis,
-edit dan shell-nya berlaku di dalam prosesnya sendiri dan Control Center tidak
-pernah melihatnya; satu-satunya panggilan yang sampai ke pintu pagar ialah alat
-`mcp__*` yang Control Center sendiri sediakan. Apabila bahagian belakang wujud,
+tersekat selama-lamanya pada gesaan kelulusannya sendiri. Panggilan baca, tulis dan edit-nya berlaku di dalam prosesnya sendiri dan Control Center tidak pernah melihatnya. Panggilan `Bash`-nya dihantar, sebelum dijalankan, kepada hook pada pelayan yang mengelaskan baris perintah dan bertanya kepada peraturan yang sepadan, dan alat `mcp__*` yang disediakan Control Center melalui pintu pagar seperti biasa. Apabila bahagian belakang wujud,
 panggilan yang tidak kelihatan itu masih berlaku di dalam balutan kotak pasir,
 jadi OS ialah sempadan di sekelilingnya. Apabila tiada, tiada apa-apa. Setiap
 penyesuai menyatakan hal ini dalam matriks penguatkuasaannya — lihat [matriks
 kejujuran penyesuai](/ms-MY/manual-pengguna/konsep/guardrail/#the-adapter-honesty-matrix).
 
-## Pempagaran keupayaan ialah penguatkuasaan melalui ketiadaan
+## Push melalui Control Center
 
-Sesuatu perbualan membawa empat bendera keupayaan: push ke repo, panggil API
-GitHub, panggil penyedia tiket dan akses rangkaian. Ia tidak diperiksa apabila
-ejen bertindak. Ia diperiksa sekali, semasa pelancaran, oleh broker kelayakan —
-dan keupayaan yang dimatikan bermakna token yang sepadan langsung tidak
-dimasukkan ke dalam persekitaran.
+Tiada bendera kebenaran bagi setiap ejen. Sama ada ejen boleh mencipta commit,
+push, membuka pull request, menulis ke penjejak atau mencapai rangkaian
+ditentukan oleh [guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) — benarkan, tanya
+dahulu atau tolak — dan peraturan yang sama terpakai tanpa mengira penyesuai
+yang menjalankan ejen.
 
-Itulah keseluruhan mekanismenya dan ia wajar dinyatakan secara terus kerana mod
-kegagalannya bukan seperti yang dijangka orang. Mematikan "GitHub API" tidak
-menghasilkan mesej "keupayaan ditolak". Ia menghasilkan `401` biasa di dalam
-ejen, kerana tiada `GH_TOKEN` untuk dihantar. Ejen mungkin menceritakannya
-sebagai masalah kelayakan. Penguatkuasaan melalui ketiadaan memang teguh — tiada
-semakan untuk dipintas — tetapi ia senyap dan ejen tidak tahu mengapa ia gagal.
+Push ialah tindakan yang mesti bertahan walaupun terhadap ejen yang cuba
+memintas sesuatu peraturan, jadi ia dikuatkuasakan melalui apa yang dipegang
+ejen, bukan melalui apa yang dijalankannya. Dengan GitHub App dikonfigurasikan,
+larian dalam worktree GitHub mendapat token pemasangan berskop repo yang boleh
+membaca kandungan dan bekerja dengan pull request tetapi tidak boleh push.
+Konfigurasi git larian menulis semula setiap URL push GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) kepada
+**gerbang larian ejen**, titik akhir loopback pada `cc_server`. Gerbang itu
+membaca ref mana yang dikemas kini oleh push, bertanya kepada peraturan
+**Push ke remote** — jadi peraturan yang dihadkan kepada cabang, seperti "tolak
+push ke `main`", turut terpakai — dan barulah memajukan push itu ke GitHub
+dengan token tulis yang ditempanya untuk tujuan itu dan tidak pernah diserahkan
+kepada ejen. Push yang ditolak muncul dalam output git sendiri:
 
-Bendera rangkaian berkelakuan sama. Apabila dimatikan, alat `web_fetch` dan
-`web_search` harness menolak setiap panggilan dan senarai benarkan proksi
-pelancaran berkotak pasir menjadi kosong, jadi setiap sambungan keluar ditolak.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Kelayakan ditarik balik apabila larian dimusnahkan, jadi sesuatu pemegang tidak
-hidup lebih lama daripada larian yang menempaannya.
+Gerbang itu hanya memajukan push ke repo worktree itu sendiri atau ke repo
+GitHub yang dipautkan kepada ruang kerja. Fetch terus ke GitHub dengan token
+baca.
+
+Perintah shell lain menemui pintu pagar yang lebih lembut. Alat `bash` harness
+dan, melalui hook, alat `Bash` Claude Code mengelaskan setiap baris perintah
+dan bertanya kepada peraturan yang menaunginya: `git commit`, `merge`,
+`rebase`, `cherry-pick`, `revert` dan `am` ialah **Cipta commit**;
+`gh pr create` ialah **Buka pull request**; `gh pr merge`, `review`, `comment`
+dan `close` ialah **Terbitkan semakan atau cantuman**; `gh issue create`,
+`edit`, `comment` dan `close` ialah **Tulis ke penjejak luaran**; pemasangan
+pakej ialah **Pasang pakej**; `curl` dan `wget` ialah **Akses rangkaian**. Ini
+mengenali cara lazim menulis sesuatu tindakan, dan ejen yang bertekad
+menyembunyikannya (`eval`, fail skrip, panggilan API terus) boleh berbuat
+demikian. Push tidak bergantung padanya.
+
+:::caution[Tanpa GitHub App, peraturan push hanya bersifat nasihat]
+Tanpa GitHub App dikonfigurasikan, broker berpatah balik kepada token akses
+peribadi, yang tidak boleh disempitkan kepada baca sahaja. Peraturan itu masih
+terpakai untuk `git push`, kerana git menghantar push ke gerbang, tetapi kod
+yang menggunakan token dalam persekitaran secara terus boleh push dengan
+memintasnya.
+:::
+
+Tiada kunci API tiket diletakkan dalam kotak pasir. Ejen menulis tiket melalui
+alat MCP Control Center, yang bertanya kepada **Tulis ke penjejak luaran**.
+
+Peraturan **Akses rangkaian** dibaca sekali, apabila larian bermula. Rangkaian
+kotak pasir sama ada hidup atau mati, jadi tolak mematikannya manakala benarkan
+dan tanya dahulu membiarkannya hidup; alat `web_fetch` dan `web_search` harness
+masih bertanya pada setiap panggilan. Kelayakan ditarik balik apabila larian
+dimusnahkan, bersama setiap token tulis yang ditempa oleh gerbang, jadi sesuatu
+pemegang tidak hidup lebih lama daripada larian.
 
 ## Apa yang ditambah oleh kotak pasir dan di mana ia berhenti
 
@@ -223,32 +255,27 @@ melarangnya.
 
 Rangkaian, di bawah kotak pasir, ialah senarai benarkan **domain** bagi setiap
 sesi yang dikuatkuasakan oleh proksi loopback dalam proses. Keluar adalah tolak
-secara lalai: apabila keupayaan rangkaian dimatikan, proksi tetap bermula tetapi
-senarai benarkannya kosong, jadi setiap sambungan keluar ditolak. Apabila ia
-dihidupkan, penyelesai membina senarai benarkan daripada dasar yang dikurasi —
-penyedia API LLM, hos git, daftar pakej, katalog model — serta domain GitHub yang
-diperoleh ejen daripada keupayaan GitHub atau push-nya, dan memadankan hos
-sasaran setiap sambungan dengannya. Kad liar berfungsi (`*.example.com` memadankan
-subdomain, bukan puncak domain). Senarai yang sentiasa ditolak secara berasingan
-menang ke atas senarai benarkan dan meliputi titik akhir metadata awan serta
-pengumpul telemetri. Apa yang _tidak_ boleh dikonfigurasi ialah senarai itu
-sendiri: spesifikasi membawa medan `egressAllowlist` untuk domain tambahan dan
-cangkuk domain tiket, tetapi tiada apa-apa dalam laluan penghantaran mengisi
-mana-mana satu pun, jadi dalam praktiknya setiap larian mendapat dasar itu serta
-domain terbitan keupayaannya dan tiada lagi.
+secara lalai: apabila rangkaian dimatikan, proksi tetap bermula tetapi senarai
+benarkannya kosong, jadi setiap sambungan keluar ditolak. Apabila ia dihidupkan,
+penyelesai membina senarai benarkan daripada dasar yang dikurasi — penyedia API
+LLM, hos git, daftar pakej, katalog model — serta domain GitHub, dan memadankan
+hos sasaran setiap sambungan dengannya. Kad liar berfungsi (`*.example.com`
+memadankan subdomain, bukan puncak domain). Senarai yang sentiasa ditolak secara
+berasingan menang ke atas senarai benarkan dan meliputi titik akhir metadata
+awan serta pengumpul telemetri. Apa yang _tidak_ boleh dikonfigurasi ialah
+senarai itu sendiri: spesifikasi membawa medan `egressAllowlist` untuk domain
+tambahan, tetapi tiada apa-apa dalam laluan penghantaran yang mengisinya, jadi
+dalam praktiknya setiap larian mendapat dasar itu serta GitHub dan tiada lagi.
 
 Penolakan, pada macOS, boleh diperhatikan: pemantau menyadap log sistem untuk
 penolakan Sandbox, menapis bunyi yang diketahui, menyahduplikasi badai cubaan
-semula dan memunculkan setiap satu sebagai `SandboxViolation` yang menamakan apa
-yang dicuba dan keupayaan mana yang akan membuka sekatan itu. Pada Linux, laluan
+semula dan memunculkan setiap satu sebagai `SandboxViolation` yang menamakan apa yang dicuba dan apa yang disekat. Pada Linux, laluan
 balutan menghurai stderr untuk `EPERM`, `Operation not permitted` dan
 `Permission denied` dan mengeluarkan jenis peristiwa yang sama — tiada penyadapan
 log sistem. Semuanya tiba pada aliran peristiwa larian itu sendiri, jadi panggilan
 sistem yang ditolak muncul dalam transkrip dan bukan hanya dalam log. Telemetri
 itu hanya wujud semasa kotak pasir natif benar-benar membalut proses itu — pada
-hos tanpa bahagian belakang tiada apa-apa untuk diperhatikan. Ia juga tidak
-berkaitan dengan pempagaran keupayaan: pelanggaran datang daripada panggilan
-sistem yang ditolak, tidak pernah daripada carian keupayaan.
+hos tanpa bahagian belakang tiada apa-apa untuk diperhatikan. Ia juga tidak berkaitan dengan guardrail: pelanggaran datang daripada panggilan sistem yang ditolak, tidak pernah daripada carian peraturan.
 
 ## Pengesahan datang daripada guardrail, bukan kotak pasir
 
@@ -278,5 +305,5 @@ ialah satu-satunya tempat yang menyatakan apa yang boleh diperiksa secara manual
 
 ## Panduan berkaitan
 
-- [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/): bendera keupayaan dan postur sistem fail
+- [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/): peraturan tindakan, penguatkuasaan push dan postur sistem fail
 - [Jalankan diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/): apa yang diliputi oleh pemeriksaan diagnostik

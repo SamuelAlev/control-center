@@ -1,20 +1,24 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/sandbox_backend_picker.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/extensions/sandbox_backend_ext.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// The sandboxing configuration: whether agent work is isolated from the host, which
-/// backend does the isolating, and what an isolated agent is still allowed to reach.
-/// It is now one card that opens with the resolved posture (on/off, the backend actually in
-/// force, the host it was detected on) and then reads top to bottom as one decision:
-/// isolate or not, with what, and with which holes punched through it.
+/// The sandboxing configuration: whether agent work is isolated from the host and which
+/// backend does the isolating. It is one card that opens with the resolved posture (on/off,
+/// the backend actually in force, the host it was detected on) and then reads top to bottom
+/// as one decision: isolate or not, and with what.
+///
+/// What an agent may DO (push, open a pull request, reach the network) is not decided here:
+/// the allow/ask/deny action policy is the only permission system, so the card ends with a
+/// pointer to Agent permissions instead of a second, competing set of toggles.
 class SandboxingSections extends ConsumerWidget {
   /// Creates [SandboxingSections].
   const SandboxingSections({super.key});
@@ -25,7 +29,6 @@ class SandboxingSections extends ConsumerWidget {
     final prefs = ref.watch(sandboxPreferencesProvider);
     final detection = ref.watch(sandboxDetectionProvider);
     final active = ref.watch(activeSandboxBackendProvider);
-    final caps = prefs.defaultCapabilities;
     final isEnabled = prefs.isEnabled;
     final platform = detection.maybeWhen(
       data: (r) => r.platform,
@@ -95,73 +98,25 @@ class SandboxingSections extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           SettingsGroup(
-            title: l10n.defaultCapabilities,
-            description: l10n.sandboxCapabilitiesDescription,
+            title: l10n.sandboxGroupAgentActions,
+            description: l10n.sandboxGroupAgentActionsDescription,
             showRule: true,
-            separator: SettingsGroupSeparator.none,
-            children: [_Capabilities(caps: caps, enabled: isEnabled)],
+            trailing: CcButton(
+              variant: CcButtonVariant.secondary,
+              size: CcButtonSize.sm,
+              icon: AppIcons.scale,
+              onPressed: () {
+                final workspaceId = context.currentWorkspaceId;
+                if (workspaceId != null) {
+                  context.go(settingsGuardrailsRoute(workspaceId));
+                }
+              },
+              child: Text(l10n.agentPermissions),
+            ),
+            children: const [],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Capabilities extends ConsumerWidget {
-  const _Capabilities({required this.caps, required this.enabled});
-
-  final AgentCapabilities caps;
-  final bool enabled;
-
-  Future<void> _update(WidgetRef ref, AgentCapabilities next) async {
-    await ref.read(sandboxPreferencesProvider).setDefaultCapabilities(next);
-    ref.invalidate(sandboxPreferencesProvider);
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SettingsToggle(
-          title: l10n.allowGitPush,
-          description: l10n.gatesGithubPatPush,
-          icon: AppIcons.gitBranch,
-          value: caps.canPushToRepo,
-          onChanged: enabled
-              ? (v) => _update(ref, caps.copyWith(canPushToRepo: v))
-              : null,
-        ),
-        SettingsToggle(
-          title: l10n.allowGithubApi,
-          description: l10n.readPrsIssuesMetadata,
-          icon: AppIcons.gitPullRequest,
-          value: caps.canCallGitHubApi,
-          onChanged: enabled
-              ? (v) => _update(ref, caps.copyWith(canCallGitHubApi: v))
-              : null,
-        ),
-        SettingsToggle(
-          title: l10n.allowTicketingApi,
-          description: l10n.ticketingApiKeySubtitle,
-          icon: AppIcons.listTodo,
-          value: caps.canCallTicketing,
-          onChanged: enabled
-              ? (v) => _update(ref, caps.copyWith(canCallTicketing: v))
-              : null,
-        ),
-        SettingsToggle(
-          title: l10n.allowNetwork,
-          description: l10n.whenOffNoDefaultRoute,
-          icon: AppIcons.globe,
-          value: caps.canAccessNetwork,
-          onChanged: enabled
-              ? (v) => _update(ref, caps.copyWith(canAccessNetwork: v))
-              : null,
-        ),
-      ],
     );
   }
 }

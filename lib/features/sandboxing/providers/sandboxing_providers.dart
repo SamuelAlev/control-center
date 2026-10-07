@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_detection_result.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
@@ -20,8 +19,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // the desktop terminal). Keeping them out of this file is what lets the web
 // build open the sandboxing settings without crashing.
 
-/// User preferences for the sandbox subsystem (master toggle, chosen backend,
-/// default capabilities for new conversations). Client-local key/value.
+/// User preferences for the sandbox subsystem (master toggle, chosen
+/// backend). Client-local key/value.
 final sandboxPreferencesProvider = Provider<SandboxPreferences>((ref) {
   return SandboxPreferences(ref.watch(appPreferencesProvider));
 });
@@ -53,9 +52,4 @@ final activeSandboxBackendProvider = Provider<SandboxBackend>((ref) {
         data: (r) => r.recommendation,
         orElse: () => SandboxBackend.none,
       );
-});
-
-/// Default capabilities applied to new conversations.
-final defaultCapabilitiesProvider = Provider<AgentCapabilities>((ref) {
-  return ref.watch(sandboxPreferencesProvider).defaultCapabilities;
 });

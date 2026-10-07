@@ -1,19 +1,20 @@
 ---
 title: Sandbox politikalarını yapılandırma
-description: Bir ajan çalıştırmasını neyin kısıtladığı, işletim sistemi sandbox'ının onu sarıp sarmadığını nasıl anlayacağınız ve sunucunun gerçekte hangi yetenek ayarlarını okuduğu.
+description: Bir ajan çalıştırmasını neyin kısıtladığı, işletim sistemi sandbox'ının onu sarıp sarmadığını nasıl anlayacağınız ve eylem kurallarının bir ajanın neyi push edebileceğine ya da nereye erişebileceğine nasıl karar verdiği.
 slug: tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Bir ajan çalıştırmasının sandbox'a alınıp alınmadığına sunucu, açılışta karar
 verir (`--sandbox`). **Ayarlar → Sunucu → Tanılama ve gizlilik** altındaki
-**Korumalı alanı etkinleştir** anahtarı, **Backend** seçici ve **Varsayılan
-yetenekler · yeni space'ler** anahtarları cihazınızda saklanan tercihlerdir.
-**Korumalı alan** kartının ana makine algılaması, sunucu ana makinesinin neyi
-sarabileceğini bildirir.
+**Korumalı alanı etkinleştir** anahtarı ve **Backend** seçici cihazınızda
+saklanan tercihlerdir. **Korumalı alan** kartının ana makine algılaması, sunucu
+ana makinesinin neyi sarabileceğini bildirir.
 
 Bir çalıştırmaya ulaşan iki denetim vardır ve bu kılavuz ikisini de ele alır:
-aşağıdaki ajan bazlı **Sandbox izinleri** ve sunucunun kendi `--sandbox` bayrağı.
+bir ajanın neyi push edebileceğine, açabileceğine ya da nereye erişebileceğine
+karar veren **Ayarlar → Çalışma alanı → Ajan izinleri** altındaki eylem
+kuralları ve sunucunun kendi `--sandbox` bayrağı.
 
 ## Bir ajan çalıştırmasını neyin kısıtladığı
 
@@ -24,7 +25,7 @@ Bir ajanı altı şey tutar. İlki işletim sistemi sandbox'ıdır ve koşullu o
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | İşletim sistemi sandbox'ı | macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap. Claude Code CLI'yı, ACP adaptörlerini ve harness `bash` aracını sarar. **Windows'ta ve `bwrap` ile `socat` olmayan Linux'ta yoktur** |
 | Kendi worktree'si        | Her konuşma copy-on-write bir checkout alır. Özgün checkout, çalıştırmaya yazma reddi yolu olarak katılır ve bunu uygulayan şey sandbox'tır                                                    |
-| Broker üzerinden verilen kimlik bilgileri | Kimlik bilgisi broker'ı, ajanın yeteneklerinden çalıştırma başına bir ortam üretir ve kapanışta geri alır. Yetenek yoksa ortamda token da yok                                        |
+| Broker üzerinden verilen kimlik bilgileri | Kimlik bilgisi broker'ı çalıştırma başına bir ortam üretir ve kapanışta geri alır. İçindeki GitHub token'ı okuyabilir ama push edemez: bir push, önce push kuralına soran Control Center'dan geçer |
 | Eylem korumaları         | Her değişiklik yapan araç etki sınıflarını bildirir ve koruma bunları çağrı çalışmadan önce çözümler. Bağlı onaylayıcısı olmayan bir `prompt` reddedilir                                      |
 | Ortam temizliği          | ACP ve harness `bash` aracı filtrelenmiş bir ortam alır. `NoSandboxAdapter` üzerinden Claude Code, ana makine ortamını devralır                                                                 |
 | Modun araç yüzeyi        | Salt okunur bir mod, worktree'yi değiştiren araçları tamamen çıkarır ve yine de teslim edebilmesi için modun kendi çıktı fiilini sabitler                                                        |
@@ -34,9 +35,7 @@ Bir ajanı altı şey tutar. İlki işletim sistemi sandbox'ıdır ve koşullu o
 - Araç kapısını, tamamlanma sözleşmelerini ve yapısal mod kurallarını yalnızca
   **yerleşik harness** uygular. Claude Code adaptörü uygulamaz. Özellikle Claude
   Code, `--dangerously-skip-permissions` ile başlatılır; çünkü etkileşimsiz bir
-  `claude -p`, aksi halde kendi isteminde sonsuza dek bloke olur — dolayısıyla
-  Claude'un kendi okuma, yazma, düzenleme ve bash çağrıları Control Center
-  tarafından ne görülür ne de kapıya bağlanır. Sandbox açıkken onların
+  `claude -p`, aksi halde kendi isteminde sonsuza dek bloke olur — dolayısıyla Claude'un kendi okuma, yazma ve düzenleme çağrıları Control Center tarafından ne görülür ne de kapıya bağlanır; bash komutlarını ise yalnızca komut satırını okuyan bir hook denetler. Sandbox açıkken onların
   etrafındaki sınır odur.
 - Harness'in süreç içi dosya araçları (read, write, edit, apply patch, search,
   find, search_files) sunucu sürecinin içinde çalışır; bu yüzden onları hiçbir
@@ -48,45 +47,61 @@ Bir ajanı altı şey tutar. İlki işletim sistemi sandbox'ıdır ve koşullu o
   `NoSandboxAdapter` üzerinden ana makine ortamını devralır. Sunucu bunu
   başlangıç günlüğünde söyler. Kendi günlüğünüzü aşağıda denetleyin.
 
-## Bir ajanın yeteneklerini ayarlama
+## Bir ajanın neyi push edebileceğine karar verme
 
-Sunucunun okuduğu tek yetenek denetimi budur. Ajan bazlıdır ve kimlik bilgisi
-broker'ının o ajanın ortamına ne koyacağına karar verir.
+git push, GitHub, biletleme ya da ağ için ajan başına bir anahtar yoktur. Her
+biri bir eylem kuralıdır:
 
-1. **Ayarlar → Çalışma alanı → Ajanlar** bölümüne gidin
-2. Listeden ajanı seçin
-3. **Ayarlar** sekmesinde **Sandbox izinleri** bölümüne kaydırın
-4. Anahtarı açın — satırın alt yazısı **Çalışma alanı varsayılanını kullan**
-   olmaktan çıkar
-5. Dört anahtarı ayarlayın:
+| Kural                                  | Yerleşik varsayılan | Neyi kapsar                                                                |
+| -------------------------------------- | ------------------- | -------------------------------------------------------------------------- |
+| **Uzak depoya push et**                | Önce sor            | Adaptör ne olursa olsun GitHub'a yapılan her `git push`                    |
+| **Pull request aç**                    | Önce sor            | `gh pr create` ve pull request araçları                                    |
+| **İnceleme yayınla veya birleştir**    | Önce sor            | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`              |
+| **Harici takip sistemine yaz**         | Önce sor            | Control Center araçlarıyla ve `gh issue` ile bilet yazımları               |
+| **Ağa eriş**                           | İzin ver            | Sandbox'ın ağı olup olmadığı ve harness'ın web araçları                    |
 
-| Anahtar                          | Neyi denetler                                                                                                                                                                                                                                     |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **git push'a izin ver**          | Bu kapalıyken çalıştırma `GIT_ASKPASS=/usr/bin/false` ve `GIT_TERMINAL_PROMPT=0` alır, böylece bir push kimlik bilgisi isteyemez                                                                                                                |
-| **GitHub API çağrılarına izin ver** | **git push'a izin ver** ile birlikte, broker'ın GitHub token'ını `GH_TOKEN` / `GITHUB_TOKEN` olarak enjekte edip etmeyeceğini denetler                                                                                                        |
-| **Bilet API çağrılarına izin ver** | Broker'ın `TICKETING_API_KEY` enjekte edip etmeyeceğini denetler                                                                                                                                                                                |
-| **Genel ağ erişimine izin ver**  | Sandbox açıkken bu gerçek bir çıkış kapısıdır: kapalıyken çalıştırmanın izin listesi boştur ve her dışa giden istek proxy'de reddedilir. Arka uç olmadığında çalıştırmaya kaydedilir ama başlatılan bir sürecin yaptığı hiçbir şeyi engellemez |
+1. **Ayarlar → Çalışma alanı → Ajan izinleri** bölümüne gidin
+2. Kapsamı seçin — **Çalışma alanı**, **Ajan** veya **Alan** — ve kuralın
+   satırında **İzin ver**, **Önce sor** veya **Reddet**'i seçin
 
-6. Kaydet
+`main`'e push'u reddeden bir kural gibi dallarla sınırlı push kuralları da
+uygulanır: bkz. [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/).
 
-Kontrol noktası: ajanı yeniden açtığınızda anahtar, sizin ayarlarınızla birlikte
-hâlâ açıktır — kaydedilmiş bir yetenek kümesi sunucudan gidip gelir ve hiçbiri
-olmayan bir ajan tutucu varsayılana döner (push kapalı, GitHub API kapalı,
-biletleme kapalı, ağ açık).
+Kontrol noktası: ajandan bir dalı push etmesini isteyin. **Önce sor** ile depoyu
+ve ref'leri adlandıran bir onay alırsınız; **Reddet** ile git şunu yazdırır:
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Canınızı yakabilecek iki durum]
-Alt yazı **Çalışma alanı varsayılanını kullan** der, ama sunucunun okuduğu bir
-çalışma alanı düzeyi yetenek ayarı yoktur. Anahtarı kapalı olan bir ajan,
-yerleşik tutucu varsayılanı alır.
+Her kural çalıştırmaya nasıl ulaşır:
 
-Ayrı olarak, çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca broker'ın
-kimlik bilgisidir — depo kapsamlı bir GitHub App kurulum token'ı ya da ortam PAT
-yedeği — asla isteği yapan üyenin kendi saklı token'ı değildir. `actingUserId`,
-broker'ın sunucu PAT'ını, sahibi olmayan ve GitHub'ı bağlamamış bir üyeden
-*esirgeyebilmesi* için geçirilir; kapalı bir yeteneğin üzerine kişisel bir
-token'ı birleştirmez. İşletim sistemi sandbox'ı olmayan bir ana makinede
-**GitHub API çağrılarına izin ver**'i kesin bir çıkış sınırı olarak görmeyin:
-başlatılan bir süreç yine de ağa erişebilir.
+- **Push**, çalıştırmanın elinde ne tuttuğuyla uygulanır. GitHub token'ı, içerik
+  okuyabilen ve pull request'lerle çalışabilen salt okunur bir GitHub App
+  kurulum token'ıdır. Git yapılandırması her GitHub push'unu `cc_server`
+  üzerindeki bir loopback ağ geçidine gönderir; ağ geçidi kurala sorar ve ancak
+  ondan sonra push'u ajanın hiç görmediği bir yazma token'ıyla iletir. Ağ geçidi
+  yalnızca çalışma ağacının kendi deposuna ya da çalışma alanına bağlı bir
+  GitHub deposuna iletir. Bu her adaptör için geçerlidir.
+- **Bir kabuktan pull request'ler ve issue'lar**, harness'ın `bash` aracında ve
+  bir hook aracılığıyla Claude Code'un `Bash` aracında komut satırından tanınır.
+  Komutu gizleyen bir ajan (bir betik, `eval`, doğrudan bir API çağrısı) bu
+  denetimi geçer ama push ağ geçidini geçemez.
+- **Biletleme anahtarları** asla sandbox'a konmaz. Ajanlar biletleri, kurala
+  soran Control Center MCP araçlarıyla yazar.
+- **Ağ**, çalıştırma başlarken bir kez çözümlenir. **Reddet** sandbox'ın ağını
+  kapatır; **İzin ver** ve **Önce sor** açık bırakır ve **Önce sor** altında
+  harness'ın `web_fetch` ve `web_search` araçları her çağrıda sormaya devam
+  eder. Ağ açık olduğu sürece GitHub her zaman çıkış izin listesindedir.
+
+:::caution[GitHub App olmadan push kuralı yalnızca tavsiye niteliğindedir]
+GitHub App yapılandırılmadığında çalıştırma, salt okunura daraltılamayan yedek
+kişisel erişim token'ını alır. `git push` yine ağ geçidinden ve kuraldan geçer,
+ama token'ı doğrudan kullanan kod onu atlayarak push edebilir. Kuralı bağlayıcı
+kılmak için GitHub App'i yapılandırın.
+
+Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca broker'ın kimlik
+bilgisidir — depo kapsamlı bir GitHub App kurulum token'ı ya da PAT yedeği —
+asla isteği yapan üyenin kendi saklı token'ı değildir. Sunucu PAT'ı, sahibi
+olmayan ve GitHub'ı bağlamamış bir üye adına hareket eden bir çalıştırmadan
+esirgenir.
 :::
 
 ## Ajan çalıştırmalarınızın sandbox'a alınıp alınmadığını denetleme
@@ -161,10 +176,13 @@ sayfasına bakın.
 
 ### Bir ajan push edemiyor ve ben bunu hiç reddetmedim
 
-Ajanın **Sandbox izinlerini** denetleyin. Özel bir yetenek kümesi olmayan bir
-ajan, **git push'a izin ver** seçeneği kapalı olan tutucu varsayılanı alır — bu
-yüzden broker hiçbir GitHub token'ı enjekte etmez ve git'in kimlik doğrulamasının
-hiçbir yolu kalmaz.
+Git'in ne yazdırdığını okuyun. `Control Center policy: …`, bir kuralın push'u
+reddettiği ya da bir **Önce sor**'un yanıtsız kaldığı anlamına gelir.
+`… is not linked to this workspace`, push'un ne çalışma ağacının kendi deposu ne
+de çalışma alanına bağlı olan bir depoyu hedeflediği anlamına gelir.
+`Control Center has no GitHub credential that can push …`, GitHub App'in o
+depoya kurulu olmadığı ve hiçbir yedek kimlik bilgisinin push edemediği
+anlamına gelir: uygulamayı o depoya kurun ya da GitHub'ı bağlayın.
 
 ### Korumalı alan kartı yerel sandbox bildirmiyor
 

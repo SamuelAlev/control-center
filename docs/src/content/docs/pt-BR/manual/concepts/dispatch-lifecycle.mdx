@@ -2,7 +2,7 @@
 title: Ciclo de vida do despacho de agentes
 description: O que acontece entre a chegada de uma mensagem e o fechamento de um log de execução — montagem do prompt, worktrees, identidade, o que limita uma execução e como o resultado dela é registrado com honestidade.
 slug: pt-BR/manual/conceitos/ciclo-de-vida-do-despacho
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## O que é um despacho
@@ -65,7 +65,7 @@ Duas identidades são resolvidas por execução, antes de qualquer processo ser 
 
 Como a substituição por adaptador vem primeiro, ela supera silenciosamente uma conta de provedor conectada no app. Se uma execução está cobrando na conta errada, essa substituição é o primeiro lugar a verificar. As credenciais de provedor são globais do host — compartilhadas entre todos os espaços de trabalho da instalação.
 
-Tokens restritos por capacidade (GitHub, tickets) vêm do broker de credenciais, que injeta apenas o que as capacidades da execução permitem. Consulte [O modelo de agentes](/pt-BR/manual/conceitos/modelo-de-agentes/).
+O token do GitHub da execução vem do broker de credenciais: um token somente leitura, com escopo do repositório da worktree. Um push passa pelo gateway de execuções de agentes, que pergunta à regra **Fazer push para um remoto** antes de encaminhá-lo, e nenhuma chave de tickets é injetada. Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/).
 
 ## Inicialização
 
@@ -76,9 +76,9 @@ O `cc_server` sonda o host uma vez na inicialização e, quando um backend está
 
 Onde não há backend, a execução **não** é isolada por sandbox e nada mais muda para compensar. Isso vale sempre no Windows (sem envolvimento nativo — o `microvm` é um caminho separado, controlado por sondagem, para terminais e rigs) e também no Linux ou no WSL2 sem `bwrap` e `socat` no `PATH`. O servidor informa em qual desses estados está na linha de log de inicialização, e `--sandbox off` opta por sair disso de propósito.
 
-Duas brechas sobrevivem ao sandbox mesmo onde ele está ativo. As ferramentas de arquivo em processo do harness (read, write, edit, apply patch, search, find, search_files) rodam dentro do processo do servidor, então nenhum perfil as restringe — seu limite é o próprio confinamento de caminho das ferramentas mais os guardrails. E o Claude Code é iniciado com `--dangerously-skip-permissions`, então suas próprias chamadas de arquivo e de shell não são controladas pelo Control Center; o sandbox do sistema operacional é a fronteira ao redor delas.
+Duas brechas sobrevivem ao sandbox mesmo onde ele está ativo. As ferramentas de arquivo em processo do harness (read, write, edit, apply patch, search, find, search_files) rodam dentro do processo do servidor, então nenhum perfil as restringe — seu limite é o próprio confinamento de caminho das ferramentas mais os guardrails. E o Claude Code é iniciado com `--dangerously-skip-permissions`, então suas próprias chamadas de arquivo não são controladas pelo Control Center, e seus comandos de shell só por um hook que lê a linha de comando; o sandbox do sistema operacional é a fronteira ao redor delas.
 
-Os limites restantes valem em todos os hosts, com ou sem sandbox: a própria worktree da execução (copy-on-write onde o `rift` é distribuído; `git worktree` no Windows), credenciais restritas por capacidade intermediadas a cada inicialização e revogadas no encerramento, os guardrails unificados de ações (fechados por padrão — uma decisão `prompt` sem nenhum aprovador conectado é negada) e a superfície de ferramentas que o modo da conversa permite. ACP e o `bash` do harness ainda saneiam o ambiente; o Claude Code pelo `NoSandboxAdapter` herda o ambiente do host.
+Os limites restantes valem em todos os hosts, com ou sem sandbox: a própria worktree da execução (copy-on-write onde o `rift` é distribuído; `git worktree` no Windows), um token de forge somente leitura intermediado a cada inicialização e revogado no encerramento, pushes que precisam passar pela regra de push no gateway de execuções de agentes, os guardrails unificados de ações (fechados por padrão — uma decisão `prompt` sem nenhum aprovador conectado é negada) e a superfície de ferramentas que o modo da conversa permite. ACP e o `bash` do harness ainda saneiam o ambiente; o Claude Code pelo `NoSandboxAdapter` herda o ambiente do host.
 :::
 
 ## Streaming

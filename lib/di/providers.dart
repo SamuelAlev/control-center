@@ -40,6 +40,7 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_access_gran
 import 'package:cc_domain/features/memory/domain/repositories/memory_domain_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
+import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_summaries_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_turn_relay_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
@@ -58,7 +59,6 @@ import 'package:control_center/core/notifications/notification_preferences.dart'
 import 'package:control_center/core/notifications/notification_sound_service.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
-import 'package:control_center/core/providers/sync_engine_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/provider_bindings.dart';
@@ -158,39 +158,32 @@ final repoScriptRepositoryProvider = Provider<RepoScriptRepository>((ref) {
 });
 
 /// Provides the [MessagingRepository] the UI reads through.
-///
-/// Wired to the deterministic sync engine (PRD 16 §6): when the `messaging`
-/// kill-switch is on, `watchSpaces`/`watchSpacesByWorkspace`/
-/// `watchParticipants` adopt the live delta feed instead of re-querying their
-/// legacy full-snapshot subscriptions on every change.
 final messagingRepositoryProvider = Provider<MessagingRepository>((ref) {
-  return RpcMessagingRepository(
-    ref.watch(rpcClientProvider),
-    sync: ref.watch(syncEngineProvider),
-  );
+  return RpcMessagingRepository(ref.watch(rpcClientProvider));
 });
 
 /// Provides the [SpaceTurnRelayPort] — the live turn relay a conversation
 /// view subscribes to per open space (`messaging.watchSpaceTurns`).
 final spaceTurnRelayPortProvider = Provider<SpaceTurnRelayPort>((ref) {
-  return RpcMessagingRepository(
-    ref.watch(rpcClientProvider),
-    sync: ref.watch(syncEngineProvider),
-  );
+  return RpcMessagingRepository(ref.watch(rpcClientProvider));
 });
 
 /// Provides the [MessagingSummariesPort] — server-computed per-space
 /// activity signals (the sidebar read model).
 final messagingSummariesPortProvider = Provider<MessagingSummariesPort>((ref) {
-  return RpcMessagingRepository(
-    ref.watch(rpcClientProvider),
-    sync: ref.watch(syncEngineProvider),
-  );
+  return RpcMessagingRepository(ref.watch(rpcClientProvider));
 });
 
 /// Provides the [ConversationRepository] — parallel conversations ("paren-
 /// theses") inside a space, backed by the `conversation.*` ops.
 final conversationRepositoryProvider = Provider<ConversationRepository>((ref) {
+  return RpcConversationRepository(ref.watch(rpcClientProvider));
+});
+
+/// Provides the [ConversationTitlePort] — title suggestions on the
+/// workspace's short-task runner (`conversation.suggestTitle`) and the live
+/// "title being generated" flags (`conversation.watchTitleGenerating`).
+final conversationTitlePortProvider = Provider<ConversationTitlePort>((ref) {
   return RpcConversationRepository(ref.watch(rpcClientProvider));
 });
 
@@ -241,7 +234,6 @@ final memoryAccessGrantRepositoryProvider =
 final voiceProfileRepositoryProvider = Provider<VoiceProfileRepository>((ref) {
   return RpcVoiceProfileRepository(ref.watch(rpcClientProvider));
 });
-
 
 /// Provides the [AgentMentionParser] instance.
 final agentMentionParserProvider = Provider<AgentMentionParser>((ref) {
@@ -359,7 +351,6 @@ final entityActivityProvider = StreamProvider.autoDispose
         entityId: args.entityId,
       );
     });
-
 
 /// How often the viewer lookup is retried while no user has resolved.
 ///
@@ -484,7 +475,6 @@ Map<String, Set<String>> parseViewerGitHubTeams(Object? raw) {
   }
   return byOrg;
 }
-
 
 // There is no client credentials repository any more. Provider tokens belong
 // to the USER and live on the server (`credentials.*` / `oauth.*`), not in this

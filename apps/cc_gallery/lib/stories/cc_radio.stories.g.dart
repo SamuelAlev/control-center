@@ -36,6 +36,7 @@ every stories file targets [Showcase] and names its navigation entry with a
   stories: [
     $Playground..$generatedName = 'Playground',
     $Group..$generatedName = 'Group',
+    $KeyboardGroup..$generatedName = 'KeyboardGroup',
     $States..$generatedName = 'States',
   ],
 );

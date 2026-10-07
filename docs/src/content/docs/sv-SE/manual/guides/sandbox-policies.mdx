@@ -1,19 +1,19 @@
 ---
 title: Konfigurera sandlådepolicyer
-description: Vad som begränsar en agentkörning, hur du avgör om OS-sandlådan lindar in den och vilka förmågeinställningar servern faktiskt läser.
+description: Vad som begränsar en agentkörning, hur du avgör om OS-sandlådan lindar in den och hur åtgärdsreglerna avgör vad en agent får pusha eller nå.
 slug: sv-SE/handbok/how-to-guider/sandladepolicyer
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Om en agentkörning är sandlådad avgörs på servern, vid start
-(`--sandbox`). Växeln **Aktivera sandlåda**, väljaren **Backend** och
-växlarna **Standardförmågor · nya ytor** under **Inställningar → Server →
-Diagnostik och integritet** är inställningar som lagras på din enhet.
-Värdidentifieringen i kortet **Sandlåda** rapporterar vad servervärden kan linda
-in.
+(`--sandbox`). Växeln **Aktivera sandlåda** och väljaren **Backend** under
+**Inställningar → Server → Diagnostik och integritet** är inställningar som
+lagras på din enhet. Värdidentifieringen i kortet **Sandlåda** rapporterar vad
+servervärden kan linda in.
 
-Två kontroller når en körning och den här guiden tar upp båda:
-**Sandlådebehörigheter** per agent nedan och serverns egen flagga `--sandbox`.
+Två kontroller når en körning och den här guiden tar upp båda: åtgärdsreglerna
+under **Inställningar → Arbetsyta → Agentbehörigheter**, som avgör vad en agent
+får pusha, öppna eller nå, och serverns egen flagga `--sandbox`.
 
 ## Vad som begränsar en agentkörning
 
@@ -24,7 +24,7 @@ En agentkörning hålls tillbaka av sex saker. Den första är OS-sandlådan och
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OS-sandlådan              | Seatbelt på macOS, bubblewrap på Linux och WSL2. Lindar in Claude Code-CLI:n, ACP-adaptrar och harnessens `bash`-verktyg. **Saknas på Windows och på Linux utan `bwrap` och `socat`** |
 | Sin egen worktree         | Varje samtal får en copy-on-write-utcheckning. Den ursprungliga utcheckningen viks in i körningen som en skrivnekad sökväg och det är sandlådan som verkställer det                                                                                  |
-| Mäklade inloggningsuppgifter | Mäklaren för inloggningsuppgifter präglar en miljö per körning utifrån agentens förmågor och återkallar den vid nedrivning. Ingen förmåga, ingen token i miljön                                                                                    |
+| Mäklade inloggningsuppgifter | Mäklaren för inloggningsuppgifter präglar en miljö per körning och återkallar den vid nedrivning. Dess GitHub-token kan läsa men inte pusha: en push går genom Control Center, som först frågar pushregeln |
 | Åtgärdsräcken             | Varje muterande verktyg deklarerar sina effektklasser och grinden löser dem innan anropet körs. En `prompt` utan ansluten godkännare nekas                                                                                                           |
 | Miljösanering             | ACP och harnessens `bash`-verktyg får en filtrerad miljö. Claude Code via `NoSandboxAdapter` ärver värdmiljön                                                                                                                                        |
 | Lägets verktygsyta        | Ett skrivskyddat läge tar bort de worktree-muterande verktygen helt och låser lägets eget utdataverb så att det fortfarande kan leverera                                                                                                             |
@@ -35,9 +35,7 @@ Tre saker är svagare än de ser ut:
   slutförandekontrakten och de strukturella lägesreglerna. Claude Code-adaptern
   gör det inte. Särskilt Claude Code startas med
   `--dangerously-skip-permissions`, eftersom en icke-interaktiv `claude -p`
-  annars skulle blockera för evigt på sin egen prompt – så Claudes egna anrop
-  för läsning, skrivning, redigering och bash varken ses eller grindas av
-  Control Center. Där sandlådan är på är den gränsen runt dem.
+  annars skulle blockera för evigt på sin egen prompt – så Claudes egna anrop för läsning, skrivning och redigering varken ses eller grindas av Control Center, och dess bash-kommandon kontrolleras bara av en hook som läser kommandoraden. Där sandlådan är på är den gränsen runt dem.
 - Harnessens filverktyg i processen (read, write, edit, apply patch, search,
   find, search_files) körs inuti serverprocessen, så ingen sandlådeprofil
   begränsar dem. Bara verktyget `bash` går genom den sandlådade
@@ -48,44 +46,61 @@ Tre saker är svagare än de ser ut:
   Code ärver värdmiljön via `NoSandboxAdapter`. Servern säger det i sin
   startlogg. Kontrollera din nedan.
 
-## Ställ in en agents förmågor
+## Avgör vad en agent får pusha
 
-Det här är den enda förmågestyrning som servern läser. Den är per agent och
-avgör vad mäklaren för inloggningsuppgifter lägger i agentens miljö.
+Det finns ingen växel per agent för git push, GitHub, ärenden eller nätverket.
+Var och en är en åtgärdsregel:
 
-1. Gå till **Inställningar → Arbetsyta → Agenter**
-2. Välj agenten i listan
-3. På fliken **Inställningar** rullar du till **Sandlådebehörigheter**
-4. Slå på växeln – radens bildtext ändras från **Använd arbetsytans standard**
-5. Ställ in de fyra växlarna:
+| Regel                                            | Inbyggd standard | Vad den täcker                                                              |
+| ------------------------------------------------ | ---------------- | --------------------------------------------------------------------------- |
+| **Pusha till en remote**                         | Fråga först      | Varje `git push` till GitHub, oavsett adapter                               |
+| **Öppna en pull request**                        | Fråga först      | `gh pr create` och verktygen för pull requests                              |
+| **Publicera en granskning eller sammanslagning** | Fråga först      | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`               |
+| **Skriv till ett externt ärendesystem**          | Fråga först      | Ärendeskrivningar via Control Centers verktyg och `gh issue`                |
+| **Använd nätverket**                             | Tillåt           | Om sandlådan har något nätverk alls, och harnessens webbverktyg             |
 
-| Växel                            | Vad den styr                                                                                                                                                                                                                                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Tillåt git push**               | Med den av får körningen `GIT_ASKPASS=/usr/bin/false` och `GIT_TERMINAL_PROMPT=0`, så en push kan inte fråga efter en inloggningsuppgift                                                                                                          |
-| **Tillåt GitHub API-anrop**       | Tillsammans med **Tillåt git push** styr den om mäklaren injicerar GitHub-token som `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                                     |
-| **Tillåt API-anrop för ärenden**  | Styr om mäklaren injicerar `TICKETING_API_KEY`                                                                                                                                                                                                    |
-| **Tillåt allmän nätverksåtkomst** | Där sandlådan är på är detta en riktig utgående grind: med den av är körningens allowlist tom och varje utgående begäran nekas i proxyn. Där det inte finns någon backend registreras den på körningen men blockerar inget som en startad process gör |
+1. Gå till **Inställningar → Arbetsyta → Agentbehörigheter**
+2. Välj omfång — **Arbetsyta**, **Agent** eller **Yta** — och välj **Tillåt**,
+   **Fråga först** eller **Neka** på regelns rad
 
-6. Spara
+Pushregler som är begränsade till grenar, till exempel en som nekar push till
+`main`, gäller också: se [Räcken](/sv-SE/handbok/koncept/racken/).
 
-Kontrollpunkt: öppna agenten igen och växeln är fortfarande på med dina växlar –
-en sparad förmågeuppsättning går fram och tillbaka genom servern och en agent
-utan någon faller tillbaka på den konservativa standarden (push av, GitHub-API
-av, ärenden av, nätverk på).
+Kontrollpunkt: be agenten pusha en gren. Med **Fråga först** får du ett
+godkännande som anger repot och refs; med **Neka** skriver git ut
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Två sätt det här biter]
-Bildtexten säger **Använd arbetsytans standard**, men det finns ingen
-förmågeinställning på arbetsytenivå som servern läser. En agent med växeln av
-får den inbyggda konservativa standarden.
+Så når varje regel körningen:
 
-Separat: körningens GitHub-inloggningsuppgift är alltid bara mäklarens – en
-repo-scopad installationstoken för GitHub-appen, eller fallbacken med PAT i
-miljön – aldrig den begärande medlemmens egen lagrade token. `actingUserId`
-skickas så att mäklaren kan *hålla tillbaka* serverns PAT från en medlem som
-inte är ägare och inte har anslutit GitHub; den slår inte samman en personlig
-token över en förmåga som är av. Behandla inte **Tillåt GitHub API-anrop** som
-en hård utgående gräns på en värd utan OS-sandlåda: en startad process kan
-fortfarande nå nätverket.
+- **Push** framtvingas genom vad körningen har. Dess GitHub-token är en
+  installationstoken för GitHub-appen som bara kan läsa: den kan läsa innehåll
+  och arbeta med pull requests. Dess git-konfiguration skickar varje push till
+  GitHub till en loopback-gateway på `cc_server`, som frågar regeln och först
+  därefter skickar vidare pushen med en skrivtoken som agenten aldrig ser.
+  Gatewayen skickar bara vidare till worktreens eget repo eller till ett
+  GitHub-repo som är länkat till arbetsytan. Det gäller för alla adaptrar.
+- **Pull requests och issues från ett skal** känns igen på kommandoraden, i
+  harnessens `bash`-verktyg och, via en hook, i Claude Codes `Bash`-verktyg. En
+  agent som döljer kommandot (ett skript, `eval`, ett direkt API-anrop) tar sig
+  förbi den här kontrollen, men inte förbi pushgatewayen.
+- **Ärendenycklar** läggs aldrig i sandlådan. Agenter skriver ärenden via
+  Control Centers MCP-verktyg, som frågar regeln.
+- **Nätverket** löses upp en gång, när körningen startar. **Neka** stänger av
+  sandlådans nätverk; **Tillåt** och **Fråga först** lämnar det på, och med
+  **Fråga först** frågar harnessens verktyg `web_fetch` och `web_search`
+  fortfarande vid varje anrop. Så länge nätverket är på finns GitHub alltid på
+  den utgående allowlisten.
+
+:::caution[Utan GitHub-app är pushregeln bara rådgivande]
+Utan en konfigurerad GitHub-app får körningen den personliga åtkomsttoken som
+fallback, och den kan inte begränsas till enbart läsning. `git push` går
+fortfarande genom gatewayen och regeln, men kod som använder token direkt kan
+pusha förbi den. Konfigurera GitHub-appen för att göra regeln bindande.
+
+Körningens GitHub-inloggningsuppgift är alltid bara mäklarens – en repo-scopad
+installationstoken för GitHub-appen, eller PAT-fallbacken – aldrig den begärande
+medlemmens egen lagrade token. Serverns PAT hålls tillbaka från en körning som
+agerar för en medlem som inte är ägare och inte har anslutit GitHub.
 :::
 
 ## Kontrollera om dina agentkörningar är sandlådade
@@ -159,10 +174,13 @@ upplösningsordningen.
 
 ### En agent kan inte pusha och jag har aldrig nekat den
 
-Kontrollera agentens **Sandlådebehörigheter**. En agent utan egen
-förmågeuppsättning får den konservativa standarden, där **Tillåt git push** är
-av – så mäklaren injicerar ingen GitHub-token och git har inget sätt att
-autentisera sig.
+Läs vad git skrev ut. `Control Center policy: …` betyder att en regel nekade
+pushen eller att ett **Fråga först** blev obesvarat.
+`… is not linked to this workspace` betyder att pushen riktas mot ett repo som
+varken är worktreens eget eller länkat till arbetsytan.
+`Control Center has no GitHub credential that can push …` betyder att
+GitHub-appen inte är installerad på det repot och att ingen fallback-uppgift
+kunde pusha: installera appen på repot eller anslut GitHub.
 
 ### Kortet Sandlåda rapporterar ingen inbyggd sandlåda
 

@@ -26,7 +26,6 @@ import 'package:cc_domain/features/messaging/domain/services/peer_delegation_gua
 import 'package:cc_domain/features/messaging/domain/services/space_factory.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/dispatch_reply_hints.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
-import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/dispatch/guided_goal_service.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -365,6 +364,7 @@ class MessagingService implements MessagingPort {
       messageId: messageId,
       mentions: _decodeMentionPrincipals(metadata),
       senderUserId: authorUserId,
+      conversationId: conversationId,
     );
   }
 
@@ -1126,6 +1126,7 @@ class MessagingService implements MessagingPort {
       agentId: agentId,
       agentName: agentName,
       messageId: messageId,
+      conversationId: convId,
       workingDirectory: workingDirectory,
       // Threaded onto the completed turn's `MessageReceived` notification
       // (PRD 16 §7) so a notification receiver can tell "my run" from
@@ -1441,10 +1442,10 @@ class MessagingService implements MessagingPort {
       ) ??
       false;
 
-  /// Fallback character budget when the space's agent has no configured
-  /// `contextSize` (mirrors the client meter's default; the window only feeds
-  /// the pressure gate, which a forced compaction skips anyway).
-  static const int _defaultContextChars = 1000000;
+  /// Fallback window, in tokens, when the space's agent has no configured
+  /// `contextSize` (the window only feeds the pressure gate, which a forced
+  /// compaction skips anyway).
+  static const int _defaultContextWindowTokens = 200000;
 
   /// Forces an anchored-compaction pass over the conversation (`/compact`).
   /// Refuses while a turn is streaming in the space — the prune pass
@@ -1590,9 +1591,7 @@ class MessagingService implements MessagingPort {
     if (agentIds.length == 1) {
       agent = await _agentRepo?.getById(workspaceId, agentIds.first);
     }
-    final windowTokens = TokenEstimator.instance.windowTokensFromChars(
-      agent?.contextSize ?? _defaultContextChars,
-    );
+    final windowTokens = agent?.contextSize ?? _defaultContextWindowTokens;
     final outcome = await service.maintain(
       workspaceId: workspaceId,
       spaceId: spaceId,
@@ -1681,6 +1680,7 @@ class MessagingService implements MessagingPort {
     String senderName = 'You',
     List<Principal> mentions = const [],
     String? senderUserId,
+    String? conversationId,
   }) {
     final bus = _eventBus;
     if (bus == null) {
@@ -1706,6 +1706,7 @@ class MessagingService implements MessagingPort {
         workspaceId: workspaceId,
         mentions: mentions,
         senderUserId: senderUserId,
+        conversationId: conversationId,
         occurredAt: DateTime.now(),
       ),
     );

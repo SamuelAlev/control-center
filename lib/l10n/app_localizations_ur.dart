@@ -2643,15 +2643,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get allow => 'اجازت دیں';
 
   @override
-  String get allowGitPush => 'git push کی اجازت دیں';
-
-  @override
-  String get allowGithubApi => 'GitHub API کالز کی اجازت دیں';
-
-  @override
-  String get allowNetwork => 'عام نیٹ ورک رسائی کی اجازت دیں';
-
-  @override
   String get apiKeys => 'API کلیدیں';
 
   @override
@@ -3056,9 +3047,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get currentParticipants => 'موجودہ شرکاء';
 
   @override
-  String get customCapabilitiesDescription => 'حسبِ ضرورت صلاحیتوں کی تفصیل';
-
-  @override
   String get customSystemPrompt => 'اس ایجنٹ کے لیے حسبِ ضرورت سسٹم پرامپٹ...';
 
   @override
@@ -3074,9 +3062,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deactivate => 'غیر فعال کریں';
-
-  @override
-  String get defaultCapabilities => 'ڈیفالٹ صلاحیتیں · نئی اسپیسز';
 
   @override
   String get defaultChat => 'ڈیفالٹ چیٹ';
@@ -3481,10 +3466,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get forward => 'آگے';
 
   @override
-  String get gatesGithubPatPush =>
-      'GitHub PAT انجیکشن کو گیٹ کرتا ہے۔ ایجنٹ کے پش کے لیے ضروری۔';
-
-  @override
   String get general => 'عام';
 
   @override
@@ -3549,6 +3530,11 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'خلل';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '⁨$count+⁩';
+  }
 
   @override
   String get serviceStatusTitle => 'سروس اسٹیٹس';
@@ -4013,6 +3999,9 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get navSettings => 'ترتیبات';
+
+  @override
+  String get exitSettings => 'ترتیبات سے باہر نکلیں';
 
   @override
   String networkBlockCount(int count) {
@@ -4529,10 +4518,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get react => 'ردعمل';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'ایجنٹ کو PRs، ایشوز اور ریپو میٹا ڈیٹا پڑھنے دیتا ہے۔';
-
-  @override
   String get readerPreferences => 'ریڈر ترجیحات';
 
   @override
@@ -4784,9 +4769,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'نیٹو سینڈ باکس macOS پر بلٹ اِن ہے — Apple Seatbelt (`sandbox-exec`) استعمال کرتا ہے۔ انسٹال کی ضرورت نہیں۔';
-
-  @override
-  String get sandboxPermissions => 'سینڈ باکس اجازتیں';
 
   @override
   String get sandboxUnsupported =>
@@ -5372,9 +5354,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get useSandbox => 'سینڈ باکس استعمال کریں';
 
   @override
-  String get useWorkspaceDefault => 'ورک اسپیس ڈیفالٹ استعمال کریں';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5417,10 +5396,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'کمزور علیحدگی — صرف نیم اسپیس حد، کوئی کرنل حد نہیں۔';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'بند ہونے پر سینڈ باکس بغیر ڈیفالٹ روٹ بوٹ ہوتا ہے۔';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6632,14 +6607,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get pipelineRunNoRepos => 'اس ورک اسپیس میں ابھی کوئی ریپوزٹری نہیں۔';
 
   @override
-  String get allowTicketingApi => 'ٹکٹنگ API کالز کی اجازت دیں';
-
-  @override
   String get ticketingApiKey => 'ٹکٹنگ API کلید';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'ٹکٹنگ فراہم کنندہ کی API کلید سینڈ باکس میں داخل کرتا ہے۔';
 
   @override
   String get ticketingProvider => 'ٹکٹنگ فراہم کنندہ';
@@ -9004,28 +8972,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'ایجنٹ کام کرتے ہوئے بھی کمپیوٹر سو سکتا ہے';
-
-  @override
-  String get syncEngineSectionTitle => 'سنک انجن';
-
-  @override
-  String get syncEngineDescription =>
-      'ٹکٹس، میسجنگ اور نوٹس مکمل اسنیپ شاٹس کی بجائے چھوٹی تدریجی تبدیلیوں سے لائیو اپ ڈیٹ ہوتے ہیں۔ ٹوگل بند کرنے سے وہ اسٹور مکمل اسنیپ شاٹ موڈ پر واپس جاتا ہے — اثر کے لیے ایپ دوبارہ لوڈ کریں۔';
-
-  @override
-  String get syncEngineTicketsTitle => 'ٹکٹس';
-
-  @override
-  String get syncEngineMessagingTitle => 'میسجنگ';
-
-  @override
-  String get syncEngineNotesTitle => 'نوٹس';
-
-  @override
-  String get syncEngineOnSubtitle => 'لائیو ڈیلٹا سنک فعال ہے';
-
-  @override
-  String get syncEngineOffSubtitle => 'مکمل اسنیپ شاٹ سنک استعمال ہو رہا ہے';
 
   @override
   String get spaces => 'اسپیسز';
@@ -12934,23 +12880,22 @@ class AppLocalizationsUr extends AppLocalizations {
       'اختیاری — خالی چھوڑیں تو عنوان ماڈل خود نام دے گا';
 
   @override
-  String get conversationTitlesSectionTitle => 'گفتگو کے عنوانات';
+  String get shortTaskOff => 'آف';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'وہ رنر منتخب کریں جو اس ورک اسپیس میں نئی گفتگوؤں کا نام خود رکھے۔ عنوانات اڈاپٹر منتخب ہونے تک بند رہتے ہیں، اور ہر رکن پر لاگو ہوتے ہیں۔';
+  String get shortTaskUnavailable =>
+      'اسے استعمال کرنے کے لیے ترتیبات ← اڈاپٹرز میں مختصر کام کا ماڈل منتخب کریں';
 
   @override
-  String get conversationTitlesModelLabel => 'عنوان ماڈل';
+  String get conversationTitleGenerate => 'بنائیں';
 
   @override
-  String get conversationTitlesAdapterLabel => 'اڈاپٹر';
+  String get conversationTitleNoMessages =>
+      'پہلے ایک پیغام بھیجیں۔ عنوان اسی سے بنتا ہے۔';
 
   @override
-  String get conversationTitlesAdapterHint => 'آف';
-
-  @override
-  String get conversationTitlesAdapterOff => 'آف';
+  String get conversationTitleGenerateFailed =>
+      'عنوان نہیں بن سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get startThread => 'تھریڈ شروع کریں';
@@ -13115,6 +13060,16 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'گفتگو';
+
+  @override
+  String get contextSegmentRunner => 'رنر کا پرامپٹ، ٹولز اور باری کا کام';
+
+  @override
+  String get contextUsageMeasured => 'ماڈل کی آخری کال کے مطابق';
+
+  @override
+  String get contextUsageEstimated =>
+      'تخمینہ، جب تک کوئی رن استعمال رپورٹ نہ کرے';
 
   @override
   String get contextExplorerTitle => 'سیاق';
@@ -13503,12 +13458,15 @@ class AppLocalizationsUr extends AppLocalizations {
       'ایجنٹ کے پراسیس اور فائل رائٹس اصل میں کہاں ہوتے ہیں۔';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'آٹو اس ہوسٹ کی سب سے مضبوط معاونت چنتا ہے۔ تبدیل نہ ہونے کے لیے ایک پن کریں۔';
+  String get sandboxGroupAgentActions => 'ایجنٹ کیا کر سکتے ہیں';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'حد میں پنچ شدہ سوراخ۔ ہر ایک وہ ہے جو الگ ایجنٹ باہر کی دنیا کے ساتھ اب بھی کر سکتا ہے۔';
+  String get sandboxGroupAgentActionsDescription =>
+      'پش کرنا، pull request کھولنا اور نیٹ ورک تک رسائی کی اجازت ہو، پہلے پوچھا جائے یا منع کیا جائے، یہ ایجنٹ اجازتوں میں طے ہوتا ہے۔';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'آٹو اس ہوسٹ کی سب سے مضبوط معاونت چنتا ہے۔ تبدیل نہ ہونے کے لیے ایک پن کریں۔';
 
   @override
   String get sandboxSummaryInForce => 'نافذ';
@@ -13650,6 +13608,26 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'سرور پر ٹرمینل میں یہ چلائیں۔ لاگ اِن مکمل کرنے کے لیے براؤزر کھلتا ہے، اور کریڈینشل اس اکاؤنٹ کی ڈائریکٹری میں لکھتا ہے۔';
+
+  @override
+  String get claudeAccountLongLivedToken => 'طویل مدتی ٹوکن';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'طویل مدتی ٹوکن استعمال کریں';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'طویل مدتی ٹوکن تبدیل کریں';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'طویل مدتی ٹوکن ہٹائیں';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'عام سائن ان کی تجدید کرنی پڑتی ہے اور یہ راتوں رات ختم ہو سکتا ہے۔ طویل مدتی ٹوکن تقریباً ایک سال تک سائن ان رہتا ہے۔ یہ کمانڈ ٹرمینل میں چلائیں، براؤزر میں مکمل کریں، پھر اس کا پرنٹ کیا ہوا ٹوکن پیسٹ کریں۔';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'یہ claude setup-token کا ٹوکن نہیں ہے۔ یہ sk-ant-oat01- سے شروع ہوتا ہے۔';
 
   @override
   String get claudeAccountSignedOut => 'سائن آؤٹ';
@@ -14075,10 +14053,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'ڈیفالٹ ایپ میں کھولیں';
-
-  @override
-  String get asideUnavailable =>
-      'اسے استعمال کرنے کے لیے ورک اسپیس ترتیبات میں ون شاٹ ماڈل سیٹ کریں';
 
   @override
   String get asideEmpty => 'ابھی کام کرنے کو کچھ نہیں';
@@ -14618,6 +14592,21 @@ class AppLocalizationsUr extends AppLocalizations {
   String get credentialGateOpenSettings => 'ترتیبات کھولیں';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'منسلک Claude Code اکاؤنٹس ہٹا دیے گئے';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'اس ایجنٹ یا ورک اسپیس کی اکاؤنٹ ترتیبات میں کوئی دوسرا اکاؤنٹ منسلک کریں، یا ڈیفالٹ استعمال کرنے کے لیے فہرست صاف کریں۔ رن خود بخود جاری ہو جائے گا۔';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'اس فہرست کے تمام اکاؤنٹس سرور سے ہٹا دیے گئے ہیں۔ کوئی دوسرا منسلک کریں، یا فہرست صاف کریں۔';
+
+  @override
+  String get accountPoolClear => 'فہرست صاف کریں';
+
+  @override
   String get selectModel => 'ماڈل منتخب کریں';
 
   @override
@@ -15054,6 +15043,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'گفتگو کی فائلیں نام سے تلاش کریں اور ایک کو ٹیب میں کھولیں';
+
+  @override
+  String get prQuickOpenDescription =>
+      'pull request کی فائلیں نام سے تلاش کریں اور ایک کو ٹیب میں کھولیں';
 
   @override
   String get ideQuickOpenHint => 'نام سے فائلیں تلاش کریں';

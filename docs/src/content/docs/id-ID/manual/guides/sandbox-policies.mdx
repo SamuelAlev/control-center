@@ -1,19 +1,20 @@
 ---
 title: Konfigurasi kebijakan sandbox
-description: Apa yang membatasi sebuah run agen, cara mengetahui apakah sandbox OS membungkusnya, dan pengaturan kemampuan mana yang benar-benar dibaca server.
+description: Apa yang membatasi sebuah run agen, cara mengetahui apakah sandbox OS membungkusnya, dan bagaimana aturan aksi menentukan apa yang boleh di-push atau dijangkau agen.
 slug: id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Apakah sebuah run agen di-sandbox ditentukan di server, saat boot
-(`--sandbox`). Tombol **Aktifkan sandboxing**, pemilih **Backend**, dan
-tombol-tombol **Kemampuan default · ruang baru** di bawah **Pengaturan → Server
-→ Diagnostik & privasi** adalah preferensi yang disimpan di perangkat Anda.
-Deteksi host pada kartu **Sandboxing** melaporkan apa yang dapat dibungkus oleh
-host server.
+(`--sandbox`). Tombol **Aktifkan sandboxing** dan pemilih **Backend** di bawah
+**Pengaturan → Server → Diagnostik & privasi** adalah preferensi yang disimpan di
+perangkat Anda. Deteksi host pada kartu **Sandboxing** melaporkan apa yang dapat
+dibungkus oleh host server.
 
-Dua kontrol menjangkau sebuah run dan panduan ini membahas keduanya: **Izin
-sandbox** per agen di bawah ini dan flag `--sandbox` milik server sendiri.
+Dua kontrol menjangkau sebuah run dan panduan ini membahas keduanya: aturan
+aksi di **Pengaturan → Ruang kerja → Izin agen**, yang menentukan apa yang
+boleh di-push, dibuka, atau dijangkau agen, dan flag `--sandbox` milik server
+sendiri.
 
 ## Apa yang membatasi sebuah run agen
 
@@ -24,7 +25,7 @@ yang bersyarat — lima sisanya berlaku di setiap host.
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sandbox OS               | Seatbelt di macOS, bubblewrap di Linux dan WSL2. Membungkus Claude Code CLI, adapter ACP, dan alat `bash` harness. **Tidak ada di Windows dan di Linux tanpa `bwrap` dan `socat`** |
 | Worktree-nya sendiri     | Setiap percakapan mendapat checkout copy-on-write. Checkout asli dilipat ke dalam run sebagai jalur tolak-tulis dan sandbox-lah yang menegakkannya                                                  |
-| Kredensial yang dijembatani | Broker kredensial membuat lingkungan per-run dari kemampuan agen dan mencabutnya saat pembongkaran. Tanpa kemampuan, tidak ada token di lingkungan                                              |
+| Kredensial yang dijembatani | Broker kredensial membuat lingkungan per-run dan mencabutnya saat pembongkaran. Token GitHub di dalamnya dapat membaca tetapi tidak dapat push: push melewati Control Center, yang lebih dulu menanyakan aturan push |
 | Pagar pengaman tindakan  | Setiap alat yang memutasi mendeklarasikan kelas efeknya dan pagar menyelesaikannya sebelum panggilan berjalan. Sebuah `prompt` tanpa penyetuju yang terhubung ditolak                              |
 | Sanitasi lingkungan      | ACP dan alat `bash` harness mendapat lingkungan yang difilter. Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host                                                                   |
 | Permukaan alat mode      | Mode hanya-baca menghapus alat yang memutasi worktree mentah-mentah dan menyematkan verb keluaran mode itu sendiri agar tetap dapat menyerahkan hasil                                           |
@@ -35,8 +36,7 @@ Tiga hal tetap lebih lemah daripada tampilannya:
   aturan mode yang struktural. Adapter Claude Code tidak. Khususnya Claude
   Code diluncurkan dengan `--dangerously-skip-permissions`, karena `claude -p`
   yang non-interaktif akan tersendat selamanya pada prompt-nya sendiri —
-  sehingga panggilan read, write, edit, dan bash milik Claude tidak terlihat
-  maupun dijaga oleh Control Center. Di tempat sandbox menyala, sandbox itulah
+  sehingga panggilan read, write, dan edit milik Claude tidak terlihat maupun dijaga oleh Control Center, dan perintah bash-nya hanya diperiksa oleh hook yang membaca baris perintah. Di tempat sandbox menyala, sandbox itulah
   batas di sekelilingnya.
 - Alat berkas dalam proses milik harness (read, write, edit, apply patch, search,
   find, search_files) berjalan di dalam proses server, jadi tidak ada profil sandbox
@@ -48,44 +48,62 @@ Tiga hal tetap lebih lemah daripada tampilannya:
   Claude Code mewarisi lingkungan host melalui `NoSandboxAdapter`. Server
   mengatakannya di log startup-nya. Periksa milik Anda di bawah.
 
-## Tetapkan kemampuan agen
+## Tentukan apa yang boleh di-push agen
 
-Inilah satu-satunya kontrol kemampuan yang dibaca server. Sifatnya per agen dan
-menentukan apa yang dimasukkan broker kredensial ke lingkungan agen tersebut.
+Tidak ada tombol per agen untuk git push, GitHub, ticketing, atau jaringan.
+Masing-masing adalah aturan aksi:
 
-1. Buka **Pengaturan → Ruang kerja → Agen**
-2. Pilih agen di daftar
-3. Di tab **Pengaturan**, gulir ke **Izin sandbox**
-4. Nyalakan tombolnya — keterangan baris itu berubah dari **Gunakan default ruang kerja**
-5. Atur keempat tombol:
+| Aturan                                | Default bawaan | Apa yang dicakupnya                                                          |
+| ------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| **Push ke remote**                    | Tanyakan dulu  | Setiap `git push` ke GitHub, adapter apa pun                                 |
+| **Buka pull request**                 | Tanyakan dulu  | `gh pr create` dan alat pull request                                         |
+| **Publikasikan review atau merge**    | Tanyakan dulu  | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                |
+| **Tulis ke pelacak eksternal**        | Tanyakan dulu  | Penulisan tiket melalui alat Control Center dan `gh issue`                   |
+| **Akses jaringan**                    | Izinkan        | Apakah sandbox punya jaringan sama sekali, dan alat web milik harness        |
 
-| Tombol                           | Apa yang dijaganya                                                                                                                                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Izinkan git push**             | Jika mati, run mendapat `GIT_ASKPASS=/usr/bin/false` dan `GIT_TERMINAL_PROMPT=0`, sehingga push tidak dapat meminta kredensial                                                                                                                   |
-| **Izinkan panggilan API GitHub** | Bersama **Izinkan git push**, menentukan apakah broker menyuntikkan token GitHub sebagai `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                            |
-| **Izinkan panggilan API ticketing** | Menentukan apakah broker menyuntikkan `TICKETING_API_KEY`                                                                                                                                                                                     |
-| **Izinkan akses jaringan umum**  | Di tempat sandbox menyala, ini adalah gerbang keluar yang nyata: bila mati, daftar izin run kosong dan setiap permintaan keluar ditolak di proxy. Di tempat tanpa backend, hal ini dicatat pada run tetapi tidak memblokir apa pun yang dilakukan proses yang dijalankan |
+1. Buka **Pengaturan → Ruang kerja → Izin agen**
+2. Pilih cakupan — **Ruang kerja**, **Agen**, atau **Space** — lalu pada baris
+   aturan, pilih **Izinkan**, **Tanyakan dulu**, atau **Tolak**
 
-6. Simpan
+Aturan push yang dibatasi ke branch, seperti aturan yang menolak push ke `main`,
+juga berlaku: lihat [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/).
 
-Titik periksa: buka lagi agennya dan tombolnya masih menyala dengan tombol
-pilihan Anda — kumpulan kemampuan yang tersimpan melakukan perjalanan bolak-balik
-melalui server dan agen tanpa kemampuan apa pun kembali ke default yang
-konservatif (push mati, API GitHub mati, ticketing mati, jaringan menyala).
+Titik periksa: minta agen melakukan push sebuah branch. Dengan **Tanyakan dulu**
+Anda mendapat persetujuan yang menyebutkan repo dan ref-nya; dengan **Tolak**,
+git mencetak `! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Dua cara ini bisa menggigit]
-Keterangannya berbunyi **Gunakan default ruang kerja**, tetapi tidak ada
-pengaturan kemampuan tingkat ruang kerja yang dibaca server. Agen dengan tombol
-yang mati mendapat default konservatif bawaan.
+Bagaimana setiap aturan menjangkau run:
 
-Secara terpisah, kredensial GitHub milik run selalu hanya milik broker — token
-instalasi GitHub App dengan cakupan repo, atau fallback PAT dari lingkungan —
-tidak pernah token tersimpan milik anggota yang meminta. `actingUserId`
-diteruskan agar broker dapat *menahan* PAT server dari anggota yang bukan
-pemilik dan belum menghubungkan GitHub; hal itu tidak menggabungkan token
-pribadi di atas kemampuan yang mati. Jangan memperlakukan **Izinkan panggilan
-API GitHub** sebagai batas keluar yang keras di host tanpa sandbox OS: proses
-yang dijalankan tetap dapat menjangkau jaringan.
+- **Push** ditegakkan lewat apa yang dipegang run. Token GitHub-nya adalah token
+  instalasi GitHub App hanya-baca yang dapat membaca konten dan bekerja dengan
+  pull request. Konfigurasi git-nya mengirim setiap push GitHub ke gateway
+  loopback di `cc_server`, yang menanyakan aturan dan baru kemudian meneruskan
+  push dengan token tulis yang tidak pernah dilihat agen. Gateway hanya
+  meneruskan ke repo milik worktree itu sendiri atau ke repo GitHub yang
+  ditautkan ke ruang kerja. Ini berlaku untuk setiap adapter.
+- **Pull request dan issue dari shell** dikenali dari baris perintah, di alat
+  `bash` milik harness dan, melalui hook, di alat `Bash` milik Claude Code. Agen
+  yang menyembunyikan perintahnya (skrip, `eval`, panggilan API langsung) lolos
+  dari pemeriksaan ini, tetapi tidak dari gateway push.
+- **Kunci ticketing** tidak pernah ditaruh di sandbox. Agen menulis tiket
+  melalui alat MCP Control Center, yang menanyakan aturan.
+- **Jaringan** diselesaikan sekali, saat run dimulai. **Tolak** mematikan
+  jaringan sandbox; **Izinkan** dan **Tanyakan dulu** membiarkannya menyala, dan
+  dengan **Tanyakan dulu** alat `web_fetch` dan `web_search` milik harness tetap
+  bertanya di setiap panggilan. Selama jaringan menyala, GitHub selalu ada di
+  daftar izin egress.
+
+:::caution[Tanpa GitHub App, aturan push hanya bersifat anjuran]
+Tanpa GitHub App yang terkonfigurasi, run mendapat personal access token
+fallback, yang tidak dapat dipersempit menjadi hanya-baca. `git push` tetap
+melewati gateway dan aturan, tetapi kode yang memakai token secara langsung
+dapat push dengan melewatinya. Konfigurasikan GitHub App agar aturan itu
+mengikat.
+
+Kredensial GitHub milik run selalu hanya milik broker — token instalasi GitHub
+App dengan cakupan repo, atau PAT fallback — tidak pernah token tersimpan milik
+anggota yang meminta. PAT server ditahan dari run yang bertindak untuk anggota
+yang bukan pemilik dan belum menghubungkan GitHub.
 :::
 
 ## Periksa apakah run agen Anda di-sandbox
@@ -159,10 +177,13 @@ untuk urutan penyelesaian selengkapnya.
 
 ### Agen tidak dapat push dan saya tidak pernah menolaknya
 
-Periksa **Izin sandbox** milik agen. Agen tanpa kumpulan kemampuan kustom
-mendapat default konservatif, yang memiliki **Izinkan git push** dalam keadaan
-mati — sehingga broker tidak menyuntikkan token GitHub dan git tidak punya cara
-untuk mengautentikasi.
+Baca apa yang dicetak git. `Control Center policy: …` berarti sebuah aturan
+menolak push atau **Tanyakan dulu** tidak dijawab.
+`… is not linked to this workspace` berarti push menuju repo yang bukan repo
+milik worktree dan tidak ditautkan ke ruang kerja.
+`Control Center has no GitHub credential that can push …` berarti GitHub App
+tidak terpasang di repo itu dan tidak ada kredensial fallback yang dapat push:
+pasang App di repo tersebut atau hubungkan GitHub.
 
 ### Kartu Sandboxing melaporkan tidak ada sandbox native
 

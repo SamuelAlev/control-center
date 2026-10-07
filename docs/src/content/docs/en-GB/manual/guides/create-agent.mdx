@@ -2,7 +2,7 @@
 title: Create and configure an agent
 description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
 slug: en-GB/manual/guides/create-agent
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 This guide shows you how to add an agent to a workspace and configure it until it can actually run.
@@ -68,19 +68,12 @@ You do not pick a repo's own skills here. A repo that ships them (in `.agents/sk
 
 ## Grant permissions
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+An agent has no permission toggles of its own. What it may push, open, merge or reach is set by the action rules at **Settings → Workspace → Agent permissions**, where a rule can be scoped to this agent. Out of the box a push, a pull request, a review or merge and a tracker write each ask you first, and network access is allowed.
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+The agent's GitHub token is always read-only. A push goes through Control Center, which asks the **Push to a remote** rule before forwarding it. See [Configure sandbox policies](/en-GB/manual/guides/sandbox-policies/) for how each rule reaches a run.
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
-
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
-
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for the full set of boundaries.
+:::note[Rules and the OS sandbox are separate layers]
+The rules decide what an agent may do; the OS sandbox bounds where its processes can read, write and connect. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for the full set of boundaries.
 :::
 
 ## Verify it runs

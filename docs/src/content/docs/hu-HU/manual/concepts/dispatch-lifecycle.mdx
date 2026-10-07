@@ -2,7 +2,7 @@
 title: Az ügynökindítás életciklusa
 description: Mi történik egy üzenet megérkezésétől egy futtatási napló lezárásáig — a prompt összeállítása, a worktree-k, az identitás, mi korlátoz egy futtatást, és hogyan rögzítjük annak kimenetelét őszintén.
 slug: hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Mi az indítás
@@ -65,7 +65,7 @@ Futtatásonként két identitás oldódik fel, mielőtt bármilyen folyamat elin
 
 Mivel az adapterenkénti felülírás az első, csendben felülírja az alkalmazásban csatlakoztatott szolgáltatói fiókot. Ha egy futtatás rossz fiókra számláz, elsőként ezt a felülírást érdemes megnézni. A szolgáltatói hitelesítő adatok hoszt-szintűek — a telepítés minden munkaterülete között megosztottak.
 
-A képesség alapján kapuzott tokenek (GitHub, jegykövetés) a hitelesítőadat-brókertől származnak, amely csak azt injektálja, amit a futtatás képességei megengednek. Lásd: [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
+A futtatás GitHub-tokenje a hitelesítőadat-brókertől származik: csak olvasásra jogosult, a worktree repójára korlátozott token. A push az ügynökfuttatási átjárón megy át, amely a továbbítás előtt megkérdezi a **Küldés távoli tárolóra** szabályt, jegykezelő kulcs pedig nem kerül injektálásra. Lásd: [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/).
 
 ## Indítás
 
@@ -76,9 +76,9 @@ A `cc_server` induláskor egyszer felméri a hosztot, és ha van elérhető hát
 
 Ahol nincs háttérrendszer, a futtatás **nincs** homokozóba zárva, és semmi más nem változik ezt kompenzálandó. Ez mindig így van Windows alatt (nincs natív csomagolás — a `microvm` külön, próba alapján kapuzott útvonal a terminálokhoz és az állomásokhoz), valamint Linuxon vagy WSL2-n, ha a `bwrap` és a `socat` nincs a `PATH`-ban. A szerver a naplójának induló sorában megnevezi, melyik állapotban van, és a `--sandbox off` szándékosan kikapcsolja.
 
-Két rés akkor is megmarad a homokozóban, ha az be van kapcsolva. A harness folyamaton belüli fájleszközei (read, write, edit, apply patch, search, find, search_files) a szerverfolyamaton belül futnak, így semmilyen profil nem korlátozza őket — a korlátjukat az eszközök saját útvonalkorlátozása és a korlátok adják. A Claude Code pedig `--dangerously-skip-permissions` kapcsolóval indul, így a saját fájl- és shell-hívásait nem kapuzza a Control Center; a körülöttük lévő határ az operációs rendszer homokozója.
+Két rés akkor is megmarad a homokozóban, ha az be van kapcsolva. A harness folyamaton belüli fájleszközei (read, write, edit, apply patch, search, find, search_files) a szerverfolyamaton belül futnak, így semmilyen profil nem korlátozza őket — a korlátjukat az eszközök saját útvonalkorlátozása és a korlátok adják. A Claude Code pedig `--dangerously-skip-permissions` kapcsolóval indul, így a saját fájlhívásait nem kapuzza a Control Center, a shellparancsait pedig csak egy hook, amely a parancssort olvassa; a körülöttük lévő határ az operációs rendszer homokozója.
 
-A fennmaradó korlátok minden hoszton érvényesek, homokozóval vagy anélkül: a futtatás saját worktree-je (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`), az indításonként brókerezett, a lebontáskor visszavont, képesség alapján kapuzott hitelesítő adatok, az egységes műveleti korlátok (fail-closed — egy `prompt` döntés, amelyhez nincs csatlakoztatva jóváhagyó, elutasításra kerül) és a beszélgetés módja által engedett eszközfelszín. Az ACP és a harness `bash` továbbra is tisztítja a környezetet; a Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli.
+A fennmaradó korlátok minden hoszton érvényesek, homokozóval vagy anélkül: a futtatás saját worktree-je (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`), az indításonként brókerezett, a lebontáskor visszavont, csak olvasásra jogosult kódhosting-token, az ügynökfuttatási átjárón a push-szabályon átengedett pushok, az egységes műveleti korlátok (fail-closed — egy `prompt` döntés, amelyhez nincs csatlakoztatva jóváhagyó, elutasításra kerül) és a beszélgetés módja által engedett eszközfelszín. Az ACP és a harness `bash` továbbra is tisztítja a környezetet; a Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli.
 :::
 
 ## Streamelés

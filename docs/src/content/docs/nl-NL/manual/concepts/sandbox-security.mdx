@@ -2,7 +2,7 @@
 title: Sandbox en beveiliging
 description: Wat een agent in Control Center vandaag daadwerkelijk beperkt, hoe ver de OS-sandbox reikt en welke grenzen standhouden op een host die geen backend heeft.
 slug: nl-NL/handleiding/concepten/sandbox-en-beveiliging
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Waar de OS-sandbox wel en niet reikt]
@@ -22,8 +22,7 @@ Twee hiaten overleven de sandbox en zijn het waard om in gedachten te houden:
   de tools zelf plus de actiebeveiligingen.
 - **Claude Code wordt gestart met `--dangerously-skip-permissions`**, omdat een
   niet-interactieve `claude -p` anders voor altijd blijft hangen op zijn eigen prompt.
-  De bestands- en shellaanroepen ervan worden dus niet door de beveiligingen van
-  Control Center bewaakt — de OS-sandbox is de grens eromheen.
+  De bestandsaanroepen ervan worden dus niet door de beveiligingen van Control Center bewaakt, en de shellopdrachten alleen door een hook die de opdrachtregel leest — de OS-sandbox is de grens eromheen.
   :::
 
 ## Waarom isolatie hier belangrijk is
@@ -90,9 +89,7 @@ verbonden goedkeurder wordt _geweigerd_ — een vraag die niemand kan beantwoord
 is nooit een ja. Zie [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/)
 voor het herleidingsmodel.
 
-**Inloggegevens achter mogelijkheden en een gesaneerde omgeving.** Inloggegevens
-worden per start aangemaakt op basis van de mogelijkheidsvlaggen van het gesprek
-en ingetrokken wanneer de run afloopt. ACP, de `bash` van de harness en Claude
+**Inloggegevens via de broker en een gesaneerde omgeving.** Inloggegevens worden per start aangemaakt en ingetrokken wanneer de run afloopt, en het GitHub-token van een run kan lezen maar niet pushen — zie "Pushes lopen via Control Center" hieronder. ACP, de `bash` van de harness en Claude
 Code onder de native wrap krijgen een omgeving waarin de injectievectoren via de
 dynamic linker en interpreters (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
 `NODE_OPTIONS`, `GIT_SSH_COMMAND` en hun verwanten) zijn gestript voordat het
@@ -123,38 +120,71 @@ beslissing wint.
 Claude Code, wanneer het als adapter wordt gebruikt, is het geval waarin de
 sandbox het meeste gewicht draagt. Control Center start het met
 `--dangerously-skip-permissions`, omdat een niet-interactieve `claude -p` anders
-voor altijd blijft hangen op zijn eigen goedkeuringsprompt. De lees-, schrijf-,
-bewerkings- en shellaanroepen ervan gebeuren binnen zijn eigen proces en Control
-Center ziet ze nooit; de enige aanroepen die een poort bereiken, zijn de `mcp__*`-tools
-die Control Center zelf serveert. Waar een backend bestaat, gebeuren die ongeziene
+voor altijd blijft hangen op zijn eigen goedkeuringsprompt. De lees-, schrijf- en bewerkingsaanroepen ervan gebeuren binnen zijn eigen proces en Control Center ziet ze nooit. Zijn `Bash`-aanroepen gaan vóór uitvoering naar een hook op de server die de opdrachtregel indeelt en de bijbehorende regel raadpleegt, en de `mcp__*`-tools die Control Center serveert gaan zoals altijd langs de poort. Waar een backend bestaat, gebeuren die ongeziene
 aanroepen nog steeds binnen de sandboxwrap, dus is het besturingssysteem de grens
 eromheen. Waar dat niet zo is, is er niets. Elke adapter vermeldt dit in zijn
 afdwingingsmatrix — zie [de eerlijkheidsmatrix per
 adapter](/nl-NL/handleiding/concepten/beveiligingen/#the-adapter-honesty-matrix).
 
-## Mogelijkheden afdwingen door afwezigheid
+## Pushes lopen via Control Center
 
-Een gesprek draagt vier mogelijkheidsvlaggen: naar de repo pushen, de GitHub-API
-aanroepen, de ticketingprovider aanroepen en toegang tot het netwerk. Ze worden
-niet gecontroleerd op het moment dat de agent handelt. Ze worden één keer
-gecontroleerd, bij de start, door de credentialbroker — en een mogelijkheid die
-uit staat, betekent simpelweg dat het bijbehorende token nooit in de omgeving
-terechtkomt.
+Er zijn geen machtigingsvlaggen per agent. Of een agent een commit mag maken,
+mag pushen, een pull request mag openen, naar een tracker mag schrijven of het
+netwerk mag bereiken, beslissen de [beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) —
+toestaan, eerst vragen of weigeren — en dezelfde regels gelden welke adapter de
+agent ook draait.
 
-Dat is het hele mechanisme, en het is het waard om het ronduit te zeggen, want de
-faalmodus is niet wat mensen verwachten. Het uitzetten van “GitHub API” levert
-geen melding op dat de mogelijkheid is geweigerd. Het levert een gewone `401` op
-binnen de agent, omdat er geen `GH_TOKEN` is om te sturen. De agent vertelt dat
-misschien zelf als een probleem met inloggegevens. Afdwingen door afwezigheid is
-robuust — er is geen controle om te omzeilen — maar het is stil en de agent weet
-niet waarom het mislukte.
+Een push is de actie die moet standhouden, zelfs tegen een agent die een regel
+probeert te omzeilen. Daarom wordt hij afgedwongen via wat de agent bezit, niet
+via wat hij uitvoert. Met een geconfigureerde GitHub App krijgt een run in een
+GitHub-worktree een tot de repo beperkt installatietoken dat inhoud kan lezen en
+met pull requests kan werken, maar niet kan pushen. De git-configuratie van de
+run herschrijft elke GitHub-push-URL (`https://github.com/`,
+`git@github.com:`, `ssh://git@github.com/`) naar de **agentrun-gateway**, een
+loopback-eindpunt op `cc_server`. De gateway leest welke refs de push bijwerkt,
+raadpleegt de regel **Naar een remote pushen** — een regel die tot branches is
+beperkt, zoals "pushes naar `main` weigeren", geldt dus ook — en stuurt de push
+pas daarna naar GitHub door, met een schrijftoken dat hij daarvoor aanmaakt en
+nooit aan de agent geeft. Een geweigerde push verschijnt in de eigen uitvoer van
+git:
 
-De netwerkvlag werkt hetzelfde. Staat die uit, dan weigeren de tools `web_fetch`
-en `web_search` van de harness elke aanroep en is de proxylijst van een
-gesandboxte start leeg, dus wordt elke uitgaande verbinding geweigerd.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Inloggegevens worden ingetrokken wanneer de run wordt afgebroken, zodat een token
-de run die hem heeft aangemaakt niet overleeft.
+De gateway stuurt pushes alleen door naar de eigen repo van de worktree of naar
+een GitHub-repo die aan de werkruimte is gekoppeld. Fetches gaan met het
+leestoken rechtstreeks naar GitHub.
+
+Andere shellopdrachten stuiten op een zachtere poort. De `bash`-tool van de
+harness en, via een hook, de `Bash`-tool van Claude Code delen elke
+opdrachtregel in en raadplegen de regel waaronder die valt: `git commit`,
+`merge`, `rebase`, `cherry-pick`, `revert` en `am` zijn **Een commit maken**;
+`gh pr create` is **Een pull request openen**; `gh pr merge`, `review`,
+`comment` en `close` zijn **Een review publiceren of mergen**;
+`gh issue create`, `edit`, `comment` en `close` zijn **Naar een externe tracker
+schrijven**; pakketinstallaties zijn **Een pakket installeren**; `curl` en
+`wget` zijn **Toegang tot het netwerk**. Dit herkent de gebruikelijke schrijfwijze
+van een actie, en een agent die er een wil verbergen (`eval`, een scriptbestand,
+een directe API-aanroep) kan dat. Pushes zijn er niet van afhankelijk.
+
+:::caution[Zonder GitHub App is de pushregel alleen een advies]
+Zonder geconfigureerde GitHub App valt de broker terug op een personal access
+token, dat niet tot alleen lezen kan worden beperkt. De regel geldt nog steeds
+voor `git push`, omdat git de push naar de gateway stuurt, maar code die het
+token uit de omgeving rechtstreeks gebruikt, kan eromheen pushen.
+:::
+
+In een sandbox wordt geen ticketing-API-sleutel gezet. Agenten schrijven tickets
+via de MCP-tools van Control Center, die **Naar een externe tracker schrijven**
+raadplegen.
+
+De regel **Toegang tot het netwerk** wordt één keer gelezen, wanneer de run
+start. Het netwerk van een sandbox staat aan of uit, dus weigeren zet het uit,
+terwijl toestaan en eerst vragen het aan laten; de tools `web_fetch` en
+`web_search` van de harness blijven bij elke aanroep vragen. Inloggegevens
+worden ingetrokken wanneer de run wordt afgebroken, samen met elk schrijftoken
+dat de gateway heeft aangemaakt, zodat een token de run niet overleeft.
 
 ## Wat de sandbox toevoegt en waar hij stopt
 
@@ -224,32 +254,27 @@ werd bereikt, zou beschrijfbaar zijn geweest terwijl het profiel het leek te
 verbieden.
 
 Netwerk is onder een sandbox een **domein**-allowlist per sessie, afgedwongen
-door in-process loopbackproxies. Uitgaand verkeer is standaard geweigerd: staat de
-netwerkmogelijkheid uit, dan starten de proxies wel, maar is hun allowlist leeg,
-dus wordt elke uitgaande verbinding geweigerd. Staat die aan, dan bouwt de
-resolver de allowlist uit een samengestelde basis — LLM-API-providers,
-githosting, pakketregisters, de modelcatalogus — plus de GitHub-domeinen die de
-GitHub- of pushmogelijkheid van een agent hem oplevert, en matcht hij de doelhost
-van elke verbinding daartegen. Jokers werken (`*.example.com` matcht subdomeinen,
-niet het hoofddomein). Een aparte lijst die altijd geweigerd wordt, wint van de
-allowlist en dekt cloudmetadata-eindpunten en telemetrie-sinks. Wat _niet_
-configureerbaar is, is de lijst zelf: de spec draagt een veld `egressAllowlist`
-voor extra domeinen en een hook voor ticketingdomeinen, maar niets in het
-dispatchpad vult die, dus in de praktijk krijgt elke run de basis plus zijn van
-mogelijkheden afgeleide domeinen en niets meer.
+door in-process loopbackproxies. Uitgaand verkeer is standaard geweigerd: staat
+het netwerk uit, dan starten de proxies wel, maar is hun allowlist leeg, dus
+wordt elke uitgaande verbinding geweigerd. Staat het aan, dan bouwt de resolver
+de allowlist uit een samengestelde basis — LLM-API-providers, githosting,
+pakketregisters, de modelcatalogus — plus de domeinen van GitHub, en matcht hij
+de doelhost van elke verbinding daartegen. Jokers werken (`*.example.com` matcht
+subdomeinen, niet het hoofddomein). Een aparte lijst die altijd geweigerd wordt,
+wint van de allowlist en dekt cloudmetadata-eindpunten en telemetrie-sinks. Wat
+_niet_ configureerbaar is, is de lijst zelf: de spec draagt een veld
+`egressAllowlist` voor extra domeinen, maar niets in het dispatchpad vult dat,
+dus in de praktijk krijgt elke run de basis plus GitHub en niets meer.
 
 Weigeringen zijn op macOS waarneembaar: een monitor tapt het systeemlogboek af op
 Sandbox-weigeringen, filtert bekende ruis, dedupliceert herhaalstormen en brengt
-elke weigering naar buiten als een `SandboxViolation` die noemt wat werd
-geprobeerd en welke mogelijkheid die zou opheffen. Op Linux parseert het wrap-pad
+elke weigering naar buiten als een `SandboxViolation` die noemt wat werd geprobeerd en wat werd tegengehouden. Op Linux parseert het wrap-pad
 stderr op `EPERM`, `Operation not permitted` en `Permission denied` en zendt
 hetzelfde gebeurtenistype uit — er is geen tap op het systeemlogboek. Die komen
 binnen op de eigen gebeurtenisstroom van de run, dus een geweigerde
 systeemaanroep verschijnt in het transcript in plaats van alleen in een log. De
 telemetrie bestaat alleen zolang een native sandbox het proces daadwerkelijk
-omhult — op een host zonder backend valt er niets waar te nemen. Ze staat ook los
-van het afdwingen van mogelijkheden: een schending komt van een geweigerde
-systeemaanroep, nooit van een opzoeking van een mogelijkheid.
+omhult — op een host zonder backend valt er niets waar te nemen. Ze staat ook los van de beveiligingen: een schending komt van een geweigerde systeemaanroep, nooit van het opzoeken van een regel.
 
 ## Bevestigingen komen van de beveiligingen, niet van de sandbox
 
@@ -280,5 +305,5 @@ die beschrijft wat je met de hand kunt controleren.
 
 ## Gerelateerde gidsen
 
-- [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/): mogelijkheidsvlaggen en de omgang met het bestandssysteem
+- [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/): actieregels, het afdwingen van pushes en de omgang met het bestandssysteem
 - [Een agent diagnosticeren](/nl-NL/handleiding/gidsen/agent-diagnosticeren/): wat de diagnostiek allemaal controleert

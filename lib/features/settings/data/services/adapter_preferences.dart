@@ -2,8 +2,6 @@ import 'package:control_center/core/providers/storage_providers.dart';
 
 const _defaultChatAdapterIdKey = 'default_chat_adapter_id';
 const _defaultChatModelIdKey = 'default_chat_model_id';
-const _shortTaskAdapterIdKey = 'short_task_adapter_id';
-const _shortTaskModelIdKey = 'short_task_model_id';
 
 /// Default per-adapter "YOLO" / skip-permissions argv (non-secret).
 ///
@@ -45,24 +43,6 @@ class AdapterPreferences {
   Future<bool> setDefaultChatModelId(String? value) => value == null
       ? _prefs.remove(_defaultChatModelIdKey)
       : _prefs.setString(_defaultChatModelIdKey, value);
-
-  // -- Short Task --
-
-  /// Returns the persisted short-task adapter id, or `null`.
-  String? getShortTaskAdapterId() => _prefs.getString(_shortTaskAdapterIdKey);
-
-  /// Persists the short-task adapter id. Pass `null` to clear.
-  Future<bool> setShortTaskAdapterId(String? value) => value == null
-      ? _prefs.remove(_shortTaskAdapterIdKey)
-      : _prefs.setString(_shortTaskAdapterIdKey, value);
-
-  /// Returns the persisted short-task model id, or `null`.
-  String? getShortTaskModelId() => _prefs.getString(_shortTaskModelIdKey);
-
-  /// Persists the short-task model id. Pass `null` to clear.
-  Future<bool> setShortTaskModelId(String? value) => value == null
-      ? _prefs.remove(_shortTaskModelIdKey)
-      : _prefs.setString(_shortTaskModelIdKey, value);
 
   // -- Per-adapter args (non-secret) --
 

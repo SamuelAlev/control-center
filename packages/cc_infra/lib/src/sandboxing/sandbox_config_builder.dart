@@ -38,8 +38,9 @@ class SandboxConfigBuilder {
             allowAll: false,
             allowedDomains: spec.allowedDomains,
             deniedDomains: spec.deniedDomains,
+            loopbackPorts: spec.loopbackPorts,
           )
-        : const NetworkConfig(allowAll: false);
+        : NetworkConfig(allowAll: false, loopbackPorts: spec.loopbackPorts);
 
     // Expand mandatory-deny write paths: home-mandatory (Claude config, CC
     // plist, credential stores) + recursive scan of writable roots for
@@ -465,8 +466,9 @@ Future<SandboxConfig> buildSandboxConfigFromPolicy(
               allowAll: false,
               allowedDomains: spec.allowedDomains,
               deniedDomains: spec.deniedDomains,
+              loopbackPorts: spec.loopbackPorts,
             )
-          : const NetworkConfig(allowAll: false),
+          : NetworkConfig(allowAll: false, loopbackPorts: spec.loopbackPorts),
       filesystem: FilesystemConfig(
         denyRead: spec.denyRead,
         allowWrite: spec.allowWrite,

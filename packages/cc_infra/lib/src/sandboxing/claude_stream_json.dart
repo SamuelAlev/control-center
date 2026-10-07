@@ -119,6 +119,27 @@ class ClaudeUsage {
   int get costCents => (costUsd * 100).round();
 }
 
+/// The size of ONE main-thread model call, from its `message_start` /
+/// `message_delta` stream events.
+///
+/// Unlike [ClaudeUsage] (the invocation's summed spend), this is occupancy:
+/// [promptTokens] is everything the model read on that call — uncached input
+/// plus cache read plus cache write — and [outputTokens] what it has written
+/// back so far, which the next call carries forward.
+class ClaudeCallUsage {
+  /// Creates a [ClaudeCallUsage].
+  const ClaudeCallUsage({required this.promptTokens, this.outputTokens = 0});
+
+  /// Input tokens the call read, cached or not.
+  final int promptTokens;
+
+  /// Output tokens produced by the call so far.
+  final int outputTokens;
+
+  /// Tokens in the window once this call's output joins the context.
+  int get contextTokens => promptTokens + outputTokens;
+}
+
 /// Callbacks invoked by [ClaudeStreamJsonParser] as it walks a
 /// `claude -p --output-format stream-json` NDJSON stream.
 class ClaudeStreamJsonCallbacks {
@@ -129,6 +150,8 @@ class ClaudeStreamJsonCallbacks {
     this.onToolCall,
     this.onToolResult,
     this.onUsage,
+    this.onCallUsage,
+    this.onCompactBoundary,
     this.onError,
     this.onTerminalError,
   });
@@ -154,6 +177,15 @@ class ClaudeStreamJsonCallbacks {
   /// event. Fires on a successful AND on a failed result — a turn that ended
   /// in an error still spent the tokens it spent.
   final void Function(ClaudeUsage usage)? onUsage;
+
+  /// The newest main-thread call's size, on its `message_start` and again as
+  /// its `message_delta` reports output. Subagent (`Task`) calls are skipped:
+  /// they run in their own window, not the one the meter describes.
+  final void Function(ClaudeCallUsage usage)? onCallUsage;
+
+  /// `claude` auto-compacted (or was asked to compact) its own context.
+  /// The argument is the size it compacted from, when reported.
+  final void Function(int? preTokens)? onCompactBoundary;
 
   /// A terminal error reported by `claude` in its final `result` event
   /// (e.g. `model_not_found`, rate-limit/overload, MCP-config rejection).
@@ -288,14 +320,27 @@ class ClaudeStreamJsonParser {
   /// [_handleToolResults] for why an unknown id must not be paired.
   final Set<String> _openToolIds = {};
 
+  /// Prompt size of the main-thread call in flight, so its `message_delta`
+  /// (which carries output only) can report the whole call.
+  int? _callPromptTokens;
+
   /// Feeds one decoded NDJSON line. Unknown event shapes are ignored.
   void process(Map<String, dynamic> obj) {
     final type = obj['type'];
     if (type == 'stream_event') {
       final event = obj['event'];
       if (event is Map<String, dynamic>) {
+        if (obj['parent_tool_use_id'] == null) {
+          _handleCallUsage(event);
+        }
         _handleEvent(event);
       }
+      return;
+    }
+    if (type == 'system' && obj['subtype'] == 'compact_boundary') {
+      final meta = obj['compact_metadata'];
+      final pre = meta is Map ? meta['pre_tokens'] : null;
+      _callbacks.onCompactBoundary?.call(pre is num ? pre.toInt() : null);
       return;
     }
     // The terminal `result` event carries two things nothing else does: the
@@ -332,6 +377,48 @@ class ClaudeStreamJsonParser {
     }
     // `system` (init) and `assistant` (the non-streamed replay of blocks we
     // already reconstructed from deltas) are not needed for live transcription.
+  }
+
+  /// Reads one call's size off its `message_start` (prompt) and
+  /// `message_delta` (output so far). A missing field reads as zero, matching
+  /// [ClaudeUsage.tryFromResult].
+  void _handleCallUsage(Map<String, dynamic> event) {
+    int count(Map<dynamic, dynamic> usage, String key) {
+      final value = usage[key];
+      return value is num ? value.toInt() : 0;
+    }
+
+    switch (event['type']) {
+      case 'message_start':
+        final message = event['message'];
+        final usage = message is Map ? message['usage'] : null;
+        if (usage is! Map) {
+          return;
+        }
+        final prompt =
+            count(usage, 'input_tokens') +
+            count(usage, 'cache_read_input_tokens') +
+            count(usage, 'cache_creation_input_tokens');
+        _callPromptTokens = prompt;
+        _callbacks.onCallUsage?.call(
+          ClaudeCallUsage(
+            promptTokens: prompt,
+            outputTokens: count(usage, 'output_tokens'),
+          ),
+        );
+      case 'message_delta':
+        final usage = event['usage'];
+        final prompt = _callPromptTokens;
+        if (usage is! Map || prompt == null) {
+          return;
+        }
+        _callbacks.onCallUsage?.call(
+          ClaudeCallUsage(
+            promptTokens: prompt,
+            outputTokens: count(usage, 'output_tokens'),
+          ),
+        );
+    }
   }
 
   void _handleToolResults(Object? content) {

@@ -21,15 +21,33 @@ class ClaudeCliBackend implements AgentBackend {
   @override
   String? get acpArgs => null;
 
+  /// Appended to Claude Code's system prompt on every run.
+  ///
+  /// `Bash.description` is optional in Claude Code's schema, and a session
+  /// that skips it on its first call skips it on every call after — leaving
+  /// the transcript a column of raw commands. The harness makes the same
+  /// argument required (`withRequiredCallDescription`); this is the Claude
+  /// Code side, with the PreToolUse hook as the backstop.
+  ///
+  /// Plain prose on purpose: the argv is joined and run through the command
+  /// policy as a shell line, so no `;`, `|`, `&`, backticks or parentheses.
+  static const bashDescriptionInstruction =
+      'Always set the description argument on every Bash call to a clear, '
+      'concise 5-10 word summary of what the command does. The user reads '
+      'that description in place of the raw command.';
+
   /// Builds the `claude -p` flag list (everything after the binary path,
   /// excluding the positional `-p` itself and the prompt). [modelId] selects
   /// the model; [permissionMode] maps to `--permission-mode`; [mcpConfigPath]
-  /// points Claude at the Control Center MCP server; [skipPermissions] adds
+  /// points Claude at the Control Center MCP server; [settingsJson] is passed
+  /// as `--settings` (the action-policy hooks); [skipPermissions] adds
   /// `--dangerously-skip-permissions` for non-interactive automation.
+  /// [bashDescriptionInstruction] always rides as `--append-system-prompt`.
   static List<String> buildClaudeArgs({
     String? modelId,
     String? permissionMode,
     String? mcpConfigPath,
+    String? settingsJson,
     bool skipPermissions = true,
   }) {
     final args = <String>[
@@ -38,6 +56,8 @@ class ClaudeCliBackend implements AgentBackend {
       'stream-json',
       '--verbose',
       '--include-partial-messages',
+      '--append-system-prompt',
+      bashDescriptionInstruction,
     ];
     if (modelId != null && modelId.isNotEmpty) {
       args.addAll(['--model', modelId]);
@@ -54,6 +74,9 @@ class ClaudeCliBackend implements AgentBackend {
       // ONLY this config, avoiding a duplicate of the same server picked up
       // from project discovery.
       args.addAll(['--mcp-config', mcpConfigPath, '--strict-mcp-config']);
+    }
+    if (settingsJson != null && settingsJson.isNotEmpty) {
+      args.addAll(['--settings', settingsJson]);
     }
     if (skipPermissions) {
       args.add('--dangerously-skip-permissions');

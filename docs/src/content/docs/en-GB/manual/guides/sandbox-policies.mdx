@@ -1,18 +1,19 @@
 ---
 title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and how the action rules decide what an agent may push or reach.
 slug: en-GB/manual/guides/sandbox-policies
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+(`--sandbox`). The **Enable sandboxing** toggle and the **Backend** picker under
+**Settings → Server → Diagnostics & privacy** are preferences stored on your
+device. The **Sandboxing** card's host detection reports what the server host
+can wrap.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Two controls reach a run and this guide covers both: the action rules at
+**Settings → Workspace → Agent permissions**, which decide what an agent may
+push, open or reach, and the server's own `--sandbox` flag.
 
 ## What constrains an agent run
 
@@ -23,7 +24,7 @@ that is conditional — the other five hold on every host.
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
 | Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
+| Brokered credentials     | The credential broker mints a per-run environment and revokes it at teardown. Its GitHub token can read but not push: a push goes through Control Center, which asks the push rule first        |
 | Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
 | Environment sanitisation | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
 | The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
@@ -34,8 +35,9 @@ Three things stay weaker than they look:
   structural mode rules. The Claude Code adapter does not. Claude
   Code in particular is launched with `--dangerously-skip-permissions`, because a
   non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
+  so Claude's own read, write and edit calls are neither seen nor gated by
+  Control Center and its bash commands are checked only by a hook that reads
+  the command line. Where the sandbox is on, it is the boundary around them.
 - The harness's in-process file tools (read, write, edit, apply patch, search,
   find, search_files) run inside the server process, so no sandbox profile constrains them.
   Only the `bash` tool goes through the sandboxed command runner. Those tools are
@@ -45,43 +47,60 @@ Three things stay weaker than they look:
   policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
   The server says so in its startup log. Check yours below.
 
-## Set an agent's capabilities
+## Decide what an agent may push
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+There is no per-agent switch for git push, GitHub, ticketing or the network.
+Each is an action rule:
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+| Rule                             | Built-in default | What it covers                                                         |
+| -------------------------------- | ---------------- | ---------------------------------------------------------------------- |
+| **Push to a remote**             | Ask first        | Every `git push` to GitHub, whatever the adapter                       |
+| **Open a pull request**          | Ask first        | `gh pr create` and the pull-request tools                              |
+| **Publish a review or merge**    | Ask first        | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`          |
+| **Write to an external tracker** | Ask first        | Ticket writes through Control Center's tools and `gh issue` writes     |
+| **Access the network**           | Allow            | Whether the sandbox has a network at all, and the harness's web tools  |
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+1. Go to **Settings → Workspace → Agent permissions**
+2. Pick the scope — **Workspace**, **Agent** or **Space** — and on the rule's
+   row pick **Allow**, **Ask first** or **Deny**
 
-6. Save
+Branch-constrained push rules, such as one that denies pushes to `main`, apply
+too: see [Guardrails](/en-GB/manual/concepts/guardrails/).
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Checkpoint: ask the agent to push a branch. Under **Ask first** you get an
+approval naming the repo and the refs; under **Deny**, git prints
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+How each rule reaches the run:
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+- **Push** is enforced by what the run holds. Its GitHub token is a read-only
+  GitHub App installation token that can read contents and work with pull
+  requests. Its git configuration sends every GitHub push to a loopback gateway
+  on `cc_server`, which asks the rule and only then forwards the push on a
+  write token the agent never sees. The gateway forwards only to the
+  worktree's own repo or a GitHub repo linked to the workspace. This holds for
+  every adapter.
+- **Pull requests and issues from a shell** are recognised by command line, in
+  the harness `bash` tool and, through a hook, in Claude Code's `Bash` tool. An
+  agent that hides the command (a script, `eval`, a raw API call) gets past
+  this check, but not past the push gateway.
+- **Ticketing** keys are never placed in the sandbox. Agents write tickets
+  through Control Center's MCP tools, which ask the rule.
+- **Network** is resolved once, when the run starts. **Deny** turns the
+  sandbox's network off; **Allow** and **Ask first** leave it on, and under
+  **Ask first** the harness's `web_fetch` and `web_search` tools still ask per
+  call. While the network is on, GitHub is always on the egress allowlist.
+
+:::caution[Without a GitHub App the push rule is advisory]
+With no GitHub App configured, the run gets the fallback personal access token,
+which cannot be narrowed to read-only. `git push` still goes through the gateway
+and the rule, but code that uses the token directly can push around it.
+Configure the GitHub App to make the rule binding.
+
+The run's GitHub credential is only ever the broker's — a repo-scoped GitHub
+App installation token, or the PAT fallback — never the requesting member's
+own stored token. The server PAT is withheld from a run acting for a member who
+is not the owner and has not connected GitHub.
 :::
 
 ## Check whether your agent runs are sandboxed
@@ -153,9 +172,12 @@ resolution order.
 
 ### An agent cannot push and I never denied it
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Read what git printed. `Control Center policy: …` means a rule denied the push
+or an **Ask first** went unanswered. `… is not linked to this workspace` means
+the push targets a repo that is neither the worktree's own nor linked to the
+workspace. `Control Center has no GitHub credential that can push …` means the
+GitHub App is not installed on that repo and no fallback credential could push:
+install the App on it or connect GitHub.
 
 ### The Sandboxing card reports no native sandbox
 

@@ -2,13 +2,13 @@
 title: Bahagian belakang kotak pasir
 description: Bahagian belakang kotak pasir, tempat ia digunakan dan setiap objek nilai yang digunakan oleh masa jalan kotak pasir.
 slug: ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Sama ada sesuatu larian dikotak pasirkan bergantung pada hos]
 `cc_server` menyiasat hos sekali semasa permulaan dan membalut penghantaran ejen dalam bahagian belakang natif apabila siasatan melaporkan satu tersedia dan `--sandbox` bukan `off`. Kedua-dua sambungan penghantaran dibalut: CLI Claude Code melalui port kotak pasir, dan ACP serta alat `bash` harness terbina melalui pengurus kotak pasir.
 
-Di mana siasatan melaporkan tiada bahagian belakang — **Windows sentiasa** dan Linux atau WSL2 tanpa `bwrap` dan `socat` — larian ejen **tidak** dikotak pasirkan. ACP dan alat `bash` harness masih dilancarkan dengan sanitasi persekitaran; Claude Code melalui `NoSandboxAdapter` dan mewarisi persekitaran hos. Sempadan yang tinggal ialah worktree larian itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows), kelayakan berpagar keupayaan yang diuruskan melalui broker setiap pelancaran dan ditarik balik semasa pembongkaran, polisi perintah mengikut modus, [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) bersatu (gagal-tertutup), sanitasi persekitaran pada laluan ACP dan `bash` harness, serta permukaan alat yang dibenarkan oleh modusnya.
+Di mana siasatan melaporkan tiada bahagian belakang — **Windows sentiasa** dan Linux atau WSL2 tanpa `bwrap` dan `socat` — larian ejen **tidak** dikotak pasirkan. ACP dan alat `bash` harness masih dilancarkan dengan sanitasi persekitaran; Claude Code melalui `NoSandboxAdapter` dan mewarisi persekitaran hos. Sempadan yang tinggal ialah worktree larian itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows), token hos kod baca sahaja yang diuruskan melalui broker setiap pelancaran dan ditarik balik semasa pembongkaran, push yang mesti melepasi peraturan push di gerbang larian ejen, polisi perintah mengikut modus, [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) bersatu (gagal-tertutup), sanitasi persekitaran pada laluan ACP dan `bash` harness, serta permukaan alat yang dibenarkan oleh modusnya.
 
 Alat fail dalam proses harness (read, write, edit, apply patch, search, find, search_files) berada di luar kotak pasir pada setiap hos: ia berjalan dalam proses pelayan, jadi hanya `bash` dibalut.
 :::
@@ -83,7 +83,7 @@ Tiada kotak pasir. Proses berjalan terus pada hos dengan akses sistem fail, rang
 
 Terminal dikotak pasirkan mengikut syaratnya sendiri, bukan oleh siasatan penghantaran. `defaultBackend` `TerminalSessionService` ialah `none` dan `cc_server` tidak mengatasinya, jadi sesi terminal menjalankan shell hos melainkan klien meminta `native` secara eksplisit — panel terminal desktop tidak berbuat demikian.
 
-Apabila `native` diminta, shell dibalut melalui `SandboxManager` di bawah profil terminal tetap: `$HOME` dan direktori kerja sesi boleh ditulis, rangkaian terbuka dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` serta `~/Library/Keychains` ditolak bacaannya. Pempagaran keupayaan tidak terpakai — itu urusan penghantaran. Jika balutan tidak disokong, sesi itu gagal dan bukannya memaparkan lencana natif pada PTY shell hos.
+Apabila `native` diminta, shell dibalut melalui `SandboxManager` di bawah profil terminal tetap: `$HOME` dan direktori kerja sesi boleh ditulis, rangkaian terbuka dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` serta `~/Library/Keychains` ditolak bacaannya. Token hos kod baca sahaja dan gerbang push tidak terpakai — itu urusan penghantaran. Jika balutan tidak disokong, sesi itu gagal dan bukannya memaparkan lencana natif pada PTY shell hos.
 
 ## Keluar rangkaian
 
@@ -92,9 +92,9 @@ Apabila kotak pasir dilancarkan, akses rangkaian keluar dikuatkuasakan oleh prok
 - Masa jalan kotak pasir menjalankan proksi HTTP/HTTPS dan proksi SOCKS5 pada `127.0.0.1` di dalam proses `cc_server`, **satu pasangan bagi setiap sesi terhad** (`http_proxy.dart`, `socks_proxy.dart`). Larian serentak tidak berkongsi pasangan.
 - Proses berkotak pasir menerima pemboleh ubah persekitaran proksi (`HTTP_PROXY`/`HTTPS_PROXY` → proksi HTTP, `ALL_PROXY` → proksi SOCKS; `GIT_SSH_COMMAND` menghalakan git-melalui-SSH melalui proksi SOCKS). Pada Linux namespace rangkaian tidak dikongsi, jadi proksi ialah satu-satunya jalan keluar; pada macOS kotak pasir berkongsi loopback hos dan bercakap terus dengannya.
 - Hos sasaran setiap sambungan dipadankan dengan senarai benarkan domain sesi itu; apa-apa selainnya ditolak. Dua bentuk kad liar, setiap satu dengan tepat satu `*`: `*.example.com` di hadapan memadankan mana-mana subdomain (termasuk `a.b.example.com`) tetapi bukan puncak domain itu sendiri; `bedrock.*.amazonaws.com` dengan label tengah memadankan tepat satu label (`bedrock.us-east-1.amazonaws.com`, bukan `bedrock.evil.attacker.amazonaws.com`).
-- Senarai benarkan itu diselesaikan bagi setiap sesi daripada dasar asas yang dikurasi (`kBaselineAllowedDomains`: penyedia LLM, hos Git, daftar pakej), serta domain GitHub apabila ejen mempunyai keupayaan GitHub atau push, serta `SandboxSpec.egressAllowlist`. Penyelesai juga menerima domain penyedia penetikan apabila ejen boleh memanggil penetikan, tetapi laluan penghantaran tidak pernah menghantar senarai itu (atau entri `egressAllowlist` tambahan), jadi dalam praktiknya setiap larian mendapat dasar asas serta domain GitHub yang diperoleh keupayaannya.
+- Senarai benarkan itu diselesaikan bagi setiap sesi daripada dasar asas yang dikurasi (`kBaselineAllowedDomains`: penyedia LLM, hos Git, daftar pakej), serta domain GitHub (`kGithubDomains`), serta `SandboxSpec.egressAllowlist`. Laluan penghantaran tidak pernah menghantar entri `egressAllowlist` tambahan, jadi dalam praktiknya setiap larian mendapat dasar asas serta GitHub.
 - Senarai tolak tetap (`kBaselineDeniedDomains`: titik akhir metadata awan, pengumpul telemetri) mengatasi semua kebenaran.
-- `networkEnabled: false` (atau ejen tanpa keupayaan rangkaian) tetap memulakan proksi setiap sesi, tetapi senarai benarkannya kosong jadi setiap sambungan keluar ditolak.
+- `networkEnabled: false` tetap memulakan proksi setiap sesi, tetapi senarai benarkannya kosong jadi setiap sambungan keluar ditolak. Penghantaran menetapkannya apabila larian bermula daripada peraturan **Akses rangkaian**: tolak mematikan rangkaian, benarkan dan tanya dahulu membiarkannya hidup.
 
 ## SandboxSpec
 
@@ -106,11 +106,10 @@ Spesifikasi yang dihantar kepada `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id ruang kerja yang memilikinya                                                                                                                         |
 | `agentId`         | `String?`                                   | Ejen yang sedang terikat pada kotak pasir, jika ada                                                                                                |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Mount hos→tetamu; kotak pasir hanya melihat laluan hos yang disenaraikan di sini                                                                         |
-| `networkEnabled`  | `bool` (lalai `true`)                     | Digabungkan dengan keupayaan rangkaian ejen. Apabila dimatikan, proksi setiap sesi tetap bermula tetapi senarai benarkannya kosong jadi setiap sambungan keluar ditolak |
-| `egressAllowlist` | `List<String>` (lalai `[]`)               | Domain keluar tambahan yang dibenarkan; kad liar disokong (`*.example.com`, serta bentuk tengah satu label). Penghantaran tidak pernah mengisi ini, jadi larian yang dibalut mendapat dasar asas yang dikurasi serta domain GitHub yang diperoleh keupayaannya |
+| `networkEnabled`  | `bool` (lalai `true`)                     | Ditetapkan semasa penghantaran daripada peraturan keluar rangkaian (mati hanya apabila ia diselesaikan kepada tolak). Apabila dimatikan, proksi setiap sesi tetap bermula tetapi senarai benarkannya kosong jadi setiap sambungan keluar ditolak |
+| `egressAllowlist` | `List<String>` (lalai `[]`)               | Domain keluar tambahan yang dibenarkan; kad liar disokong (`*.example.com`, serta bentuk tengah satu label). Penghantaran tidak pernah mengisi ini, jadi larian yang dibalut mendapat dasar asas yang dikurasi serta domain GitHub |
 | `guestWorkdir`    | `String?`                                   | Direktori kerja lalai di dalam kotak pasir; panggilan `exec` individu boleh mengatasinya                                                       |
 | `mode`            | `Mode` (lalai `chat`)                     | Mengukir peraturan tulis sistem fail: `chat` mengekalkan mount bind boleh ditulis; `review`, `plan` dan `orchestrate` adalah baca sahaja                      |
-| `capabilities`    | `AgentCapabilities` (lalai `safeDefault`) | Menerbitkan keputusan rangkaian hidup/mati dan domain keluar GitHub. Domain penetikan ialah argumen penyelesai yang tidak pernah dibekalkan oleh laluan penghantaran |
 | `protectedPaths`  | `List<String>` (lalai `[]`)               | Laluan hos yang tidak boleh sama sekali ditulis di dalam kotak pasir, dalam mana-mana modus                                                                      |
 | `runnerStateDirs` | `List<String>` (lalai `[]`)               | Direktori hos tempat pelari menyimpan keadaannya sendiri, boleh ditulis dalam setiap modus (`CLAUDE_CONFIG_DIR` yang diuruskan Control Center ialah yang semasa) |
 | `execGrantRoots`  | `List<String>` (lalai `[]`)               | Pokok direktori yang diluluskan pengendali yang membuka semula sekatan exec direktori boleh tulis pada macOS. Linux mengabaikannya — bwrap tiada sekatan exec `$HOME` untuk dibuka semula |
@@ -168,7 +167,6 @@ Dikembalikan oleh `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Kata kerja yang ditolak (cth. `file-read*`, `network-outbound`)                    |
 | `target`              | `String`  | Laluan atau hos yang menjadi sasaran operasi yang ditolak                   |
-| `suggestedCapability` | `String?` | Bendera keupayaan yang akan membenarkan tindakan ini (cth. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Baris log mentah, berguna untuk nyahpepijat                                         |
 
 ## Lihat juga

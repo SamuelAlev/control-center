@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_infra/src/claude_accounts/claude_account_store.dart';
+import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -406,53 +407,6 @@ void main() {
     });
   });
 
-  group('bootstrapFromKeychain', () {
-    test('seeds the first account from the keychain blob', () async {
-      const blob = '{"claudeAiOauth":{"accessToken":"sk-ant-oat01-x"}}';
-      proc.results['find-generic-password'] = ProcessResult(0, 0, blob, '');
-      proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
-
-      final account = await store.bootstrapFromKeychain();
-      expect(account, isNotNull);
-      final creds = File(
-        p.join(store.configDirFor(account!.id), '.credentials.json'),
-      );
-      expect(creds.existsSync(), isTrue);
-      expect(creds.readAsStringSync(), blob);
-    }, skip: !Platform.isMacOS ? 'macOS keychain only' : null);
-
-    test('does nothing when accounts already exist', () async {
-      await store.create(label: 'Work');
-      proc.results['find-generic-password'] = ProcessResult(
-        0,
-        0,
-        '{"claudeAiOauth":{"accessToken":"x"}}',
-        '',
-      );
-      expect(await store.bootstrapFromKeychain(), isNull);
-      expect((await store.list()).length, 1);
-    });
-
-    test('a non-credential blob is refused, not copied', () async {
-      // Half-written or unexpected content would look signed-in and fail on
-      // the first request instead of at bootstrap.
-      proc.results['find-generic-password'] = ProcessResult(
-        0,
-        0,
-        'garbage',
-        '',
-      );
-      expect(await store.bootstrapFromKeychain(), isNull);
-      expect(await store.list(), isEmpty);
-    }, skip: !Platform.isMacOS ? 'macOS keychain only' : null);
-
-    test('no keychain item leaves the install with no accounts', () async {
-      proc.results['find-generic-password'] = ProcessResult(0, 44, '', '');
-      expect(await store.bootstrapFromKeychain(), isNull);
-      expect(await store.list(), isEmpty);
-    }, skip: !Platform.isMacOS ? 'macOS keychain only' : null);
-  });
-
   group('durability', () {
     test('a corrupt registry reads as empty rather than throwing', () async {
       await store.create(label: 'Work');
@@ -643,6 +597,19 @@ void main() {
       );
       expect(plan.candidates, isEmpty);
       expect(plan.allSpent?.earliestReset, early);
+    });
+
+    test('a pool of removed accounts refuses, never the default', () async {
+      // The pool exists to keep this scope off the accounts it does not name;
+      // the server default is usually one of them.
+      await seed(['Work', 'Personal']);
+      final plan = await build().resolveForDispatch(
+        pool: const AccountPool(accountIds: ['gone']),
+      );
+      expect(plan.candidates, isEmpty);
+      expect(plan.allSpent?.reason, RunCredentialReason.accountsRemoved);
+      expect(plan.allSpent?.accountIds, ['gone']);
+      expect(plan.allSpent?.earliestReset, isNull);
     });
 
     test('no pool keeps the single-default behaviour', () async {
@@ -970,45 +937,180 @@ void main() {
     });
   });
 
-  group('the seeded account follows the default login', () {
-    // It has no keychain item of its own — nothing ever logged into its
-    // directory — so without this it is frozen at the moment of seeding.
-    // Measured on a real install: its snapshot expired at 21:57 while the
-    // default item was good until 05:54, and every run on it then 401'd while
-    // the usage flyout said "no usage reported".
-    test('mirrors the DEFAULT item when it has none of its own', () async {
-      proc.results['find-generic-password -s Claude Code-credentials -w'] =
-          ProcessResult(0, 0, _credentials(expiresAt: 900), '');
-      proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
-      final account = await store.bootstrapFromKeychain();
-      expect(account, isNotNull);
-      expect((await store.list()).single.tracksDefaultLogin, isTrue);
+  group('the operator\'s own login is never copied', () {
+    test(
+      'an account with no item of its own does NOT follow the default',
+      () async {
+        // Following it put one rotating refresh token in two places, and
+        // whichever refreshed first signed the other out — the operator's own
+        // Claude Code, every morning.
+        final a = await store.create(label: 'Work');
+        proc.results['find-generic-password -s Claude Code-credentials -w'] =
+            ProcessResult(0, 0, _credentials(expiresAt: 9000), '');
+        expect(await store.syncCredentialFromKeychain(a.id), isFalse);
+        expect(
+          File(
+            p.join(store.configDirFor(a.id), '.credentials.json'),
+          ).existsSync(),
+          isFalse,
+        );
+      },
+      skip: !Platform.isMacOS ? 'macOS keychain only' : null,
+    );
 
-      // The default item moves on; the account must move with it.
-      proc.results['find-generic-password -s Claude Code-credentials -w'] =
-          ProcessResult(0, 0, _credentials(expiresAt: 9000), '');
-      expect(await store.syncCredentialFromKeychain(account!.id), isTrue);
-      final file = File(
-        p.join(store.configDirFor(account.id), '.credentials.json'),
-      );
-      expect(file.readAsStringSync(), contains('tok-9000'));
-    }, skip: !Platform.isMacOS ? 'macOS keychain only' : null);
+    test('retires an account an older build seeded from it', () async {
+      final seeded = await store.create(label: 'Keychain account');
+      final own = await store.create(label: 'Work');
+      // The registry as an older build wrote it: the seeded row carries the
+      // marker, and its directory holds a copy of the operator's credential.
+      final registry = File(p.join(store.root, 'accounts.json'));
+      final rows = (jsonDecode(registry.readAsStringSync()) as List)
+          .cast<Map<String, dynamic>>();
+      rows.first['tracks_default_login'] = true;
+      registry.writeAsStringSync(jsonEncode(rows));
+      final copy = File(
+        p.join(store.configDirFor(seeded.id), '.credentials.json'),
+      )..writeAsStringSync(_credentials(expiresAt: 900));
+      final ownCreds = File(
+        p.join(store.configDirFor(own.id), '.credentials.json'),
+      )..writeAsStringSync(_credentials(expiresAt: 900));
 
-    test('an account signed in through its OWN directory does not', () async {
-      // Its own item is authoritative; falling back to the default would swap
-      // one login's credential for another's.
-      final a = await store.create(label: 'Work');
-      expect((await store.list()).single.tracksDefaultLogin, isFalse);
-      proc.results['find-generic-password -s Claude Code-credentials -w'] =
-          ProcessResult(0, 0, _credentials(expiresAt: 9000), '');
-      expect(await store.syncCredentialFromKeychain(a.id), isFalse);
+      expect(await store.retireDefaultLoginCopies(), [seeded.id]);
+      expect(copy.existsSync(), isFalse, reason: 'the copy is what raced');
+      expect(ownCreds.existsSync(), isTrue, reason: 'its own login stays');
       expect(
-        File(
-          p.join(store.configDirFor(a.id), '.credentials.json'),
-        ).existsSync(),
+        registry.readAsStringSync(),
+        isNot(contains('tracks_default_login')),
+      );
+      expect((await store.list()).map((a) => a.id), [
+        seeded.id,
+        own.id,
+      ], reason: 'the account itself stays, signed out');
+      expect(await store.retireDefaultLoginCopies(), isEmpty);
+    });
+  });
+
+  group('long-lived token', () {
+    const token = 'sk-ant-oat01-abcdefghijklmnopqrstuvwxyz012345';
+
+    test('refuses a value that is not a setup token', () async {
+      final a = await store.create(label: 'Work');
+      for (final bad in [
+        '',
+        'sk-ant-api03-abcdefghijklmnopqrstuvwxyz',
+        'sk-ant-oat01-short',
+        'sk-ant-oat01-abcdefghijklmnopqrstuvwxyz\nEVIL=1',
+        'Your OAuth token: $token',
+      ]) {
+        await expectLater(
+          store.setLongLivedToken(a.id, bad),
+          throwsArgumentError,
+          reason: bad,
+        );
+      }
+      expect(readClaudeLongLivedToken(store.configDirFor(a.id)), isNull);
+    });
+
+    test('refuses an unknown account', () async {
+      await expectLater(
+        store.setLongLivedToken('nope', token),
+        throwsArgumentError,
+      );
+    });
+
+    test('is stored in the account directory, owner-only', () async {
+      final a = await store.create(label: 'Work');
+      await store.setLongLivedToken(a.id, '  $token\n');
+      final dir = store.configDirFor(a.id);
+      expect(readClaudeLongLivedToken(dir), token);
+      if (!Platform.isWindows) {
+        final mode = claudeLongLivedTokenFile(dir).statSync().mode & 0x1ff;
+        expect(mode, 0x180, reason: '0600');
+      }
+    });
+
+    test('reaches auth status and the run environment', () async {
+      final a = await store.create(label: 'Work');
+      await store.setLongLivedToken(a.id, token);
+      expect(store.runEnvironmentFor(a.id), {
+        'CLAUDE_CONFIG_DIR': store.configDirFor(a.id),
+        claudeLongLivedTokenEnvKey: token,
+      });
+      proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
+      final listed = (await store.listWithStatus()).single;
+      expect(listed.usesLongLivedToken, isTrue);
+      expect(listed.longLivedTokenSavedAt, isNotNull);
+      final status = proc.calls.lastWhere(
+        (c) => c.args.join(' ').startsWith('auth status'),
+      );
+      expect(status.env?[claudeLongLivedTokenEnvKey], token);
+    });
+
+    test('the token never reaches the wire shape', () async {
+      final a = await store.create(label: 'Work');
+      await store.setLongLivedToken(a.id, token);
+      proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
+      final listed = (await store.listWithStatus()).single;
+      expect(jsonEncode(listed.toJson()), isNot(contains(token)));
+    });
+
+    test('skips the keychain mirror and counts as signed in', () async {
+      final a = await store.create(label: 'Work');
+      await store.setLongLivedToken(a.id, token);
+      proc.calls.clear();
+      expect(await store.syncCredentialFromKeychain(a.id), isTrue);
+      expect(
+        proc.calls.where((c) => c.exe == 'security'),
+        isEmpty,
+        reason: 'nothing to mirror: the token is the credential',
+      );
+      final avail = await store.availability();
+      expect(avail[a.id]?.signedIn, isTrue);
+    });
+
+    test('a stale interactive credential beside it is not an expiry', () async {
+      // Runs use the token, so nothing refreshes the old file any more; its
+      // lapsed `expiresAt` must not mark the account expired.
+      final a = await store.create(label: 'Work');
+      File(
+        p.join(store.configDirFor(a.id), '.credentials.json'),
+      ).writeAsStringSync(
+        jsonEncode({
+          'claudeAiOauth': {'accessToken': 'old', 'expiresAt': 1},
+        }),
+      );
+      await store.setLongLivedToken(a.id, token);
+      expect(store.credentialExpiry(a.id), isNull);
+      expect(store.credentialBeyondRepair(a.id, DateTime.now()), isFalse);
+    });
+
+    test('pasting a new token clears a recorded auth failure', () async {
+      final a = await store.create(label: 'Work');
+      await store.setLongLivedToken(a.id, token);
+      await store.markAuthFailed(a.id, reason: 'token expired');
+      expect((await store.availability())[a.id]?.signedIn, isFalse);
+      await store.setLongLivedToken(a.id, token);
+      expect((await store.list()).single.authFailedAt, isNull);
+      expect((await store.availability())[a.id]?.signedIn, isTrue);
+    });
+
+    test('clearing it drops back to the directory\'s own login', () async {
+      final a = await store.create(label: 'Work');
+      await store.setLongLivedToken(a.id, token);
+      await store.clearLongLivedToken(a.id);
+      expect(readClaudeLongLivedToken(store.configDirFor(a.id)), isNull);
+      expect(
+        store.runEnvironmentFor(a.id).containsKey(claudeLongLivedTokenEnvKey),
         isFalse,
       );
-    }, skip: !Platform.isMacOS ? 'macOS keychain only' : null);
+    });
+
+    test('setupTokenCommand is scoped to the account directory', () async {
+      final a = await store.create(label: 'Work');
+      final cmd = store.setupTokenCommand(a.id);
+      expect(cmd.argv, ['claude', 'setup-token']);
+      expect(cmd.environment['CLAUDE_CONFIG_DIR'], store.configDirFor(a.id));
+    });
   });
 
   group('prepareForRun — the interactive gates a dispatch cannot answer', () {

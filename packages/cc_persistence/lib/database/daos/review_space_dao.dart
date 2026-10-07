@@ -17,6 +17,10 @@ class ReviewSpaceDao extends DatabaseAccessor<WorkspaceDatabase>
   /// A PR node id is globally unique on GitHub, but the same upstream repo can
   /// be linked into multiple workspaces, so the lookup MUST be workspace-scoped
   /// to avoid surfacing another workspace's review space.
+  ///
+  /// The newest row when a PR was associated more than once — without the
+  /// limit, `watchSingleOrNull` errored on the second row and the PR could
+  /// never resolve its space again.
   Stream<ReviewSpacesTableData?> watchByPr(
     String workspaceId,
     String prExternalId,
@@ -27,7 +31,8 @@ class ReviewSpaceDao extends DatabaseAccessor<WorkspaceDatabase>
                   t.workspaceId.equals(workspaceId) &
                   t.prExternalId.equals(prExternalId),
             )
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+            ..limit(1))
           .watchSingleOrNull();
 
   /// Watches the most recent association for a specific space. A space can

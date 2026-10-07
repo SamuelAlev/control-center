@@ -2,13 +2,13 @@
 title: Backend sandbox
 description: Backend sandbox, tempat penerapannya, dan setiap objek nilai yang digunakan runtime sandbox.
 slug: id-ID/panduan-pengguna/referensi/backend-sandbox
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Apakah sebuah run di-sandbox bergantung pada host]
 `cc_server` menyelidiki host sekali saat boot dan membungkus pengiriman agen dalam backend native bila probe melaporkan ada backend yang tersedia dan `--sandbox` tidak bernilai `off`. Kedua titik sambung pengiriman dibungkus: CLI Claude Code melalui port sandbox, dan ACP plus alat `bash` harness bawaan melalui manajer sandbox.
 
-Bila probe melaporkan tidak ada backend — **selalu di Windows** dan Linux atau WSL2 tanpa `bwrap` dan `socat` — run agen **tidak** di-sandbox. ACP dan alat `bash` harness tetap dijalankan dengan sanitasi lingkungan; Claude Code melewati `NoSandboxAdapter` dan mewarisi lingkungan host. Batas-batas yang tersisa adalah worktree milik run itu sendiri (copy-on-write di tempat `rift` tersedia; `git worktree` di Windows), kredensial yang dijembatani sesuai kemampuan dan dicabut saat pembongkaran, kebijakan perintah per mode, [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) tindakan yang terpadu (fail-closed), sanitasi lingkungan pada jalur ACP dan `bash` harness, serta permukaan alat yang diizinkan oleh mode-nya.
+Bila probe melaporkan tidak ada backend — **selalu di Windows** dan Linux atau WSL2 tanpa `bwrap` dan `socat` — run agen **tidak** di-sandbox. ACP dan alat `bash` harness tetap dijalankan dengan sanitasi lingkungan; Claude Code melewati `NoSandboxAdapter` dan mewarisi lingkungan host. Batas-batas yang tersisa adalah worktree milik run itu sendiri (copy-on-write di tempat `rift` tersedia; `git worktree` di Windows), token forge hanya-baca yang dijembatani per peluncuran dan dicabut saat pembongkaran, push yang harus lolos aturan push di gateway run agen, kebijakan perintah per mode, [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) tindakan yang terpadu (fail-closed), sanitasi lingkungan pada jalur ACP dan `bash` harness, serta permukaan alat yang diizinkan oleh mode-nya.
 
 Alat berkas dalam proses milik harness (read, write, edit, apply patch, search, find, search_files) berada di luar sandbox di setiap host: alat itu berjalan di dalam proses server, jadi hanya `bash` yang dibungkus.
 :::
@@ -100,7 +100,7 @@ Tanpa sandboxing. Proses berjalan langsung di host dengan akses sistem berkas, j
 
 Terminal di-sandbox dengan ketentuannya sendiri, bukan oleh probe pengiriman. `defaultBackend` milik `TerminalSessionService` bernilai `none` dan `cc_server` tidak menimpanya, jadi sesi terminal menjalankan shell host kecuali klien secara eksplisit meminta `native` — panel terminal di desktop tidak memintanya.
 
-Saat `native` diminta, shell dibungkus melalui `SandboxManager` di bawah profil terminal tetap: `$HOME` dan direktori kerja sesi dapat ditulis, jaringan terbuka, dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, serta `~/Library/Keychains` ditolak-baca. Penggerbangan kemampuan tidak berlaku — itu urusan pengiriman. Bila pembungkusan tidak didukung, sesi gagal alih-alih menampilkan lencana native pada PTY shell host.
+Saat `native` diminta, shell dibungkus melalui `SandboxManager` di bawah profil terminal tetap: `$HOME` dan direktori kerja sesi dapat ditulis, jaringan terbuka, dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, serta `~/Library/Keychains` ditolak-baca. Token forge hanya-baca dan gateway push tidak berlaku — itu urusan pengiriman. Bila pembungkusan tidak didukung, sesi gagal alih-alih menampilkan lencana native pada PTY shell host.
 
 ## Egress jaringan
 
@@ -109,9 +109,9 @@ Saat sandbox diluncurkan, akses jaringan keluar ditegakkan oleh proksi dalam pro
 - Runtime sandbox menjalankan proksi HTTP/HTTPS dan proksi SOCKS5 di `127.0.0.1` di dalam proses `cc_server`, **satu pasang per sesi yang dibatasi** (`http_proxy.dart`, `socks_proxy.dart`). Run yang berjalan bersamaan tidak berbagi satu pasang.
 - Proses yang di-sandbox menerima variabel lingkungan proksi (`HTTP_PROXY`/`HTTPS_PROXY` → proksi HTTP, `ALL_PROXY` → proksi SOCKS; `GIT_SSH_COMMAND` mengarahkan git-over-SSH melalui proksi SOCKS). Di Linux, namespace jaringannya tidak dibagi, jadi proksilah satu-satunya jalan keluar; di macOS sandbox berbagi loopback host dan berbicara langsung dengannya.
 - Host tujuan setiap koneksi dicocokkan dengan daftar izin domain sesi; apa pun selain itu ditolak. Ada dua bentuk wildcard, masing-masing dengan tepat satu `*`: `*.example.com` di awal cocok dengan subdomain mana pun (termasuk `a.b.example.com`) tetapi tidak dengan apex-nya sendiri; `bedrock.*.amazonaws.com` dengan label di tengah cocok dengan tepat satu label (`bedrock.us-east-1.amazonaws.com`, bukan `bedrock.evil.attacker.amazonaws.com`).
-- Daftar izin disusun per sesi dari baseline terkurasi (`kBaselineAllowedDomains`: penyedia LLM, hosting Git, registri paket), plus domain GitHub bila agen memiliki kemampuan GitHub atau push, plus `SandboxSpec.egressAllowlist`. Resolver juga menerima domain penyedia tiket bila agen dapat memanggil ticketing, tetapi jalur pengiriman tidak pernah meneruskan daftar itu (atau entri `egressAllowlist` tambahan), jadi dalam praktiknya setiap run mendapat baseline plus domain GitHub yang diperoleh kemampuannya.
+- Daftar izin disusun per sesi dari baseline terkurasi (`kBaselineAllowedDomains`: penyedia LLM, hosting Git, registri paket), plus domain GitHub (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Jalur pengiriman tidak pernah meneruskan entri `egressAllowlist` tambahan, jadi dalam praktiknya setiap run mendapat baseline plus GitHub.
 - Daftar tolak tetap (`kBaselineDeniedDomains`: endpoint metadata cloud, tujuan telemetri) diutamakan atas semua izin.
-- `networkEnabled: false` (atau agen tanpa kemampuan jaringan) tetap memulai proksi per sesi, tetapi daftar izinnya kosong sehingga setiap koneksi keluar ditolak.
+- `networkEnabled: false` tetap memulai proksi per sesi, tetapi daftar izinnya kosong sehingga setiap koneksi keluar ditolak. Pengiriman menyetelnya saat run dimulai dari aturan **Akses jaringan**: tolak mematikan jaringan, izinkan dan tanyakan dulu membiarkannya menyala.
 
 ## SandboxSpec
 
@@ -123,11 +123,10 @@ Spesifikasi yang diteruskan ke `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id ruang kerja pemilik                                                                                                                      |
 | `agentId`         | `String?`                                   | Agen yang saat ini terikat ke sandbox, bila ada                                                                                             |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Mount host→guest; sandbox hanya melihat jalur host yang terdaftar di sini                                                                   |
-| `networkEnabled`  | `bool` (default `true`)                     | Digabungkan dengan kemampuan jaringan agen. Bila mati, proksi per sesi tetap dimulai tetapi daftar izinnya kosong sehingga setiap koneksi keluar ditolak |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Domain egress tambahan yang diizinkan; wildcard didukung (`*.example.com`, plus bentuk tengah satu label). Pengiriman tidak pernah mengisi ini, jadi run yang dibungkus mendapat baseline terkurasi plus domain GitHub yang diperoleh kemampuannya |
+| `networkEnabled`  | `bool` (default `true`)                     | Disetel saat pengiriman dari aturan egress jaringan (mati hanya bila aturan itu diselesaikan menjadi tolak). Bila mati, proksi per sesi tetap dimulai tetapi daftar izinnya kosong sehingga setiap koneksi keluar ditolak |
+| `egressAllowlist` | `List<String>` (default `[]`)               | Domain egress tambahan yang diizinkan; wildcard didukung (`*.example.com`, plus bentuk tengah satu label). Pengiriman tidak pernah mengisi ini, jadi run yang dibungkus mendapat baseline terkurasi plus domain GitHub |
 | `guestWorkdir`    | `String?`                                   | Direktori kerja default di dalam sandbox; panggilan `exec` individual dapat menimpanya                                                      |
 | `mode`            | `Mode` (default `chat`)                     | Memahat aturan tulis sistem berkas: `chat` membuat bind mount tetap dapat ditulis; `review`, `plan`, dan `orchestrate` bersifat hanya-baca    |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Menurunkan keputusan jaringan hidup/mati dan domain egress GitHub. Domain ticketing adalah argumen resolver yang tidak pernah disuplai jalur pengiriman |
 | `protectedPaths`  | `List<String>` (default `[]`)               | Jalur host yang tidak boleh dapat ditulis di dalam sandbox, dalam mode apa pun                                                             |
 | `runnerStateDirs` | `List<String>` (default `[]`)               | Direktori host tempat runner menyimpan statusnya sendiri, dapat ditulis di setiap mode (yang berlaku saat ini adalah `CLAUDE_CONFIG_DIR` yang dikelola Control Center) |
 | `execGrantRoots`  | `List<String>` (default `[]`)               | Pohon direktori yang disetujui operator yang membuka kembali pemblokiran exec direktori yang dapat ditulis di macOS. Linux mengabaikannya — bwrap tidak memiliki pemblokiran exec `$HOME` untuk dibuka kembali |
@@ -185,7 +184,6 @@ Dikembalikan oleh `SandboxPort.launch`:
 | --------------------- | --------- | ------------------------------------------------------------------------- |
 | `action`              | `String`  | Verb yang ditolak (mis. `file-read*`, `network-outbound`)                 |
 | `target`              | `String`  | Jalur atau host yang menjadi target operasi yang ditolak                  |
-| `suggestedCapability` | `String?` | Flag kemampuan yang akan mengizinkan tindakan ini (mis. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Baris log mentah, berguna untuk penelusuran kesalahan                     |
 
 ## Lihat juga

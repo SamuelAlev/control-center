@@ -10,7 +10,6 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
@@ -30,6 +29,7 @@ class _StreamContext {
     required this.agentName,
     required this.messageId,
     required this.dispatchResult,
+    this.conversationId,
     this.workingDirectory,
     this.snapshotStartFuture,
     this.requestedByUserId,
@@ -49,6 +49,11 @@ class _StreamContext {
   final String agentId;
   final String agentName;
   final String messageId;
+
+  /// Conversation the turn is posted into — carried onto its
+  /// `MessageReceived` so the notification opens that conversation, not the
+  /// space's standing one. Null when it could not be resolved.
+  final String? conversationId;
   final AgentDispatchResult dispatchResult;
 
   /// Folds the event stream into the ordered transcript. Wired in
@@ -88,6 +93,10 @@ class _StreamContext {
   TurnOutcome? doneOutcome;
   DateTime? firstTokenAt;
   RunCost accumulatedCost = RunCost.zero;
+
+  /// The newest provider-reported context reading, persisted on the turn as
+  /// `metadata['context']` so the meter shows what the model actually holds.
+  ContextWindowEvent? contextReading;
   Timer? dbFlushTimer;
   bool dbDirty = false;
 
@@ -151,6 +160,7 @@ class AgentStreamProcessor {
     required String agentId,
     required String agentName,
     required String messageId,
+    String? conversationId,
     String? workingDirectory,
     String? requestedByUserId,
     Future<void> Function(String content)? onTurnCompleted,
@@ -173,6 +183,7 @@ class AgentStreamProcessor {
       agentId: agentId,
       agentName: agentName,
       messageId: messageId,
+      conversationId: conversationId,
       dispatchResult: dispatchResult,
       workingDirectory: workingDirectory,
       snapshotStartFuture: snapshotStartFuture,
@@ -214,6 +225,12 @@ class AgentStreamProcessor {
                             .startedAt
                             .millisecondsSinceEpoch,
             );
+        return;
+      case ContextWindowEvent():
+        ctx.contextReading = event;
+        // Not structural: a reading changes no bubble, it only needs to reach
+        // the stored row on the next delta flush so the meter moves mid-turn.
+        _markDirty(ctx, structural: false);
         return;
       case DebugEvent():
         // Diagnostics live in the NDJSON run log, never the transcript.
@@ -444,6 +461,7 @@ class AgentStreamProcessor {
       // Thin clients receive list rows without segments; this keeps their
       // context-window estimates accurate (TokenEstimator.estimateMessage).
       'transcriptChars': ctx.folder.transcriptChars,
+      'context': ?_contextMetadata(ctx),
       'turn': {
         'durationMs': durationMs,
         'totalTokens': ctx.accumulatedCost.totalTokens,
@@ -454,6 +472,20 @@ class AgentStreamProcessor {
           if (ctx.snapshotStart != null) 'start': ctx.snapshotStart,
           if (ctx.snapshotEnd != null) 'end': ctx.snapshotEnd,
         },
+    };
+  }
+
+  /// `metadata['context']` for the turn, or null before the runner reported
+  /// a reading. The DAO stamps `tokens` and `window` into their own columns.
+  Map<String, dynamic>? _contextMetadata(_StreamContext ctx) {
+    final reading = ctx.contextReading;
+    if (reading == null) {
+      return null;
+    }
+    return {
+      'tokens': reading.contextTokens,
+      'window': ?reading.windowTokens,
+      if (reading.compactions > 0) 'compactions': reading.compactions,
     };
   }
 
@@ -473,6 +505,7 @@ class AgentStreamProcessor {
       'streamComplete': false,
       'segments': ctx.folder.encodeForFlush(),
       'transcriptChars': ctx.folder.transcriptChars,
+      'context': ?_contextMetadata(ctx),
     };
     final flush = _flushMessage;
     if (flush == null) {
@@ -522,20 +555,19 @@ class AgentStreamProcessor {
   }
 
   /// Runs the anchored-compaction + tool-pruning maintenance pass after a turn
-  /// finishes. [contextSize] is CC's per-agent character budget; it is mapped
-  /// to an estimated token window for the planner. No-op when no compaction
-  /// service is wired or the agent has no configured context size.
+  /// finishes, against the window the turn's runner reported (the real one,
+  /// e.g. a Claude Code `[1m]` variant) or else the agent's configured
+  /// [contextSize] in tokens. No-op when no compaction service is wired or
+  /// neither is known.
   Future<void> _runContextMaintenance(
     _StreamContext ctx,
     int? contextSize,
   ) async {
     final service = _compactionService;
-    if (service == null || contextSize == null) {
+    final windowTokens = ctx.contextReading?.windowTokens ?? contextSize;
+    if (service == null || windowTokens == null) {
       return;
     }
-    final windowTokens = TokenEstimator.instance.windowTokensFromChars(
-      contextSize,
-    );
     try {
       await service.maintain(
         workspaceId: ctx.workspaceId,
@@ -576,6 +608,7 @@ class AgentStreamProcessor {
         // activity to the right workspace's dashboard feed.
         workspaceId: ctx.dispatchResult.agent?.workspaceId,
         requestedByUserId: ctx.requestedByUserId,
+        conversationId: ctx.conversationId,
         occurredAt: DateTime.now(),
       ),
     );

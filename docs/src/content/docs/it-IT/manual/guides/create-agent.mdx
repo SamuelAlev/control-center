@@ -2,7 +2,7 @@
 title: Crea e configura un agente
 description: Aggiungi un agente a uno spazio di lavoro, assegnagli un adattatore, un modello, delle skill e dei permessi e verifica che venga eseguito.
 slug: it-IT/manuale/guide/crea-agente
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Questa guida mostra come aggiungere un agente a uno spazio di lavoro e configurarlo finché non riesce davvero a essere eseguito.
@@ -68,19 +68,12 @@ Non scegli qui le skill di un repository. Un repository che le fornisce (in `.ag
 
 ## Concedi i permessi
 
-**Permessi del sandbox** parte da «Usa predefinito dello spazio di lavoro». Attiva l'interruttore per impostarli per questo agente, poi attiva o disattiva:
+Un agente non ha interruttori di permesso propri. Cosa può inviare, aprire, unire o raggiungere lo stabiliscono le regole delle azioni in **Impostazioni → Spazio di lavoro → Autorizzazioni degli agenti**, dove una regola può essere limitata a questo agente. Di serie, un push, una pull request, una revisione o un merge e una scrittura su un tracker ti chiedono prima ciascuno conferma, e l'accesso alla rete è consentito.
 
-- **Consenti git push** — inietta il token GitHub di cui l'agente ha bisogno per fare push
-- **Consenti chiamate API GitHub** — consente all'agente di leggere PR, issue e metadati dei repository
-- **Consenti chiamate API dei ticket** — inietta la chiave del fornitore dei ticket
-- **Consenti accesso di rete generale** — abilita anche gli strumenti `web_fetch` e `web_search` dell'harness integrato
+Il token GitHub dell'agente è sempre di sola lettura. Un push passa da Control Center, che interroga la regola **Eseguire il push a un remoto** prima di inoltrarlo. Vedi [Configura le policy del sandbox](/it-IT/manuale/guide/policy-sandbox/) per come ogni regola raggiunge un'esecuzione.
 
-Ogni interruttore viene verificato dal broker delle credenziali all'avvio dell'esecuzione: una capacità disattivata significa semplicemente che il token corrispondente non viene mai generato nell'ambiente dell'esecuzione.
-
-:::caution[Il valore predefinito dello spazio di lavoro è l'insieme prudente del server]
-Un agente lasciato su «Usa predefinito dello spazio di lavoro» viene eseguito con git push, API GitHub e ticket tutti **disattivati** e rete **attiva**. I valori predefiniti delle capacità mostrati in Impostazioni → Server → Diagnostica e privacy sono una preferenza lato client. Se vuoi che un agente faccia push o apra PR, attiva l'interruttore e concedi le capacità esplicitamente.
-
-Queste capacità fanno da gate a credenziali e strumenti dell'harness, uno strato separato dal sandbox del sistema operativo. `cc_server` avvolge le esecuzioni degli agenti nel sandbox della macchina dove ne esiste uno — Windows non ha un backend nativo, e Linux e WSL2 richiedono `bwrap` e `socat`. Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/) per l'insieme completo dei confini.
+:::note[Le regole e il sandbox del sistema operativo sono strati separati]
+Le regole decidono cosa può fare un agente; il sandbox del sistema operativo limita dove i suoi processi possono leggere, scrivere e connettersi. `cc_server` avvolge le esecuzioni degli agenti nel sandbox della macchina dove ne esiste uno — Windows non ha un backend nativo, e Linux e WSL2 richiedono `bwrap` e `socat`. Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/) per l'insieme completo dei confini.
 :::
 
 ## Verifica che venga eseguito

@@ -23,6 +23,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
     super.key,
     required this.leading,
     required this.label,
+    this.labelScrambling = false,
     required this.selected,
     required this.status,
     required this.unread,
@@ -49,6 +50,10 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
 
   /// The space display name.
   final String label;
+
+  /// Whether [label] is still being worked out (a conversation title a model
+  /// is generating): its letters churn until this clears.
+  final bool labelScrambling;
 
   /// Whether this is the route's selected space.
   final bool selected;
@@ -164,6 +169,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
             tokens: t,
             leading: leading,
             label: label,
+            labelScrambling: labelScrambling,
             contentColor: animatedFg ?? fg,
             caption: caption,
             filled: _filled,

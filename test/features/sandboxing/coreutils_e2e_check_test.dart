@@ -10,7 +10,6 @@ library;
 
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
@@ -31,9 +30,7 @@ void main() {
           guestWorkdir: '/tmp',
           networkEnabled: false,
           mode: Mode.chat,
-          capabilities: AgentCapabilities(),
         ),
-        capabilities: const AgentCapabilities(),
         homeDir: home,
       );
       final config = await buildSandboxConfigFromPolicy(spec);

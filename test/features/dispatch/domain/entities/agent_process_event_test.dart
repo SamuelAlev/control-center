@@ -315,18 +315,17 @@ void main() {
     });
 
     test(
-      'metadata includes action, target, suggestedCapability',
+      'metadata includes action and target',
       timeout: const Timeout.factor(2),
       () {
         final e = SandboxViolationEvent(
           content: 'denied',
           action: 'file-read',
           target: '/etc/passwd',
-          suggestedCapability: 'fs.read',
         );
         expect(e.metadata!['action'], 'file-read');
         expect(e.metadata!['target'], '/etc/passwd');
-        expect(e.metadata!['suggestedCapability'], 'fs.read');
+        expect(e.metadata!.containsKey('suggestedCapability'), isFalse);
       },
     );
 

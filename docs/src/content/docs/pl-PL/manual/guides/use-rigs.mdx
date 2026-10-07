@@ -2,7 +2,7 @@
 title: Daj agentowi maszynę do testów
 description: Daj agentowi jednorazową przeglądarkę, pulpit, emulator Androida albo Symulator iOS — z podglądem na żywo i kontrolą, którą możesz przejąć.
 slug: pl-PL/podrecznik/poradniki/uzywanie-rigow
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 **Rig** to jednorazowa maszyna, którą agent otwiera, gdy naprawdę musi czegoś
@@ -192,9 +192,11 @@ Co się zmienia:
 - Nic, co uruchomisz, nie dociera do hosta. `rm -rf` w środku kosztuje Cię riga.
 - Sieć jest domyślnie zablokowana. Osiągalne są tylko hosty z listy dozwolonych
   riga, a wszystko przechodzi przez bramę, która tego pilnuje.
-- `git push` nadal działa. Rig nie przechowuje żadnego poświadczenia; prosi serwer
-  o krótkotrwałe poświadczenie na każdą operację, a token jest unieważniany przy
-  zamknięciu riga.
+- `git push` nadal działa w terminalu otwartym przez Ciebie. Rig nie
+  przechowuje żadnego poświadczenia; prosi serwer o krótkotrwałe poświadczenie
+  na każdą operację, ograniczone Twoim własnym dostępem do hosta kodu, a token
+  jest unieważniany przy zamknięciu riga. Rig otwarty przez agenta dostaje
+  poświadczenie tylko do odczytu, więc może pobierać, ale nie wypychać.
 
 Co warto wiedzieć:
 

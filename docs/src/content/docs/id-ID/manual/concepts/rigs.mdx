@@ -2,7 +2,7 @@
 title: Rigs dan lingkungan terisolasi
 description: Mengapa agen mendapat mesin sekali pakai alih-alih komputer Anda — batas isolasi, jalur tampilan, kredensial, port, dan siklus hidupnya.
 slug: id-ID/panduan-pengguna/konsep/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 **Rig** adalah mesin sekali pakai yang dikemudikan agen secara real time —
@@ -163,13 +163,20 @@ besar isinya — tidak pernah isinya sendiri.
 
 ## Kredensial tidak pernah tinggal di sistem tamu
 
-`git push` bekerja dari terminal terisolasi, tetapi sistem tamu tidak menyimpan
+`git push` bekerja dari terminal terisolasi yang Anda buka, tetapi sistem tamu tidak menyimpan
 token forge. Ia memegang satu rahasia per VM yang satu-satunya kekuatan adalah
 *meminta* kepada broker kredensial host — melalui tunnel yang dikendalikan host
 — token berumur pendek yang bercakupan repo, per operasi, dengan pembatasan
 laju, dibatasi oleh daftar izin host yang sama dengan egress, dan dicabut
 begitu rig ditutup. Mesin yang dibangun untuk dibuang tidak boleh memuat apa
 pun yang layak dicuri.
+
+Apa yang boleh dilakukan token itu ditetapkan saat rig dibuka. Rig terminal
+yang dibuka manusia mendapat token tulis, dibatasi oleh akses forge milik
+anggota itu sendiri. Rig yang dibuka agen mendapat token hanya-baca: credential
+helper git tidak dapat membedakan push dari fetch, jadi aturan push tidak dapat
+ditanyakan per push di dalam tamu seperti yang dilakukan gateway run agen di
+host.
 
 ## Worktree di dalam rig adalah satelit
 

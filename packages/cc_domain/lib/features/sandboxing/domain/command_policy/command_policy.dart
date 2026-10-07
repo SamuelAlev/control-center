@@ -163,9 +163,15 @@ const List<String> defaultDeny = [
 
 /// Commands that are elevated but consentable — prompt for user approval.
 /// DISJOINT from [defaultDeny].
+///
+/// `git push` and the `gh pr` mutations are deliberately absent: the action
+/// policy owns them ("Push to a remote", "Open a pull request", "Publish a
+/// review or merge"), asked by the agent run gateway and the shell classifier.
+/// Listing them here as well would ask the operator twice — and an operator
+/// who set "Push to a remote: allow" would still be asked. Read-only modes keep
+/// denying them through [mutatingCommands].
 const List<String> defaultPrompt = [
-  // Git remote state mutations.
-  'git push',
+  // Git history rewrites.
   'git reset --hard',
   'git clean',
   // Package publishing.
@@ -176,10 +182,6 @@ const List<String> defaultPrompt = [
   'twine upload',
   'gem push',
   // GitHub CLI mutations.
-  'gh pr create',
-  'gh pr merge',
-  'gh pr close',
-  'gh pr review',
   'gh release create',
   'gh release delete',
   'gh repo create',
@@ -204,6 +206,10 @@ const List<String> mutatingCommands = [
   'git push',
   'git reset',
   'git merge',
+  'gh pr create',
+  'gh pr merge',
+  'gh pr close',
+  'gh pr review',
   'git rebase',
   'git clean',
   'git checkout --',

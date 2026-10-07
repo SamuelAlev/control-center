@@ -2,7 +2,7 @@
 title: Nastavte integraci Linear
 description: Ulož na server API klíč Linear, aby agenti mohli volat Linear, a zvol Linear jako poskytovatele ticketingu pro nové tickety.
 slug: cs-CZ/prirucka/navody/integrace-linear
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 Vlož na server API klíč Linear ke svému uživateli, stejně jako připojuješ
@@ -16,8 +16,9 @@ nepotřebují. Viz
 **API klíč ticketingu** je v **Nastavení → Pracovní prostor → Obecné**, na
 kartě **Ticketing**. Klíč se uloží na server k tvému id uživatele. Vlastní
 klíč serveru pro práci, o kterou nikdo nepožádal, bere `LINEAR_API_KEY` nebo
-kartu **Aplikace poskytovatelů** a jako `TICKETING_API_KEY` se vloží jen
-tehdy, když má ten agent schopnost **Povolit volání ticketing API**.
+kartu **Aplikace poskytovatelů**. Do sandboxu agenta se žádný klíč ticketingu
+nevkládá: agenti zapisují tickety přes vlastní nástroje Control Center, které
+se nejdřív zeptají pravidla **Zápis do externího trackeru**.
 
 ## Označ nové tickety jako Linear
 

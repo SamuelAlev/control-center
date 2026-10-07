@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
@@ -48,7 +47,6 @@ class RunLogWriter {
     String? ticketId,
     required String cliName,
     String? modelId,
-    required AgentCapabilities capabilities,
   }) async {
     try {
       _bufFlushTimer?.cancel();
@@ -77,7 +75,6 @@ class RunLogWriter {
           'ticketId': ticketId,
           'cliName': cliName,
           'modelId': modelId,
-          'capabilities': capabilities.toJson(),
         }),
       );
     } catch (_) {

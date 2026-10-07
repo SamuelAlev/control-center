@@ -2,7 +2,7 @@
 title: Konfigurasi agen
 description: Setiap bidang pada entitas agen dan enum yang digunakannya.
 slug: id-ID/panduan-pengguna/referensi/konfigurasi-agen
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Referensi ini mencantumkan setiap bidang pada entitas agen, beserta enum dan flag yang digunakannya. Untuk panduan langkah demi langkah dalam membuat atau mengedit agen di aplikasi, lihat [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/).
@@ -26,7 +26,6 @@ Referensi ini mencantumkan setiap bidang pada entitas agen, beserta enum dan fla
 | `effort`                | `String?`              | Tidak | ID tingkat penalaran (mis. `'low'`, `'xhigh'`), bersumber dari `thinkingLevels` model yang dipilih                                                                                                   |
 | `contextSize`           | `int?`                 | Tidak | Ukuran maksimum jendela konteks                                                                                                                                                                     |
 | `role`                  | `AgentRole?`           | Tidak | Peran agen                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | Tidak | Default kemampuan per agen; saat null default tingkat pengguna berlaku pada saat pengiriman dan percakapan masih dapat menimpanya                                                                   |
 | `monthlyBudgetCents`    | `int`                  | Tidak | Batas pengeluaran bulanan dalam sen (default `0`, tak terbatas)                                                                                                                                     |
 | `silenceTimeoutMinutes` | `int?`                 | Tidak | Penimpaan batas waktu diam dalam menit; harus null atau dalam rentang 1–240 (ditegaskan oleh konstruktor)                                                                                           |
 | `maxConcurrentTasks`    | `int`                  | Tidak | Default `1`. Angka kapasitas yang dilaporkan model kehadiran (jumlah yang berjalan dan yang mengantre dibandingkan dengannya)                                                                        |
@@ -69,18 +68,9 @@ atas dengan `agents.upsert`.
 | `paused`   | Disetel oleh penghentian paksa anggaran. Ditampilkan pada daftar kehadiran; pengiriman tetap menerima pekerjaan |
 | `archived` | Dipensiunkan dan disembunyikan dari daftar aktif                                       |
 
-## Flag AgentCapabilities
+## Izin
 
-Diselesaikan per pengiriman: default agen, jatuh kembali ke default tingkat pengguna saat null, dengan penimpaan per percakapan di atasnya. Ditegakkan melalui ketiadaan — broker kredensial memang tidak membuat atau menyuntikkan apa yang dicakup oleh kemampuan yang dimatikan.
-
-| Flag               | Tipe   | Default | Deskripsi                                                                                 |
-| ------------------ | ------ | ------- | ----------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commit ke remote; membatasi injeksi token GitHub bersama `canCallGitHubApi`           |
-| `canCallGitHubApi` | `bool` | `false` | Memanggil api.github.com; membatasi injeksi `GH_TOKEN` dan domain egress GitHub            |
-| `canCallTicketing` | `bool` | `false` | Memanggil API penyedia ticketing; membatasi injeksi kunci API penyedia dan domain egress-nya |
-| `canAccessNetwork` | `bool` | `true`  | Egress keluar sembarang. Juga membatasi alat `web_fetch` dan `web_search` milik harness    |
-
-`AgentCapabilities.safeDefault` adalah keempat default konstruktor. `legacyDefault` (keempatnya true) hanya dipakai oleh migrasi yang mengisi kembali percakapan yang dibuat sebelum kemampuan ada. Blob tersimpan yang rusak atau kosong diuraikan menjadi `safeDefault`; kunci lawas `canCallLinear` dibaca sebagai `canCallTicketing`.
+Agen tidak membawa flag izin. Push, membuka dan memublikasikan pull request, menulis ke pelacak, dan egress jaringan adalah kelas aksi (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) yang diselesaikan oleh [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) pada cakupan ruang kerja, agen, atau space. Token GitHub sebuah run selalu bercakupan baca; push melewati gateway run agen, yang menanyakan aturan `gitPush` sebelum meneruskannya.
 
 ## AgentSkills
 

@@ -50,7 +50,7 @@ void main() {
     'repos', 'review_hub', 'review_space', 'review_studio',
     'rig', 'sandbox', 'server', 'server_settings',
     'serviceStatus', 'skills', 'soundscape', 'space_read',
-    'sso', 'stack', 'steering', 'subscriptions', 'sync',
+    'sso', 'stack', 'steering', 'subscriptions',
     'takeover', 'team', 'terminal', 'ticket_link',
     'ticket_sync', 'ticketing', 'tickets', 'todos',
     'usage', 'users', 'voice_profile', 'weather',

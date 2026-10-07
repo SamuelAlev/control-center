@@ -72,6 +72,41 @@ void main() {
     );
   });
 
+  group('a pool naming only removed accounts', () {
+    // Dispatch refuses on such a pool instead of falling back, so the editor
+    // must say so and offer the way out — even with one account left, where
+    // it would otherwise render nothing at all.
+    testWidgets('says so with one account left', (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _pump(
+        tester,
+        scope: _agentScope,
+        pool: const AccountPool(accountIds: ['gone']),
+        candidates: _candidates(1),
+      );
+      expect(find.text(l10n.accountPoolAllRemoved), findsOneWidget);
+      expect(find.text(l10n.accountPoolClear), findsOneWidget);
+    });
+
+    testWidgets('says so above the full editor', (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _pump(tester, pool: const AccountPool(accountIds: ['gone']));
+      expect(find.text(l10n.accountPoolAllRemoved), findsOneWidget);
+      expect(
+        find.byType(CcSegmentedToggle<AccountRotationStrategy>),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stays quiet while one listed account survives', (
+      tester,
+    ) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _pump(tester, pool: const AccountPool(accountIds: ['gone', 'c1']));
+      expect(find.text(l10n.accountPoolAllRemoved), findsNothing);
+    });
+  });
+
   group('unconfigured', () {
     testWidgets('shows every candidate attached, in order', (tester) async {
       // Editing must start from what WOULD run. An empty list would imply

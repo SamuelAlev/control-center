@@ -2,7 +2,7 @@
 title: 詞彙表
 description: Control Center 全站關鍵術語的定義。
 slug: zh-TW/手冊/參考/詞彙表
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['代理', '具備身分、角色、技能與能力的 AI 工作者。恰好屬於一個工作區。系統中的主要行為者。'],
+['代理', '具備身分、角色、技能與配接器的 AI 工作者。恰好屬於一個工作區。系統中的主要行為者。'],
 ['配接器', '執行代理回合的執行器。隨附兩種：Control Center（內建）——與模型供應商溝通的行程內 harness——以及透過 claude CLI 執行的 Claude Code。Cursor、Codex 及其他模型供應商都掛接在內建配接器上，而不是各自獨立的執行器。'],
 ['工作區', '最上層的隔離租戶。彙整代理、儲存庫、空間、工單、記憶與管線。隔離是結構性的，而不是約定俗成：每個工作區都有自己的 SQLite 檔案，因此跨工作區的讀取無法通過編譯。應用程式內每條路由都帶有 /workspaces/:workspaceId 前置字串。'],
 ['託管平台', '程式碼託管服務——GitHub、GitLab 或 Bitbucket Cloud。每個儲存庫的屬性，在註冊時從其 origin 遠端讀取。一個工作區可以同時容納這三者的儲存庫。'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', '不區分大小寫的技能識別碼集合，會在派送時把相關情境注入提示詞。'],
 ['技能來源', '依工作區註冊為技能目錄的 GitHub 儲存庫。依構造即不可信：該儲存庫的中繼資料僅供顯示，且每次安裝都必須先通過失敗即關閉的掃描關卡，之後任何內容才能落到磁碟或進入提示詞。'],
 ['skills-lock.json', '依工作區記錄的已安裝技能清單：每項技能的來源儲存庫、儲存庫內路徑、固定所在的提交，以及一個彙總的內容雜湊。安裝、更新與解除安裝都會讓它保持最新；verify_skills 會拿它與磁碟核對。'],
-['AgentCapabilities', '四個旗標（推送至儲存庫、GitHub API、工單、網路對外連線），在派送時解析：先取代理預設值，再取使用者預設值，並可依對話覆寫。以「缺少即表示停用」來強制執行：某項能力一旦停用，對應的權杖或對外連線就根本不會被注入。'],
+['代理執行閘道', 'cc_server 上的一個回送端點，在代理的沙箱內套用動作原則。代理發起的每一次 GitHub 推送都會被導到這裡，依推送到遠端規則檢查，再以代理從不持有的寫入權杖轉送；Claude Code 的 Bash 命令則經由同一端點上的鉤子檢查。'],
 ['模式', 'chat、plan、review 或 orchestrate。依空間儲存，因此同一個代理可以在不同空間處於不同模式；空間中的每段對話都共用它。它控管系統提示詞、沙箱寫入規則與 MCP 工具允許清單。'],
 ['SandboxBackend', 'microvm（封閉的 VM——唯一具有核心邊界的後端，套用於互動式終端機）、native（macOS 上的 Seatbelt、Linux 與 WSL2 上的 bubblewrap）或 none。開機時探測一次；native 可用時會包覆代理派送。Windows 沒有原生後端，Linux 需要 bwrap 加 socat，因此那些平台上的執行不會被包覆；--sandbox off 則刻意選擇退出。'],
 ['機台', '代理即時操控的可拋棄機器：封閉的瀏覽器或 Linux 桌面、由主機管理的 Android 模擬器或 iOS 模擬器，或封閉的終端機。透過專屬的全解析度通道即時觀看，接管則由伺服器端強制執行。以對話為作用域，因此人類分頁與代理工具面對的是同一台機器。'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', '單次代理執行的 token／成本統計（輸入 token、輸出 token、以分為單位的預估成本）。'],
 ['喚醒原因', '代理被派送的原因。共六個值：使用者訊息、工單指派、失敗後的復原重新派送、子工單完成、排定的後續心跳，以及管線步驟。'],
 ['SandboxPort', '管理沙箱生命週期（探測、啟動、事件、exec、銷毀）。'],
-['CredentialBrokerPort', '為沙箱啟動鑄造受作用域限定、受能力閘控的憑證，並在拆除時撤銷它們。'],
+['CredentialBrokerPort', '為沙箱啟動鑄造受作用域限定的憑證（代理環境中為唯讀，寫入權限僅用於伺服器端的推送路徑），並在拆除時撤銷它們。'],
 ['GitRepoInspectorPort', '從本機 Git 儲存庫路徑擷取中繼資料（owner、repo、branch）。'],
 ['EmbeddingPort', '產生用於語意搜尋的單位範數文字嵌入向量。'],
 ['NotificationPort', '顯示原生桌面通知，並遵守類別／路由閘控。'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## 核心實體
 
-**代理**：具備身分、角色、技能與能力的 AI 工作者。恰好屬於一個工作區。系統中的主要行為者。
+**代理**：具備身分、角色、技能與配接器的 AI 工作者。恰好屬於一個工作區。系統中的主要行為者。
 
 **配接器**：執行代理回合的執行器。隨附兩種：**Control Center（內建）**——與模型供應商溝通的行程內 harness——以及透過 `claude -p` 執行的 **Claude Code**。Cursor、Codex、Anthropic、OpenAI 及其他全都是內建配接器上的供應商，而不是各自獨立的 CLI。參見[管理配接器與模型](/zh-TW/手冊/操作指南/配接器/)。
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**：依工作區記錄的已安裝技能清單：每項技能的來源儲存庫、儲存庫內路徑、固定所在的提交，以及一個彙總的內容雜湊。安裝、更新與解除安裝都會讓它保持最新；`verify_skills` 會拿它與磁碟核對。
 
-**AgentCapabilities**：四個旗標（推送至儲存庫、GitHub API、工單、網路對外連線），在派送時解析——先取代理預設值 → 再取使用者預設值，並可依對話覆寫。以「缺少即表示停用」來強制執行：某項能力一旦停用，對應的權杖或對外連線就根本不會被注入。
+**代理執行閘道**：`cc_server` 上的一個回送端點，在代理的沙箱內套用動作原則。代理發起的每一次 GitHub 推送都會被導到這裡，依**推送到遠端**規則檢查，再以代理從不持有的寫入權杖轉送；Claude Code 的 `Bash` 命令則經由同一端點上的鉤子檢查。參見[沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)。
 
 **模式**：`chat`、`plan`、`review` 或 `orchestrate`。**依空間**儲存，因此同一個代理可以在不同空間處於不同模式；空間中的每段對話都共用它。它控管系統提示詞、沙箱寫入規則與 MCP 工具允許清單。輸入區只提供 `chat`、`plan` 與 `orchestrate`；`chat` 標示為「代理」。
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**：管理沙箱生命週期（探測、啟動、事件、exec、銷毀）。
 
-**CredentialBrokerPort**：為沙箱啟動鑄造受作用域限定、受能力閘控的憑證，並在拆除時撤銷它們。
+**CredentialBrokerPort**：為沙箱啟動鑄造受作用域限定的憑證——代理環境中為唯讀，寫入權限僅用於伺服器端的推送路徑——並在拆除時撤銷它們。
 
 **GitRepoInspectorPort**：從本機 Git 儲存庫路徑擷取中繼資料（owner、repo、branch）。
 

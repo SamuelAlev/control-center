@@ -2612,15 +2612,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get allow => '許可';
 
   @override
-  String get allowGitPush => 'git push を許可';
-
-  @override
-  String get allowGithubApi => 'GitHub API の呼び出しを許可';
-
-  @override
-  String get allowNetwork => '一般的なネットワークアクセスを許可';
-
-  @override
   String get apiKeys => 'API キー';
 
   @override
@@ -3014,9 +3005,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get currentParticipants => '現在の参加者';
 
   @override
-  String get customCapabilitiesDescription => 'カスタム機能の説明';
-
-  @override
   String get customSystemPrompt => 'このエージェントのカスタムシステムプロンプト...';
 
   @override
@@ -3032,9 +3020,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deactivate => '無効化';
-
-  @override
-  String get defaultCapabilities => 'デフォルトの機能 · 新しいスペース';
 
   @override
   String get defaultChat => 'デフォルトチャット';
@@ -3433,9 +3418,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get forward => '進む';
 
   @override
-  String get gatesGithubPatPush => 'GitHub PATの注入をゲートします。エージェントがプッシュするために必要です。';
-
-  @override
   String get general => '一般';
 
   @override
@@ -3500,6 +3482,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => '停止';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'サービスのステータス';
@@ -3951,6 +3938,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get navSettings => '設定';
+
+  @override
+  String get exitSettings => '設定を終了';
 
   @override
   String networkBlockCount(int count) {
@@ -4451,9 +4441,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get react => 'リアクション';
 
   @override
-  String get readPrsIssuesMetadata => 'エージェントがPR、Issue、リポジトリのメタデータを読めるようにします。';
-
-  @override
   String get readerPreferences => 'リーダー設定';
 
   @override
@@ -4704,9 +4691,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'macOSではネイティブサンドボックスが組み込まれています。Apple Seatbelt（`sandbox-exec`）を使用します。インストールは不要です。';
-
-  @override
-  String get sandboxPermissions => 'サンドボックスの権限';
 
   @override
   String get sandboxUnsupported =>
@@ -5287,9 +5271,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get useSandbox => 'サンドボックスを使用';
 
   @override
-  String get useWorkspaceDefault => 'ワークスペースのデフォルトを使用';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5329,9 +5310,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weakIsolationDescription => '弱い分離 — 名前空間の境界のみで、カーネル境界はありません。';
-
-  @override
-  String get whenOffNoDefaultRoute => 'オフの場合、サンドボックスはデフォルトルートなしで起動します。';
 
   @override
   String get whenOffServerStaysStopped => 'オフの場合、サーバーは起動するまで停止したままです。';
@@ -6522,13 +6500,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pipelineRunNoRepos => 'このワークスペースにはまだリポジトリがありません。';
 
   @override
-  String get allowTicketingApi => 'チケット API の呼び出しを許可';
-
-  @override
   String get ticketingApiKey => 'チケット API キー';
-
-  @override
-  String get ticketingApiKeySubtitle => 'チケットプロバイダーの API キーをサンドボックスに注入します。';
 
   @override
   String get ticketingProvider => 'チケットプロバイダー';
@@ -8850,28 +8822,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keepAwakeOffSubtitle => 'エージェントの作業中でもコンピューターがスリープすることがあります';
-
-  @override
-  String get syncEngineSectionTitle => '同期エンジン';
-
-  @override
-  String get syncEngineDescription =>
-      'チケット、メッセージ、ノートは、フルスナップショットではなく小さな増分変更でライブ更新されます。トグルをオフにすると、そのストアはフルスナップショットモードに戻ります。変更を反映するにはアプリを再読み込みしてください。';
-
-  @override
-  String get syncEngineTicketsTitle => 'チケット';
-
-  @override
-  String get syncEngineMessagingTitle => 'メッセージ';
-
-  @override
-  String get syncEngineNotesTitle => 'ノート';
-
-  @override
-  String get syncEngineOnSubtitle => 'ライブ差分同期が有効です';
-
-  @override
-  String get syncEngineOffSubtitle => 'フルスナップショット同期を使用しています';
 
   @override
   String get spaces => 'スペース';
@@ -12715,23 +12665,19 @@ class AppLocalizationsJa extends AppLocalizations {
       '任意 — 空欄のままにするとタイトルモデルが自動的に名前を付けます';
 
   @override
-  String get conversationTitlesSectionTitle => '会話タイトル';
+  String get shortTaskOff => 'オフ';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'このワークスペースで新しい会話に自動的に名前を付けるランナーを選択します。アダプターを選択するまでタイトルはオフで、設定は全メンバーに適用されます。';
+  String get shortTaskUnavailable => '使用するには、設定 → アダプターで短いタスク用のモデルを選んでください';
 
   @override
-  String get conversationTitlesModelLabel => 'タイトルモデル';
+  String get conversationTitleGenerate => '生成';
 
   @override
-  String get conversationTitlesAdapterLabel => 'アダプター';
+  String get conversationTitleNoMessages => 'まずメッセージを送信してください。タイトルはそこから生成されます。';
 
   @override
-  String get conversationTitlesAdapterHint => 'オフ';
-
-  @override
-  String get conversationTitlesAdapterOff => 'オフ';
+  String get conversationTitleGenerateFailed => 'タイトルを生成できませんでした。もう一度お試しください。';
 
   @override
   String get startThread => 'スレッドを開始';
@@ -12893,6 +12839,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => '会話';
+
+  @override
+  String get contextSegmentRunner => 'ランナーのプロンプト・ツール・ターン内の作業';
+
+  @override
+  String get contextUsageMeasured => 'モデルの最後の呼び出しで報告された値';
+
+  @override
+  String get contextUsageEstimated => '実行が使用量を報告するまでの推定値';
 
   @override
   String get contextExplorerTitle => 'コンテキスト';
@@ -13267,12 +13222,15 @@ class AppLocalizationsJa extends AppLocalizations {
       'エージェントのプロセスとファイル書き込みが実際に行われる場所です。';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      '「自動」はこのホストが対応する最も強いものを選びます。勝手に変わらないように固定してください。';
+  String get sandboxGroupAgentActions => 'エージェントに許可される操作';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      '境界に開けられた穴です。それぞれが、隔離されたエージェントが外の世界に対してまだできることです。';
+  String get sandboxGroupAgentActionsDescription =>
+      'プッシュ、プルリクエストの作成、ネットワークへのアクセスを許可するか、確認するか、拒否するかは、エージェントの権限で設定します。';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      '「自動」はこのホストが対応する最も強いものを選びます。勝手に変わらないように固定してください。';
 
   @override
   String get sandboxSummaryInForce => '有効';
@@ -13413,6 +13371,26 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'サーバーのターミナルでこれを実行してください。ブラウザが開いてログインが完了し、資格情報がこのアカウントのディレクトリに書き込まれます。';
+
+  @override
+  String get claudeAccountLongLivedToken => '長期トークン';
+
+  @override
+  String get claudeAccountUseLongLivedToken => '長期トークンを使う';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => '長期トークンを置き換える';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => '長期トークンを削除';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      '通常のサインインは更新が必要で、一晩で期限切れになることがあります。長期トークンは約 1 年間サインインしたままです。ターミナルでこのコマンドを実行し、ブラウザーで完了してから、表示されたトークンを貼り付けてください。';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'これは claude setup-token のトークンではありません。トークンは sk-ant-oat01- で始まります。';
 
   @override
   String get claudeAccountSignedOut => 'サインアウト済み';
@@ -13833,9 +13811,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'デフォルトアプリで開く';
-
-  @override
-  String get asideUnavailable => '使用するには、ワークスペース設定でワンショットモデルを設定してください';
 
   @override
   String get asideEmpty => 'まだ作業元がありません';
@@ -14365,6 +14340,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get credentialGateOpenSettings => '設定を開く';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      '割り当てた Claude Code アカウントは削除されています';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'このエージェントまたはワークスペースのアカウント設定で別のアカウントを割り当てるか、リストをクリアして既定のアカウントを使ってください。実行は自動的に再開します。';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'このリストのアカウントはすべてサーバーから削除されています。別のアカウントを割り当てるか、リストをクリアしてください。';
+
+  @override
+  String get accountPoolClear => 'リストをクリア';
+
+  @override
   String get selectModel => 'モデルを選択';
 
   @override
@@ -14787,6 +14777,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get ideQuickOpenDescription => '会話のファイルを名前で検索してタブで開きます';
+
+  @override
+  String get prQuickOpenDescription => 'プルリクエストのファイルを名前で検索してタブで開きます';
 
   @override
   String get ideQuickOpenHint => 'ファイル名で検索';

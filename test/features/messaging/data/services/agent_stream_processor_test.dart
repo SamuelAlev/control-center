@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
+import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart'
+    show AccountPoolOrder;
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
@@ -282,7 +284,7 @@ class _FakeAgentDispatchService implements AgentDispatchService {
   get adapterLaunchOverrides => null;
 
   @override
-  Future<List<String>?> Function({
+  Future<AccountPoolOrder> Function({
     String? workspaceId,
     String? agentId,
     required String providerId,

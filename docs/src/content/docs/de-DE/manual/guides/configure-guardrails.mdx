@@ -2,7 +2,7 @@
 title: Schutzregeln konfigurieren
 description: Setze Regeln für Zulassen, Zuerst fragen und Verweigern bei Agentenaktionen, prüfe sie mit „Was wäre wenn?“ und stelle die Autonomie je Bereich ein.
 slug: de-DE/handbuch/anleitungen/schutzregeln-konfigurieren
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Diese Anleitung zeigt, wie du Schutzregeln konfigurierst: die Regeln, die
@@ -138,11 +138,13 @@ die Fassung in der App: je Effektklasse sagt sie, ob jeder Runner sie an der
 Richtlinienkontrolle fängt, sie der Sandbox überlässt oder sie gar nicht
 abfangen kann.
 
-- **Der Adapter Claude Code** ist an seinen eigenen Werkzeugaufrufen nicht
-  durch ein Tor gebunden. Claude Code wird mit `--dangerously-skip-permissions`
-  gestartet, deshalb laufen seine Aufrufe zum Lesen, Schreiben, Bearbeiten und
-  für die Shell nie durch die Schutzregel. Was bei diesem Adapter durch das
-  Tor läuft, ist die MCP-Werkzeugfläche, in die er zurückruft, und der
+- **Der Adapter Claude Code** ist an seinen eigenen Werkzeugaufrufen nur zum
+  Teil durch ein Tor gebunden. Claude Code wird mit
+  `--dangerously-skip-permissions` gestartet, deshalb laufen seine Aufrufe zum
+  Lesen, Schreiben und Bearbeiten nie durch die Schutzregel. Seine
+  Shell-Befehle erreichen sie über einen Hook, der die Befehlszeile einordnet,
+  und seine Pushes laufen wie die jedes Agenten durch das Push-Gateway. Durch
+  das Tor laufen außerdem die MCP-Werkzeugfläche, in die er zurückruft, und der
   Shell-Befehl, mit dem Control Center ihn startet.
 - **Das eigene Ausgabe-Verb eines Modus** (`submit_plan`,
   `propose_orchestration`) ist fest verankert und lässt sich nie verweigern —

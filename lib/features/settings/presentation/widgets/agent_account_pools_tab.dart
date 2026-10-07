@@ -1,22 +1,21 @@
-import 'package:cc_data/cc_data.dart' show RpcAccountPoolsRepository;
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
-import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
-import 'package:cc_domain/features/subscriptions/subscriptions.dart';
-import 'package:cc_harness/provider.dart' show HarnessProviderInfo;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/account_pool_editor.dart';
-import 'package:control_center/features/settings/presentation/widgets/harness_rotation_editor.dart';
+import 'package:control_center/features/settings/presentation/widgets/account_pool_lanes.dart';
 import 'package:control_center/features/settings/providers/account_pool_providers.dart';
-import 'package:control_center/features/settings/providers/claude_account_providers.dart';
-import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
-import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Which account lane an agent's runner draws its credential from.
+/// Which family of account-pool lanes an agent's runner draws its credential
+/// from.
+///
+/// The ONLY runner-specific thing about account pools on the client: a new
+/// runner maps its transport here and every pool surface — this tab, its
+/// visibility, the editor — follows. A new harness provider needs nothing.
 enum AccountLane {
   /// The Claude Code CLI, which signs in as one of the host's `claude` logins.
   claudeCode,
@@ -25,7 +24,15 @@ enum AccountLane {
   harness,
 
   /// A runner that owns its own credential, with nothing here to rotate.
-  none,
+  none;
+
+  /// Whether the pool lane [lane] (from [AccountPoolLanes]) is one this
+  /// runner draws from.
+  bool covers(String lane) => switch (this) {
+    AccountLane.claudeCode => lane == AccountPoolLanes.claudeCode,
+    AccountLane.harness => AccountPoolLanes.harnessProviderOf(lane) != null,
+    AccountLane.none => false,
+  };
 }
 
 /// The lane the runner [adapterId] names draws its credential from.
@@ -49,6 +56,23 @@ AccountLane accountLaneForAdapter(String? adapterId) {
 AccountLane accountLaneFor(Agent agent) =>
     accountLaneForAdapter(agent.adapterId);
 
+/// The pool lanes [agentId]'s runner draws from whose editor has something to
+/// show — the agent tab's contents, and whether it exists at all.
+List<AccountPoolLaneView> watchAgentPoolLanes(
+  WidgetRef ref, {
+  required String agentId,
+  required AccountLane lane,
+}) => [
+  for (final view in watchAccountPoolLanes(ref))
+    if (lane.covers(view.lane) &&
+        watchAccountPoolEditorVisible(
+          ref,
+          AccountPoolScope(lane: view.lane, agentId: agentId),
+          view.ids,
+        ))
+      view,
+];
+
 /// Per-agent account pools — this agent's override of the workspace's.
 /// Nothing is written until the operator changes something, so an agent that never opens
 /// this tab keeps resolving through the workspace exactly as before.
@@ -70,18 +94,9 @@ class AgentAccountPoolsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final claude = lane == AccountLane.claudeCode
-        ? ref.watch(claudeAccountsProvider).asData?.value ?? const []
-        : const <ClaudeAccountView>[];
-    final rotatable = lane == AccountLane.harness
-        ? ref.watch(rotatableHarnessProvidersProvider)
-        : const <HarnessProviderInfo>[];
-    final usage = lane == AccountLane.harness
-        ? ref.watch(subscriptionUsageProvider).value ??
-              const <SubscriptionUsage>[]
-        : const <SubscriptionUsage>[];
+    final lanes = watchAgentPoolLanes(ref, agentId: agentId, lane: lane);
 
-    if (claude.length < 2 && rotatable.isEmpty) {
+    if (lanes.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: CcEmptyState(
@@ -99,66 +114,15 @@ class AgentAccountPoolsTab extends ConsumerWidget {
           style: TextStyle(fontSize: 12, color: t.fgSecondary),
         ),
         const SizedBox(height: AppSpacing.lg),
-        if (claude.length > 1) ...[
-          _Heading(label: l10n.claudeAccountsTitle),
+        for (final view in lanes) ...[
           AccountPoolEditor(
-            scope: AccountPoolScope(
-              lane: RpcAccountPoolsRepository.claudeLane,
-              agentId: agentId,
-            ),
-            candidates: [
-              for (final v in claude)
-                AccountPoolCandidate(
-                  id: v.account.id,
-                  label: v.account.label,
-                  detail: v.account.subtitle,
-                  unavailable: !v.account.loggedIn || v.account.isRateLimited(),
-                  unavailableReason: !v.account.loggedIn
-                      ? l10n.accountPoolSignedOut
-                      : null,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-        ],
-        for (final p in rotatable) ...[
-          _Heading(label: p.displayName),
-          AccountPoolEditor(
-            scope: AccountPoolScope(
-              lane: RpcAccountPoolsRepository.harnessLane(p.id),
-              agentId: agentId,
-            ),
-            candidates: harnessRotationCandidates(
-              info: p,
-              l10n: l10n,
-              usage: usage,
-            ),
+            scope: AccountPoolScope(lane: view.lane, agentId: agentId),
+            candidates: view.candidates(l10n),
+            title: view.title(l10n),
           ),
           const SizedBox(height: AppSpacing.xl),
         ],
       ],
-    );
-  }
-}
-
-class _Heading extends StatelessWidget {
-  const _Heading({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: t.fgPrimary,
-        ),
-      ),
     );
   }
 }

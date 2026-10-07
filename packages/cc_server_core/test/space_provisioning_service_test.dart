@@ -259,6 +259,43 @@ void main() {
   });
 
   test(
+    'a stopped run that unwinds after a Retry does not fail the Retry',
+    () async {
+      workspaceRepo.repos = [_repo('r1')];
+      messagingRepo.participants = [_participant('a1')];
+      agentRepo.agents = {'a1': _agent('a1')};
+      provisioner.gated = true;
+      final service = buildSut();
+
+      // The first run is mid-copy when the operator stops it, and the copy
+      // keeps going; Retry is pressed before it finishes.
+      final stopped = service.provision(workspaceId: 'ws', spaceId: 'ch');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await service.cancel(workspaceId: 'ws', spaceId: 'ch');
+      final retry = service.provision(workspaceId: 'ws', spaceId: 'ch');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(provisioner.gates, hasLength(2));
+      final retryStartedAt = statusCalls.length;
+
+      // The stopped run finishes with nothing on disk...
+      provisioner.gates[0].complete();
+      await stopped;
+      // ...then the Retry materializes the worktree.
+      isolatedRepoRepo.worktrees = [_worktree('r1')];
+      provisioner.gates[1].complete();
+      await retry;
+
+      final afterRetry = statusCalls.skip(retryStartedAt).map((c) => c.$2);
+      expect(
+        afterRetry,
+        isNot(contains(SpaceProvisioningStatus.failed)),
+        reason: 'the run the Retry replaced must not report on its behalf',
+      );
+      expect(statusCalls.last, ('ch', SpaceProvisioningStatus.ready));
+    },
+  );
+
+  test(
     'flips to failed when provisioning exceeds the watchdog timeout',
     () async {
       workspaceRepo.repos = [_repo('r1')];
@@ -357,6 +394,12 @@ class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
   bool hang = false;
   final Completer<void> _hangGate = Completer<void>();
 
+  /// When set, every call parks on its own gate in [gates] until the test
+  /// releases it — and cancelling does NOT release it, the way a CoW copy
+  /// already under way finishes before a stop is noticed.
+  bool gated = false;
+  final gates = <Completer<void>>[];
+
   /// Repo names to report through `onRepoProvision` (as materializing on the
   /// base branch) when called.
   List<String> reportRepoNames = const [];
@@ -381,6 +424,11 @@ class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
     CancellationToken? cancel,
   }) async {
     calls++;
+    if (gated) {
+      final gate = Completer<void>();
+      gates.add(gate);
+      await gate.future;
+    }
     if (hang) {
       await _hangGate.future;
       if (isSpaceProvisioningCancelled(workspaceId, spaceId)) {

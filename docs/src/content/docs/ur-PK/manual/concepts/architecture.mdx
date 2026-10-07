@@ -3,7 +3,7 @@ title: آرکیٹیکچر
 description: Control Center کی ساخت کیسی ہے — تھن-کلائنٹ سرور ماڈل، فیچر-فرسٹ کلین آرکیٹیکچر اور پورٹس اینڈ اڈاپٹرز کے ساتھ۔
 dateModified: 2026-09-19
 slug: ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## جائزہ
@@ -58,7 +58,7 @@ feature_name/
 - بنیادی اینٹٹیز: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - شناخت اور ملٹی پلیئر: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - میموری اینٹٹیز: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- مشترکہ ویلیو آبجیکٹس: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- مشترکہ ویلیو آبجیکٹس: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - مشترکہ پورٹس: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - ڈومین سروسز: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + ایونٹ کی اقسام (ورک اسپیس/ایجنٹ، PR/ریویو، میسجنگ، ٹکٹنگ، پائپ لائن، آرکیسٹریشن، میموری، کیلنڈر/میٹنگز، شناخت اور رکنیت، آبزرویبیلٹی)

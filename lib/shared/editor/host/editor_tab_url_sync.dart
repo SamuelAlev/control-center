@@ -1,6 +1,7 @@
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 
 /// Two-way sync helpers between an [EditorLayoutController]'s focused tab and
 /// the `?tab=` query param of a tabbed detail surface (space conversation,
@@ -17,9 +18,17 @@ import 'package:flutter/services.dart';
 const String editorTabQueryParam = 'tab';
 
 /// A tab's URL identity: its [EditorTab.dedupKey] when it has one, else its
-/// kind. The kind fallback is ambiguous between same-kind siblings (e.g. two
-/// terminals), but still restores *a* tab of that kind.
+/// kind. The kind fallback is ambiguous between same-kind siblings, so a kind
+/// that can stack (terminals, web browsers) mints a per-tab key with
+/// [instanceTabKey]; only singleton kinds and tabs restored from a layout
+/// saved before that rely on the fallback.
 String editorTabKey(EditorTab tab) => tab.dedupKey ?? tab.kind;
+
+/// A fresh, unique `?tab=` key for one tab of a stackable [kind] — a terminal
+/// or web browser, where every open is a new tab rather than a refocus. Being
+/// a dedup key, it also persists with the layout, so the link survives a
+/// restart.
+String instanceTabKey(String kind) => '$kind:${const Uuid().v4()}';
 
 /// The URL key of the focused tab — the selected tab of the active leaf — or
 /// null when the active leaf holds no tabs.
@@ -31,11 +40,14 @@ String? activeEditorTabKey(EditorLayoutController layout) {
   return editorTabKey(controller.tabs[controller.selectedIndex]);
 }
 
-/// Focuses the first tab (across all leaves) whose [editorTabKey] is [key].
-/// Returns false when no open tab matches — a stale key (the tab was closed
-/// since the URL was written) degrades to leaving the current selection.
+/// Focuses the first tab (across all leaves) whose [editorTabKey] is [key],
+/// else — for a bare-kind key written before that kind minted per-tab keys —
+/// the first tab of that kind. Returns false when no open tab matches: a stale
+/// key (the tab was closed since the URL was written) degrades to leaving the
+/// current selection.
 bool focusEditorTabByKey(EditorLayoutController layout, String key) =>
-    layout.focusTab((t) => editorTabKey(t) == key);
+    layout.focusTab((t) => editorTabKey(t) == key) ||
+    layout.focusTab((t) => t.kind == key);
 
 /// [current] as a navigable location with the `?tab=` param set to [key]
 /// (removed when null), every other query param preserved.

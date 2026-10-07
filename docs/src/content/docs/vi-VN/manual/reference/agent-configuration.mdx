@@ -2,7 +2,7 @@
 title: Cấu hình agent
 description: Mọi trường trên thực thể agent và các enum mà nó dùng.
 slug: vi-VN/so-tay/tham-chieu/cau-hinh-agent
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Trang tham chiếu này liệt kê mọi trường trên thực thể agent, cùng các enum và cờ mà nó dùng. Để xem hướng dẫn từng bước về cách tạo hoặc chỉnh sửa một agent trong ứng dụng, xem [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/).
@@ -26,7 +26,6 @@ Trang tham chiếu này liệt kê mọi trường trên thực thể agent, cù
 | `effort`                | `String?`              | Không    | Id mức suy luận (ví dụ `'low'`, `'xhigh'`), lấy từ `thinkingLevels` của mô hình được chọn                                                                                                           |
 | `contextSize`           | `int?`                 | Không    | Kích thước tối đa của cửa sổ ngữ cảnh                                                                                                                                                               |
 | `role`                  | `AgentRole?`           | Không    | Vai trò agent                                                                                                                                                                                       |
-| `capabilities`          | `AgentCapabilities?`   | Không    | Giá trị mặc định về khả năng theo từng agent; khi null thì mặc định ở cấp người dùng được áp dụng lúc điều phối, và một cuộc hội thoại vẫn có thể ghi đè                                              |
 | `monthlyBudgetCents`    | `int`                  | Không    | Mức trần chi tiêu hàng tháng tính bằng cent (mặc định `0`, không giới hạn)                                                                                                                          |
 | `silenceTimeoutMinutes` | `int?`                 | Không    | Ghi đè thời gian hết hạn im lặng tính bằng phút; phải là null hoặc trong khoảng 1–240 (được assert trong hàm khởi tạo)                                                                               |
 | `maxConcurrentTasks`    | `int`                  | Không    | Mặc định `1`. Con số năng lực mà mô hình hiện diện báo cáo (số lượt chạy đang chạy và đang xếp hàng được đối chiếu với nó)                                                                           |
@@ -68,18 +67,9 @@ mặc định `0` của `monthlyBudgetCents` nghĩa là không giới hạn. Hã
 | `paused`   | Được đặt bởi cơ chế dừng cứng ngân sách. Hiển thị trên danh sách hiện diện; việc điều phối vẫn nhận công việc |
 | `archived` | Đã nghỉ và bị ẩn khỏi các danh sách hiện diện đang hoạt động                                     |
 
-## Các cờ AgentCapabilities
+## Quyền hạn
 
-Được phân giải theo từng lần điều phối: mặc định của agent, quay về mặc định cấp người dùng khi null, và đè lên trên là ghi đè theo từng cuộc hội thoại. Được thi hành bằng sự vắng mặt — broker thông tin xác thực đơn giản là không phát hành hay chèn những gì một khả năng bị tắt bao phủ.
-
-| Cờ                 | Kiểu   | Mặc định | Mô tả                                                                                    |
-| ------------------ | ------ | -------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`  | Đẩy commit lên remote; chi phối việc chèn token GitHub cùng với `canCallGitHubApi`        |
-| `canCallGitHubApi` | `bool` | `false`  | Gọi api.github.com; chi phối việc chèn `GH_TOKEN` và các tên miền mạng ra của GitHub      |
-| `canCallTicketing` | `bool` | `false`  | Gọi API của nhà cung cấp phiếu; chi phối việc chèn khóa API của nhà cung cấp và các tên miền mạng ra của nó |
-| `canAccessNetwork` | `bool` | `true`   | Lưu lượng mạng ra ngoài tùy ý. Cũng chi phối các công cụ `web_fetch` và `web_search` của harness |
-
-`AgentCapabilities.safeDefault` là cả bốn giá trị mặc định của hàm khởi tạo. `legacyDefault` (cả bốn đều true) chỉ được dùng bởi đợt migration đã điền bù cho các cuộc hội thoại được tạo trước khi khả năng tồn tại. Một blob đã lưu bị hỏng hoặc rỗng sẽ phân giải về `safeDefault`; khóa cũ `canCallLinear` được đọc như `canCallTicketing`.
+Agent không mang cờ quyền hạn nào. Push, mở và xuất bản pull request, ghi vào tracker và egress mạng là các lớp hành động (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) mà [rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) phân giải ở phạm vi không gian làm việc, agent hoặc space. Token GitHub của một lượt chạy luôn chỉ có phạm vi đọc; các lần push đi qua cổng lượt chạy agent, nơi hỏi quy tắc `gitPush` trước khi chuyển tiếp.
 
 ## AgentSkills
 

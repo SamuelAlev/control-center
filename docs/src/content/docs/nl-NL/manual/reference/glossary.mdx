@@ -2,7 +2,7 @@
 title: Verklarende woordenlijst
 description: Definities van de kernbegrippen die in Control Center worden gebruikt.
 slug: nl-NL/handleiding/referentie/woordenlijst
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'Een AI-medewerker met een identiteit, rol, skills en mogelijkheden. Hoort bij precies één werkruimte. De primaire actor in het systeem.'],
+['Agent', 'Een AI-medewerker met een identiteit, rol, skills en een adapter. Hoort bij precies één werkruimte. De primaire actor in het systeem.'],
 ['Adapter', 'De runner die een agentturn uitvoert. Er worden er twee meegeleverd: Control Center (built-in) — de harness in het proces die met modelaanbieders praat — en Claude Code via de claude CLI. Cursor, Codex en de andere modelaanbieders hangen aan de ingebouwde adapter, niet als aparte runners.'],
 ['Werkruimte', 'De isolatietennant op het hoogste niveau. Bundelt agenten, repo\'s, ruimtes, tickets, geheugen en pipelines. Isolatie is structureel, niet louter conventie: elke werkruimte heeft zijn eigen SQLite-bestand, dus een leesactie over werkruimtes heen compileert niet. Elke route in de app begint met /workspaces/:workspaceId.'],
 ['Forge', 'Een codehost — GitHub, GitLab of Bitbucket Cloud. Een eigenschap van elke repo, bij registratie uitgelezen uit zijn origin-remote. Eén werkruimte kan repo\'s op alle drie huisvesten.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Hoofdletterongevoelige set van skill-id\'s die op het moment van dispatch relevante context in prompts injecteert.'],
 ['Skillbron', 'Een GitHub-repository die per werkruimte als skillcatalogus is geregistreerd. Wantrouwig van opzet: de metadata van de repository is alleen ter weergave en elke installatie passeert de fail-closed scanpoort voordat er inhoud op schijf of in een prompt belandt.'],
 ['skills-lock.json', 'Het manifest per werkruimte van geïnstalleerde skills: voor elk ervan de bronrepository, het pad in de repo, de commit waaraan het is vastgezet en een samengevatte contenthash. Installaties, updates en de-installaties houden het actueel; verify_skills controleert het tegen de schijf.'],
-['AgentCapabilities', 'Vier vlaggen (push naar de repo, GitHub API, ticketing, netwerkuitgang) die per dispatch worden bepaald: eerst de standaard van de agent, dan de standaard van de gebruiker, met een override per gesprek. Gehandhaafd door afwezigheid, want een uitgeschakelde mogelijkheid betekent dat het token of de uitgang simpelweg nooit wordt geïnjecteerd.'],
+['Agentrun-gateway', 'Een loopback-eindpunt op cc_server dat het actiebeleid binnen de sandbox van een agent toepast. Elke GitHub-push van een agent wordt erheen geleid, getoetst aan de regel Naar een remote pushen en doorgestuurd met een schrijftoken dat de agent nooit in handen heeft; de Bash-opdrachten van Claude Code worden via een hook op hetzelfde eindpunt gecontroleerd.'],
 ['Modus', 'chat, plan, review of orchestrate. Per ruimte opgeslagen, dus één agent kan in verschillende ruimtes in verschillende modi staan; elk gesprek in een ruimte deelt de modus. Bepaalt de systeemprompt, de schrijfregels van de sandbox en de allowlist met MCP-tools.'],
 ['SandboxBackend', 'microvm (een afgesloten VM — de enige backend met een kernelgrens, toegepast op interactieve terminals), native (OS-eigen Seatbelt op macOS, bubblewrap op Linux en WSL2) of none. Wordt één keer bij het opstarten geprobeerd; native omhult agentdispatch wanneer die beschikbaar is. Windows heeft geen native backend en Linux vereist bwrap plus socat, dus runs daar worden niet omhuld; --sandbox off kiest daar bewust voor om het uit te zetten.'],
 ['Rig', 'Een wegwerpmachine die een agent in realtime aanstuurt: een afgesloten browser of Linux-desktop, een door de host beheerde Android-emulator of iOS Simulator, of een afgesloten terminal. Live bekeken via zijn eigen baan op volledige resolutie, met overname die server-side wordt afgedwongen. Gebonden aan een gesprek, zodat het menselijke tabblad en de agenttool één machine aanspreken.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in centen) voor één agentrun.'],
 ['WakeReason', 'Waarom een agent is gedispatcht. Zes waarden: gebruikersbericht, tickettoewijzing, hersteldispatch na een fout, kindticket afgerond, geplande vervolghartslag en pipelinestap.'],
 ['SandboxPort', 'Beheert de levenscyclus van de sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Geeft begrensde, aan mogelijkheden gebonden inloggegevens uit voor het starten van een sandbox en trekt ze bij het opruimen weer in.'],
+['CredentialBrokerPort', 'Geeft begrensde inloggegevens uit voor het starten van een sandbox (alleen leesrechten voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server) en trekt ze bij het opruimen weer in.'],
 ['GitRepoInspectorPort', 'Haalt metadata (owner, repo, branch) op uit een lokaal Git-repopad.'],
 ['EmbeddingPort', 'Produceert tekstembeddings met eenheidsnorm voor semantisch zoeken.'],
 ['NotificationPort', 'Toont native desktopmeldingen en respecteert de filtering op categorie en route.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Kernentiteiten
 
-**Agent**: Een AI-medewerker met een identiteit, rol, skills en mogelijkheden. Hoort bij precies één werkruimte. De primaire actor in het systeem.
+**Agent**: Een AI-medewerker met een identiteit, rol, skills en een adapter. Hoort bij precies één werkruimte. De primaire actor in het systeem.
 
 **Adapter**: De runner die een agentturn uitvoert. Er worden twee meegeleverd: **Control Center (built-in)** — de harness in het proces die met modelaanbieders praat — en **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI en de rest zijn aanbieders op de ingebouwde adapter, geen aparte CLI's. Zie [Adapters en modellen beheren](/nl-NL/handleiding/gidsen/adapters/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Het manifest per werkruimte van geïnstalleerde skills: voor elk ervan de bronrepository, het pad in de repo, de commit waaraan het is vastgezet en een samengevatte contenthash. Installaties, updates en de-installaties houden het actueel; `verify_skills` controleert het tegen de schijf.
 
-**AgentCapabilities**: Vier vlaggen (push naar de repo, GitHub API, ticketing, netwerkuitgang) die per dispatch worden bepaald — eerst de standaard van de agent → de standaard van de gebruiker, met een override per gesprek. Gehandhaafd door afwezigheid: een uitgeschakelde mogelijkheid betekent dat het token of de uitgang simpelweg nooit wordt geïnjecteerd.
+**Agentrun-gateway**: Een loopback-eindpunt op `cc_server` dat het actiebeleid binnen de sandbox van een agent toepast. Elke GitHub-push van een agent wordt erheen geleid, getoetst aan de regel **Naar een remote pushen** en doorgestuurd met een schrijftoken dat de agent nooit in handen heeft; de `Bash`-opdrachten van Claude Code worden via een hook op hetzelfde eindpunt gecontroleerd. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
 
 **Modus**: `chat`, `plan`, `review` of `orchestrate`. **Per ruimte** opgeslagen, dus één agent kan in verschillende ruimtes in verschillende modi staan; elk gesprek in een ruimte deelt de modus. Bepaalt de systeemprompt, de schrijfregels van de sandbox en de allowlist met MCP-tools. De composer biedt alleen `chat`, `plan` en `orchestrate`; `chat` heeft het label “Agent”.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Beheert de levenscyclus van de sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Geeft begrensde, aan mogelijkheden gebonden inloggegevens uit voor het starten van een sandbox en trekt ze bij het opruimen weer in.
+**CredentialBrokerPort**: Geeft begrensde inloggegevens uit voor het starten van een sandbox — alleen leesrechten voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server — en trekt ze bij het opruimen weer in.
 
 **GitRepoInspectorPort**: Haalt metadata (owner, repo, branch) op uit een lokaal Git-repopad.
 

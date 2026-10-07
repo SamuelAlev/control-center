@@ -29,6 +29,41 @@ class AcpModelsService {
     return models;
   }
 
+  /// Claude Code's window when it is not told which model to use: its
+  /// default model runs at the standard window.
+  static const int claudeCodeDefaultContextWindow = 200000;
+
+  /// The window, in tokens, Claude Code runs [modelId] with — what the meter
+  /// measures against when the agent sets no context size of its own.
+  ///
+  /// Claude Code has no window flag: the window is a property of the model
+  /// id, and `[1m]` selects the long-context variant. Which one runs is the
+  /// operator's choice of model; nothing upgrades it.
+  ///
+  /// An id the catalog does not list (a dated snapshot, a newer release) is
+  /// read by its suffix: `[1m]` is the long window, anything else the
+  /// standard one.
+  static int claudeCodeContextWindow(String? modelId) {
+    if (modelId == null) {
+      return claudeCodeDefaultContextWindow;
+    }
+    return _claudeCodeWindowOf(modelId) ??
+        (modelId.endsWith(_longContextSuffix)
+            ? 1000000
+            : claudeCodeDefaultContextWindow);
+  }
+
+  static const String _longContextSuffix = '[1m]';
+
+  static int? _claudeCodeWindowOf(String modelId) {
+    for (final model in _claudeCodeCatalog) {
+      if (model.id == modelId) {
+        return model.contextWindow;
+      }
+    }
+    return null;
+  }
+
   static const Map<String, List<AcpModel>> _staticCatalog = {
     'claude-code': _claudeCodeCatalog,
   };

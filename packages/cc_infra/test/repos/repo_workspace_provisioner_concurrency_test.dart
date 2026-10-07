@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
@@ -100,6 +101,33 @@ void main() {
     );
   });
 
+  test(
+    'a Retry is not refused by the stop it cleared while the stopped copy '
+    'is still finishing',
+    () async {
+      // A CoW copy does not observe the token, so the stopped run stays in
+      // flight until the copy lands. A Retry in that window used to share the
+      // stopped run's cancelled token and give up before starting — every
+      // press "failed" in a second with no worktree on disk.
+      final copy = Completer<void>();
+      isolation.holdNext = copy;
+      final stopped = provision('_pr');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      provisioner.cancelSpaceProvisioning('ws-1', 'sp-1');
+
+      // What the space banner's Retry does before provisioning again.
+      provisioner.clearSpaceProvisioningCancellation('ws-1', 'sp-1');
+      final retry = provision('_pr');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      copy.complete();
+
+      expect(await stopped, '', reason: 'the stopped run still reports stop');
+      expect(await retry, isNot(''));
+      expect(registry.rows, hasLength(1));
+      expect(Directory(worktreePath()).existsSync(), isTrue);
+    },
+  );
+
   test('different repos of one space still materialize in parallel', () async {
     // The lock is per repo, not per space: serializing a whole space would turn
     // a ten-repo workspace into a queue.
@@ -143,6 +171,10 @@ class _RaceyIsolation implements RepoIsolationPort {
   final List<String> provisioned = [];
   final List<String> destroyed = [];
 
+  /// Parks the next provision mid-copy until completed — without observing
+  /// the cancel token meanwhile, as a real CoW copy does not.
+  Completer<void>? holdNext;
+
   @override
   bool get isCowAvailable => true;
 
@@ -165,6 +197,13 @@ class _RaceyIsolation implements RepoIsolationPort {
     // Yield, so an unserialized second caller gets in before the row lands.
     await Future<void>.delayed(Duration.zero);
     Directory(path).createSync(recursive: true);
+    final hold = holdNext;
+    if (hold != null) {
+      holdNext = null;
+      await hold.future;
+      // Noticed only once the copy is done, as the rift adapter does.
+      cancel?.throwIfCancelled();
+    }
     await Future<void>.delayed(Duration.zero);
     provisioned.add(path);
     return RepoIsolationResult(path: path, backend: RepoIsolationBackend.rift);

@@ -2,13 +2,13 @@
 title: Backendy sandboxu
 description: Backendy sandboxu, kde se uplatňují, a každý hodnotový objekt, který runtime sandboxu používá.
 slug: cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Jestli je běh v sandboxu, záleží na hostiteli]
 `cc_server` hostitele při startu jednou osondá a odeslání agenta obalí nativním backendem, když sonda hlásí, že nějaký je k dispozici a `--sandbox` není `off`. Obalí se oba švy odeslání: CLI Claude Code přes port sandboxu a ACP plus nástroj `bash` vestavěného harnessu přes správce sandboxu.
 
-Kde sonda nehlásí backend — **na Windows vždy** a na Linuxu nebo WSL2 bez `bwrap` a `socat` — běhy agenta v sandboxu **nejsou**. ACP a nástroj `bash` harnessu se pořád spouštějí s očištěním prostředí; Claude Code jde přes `NoSandboxAdapter` a dědí prostředí hostitele. Zbývající hranice jsou vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), pověření omezená schopnostmi, která broker vystaví pro každý start a při úklidu odebere, politika příkazů podle režimu, sjednocené [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) (selžou uzavřeně), očištění prostředí na cestách ACP a `bash` harnessu a plocha nástrojů, kterou režim dovolí.
+Kde sonda nehlásí backend — **na Windows vždy** a na Linuxu nebo WSL2 bez `bwrap` a `socat` — běhy agenta v sandboxu **nejsou**. ACP a nástroj `bash` harnessu se pořád spouštějí s očištěním prostředí; Claude Code jde přes `NoSandboxAdapter` a dědí prostředí hostitele. Zbývající hranice jsou vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), token forge jen pro čtení, který broker vystaví pro každý start a při úklidu odebere, pushe, které musí projít pravidlem pro push v bráně běhů agentů, politika příkazů podle režimu, sjednocené [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) (selžou uzavřeně), očištění prostředí na cestách ACP a `bash` harnessu a plocha nástrojů, kterou režim dovolí.
 
 Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search, find, search_files) jsou mimo sandbox na každém hostiteli: běží v procesu serveru, takže se obalí jen `bash`.
 :::
@@ -97,7 +97,7 @@ Bez sandboxu. Proces běží přímo na hostiteli s jeho souborovým systémem, 
 
 Terminál má vlastní pravidla sandboxu, ne ta ze sondy odeslání. `defaultBackend` u `TerminalSessionService` je `none` a `cc_server` ho nepřepisuje, takže relace terminálu spouští shell hostitele, dokud klient výslovně nepožádá o `native` — panel terminálu v aplikaci na počítači o to nežádá.
 
-Když je požadovaný `native`, shell se obalí přes `SandboxManager` pevným profilem terminálu: `$HOME` a pracovní adresář relace jsou zapisovatelné, síť je otevřená a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` a `~/Library/Keychains` mají zákaz čtení. Brána schopností se neuplatní — to řeší odeslání. Když obal není podporovaný, relace selže, místo aby na PTY shellu hostitele ukázala odznak nativního sandboxu.
+Když je požadovaný `native`, shell se obalí přes `SandboxManager` pevným profilem terminálu: `$HOME` a pracovní adresář relace jsou zapisovatelné, síť je otevřená a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` a `~/Library/Keychains` mají zákaz čtení. Token forge jen pro čtení a brána pro push se neuplatní — to řeší odeslání. Když obal není podporovaný, relace selže, místo aby na PTY shellu hostitele ukázala odznak nativního sandboxu.
 
 ## Odchozí síť
 
@@ -106,9 +106,9 @@ Když se sandbox spustí, odchozí přístup k síti vynucují proxy v procesu, 
 - Runtime sandboxu spouští HTTP/HTTPS proxy a SOCKS5 proxy na `127.0.0.1` uvnitř procesu `cc_server`, **jeden pár na každou omezenou relaci** (`http_proxy.dart`, `socks_proxy.dart`). Souběžné běhy pár nesdílejí.
 - Sandboxované procesy dostanou proměnné prostředí proxy (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP proxy, `ALL_PROXY` → SOCKS proxy; `GIT_SSH_COMMAND` vede git přes SSH skrz SOCKS proxy). Na Linuxu je síťový jmenný prostor nesdílený, takže proxy jsou jediná cesta ven; na macOS sandbox sdílí loopback hostitele a mluví s nimi přímo.
 - Cílový hostitel každého spojení se porovná se seznamem povolených domén relace; všechno ostatní se odmítne. Dva tvary zástupných znaků, každý s právě jednou `*`: úvodní `*.example.com` odpovídá libovolné subdoméně (včetně `a.b.example.com`), ale ne samotnému apexu; prostřední návěští `bedrock.*.amazonaws.com` odpovídá právě jednomu návěští (`bedrock.us-east-1.amazonaws.com`, ne `bedrock.evil.attacker.amazonaws.com`).
-- Seznam povolených se pro každou relaci sestaví z vybraného základu (`kBaselineAllowedDomains`: poskytovatelé LLM, hosting gitu, registry balíčků), plus domény GitHubu, když má agent schopnost GitHub nebo push, plus `SandboxSpec.egressAllowlist`. Resolver taky bere domény poskytovatele ticketů, když agent umí volat tickety, ale cesta odeslání ten seznam (ani další položky `egressAllowlist`) nikdy nepředá, takže v praxi každý běh dostane základ plus domény GitHubu, které mu schopnosti vynesou.
+- Seznam povolených se pro každou relaci sestaví z vybraného základu (`kBaselineAllowedDomains`: poskytovatelé LLM, hosting gitu, registry balíčků), plus domény GitHubu (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Cesta odeslání nikdy nepředá další položky `egressAllowlist`, takže v praxi každý běh dostane základ plus GitHub.
 - Pevný seznam zákazů (`kBaselineDeniedDomains`: endpointy metadat cloudu, cíle telemetrie) má přednost před všemi povoleními.
-- `networkEnabled: false` (nebo agent bez schopnosti sítě) proxy pro danou relaci pořád spustí, ale seznam povolených je prázdný, takže se každé odchozí spojení odmítne.
+- `networkEnabled: false` proxy pro danou relaci pořád spustí, ale seznam povolených je prázdný, takže se každé odchozí spojení odmítne. Odeslání hodnotu nastaví při startu běhu podle pravidla **Přístup k síti**: zakázat síť vypne, povolit a nejdřív se zeptat ji nechají zapnutou.
 
 ## SandboxSpec
 
@@ -120,11 +120,10 @@ Specifikace předaná do `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id vlastnicího pracovního prostoru                                                                                                    |
 | `agentId`         | `String?`                                   | Agent právě navázaný na sandbox, pokud nějaký je                                                                                      |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Připojení hostitel→host; sandbox vidí jen cesty hostitele uvedené tady                                                                |
-| `networkEnabled`  | `bool` (výchozí `true`)                     | Spojuje se se schopností sítě agenta. Když je vypnuté, proxy pro danou relaci se pořád spustí, ale seznam povolených je prázdný, takže se každé odchozí spojení odmítne |
-| `egressAllowlist` | `List<String>` (výchozí `[]`)               | Další povolené domény odchozího provozu; podporuje zástupné znaky (`*.example.com` a tvar s jedním prostředním návěštím). Odeslání tohle pole nikdy nenaplní, takže obalený běh dostane vybraný základ plus domény GitHubu, které mu schopnosti vynesou |
+| `networkEnabled`  | `bool` (výchozí `true`)                     | Nastaví ho odeslání podle pravidla pro odchozí síťový provoz (vypnuté jen tehdy, když vyjde zakázat). Když je vypnuté, proxy pro danou relaci se pořád spustí, ale seznam povolených je prázdný, takže se každé odchozí spojení odmítne |
+| `egressAllowlist` | `List<String>` (výchozí `[]`)               | Další povolené domény odchozího provozu; podporuje zástupné znaky (`*.example.com` a tvar s jedním prostředním návěštím). Odeslání tohle pole nikdy nenaplní, takže obalený běh dostane vybraný základ plus domény GitHubu |
 | `guestWorkdir`    | `String?`                                   | Výchozí pracovní adresář uvnitř sandboxu; jednotlivá volání `exec` ho umí přepsat                                                     |
 | `mode`            | `Mode` (výchozí `chat`)                     | Vykrajuje pravidla zápisu do souborového systému: `chat` nechává bind mounty zapisovatelné; `review`, `plan` a `orchestrate` jsou jen pro čtení |
-| `capabilities`    | `AgentCapabilities` (výchozí `safeDefault`) | Odvozuje rozhodnutí, jestli je síť zapnutá, a domény odchozího provozu na GitHub. Domény ticketů jsou argument resolveru, který cesta odeslání nikdy nepředá |
 | `protectedPaths`  | `List<String>` (výchozí `[]`)               | Cesty hostitele, které uvnitř sandboxu nesmí být v žádném režimu zapisovatelné                                                        |
 | `runnerStateDirs` | `List<String>` (výchozí `[]`)               | Adresáře hostitele, ve kterých si runner drží vlastní stav, zapisovatelné v každém režimu (zatím je to `CLAUDE_CONFIG_DIR` spravovaný Control Center) |
 | `execGrantRoots`  | `List<String>` (výchozí `[]`)               | Stromy adresářů schválené operátorem, které na macOS znovu otevřou blok exec ze zapisovatelného adresáře. Linux je ignoruje — bwrap nemá v `$HOME` blok exec, který by šlo znovu otevřít |
@@ -182,7 +181,6 @@ Vrací ho `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Odmítnuté sloveso (např. `file-read*`, `network-outbound`)                 |
 | `target`              | `String`  | Cesta nebo hostitel, na který odmítnutá operace mířila                     |
-| `suggestedCapability` | `String?` | Příznak schopnosti, který by tuhle akci povolil (např. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Surový řádek logu, užitečný při ladění                                     |
 
 ## Viz také

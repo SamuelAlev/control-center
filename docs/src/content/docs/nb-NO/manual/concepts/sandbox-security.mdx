@@ -2,7 +2,7 @@
 title: Sandkasse og sikkerhet
 description: Hva som faktisk begrenser en agent i Control Center i dag, hvor langt OS-sandkassen rekker, og hvilke grenser som holder på en vert uten backend.
 slug: nb-NO/handbok/konsepter/sandkasse-og-sikkerhet
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Hvor OS-sandkassen rekker, og hvor den ikke rekker]
@@ -21,8 +21,7 @@ To hull overlever sandkassen, og de er verdt å ha i bakhodet:
   stibegrensningen i verktøyene selv pluss tillatelsesreglene for handlinger.
 - **Claude Code startes med `--dangerously-skip-permissions`**, fordi en
   ikke-interaktiv `claude -p` ellers ville blokkere for alltid på sin egen
-  prompt. Fil- og skallkallene dens er derfor ikke underlagt Control Centers
-  tillatelsesregler — OS-sandkassen er grensen rundt dem.
+  prompt. Filkallene dens er derfor ikke underlagt Control Centers tillatelsesregler, og skallkommandoene er bare underlagt en hook som leser kommandolinjen — OS-sandkassen er grensen rundt dem.
   :::
 
 ## Hvorfor isolasjon betyr noe her
@@ -87,9 +86,7 @@ tilkoblet godkjenner løses til _nektet_ — et spørsmål ingen kan svare på, 
 aldri et ja. Se [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/)
 for hvordan regler løses.
 
-**Kapabilitetsstyrt legitimasjon og et sanert miljø.** Legitimasjon utstedes
-ved hver oppstart fra samtalens kapabilitetsflagg og tilbakekalles når
-kjøringen avsluttes. ACP, harnessens `bash` og Claude Code under den native
+**Formidlet legitimasjon og et sanert miljø.** Legitimasjon utstedes ved hver oppstart og tilbakekalles når kjøringen avsluttes, og GitHub-tokenet en kjøring har, kan lese, men ikke pushe — se «Pusher går gjennom Control Center» nedenfor. ACP, harnessens `bash` og Claude Code under den native
 innpakningen får et miljø som er tømt for injeksjonsvektorene fra dynamiske
 lenkelastere og tolker (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`,
 `GIT_SSH_COMMAND` og deres slektninger) før prosessen starter. Claude Code
@@ -119,35 +116,69 @@ restriktive beslutningen som vinner.
 Claude Code, når den brukes som adapter, er tilfellet der sandkassen veier
 tyngst. Control Center starter den med `--dangerously-skip-permissions`, fordi
 en ikke-interaktiv `claude -p` ellers ville blokkere for alltid på sin egen
-godkjenningsforespørsel. Lese-, skrive-, redigerings- og skallkallene dens skjer
-inne i dens egen prosess, og Control Center ser dem aldri; de eneste kallene den
-gjør som når en sperre, er `mcp__*`-verktøyene som Control Center selv betjener.
+godkjenningsforespørsel. Lese-, skrive- og redigeringskallene dens skjer inne i dens egen prosess, og Control Center ser dem aldri. `Bash`-kallene dens sendes, før de kjører, til en hook på serveren som klassifiserer kommandolinjen og spør den tilhørende regelen, og `mcp__*`-verktøyene Control Center betjener, går gjennom sperren som vanlig.
 Der en backend finnes, skjer disse usynlige kallene fortsatt inne i
 sandkasseinnpakningen, så OS-et er grensen rundt dem. Der ingen finnes, er
 ingenting det. Hver adapter oppgir dette i sin håndhevingsmatrise — se
 [adapter-ærlighetsmatrisen](/nb-NO/handbok/konsepter/tillatelsesregler/#the-adapter-honesty-matrix).
 
-## Kapabilitetsstyring er håndheving gjennom fravær
+## Pusher går gjennom Control Center
 
-En samtale bærer fire kapabilitetsflagg: pushe til repoet, kalle GitHub-API-et,
-kalle saksleverandøren og ha nettverkstilgang. De sjekkes ikke når agenten
-handler. De sjekkes én gang, ved oppstart, av legitimasjonsmegleren — og en
-kapabilitet som er av, betyr rett og slett at det tilhørende tokenet aldri
-plasseres i miljøet.
+Det finnes ingen tillatelsesflagg per agent. Om en agent får opprette en commit,
+pushe, åpne en pull request, skrive til et oppfølgingssystem eller nå
+nettverket, avgjøres av [tillatelsesreglene](/nb-NO/handbok/konsepter/tillatelsesregler/) —
+tillat, spør først eller nekt — og de samme reglene gjelder uansett hvilken
+adapter som kjører agenten.
 
-Det er hele mekanismen, og den er verdt å si rett ut, for feilmodusen er ikke
-den folk forventer. Slår du av «GitHub API», får du ikke en melding om
-«kapabilitet nektet». Du får en vanlig `401` inne i agenten, fordi det ikke
-finnes noe `GH_TOKEN` å sende. Agenten kan godt fremstille det som et
-legitimasjonsproblem. Håndheving gjennom fravær er robust — det finnes ingen
-kontroll å omgå — men den er stille, og agenten vet ikke hvorfor det feilet.
+En push er handlingen som må holde selv mot en agent som prøver å omgå en regel,
+så den håndheves gjennom det agenten har, ikke det den kjører. Med en GitHub App
+konfigurert får en kjøring i en GitHub-worktree et repo-begrenset
+installasjonstoken som kan lese innhold og jobbe med pull requests, men ikke
+pushe. Kjøringens git-konfigurasjon skriver om hver push-URL til GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) til
+**agentkjøringsgatewayen**, et loopback-endepunkt på `cc_server`. Gatewayen
+leser hvilke refs pushen oppdaterer, spør regelen **Push til en remote** — så en
+regel som er begrenset til grener, for eksempel «nekt push til `main`», gjelder
+— og sender først da pushen videre til GitHub med et skrivetoken den utsteder
+for formålet og aldri gir til agenten. En avvist push vises i gits egen utdata:
 
-Nettverksflagget oppfører seg på samme måte. Med det av nekter harnessens
-`web_fetch`- og `web_search`-verktøy hvert kall, og tillatelseslisten til en
-sandkasseinnpakket oppstart er tom, så hver utgående tilkobling avvises.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Legitimasjon tilbakekalles når kjøringen avsluttes, så et håndtak overlever ikke
-kjøringen som utstedte det.
+Gatewayen sender bare pusher videre til worktreens eget repo eller til et
+GitHub-repo som er koblet til arbeidsområdet. Fetch går rett til GitHub med
+lesetokenet.
+
+Andre skallkommandoer møter en mykere port. Harnessens `bash`-verktøy og,
+gjennom en hook, Claude Codes `Bash`-verktøy klassifiserer hver kommandolinje
+og spør regelen den hører inn under: `git commit`, `merge`, `rebase`,
+`cherry-pick`, `revert` og `am` er **Opprett en commit**; `gh pr create` er
+**Åpne en pull request**; `gh pr merge`, `review`, `comment` og `close` er
+**Publiser en gjennomgang eller sammenslåing**; `gh issue create`, `edit`,
+`comment` og `close` er **Skriv til et eksternt oppfølgingssystem**;
+pakkeinstallasjoner er **Installer en pakke**; `curl` og `wget` er **Bruk
+nettverket**. Dette kjenner igjen den vanlige skrivemåten for en handling, og en
+agent som er fast bestemt på å skjule en (`eval`, en skriptfil, et direkte
+API-kall), klarer det. Pusher er ikke avhengige av det.
+
+:::caution[Uten GitHub App er push-regelen bare veiledende]
+Uten en konfigurert GitHub App faller megleren tilbake på et personlig
+tilgangstoken, som ikke kan begrenses til bare lesing. Regelen gjelder
+fortsatt for `git push`, fordi git sender pushen til gatewayen, men kode som
+bruker tokenet i miljøet direkte, kan pushe forbi den.
+:::
+
+Ingen API-nøkkel for saker legges i en sandkasse. Agenter skriver saker gjennom
+Control Centers MCP-verktøy, som spør **Skriv til et eksternt
+oppfølgingssystem**.
+
+Regelen **Bruk nettverket** leses én gang, når kjøringen starter. Nettverket i
+en sandkasse er enten på eller av, så nekt slår det av, mens tillat og spør
+først lar det stå på; harnessens `web_fetch`- og `web_search`-verktøy spør
+fortsatt ved hvert kall. Legitimasjon tilbakekalles når kjøringen avsluttes,
+sammen med alle skrivetokener gatewayen har utstedt, så et håndtak overlever
+ikke kjøringen.
 
 ## Hva sandkassen tilfører, og hvor den stopper
 
@@ -214,32 +245,28 @@ ville ha vært skrivbar mens profilen så ut til å forby det.
 
 Nettverk, under en sandkasse, er en tillatelsesliste over **domener** per økt,
 håndhevet av loopback-proxyer i samme prosess. Utgående trafikk er nektet som
-standard: med nettverkskapabiliteten av starter proxyene fortsatt, men
-tillatelseslisten deres er tom, så hver utgående tilkobling avvises. Med den på
-bygger oppløseren tillatelseslisten fra en kuratert grunnlinje — LLM-API-
-leverandører, git-hosting, pakkeregistre, modellkatalogen — pluss
-GitHub-domenene en agents GitHub- eller push-kapabilitet gir den, og matcher
+standard: med nettverket av starter proxyene fortsatt, men tillatelseslisten
+deres er tom, så hver utgående tilkobling avvises. Med det på bygger oppløseren
+tillatelseslisten fra en kuratert grunnlinje — LLM-API-leverandører,
+git-hosting, pakkeregistre, modellkatalogen — pluss GitHubs domener, og matcher
 målverten til hver tilkobling mot den. Jokertegn virker (`*.example.com`
 matcher subdomener, ikke toppdomenet). En egen liste som alltid nektes, vinner
 over tillatelseslisten og dekker endepunkter for skymetadata og
 telemetrimottak. Det som _ikke_ er konfigurerbart, er selve listen:
-spesifikasjonen har et `egressAllowlist`-felt for ekstra domener og en hook for
-saksdomener, men ingenting i utsendingstråden fyller ut noen av dem, så i
-praksis får hver kjøring grunnlinjen pluss kapabilitetsavledede domener og
-ingenting mer.
+spesifikasjonen har et `egressAllowlist`-felt for ekstra domener, men ingenting
+i utsendingstråden fyller det ut, så i praksis får hver kjøring grunnlinjen
+pluss GitHub og ingenting mer.
 
 Nekter, på macOS, er observerbare: en monitor tapper systemloggen for
 Sandbox-nekter, filtrerer bort kjent støy, dedupliserer stormer med nye forsøk og
 løfter frem hver av dem som en `SandboxViolation` som navngir hva som ble
-forsøkt, og hvilken kapabilitet som ville åpne for det. På Linux parser
+forsøkt, og hva som ble blokkert. På Linux parser
 innpakningsstien stderr etter `EPERM`, `Operation not permitted` og
 `Permission denied` og sender ut samme hendelsestype — det finnes ingen
 systemlogg-tapp. Disse kommer inn på kjøringens egen hendelsesstrøm, så et
 nektet systemkall dukker opp i transkripsjonen i stedet for bare i en logg.
 Telemetrien finnes bare mens en native sandkasse faktisk pakker inn prosessen —
-på en vert uten backend er det ingenting å observere. Den er også uavhengig av
-kapabilitetsstyringen: en overtredelse kommer fra et nektet systemkall, aldri
-fra et kapabilitetsoppslag.
+på en vert uten backend er det ingenting å observere. Den er også uavhengig av tillatelsesreglene: en overtredelse kommer fra et nektet systemkall, aldri fra et regeloppslag.
 
 ## Bekreftelser kommer fra tillatelsesreglene, ikke fra sandkassen
 
@@ -269,5 +296,5 @@ ene stedet som sier hva som kan sjekkes manuelt.
 
 ## Relaterte guider
 
-- [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/): kapabilitetsflagg og innstillinger for filsystemet
+- [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/): handlingsregler, håndheving av pusher og innstillinger for filsystemet
 - [Kjør agentdiagnostikk](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/): hva den diagnostiske sjekken dekker

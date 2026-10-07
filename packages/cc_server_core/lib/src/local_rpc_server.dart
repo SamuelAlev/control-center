@@ -1060,7 +1060,7 @@ class LocalRpcServer implements McpHostServer {
       await _serveWebhook(request);
       return;
     }
-    if (request.uri.path == '/mcp' || request.uri.path == '/sse') {
+    if (McpRequestHandler.serves(request.uri.path)) {
       await _serveMcp(request);
       return;
     }

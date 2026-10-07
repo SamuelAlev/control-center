@@ -37,11 +37,12 @@ enum RunCredentialLane {
 
 /// Why the run cannot start.
 ///
-/// Four states rather than one "credential problem", because they heal four
+/// Separate states rather than one "credential problem", because they heal
 /// different ways and telling the operator the wrong one costs them the fix: a
 /// spent plan comes back by itself at a known time, a signed-out directory
 /// comes back only when a human runs `claude auth login`, an expired credential
-/// looks signed in until it 401s, and a missing API key needs a key pasted.
+/// looks signed in until it 401s, a missing API key needs a key pasted, and a
+/// pool of removed accounts needs the pool edited.
 enum RunCredentialReason {
   /// No credential at all for this provider (the harness lane's only state).
   noCredential('no_credential'),
@@ -56,7 +57,12 @@ enum RunCredentialReason {
 
   /// The plan's windows are used up, or the account is cooling off after a real
   /// rate-limit response. The only reason that carries a reset time.
-  planSpent('plan_spent');
+  planSpent('plan_spent'),
+
+  /// The workspace's (or agent's) account pool names only accounts that have
+  /// since been removed from the server. Fixed by attaching another account or
+  /// clearing the pool, never by signing in.
+  accountsRemoved('accounts_removed');
 
   const RunCredentialReason(this.wire);
 
@@ -75,17 +81,24 @@ enum RunCredentialReason {
   }
 }
 
-/// Why a dispatch cannot start on any Claude Code account: what is wrong, which
-/// accounts it is wrong for, and when (if ever) one frees up by itself.
+/// Why a dispatch cannot start on any account its pool allows, for any lane:
+/// what is wrong, which accounts it is wrong for, and when (if ever) one frees
+/// up by itself.
 ///
 /// A named shape rather than a bare reason because all three facts travel
-/// together from the account store through the dispatch port into the gate, and
-/// spelling the record out at each hop is how one of them gets dropped.
-typedef ClaudeAccountRefusal = ({
+/// together from the pool resolution through the dispatch port into the gate,
+/// and spelling the record out at each hop is how one of them gets dropped.
+typedef AccountPoolRefusal = ({
   RunCredentialReason reason,
   List<String> accountIds,
   DateTime? earliestReset,
 });
+
+/// What an account pool says about one dispatch on a lane whose runner spends
+/// credentials in an order (the built-in harness): the order to spend them in,
+/// or why it must not run at all. Both null means "no pool — keep the
+/// credential store's own order".
+typedef AccountPoolOrder = ({List<String>? order, AccountPoolRefusal? refusal});
 
 /// How a parked run stopped being parked.
 enum RunCredentialOutcome {

@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/widgets.dart';
 
 export 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart'
@@ -41,6 +44,7 @@ class SpaceRowLayout extends StatelessWidget {
     required this.tokens,
     required this.leading,
     required this.label,
+    this.labelScrambling = false,
     required this.contentColor,
     required this.caption,
     required this.filled,
@@ -73,6 +77,9 @@ class SpaceRowLayout extends StatelessWidget {
 
   /// Primary line.
   final String label;
+
+  /// Whether [label]'s letters churn (see [CcScrambleText]).
+  final bool labelScrambling;
 
   /// Animated foreground colour.
   final Color contentColor;
@@ -159,6 +166,12 @@ class SpaceRowLayout extends StatelessWidget {
     final t = tokens;
     final showTrailing =
         trailingLabel != null && trailingLabel!.isNotEmpty && !transitioning;
+    // The chip leaves with the other trailing chrome: as the row narrows it
+    // would overflow the title line.
+    final showCount = count != null && !transitioning;
+    // Fixed columns. The rail is narrower than these mid-animation.
+    final minRowWidth =
+        markSlot + markGap + (hasMenu ? kSpaceSidebarOverflowSlot : 0);
     final showIndicator =
         !muted &&
         !transitioning &&
@@ -200,81 +213,98 @@ class SpaceRowLayout extends StatelessWidget {
               top: (_twoLine ? _kTwoLinePad : 0) + cardInset.top,
               bottom: (_twoLine ? _kTwoLinePad : 0) + cardInset.bottom,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: markSlot,
-                  height: markSlot,
-                  child: Center(
-                    child: IconTheme.merge(
-                      data: IconThemeData(color: contentColor, size: markSlot),
-                      child: leading,
+            // While the sidebar width animates the rail drops below the fixed
+            // columns. Lay out at their width and let the hidden title spill
+            // past the end instead of overflowing the row.
+            child: LayoutBuilder(
+              builder: (context, constraints) => OverflowBox(
+                alignment: AlignmentDirectional.centerStart,
+                fit: OverflowBoxFit.deferToChild,
+                maxWidth: math.max(constraints.maxWidth, minRowWidth),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: markSlot,
+                      height: markSlot,
+                      child: Center(
+                        child: IconTheme.merge(
+                          data: IconThemeData(
+                            color: contentColor,
+                            size: markSlot,
+                          ),
+                          child: leading,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                SizedBox(width: markGap),
-                Expanded(
-                  child: AnimatedOpacity(
-                    opacity: transitioning ? 0 : 1,
-                    duration: CcMotion.fast,
-                    curve: CcMotion.standard,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
+                    SizedBox(width: markGap),
+                    Expanded(
+                      child: AnimatedOpacity(
+                        opacity: transitioning ? 0 : 1,
+                        duration: CcMotion.fast,
+                        curve: CcMotion.standard,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Flexible(
-                              child: Text(
-                                label,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: CcScrambleText(
+                                    label,
+                                    scrambling: labelScrambling,
+                                    style: _labelStyle,
+                                  ),
+                                ),
+                                if (showCount) ...[
+                                  const SizedBox(width: AppSpacing.sm),
+                                  SpaceCountChip(
+                                    count: count!,
+                                    selected: filled,
+                                  ),
+                                ],
+                                if (showTrailing) ...[
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    trailingLabel!,
+                                    style: CcTypography.caption.copyWith(
+                                      color: caption,
+                                    ),
+                                  ),
+                                ],
+                                if (showIndicator) ...[
+                                  const SizedBox(width: AppSpacing.sm),
+                                  SpaceTrailingIndicator(
+                                    status: status,
+                                    unread: unread,
+                                    leadingHandlesRunning:
+                                        leadingHandlesRunning,
+                                    selected: filled,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (_twoLine) ...[
+                              Text(
+                                subtitle!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: _labelStyle,
-                              ),
-                            ),
-                            if (count != null) ...[
-                              const SizedBox(width: AppSpacing.sm),
-                              SpaceCountChip(count: count!, selected: filled),
-                            ],
-                            if (showTrailing) ...[
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(
-                                trailingLabel!,
+                                // RTL carve-out: a branch name is a git ref.
+                                textDirection: TextDirection.ltr,
                                 style: CcTypography.caption.copyWith(
                                   color: caption,
                                 ),
                               ),
                             ],
-                            if (showIndicator) ...[
-                              const SizedBox(width: AppSpacing.sm),
-                              SpaceTrailingIndicator(
-                                status: status,
-                                unread: unread,
-                                leadingHandlesRunning: leadingHandlesRunning,
-                                selected: filled,
-                              ),
-                            ],
                           ],
                         ),
-                        if (_twoLine) ...[
-                          Text(
-                            subtitle!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            // RTL carve-out: a branch name is a git ref.
-                            textDirection: TextDirection.ltr,
-                            style: CcTypography.caption.copyWith(
-                              color: caption,
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
-                  ),
+                    if (hasMenu)
+                      const SizedBox(width: kSpaceSidebarOverflowSlot),
+                  ],
                 ),
-                if (hasMenu) const SizedBox(width: kSpaceSidebarOverflowSlot),
-              ],
+              ),
             ),
           ),
           if (hasMenu)

@@ -16,8 +16,10 @@ import 'package:cc_gallery/stories/cc_button.stories.dart' as _cc_gallery_storie
 import 'package:cc_gallery/stories/cc_card.stories.dart' as _cc_gallery_stories_cc_card_stories;
 import 'package:cc_gallery/stories/cc_checkbox.stories.dart' as _cc_gallery_stories_cc_checkbox_stories;
 import 'package:cc_gallery/stories/cc_chip.stories.dart' as _cc_gallery_stories_cc_chip_stories;
+import 'package:cc_gallery/stories/cc_collapsible.stories.dart' as _cc_gallery_stories_cc_collapsible_stories;
 import 'package:cc_gallery/stories/cc_color_tag.stories.dart' as _cc_gallery_stories_cc_color_tag_stories;
 import 'package:cc_gallery/stories/cc_config_row.stories.dart' as _cc_gallery_stories_cc_config_row_stories;
+import 'package:cc_gallery/stories/cc_depth_switcher.stories.dart' as _cc_gallery_stories_cc_depth_switcher_stories;
 import 'package:cc_gallery/stories/cc_dialog.stories.dart' as _cc_gallery_stories_cc_dialog_stories;
 import 'package:cc_gallery/stories/cc_divider.stories.dart' as _cc_gallery_stories_cc_divider_stories;
 import 'package:cc_gallery/stories/cc_empty_state.stories.dart' as _cc_gallery_stories_cc_empty_state_stories;
@@ -40,11 +42,13 @@ import 'package:cc_gallery/stories/cc_popover.stories.dart' as _cc_gallery_stori
 import 'package:cc_gallery/stories/cc_progress_bar.stories.dart' as _cc_gallery_stories_cc_progress_bar_stories;
 import 'package:cc_gallery/stories/cc_radio.stories.dart' as _cc_gallery_stories_cc_radio_stories;
 import 'package:cc_gallery/stories/cc_resizable.stories.dart' as _cc_gallery_stories_cc_resizable_stories;
+import 'package:cc_gallery/stories/cc_scramble_text.stories.dart' as _cc_gallery_stories_cc_scramble_text_stories;
 import 'package:cc_gallery/stories/cc_scroll_area.stories.dart' as _cc_gallery_stories_cc_scroll_area_stories;
 import 'package:cc_gallery/stories/cc_scrollbar.stories.dart' as _cc_gallery_stories_cc_scrollbar_stories;
 import 'package:cc_gallery/stories/cc_segmented_toggle.stories.dart' as _cc_gallery_stories_cc_segmented_toggle_stories;
 import 'package:cc_gallery/stories/cc_select.stories.dart' as _cc_gallery_stories_cc_select_stories;
 import 'package:cc_gallery/stories/cc_sequence_diagram.stories.dart' as _cc_gallery_stories_cc_sequence_diagram_stories;
+import 'package:cc_gallery/stories/cc_shimmer_text.stories.dart' as _cc_gallery_stories_cc_shimmer_text_stories;
 import 'package:cc_gallery/stories/cc_sidebar.stories.dart' as _cc_gallery_stories_cc_sidebar_stories;
 import 'package:cc_gallery/stories/cc_sidebar_item.stories.dart' as _cc_gallery_stories_cc_sidebar_item_stories;
 import 'package:cc_gallery/stories/cc_slider.stories.dart' as _cc_gallery_stories_cc_slider_stories;
@@ -91,8 +95,10 @@ final components = <_widgetbook.Component>[
   _cc_gallery_stories_cc_card_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_checkbox_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_chip_stories.ShowcaseComponent,
+  _cc_gallery_stories_cc_collapsible_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_color_tag_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_config_row_stories.ShowcaseComponent,
+  _cc_gallery_stories_cc_depth_switcher_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_dialog_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_divider_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_empty_state_stories.ShowcaseComponent,
@@ -115,11 +121,13 @@ final components = <_widgetbook.Component>[
   _cc_gallery_stories_cc_progress_bar_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_radio_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_resizable_stories.ShowcaseComponent,
+  _cc_gallery_stories_cc_scramble_text_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_scroll_area_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_scrollbar_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_segmented_toggle_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_select_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_sequence_diagram_stories.ShowcaseComponent,
+  _cc_gallery_stories_cc_shimmer_text_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_sidebar_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_sidebar_item_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_slider_stories.ShowcaseComponent,

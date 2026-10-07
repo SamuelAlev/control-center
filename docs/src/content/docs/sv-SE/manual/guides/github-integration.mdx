@@ -2,7 +2,7 @@
 title: Konfigurera GitHub-integration
 description: Logga in på GitHub så att PR-ytan, reporegistreringen och agentkörningarna fungerar.
 slug: sv-SE/handbok/how-to-guider/github-integration
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Den här guiden handlar om de GitHub-specifika delarna av uppsättningen. GitHub är
@@ -76,7 +76,7 @@ inloggningsuppgift och sist miljön.
 | Kontrollkörningar     | GitHub Checks API                                                                                              |
 | Publicera granskning  | Ett steg som en användare måste godkänna och som publicerar din granskning på PR:en                            |
 | Reporegistrering      | En utcheckning godtas om dess `origin`-remote pekar på github.com — eller på gitlab.com / bitbucket.org        |
-| Agenters GitHub-åtkomst | Mäklaren för inloggningsuppgifter injicerar token som `GH_TOKEN` / `GITHUB_TOKEN`, styrt av agentens förmågor |
+| Agenters GitHub-åtkomst | Mäklaren för inloggningsuppgifter injicerar en token som bara kan läsa som `GH_TOKEN` / `GITHUB_TOKEN`; pushar går genom Control Center |
 | Aviseringsping        | En pollning på serversidan av din GitHub-aviseringsinkorg väcker ”Omnämnd i pull request” och ”Granskning begärd” |
 | Användarprofiler      | Profilkort vid hovring och filtrering av PR:er per författare                                                  |
 
@@ -96,9 +96,10 @@ och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
 
 ## Så agerar agenter på GitHub
 
-- En agent får bara en GitHub-token om den har **Tillåt GitHub API-anrop** eller
-  **Tillåt git push**. Se
-  [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
+- En agent som arbetar i en GitHub-worktree får alltid en GitHub-token som bara
+  kan läsa. En push går genom Control Center, som frågar regeln **Pusha till en
+  remote** och sedan skickar den vidare med en skrivtoken som agenten aldrig
+  har. Se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
 - Commits som en agent gör skapas **som agenten** — visningsnamnet plus
   ` (agent)`, på en syntetisk adress som härleds från agentens id — aldrig som en
   människa. Personen som bad om det krediteras med en `Co-Authored-By`-trailer
@@ -107,11 +108,11 @@ och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
   timme, per start i stället för att lämna över en bred token. Installationen
   löses från körningens repo-**ägare**, så en app som är installerad på flera
   konton begränsas korrekt till det konto körningen rör. Utan en app får
-  agenterna token från miljön
-- En körning som begärs av en medlem som har loggat in agerar under **den
-  medlemmens** GitHub-identitet — deras inloggningsuppgift läggs in efter
-  mäklarens miljö, så en commit eller kommentar som en agent gör för dem kan
-  tillskrivas dem
+  agenterna token från miljön, som inte kan begränsas till enbart läsning:
+  pushregeln binder då `git push`, men inte kod som använder token direkt
+- Token är alltid mäklarens, aldrig den begärande medlemmens egen. Serverns
+  token hålls tillbaka från en körning som agerar för en medlem som inte är
+  ägare och inte har anslutit GitHub
 
 ## Felsökning
 

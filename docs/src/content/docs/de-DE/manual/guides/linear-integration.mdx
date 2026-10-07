@@ -2,7 +2,7 @@
 title: Linear-Integration einrichten
 description: Speichere einen Linear-API-Schlüssel auf dem Server, damit Agenten Linear aufrufen können, und wähle Linear als Ticketing-Anbieter für neue Tickets.
 slug: de-DE/handbuch/anleitungen/linear-integration
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 Füge einen Linear-API-Schlüssel auf dem Server unter deinem Nutzer ein, so wie du
@@ -16,8 +16,9 @@ ohne dass ein externer Dienst nötig ist — siehe
 **Ticketing-API-Schlüssel** liegt unter **Einstellungen → Arbeitsbereich → Allgemein**, auf der
 Karte **Tickets**. Er speichert den Schlüssel auf dem Server unter deiner Nutzer-ID. Den
 eigenen Schlüssel des Servers für Arbeit ohne Aufrufer liefert `LINEAR_API_KEY` oder die
-Karte **Anbieter-Apps**, und er wird nur dann als `TICKETING_API_KEY` injiziert, wenn
-dieser Agent die Befugnis **Ticketing-API-Aufrufe zulassen** hat.
+Karte **Anbieter-Apps**. In die Sandbox eines Agenten wird kein Ticketing-Schlüssel gelegt:
+Agenten schreiben Tickets über die eigenen Werkzeuge von Control Center, die zuerst die
+Regel **In einen externen Tracker schreiben** fragen.
 
 ## Neue Tickets als Linear stempeln
 

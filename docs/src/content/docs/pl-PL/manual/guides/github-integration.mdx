@@ -2,7 +2,7 @@
 title: Skonfiguruj integrację GitHub
 description: Zaloguj się do GitHuba, aby powierzchnia pull requestów, rejestracja repozytoriów i uruchomienia agentów działały.
 slug: pl-PL/podrecznik/poradniki/integracja-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Ten poradnik obejmuje części konfiguracji właściwe dla GitHuba. GitHub to jeden
@@ -79,7 +79,7 @@ a na końcu po środowisko.
 | Uruchomienia kontroli    | Interfejs Checks API GitHuba                                                                                           |
 | Publikowanie recenzji    | Krok wymagający zatwierdzenia przez użytkownika, który publikuje Twoją recenzję w PR                                   |
 | Rejestracja repozytoriów | Kopia robocza jest przyjmowana, jeśli jej zdalne repozytorium `origin` wskazuje na github.com — albo na gitlab.com / bitbucket.org |
-| Dostęp agentów do GitHuba | Broker poświadczeń wstrzykuje token jako `GH_TOKEN` / `GITHUB_TOKEN`, zgodnie z możliwościami agenta                   |
+| Dostęp agentów do GitHuba | Broker poświadczeń wstrzykuje token tylko do odczytu jako `GH_TOKEN` / `GITHUB_TOKEN`; push przechodzi przez Control Center |
 | Sygnały powiadomień      | Odpytywanie po stronie serwera Twojej skrzynki powiadomień GitHub wywołuje „Wzmianka w pull requeście” i „Prośba o recenzję” |
 | Profile użytkowników     | Karty profili po najechaniu i filtrowanie PR-ów według autora                                                           |
 
@@ -99,8 +99,10 @@ i przyciskiem odświeżania. Statusy odświeżają się same co dwie minuty.
 
 ## Wiedz, jak agenci działają na GitHubie
 
-- Agent otrzymuje token GitHub tylko wtedy, gdy ma włączone **Zezwól na
-  wywołania GitHub API** lub **Zezwól na git push**. Zobacz
+- Agent pracujący w worktree GitHuba zawsze otrzymuje token GitHub tylko do
+  odczytu. Push przechodzi przez Control Center, który pyta regułę **Push do
+  zdalnego repozytorium**, a potem przekazuje go z tokenem zapisu, którego
+  agent nigdy nie posiada. Zobacz
   [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/)
 - Commity tworzone przez agenta mają autora **samego agenta** — nazwę
   wyświetlaną plus ` (agent)`, pod syntetycznym adresem opartym na identyfikatorze
@@ -111,10 +113,12 @@ i przyciskiem odświeżania. Statusy odświeżają się same co dwie minuty.
   zamiast przekazywać szeroki token. Instalacja jest ustalana na podstawie
   **właściciela** repozytorium danego uruchomienia, więc jedna aplikacja
   zainstalowana na kilku kontach obejmuje właściwe z nich — to, którego dotknie
-  uruchomienie. Bez aplikacji agenci otrzymują token ze środowiska
-- Uruchomienie zlecone przez członka, który się zalogował, działa na **jego**
-  tożsamości GitHub — jego poświadczenie jest dokładane po środowisku brokera,
-  więc commit albo komentarz, który agent tworzy dla niego, można mu przypisać
+  uruchomienie. Bez aplikacji agenci otrzymują token ze środowiska, którego nie
+  da się ograniczyć do odczytu: reguła push wiąże wtedy `git push`, ale nie kod,
+  który używa tokenu bezpośrednio
+- Token zawsze należy do brokera, nigdy do członka, który zlecił uruchomienie.
+  Token serwera jest wstrzymywany dla uruchomienia działającego w imieniu
+  członka, który nie jest właścicielem i nie połączył GitHuba
 
 ## Rozwiązywanie problemów
 

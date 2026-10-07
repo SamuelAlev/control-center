@@ -2,7 +2,7 @@
 title: Einen Agenten diagnostizieren
 description: Geh Laufprotokoll, Adapter-Prüfung, Serverstatus und Host-Diagnose durch, wenn ein Agent keine Läufe mehr erzeugt.
 slug: de-DE/handbuch/anleitungen/agent-diagnostizieren
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Diese Anleitung zeigt, wie du herausfindest, warum ein Agent keine Läufe erzeugt.
@@ -60,19 +60,18 @@ Zwei Dinge, die zählen, wenn eine Änderung „in den Tests klappt, in der App 
 
 **Einstellungen → Server → Diagnose und Datenschutz** (`/settings/server/diagnostics`) ist die Seite auf Host-Ebene. Sie enthält:
 
-- **Sandboxing** — den Hauptschalter, das erkannte Backend, einen Installationshinweis und die Standardschalter für Befugnisse. Vom Server kommt nur das erkannte Backend; siehe die Achtung unten. Einen Zurücksetzen-Schalter gibt es nicht.
+- **Sandboxing** — den Hauptschalter, das erkannte Backend und einen Installationshinweis. Vom Server kommt nur das erkannte Backend; siehe die Achtung unten. Einen Zurücksetzen-Schalter gibt es nicht.
 - **Semantische Suche** — den Lebenszyklus des Embedding-Modells auf dem Gerät: installiert, wird mit Prozentangabe heruntergeladen, nicht installiert oder ein Installationsfehler. Bis es installiert ist, bleiben Gedächtnis und Codesuche bei Schlüsselwörtern.
 - **Systemverhalten** — den Computer wach halten, während Agenten laufen.
-- **Sync-Engine** — Notausschalter je Speicher für Tickets, Nachrichten und Notizen. Das sind Notausgänge zurück zu Abos des vollständigen Snapshots. Eine Änderung gilt nur für neue Abos und wirkt erst nach einem Neuladen vollständig.
 - **Log-Level** — stell ihn höher, bevor du den Fehler nachstellst.
 - **Datenschutz** — ob roher Diff-Inhalt an das Modell des Agenten gehen darf und ob Absturzberichte gesendet werden.
 
 :::caution[Dieser Abschnitt meldet den Host, und seine Schalter liegen auf dem Client]
-Erkennung und Durchsetzung stimmen inzwischen überein: Meldet der Detektor ein natives Backend, sind Agentenläufe auf diesem Host wirklich darin eingeschlossen. Lebendig ist in diesem Abschnitt nur der Detektor. Hauptschalter, Backend-Auswahl und die Standardschalter für Befugnisse sind Einstellungen auf deinem Gerät, und der Server liest keine davon. Der eigene Schalter des Servers ist `--sandbox` (Standard `on`, `off` zum Abwählen). Steht ein Agent auf „Arbeitsbereichsstandard verwenden“, fällt der Server auf sein zurückhaltendes Standardverhalten zurück: kein git push, keine GitHub-API, kein Ticketing-Schlüssel, Netzwerk an.
+Erkennung und Durchsetzung stimmen inzwischen überein: Meldet der Detektor ein natives Backend, sind Agentenläufe auf diesem Host wirklich darin eingeschlossen. Lebendig ist in diesem Abschnitt nur der Detektor. Hauptschalter und Backend-Auswahl sind Einstellungen auf deinem Gerät, und der Server liest keine davon. Der eigene Schalter des Servers ist `--sandbox` (Standard `on`, `off` zum Abwählen).
 
 Eine Warnung hier lohnt das Handeln. Warum ein Agent scheitert, steht meist woanders. Welchen Zustand der Server hat, steht im Startlog: `agent sandbox ON` mit der Backend-Notiz, `no OS-native agent sandbox on this host` mit einem Installationshinweis, oder `agent sandbox DISABLED by --sandbox off`. `GET /healthz` hat kein Sandbox-Feld.
 
-Wo kein Backend da ist — unter Windows immer, unter Linux oder WSL2 ohne `bwrap` und `socat` — laufen die Läufe **ohne** Sandbox. Was sie begrenzt, ist der eigene Checkout der Unterhaltung, die Befugnisse, die entscheiden, welche Zugangsdaten hineingelegt werden, die Schutzregeln für Aktionen, die Bereinigung der Umgebung und die Werkzeugfläche, die der Modus zulässt.
+Wo kein Backend da ist — unter Windows immer, unter Linux oder WSL2 ohne `bwrap` und `socat` — laufen die Läufe **ohne** Sandbox. Was sie begrenzt, ist der eigene Checkout der Unterhaltung, das Forge-Token des Laufs, das nur lesen darf, und das Push-Gateway, die Schutzregeln für Aktionen, die Bereinigung der Umgebung und die Werkzeugfläche, die der Modus zulässt.
 :::
 
 ## Häufige Fehler
@@ -83,7 +82,7 @@ Installiere die CLI **auf dem Server-Host** und klicke danach auf der Seite Mode
 
 ### Der Agent kann nicht pushen oder einen Pull Request öffnen
 
-Die Befugnisse sind das Tor. Öffne **Einstellungen → Arbeitsbereich → Agenten** → den Agenten → **Sandbox-Berechtigungen**, schalte den Schalter ein und aktiviere **git push erlauben** und **GitHub-API-Aufrufe erlauben**. Bleibt der Schalter auf „Arbeitsbereichsstandard verwenden“, bekommt der Agent nichts davon.
+Lies, was git oder der Agent ausgegeben hat. `Control Center policy: …` heißt, eine Aktionsregel hat es verweigert oder eine Freigabe blieb unbeantwortet: Prüfe **Zu einem Remote pushen** und **Einen Pull Request öffnen** unter **Einstellungen → Arbeitsbereich → Agent-Berechtigungen**. Sagt git, Control Center habe keine GitHub-Zugangsdaten, die pushen können, installiere die GitHub App auf diesem Repo oder verbinde GitHub.
 
 ### Die semantische Suche liefert nichts Brauchbares
 

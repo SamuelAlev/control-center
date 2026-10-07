@@ -2,12 +2,12 @@
 title: The agent model
 description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
 slug: en-GB/manual/concepts/agent-model
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## What is an agent?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+An agent is a named actor with a persona, a set of skills and an adapter to run on. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
 
 Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
 
@@ -26,7 +26,6 @@ An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` 
 | `modelId`               | Which model within that adapter                                                       |
 | `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
 | `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
 | `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
 | `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
 
@@ -51,18 +50,13 @@ The scoping is a context-budget decision. The skill index sits in the prompt on 
 
 Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialised into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
 
-## Capabilities
+## Permissions
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+An agent carries no permission flags of its own. Whether it may commit, push, open a pull request, write to a tracker or reach the network is decided by the [action guardrails](/en-GB/manual/concepts/guardrails/) — allow, ask first or deny, at the workspace, agent or space scope — and the same rules apply whichever adapter runs it.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+What a run is _handed_ does not change with those rules. A run in a GitHub worktree always gets a read-only GitHub token, and a push is asked about when it happens: the agent's git configuration sends every GitHub push through Control Center, which applies the **Push to a remote** rule before forwarding it.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
-
-See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for the other half of the story, including what is and is not enforced at the filesystem level.
+See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for how that works, including what is and is not enforced at the filesystem level.
 
 ## The adapter decides what can be enforced
 
@@ -71,7 +65,7 @@ The single most consequential field on an agent is its adapter, because the adap
 | Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Claude CLI       | Claude Code               | The `mcp__*` tools it is served, plus its `Bash` commands, which a hook sends to the action policy before they run. Claude's own read, write and edit tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
 
 Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
 

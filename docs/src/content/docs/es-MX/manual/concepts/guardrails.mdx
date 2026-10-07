@@ -2,7 +2,7 @@
 title: Barandillas — una sola política para cada acción que muta el estado
 description: Por qué Control Center canaliza todos los efectos secundarios de un agente por un único motor de permitir/preguntar/denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia realmente el dial de autonomía.
 slug: es-MX/manual/conceptos/barandillas
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Los agentes de Control Center pueden eliminar archivos, hacer push de ramas, publicar pull requests y llamar a API externas. Cada una de esas acciones es un _tipo_ de riesgo distinto y, durante mucho tiempo, solo una de ellas —los comandos de shell— tenía una política. Las barandillas existen para responder de forma uniforme una sola pregunta, para toda acción que muta el estado que un agente pueda realizar, sin importar qué runtime o herramienta la proponga: **¿se permite, requiere una aprobación o se deniega?**
@@ -114,7 +114,7 @@ La delegación entre agentes está protegida en el punto de control de `delegate
 
 No todos los runtimes permiten que Control Center intercepte todas las acciones. Las CLI de agentes externos ejecutan algunas herramientas de forma nativa, dentro de su propio proceso, donde no puede haber ninguna compuerta. En lugar de fingir lo contrario, cada adaptador lleva una **matriz de honestidad**: por adaptador, si Control Center filtra la superficie de herramientas, intercepta las llamadas de herramientas, observa el contrato de finalización, alcanza a ver las herramientas nativas del ejecutor y si las herramientas en proceso están cubiertas por un perfil de sandbox.
 
-Dos entradas merecen leerse antes de confiar en una configuración. El arnés integrado declara que sus herramientas de archivos en proceso **no** están en el sandbox: la superficie de herramientas y este motor de políticas son la única frontera de sistema de archivos que tiene. Claude Code declara que sus propias llamadas de herramientas **no** son interceptables, porque se lanza con `--dangerously-skip-permissions`; Control Center solo ve sus llamadas `mcp__*`, y sus propias herramientas de lectura, escritura, edición y shell se ejecutan sin que nadie las vea.
+Dos entradas merecen leerse antes de confiar en una configuración. El arnés integrado declara que sus herramientas de archivos en proceso **no** están en el sandbox: la superficie de herramientas y este motor de políticas son la única frontera de sistema de archivos que tiene. Claude Code declara que sus propias llamadas de herramientas **no** son interceptables, porque se lanza con `--dangerously-skip-permissions`; Control Center ve sus llamadas `mcp__*` y, mediante un hook, sus líneas de comandos de `Bash`, mientras que sus propias herramientas de lectura, escritura y edición se ejecutan sin que nadie las vea.
 
 La pantalla de ajustes muestra esta matriz, porque el único fallo imperdonable en un sistema de barandillas es declarar una cobertura que no existe.
 

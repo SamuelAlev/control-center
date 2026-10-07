@@ -205,8 +205,17 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     }
     // One source per space; concurrent callers share it, so cancelling once
     // interrupts every in-flight run for that space.
-    final shared = _cancelSources.putIfAbsent(key, _SpaceCancellation.new)
-      ..runs += 1;
+    //
+    // A source that is already cancelled belongs to the stop that was cleared
+    // to get here: the run it interrupted can still be inside a step that does
+    // not observe the token (the CoW copy), keeping the source registered.
+    // Sharing it would refuse this run before it started, so every Retry
+    // pressed during that window failed in a second with no worktree.
+    var shared = _cancelSources[key];
+    if (shared == null || shared.source.isCancelled) {
+      shared = _cancelSources[key] = _SpaceCancellation();
+    }
+    shared.runs += 1;
     final cancelToken = cancel == null
         ? shared.source.token
         : CancellationToken.any([shared.source.token, cancel]);
@@ -302,8 +311,10 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       return fallbackDir;
     } finally {
       // Drop the shared source once the last run using it is done, so a space
-      // provisioned again later starts from a fresh, un-cancelled token.
-      if (--shared.runs <= 0) {
+      // provisioned again later starts from a fresh, un-cancelled token. Only
+      // while it is still the registered one: a stopped run finishing late
+      // must not unregister the source a newer run replaced it with.
+      if (--shared.runs <= 0 && identical(_cancelSources[key], shared)) {
         _cancelSources.remove(key);
       }
     }

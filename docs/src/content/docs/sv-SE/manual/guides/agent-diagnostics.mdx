@@ -2,7 +2,7 @@
 title: Felsök en agent
 description: Arbeta dig igenom körningsloggen, adapterproben, serverns status och värddiagnostiken när en agent slutar producera körningar.
 slug: sv-SE/handbok/how-to-guider/felsok-agent
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Den här guiden visar hur du tar reda på varför en agent inte producerar några körningar.
@@ -60,19 +60,18 @@ Två saker värda att känna till när en ändring "fungerar i tester men inte i
 
 **Inställningar → Server → Diagnostik och integritet** (`/settings/server/diagnostics`) är värdnivåsidan. Den innehåller:
 
-- **Sandlåda** — huvudväxeln, den upptäckta backenden, ett installationstips och standardväxlarna för förmågor. Endast den upptäckta backenden kommer från servern; se varningen nedan. Det finns ingen återställningskontroll.
+- **Sandlåda** — huvudväxeln, den upptäckta backenden och ett installationstips. Endast den upptäckta backenden kommer från servern; se varningen nedan. Det finns ingen återställningskontroll.
 - **Semantisk sökning** — inbäddningsmodellen på enheten och dess livscykel: installerad, laddar ned med en procentandel, inte installerad eller ett installationsfel. Tills den är installerad förblir minnes- och kodsökning enbart nyckelordsbaserad.
 - **Systembeteende** — håll datorn vaken medan agenter körs.
-- **Synkmotor** — dödarknappar per lager för ärenden, meddelanden och anteckningar. Dessa är nödutgångar tillbaka till prenumerationer med hela ögonblicksbilder; en ändring påverkar bara nya prenumerationer, så den får full effekt först efter en omladdning.
 - **Loggnivå** — höj den innan du återskapar ett fel.
 - **Integritet** — huruvida rå diff-innehåll får vidarebefordras till agentens modell och huruvida kraschrapporter skickas.
 
 :::caution[Det här avsnittet rapporterar värden, men reglagen finns på klientsidan]
-Detektion och verkställighet stämmer nu överens: där detektorn rapporterar en nativ backend är agentkörningar på den värden verkligen inpackade i den. Men detektorn är det enda levande i det här avsnittet. Huvudväxeln, backendväljaren och standardväxlarna för förmågor är inställningar som lagras på din enhet, och servern läser ingen av dem — serverns egen växel är `--sandbox` (`on` som standard, `off` för att avstå) och för varje agent som lämnats på "Använd arbetsytans standard" faller servern tillbaka till sin konservativa standard: ingen git push, inget GitHub-API, ingen ärendenyckel, nätverk på.
+Detektion och verkställighet stämmer nu överens: där detektorn rapporterar en nativ backend är agentkörningar på den värden verkligen inpackade i den. Men detektorn är det enda levande i det här avsnittet. Huvudväxeln och backendväljaren är inställningar som lagras på din enhet, och servern läser ingen av dem — serverns egen växel är `--sandbox` (`on` som standard, `off` för att avstå).
 
 Så en varning här är värd att agera på, men den är oftast inte orsaken till att en agent misslyckas. För att bekräfta vilket läge servern är i, läs dess startlogg: den skriver ut `agent sandbox ON` med backendanteckningen, `no OS-native agent sandbox on this host` med ett installationstips eller `agent sandbox DISABLED by --sandbox off`. `GET /healthz` innehåller inget sandlådefält.
 
-Där det inte finns någon backend — Windows alltid, Linux eller WSL2 utan `bwrap` och `socat` — är körningar **inte** sandlådade, och det som begränsar dem är samtalets egen checkout, de förmågor som styr vilka inloggningsuppgifter som skapas in i den, räckena för åtgärder, miljösaneringen och den verktygsyta som dess läge tillåter.
+Där det inte finns någon backend — Windows alltid, Linux eller WSL2 utan `bwrap` och `socat` — är körningar **inte** sandlådade, och det som begränsar dem är samtalets egen checkout, dess kodvärdstoken som bara kan läsa och pushgatewayen, räckena för åtgärder, miljösaneringen och den verktygsyta som dess läge tillåter.
 :::
 
 ## Vanliga fel
@@ -83,7 +82,7 @@ Installera CLI:t **på servervärden** och klicka sedan på **Uppdatera** på si
 
 ### Agenten kan inte pusha eller öppna en pull request
 
-Dess förmågor är grinden. Öppna **Inställningar → Arbetsyta → Agenter** → agenten → **Sandlådebehörigheter**, slå på växeln och aktivera **Tillåt git push** och **Tillåt GitHub API-anrop**. Att lämna växeln på "Använd arbetsytans standard" ger agenten ingen av dem.
+Läs vad git eller agenten skrev ut. `Control Center policy: …` betyder att en åtgärdsregel nekade det eller att ett godkännande blev obesvarat: kontrollera **Pusha till en remote** och **Öppna en pull request** under **Inställningar → Arbetsyta → Agentbehörigheter**. Om git säger att Control Center saknar en GitHub-inloggningsuppgift som kan pusha, installera GitHub-appen på det repot eller anslut GitHub.
 
 ### Semantisk sökning ger inget användbart
 

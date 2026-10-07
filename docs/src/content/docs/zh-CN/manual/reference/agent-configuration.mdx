@@ -2,7 +2,7 @@
 title: 智能体配置
 description: 智能体实体上的每个字段，以及它使用的各个枚举。
 slug: zh-CN/手册/参考/智能体配置
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 本参考列出智能体实体上的每个字段，以及它使用的枚举和标志。关于在应用中创建或编辑智能体的分步讲解，见[创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)。
@@ -26,7 +26,6 @@ sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 | `effort`                | `String?`              | 否   | 推理档位 id（例如 `'low'`、`'xhigh'`），取自所选模型的 `thinkingLevels`                                                                                                                             |
 | `contextSize`           | `int?`                 | 否   | 上下文窗口的最大大小                                                                                                                                                                                |
 | `role`                  | `AgentRole?`           | 否   | 智能体的角色                                                                                                                                                                                        |
-| `capabilities`          | `AgentCapabilities?`   | 否   | 按智能体的能力默认值；为 null 时，在派发时应用用户级默认值，而对话仍然可以覆盖                                                                                                                      |
 | `monthlyBudgetCents`    | `int`                  | 否   | 以美分计的月度支出上限（默认 `0`，即不限）                                                                                                                                                          |
 | `silenceTimeoutMinutes` | `int?`                 | 否   | 静默超时的覆盖值，以分钟计；必须为 null 或落在 1–240 之间（由构造函数断言）                                                                                                                         |
 | `maxConcurrentTasks`    | `int`                  | 否   | 默认 `1`。在线状态模型报告的容量数值（运行中和队列中的计数都会与它比较）                                                                                                                            |
@@ -68,18 +67,9 @@ sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 | `paused`   | 由预算硬性停止设置。会显示在在线状态名册上；派发仍然会接受工作              |
 | `archived` | 已退役，并从活动名册中隐藏                                                  |
 
-## AgentCapabilities 标志
+## 权限
 
-每次派发时解析：先取智能体的默认值，为 null 时回退到用户级默认值，其最上层再叠加按对话的覆盖值。强制方式就是“不存在”——被禁用的能力所覆盖的东西，凭据代理根本不会签发，也不会注入。
-
-| 标志               | 类型   | 默认值  | 说明                                                                                     |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | 把提交推送到远程；与 `canCallGitHubApi` 一起把关 GitHub 令牌的注入                        |
-| `canCallGitHubApi` | `bool` | `false` | 调用 api.github.com；把关 `GH_TOKEN` 的注入以及 GitHub 的出站域名                         |
-| `canCallTicketing` | `bool` | `false` | 调用工单服务商的 API；把关服务商 API 密钥的注入及其出站域名                               |
-| `canAccessNetwork` | `bool` | `true`  | 任意的对外出站。还把关运行器的 `web_fetch` 和 `web_search` 工具                           |
-
-`AgentCapabilities.safeDefault` 就是这四个字段的构造函数默认值。`legacyDefault`（四者全为 true）只被那次迁移使用——它回填了能力存在之前创建的对话。格式错误或为空的存储数据块会解析为 `safeDefault`；遗留键 `canCallLinear` 会被读作 `canCallTicketing`。
+智能体不带任何权限标志。推送、打开和发布 pull request、写入跟踪器以及网络出站都是操作类别（`gitPush`、`prCreate`、`prPublish`、`vendorSyncWrite`、`networkEgress`），由[护栏](/zh-CN/手册/概念/护栏/)在工作区、智能体或空间范围内解析。运行的 GitHub 令牌始终是只读范围；推送经过智能体运行网关，网关在转发前询问 `gitPush` 规则。
 
 ## AgentSkills
 

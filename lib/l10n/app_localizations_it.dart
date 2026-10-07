@@ -2679,15 +2679,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get allow => 'Consenti';
 
   @override
-  String get allowGitPush => 'Consenti git push';
-
-  @override
-  String get allowGithubApi => 'Consenti chiamate API GitHub';
-
-  @override
-  String get allowNetwork => 'Consenti accesso di rete generale';
-
-  @override
   String get apiKeys => 'Chiavi API';
 
   @override
@@ -3097,10 +3088,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get currentParticipants => 'Partecipanti attuali';
 
   @override
-  String get customCapabilitiesDescription =>
-      'Capacità personalizzate per questo agente';
-
-  @override
   String get customSystemPrompt =>
       'Prompt di sistema personalizzato per questo agente...';
 
@@ -3117,10 +3104,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deactivate => 'Disattiva';
-
-  @override
-  String get defaultCapabilities =>
-      'Capacità predefinite · nuove conversazioni';
 
   @override
   String get defaultChat => 'Chat predefinita';
@@ -3529,10 +3512,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get forward => 'Avanti';
 
   @override
-  String get gatesGithubPatPush =>
-      'Controlla l\'iniezione del PAT GitHub. Necessario affinché l\'agente possa eseguire il push.';
-
-  @override
   String get general => 'Generale';
 
   @override
@@ -3601,6 +3580,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Interruzione';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Stato dei servizi';
@@ -4070,6 +4054,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get navSettings => 'Impostazioni';
+
+  @override
+  String get exitSettings => 'Esci dalle impostazioni';
 
   @override
   String networkBlockCount(int count) {
@@ -4593,10 +4580,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get react => 'Reagisci';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Permette all\'agente di leggere PR, issue e metadati della repository.';
-
-  @override
   String get readerPreferences => 'Preferenze lettore';
 
   @override
@@ -4851,9 +4834,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Il sandbox nativo è integrato in macOS — utilizza Apple Seatbelt (`sandbox-exec`). Nessuna installazione richiesta.';
-
-  @override
-  String get sandboxPermissions => 'Permessi del sandbox';
 
   @override
   String get sandboxUnsupported =>
@@ -5440,9 +5420,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get useSandbox => 'Usa sandbox';
 
   @override
-  String get useWorkspaceDefault => 'Usa predefinito dello spazio di lavoro';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5485,10 +5462,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Isolamento debole — solo limite di namespace, nessun limite di kernel.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Se disattivato, il sandbox si avvia senza una rotta predefinita.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6713,14 +6686,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ancora nessun repository in questo workspace.';
 
   @override
-  String get allowTicketingApi => 'Consenti chiamate API dei ticket';
-
-  @override
   String get ticketingApiKey => 'Chiave API ticketing';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Inietta la chiave API del provider di ticket nella sandbox.';
 
   @override
   String get ticketingProvider => 'Provider di ticket';
@@ -9110,30 +9076,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Il computer può andare in sospensione anche mentre un agente sta lavorando';
-
-  @override
-  String get syncEngineSectionTitle => 'Motore di sincronizzazione';
-
-  @override
-  String get syncEngineDescription =>
-      'Ticket, messaggistica e note si aggiornano in tempo reale tramite piccole modifiche incrementali anziché istantanee complete. Disattivando un interruttore quell\'archivio torna alla modalità a istantanea completa: ricarica l\'app perché la modifica abbia effetto.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Ticket';
-
-  @override
-  String get syncEngineMessagingTitle => 'Messaggistica';
-
-  @override
-  String get syncEngineNotesTitle => 'Note';
-
-  @override
-  String get syncEngineOnSubtitle =>
-      'La sincronizzazione in tempo reale è attiva';
-
-  @override
-  String get syncEngineOffSubtitle =>
-      'In uso la sincronizzazione a istantanea completa';
 
   @override
   String get spaces => 'Spazi';
@@ -13068,23 +13010,22 @@ class AppLocalizationsIt extends AppLocalizations {
       'Facoltativo: lascialo vuoto e il modello dei titoli la nomina automaticamente';
 
   @override
-  String get conversationTitlesSectionTitle => 'Titoli delle conversazioni';
+  String get shortTaskOff => 'Disattivato';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Scegli il motore che assegna automaticamente un titolo alle nuove conversazioni di questo spazio di lavoro. I titoli restano disattivati finché non viene scelto un adattatore e valgono per ogni membro.';
+  String get shortTaskUnavailable =>
+      'Scegli un modello per attività brevi in Impostazioni → Adattatori per usarlo';
 
   @override
-  String get conversationTitlesModelLabel => 'Modello dei titoli';
+  String get conversationTitleGenerate => 'Genera';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adattatore';
+  String get conversationTitleNoMessages =>
+      'Invia prima un messaggio. Il titolo viene generato da quello.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Disattivato';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Disattivato';
+  String get conversationTitleGenerateFailed =>
+      'Impossibile generare un titolo. Riprova.';
 
   @override
   String get startThread => 'Avvia discussione';
@@ -13249,6 +13190,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Conversazione';
+
+  @override
+  String get contextSegmentRunner =>
+      'Prompt del runner, strumenti e lavoro del turno';
+
+  @override
+  String get contextUsageMeasured =>
+      'Riportato dall’ultima chiamata al modello';
+
+  @override
+  String get contextUsageEstimated =>
+      'Stimato finché un’esecuzione non riporta l’utilizzo';
 
   @override
   String get contextExplorerTitle => 'Contesto';
@@ -13643,12 +13596,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Dove avvengono realmente i processi e le scritture su file di un agente.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'La modalità automatica sceglie il più robusto supportato da questo host. Fissane uno per evitare che cambi da solo.';
+  String get sandboxGroupAgentActions => 'Cosa possono fare gli agenti';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'I varchi aperti nel confine. Ognuno è qualcosa che un agente isolato può ancora fare al mondo esterno.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Se il push, l\'apertura di una pull request e l\'accesso alla rete sono consentiti, richiedono conferma o sono negati si stabilisce nelle autorizzazioni degli agenti.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'La modalità automatica sceglie il più robusto supportato da questo host. Fissane uno per evitare che cambi da solo.';
 
   @override
   String get sandboxSummaryInForce => 'In vigore';
@@ -13791,6 +13747,28 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Esegui questo comando in un terminale sul server. Si apre un browser per completare l\'accesso e la credenziale viene scritta nella cartella di questo account.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Token a lunga durata';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Usa un token a lunga durata';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken =>
+      'Sostituisci il token a lunga durata';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken =>
+      'Rimuovi il token a lunga durata';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Un accesso normale va rinnovato e può scadere da un giorno all\'altro. Un token a lunga durata resta valido per circa un anno. Esegui questo comando in un terminale, completa nel browser, poi incolla il token che stampa.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Questo non è un token di claude setup-token. Inizia con sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Disconnesso';
@@ -14221,10 +14199,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Apri nell\'app predefinita';
-
-  @override
-  String get asideUnavailable =>
-      'Imposta un modello one-shot nelle impostazioni per usarlo';
 
   @override
   String get asideEmpty => 'Non c\'è ancora nulla su cui lavorare';
@@ -14769,6 +14743,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get credentialGateOpenSettings => 'Apri le impostazioni';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Gli account Claude Code associati sono stati rimossi';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Associa un altro account nelle impostazioni account di questo agente o dello spazio di lavoro, oppure svuota l\'elenco per usare quello predefinito. L\'esecuzione riprende da sola.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Tutti gli account di questo elenco sono stati rimossi dal server. Associane un altro o svuota l\'elenco.';
+
+  @override
+  String get accountPoolClear => 'Svuota l\'elenco';
+
+  @override
   String get selectModel => 'Seleziona modello';
 
   @override
@@ -15210,6 +15199,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Cerca i file della conversazione per nome e aprine uno in una scheda';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Cerca i file della pull request per nome e aprine uno in una scheda';
 
   @override
   String get ideQuickOpenHint => 'Cerca file per nome';

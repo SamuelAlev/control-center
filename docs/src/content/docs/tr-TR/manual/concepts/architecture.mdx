@@ -3,7 +3,7 @@ title: Mimari
 description: Control Center’ın ince istemci sunucu modeli, özellik öncelikli Clean Architecture ile portlar ve adaptörler kullanılarak nasıl yapılandırıldığı.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/kavramlar/mimari
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Genel bakış
@@ -58,7 +58,7 @@ Bilinmeye değer iki adlandırılmış istisna var:
 - Çekirdek varlıklar: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Kimlik ve çok oyunculu: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Bellek varlıkları: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Paylaşılan değer nesneleri: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Paylaşılan değer nesneleri: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Paylaşılan portlar: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Alan hizmetleri: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + olay türleri (çalışma alanı/ajan, PR/inceleme, mesajlaşma, biletleme, pipeline, orkestrasyon, bellek, takvim/toplantılar, kimlik ve üyelik, gözlemlenebilirlik)

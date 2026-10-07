@@ -3,7 +3,7 @@ title: 아키텍처
 description: 씬 클라이언트 서버 모델, 피처 우선 클린 아키텍처, 포트와 어댑터로 구성된 Control Center의 구조를 설명합니다.
 dateModified: 2026-09-19
 slug: ko-KR/매뉴얼/개념/아키텍처
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## 개요
@@ -58,7 +58,7 @@ feature_name/
 - 핵심 엔티티: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - 신원과 멀티플레이어: `User`, `Principal`(sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - 메모리 엔티티: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- 공유 값 객체: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- 공유 값 객체: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - 공유 포트: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - 도메인 서비스: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + 이벤트 유형(워크스페이스/에이전트, PR/리뷰, 메시징, 티켓팅, 파이프라인, 오케스트레이션, 메모리, 캘린더/회의, 신원과 멤버십, 관측성)

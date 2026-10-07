@@ -4,7 +4,6 @@ extension _AcpMethods on DispatchSession {
   /// `<cliPath> <acpArgs> <argsOverride>` as a subprocess, speaks JSON-RPC 2.0
   /// over stdio and translates `session/update` notifications into events.
   Future<void> _runAcp({
-    required AgentCapabilities caps,
     required List<String> scopedNotes,
   }) async {
     final backend = deps.backendRegistry.backendFor(cliName)!;
@@ -39,7 +38,6 @@ extension _AcpMethods on DispatchSession {
       return;
     }
     final mergedEnv = _mergedEnv(
-      caps: caps,
       scopedEnv: const {},
       backendEnv: backend.defaultEnv(),
     );
@@ -52,7 +50,7 @@ extension _AcpMethods on DispatchSession {
       final sanitizedParent = const EnvSanitizer().hardenPlatform({});
       if (manager != null) {
         // Route through the OS sandbox (sandbox-exec / bwrap).
-        final config = await _buildSandboxConfig(caps);
+        final config = await _buildSandboxConfig();
         final wrap = await manager.wrap(
           config: config,
           argv: argv,

@@ -2,7 +2,7 @@
 title: API-kulcsok kezelése
 description: Hol él az egyes hitelesítő adat — a szerveren lévő felhasználói fiókjában, magán a szerveren vagy egy külső CLI-ben —, és hogyan állíthatja be, forgathatja és távolíthatja el.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Ez az útmutató bemutatja, hol tárolja a Control Center az általa használt
@@ -82,8 +82,9 @@ mihez hitelesíteniük.
 A kulcsa a szerveren, a felhasználói azonosítójához rendelve tárolódik,
 akárcsak a kódhoszthoz tartozó. A szerver külön tartja a saját Linear-kulcsát
 (**Szolgáltatói alkalmazások**), és a jegyszinkronizálás ezen fut, amikor nem
-ember kérte. Az ügynök csak akkor kap kulcsot, ha rendelkezik a **Jegykezelő
-API-hívások engedélyezése** képességgel. Lásd a
+ember kérte. Az ügynök homokozójába nem kerül jegykezelő kulcs; az ügynökök a
+Control Center eszközein keresztül írnak jegyeket, amelyek az **Írás külső
+követőbe** szabályt kérdezik meg. Lásd a
 [Linear-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/) oldalt.
 
 ## Forgatás vagy visszavonás

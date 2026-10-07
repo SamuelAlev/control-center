@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_lifecycle_status.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -26,7 +25,6 @@ class Agent {
     this.effort,
     this.contextSize,
     this.role,
-    this.capabilities,
     this.monthlyBudgetCents = 0,
     this.silenceTimeoutMinutes,
     this.maxConcurrentTasks = 1,
@@ -90,12 +88,14 @@ class Agent {
   /// spec; the column stores the raw id string.
   final String? effort;
 
-  /// Context window size, if configured.
+  /// Context window size in TOKENS, if configured — the same unit as a
+  /// model's context window, which the agent form pre-fills it from.
+  ///
+  /// The built-in harness caps its window here. Claude Code's window comes
+  /// from the model id (`opus` vs `opus[1m]`), which is the operator's choice;
+  /// this is only what its meter measures against. Null leaves the model's own
+  /// window in charge.
   final int? contextSize;
-
-  /// Per-agent sandbox capability default. When null, the user-level default
-  /// applies at dispatch time. Individual conversations can still override.
-  final AgentCapabilities? capabilities;
 
   /// Agent role (e.g. ceo, coder, reviewer). Null for legacy agents.
   final AgentRole? role;
@@ -158,7 +158,6 @@ class Agent {
           strictMode == other.strictMode &&
           effort == other.effort &&
           contextSize == other.contextSize &&
-          capabilities == other.capabilities &&
           role == other.role &&
           monthlyBudgetCents == other.monthlyBudgetCents &&
           silenceTimeoutMinutes == other.silenceTimeoutMinutes &&
@@ -185,7 +184,6 @@ class Agent {
     strictMode,
     effort,
     contextSize,
-    capabilities,
     role,
     monthlyBudgetCents,
     silenceTimeoutMinutes,
@@ -220,8 +218,6 @@ class Agent {
     bool removeEffort = false,
     int? contextSize,
     bool removeContextSize = false,
-    AgentCapabilities? capabilities,
-    bool removeCapabilities = false,
     AgentRole? role,
     bool removeRole = false,
     int? monthlyBudgetCents,
@@ -253,9 +249,6 @@ class Agent {
       strictMode: strictMode ?? this.strictMode,
       effort: removeEffort ? null : (effort ?? this.effort),
       contextSize: removeContextSize ? null : (contextSize ?? this.contextSize),
-      capabilities: removeCapabilities
-          ? null
-          : (capabilities ?? this.capabilities),
       role: removeRole ? null : (role ?? this.role),
       monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,
       silenceTimeoutMinutes: removeSilenceTimeoutMinutes

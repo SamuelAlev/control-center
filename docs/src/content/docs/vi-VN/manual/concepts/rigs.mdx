@@ -2,7 +2,7 @@
 title: Rigs và môi trường cách ly
 description: Vì sao agent nhận được máy dùng một lần thay vì máy tính của bạn — các ranh giới cô lập, làn hiển thị, thông tin xác thực, cổng và vòng đời.
 slug: vi-VN/so-tay/khai-niem/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Một **rig** là một cỗ máy dùng một lần mà agent điều khiển trong thời gian thực
@@ -161,13 +161,19 @@ nhật ký kiểm toán ghi lại rằng một thao tác dán đã xảy ra cùn
 
 ## Thông tin xác thực không bao giờ nằm trong hệ thống khách
 
-`git push` hoạt động từ một terminal khép kín, vậy mà hệ thống khách không lưu
+`git push` hoạt động từ một terminal khép kín do bạn mở, vậy mà hệ thống khách không lưu
 token máy chủ mã nào. Nó giữ một bí mật riêng cho mỗi VM, với quyền năng duy nhất
 là *hỏi* broker thông tin xác thực của máy chủ — qua một tunnel do máy chủ kiểm
 soát — để lấy một token ngắn hạn, giới hạn theo repo, cho từng thao tác, có giới
 hạn tần suất, bị chặn bởi đúng danh sách máy chủ được phép như egress, và bị thu
 hồi ngay khi rig đóng. Một cỗ máy sinh ra để vứt bỏ phải không chứa gì đáng để
 đánh cắp.
+
+Token đó được phép làm gì sẽ được cố định khi rig mở. Một rig terminal do con
+người mở nhận token có quyền ghi, bị giới hạn bởi quyền truy cập forge của chính
+thành viên đó. Một rig do agent mở nhận token chỉ đọc: credential helper của git
+không phân biệt được push với fetch, nên không thể hỏi quy tắc push cho từng lần
+push bên trong khách theo cách cổng lượt chạy agent làm trên máy chủ.
 
 ## Worktree trong một rig là một vệ tinh
 

@@ -2,7 +2,7 @@
 title: Levenscyclus van agent-dispatch
 description: Wat er gebeurt tussen het aankomen van een bericht en het sluiten van een run-log — promptopbouw, worktrees, identiteit, wat een run begrenst en hoe de uitkomst ervan eerlijk wordt vastgelegd.
 slug: nl-NL/handleiding/concepten/dispatch-levenscyclus
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Wat een dispatch is
@@ -65,7 +65,7 @@ Per run worden twee identiteiten bepaald, voordat er een proces start.
 
 Omdat de override per adapter vooraan staat, wint die stil van een provideraccount dat in de app is gekoppeld. Als een run op de verkeerde rekening afrekent, is die override de eerste plek om te kijken. Providergegevens zijn host-globaal — gedeeld over elke werkruimte op de installatie.
 
-Tokens die aan mogelijkheden zijn gebonden (GitHub, ticketing) komen van de credentialbroker, die alleen injecteert wat de mogelijkheden van de run toestaan. Zie [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
+Het GitHub-token van de run komt van de credentialbroker: een token met alleen leesrechten, beperkt tot de repo van de worktree. Een push loopt via de agentrun-gateway, die de regel **Naar een remote pushen** raadpleegt voordat hij hem doorstuurt, en er wordt geen ticketingsleutel geïnjecteerd. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
 
 ## Starten
 
@@ -76,9 +76,9 @@ De run wordt gestart met zijn worktree als werkmap en — voor Claude Code — e
 
 Waar geen backend is, wordt de run **niet** gesandboxed en verandert er verder niets als compensatie. Dat betekent: altijd Windows (geen native omhulling — `microvm` is een apart, door een probe geactiveerd pad voor terminals en rigs) en Linux of WSL2 zonder `bwrap` en `socat` op het `PATH`. De server noemt in welke toestand hij verkeert op zijn opstartregel in het log, en `--sandbox off` kiest er bewust voor om af te zien van sandboxing.
 
-Twee hiaten overleven de sandbox, ook waar die aanstaat. De in-process bestandstools van de harness (read, write, edit, apply patch, search, find, search_files) draaien in het serverproces, dus geen enkel profiel beperkt ze — hun grens is de eigen padbeperking van de tools plus de beveiligingen. En Claude Code wordt gestart met `--dangerously-skip-permissions`, dus zijn eigen bestands- en shellaanroepen worden niet door Control Center bewaakt; de OS-sandbox is de grens eromheen.
+Twee hiaten overleven de sandbox, ook waar die aanstaat. De in-process bestandstools van de harness (read, write, edit, apply patch, search, find, search_files) draaien in het serverproces, dus geen enkel profiel beperkt ze — hun grens is de eigen padbeperking van de tools plus de beveiligingen. En Claude Code wordt gestart met `--dangerously-skip-permissions`, dus zijn eigen bestandsaanroepen worden niet door Control Center bewaakt en zijn shellopdrachten alleen door een hook die de opdrachtregel leest; de OS-sandbox is de grens eromheen.
 
-De overige grenzen gelden op elke host, met of zonder sandbox: de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), inloggegevens die per start via de broker worden verstrekt en bij het opruimen worden ingetrokken, de uniforme actiebeveiligingen (fail-closed — een `prompt`-beslissing zonder verbonden goedkeurder wordt geweigerd) en het tooloppervlak dat de modus van het gesprek toestaat. ACP en de `bash` van de harness saneren de omgeving nog steeds; Claude Code via `NoSandboxAdapter` erft de omgeving van de host.
+De overige grenzen gelden op elke host, met of zonder sandbox: de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), een forge-token met alleen leesrechten dat per start via de broker wordt verstrekt en bij het opruimen wordt ingetrokken, pushes die bij de agentrun-gateway langs de pushregel moeten, de uniforme actiebeveiligingen (fail-closed — een `prompt`-beslissing zonder verbonden goedkeurder wordt geweigerd) en het tooloppervlak dat de modus van het gesprek toestaat. ACP en de `bash` van de harness saneren de omgeving nog steeds; Claude Code via `NoSandboxAdapter` erft de omgeving van de host.
 :::
 
 ## Streamen

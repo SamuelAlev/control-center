@@ -2,7 +2,7 @@
 title: Barandillas — una política para cada acción mutadora
 description: Por qué Control Center canaliza cada efecto secundario de un agente a través de un único motor de permitir, preguntar o denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia de verdad el dial de autonomía.
 slug: es-ES/manual/conceptos/barandillas
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Los agentes de Control Center pueden eliminar archivos, enviar ramas, publicar
@@ -249,9 +249,7 @@ integrado declara que sus herramientas de archivo en proceso **no** están
 aisladas: la superficie de herramientas y este motor de políticas son su único
 límite del sistema de archivos. Claude Code declara que sus propias llamadas a
 herramientas **no** se pueden interceptar, porque se lanza con
-`--dangerously-skip-permissions`; Control Center solo ve sus llamadas `mcp__*`, y
-sus propias herramientas de lectura, escritura, edición y shell se ejecutan sin
-ser vistas.
+`--dangerously-skip-permissions`; Control Center ve sus llamadas `mcp__*` y, mediante un hook, sus líneas de comandos de `Bash`, mientras que sus propias herramientas de lectura, escritura y edición se ejecutan sin ser vistas.
 
 La pantalla de ajustes muestra esta matriz, porque el único fallo imperdonable de
 un sistema de barandillas es reclamar una cobertura que no existe.

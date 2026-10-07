@@ -2,7 +2,6 @@ import 'package:cc_data/src/repositories/remote_agent_repository.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_lifecycle_status.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -42,9 +41,6 @@ class RpcAgentRepository implements AgentRepository {
     effort: d.effort,
     contextSize: d.contextSize,
     role: d.role == null ? null : _agentRoleByName[d.role],
-    capabilities: d.capabilities == null
-        ? null
-        : AgentCapabilities.fromJson(d.capabilities!),
     monthlyBudgetCents: d.monthlyBudgetCents,
     silenceTimeoutMinutes: d.silenceTimeoutMinutes,
     maxConcurrentTasks: d.maxConcurrentTasks,
@@ -73,7 +69,6 @@ class RpcAgentRepository implements AgentRepository {
     effort: a.effort,
     contextSize: a.contextSize,
     role: a.role?.name,
-    capabilities: a.capabilities?.toJson(),
     monthlyBudgetCents: a.monthlyBudgetCents,
     silenceTimeoutMinutes: a.silenceTimeoutMinutes,
     maxConcurrentTasks: a.maxConcurrentTasks,

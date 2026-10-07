@@ -2,12 +2,12 @@
 title: Model agentů
 description: Co agent v Control Center skutečně je, která jeho pole mění chování a jak adaptér, na kterém běží, rozhoduje, co se dá vynutit.
 slug: cs-CZ/prirucka/koncepty/model-agentu
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Co je agent?
 
-Agent je pojmenovaný aktér s personou, sadou skillů, adaptérem, na kterém běží, a sadou schopností. Agenti jsou principálové ve stejném smyslu jako lidé: píší zprávy, vlastní tickety, odevzdávají revize a objevují se na stejném seznamu. Práci dělají oni.
+Agent je pojmenovaný aktér s personou, sadou skillů a adaptérem, na kterém běží. Agenti jsou principálové ve stejném smyslu jako lidé: píší zprávy, vlastní tickety, odevzdávají revize a objevují se na stejném seznamu. Práci dělají oni.
 
 Každý agent patří právě do jednoho pracovního prostoru. To je tvrdý invariant: `agent.workspaceId` není null, vlastní pracovní prostor agenta vybírá databázový soubor, do kterého spadnou jeho řádky, a vytvoření agenta bez pracovního prostoru se odmítne.
 
@@ -26,7 +26,6 @@ Agent je také adresář. Jeho definice leží v `agents/<slug>/AGENTS.md` v dat
 | `modelId`               | Který model v rámci daného adaptéru                                                   |
 | `effort`                | Úroveň uvažování podle slovníku vybraného modelu                                     |
 | `contextSize`           | Přepsání velikosti kontextového okna                                                 |
-| `capabilities`          | Příznaky přihlašovacích údajů a odchozího provozu, kontrolované při spuštění         |
 | `silenceTimeoutMinutes` | Přepsání pro tohoto agenta (1–240) u watchdogu ticha                                  |
 | `reportsTo`             | Id nadřízeného agenta: řetězec podřízenosti, který kreslí organizační schéma         |
 
@@ -51,18 +50,13 @@ Omezení na jeden repozitář je rozhodnutí o rozpočtu kontextu. Index skillů
 
 Skilly repozitáře se načítají pro **každý** adaptér, nejen pro vestavěný harness. Skilly aktivního repozitáře se zapíšou do pracovního adresáře agenta. To je cesta, kterou Claude Code už prochází. Stejný index se složí do `AGENTS.md`, který čte vestavěný harness. Než k tomu dojde, skilly repozitáře projdou stejnou kontrolou jako nainstalovaný skill, která bez verdiktu nic nepropustí. Repozitář po checkoutu je naklonovaný obsah a jeho frontmatter se dostane do promptu.
 
-## Schopnosti
+## Oprávnění
 
-Schopnosti rozhodují o tom, co se běhu _předá_, ne o tom, čeho se smí dotknout na souborovém systému. Broker přihlašovacích údajů je kontroluje při spuštění: je-li schopnost vypnutá, odpovídající token se prostě nevloží.
+Agent nemá vlastní příznaky oprávnění. Jestli smí vytvořit commit, pushovat, otevřít pull request, zapisovat do trackeru nebo sahat na síť, rozhodují [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) — povolit, nejdřív se zeptat nebo zakázat, v rozsahu pracovního prostoru, agenta nebo prostoru — a stejná pravidla platí bez ohledu na to, který adaptér ho spouští.
 
-- **Push do repozitáře** řídí vložení tokenu GitHub použitého pro `git push`.
-- **GitHub API** řídí vložení `GH_TOKEN` a odchozí provoz na api.github.com.
-- **Ticketing** řídí API klíč poskytovatele ticketů a odchozí provoz na jeho domény.
-- **Odchozí síť** jsou libovolné odchozí požadavky.
+To, co se běhu _předá_, se s těmi pravidly nemění. Běh ve worktree GitHubu dostane vždycky token GitHub jen pro čtení a na push se ptá ve chvíli, kdy nastane: konfigurace gitu agenta posílá každý push na GitHub přes Control Center, které před předáním dál uplatní pravidlo **Odeslat na remote**.
 
-Běh je bere z vlastního řádku agenta. Když agent žádné nemá, platí pevný konzervativní výchozí stav: tři příznaky přihlašovacích údajů vypnuté, odchozí síť zapnutá. Přepínač „Oprávnění sandboxu“ ve formuláři agenta volí mezi tímto záložním stavem a vlastní sadou uloženou u agenta.
-
-Druhou polovinu, včetně toho, co se na úrovni souborového systému vynucuje a co ne, popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+Jak to funguje, včetně toho, co se na úrovni souborového systému vynucuje a co ne, popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 
 ## O vynucení rozhoduje adaptér
 
@@ -71,7 +65,7 @@ Pole s největšími důsledky je adaptér, protože jeho transport určuje, kol
 | Transport          | Adaptéry                  | Co Control Center vynucuje                                                                                                                                                                                                                                                 |
 | ------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Vestavěný harness  | Control Center (built-in) | Všechno. Plocha nástrojů se z režimu _sestaví_, takže zakázaný nástroj je neviditelný a nestačí ho jen odmítnout. Každé volání projde bránou schválení a guardraily akcí. Kontrakt dokončení umí běh pobídnout a pak ho ukončit chybou, když skončí bez požadovaného výstupu |
-| Claude CLI         | Claude Code               | Jen nástroje `mcp__*`, které dostane. Vlastní nástroje Claude pro čtení, zápis, úpravy a shell žijí v jeho procesu a běží mimo dohled. Spouští se s `--dangerously-skip-permissions`, protože neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu          |
+| Claude CLI         | Claude Code               | Nástroje `mcp__*`, které dostane, a jeho příkazy `Bash`, které hook před spuštěním pošle politice akcí. Vlastní nástroje Claude pro čtení, zápis a úpravy žijí v jeho procesu a běží mimo dohled. Spouští se s `--dangerously-skip-permissions`, protože neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu          |
 
 Konkrétně **jen vestavěný harness umí subagenty, řízení uprostřed běhu, pozastavení a obnovení (a tedy převzetí) a strukturální vynucení režimu.** Claude Code z toho neumí nic.
 

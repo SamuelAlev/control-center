@@ -2658,15 +2658,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get allow => 'Tillat';
 
   @override
-  String get allowGitPush => 'Tillat git push';
-
-  @override
-  String get allowGithubApi => 'Tillat GitHub API-kall';
-
-  @override
-  String get allowNetwork => 'Tillat generell nettverkstilgang';
-
-  @override
   String get apiKeys => 'API-nøkler';
 
   @override
@@ -3072,10 +3063,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get currentParticipants => 'Nåværende deltakere';
 
   @override
-  String get customCapabilitiesDescription =>
-      'Beskrivelse av egendefinerte evner';
-
-  @override
   String get customSystemPrompt =>
       'Egendefinert systemprompt for denne agenten…';
 
@@ -3092,9 +3079,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get deactivate => 'Deaktiver';
-
-  @override
-  String get defaultCapabilities => 'Standardkapasiteter · nye områder';
 
   @override
   String get defaultChat => 'Standardchat';
@@ -3501,10 +3485,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get forward => 'Fremover';
 
   @override
-  String get gatesGithubPatPush =>
-      'Styrer injeksjon av GitHub PAT. Påkrevd for at agenten skal kunne pushe.';
-
-  @override
   String get general => 'Generelt';
 
   @override
@@ -3569,6 +3549,11 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Avbrudd';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Tjenestestatus';
@@ -4035,6 +4020,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get navSettings => 'Innstillinger';
+
+  @override
+  String get exitSettings => 'Gå ut av innstillinger';
 
   @override
   String networkBlockCount(int count) {
@@ -4551,10 +4539,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get react => 'Reager';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Lar agenten lese PR-er, issues og arkivmetadata.';
-
-  @override
   String get readerPreferences => 'Leserinnstillinger';
 
   @override
@@ -4809,9 +4793,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Innebygd sandkasse er innebygd på macOS — bruker Apple Seatbelt (`sandbox-exec`). Ingen installasjon kreves.';
-
-  @override
-  String get sandboxPermissions => 'Sandkassetillatelser';
 
   @override
   String get sandboxUnsupported =>
@@ -5396,9 +5377,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get useSandbox => 'Bruk sandkasse';
 
   @override
-  String get useWorkspaceDefault => 'Bruk standard for arbeidsområde';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5441,10 +5419,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Svak isolasjon — bare navneromsgrense, ingen kjernegrense.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Når av, starter sandkassen uten en standardrute.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6663,14 +6637,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pipelineRunNoRepos => 'Ingen arkiv i dette arbeidsområdet ennå.';
 
   @override
-  String get allowTicketingApi => 'Tillat API-kall for saker';
-
-  @override
   String get ticketingApiKey => 'API-nøkkel for saker';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Injiserer saksleverandørens API-nøkkel i sandkassen.';
 
   @override
   String get ticketingProvider => 'Saksleverandør';
@@ -9039,29 +9006,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Datamaskinen kan sove selv om en agent jobber';
-
-  @override
-  String get syncEngineSectionTitle => 'Synkroniseringsmotor';
-
-  @override
-  String get syncEngineDescription =>
-      'Saker, meldinger og notater oppdateres live via små inkrementelle endringer i stedet for fulle øyeblikksbilder. Når du slår av en bryter, faller det lageret tilbake til full-øyeblikksbilde-modus — last appen på nytt for at endringen skal tre i kraft.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Saker';
-
-  @override
-  String get syncEngineMessagingTitle => 'Meldinger';
-
-  @override
-  String get syncEngineNotesTitle => 'Notater';
-
-  @override
-  String get syncEngineOnSubtitle => 'Live delta-synkronisering er aktiv';
-
-  @override
-  String get syncEngineOffSubtitle =>
-      'Bruker full-øyeblikksbilde-synkronisering';
 
   @override
   String get spaces => 'Områder';
@@ -12987,23 +12931,22 @@ class AppLocalizationsNb extends AppLocalizations {
       'Valgfritt — la stå tomt, så navngir tittelmodellen den automatisk';
 
   @override
-  String get conversationTitlesSectionTitle => 'Samtaletitler';
+  String get shortTaskOff => 'Av';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Velg kjøreren som navngir nye samtaler i dette arbeidsområdet automatisk. Titler er av til en adapter er valgt, og gjelder for alle medlemmer.';
+  String get shortTaskUnavailable =>
+      'Velg en modell for korte oppgaver under Innstillinger → Adaptere for å bruke dette';
 
   @override
-  String get conversationTitlesModelLabel => 'Tittelmodell';
+  String get conversationTitleGenerate => 'Generer';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adapter';
+  String get conversationTitleNoMessages =>
+      'Send en melding først. Tittelen lages ut fra den.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Av';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Av';
+  String get conversationTitleGenerateFailed =>
+      'Kunne ikke generere en tittel. Prøv igjen.';
 
   @override
   String get startThread => 'Start tråd';
@@ -13168,6 +13111,17 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Samtale';
+
+  @override
+  String get contextSegmentRunner =>
+      'Kjørerens prompt, verktøy og arbeid i turen';
+
+  @override
+  String get contextUsageMeasured => 'Rapportert av modellens siste kall';
+
+  @override
+  String get contextUsageEstimated =>
+      'Anslått til en kjøring rapporterer forbruk';
 
   @override
   String get contextExplorerTitle => 'Kontekst';
@@ -13559,12 +13513,15 @@ class AppLocalizationsNb extends AppLocalizations {
       'Hvor en agents prosesser og filskrivinger faktisk skjer.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Auto velger den sterkeste denne verten støtter. Fest én for å hindre at den endres under deg.';
+  String get sandboxGroupAgentActions => 'Hva agenter kan gjøre';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Hullene slått gjennom grensen. Hver er noe en isolert agent fortsatt kan gjøre mot omverdenen.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Om push, åpning av pull requests og bruk av nettverket tillates, krever spørsmål eller nektes, angis i agenttillatelser.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Auto velger den sterkeste denne verten støtter. Fest én for å hindre at den endres under deg.';
 
   @override
   String get sandboxSummaryInForce => 'I kraft';
@@ -13707,6 +13664,26 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Kjør dette i en terminal på serveren. Det åpner en nettleser for å fullføre innloggingen, og skriver påloggingsinformasjonen inn i denne kontoens mappe.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Langvarig token';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Bruk et langvarig token';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'Erstatt langvarig token';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'Fjern langvarig token';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'En vanlig pålogging må fornyes og kan utløpe over natten. Et langvarig token holder deg pålogget i omtrent et år. Kjør dette i en terminal, fullfør i nettleseren, og lim deretter inn tokenet den skriver ut.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Det er ikke et token fra claude setup-token. Det begynner med sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Logget ut';
@@ -14134,10 +14111,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Åpne i standardapp';
-
-  @override
-  String get asideUnavailable =>
-      'Sett en engangsmodell i arbeidsområdeinnstillingene for å bruke dette';
 
   @override
   String get asideEmpty => 'Ingenting å jobbe ut fra ennå';
@@ -14679,6 +14652,21 @@ class AppLocalizationsNb extends AppLocalizations {
   String get credentialGateOpenSettings => 'Åpne innstillinger';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'De tilknyttede Claude Code-kontoene er fjernet';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Knytt til en annen konto i kontoinnstillingene for denne agenten eller arbeidsområdet, eller tøm listen for å bruke standardkontoen. Kjøringen fortsetter av seg selv.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Alle kontoene i denne listen er fjernet fra serveren. Knytt til en annen, eller tøm listen.';
+
+  @override
+  String get accountPoolClear => 'Tøm listen';
+
+  @override
   String get selectModel => 'Velg modell';
 
   @override
@@ -15117,6 +15105,10 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Søk i samtalens filer etter navn og åpne én i en fane';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Søk i pull requestens filer etter navn og åpne én i en fane';
 
   @override
   String get ideQuickOpenHint => 'Søk etter filer etter navn';

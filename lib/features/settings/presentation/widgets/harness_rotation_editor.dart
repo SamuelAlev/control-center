@@ -1,4 +1,4 @@
-import 'package:cc_data/cc_data.dart' show RpcAccountPoolsRepository;
+import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/account_pool_editor.dart';
@@ -77,7 +77,10 @@ SubscriptionUsage? _usageFor(
       return u;
     }
   }
-  final matches = [for (final u in all) if (u.providerId == usageId) u];
+  final matches = [
+    for (final u in all)
+      if (u.providerId == usageId) u,
+  ];
   if (matches.length == 1 && matches.single.accountId == null) {
     return matches.single;
   }
@@ -101,15 +104,22 @@ class HarnessRotationEditor extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final scope = AccountPoolScope(lane: AccountPoolLanes.harness(info.id));
+    if (!watchAccountPoolEditorVisible(ref, scope, [
+      for (final c in info.credentials) c.credentialId,
+    ])) {
+      return const SizedBox.shrink();
+    }
     final all = ref.watch(subscriptionUsageProvider).value ?? const [];
-    return AccountPoolEditor(
-      scope: AccountPoolScope(
-        lane: RpcAccountPoolsRepository.harnessLane(info.id),
-      ),
-      candidates: harnessRotationCandidates(
-        info: info,
-        l10n: l10n,
-        usage: all,
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: 8),
+      child: AccountPoolEditor(
+        scope: scope,
+        candidates: harnessRotationCandidates(
+          info: info,
+          l10n: l10n,
+          usage: all,
+        ),
       ),
     );
   }

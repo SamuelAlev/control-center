@@ -14,12 +14,13 @@ import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/workspace_events.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
+import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart'
+    show AccountPoolOrder, RunCredentialReason;
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/core/domain/services/activity_logger.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/core/domain/services/user_mention_parser.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
@@ -74,6 +75,7 @@ import 'package:cc_domain/features/pipelines/domain/services/pipeline_trigger_di
 import 'package:cc_domain/features/pipelines/domain/services/sub_pipeline_resume_listener.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
     show BuiltInBodyKeys;
+import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
@@ -95,6 +97,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_domain/features/settings/domain/services/branch_template_resolver.dart';
+import 'package:cc_domain/features/skills/domain/ports/skill_source_port.dart';
 import 'package:cc_domain/features/skills/domain/scanner/skill_scanner.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_domain/features/teams/domain/services/team_routing_service.dart';
@@ -230,7 +233,6 @@ import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 import 'package:cc_server_core/src/skill_reverify_service.dart';
 import 'package:cc_server_core/src/space_provisioning_service.dart';
 import 'package:cc_server_core/src/space_stack_service.dart';
-import 'package:cc_server_core/src/sync/sync_feed_service.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
 import 'package:cc_server_core/src/write_ledger_adapter.dart';
@@ -769,58 +771,6 @@ Future<CcServer> runCcServer({
   // a hard 20s timeout and KILLS the child on expiry.
   final astParsers = AstParserProvider(resolve: grammarManager.resolve);
 
-  // Tails the trigger-written change feed and emits ordered delta packets;
-  // rows load through the SAME wire mappers the snapshot watches use.
-  final syncFeed = SyncFeedService(
-    workspaces: workspaceDbs,
-    loaders: {
-      // Each loader receives the workspace the change came from and that
-      // workspace picks the database file — so the "does this row actually
-      // belong to `ws`?" checks these loaders used to make are now answered by
-      // which file was opened.
-      'tickets': (ws, pk, ctx) async {
-        final t = await ticketRepository.getById(ws, pk);
-        return t == null ? null : ticketToWire(t);
-      },
-      'spaces': (ws, pk, ctx) async {
-        final c = await messagingRepository.getSpaceById(ws, pk);
-        return c == null ? null : spaceToWire(c);
-      },
-      'conversation_messages': (ws, pk, ctx) async {
-        final m = await messagingRepository.getMessageById(ws, pk);
-        return m == null ? null : messageToWireLite(m);
-      },
-      'space_participants': (ws, pk, ctx) async {
-        if (ctx == null) {
-          return null;
-        }
-        final participants = await messagingRepository.getParticipants(ws, ctx);
-        for (final p in participants) {
-          if (p.id == pk) {
-            return spaceParticipantToWire(p);
-          }
-        }
-        return null;
-      },
-      'space_notes': (ws, pk, ctx) async {
-        if (ctx == null) {
-          return null;
-        }
-        final note = await workspaceDbs
-            .of(ws)
-            .spaceExtrasDao
-            .noteForSpace(ws, ctx);
-        return (note == null || note.id != pk) ? null : spaceNoteToWire(note);
-      },
-      'message_reactions': (ws, pk, ctx) async {
-        final wsDb = workspaceDbs.of(ws);
-        final row = await (wsDb.select(
-          wsDb.messageReactionsTable,
-        )..where((t) => t.id.equals(pk))).getSingleOrNull();
-        return row == null ? null : reactionToWire(row);
-      },
-    },
-  )..start();
   // The headless server owns the FULL newsfeed surface (DB reads + RSS
   // fetch/refresh/feed-management) via the same repository the desktop uses,
   // composing the cc_infra RSS fetcher with the cc_persistence RSS DAO.
@@ -1033,14 +983,6 @@ Future<CcServer> runCcServer({
     'resolving forge credentials',
     forgeCredentials.connections,
   );
-  // The server's own GitHub credential, snapshotted for the surfaces built
-  // around a captured token (the GraphQL dashboard queries, the local-git diff
-  // source). Everything that goes through `forgeDioFactory` resolves per
-  // request instead, so a credential added later needs no restart.
-  final ghToken = await forgeCredentials.tokenFor(ForgeHost.github) ?? '';
-  final ghUsername = ghToken.isEmpty
-      ? ''
-      : await forgeCredentials.viewerLogin(ForgeHost.github);
   final connectedForges = {
     for (final c in forgeConnections)
       if (c.authenticated) c.forge,
@@ -1089,6 +1031,31 @@ Future<CcServer> runCcServer({
   final serverGitHubClient = GitHubApiClient(
     forgeDioFactory.of(ForgeHost.github),
   );
+
+  // Repo reads on behalf of a workspace resolve through that workspace's
+  // GitHub identity mode (inherit / its own App / background PAT only) and the
+  // installation covering the repo's owner. `serverGitHubClient` knows neither:
+  // it answers with whichever install-App installation responded first, so a
+  // private repo that App cannot see reads as 404 even when the workspace's
+  // configured credential can.
+  final ownerScopedGitHubDios = <String, Dio>{};
+  Dio githubDioForOwner(String workspaceId, String owner) =>
+      ownerScopedGitHubDios.putIfAbsent(
+        '$workspaceId\u0000${owner.toLowerCase()}',
+        () => ForgeDioFactory(
+          tokenLookup: (forge) => forgeCredentials.tokenForRepoOwner(
+            forge,
+            owner,
+            workspaceId: workspaceId.isEmpty ? null : workspaceId,
+          ),
+        ).of(ForgeHost.github),
+      );
+  final ownerScopedGitHubClients = <String, GitHubApiClient>{};
+  GitHubApiClient githubClientForOwner(String workspaceId, String owner) =>
+      ownerScopedGitHubClients.putIfAbsent(
+        '$workspaceId\u0000${owner.toLowerCase()}',
+        () => GitHubApiClient(githubDioForOwner(workspaceId, owner)),
+      );
 
   // The composer's GIF picker runs on the host's Klipy app key (the thin client
   // holds none). Null when unconfigured → the `gif.*` ops return empty.
@@ -1146,6 +1113,48 @@ Future<CcServer> runCcServer({
           ).of(ForgeHost.github),
         ),
       );
+
+  // A workspace's own background GitHub identity (no acting user), for reads
+  // that span several repo owners in one query (search). Follows the
+  // workspace's GitHub identity mode; per-repo reads use
+  // `githubClientForOwner` so the installation matches the repo's owner.
+  final workspaceGitHubClients = <String, GitHubApiClient>{};
+  GitHubApiClient githubClientForWorkspace(String workspaceId) =>
+      workspaceGitHubClients.putIfAbsent(
+        workspaceId,
+        () => GitHubApiClient(
+          forgeDioFactoryForActor(
+            null,
+            workspaceId: workspaceId,
+          ).of(ForgeHost.github),
+        ),
+      );
+
+  // Whether a GitHub read has any credential to ride, decided per call rather
+  // than from a boot-time snapshot of the install's token: a workspace on its
+  // own PAT or App has one even when the install has none, and a credential
+  // added after boot applies without a restart. A read with none degrades to
+  // an empty answer instead of an anonymous call.
+  Future<bool> hasGitHubForWorkspace(String workspaceId) async =>
+      await forgeCredentials.tokenFor(
+        ForgeHost.github,
+        workspaceId: workspaceId,
+      ) !=
+      null;
+  Future<bool> hasGitHubForOwner(String workspaceId, String owner) async =>
+      await forgeCredentials.tokenForRepoOwner(
+        ForgeHost.github,
+        owner,
+        workspaceId: workspaceId,
+      ) !=
+      null;
+  Future<bool> hasGitHubForActor(String userId, {String? workspaceId}) async =>
+      await forgeCredentials.tokenForActor(
+        ForgeHost.github,
+        userId,
+        workspaceId: workspaceId,
+      ) !=
+      null;
 
   // One identity cache per acting user. The cache holds a login and an org →
   // teams map, which are that person's, so a single shared instance would hand
@@ -1610,7 +1619,8 @@ Future<CcServer> runCcServer({
   // is untrusted — only the content hash CC computes over the fetched bytes is
   // trusted and every install still passes the mandatory scan gate.
   final skillSourceStore = DaoSkillSourceRepository(workspaceDbs);
-  final skillSourceCatalog = GitHubSkillSourceAdapter(serverGitHubClient);
+  SkillSourcePort skillSourceCatalogFor(String workspaceId, String owner) =>
+      GitHubSkillSourceAdapter(githubClientForOwner(workspaceId, owner));
   final skillBundles = SkillBundleService(
     filesystem: workspaceFilesystem,
     scanner: skillScanner,
@@ -1626,26 +1636,41 @@ Future<CcServer> runCcServer({
     // the latest commit touching it when the caller names no ref.
     fetchGitHubSkill:
         ({
+          required String workspaceId,
           required String owner,
           required String repo,
           required String path,
           String? ref,
-        }) => skillSourceCatalog.resolve(owner, repo, path, ref: ref),
+        }) => skillSourceCatalogFor(
+          workspaceId,
+          owner,
+        ).resolve(owner, repo, path, ref: ref),
     // PRD 23 §4 update-check: resolve latest upstream commit + default branch.
     latestCommit:
         ({
+          required String workspaceId,
           required String owner,
           required String repo,
           required String path,
           String? branch,
-        }) => serverGitHubClient.content.getLatestCommitSha(
+        }) => githubClientForOwner(
+          workspaceId,
+          owner,
+        ).content.getLatestCommitSha(
           owner,
           repo,
           path,
           branch: branch,
         ),
-    defaultBranch: ({required String owner, required String repo}) =>
-        serverGitHubClient.pr.getDefaultBranch(owner, repo),
+    defaultBranch:
+        ({
+          required String workspaceId,
+          required String owner,
+          required String repo,
+        }) => githubClientForOwner(
+          workspaceId,
+          owner,
+        ).pr.getDefaultBranch(owner, repo),
   );
   // PRD 23 §6 enforcement: quarantined skills are refused agent links. The
   // filter is attached here (not in the constructor) because its verdict source
@@ -1706,24 +1731,6 @@ Future<CcServer> runCcServer({
   // membership does not freeze at boot.
   // GitHub adapter is per repo owner (installation token is owner-scoped;
   // other owners 404).
-  final ownerScopedGitHubDios = <String, Dio>{};
-  Dio githubDioForOwner(String workspaceId, String owner) =>
-      ownerScopedGitHubDios.putIfAbsent(
-        '$workspaceId\u0000${owner.toLowerCase()}',
-        () => ForgeDioFactory(
-          tokenLookup: (forge) => forgeCredentials.tokenForRepoOwner(
-            forge,
-            owner,
-            workspaceId: workspaceId.isEmpty ? null : workspaceId,
-          ),
-        ).of(ForgeHost.github),
-      );
-  final ownerScopedGitHubClients = <String, GitHubApiClient>{};
-  GitHubApiClient githubClientForOwner(String workspaceId, String owner) =>
-      ownerScopedGitHubClients.putIfAbsent(
-        '$workspaceId\u0000${owner.toLowerCase()}',
-        () => GitHubApiClient(githubDioForOwner(workspaceId, owner)),
-      );
   Future<GitHubAppClient?> githubAppForWorkspace({String? workspaceId}) async {
     if (workspaceId == null || workspaceId.isEmpty) {
       return providerApps.githubApp();
@@ -1855,7 +1862,11 @@ Future<CcServer> runCcServer({
   final localGitPrDiffSource = LocalGitPrDiffSource(
     git: const ProcessGitCommandAdapter(),
     filesystem: workspaceFilesystem,
-    githubToken: ghToken,
+    githubTokenFor: (workspaceId, owner) => forgeCredentials.tokenForRepoOwner(
+      ForgeHost.github,
+      owner,
+      workspaceId: workspaceId.isEmpty ? null : workspaceId,
+    ),
   );
   // One registry per acting user. Every `pr_review.*` mutation — approve,
   // comment, reply, react, merge, assign, request reviewers — goes out on the
@@ -1953,6 +1964,31 @@ Future<CcServer> runCcServer({
     serverOwnerUserId: () async => ownerUserId,
     workspacePat: workspaceGitHub.backgroundPat,
   );
+  // The action policy's reach into an agent's sandbox. Agents hold a read-only
+  // forge token; their git config routes every GitHub push here, where the
+  // "Push to a remote" rule is asked before the push is forwarded on a write
+  // token the gateway keeps. Claude Code's `Bash` calls are asked about through
+  // its PreToolUse hook on the same endpoint. Mounted on the MCP surface, so it
+  // rides the loopback port agents already dial.
+  final agentRunGateway = AgentRunGateway(
+    guard: actionGuard,
+    broker: credentialBroker,
+    loopbackBase: mcpControl.agentLoopbackBase,
+    // A run may push to its own worktree's repo, or to any GitHub repo linked
+    // to its workspace — never to one the workspace does not know.
+    repoAllowed: (workspaceId, owner, name) async {
+      final repos = await workspaceRepository
+          .watchReposForWorkspace(workspaceId)
+          .first;
+      return repos.any(
+        (r) =>
+            r.forge == ForgeHost.github &&
+            r.remoteOwner.toLowerCase() == owner.toLowerCase() &&
+            r.remoteName.toLowerCase() == name.toLowerCase(),
+      );
+    },
+  );
+  mcpControl.agentRoutes = agentRunGateway.handle;
   // Server-owned LLM provider credential store (the "brain"): UI-saved API keys
   // and OAuth tokens persist to a 0600 JSON file under the data dir, with the
   // process environment as a read-only fallback. The SAME instance backs both
@@ -2137,6 +2173,7 @@ Future<CcServer> runCcServer({
     // dispatchers use now gates the BUILT-IN harness loop by declared effect
     // class — the path bridged MCP tools take (they bypass the MCP dispatcher).
     actionGuard: actionGuard,
+    agentRunGateway: agentRunGateway,
     // The same fail-closed gate the install path uses, so a repo's own skills
     // pass a verdict before they are projected into an agent's overlay: they
     // are cloned content whose frontmatter is autoloaded into a prompt.
@@ -2428,20 +2465,21 @@ Future<CcServer> runCcServer({
       return (usedFraction: worst, resetsAt: resetsAt);
     },
   );
-  // A demo must not import the operator's keychain login into the public
-  // server. Its Claude Code roster is fictional and wired below.
+  // Older builds seeded an account by copying the operator's own Claude Code
+  // login, and the two copies of its rotating refresh token signed each other
+  // out daily. Undo that once, before any run can refresh the copy again. The
+  // operator's own login is never copied any more: accounts sign in on their
+  // own or carry a `claude setup-token` token. A demo's roster is fictional.
   if (demo == null) {
-    unawaited(
-      claudeAccountStore.bootstrapFromKeychain().catchError((Object e) {
-        // Never fatal: a host with no keychain item simply starts with no
-        // accounts, and the operator signs one in from Settings.
-        _emitLog(
-          false,
-          'cc_server: Claude Code account bootstrap skipped ($e)',
-        );
-        return null;
-      }),
-    );
+    final retired = await claudeAccountStore.retireDefaultLoginCopies();
+    if (retired.isNotEmpty) {
+      _emitLog(
+        false,
+        'cc_server: Claude Code account ${retired.join(', ')} no longer '
+        'mirrors your own Claude Code login; give it a long-lived token in '
+        'Settings → Adapters → Claude Code.',
+      );
+    }
   }
   final agentDispatchService = AgentDispatchService(
     agentDispatch: agentDispatch,
@@ -2518,24 +2556,16 @@ Future<CcServer> runCcServer({
           // Most-specific scope wins, the same order guardrails resolve in:
           // the agent's own pool, then the workspace's. An explicit
           // `accountId` is more specific than either and short-circuits both.
-          final pool = workspaceId == null
-              ? const AccountPool()
-              : await _readClaudeAccountPool(
-                  workspaceSettingsRepository,
-                  workspaceId,
-                  agentId,
-                );
-          final cursorKey = claudeAccountCursorKey(agentId);
-          final cursor = workspaceId == null
-              ? 0
-              : int.tryParse(
-                      await workspaceSettingsRepository.get(
-                            workspaceId,
-                            cursorKey,
-                          ) ??
-                          '',
-                    ) ??
-                    0;
+          // The same reader the harness lane uses — one place pools resolve.
+          final read = await readAccountPool(
+            workspaceSettingsRepository,
+            workspaceId: workspaceId,
+            agentId: agentId,
+            lane: AccountPoolLanes.claudeCode,
+          );
+          final pool = read.pool;
+          final cursorKey = read.cursorKey;
+          final cursor = read.cursor;
           final plan = await claudeAccountStore.resolveForDispatch(
             pool: pool,
             pinnedAccountId: accountId,
@@ -2551,7 +2581,10 @@ Future<CcServer> runCcServer({
           // racing still land on different accounts — writing it after would
           // let both read the same cursor and pick the same one.
           final next = plan.nextCursor;
-          if (next != null && workspaceId != null && next != cursor) {
+          if (next != null &&
+              workspaceId != null &&
+              cursorKey != null &&
+              next != cursor) {
             await workspaceSettingsRepository.set(
               workspaceId,
               cursorKey,
@@ -3207,7 +3240,7 @@ Future<CcServer> runCcServer({
                     egressAllowlist: execRigEgressAllowlist(forge: forge),
                     // A CEILING, not an authorization. A person typing in
                     // their own terminal expects `git push` to work, so the
-                    // flags stay open — but what the shell can actually reach
+                    // scope is write — but what the shell can actually reach
                     // is decided by `openedByUserId` below, against that
                     // member's own forge access.
                     //
@@ -3216,11 +3249,7 @@ Future<CcServer> runCcServer({
                     // everyone else: a member on a remote client has no host
                     // to push from, so an unbounded enclosed terminal would
                     // hand them access they do not otherwise have.
-                    capabilities: const AgentCapabilities(
-                      canPushToRepo: true,
-                      canCallGitHubApi: true,
-                      canAccessNetwork: true,
-                    ),
+                    forgeTokenScope: ForgeTokenScope.write,
                     repoOwner: forge?.owner,
                     repoName: forge?.name,
                     // Whose access this shell is bounded by. Falls back to the
@@ -3686,7 +3715,8 @@ Future<CcServer> runCcServer({
     messagingRepository: messagingRepository,
     isolatedRepoRepository: isolatedRepoRepository,
     agentDispatchPort: agentDispatch,
-    githubPrClient: serverGitHubClient.pr,
+    githubPrClientFor: (workspaceId, owner) =>
+        githubClientForOwner(workspaceId, owner).pr,
     orchestrationRepository: orchestrationRepository,
     ticketWorkflow: ticketWorkflow,
     codeIndexer: codeIndexer,
@@ -3965,7 +3995,10 @@ Future<CcServer> runCcServer({
     required String repo,
     required int prNumber,
   }) async {
-    final cacheKey = '$owner/$repo#$prNumber';
+    // Keyed by workspace too: the lookup reads with that workspace's GitHub
+    // identity, so a PR one workspace cannot see (synthetic fallback) must not
+    // poison the answer for another that can.
+    final cacheKey = '$workspaceId\u0000$owner/$repo#$prNumber';
     final cached = prExternalIdCache[cacheKey];
     if (cached != null) {
       return cached;
@@ -3981,18 +4014,17 @@ Future<CcServer> runCcServer({
         return prExternalIdCache[cacheKey] = a.prExternalId;
       }
     }
-    final gh = await serverGitHubClient.pr.getPullRequest(
+    final gh = await githubClientForOwner(
+      workspaceId,
       owner,
-      repo,
-      prNumber,
-    );
+    ).pr.getPullRequest(owner, repo, prNumber);
     final externalId = gh != null
         ? pullRequestFromGitHub(gh, repoFullName: repoFullName).externalId
         : '';
     // Last resort (PR not found): the synthetic key, so the key is never empty.
     return prExternalIdCache[cacheKey] = externalId.isNotEmpty
         ? externalId
-        : cacheKey;
+        : '$owner/$repo#$prNumber';
   }
 
   // The reviewer fan-out + GitHub publish services back the AI-review MCP
@@ -4041,7 +4073,10 @@ Future<CcServer> runCcServer({
           if (parts.length < 2) {
             return const [];
           }
-          final files = await serverGitHubClient.pr.listPullRequestFiles(
+          final files = await githubClientForOwner(
+            workspaceId,
+            parts.first,
+          ).pr.listPullRequestFiles(
             parts.first,
             parts.sublist(1).join('/'),
             prNumber,
@@ -4052,12 +4087,13 @@ Future<CcServer> runCcServer({
   final reviewPublisherService = ReviewPublisherService(
     // Per acting user: the "publish to GitHub" button submits as the person who
     // pressed it, and the opt-in auto-publish at the end of an agent
-    // orchestration passes no user and stays on the server's identity.
-    githubPrClientFor: (actingUserId) => actingUserId == null
-        ? serverGitHubClient.pr
-        : GitHubApiClient(
-            forgeDioFactoryForActor(actingUserId).of(ForgeHost.github),
-          ).pr,
+    // orchestration passes no user and stays on the workspace's background
+    // identity. Both follow the workspace's GitHub identity mode.
+    githubPrClientFor:
+        (actingUserId, {required workspaceId, required owner}) =>
+            actingUserId == null
+            ? githubClientForOwner(workspaceId, owner).pr
+            : githubClientForActor(actingUserId, workspaceId: workspaceId).pr,
     messaging: messagingRepository,
     reviewSpaces: reviewSpaceRepository,
   );
@@ -4238,16 +4274,13 @@ Future<CcServer> runCcServer({
     required String userId,
   }) async {
     final linked = await resolveLinkedReviewRepo(workspaceId, owner, repo);
-    final gh = await serverGitHubClient.pr.getPullRequest(
-      owner,
-      repo,
-      prNumber,
-    );
+    final github = githubClientForOwner(workspaceId, owner);
+    final gh = await github.pr.getPullRequest(owner, repo, prNumber);
     if (gh == null) {
       throw const NotFoundException('Pull request not found');
     }
     final pr = pullRequestFromGitHub(gh, repoFullName: linked.fullName);
-    final files = await serverGitHubClient.pr.listPullRequestFiles(
+    final files = await github.pr.listPullRequestFiles(
       owner,
       repo,
       prNumber,
@@ -4306,7 +4339,7 @@ Future<CcServer> runCcServer({
         headSha: pr.headSha,
         changedFiles: changedFiles,
         readContent: ({required String path, required String ref}) =>
-            serverGitHubClient.content.getFileContent(owner, repo, path, ref),
+            github.content.getFileContent(owner, repo, path, ref),
       );
       if (dependencyDiffs.isNotEmpty) {
         CcHostLog.info(
@@ -4325,7 +4358,7 @@ Future<CcServer> runCcServer({
       headSha: pr.headSha,
       changedFiles: changedFiles,
       readContent: ({required String path, required String ref}) =>
-          serverGitHubClient.content.getFileContent(owner, repo, path, ref),
+          github.content.getFileContent(owner, repo, path, ref),
     );
     if (contract != null) {
       axes.add(contract.toJson());
@@ -4600,9 +4633,13 @@ Future<CcServer> runCcServer({
     String? createdByUserId,
     String title = '',
   }) async {
-    final existing = await reviewSpaceRepository
-        .watchByPr(workspaceId, prExternalId)
-        .first;
+    final existing = await findPrSpaceAssociation(
+      reviewSpaceRepository,
+      workspaceId: workspaceId,
+      repoFullName: repoFullName,
+      prNumber: prNumber,
+      prExternalId: prExternalId,
+    );
     if (existing != null &&
         await messagingRepository.spaceExists(workspaceId, existing.spaceId)) {
       final ch = await messagingRepository.getSpaceById(
@@ -4756,11 +4793,10 @@ Future<CcServer> runCcServer({
         ) ??
         ReviewLevel.defaultLevel;
     final linkedRepo = await resolveLinkedReviewRepo(workspaceId, owner, repo);
-    final gh = await serverGitHubClient.pr.getPullRequest(
+    final gh = await githubClientForOwner(
+      workspaceId,
       owner,
-      repo,
-      prNumber,
-    );
+    ).pr.getPullRequest(owner, repo, prNumber);
     if (gh == null) {
       throw const NotFoundException('Pull request not found');
     }
@@ -4826,8 +4862,9 @@ Future<CcServer> runCcServer({
   // an inbound URL this server deliberately does not require — so a polling
   // sweep is the transport, at the cost of a sweep interval of latency.
   //
-  // Everything the bridge does on GitHub rides the SERVER's identity (app →
-  // owner → environment): a PR comment is background work no human clicked,
+  // Everything the bridge does on GitHub rides the workspace's background
+  // identity for the repo's owner: a PR comment is background work no human
+  // clicked,
   // which is the attribution rule the forge seams already follow. The in-space
   // question is attributed to the member whose GitHub login the commenter maps
   // to (membership is the gate), and the run executes on their behalf.
@@ -4836,7 +4873,7 @@ Future<CcServer> runCcServer({
     resolvePrExternalId: resolvePrExternalId,
     ensureReviewSpace: ensureReviewSpaceFn,
     agents: agentRepository,
-    github: serverGitHubClient,
+    githubFor: githubClientForOwner,
     resolveLinkedRepo: resolveLinkedReviewRepo,
     credentials: forgeCredentials,
     diffSource: localGitPrDiffSource,
@@ -5246,6 +5283,11 @@ Future<CcServer> runCcServer({
       confirmationPort: confirmationPort,
       protectedPathsResolver: protectedPathsResolver,
       toolDeferralEnabled: config.toolDeferralEnabled,
+      conversationContextUseCase: conversationContextUseCase,
+      modelWindowOf: (qualified) => harnessModelOverrides
+          .resolve(modelCatalogService.catalogSync().resolve, qualified)
+          ?.limits
+          .context,
     ),
     weatherService: weatherService,
     fontCatalog: fontCatalog,
@@ -5377,6 +5419,7 @@ Future<CcServer> runCcServer({
     watchUserPromptHistory: messagingRepository.watchUserPromptHistory,
     // Conversations (parallel streams / "parentheses" inside a space).
     conversationRepository: conversationRepository,
+    conversationTitles: conversationTitleService,
     watchConversationsForSpace: (workspaceId, spaceId) => conversationRepository
         .watchForSpace(workspaceId: workspaceId, spaceId: spaceId),
     workspaceRepository: workspaceRepository,
@@ -5408,7 +5451,7 @@ Future<CcServer> runCcServer({
     // enforcement.
     skillBundles: skillBundles,
     skillSources: skillSourceStore,
-    skillSourceCatalog: skillSourceCatalog,
+    skillSourceCatalogFor: skillSourceCatalogFor,
     skillAnalysis: skillAnalysis,
     // Backs `skills.repoSkills`: the same gate the dispatch-time projector
     // uses, so the composer's palette and a slash command agree on what a
@@ -5583,7 +5626,6 @@ Future<CcServer> runCcServer({
     // demo: no tunnels, no mDNS.
     networkRuntime: demo != null ? null : () => networkRuntimeHolder.value,
     presenceHub: presenceHub,
-    syncFeed: syncFeed,
     workspaceDbs: workspaceDbs,
     takeoverService: takeoverService,
     // Relay pairing: advertise the broker so a phone that can't reach this
@@ -5742,23 +5784,15 @@ Future<CcServer> runCcServer({
       return {for (final p in pairs) '${p.repoFullName}#${p.number}'};
     },
     // The PR-queue free-text search, parsed + executed server-side.
-    fetchPrSearch: ghToken.isEmpty
-        ? null
-        : (repos, query) async {
-            final groups = await GitHubPrSearchAdapter(
-              serverGitHubClient,
-            ).search(query: PrSearchQuery.parse(query), repos: repos);
-            return [for (final g in groups) (repo: g.repo, prs: g.prs)];
-          },
-    // Per-author PR counts for the profile rail.
-    fetchPrCountsByAuthor: ghToken.isEmpty
-        ? null
-        : (repos, login) => serverGitHubClient.graphql.prCountsByAuthor(
-            login: login,
-            repos: [
-              for (final r in repos) (owner: r.remoteOwner, name: r.remoteName),
-            ],
-          ),
+    fetchPrSearch: (repos, query, {required workspaceId}) async {
+      if (!await hasGitHubForWorkspace(workspaceId)) {
+        return const [];
+      }
+      final groups = await GitHubPrSearchAdapter(
+        githubClientForWorkspace(workspaceId),
+      ).search(query: PrSearchQuery.parse(query), repos: repos);
+      return [for (final g in groups) (repo: g.repo, prs: g.prs)];
+    },
     // The caller's merged PR history, asked of each repo's own forge under
     // the CALLER's per-forge viewer identity. Fails soft per repo so one
     // inaccessible repo — or one unconnected forge — never sinks the rest.
@@ -5766,94 +5800,43 @@ Future<CcServer> runCcServer({
         ? demo.mergedByViewer
         : mergedHistory.mergedByViewer,
     // GitHub org members across the workspace's repo owners (deduped by login).
-    fetchOrgMembers: ghToken.isEmpty
-        ? null
-        : (owners) async {
-            final byLogin = <String, Map<String, dynamic>>{};
-            for (final org in owners) {
-              try {
-                final members = await serverGitHubClient.content
-                    .getOrganizationMembers(org);
-                for (final m in members) {
-                  byLogin[m.login] = m.toJson();
-                }
-              } on Object {
-                // skip this org
-              }
-            }
-            return byLogin.values.toList();
-          },
+    fetchOrgMembers: (owners, {required workspaceId}) async {
+      final byLogin = <String, Map<String, dynamic>>{};
+      for (final org in owners) {
+        if (!await hasGitHubForOwner(workspaceId, org)) {
+          continue;
+        }
+        try {
+          final members = await githubClientForOwner(
+            workspaceId,
+            org,
+          ).content.getOrganizationMembers(org);
+          for (final m in members) {
+            byLogin[m.login] = m.toJson();
+          }
+        } on Object {
+          // skip this org
+        }
+      }
+      return byLogin.values.toList();
+    },
     // Bundled GitHub read fetchers for the compose-PR / peek / `#` search / repo
     // permission / profile / pagination surfaces a thin client can no longer
-    // fetch itself (it holds no gh token). Null when token-less so those ops
-    // degrade to empty. Workspace ownership of (owner, repo) is enforced in each
-    // op handler before these run.
+    // fetch itself (it holds no gh token). Each fetcher degrades to empty when
+    // its caller/workspace has no credential. Workspace ownership of
+    // (owner, repo) is enforced in each op handler before these run.
     // demo: every GitHub read is egress.
     githubRead: demo != null
         ? null
-        : ghToken.isEmpty
-        ? null
         : (
-            repoBranches: (owner, repo) async {
-              final branches = await serverGitHubClient.graphql
-                  .listBranchesWithActivity(owner, repo);
-              final me = ghUsername.toLowerCase();
-              // Most-recent commit first; unknown dates sort last (a/b inferred
-              // as GitHubBranchActivity from the list element type).
-              final sorted = branches.toList()
-                ..sort((a, b) {
-                  final da = a.committedDate;
-                  final db = b.committedDate;
-                  if (da == null && db == null) {
-                    return 0;
-                  }
-                  if (da == null) {
-                    return 1;
-                  }
-                  if (db == null) {
-                    return -1;
-                  }
-                  return db.compareTo(da);
-                });
-              final mine = <String>[];
-              final others = <String>[];
-              for (final b in sorted) {
-                if (me.isNotEmpty && b.authorLogin?.toLowerCase() == me) {
-                  mine.add(b.name);
-                } else {
-                  others.add(b.name);
-                }
+            prContent: (owner, repo, number, {required workspaceId}) async {
+              if (!await hasGitHubForOwner(workspaceId, owner)) {
+                return null;
               }
-              return [...mine, ...others];
-            },
-            defaultBranch: serverGitHubClient.pr.getDefaultBranch,
-            prTemplates: (owner, repo) async {
-              final templates = await serverGitHubClient.graphql
-                  .fetchPullRequestTemplates(owner, repo);
-              return [
-                for (final t in templates)
-                  (name: t.name, body: t.body, isDefault: t.isDefault),
-              ];
-            },
-            compareBranches: (owner, repo, base, head) async {
-              final c = await serverGitHubClient.pr.compareBranches(
+              final gh = await githubClientForOwner(
+                workspaceId,
                 owner,
-                repo,
-                base: base,
-                head: head,
-              );
-              return (
-                files: c.files.map(prFileFromGitHub).toList(growable: false),
-                commits: c.commits
-                    .map(prCommitFromGitHub)
-                    .toList(growable: false),
-                additions: c.additions,
-                deletions: c.deletions,
-                totalCommits: c.totalCommits,
-              );
-            },
-            prContent: (owner, repo, number) async {
-              final gh = await serverGitHubClient.pr.getPullRequest(
+              ).pr.getPullRequest(
                 owner,
                 repo,
                 number,
@@ -5868,7 +5851,11 @@ Future<CcServer> runCcServer({
                 commitsCount: gh.commitsCount,
               );
             },
-            searchIssues: serverGitHubClient.pr.searchIssues,
+            searchIssues: (owner, repo, query, {required workspaceId}) =>
+                githubClientForOwner(
+                  workspaceId,
+                  owner,
+                ).pr.searchIssues(owner, repo, query),
             // The CALLER's permission, on the CALLER's client. The answer is
             // about one specific human — gating their merge/edit affordances
             // on the boot-time server login reported the wrong person's
@@ -5901,38 +5888,51 @@ Future<CcServer> runCcServer({
             // user-to-server token reads the whole profile. A member who has
             // not connected GitHub still falls back to the app identity and
             // gets the tolerated partial answer (profile without orgs).
-            userProfile: (login, actingUserId) async =>
-                (await githubClientForActor(
-                  actingUserId,
-                ).graphql.getUserProfile(login: login))?.toWire(),
-            teamProfile: (organization, slug, actingUserId) =>
-                githubClientForActor(actingUserId).graphql.getTeamProfile(
-                  organization: organization,
-                  slug: slug,
-                ),
-            profileActivity: (repos, logins, actingUserId) =>
-                GitHubProfileActivityAdapter(
-                  githubClientForActor(actingUserId),
-                ).fetch(repos: repos, logins: logins),
-            openPrPage: (owner, repo, page) async {
-              final result = await serverGitHubClient.pr
-                  .listOpenPullRequestsPage(owner, repo, page: page);
-              return (
-                prs: [
-                  for (final gh in result.items)
-                    pullRequestFromGitHub(gh, repoFullName: '$owner/$repo'),
-                ],
-                hasMore: result.hasMore,
+            userProfile: (login, actingUserId) async {
+              if (!await hasGitHubForActor(actingUserId)) {
+                return null;
+              }
+              return (await githubClientForActor(
+                actingUserId,
+              ).graphql.getUserProfile(login: login))?.toWire();
+            },
+            teamProfile: (organization, slug, actingUserId) async {
+              if (!await hasGitHubForActor(actingUserId)) {
+                return null;
+              }
+              return githubClientForActor(actingUserId).graphql.getTeamProfile(
+                organization: organization,
+                slug: slug,
               );
             },
-            closedByAuthorPage: (owner, repo, login, page) async {
-              final result = await serverGitHubClient.pr
-                  .searchClosedPullRequestsByAuthor(
-                    owner,
-                    repo,
-                    login,
-                    page: page,
-                  );
+            // The caller's credential under the bound workspace's identity
+            // mode: a workspace set to "personal access token only" reads its
+            // private repos with that token, not the install App the
+            // workspace opted out of (which answers private repos it is not
+            // installed on with nothing, leaving only the public ones).
+            profileActivity:
+                (repos, logins, actingUserId, {required workspaceId}) async {
+                  if (!await hasGitHubForActor(
+                    actingUserId,
+                    workspaceId: workspaceId,
+                  )) {
+                    return GitHubProfileActivity.empty;
+                  }
+                  return GitHubProfileActivityAdapter(
+                    githubClientForActor(
+                      actingUserId,
+                      workspaceId: workspaceId,
+                    ),
+                  ).fetch(repos: repos, logins: logins);
+                },
+            openPrPage: (owner, repo, page, {required workspaceId}) async {
+              if (!await hasGitHubForOwner(workspaceId, owner)) {
+                return (prs: const <PullRequest>[], hasMore: false);
+              }
+              final result = await githubClientForOwner(
+                workspaceId,
+                owner,
+              ).pr.listOpenPullRequestsPage(owner, repo, page: page);
               return (
                 prs: [
                   for (final gh in result.items)
@@ -5968,21 +5968,61 @@ Future<CcServer> runCcServer({
     // call a provider usage endpoint on the public binary.
     collectSubscriptionAccounts: demo == null,
     fetchSubscriptionUsage: demo == null
-        ? (accounts) async {
+        ? (accounts, {force = false}) async {
             final claude = await _claudeUsageAccounts(
               store: claudeAccountStore,
             );
             final all = await SubscriptionUsageService(
               dio: createDio(),
-              fetchClaudeCached: claudeUsageCache.get,
+              fetchClaudeCached: (configDir) =>
+                  claudeUsageCache.get(configDir, force: force),
             ).fetchAll(accounts: [...accounts, ...claude]);
             return [for (final u in all) u.toJson()];
           }
-        : (accounts) => demo.fetchSubscriptionUsage(),
+        : (accounts, {force = false}) => demo.fetchSubscriptionUsage(),
     // The Claude Code logins this host manages, and the per-account quota the
     // composer picker shows so "which account should this run use?" can be
     // answered on remaining headroom rather than from memory.
     claudeAccounts: demo?.claudeAccounts ?? claudeAccountStore,
+    // Account pools live in each workspace's settings while the credentials
+    // are server-global, so a removal has to visit every workspace to take the
+    // id off. One sweep for every lane; only "which ids still exist" is
+    // lane-specific. Through CrossWorkspaceQueries: a maintenance sweep,
+    // sequential.
+    onAccountPoolCredentialsRemoved: demo == null
+        ? (lane) async {
+            final provider = AccountPoolLanes.harnessProviderOf(lane);
+            final Set<String> existing;
+            if (lane == AccountPoolLanes.claudeCode) {
+              existing = {for (final a in await claudeAccountStore.list()) a.id};
+            } else if (provider != null) {
+              existing = {
+                for (final c in await harnessCreds.credentialsFor(provider))
+                  c.credentialId,
+              };
+            } else {
+              return;
+            }
+            await crossWorkspace.forEachWorkspace(
+              (wsDb) async {
+                final dao = wsDb.workspaceSettingDao;
+                final rows = await dao.getForWorkspace(wsDb.workspaceId);
+                final pruned = prunedAccountPools(
+                  {for (final r in rows) r.key: r.value},
+                  lane: lane,
+                  existing: existing,
+                );
+                for (final MapEntry(:key, :value) in pruned.entries) {
+                  await dao.setValue(wsDb.workspaceId, key, value);
+                }
+              },
+              onError: (workspaceId, e) => CcHostLog.warning(
+                'account pools: could not prune $lane in workspace '
+                '$workspaceId: $e',
+              ),
+            );
+          }
+        : null,
     fetchClaudeAccountUsage: demo == null
         ? (configDir) async => (await claudeUsageCache.get(configDir)).toJson()
         : demo.fetchClaudeAccountUsage,
@@ -6004,9 +6044,11 @@ Future<CcServer> runCcServer({
     // `tokenForActor` to the app identity.
     fetchPrPreview:
         (owner, repo, number, {required actingUserId, workspaceId}) async {
-          final client = actingUserId.isEmpty
-              ? serverGitHubClient
-              : githubClientForActor(actingUserId, workspaceId: workspaceId);
+          final client = actingUserId.isNotEmpty
+              ? githubClientForActor(actingUserId, workspaceId: workspaceId)
+              : workspaceId != null && workspaceId.isNotEmpty
+              ? githubClientForOwner(workspaceId, owner)
+              : serverGitHubClient;
           try {
             final pr = await client.pr.getPullRequest(owner, repo, number);
             if (pr == null) {
@@ -6025,9 +6067,11 @@ Future<CcServer> runCcServer({
         },
     fetchCommitPreview:
         (owner, repo, sha, {required actingUserId, workspaceId}) async {
-          final client = actingUserId.isEmpty
-              ? serverGitHubClient
-              : githubClientForActor(actingUserId, workspaceId: workspaceId);
+          final client = actingUserId.isNotEmpty
+              ? githubClientForActor(actingUserId, workspaceId: workspaceId)
+              : workspaceId != null && workspaceId.isNotEmpty
+              ? githubClientForOwner(workspaceId, owner)
+              : serverGitHubClient;
           try {
             final commit = await client.pr.getCommit(owner, repo, sha);
             if (commit == null) {
@@ -7617,7 +7661,6 @@ Future<CcServer> runCcServer({
     .._networkRuntime = networkRuntime
     .._presenceHub = presenceHub
     .._agentPresenceSynthesizer = agentPresenceSynthesizer
-    .._syncFeed = syncFeed
     .._checkerListener = checkerListener
     .._worktreeGcListener = worktreeGcListener
     .._rigEventListener = rigEventListener

@@ -27,6 +27,7 @@ class EditorChrome {
     this.leadingFor,
     this.trailingFor,
     this.labelFor,
+    this.scramblingFor,
     this.dirtyFor,
     this.confirmClose,
     this.newTabMenuItems,
@@ -52,6 +53,11 @@ class EditorChrome {
 
   /// Resolves a tab's header label. Defaults to the tab's own `label`.
   final String Function(EditorTab tab)? labelFor;
+
+  /// Resolves whether a tab's label is still being worked out (a conversation
+  /// title a model is generating): the strip churns its letters meanwhile.
+  /// Defaults to never.
+  final bool Function(EditorTab tab)? scramblingFor;
 
   /// Resolves whether a tab has unsaved changes (drives the tab strip's dirty
   /// dot). Defaults to never-dirty. Host-owned because "dirty" is a
@@ -92,6 +98,7 @@ class EditorChrome {
       trailingFor?.call(tab);
   String _label(EditorTab tab) => (labelFor ?? (t) => t.label)(tab);
   bool _dirty(EditorTab tab) => (dirtyFor ?? (t) => false)(tab);
+  bool _scrambling(EditorTab tab) => scramblingFor?.call(tab) ?? false;
 }
 
 /// One editor tab-group: a single leaf of the split tree.
@@ -318,6 +325,9 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
               ? null
               : [for (final t in tabs) chrome._trailing(t)],
           dirty: [for (final t in tabs) chrome._dirty(t)],
+          scrambling: chrome.scramblingFor == null
+              ? null
+              : [for (final t in tabs) chrome._scrambling(t)],
           selectedIndex: selected,
           onTabSelected: (i) {
             widget.layout.setActiveLeaf(widget.leafId);

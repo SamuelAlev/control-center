@@ -2,7 +2,7 @@
 title: Administrer API-nøkler
 description: Hvor hver påloggingsinformasjon ligger — brukerkontoen din på serveren, serveren selv eller en ekstern CLI — og hvordan du setter, roterer og fjerner den.
 slug: nb-NO/handbok/slik-gjor-du/api-nokler
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Denne veiledningen viser hvor hver påloggingsinformasjon Control Center bruker,
@@ -80,8 +80,9 @@ ingenting å autentisere seg mot.
 Nøkkelen din lagres på serveren knyttet til bruker-id-en din, som
 kodevertnøkkelen. Serveren holder sin egen Linear-nøkkel separat
 (**Leverandørapper**), og det er den sakssynkroniseringen kjører på når ingen
-har bedt om det. En nøkkel en agent mottar, injiseres bare når agenten har
-kapasiteten **Tillat API-kall for saker**. Se
+har bedt om det. Ingen saksnøkkel injiseres i en agents sandkasse; agenter
+skriver saker gjennom Control Centers verktøy, som spør regelen **Skriv til et
+eksternt oppfølgingssystem**. Se
 [Sett opp Linear-integrasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/).
 
 ## Roter eller tilbakekall

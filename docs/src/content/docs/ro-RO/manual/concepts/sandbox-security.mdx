@@ -2,7 +2,7 @@
 title: Sandbox și securitate
 description: Ce limitează de fapt un agent în Control Center astăzi, până unde ajunge sandbox-ul de sistem și ce granițe rezistă pe o gazdă care nu are niciun backend.
 slug: ro-RO/manual/concepte/sandbox-si-securitate
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Unde ajunge sandbox-ul de sistem și unde nu ajunge]
@@ -20,8 +20,7 @@ Două lacune supraviețuiesc sandbox-ului și merită ținute minte:
   așa că doar `bash` este învelit. Ceea ce le limitează este confinarea căilor din instrumentele
   însele, plus guardrail-urile de acțiuni.
 - **Claude Code este lansat cu `--dangerously-skip-permissions`**, pentru că un `claude -p`
-  neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt. Apelurile lui de fișiere și de
-  shell nu sunt deci filtrate de guardrail-urile Control Center — sandbox-ul de sistem este
+  neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt. Apelurile lui de fișiere nu sunt deci filtrate de guardrail-urile Control Center, iar comenzile de shell doar de un hook care citește linia de comandă — sandbox-ul de sistem este
   granița din jurul lor.
   :::
 
@@ -84,9 +83,7 @@ cere aprobare sau refuză înainte ca apelul să ruleze. Un `prompt` fără nici
 se rezolvă la _refuzat_ — o întrebare la care nimeni nu poate răspunde nu este niciodată un da.
 Vezi [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/) pentru modelul de rezolvare.
 
-**Date de autentificare limitate de capabilități și un mediu sanitizat.** Datele de autentificare
-sunt emise la fiecare lansare din flag-urile de capabilitate ale conversației și sunt revocate
-când rularea se desființează. ACP, `bash`-ul harness-ului și Claude Code sub învelișul nativ
+**Date de autentificare emise de broker și un mediu sanitizat.** Datele de autentificare sunt emise la fiecare lansare și sunt revocate când rularea se desființează, iar tokenul GitHub pe care îl are o rulare poate citi, dar nu poate face push — vezi „Push-urile trec prin Control Center” mai jos. ACP, `bash`-ul harness-ului și Claude Code sub învelișul nativ
 primesc un mediu curățat de vectorii de injecție prin linker dinamic și interpretor (`LD_PRELOAD`,
 `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` și rudele lor) înainte ca procesul să
 pornească. Claude Code prin `NoSandboxAdapter` moștenește mediul gazdei.
@@ -112,36 +109,70 @@ separat, câștigând decizia cea mai restrictivă.
 
 Claude Code, când este folosit ca adaptor, este cazul în care sandbox-ul are cea mai mare
 greutate. Control Center îl lansează cu `--dangerously-skip-permissions`, pentru că un `claude -p`
-neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt de aprobare. Apelurile sale de
-citire, scriere, editare și shell au loc în interiorul propriului proces, iar Control Center nu le
-vede niciodată; singurele apeluri pe care le face și care ajung la o poartă sunt instrumentele
-`mcp__*` pe care Control Center însuși le deservește. Acolo unde există un backend, acele apeluri
+neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt de aprobare. Apelurile sale de citire, scriere și editare au loc în interiorul propriului proces, iar Control Center nu le vede niciodată. Apelurile sale `Bash` sunt trimise, înainte să ruleze, unui hook de pe server care clasifică linia de comandă și întreabă regula corespunzătoare, iar instrumentele `mcp__*` pe care le deservește Control Center trec prin poartă ca de obicei. Acolo unde există un backend, acele apeluri
 nevăzute au loc totuși în interiorul învelișului de sandbox, așa că sistemul de operare este
 granița din jurul lor. Acolo unde nu există niciunul, nimic nu este. Fiecare adaptor declară
 asta în matricea sa de aplicare — vezi [matricea de onestitate a
 adaptoarelor](/ro-RO/manual/concepte/guardrail-uri/#the-adapter-honesty-matrix).
 
-## Controlul pe capabilități este aplicare prin absență
+## Push-urile trec prin Control Center
 
-O conversație poartă patru flag-uri de capabilitate: push în repo, apelarea API-ului GitHub,
-apelarea furnizorului de tichete și accesul la rețea. Ele nu sunt verificate atunci când
-acționează agentul. Sunt verificate o singură dată, la lansare, de brokerul de date de
-autentificare — iar o capabilitate oprită înseamnă pur și simplu că tokenul corespunzător nu este
-niciodată pus în mediu.
+Nu există indicatori de permisiune per agent. Dacă un agent poate crea un
+commit, face push, deschide un pull request, scrie într-un tracker sau ajunge la
+rețea decid [guardrail-urile](/ro-RO/manual/concepte/guardrail-uri/) — permite, întreabă
+întâi sau refuză — iar aceleași reguli se aplică indiferent de adaptorul care
+rulează agentul.
 
-Acesta este întregul mecanism și merită spus fără ocolișuri, pentru că modul de eșec nu este cel
-la care se așteaptă lumea. Oprirea „GitHub API” nu produce un mesaj de „capabilitate refuzată”.
-Produce un `401` obișnuit în interiorul agentului, pentru că nu există niciun `GH_TOKEN` de
-trimis. Agentul poate foarte bine să povestească asta ca pe o problemă de date de autentificare.
-Aplicarea prin absență este robustă — nu există nicio verificare de ocolit — dar este mută, iar
-agentul nu știe de ce a eșuat.
+Un push este acțiunea care trebuie să reziste chiar și în fața unui agent care
+încearcă să ocolească o regulă, așa că este impus prin ce deține agentul, nu
+prin ce rulează. Cu un GitHub App configurat, o rulare într-un worktree GitHub
+primește un token de instalare limitat la depozit, care poate citi conținut și
+lucra cu pull request-uri, dar nu poate face push. Configurația git a rulării
+rescrie fiecare URL de push GitHub (`https://github.com/`, `git@github.com:`,
+`ssh://git@github.com/`) către **gateway-ul rulărilor de agenți**, un punct
+final de loopback pe `cc_server`. Gateway-ul citește ce ref-uri actualizează
+push-ul, întreabă regula **Push către un remote** — așa că se aplică și o regulă
+limitată la ramuri, precum „refuză push-ul pe `main`” — și abia apoi transmite
+push-ul către GitHub cu un token de scriere pe care îl emite în acest scop și nu
+îl dă niciodată agentului. Un push refuzat apare chiar în ieșirea git:
 
-Flag-ul de rețea se comportă la fel. Cu el oprit, instrumentele `web_fetch` și `web_search` ale
-harness-ului refuză fiecare apel, iar lista de permisiuni a proxy-ului unei lansări sandboxate
-este goală, așa că fiecare conexiune de ieșire este refuzată.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Datele de autentificare sunt revocate când rularea se desființează, așa că un handle nu
-supraviețuiește rulării care l-a emis.
+Gateway-ul transmite push-uri doar către depozitul propriu al worktree-ului sau
+către un depozit GitHub legat de spațiul de lucru. Fetch-urile merg direct la
+GitHub cu tokenul de citire.
+
+Celelalte comenzi de shell întâlnesc o poartă mai blândă. Instrumentul `bash` al
+harness-ului și, printr-un hook, instrumentul `Bash` al Claude Code clasifică
+fiecare linie de comandă și întreabă regula în care se încadrează: `git commit`,
+`merge`, `rebase`, `cherry-pick`, `revert` și `am` sunt **Creează un commit**;
+`gh pr create` este **Deschide un pull request**; `gh pr merge`, `review`,
+`comment` și `close` sunt **Publică o revizuire sau o fuziune**;
+`gh issue create`, `edit`, `comment` și `close` sunt **Scrie într-un tracker
+extern**; instalările de pachete sunt **Instalează un pachet**; `curl` și `wget`
+sunt **Accesează rețeaua**. Asta recunoaște forma obișnuită de a scrie o
+acțiune, iar un agent hotărât să o ascundă (`eval`, un fișier de script, un apel
+direct la API) poate face asta. Push-urile nu depind de asta.
+
+:::caution[Fără GitHub App, regula de push este doar orientativă]
+Fără un GitHub App configurat, brokerul recurge la un token de acces personal,
+care nu poate fi restrâns doar la citire. Regula se aplică în continuare pentru
+`git push`, pentru că git trimite push-ul la gateway, dar codul care folosește
+direct tokenul din mediu poate face push ocolind-o.
+:::
+
+Nicio cheie API de tichete nu este pusă într-un sandbox. Agenții scriu tichete
+prin instrumentele MCP ale Control Center, care întreabă **Scrie într-un tracker
+extern**.
+
+Regula **Accesează rețeaua** este citită o singură dată, când pornește rularea.
+Rețeaua unui sandbox este fie pornită, fie oprită, așa că refuzul o oprește, iar
+permite și întreabă întâi o lasă pornită; instrumentele `web_fetch` și
+`web_search` ale harness-ului întreabă în continuare la fiecare apel. Datele de
+autentificare sunt revocate când rularea se desființează, împreună cu orice
+token de scriere emis de gateway, așa că un handle nu supraviețuiește rulării.
 
 ## Ce adaugă sandbox-ul și unde se oprește
 
@@ -202,30 +233,26 @@ fapt `/private/tmp`, `/var/folders/…` este de fapt `/private/var/folders/…` 
 accesat prin oricare dintre ele ar fi fost inscriptibil în timp ce profilul părea să îl interzică.
 
 Rețeaua, sub un sandbox, este o listă de permisiuni **pe domenii**, per sesiune, impusă de
-proxy-uri de loopback în proces. Ieșirea în rețea este refuzată implicit: cu capabilitatea de
-rețea oprită, proxy-urile pornesc totuși, dar lista lor de permisiuni este goală, așa că fiecare
-conexiune de ieșire este refuzată. Cu ea pornită, rezolvatorul construiește lista de permisiuni
-dintr-o bază de referință atent selectată — furnizori de API pentru LLM-uri, găzduire git, registre
-de pachete, catalogul de modele — plus domeniile GitHub pe care i le câștigă agentului capabilitatea
-de GitHub sau de push, și potrivește gazda țintă a fiecărei conexiuni cu ea. Wildcard-urile
-funcționează (`*.example.com` potrivește subdomeniile, nu apexul). O listă separată, mereu
-interzisă, are prioritate în fața listei de permisiuni și acoperă punctele finale de metadate din
-cloud și destinațiile de telemetrie. Ceea ce _nu_ este configurabil este lista în sine:
-specificația poartă un câmp `egressAllowlist` pentru domenii suplimentare și un cârlig de domeniu
-pentru tichete, dar nimic din calea de trimitere nu populează vreunul dintre ele, așa că în
-practică fiecare rulare primește baza de referință plus domeniile derivate din capabilități, și
-nimic mai mult.
+proxy-uri de loopback în proces. Ieșirea în rețea este refuzată implicit: cu rețeaua oprită,
+proxy-urile pornesc totuși, dar lista lor de permisiuni este goală, așa că fiecare conexiune de
+ieșire este refuzată. Cu ea pornită, rezolvatorul construiește lista de permisiuni dintr-o bază
+de referință atent selectată — furnizori de API pentru LLM-uri, găzduire git, registre de
+pachete, catalogul de modele — plus domeniile GitHub, și potrivește gazda țintă a fiecărei
+conexiuni cu ea. Wildcard-urile funcționează (`*.example.com` potrivește subdomeniile, nu
+apexul). O listă separată, mereu interzisă, are prioritate în fața listei de permisiuni și
+acoperă punctele finale de metadate din cloud și destinațiile de telemetrie. Ceea ce _nu_ este
+configurabil este lista în sine: specificația poartă un câmp `egressAllowlist` pentru domenii
+suplimentare, dar nimic din calea de trimitere nu îl populează, așa că în practică fiecare
+rulare primește baza de referință plus GitHub, și nimic mai mult.
 
 Interdicțiile, pe macOS, sunt observabile: un monitor interceptează jurnalul de sistem pentru
 interdicțiile Sandbox, filtrează zgomotul cunoscut, elimină duplicatele furtunilor de reîncercări
-și expune fiecare interdicție ca un `SandboxViolation` care numește ce s-a încercat și ce
-capabilitate l-ar debloca. Pe Linux, calea de învelire analizează stderr după `EPERM`,
+și expune fiecare interdicție ca un `SandboxViolation` care numește ce s-a încercat și ce a fost blocat. Pe Linux, calea de învelire analizează stderr după `EPERM`,
 `Operation not permitted` și `Permission denied` și emite același tip de eveniment — nu există
 nicio interceptare a jurnalului de sistem. Acestea ajung pe fluxul propriu de evenimente al
 rulării, așa că un apel de sistem refuzat apare în transcriere, nu doar într-un jurnal. Telemetria
 există doar cât timp un sandbox nativ învelește efectiv procesul — pe o gazdă fără backend nu
-există nimic de observat. De asemenea, nu are legătură cu controlul pe capabilități: o încălcare
-provine dintr-un apel de sistem refuzat, niciodată dintr-o căutare de capabilitate.
+există nimic de observat. De asemenea, nu are legătură cu guardrail-urile: o încălcare provine dintr-un apel de sistem refuzat, niciodată dintr-o căutare de regulă.
 
 ## Confirmările vin de la guardrail-uri, nu de la sandbox
 
@@ -254,5 +281,5 @@ care declară ce poate fi verificat manual.
 
 ## Ghiduri conexe
 
-- [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/): flag-urile de capabilitate și postura față de sistemul de fișiere
+- [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/): regulile de acțiune, impunerea push-urilor și postura față de sistemul de fișiere
 - [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/): ce acoperă verificările de diagnosticare

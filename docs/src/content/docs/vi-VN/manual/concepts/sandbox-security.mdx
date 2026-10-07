@@ -2,7 +2,7 @@
 title: Sandbox và bảo mật
 description: Điều gì thực sự ràng buộc một agent trong Control Center hiện nay, sandbox hệ điều hành vươn tới đâu và những ranh giới nào vẫn đứng vững trên một máy chủ không có backend.
 slug: vi-VN/so-tay/khai-niem/sandbox-va-bao-mat
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Sandbox hệ điều hành vươn tới đâu và không vươn tới đâu]
@@ -21,8 +21,7 @@ Hai lỗ hổng vẫn tồn tại bên trong sandbox và đáng để ghi nhớ:
   chính các công cụ đó cùng với rào chắn hành động.
 - **Claude Code được khởi chạy với `--dangerously-skip-permissions`**, bởi một
   `claude -p` phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt của chính nó.
-  Vì vậy các lệnh gọi tệp và shell của nó không bị rào chắn của Control Center
-  kiểm soát — sandbox hệ điều hành mới là ranh giới bao quanh chúng.
+  Vì vậy các lệnh gọi tệp của nó không bị rào chắn của Control Center kiểm soát, còn các lệnh shell chỉ bị một hook đọc dòng lệnh kiểm tra — sandbox hệ điều hành mới là ranh giới bao quanh chúng.
   :::
 
 ## Vì sao cô lập lại quan trọng ở đây
@@ -90,9 +89,7 @@ cho phép, hỏi trước, hoặc từ chối trước khi lệnh gọi chạy. 
 một câu hỏi không ai trả lời được thì không bao giờ là đồng ý. Xem
 [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) để biết mô hình phân giải.
 
-**Thông tin xác thực được kiểm soát theo khả năng và một môi trường đã làm
-sạch.** Thông tin xác thực được tạo mới ở mỗi lần khởi chạy từ các cờ khả năng
-của cuộc hội thoại và bị thu hồi khi lượt chạy kết thúc. ACP, `bash` của harness
+**Thông tin xác thực qua broker và một môi trường đã làm sạch.** Thông tin xác thực được tạo mới ở mỗi lần khởi chạy và bị thu hồi khi lượt chạy kết thúc, và token GitHub mà một lượt chạy nắm giữ có thể đọc nhưng không thể push — xem “Push đi qua Control Center” bên dưới. ACP, `bash` của harness
 và Claude Code dưới lớp bọc native nhận một môi trường đã bị loại bỏ các vector
 chèn của trình liên kết động và trình thông dịch (`LD_PRELOAD`,
 `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` và những thứ tương
@@ -123,35 +120,65 @@ giành phần thắng.
 Claude Code, khi được dùng như một adapter, là trường hợp mà sandbox mang trọng
 lượng lớn nhất. Control Center khởi chạy nó với `--dangerously-skip-permissions`,
 bởi một `claude -p` phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt phê
-duyệt của chính nó. Các lệnh gọi read, write, edit và shell của nó diễn ra bên
-trong tiến trình của chính nó và Control Center không bao giờ thấy chúng; những
-lệnh gọi duy nhất của nó chạm tới một cổng là các công cụ `mcp__*` do chính
-Control Center phục vụ. Nơi có backend, những lệnh gọi vô hình đó vẫn diễn ra
+duyệt của chính nó. Các lệnh gọi read, write và edit của nó diễn ra bên trong tiến trình của chính nó và Control Center không bao giờ thấy chúng. Các lệnh gọi `Bash` của nó được gửi, trước khi chạy, tới một hook trên máy chủ để phân loại dòng lệnh và hỏi quy tắc tương ứng, còn các công cụ `mcp__*` do Control Center phục vụ vẫn đi qua cổng như thường lệ. Nơi có backend, những lệnh gọi vô hình đó vẫn diễn ra
 bên trong lớp bọc sandbox, nên hệ điều hành là ranh giới bao quanh chúng. Nơi
 không có, thì không có gì cả. Mỗi adapter nói rõ điều này trong ma trận thực thi
 của nó — xem [ma trận trung thực của adapter](/vi-VN/so-tay/khai-niem/rao-chan/#the-adapter-honesty-matrix).
 
-## Kiểm soát theo khả năng là thực thi bằng sự vắng mặt
+## Push đi qua Control Center
 
-Một cuộc hội thoại mang bốn cờ khả năng: push lên kho mã, gọi GitHub API, gọi
-nhà cung cấp phiếu và truy cập mạng. Chúng không được kiểm tra khi agent hành
-động. Chúng được kiểm tra một lần, lúc khởi chạy, bởi broker thông tin xác thực —
-và một khả năng bị tắt nghĩa là token tương ứng đơn giản là không bao giờ được
-đưa vào môi trường.
+Không có cờ quyền hạn theo từng agent. Việc một agent có được tạo commit, push,
+mở pull request, ghi vào tracker hay truy cập mạng hay không do
+[rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) quyết định — cho phép, hỏi trước hoặc từ
+chối — và cùng các quy tắc đó áp dụng bất kể adapter nào chạy agent.
 
-Đó là toàn bộ cơ chế và đáng để nói thẳng vì kiểu hỏng hóc không giống như người
-ta tưởng. Tắt "GitHub API" không tạo ra thông báo "khả năng bị từ chối". Nó tạo
-ra một `401` bình thường bên trong agent, vì không có `GH_TOKEN` nào để gửi.
-Agent hoàn toàn có thể kể lại điều đó như một vấn đề thông tin xác thực. Thực thi
-bằng sự vắng mặt rất vững chắc — không có phép kiểm tra nào để lách — nhưng nó im
-lặng và agent không biết vì sao mình thất bại.
+Push là hành động phải đứng vững ngay cả trước một agent đang tìm cách lách quy
+tắc, nên nó được thực thi bằng thứ agent nắm giữ chứ không phải bằng thứ agent
+chạy. Khi đã cấu hình GitHub App, một lượt chạy trong worktree GitHub nhận một
+token cài đặt giới hạn theo kho mã, có thể đọc nội dung và làm việc với pull
+request nhưng không thể push. Cấu hình git của lượt chạy viết lại mọi URL push
+GitHub (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) về
+**cổng lượt chạy agent**, một endpoint loopback trên `cc_server`. Cổng đọc xem
+lần push cập nhật những ref nào, hỏi quy tắc **Push lên remote** — nên một quy
+tắc giới hạn theo nhánh, như “từ chối push lên `main`”, cũng được áp dụng — và
+chỉ khi đó mới chuyển tiếp lần push tới GitHub bằng một token ghi mà nó tạo ra
+cho mục đích này và không bao giờ trao cho agent. Một lần push bị từ chối hiện
+ngay trong đầu ra của git:
 
-Cờ mạng cũng hành xử y hệt. Khi nó tắt, các công cụ `web_fetch` và `web_search`
-của harness từ chối mọi lệnh gọi và danh sách cho phép proxy của một lần spawn đã
-sandbox là rỗng, nên mọi kết nối ra ngoài đều bị từ chối.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Thông tin xác thực bị thu hồi khi lượt chạy kết thúc, nên một handle không sống
-lâu hơn lượt chạy đã tạo ra nó.
+Cổng chỉ chuyển tiếp push tới kho mã của chính worktree hoặc tới một kho mã
+GitHub được liên kết với không gian làm việc. Các lần fetch đi thẳng tới GitHub
+bằng token đọc.
+
+Các lệnh shell khác gặp một cổng mềm hơn. Công cụ `bash` của harness và, qua một
+hook, công cụ `Bash` của Claude Code phân loại từng dòng lệnh và hỏi quy tắc mà
+nó thuộc về: `git commit`, `merge`, `rebase`, `cherry-pick`, `revert` và `am` là
+**Tạo một commit**; `gh pr create` là **Mở một pull request**; `gh pr merge`,
+`review`, `comment` và `close` là **Xuất bản review hoặc merge**;
+`gh issue create`, `edit`, `comment` và `close` là **Ghi vào tracker bên
+ngoài**; các lệnh cài gói là **Cài một gói**; `curl` và `wget` là **Truy cập
+mạng**. Cơ chế này nhận ra cách viết thông thường của một hành động, và một
+agent quyết tâm che giấu nó (`eval`, một tệp script, một lời gọi API trực tiếp)
+có thể làm được. Push không phụ thuộc vào cơ chế này.
+
+:::caution[Không có GitHub App, quy tắc push chỉ mang tính khuyến nghị]
+Khi chưa cấu hình GitHub App, broker quay về một personal access token, thứ
+không thể thu hẹp thành chỉ đọc. Quy tắc vẫn áp dụng cho `git push`, vì git gửi
+lần push tới cổng, nhưng mã dùng trực tiếp token trong môi trường có thể push
+vòng qua nó.
+:::
+
+Không có khóa API phiếu nào được đặt vào sandbox. Agent ghi phiếu qua các công
+cụ MCP của Control Center, vốn hỏi quy tắc **Ghi vào tracker bên ngoài**.
+
+Quy tắc **Truy cập mạng** được đọc một lần, khi lượt chạy bắt đầu. Mạng của
+sandbox chỉ có bật hoặc tắt, nên từ chối sẽ tắt nó, còn cho phép và hỏi trước
+giữ nó bật; các công cụ `web_fetch` và `web_search` của harness vẫn hỏi ở mỗi
+lệnh gọi. Thông tin xác thực bị thu hồi khi lượt chạy kết thúc, cùng với mọi
+token ghi mà cổng đã tạo, nên một handle không sống lâu hơn lượt chạy.
 
 ## Sandbox bổ sung điều gì và dừng lại ở đâu
 
@@ -220,31 +247,28 @@ profile trông như thể đang cấm nó.
 
 Mạng, khi ở trong một sandbox, là một danh sách cho phép theo **tên miền** cho
 từng phiên, được thực thi bởi các proxy loopback in-process. Egress mặc định bị
-từ chối: khi khả năng mạng tắt, các proxy vẫn khởi động nhưng danh sách cho phép
-của chúng rỗng, nên mọi kết nối ra ngoài đều bị từ chối. Khi nó bật, bộ phân giải
-dựng danh sách cho phép từ một đường cơ sở được tuyển chọn — các nhà cung cấp API
-LLM, nơi lưu trữ git, các registry gói, danh mục mô hình — cộng với các tên miền
-GitHub mà khả năng GitHub hoặc push của agent kiếm được, rồi đối chiếu máy chủ
-đích của mọi kết nối với nó. Ký tự đại diện hoạt động (`*.example.com` khớp với
-các tên miền con, không khớp với tên miền gốc). Một danh sách luôn bị từ chối
-riêng biệt thắng danh sách cho phép và bao gồm các endpoint metadata của cloud và
-các điểm thu thập telemetry. Thứ _không_ cấu hình được chính là bản thân danh
-sách: spec mang một trường `egressAllowlist` cho các tên miền bổ sung và một hook
-tên miền phiếu, nhưng không có gì trong đường điều phối điền vào cả hai, nên trên
-thực tế mọi lượt chạy đều nhận đường cơ sở cộng với các tên miền suy ra từ khả
-năng của nó và không hơn.
+từ chối: khi mạng tắt, các proxy vẫn khởi động nhưng danh sách cho phép của
+chúng rỗng, nên mọi kết nối ra ngoài đều bị từ chối. Khi mạng bật, bộ phân giải
+dựng danh sách cho phép từ một đường cơ sở được tuyển chọn — các nhà cung cấp
+API LLM, nơi lưu trữ git, các registry gói, danh mục mô hình — cộng với các tên
+miền GitHub, rồi đối chiếu máy chủ đích của mọi kết nối với nó. Ký tự đại diện
+hoạt động (`*.example.com` khớp với các tên miền con, không khớp với tên miền
+gốc). Một danh sách luôn bị từ chối riêng biệt thắng danh sách cho phép và bao
+gồm các endpoint metadata của cloud và các điểm thu thập telemetry. Thứ _không_
+cấu hình được chính là bản thân danh sách: spec mang một trường
+`egressAllowlist` cho các tên miền bổ sung, nhưng không có gì trong đường điều
+phối điền vào nó, nên trên thực tế mọi lượt chạy đều nhận đường cơ sở cộng với
+GitHub và không hơn.
 
 Các lệnh từ chối, trên macOS, có thể quan sát được: một trình giám sát theo dõi
 system log để tìm các lệnh từ chối của Sandbox, lọc nhiễu đã biết, loại trùng các
-đợt thử lại và đưa mỗi cái lên thành một `SandboxViolation` nêu rõ điều gì đã
-được thử và khả năng nào sẽ gỡ chặn nó. Trên Linux, đường bọc phân tích stderr để
+đợt thử lại và đưa mỗi cái lên thành một `SandboxViolation` nêu rõ điều gì đã được thử và điều gì đã bị chặn. Trên Linux, đường bọc phân tích stderr để
 tìm `EPERM`, `Operation not permitted` và `Permission denied` rồi phát ra cùng
 loại sự kiện — không có việc theo dõi system log. Những sự kiện đó đến trên luồng
 sự kiện của chính lượt chạy, nên một syscall bị từ chối hiện ra trong bản tường
 thuật chứ không chỉ trong một log. Telemetry chỉ tồn tại khi một sandbox native
 thực sự đang bọc tiến trình — trên một máy chủ không có backend thì không có gì
-để quan sát. Nó cũng không liên quan gì tới kiểm soát theo khả năng: một vi phạm
-đến từ một syscall bị từ chối, không bao giờ từ một lần tra cứu khả năng.
+để quan sát. Nó cũng không liên quan gì tới rào chắn: một vi phạm đến từ một syscall bị từ chối, không bao giờ từ một lần tra cứu quy tắc.
 
 ## Xác nhận đến từ rào chắn, không phải từ sandbox
 
@@ -274,5 +298,5 @@ duy nhất nêu rõ những gì có thể kiểm tra bằng tay.
 
 ## Hướng dẫn liên quan
 
-- [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/): các cờ khả năng và thế đứng của hệ thống tệp
+- [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/): các quy tắc hành động, việc thực thi push và thế đứng của hệ thống tệp
 - [Chạy chẩn đoán agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/): phạm vi của các kiểm tra chẩn đoán

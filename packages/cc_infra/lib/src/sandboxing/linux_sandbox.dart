@@ -318,6 +318,7 @@ abstract final class LinuxSandbox {
     required String sessionId,
     int? httpProxyPort,
     int? socksProxyPort,
+    List<int> loopbackPorts = const [],
     String socatPath = 'socat',
   }) async {
     final processes = <Process>[];
@@ -351,6 +352,25 @@ abstract final class LinuxSandbox {
           hostSocketPath: socket,
           sandboxSocketPath: socket,
           sandboxLoopbackPort: 1080,
+        ),
+      );
+    }
+    // The server's own agent endpoint (MCP, the agent run gateway), reachable
+    // inside the namespace at the SAME port, so a URL written for the host
+    // works unchanged in here.
+    for (final port in loopbackPorts) {
+      final socket = '/tmp/cc-sb-${sessionId}_lo$port.sock';
+      _unlinkIfExists(socket);
+      final p = await Process.start(socatPath, [
+        'UNIX-LISTEN:$socket,fork,reuseaddr',
+        'TCP:127.0.0.1:$port',
+      ]);
+      processes.add(p);
+      bridges.add(
+        LinuxSocketBridge(
+          hostSocketPath: socket,
+          sandboxSocketPath: socket,
+          sandboxLoopbackPort: port,
         ),
       );
     }

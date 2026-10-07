@@ -2,7 +2,7 @@
 title: Sandbox e segurança
 description: O que de fato restringe um agente no Control Center hoje, até onde o sandbox do sistema operacional chega e quais fronteiras se sustentam em um host sem backend.
 slug: pt-BR/manual/conceitos/sandbox-e-seguranca
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Onde o sandbox do sistema operacional chega e onde não chega]
@@ -20,9 +20,7 @@ Duas brechas sobrevivem ao sandbox e vale mantê-las em mente:
   processo do servidor, então só o `bash` é envolvido. O que limita aquelas é o
   confinamento de caminhos nas próprias ferramentas, além das barreiras de ação.
 - **O Claude Code é iniciado com `--dangerously-skip-permissions`**, porque um
-  `claude -p` não interativo bloquearia para sempre no próprio prompt. As
-  chamadas de arquivo e de shell dele, portanto, não passam pelas barreiras do
-  Control Center — o sandbox do sistema operacional é a fronteira em volta delas.
+  `claude -p` não interativo bloquearia para sempre no próprio prompt. As chamadas de arquivo dele, portanto, não passam pelas barreiras do Control Center, e os comandos de shell só passam por um hook que lê a linha de comando — o sandbox do sistema operacional é a fronteira em volta delas.
   :::
 
 ## Por que o isolamento importa aqui
@@ -92,9 +90,7 @@ consegue responder nunca é um sim. Consulte
 [Barreiras](/pt-BR/manual/conceitos/barreiras/) para conhecer o modelo de
 resolução.
 
-**Credenciais condicionadas por capacidade e um ambiente higienizado.** As
-credenciais são emitidas a cada inicialização a partir das flags de capacidade da
-conversa e revogadas quando a execução termina. ACP, o `bash` do harness e o
+**Credenciais intermediadas pelo broker e um ambiente higienizado.** As credenciais são emitidas a cada inicialização e revogadas quando a execução termina, e o token do GitHub de uma execução pode ler, mas não fazer push — veja "Os pushes passam pelo Control Center" mais abaixo. ACP, o `bash` do harness e o
 Claude Code sob o envelope nativo recebem um ambiente sem os vetores de injeção do
 vinculador dinâmico e do interpretador (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
 `NODE_OPTIONS`, `GIT_SSH_COMMAND` e afins) antes de o processo começar. O Claude
@@ -125,37 +121,70 @@ mais restritiva.
 O Claude Code, quando usado como adaptador, é o caso em que o sandbox carrega o
 maior peso. O Control Center o inicia com `--dangerously-skip-permissions`,
 porque um `claude -p` não interativo bloquearia para sempre no próprio prompt de
-aprovação. Suas chamadas de leitura, escrita, edição e shell acontecem dentro do
-próprio processo, e o Control Center nunca as vê; as únicas chamadas que ele faz e
-que chegam a um portão são as ferramentas `mcp__*` que o próprio Control Center
-serve. Onde existe um backend, essas chamadas invisíveis ainda acontecem dentro
+aprovação. Suas chamadas de leitura, escrita e edição acontecem dentro do próprio processo, e o Control Center nunca as vê. Suas chamadas `Bash` são enviadas, antes de rodarem, a um hook no servidor que classifica a linha de comando e pergunta à regra correspondente, e as ferramentas `mcp__*` que o Control Center serve passam pelo portão como sempre. Onde existe um backend, essas chamadas invisíveis ainda acontecem dentro
 do envelope do sandbox, então o sistema operacional é a fronteira em volta delas.
 Onde não existe, nada é. Cada adaptador declara isso na própria matriz de
 aplicação — consulte [a matriz de honestidade dos
 adaptadores](/pt-BR/manual/conceitos/barreiras/#the-adapter-honesty-matrix).
 
-## O condicionamento de capacidades é aplicação por ausência
+## Os pushes passam pelo Control Center
 
-Uma conversa carrega quatro flags de capacidade: push para o repositório,
-chamadas à API do GitHub, chamadas ao provedor de tickets e acesso à rede. Elas
-não são verificadas quando o agente age. São verificadas uma única vez, na
-inicialização, pelo broker de credenciais — e uma capacidade desligada significa
-simplesmente que o token correspondente nunca é colocado no ambiente.
+Não há flags de permissão por agente. Se um agente pode criar um commit, fazer
+push, abrir um pull request, escrever em um rastreador ou alcançar a rede é
+decidido pelas [barreiras](/pt-BR/manual/conceitos/barreiras/) — permitir, perguntar
+primeiro ou negar —, e as mesmas regras valem qualquer que seja o adaptador que
+executa o agente.
 
-Esse é o mecanismo inteiro, e vale dizê-lo sem rodeios porque o modo de falha não
-é o que as pessoas esperam. Desligar a "API do GitHub" não produz uma mensagem de
-"capacidade negada". Produz um `401` comum dentro do agente, porque não há
-`GH_TOKEN` para enviar. O agente pode muito bem narrar isso como um problema de
-credenciais. A aplicação por ausência é robusta — não há verificação a contornar
-—, mas é silenciosa, e o agente não sabe por que falhou.
+O push é a ação que precisa resistir até a um agente que tenta contornar uma
+regra, então ele é aplicado pelo que o agente tem, e não pelo que ele executa.
+Com um GitHub App configurado, uma execução em uma worktree do GitHub recebe um
+token de instalação com escopo de repositório que pode ler conteúdo e trabalhar
+com pull requests, mas não fazer push. A configuração do git da execução
+reescreve toda URL de push do GitHub (`https://github.com/`, `git@github.com:`,
+`ssh://git@github.com/`) para o **gateway de execuções de agentes**, um endpoint
+de loopback no `cc_server`. O gateway lê quais refs o push atualiza, pergunta à
+regra **Fazer push para um remoto** — então uma regra limitada a branches, como
+"negar push para `main`", se aplica — e só então encaminha o push ao GitHub com
+um token de escrita que ele emite para esse fim e nunca entrega ao agente. Um
+push recusado aparece na própria saída do git:
 
-A flag de rede se comporta do mesmo jeito. Com ela desligada, as ferramentas
-`web_fetch` e `web_search` do harness recusam toda chamada, e a lista de
-permissões do proxy de um processo iniciado com sandbox fica vazia, então toda
-conexão de saída é recusada.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-As credenciais são revogadas quando a execução é desmontada, então um
-identificador não sobrevive à execução que o emitiu.
+O gateway só encaminha pushes para o repositório da própria worktree ou para um
+repositório do GitHub vinculado ao espaço de trabalho. Os fetches vão direto ao
+GitHub com o token de leitura.
+
+Os demais comandos de shell encontram um portão mais brando. A ferramenta `bash`
+do harness e, por meio de um hook, a ferramenta `Bash` do Claude Code
+classificam cada linha de comando e perguntam à regra em que ela se encaixa:
+`git commit`, `merge`, `rebase`, `cherry-pick`, `revert` e `am` são **Criar um
+commit**; `gh pr create` é **Abrir um pull request**; `gh pr merge`, `review`,
+`comment` e `close` são **Publicar uma revisão ou fazer merge**;
+`gh issue create`, `edit`, `comment` e `close` são **Escrever em um rastreador
+externo**; instalações de pacotes são **Instalar um pacote**; `curl` e `wget`
+são **Acessar a rede**. Isso reconhece a grafia convencional de uma ação, e um
+agente determinado a escondê-la (`eval`, um arquivo de script, uma chamada
+direta à API) consegue. Os pushes não dependem disso.
+
+:::caution[Sem GitHub App, a regra de push é só indicativa]
+Sem um GitHub App configurado, o broker recorre a um token de acesso pessoal,
+que não pode ser restrito a somente leitura. A regra continua valendo para
+`git push`, porque o git envia o push ao gateway, mas um código que use
+diretamente o token do ambiente consegue fazer push contornando-a.
+:::
+
+Nenhuma chave de API de tickets é colocada em um sandbox. Os agentes escrevem
+tickets pelas ferramentas MCP do Control Center, que perguntam a **Escrever em
+um rastreador externo**.
+
+A regra **Acessar a rede** é lida uma única vez, quando a execução começa. A
+rede de um sandbox está ligada ou desligada, então negar a desliga, enquanto
+permitir e perguntar primeiro a mantêm ligada; as ferramentas `web_fetch` e
+`web_search` do harness continuam perguntando a cada chamada. As credenciais são
+revogadas quando a execução é desmontada, junto com qualquer token de escrita
+que o gateway tenha emitido, então um identificador não sobrevive à execução.
 
 ## O que o sandbox acrescenta e onde ele para
 
@@ -224,31 +253,28 @@ seria gravável enquanto o perfil parecia proibi-lo.
 
 A rede, sob um sandbox, é uma lista de permissões de **domínio** por sessão,
 aplicada por proxies de loopback em processo. A saída é negada por padrão: com a
-capacidade de rede desligada, os proxies ainda sobem, mas a lista de permissões
-deles está vazia, então toda conexão de saída é recusada. Com ela ligada, o
-resolvedor monta a lista de permissões a partir de uma base curada — provedores de
-API de LLM, hospedagem de git, registros de pacotes, o catálogo de modelos —,
-mais os domínios do GitHub que a capacidade de GitHub ou de push do agente lhe
-garante, e compara com ela o host de destino de cada conexão. Curingas funcionam
-(`*.example.com` casa subdomínios, não o domínio raiz). Uma lista separada, sempre
-negada, prevalece sobre a lista de permissões e cobre endpoints de metadados de
-nuvem e destinos de telemetria. O que _não_ é configurável é a própria lista: a
-especificação carrega um campo `egressAllowlist` para domínios extras e um hook de
-domínio de tickets, mas nada no caminho de despacho preenche qualquer um dos dois,
-então na prática toda execução recebe a base mais os seus domínios derivados de
-capacidade, e nada mais.
+rede desligada, os proxies ainda sobem, mas a lista de permissões deles está
+vazia, então toda conexão de saída é recusada. Com ela ligada, o resolvedor
+monta a lista de permissões a partir de uma base curada — provedores de API de
+LLM, hospedagem de git, registros de pacotes, o catálogo de modelos —, mais os
+domínios do GitHub, e compara com ela o host de destino de cada conexão.
+Curingas funcionam (`*.example.com` casa subdomínios, não o domínio raiz). Uma
+lista separada, sempre negada, prevalece sobre a lista de permissões e cobre
+endpoints de metadados de nuvem e destinos de telemetria. O que _não_ é
+configurável é a própria lista: a especificação carrega um campo
+`egressAllowlist` para domínios extras, mas nada no caminho de despacho o
+preenche, então na prática toda execução recebe a base mais o GitHub, e nada
+mais.
 
 As negações, no macOS, são observáveis: um monitor lê o log do sistema em busca de
 negações do Sandbox, filtra o ruído conhecido, deduplica tempestades de tentativas
-repetidas e expõe cada uma como um `SandboxViolation`, nomeando o que foi tentado
-e qual capacidade o desbloquearia. No Linux, o caminho do envelope analisa o
+repetidas e expõe cada uma como um `SandboxViolation`, nomeando o que foi tentado e o que foi bloqueado. No Linux, o caminho do envelope analisa o
 stderr em busca de `EPERM`, `Operation not permitted` e `Permission denied` e
 emite o mesmo tipo de evento — não há leitura do log do sistema. Eles chegam no
 próprio fluxo de eventos da execução, então uma syscall negada aparece na
 transcrição, e não apenas em um log. A telemetria só existe enquanto um sandbox
 nativo está de fato envolvendo o processo — em um host sem backend, não há nada a
-observar. Ela também não tem relação com o condicionamento de capacidades: uma
-violação vem de uma syscall negada, nunca de uma consulta de capacidade.
+observar. Ela também não tem relação com as barreiras: uma violação vem de uma syscall negada, nunca de uma consulta de regra.
 
 ## As confirmações vêm das barreiras, não do sandbox
 
@@ -278,5 +304,5 @@ que enuncia o que pode ser verificado à mão.
 
 ## Guias relacionados
 
-- [Configurar políticas de sandbox](/pt-BR/manual/guias/politicas-de-sandbox/): flags de capacidade e postura do sistema de arquivos
+- [Configurar políticas de sandbox](/pt-BR/manual/guias/politicas-de-sandbox/): regras de ação, aplicação de push e postura do sistema de arquivos
 - [Diagnosticar um agente](/pt-BR/manual/guias/diagnosticar-agente/): o que as verificações de diagnóstico cobrem

@@ -16,7 +16,6 @@
   "serverSetupErrorUnreachable": "無法連到伺服器。請確認伺服器正在執行，且此裝置可連到它（同一網絡或經由中繼）。",
   "serverSetupErrorGeneric": "連線時發生問題。展開下方技術詳情以取得更多信息。",
   "notificationRigReclaimedBodyIdle": "因閒置過久，已關閉機器以釋放內存。",
-  "allowNetwork": "允許一般網絡存取",
   "appLogLevelInfoLabel": "信息",
   "networkBlockCount": "{count} 個網絡封鎖",
   "@networkBlockCount": {

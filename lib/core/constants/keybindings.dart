@@ -374,6 +374,17 @@ abstract final class KeybindingRegistry {
       cmd: true,
       when: r'route =~ /^\/pull-requests\//',
     ),
+    // ⌘P / Ctrl+P: quick open over the PR worktree — parity with the
+    // messaging IDE's `msg.ide-quick-open`. The first press on a pull request
+    // can be what checks the worktree out; the picker waits for it.
+    Keybinding.key(
+      id: 'pr.detail-quick-open',
+      category: KeybindingCategory.view,
+      scope: '/pull-requests/',
+      key: LogicalKeyboardKey.keyP,
+      cmd: true,
+      when: r'route =~ /^\/pull-requests\//',
+    ),
   ];
 
   /// The browse-only PR queue on a `/users/<login>` profile page: move / open /
@@ -664,6 +675,7 @@ extension KeybindingL10n on Keybinding {
       'pr.user-focus-search' ||
       'pr.user-focus-search-alt' => l10n.keybindingFocusSearch,
       'pr.detail-close-tab' => l10n.ideCloseTab,
+      'pr.detail-quick-open' => l10n.ideQuickOpen,
       'msg.new-space' => l10n.keybindingNewSpace,
       'msg.prev-space' => l10n.keybindingPreviousSpace,
       'msg.next-space' => l10n.keybindingNextSpace,
@@ -727,6 +739,7 @@ extension KeybindingL10n on Keybinding {
       'pr.user-focus-search' || 'pr.user-focus-search-alt' =>
         l10n.keybindingFocusThePullRequestSearchFieldDescription,
       'pr.detail-close-tab' => l10n.ideCloseTab,
+      'pr.detail-quick-open' => l10n.prQuickOpenDescription,
       'msg.new-space' => l10n.keybindingCreateANewSpaceDescription,
       'msg.prev-space' => l10n.keybindingSelectThePreviousSpaceDescription,
       'msg.next-space' => l10n.keybindingSelectTheNextSpaceDescription,

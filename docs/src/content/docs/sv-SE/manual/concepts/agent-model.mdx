@@ -2,12 +2,12 @@
 title: Agentmodellen
 description: Vad en agent faktiskt är i Control Center, vilka av dess fält som förändrar beteendet och hur adaptern den körs på avgör vad som kan framtvingas.
 slug: sv-SE/handbok/koncept/agentmodell
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Vad är en agent?
 
-En agent är en namngiven aktör med en persona, en uppsättning skills, en adapter att köra på och en uppsättning förmågor. Agenter är principaler i samma mening som människor är det: de författar meddelanden, äger ärenden, lämnar granskningar och syns i samma personallista. De är sakerna som utför arbete.
+En agent är en namngiven aktör med en persona, en uppsättning skills och en adapter att köra på. Agenter är principaler i samma mening som människor är det: de författar meddelanden, äger ärenden, lämnar granskningar och syns i samma personallista. De är sakerna som utför arbete.
 
 Varje agent tillhör exakt en arbetsyta. Detta är en hård invariant — `agent.workspaceId` är icke-null, agentens egen arbetsyta är det som avgör vilken databasfil dess rader hamnar i och att skapa en agent utan arbetsyta avvisas.
 
@@ -26,7 +26,6 @@ En agent är också en katalog. Dess definition ligger i `agents/<slug>/AGENTS.m
 | `modelId`               | Vilken modell inom den adaptern                                                       |
 | `effort`                | Resonemangsnivå, hämtad från den valda modellens eget vokabulär                       |
 | `contextSize`           | Överstyrning av kontextfönstret                                                       |
-| `capabilities`          | Flaggor för inloggningsuppgifter och utgående trafik, kontrollerade vid start         |
 | `silenceTimeoutMinutes` | Per-agent-överstyrning (1–240) för tystnadsövervakningen                             |
 | `reportsTo`             | Förälderagentens id — rapporteringskedjan som organisationsschemat ritar              |
 
@@ -51,18 +50,13 @@ Avgränsningen är ett beslut om kontextbudget. Skillindexet ligger i prompten v
 
 Repo-skills laddas för **varje** adapter, inte bara den inbyggda harnessen. Det aktiva repots skills materialiseras i agentens arbetskatalog, vilket är den sökväg Claude Code redan skannar; samma index komponeras in i den `AGENTS.md` som den inbyggda harnessen läser. Ett repos skills genomgår samma fail-closed-scan som en installerad skill innan något av detta sker — ett utcheckat repo är klonat innehåll, och dess frontmatter når en prompt.
 
-## Förmågor
+## Behörigheter
 
-Förmågor styr vad en körning _tilldelas_, inte vad dess filsystem låter den röra. Mäklaren för inloggningsuppgifter kontrollerar dem vid start: om en förmåga är av injiceras helt enkelt inte motsvarande token.
+En agent bär inga egna behörighetsflaggor. Om den får skapa en commit, pusha, öppna en pull request, skriva till ett ärendesystem eller nå nätverket avgörs av [åtgärdsräckena](/sv-SE/handbok/koncept/racken/) — tillåt, fråga först eller neka, i omfånget arbetsyta, agent eller yta — och samma regler gäller oavsett vilken adapter som kör den.
 
-- **Pusha till repo** — styr injiceringen av GitHub-token som används för `git push`.
-- **GitHub-API** — styr injiceringen av `GH_TOKEN` och utgående trafik till api.github.com.
-- **Ärenden** — styr ärendehanteringsleverantörens API-nyckel och utgående trafik till dess domäner.
-- **Utgående nätverkstrafik** — godtyckliga utgående förfrågningar.
+Vad en körning _tilldelas_ ändras inte av de reglerna. En körning i en GitHub-worktree får alltid en GitHub-token som bara kan läsa, och en push frågas om i samma stund som den sker: agentens git-konfiguration skickar varje GitHub-push genom Control Center, som tillämpar regeln **Pusha till en remote** innan pushen skickas vidare.
 
-En körning läser dem från agentens egen rad. När agenten inte har några gäller en fast konservativ standard: de tre inloggningsuppgiftsflaggorna av, utgående nätverkstrafik på. Växlingsknappen "Sandlådebehörigheter" i agentformuläret väljer mellan den fallbacken och en anpassad uppsättning som lagras på agenten.
-
-Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för den andra halvan, inklusive vad som framtvingas och inte framtvingas på filsystemsnivå.
+Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för hur det fungerar, inklusive vad som framtvingas och inte framtvingas på filsystemsnivå.
 
 ## Adaptern avgör vad som kan framtvingas
 
@@ -71,7 +65,7 @@ Det enskilt mest konsekvensrika fältet på en agent är dess adapter, eftersom 
 | Transport        | Adaptrar                  | Vad Control Center framtvingar                                                                                                                                                                                                                                            |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Inbyggd harness  | Control Center (inbyggd)  | Allt. Verktygsytan _byggs_ från läget, så ett otillåtet verktyg är osynligt snarare än bara nekat; varje anrop passerar godkännandegrinden och åtgärdsräcken; slutförandekontraktet kan puffa och sedan underkänna en körning som avslutas utan sin leverans |
-| Claude CLI       | Claude Code               | Endast de `mcp__*`-verktyg den serveras. Claudes egna läs-, skriv-, redigerings- och skalkommando-verktyg lever i dess process och körs osedda — och den startas med `--dangerously-skip-permissions`, eftersom icke-interaktiv `claude -p` annars skulle blockera för evigt på sin egen prompt    |
+| Claude CLI       | Claude Code               | De `mcp__*`-verktyg den serveras, plus dess `Bash`-kommandon, som en hook skickar till åtgärdspolicyn innan de körs. Claudes egna läs-, skriv- och redigeringsverktyg lever i dess process och körs osedda — och den startas med `--dangerously-skip-permissions`, eftersom icke-interaktiv `claude -p` annars skulle blockera för evigt på sin egen prompt    |
 
 Konkret: **endast den inbyggda harnessen stöder subagenter, styrning under körning, pausa och återuppta (och därmed övertagande) samt strukturell lägestillämpning.** Claude Code får inget av detta.
 

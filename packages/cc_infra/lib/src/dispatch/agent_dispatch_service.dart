@@ -121,7 +121,7 @@ class AgentDispatchService {
 
   /// Orders a harness provider's stored credentials for one run — the harness
   /// half of account pools. See `DispatchSession.onResolveHarnessRotation`.
-  final Future<List<String>?> Function({
+  final Future<AccountPoolOrder> Function({
     String? workspaceId,
     String? agentId,
     required String providerId,
@@ -394,6 +394,7 @@ class AgentDispatchService {
         imagePaths: promptImageRefs.isEmpty ? null : promptImageRefs,
         silenceTimeoutMinutes: prepared.agent?.silenceTimeoutMinutes,
         effortLevel: prepared.agent?.effort,
+        contextWindowTokens: prepared.agent?.contextSize,
         adapterArgsOverride: overrides.args,
         adapterEnvOverride: overrides.env,
         claudeConfigDir: claudePlan?.accounts.firstOrNull?.configDir,
@@ -993,5 +994,5 @@ class ClaudeAccountPlan {
   onAuthFailed;
 
   /// Set instead of [accounts] when every attached account is spent.
-  final ClaudeAccountRefusal? refusal;
+  final AccountPoolRefusal? refusal;
 }

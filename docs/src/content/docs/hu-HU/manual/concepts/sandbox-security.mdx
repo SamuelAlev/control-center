@@ -2,7 +2,7 @@
 title: Homokozó és biztonság
 description: Mi korlátozza valójában ma az ügynököt a Control Centerben, milyen messzire ér el az operációs rendszer homokozója, és mely határok tartanak egy olyan hoszton, amelynek nincs háttérrendszere.
 slug: hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Hová ér el az operációs rendszer homokozója, és hová nem]
@@ -21,8 +21,7 @@ Két rés fennmarad a homokozó mellett is, és érdemes észben tartani őket:
   belül futnak, így csak a `bash` van becsomagolva. Azokat az eszközök saját
   útvonal-elkülönítése, valamint a műveleti korlátok szorítják határok közé.
 - **A Claude Code `--dangerously-skip-permissions` kapcsolóval indul**, mert egy
-  nem interaktív `claude -p` egyébként örökre blokkolna a saját kérdésénél. A
-  fájl- és shellhívásait ezért nem a Control Center korlátai kapuzzák —
+  nem interaktív `claude -p` egyébként örökre blokkolna a saját kérdésénél. A fájlhívásait ezért nem kapuzzák a Control Center korlátai, a shellparancsait pedig csak egy hook, amely a parancssort olvassa —
   körülöttük az operációs rendszer homokozója a határ.
   :::
 
@@ -93,9 +92,7 @@ jóváhagyó nélküli `prompt` _elutasításra_ oldódik fel — egy kérdés, 
 nem tud válaszolni, soha nem igen. A feloldási modellt lásd a
 [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) oldalon.
 
-**Képességkapuzott hitelesítő adatok és megtisztított környezet.** A hitelesítő
-adatokat minden indításkor a beszélgetés képességjelzőiből állítjuk ki, és a
-futás végén visszavonjuk. Az ACP, a harness `bash` és a natív becsomagolás alatti
+**Közvetített hitelesítő adatok és megtisztított környezet.** A hitelesítő adatokat minden indításkor kiállítjuk, és a futás végén visszavonjuk; a futás GitHub-tokenje olvasni tud, pusholni nem — lásd alább „A pushok a Control Centeren mennek át” részt. Az ACP, a harness `bash` és a natív becsomagolás alatti
 Claude Code a folyamat indulása előtt olyan környezetet kap, amelyből
 eltávolították a dinamikus linker és az interpreter injektálási vektorait
 (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` és
@@ -126,36 +123,71 @@ alparancsot külön értékelünk ki, a legszigorúbb döntés győz.
 A Claude Code adapterként az a hely, ahol a homokozón van a legnagyobb súly. A
 Control Center `--dangerously-skip-permissions` kapcsolóval indítja, mert egy nem
 interaktív `claude -p` egyébként örökre blokkolna a saját jóváhagyási kérésénél.
-Olvasási, írási, szerkesztési és shellhívásai a saját folyamatában történnek, és
-a Control Center soha nem látja őket; az egyetlen hívása, amely elér egy
-kapuhoz, a Control Center által kiszolgált `mcp__*` eszközök. Ahol létezik
+Olvasási, írási és szerkesztési hívásai a saját folyamatában történnek, és a Control Center soha nem látja őket. A `Bash` hívásai futás előtt egy szerveroldali hookhoz kerülnek, amely besorolja a parancssort és megkérdezi a megfelelő szabályt, a Control Center által kiszolgált `mcp__*` eszközök pedig a szokásos módon haladnak át a kapun. Ahol létezik
 háttérrendszer, azok a láthatatlan hívások is a homokozóba csomagolva mennek
 végbe, így az operációs rendszer a körülöttük lévő határ. Ahol nincs, ott semmi.
 Minden adapter elmondja ezt a saját érvényesítési mátrixában — lásd
 [az adapterek őszinteségi mátrixát](/hu-HU/kezikonyv/fogalmak/korlatok/#the-adapter-honesty-matrix).
 
-## A képességkapuzás érvényesítés a hiány révén
+## A pushok a Control Centeren mennek át
 
-Egy beszélgetés négy képességjelzőt hordoz: feltolás a repóba, a GitHub API
-hívása, a jegykezelő szolgáltató hívása és hálózati hozzáférés. Ezeket nem akkor
-ellenőrzik, amikor az ügynök cselekszik. Egyszer ellenőrzik őket, indításkor, a
-hitelesítőadat-közvetítő — és egy kikapcsolt képesség azt jelenti, hogy a hozzá
-tartozó tokent egyszerűen soha nem tesszük a környezetbe.
+Nincsenek ügynökönkénti jogosultságjelzők. Hogy egy ügynök létrehozhat-e
+commitot, pusholhat-e, nyithat-e pull requestet, írhat-e követőbe vagy elérheti-e
+a hálózatot, azt a [korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) döntik el —
+engedélyezés, előbb kérdezzen vagy tiltás —, és ugyanazok a szabályok
+érvényesek, bármelyik adapter futtatja is az ügynököt.
 
-Ez a teljes mechanizmus, és érdemes egyenesen megfogalmazni, mert a hiba módja
-nem az, amire az emberek számítanak. A „GitHub API" kikapcsolása nem egy
-„képesség megtagadva" üzenetet eredményez. Egy közönséges `401`-et eredményez az
-ügynökön belül, mert nincs `GH_TOKEN`, amit elküldhetne. Az ügynök joggal
-mesélhet erről hitelesítőadat-problémaként. A hiányon alapuló érvényesítés
-robusztus — nincs olyan ellenőrzés, amelyet meg lehetne kerülni —, de csendes,
-és az ügynök nem tudja, miért bukott meg.
+A push az a művelet, amelynek akkor is tartania kell, ha az ügynök megpróbál
+megkerülni egy szabályt, ezért azzal érvényesítjük, ami az ügynök birtokában
+van, nem azzal, amit futtat. Beállított GitHub App esetén egy GitHub-worktree-ben
+zajló futás repóra korlátozott telepítési tokent kap, amely tartalmat olvashat és
+pull requestekkel dolgozhat, de pusholni nem tud. A futás git-konfigurációja
+minden GitHub-push URL-t (`https://github.com/`, `git@github.com:`,
+`ssh://git@github.com/`) átír az **ügynökfuttatási átjáróra**, egy loopback
+végpontra a `cc_server`-en. Az átjáró kiolvassa, mely refeket frissíti a push,
+megkérdezi a **Küldés távoli tárolóra** szabályt — így egy ágakra korlátozott
+szabály, például „a `main`-re irányuló push tiltása”, is érvényesül —, és csak
+ezután továbbítja a pusht a GitHubra egy írási tokennel, amelyet erre a célra
+állít ki, és soha nem ad át az ügynöknek. Az elutasított push a git saját
+kimenetében jelenik meg:
 
-A hálózati jelző ugyanígy viselkedik. Kikapcsolva a harness `web_fetch` és
-`web_search` eszköze minden hívást elutasít, és egy homokozott indítás
-proxy-engedélylistája üres, így minden kimenő kapcsolat elutasításra kerül.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-A hitelesítő adatok a futás lebontásakor visszavonásra kerülnek, így egy fogantyú
-nem éli túl az őt kiállító futást.
+Az átjáró csak a worktree saját repójába vagy a munkaterülethez kapcsolt
+GitHub-repóba továbbít pusht. A fetch az olvasási tokennel közvetlenül a
+GitHubra megy.
+
+A többi shellparancs lazább kapuba ütközik. A harness `bash` eszköze és – egy
+hookon keresztül – a Claude Code `Bash` eszköze minden parancssort besorol, és
+megkérdezi azt a szabályt, amely alá tartozik: a `git commit`, `merge`,
+`rebase`, `cherry-pick`, `revert` és `am` a **Commit létrehozása**; a
+`gh pr create` a **Pull request megnyitása**; a `gh pr merge`, `review`,
+`comment` és `close` az **Átnézés vagy összefésülés közzététele**; a
+`gh issue create`, `edit`, `comment` és `close` az **Írás külső követőbe**; a
+csomagtelepítések a **Csomag telepítése**; a `curl` és a `wget` a **Hálózati
+hozzáférés**. Ez a művelet szokásos leírását ismeri fel, és egy ügynök, amely
+el akarja rejteni (`eval`, szkriptfájl, közvetlen API-hívás), képes rá. A
+pushok nem függenek tőle.
+
+:::caution[GitHub App nélkül a push-szabály csak tanácsadó jellegű]
+Beállított GitHub App nélkül a közvetítő személyes hozzáférési tokenre tér
+vissza, amelyet nem lehet csak olvasásra korlátozni. A szabály a `git push`-ra
+továbbra is érvényes, mert a git az átjárónak küldi a pusht, de az a kód, amely a
+környezetben lévő tokent közvetlenül használja, megkerülheti.
+:::
+
+A homokozóba nem kerül jegykezelő API-kulcs. Az ügynökök a Control Center MCP
+eszközein keresztül írnak jegyeket, amelyek az **Írás külső követőbe**
+szabályt kérdezik meg.
+
+A **Hálózati hozzáférés** szabályt egyszer olvassuk ki, a futás indulásakor. A
+homokozó hálózata vagy be van kapcsolva, vagy ki, így a tiltás kikapcsolja, az
+engedélyezés és az előbb kérdezzen pedig bekapcsolva hagyja; a harness
+`web_fetch` és `web_search` eszköze továbbra is minden hívásnál kérdez. A
+hitelesítő adatok a futás lebontásakor visszavonásra kerülnek, az átjáró által
+kiállított írási tokenekkel együtt, így egy fogantyú nem éli túl a futást.
 
 ## Mit ad hozzá a homokozó, és hol áll meg
 
@@ -224,32 +256,29 @@ volna, miközben a profil látszólag tiltotta.
 
 A hálózat homokozó alatt munkamenetenkénti **domain**-engedélylista, amelyet
 folyamaton belüli loopback proxyk érvényesítenek. A kimenő forgalom
-alapértelmezés szerint tiltott: kikapcsolt hálózati képességgel a proxyk
-elindulnak, de az engedélylistájuk üres, így minden kimenő kapcsolat
-elutasításra kerül. Bekapcsolva a feloldó egy gondozott alaplistából építi fel az
+alapértelmezés szerint tiltott: kikapcsolt hálózattal a proxyk elindulnak, de az
+engedélylistájuk üres, így minden kimenő kapcsolat elutasításra kerül.
+Bekapcsolt hálózattal a feloldó egy gondozott alaplistából építi fel az
 engedélylistát — LLM API-szolgáltatók, git-hoszting, csomagregiszterek, a
-modellkatalógus —, plusz azokból a GitHub-domainekből, amelyeket az ügynök
-GitHub- vagy push-képessége kiérdemel, és minden kapcsolat célhosztját ezzel
-veti össze. A helyettesítő karakterek működnek (`*.example.com` az aldomainekre
-illeszkedik, nem a csúcstartományra). Egy külön, mindig tiltott lista felülírja
-az engedélylistát, és felhő-metaadatvégpontokat és telemetriai célpontokat fed
-le. Ami _nem_ konfigurálható, az maga a lista: a specifikáció hordoz egy
-`egressAllowlist` mezőt további domainekhez és egy jegykezelő domain-horgot, de
-az indítási útvonalban semmi nem tölti ki egyiket sem, így a gyakorlatban minden
-futás az alaplistát és a képességből származó domainjeit kapja, semmi többet.
+modellkatalógus —, plusz a GitHub domainjeiből, és minden kapcsolat célhosztját
+ezzel veti össze. A helyettesítő karakterek működnek (`*.example.com` az
+aldomainekre illeszkedik, nem a csúcstartományra). Egy külön, mindig tiltott
+lista felülírja az engedélylistát, és felhő-metaadatvégpontokat és telemetriai
+célpontokat fed le. Ami _nem_ konfigurálható, az maga a lista: a specifikáció
+hordoz egy `egressAllowlist` mezőt további domainekhez, de az indítási
+útvonalban semmi nem tölti ki, így a gyakorlatban minden futás az alaplistát és
+a GitHubot kapja, semmi többet.
 
 A tiltások macOS-en megfigyelhetők: egy monitor a rendszernaplóból kiszúrja a
 Sandbox-tiltásokat, kiszűri az ismert zajt, deduplikálja az újrapróbálkozási
 viharokat, és mindegyiket `SandboxViolation` eseményként hozza felszínre,
-megnevezve, mit kíséreltek meg és melyik képesség oldaná fel. Linuxon a
+megnevezve, mit kíséreltek meg és mi lett blokkolva. Linuxon a
 becsomagolási út az stderr-ből elemzi ki az `EPERM`, `Operation not permitted`
 és `Permission denied` szövegeket, és ugyanazt az eseménytípust bocsátja ki —
 nincs rendszernapló-kiszúrás. Ezek a futás saját eseményfolyamán érkeznek, így
 egy megtagadott rendszerhívás az átiratban is megjelenik, nem csak egy naplóban.
 A telemetria csak addig létezik, amíg egy natív homokozó ténylegesen becsomagolja
-a folyamatot — egy háttérrendszer nélküli hoszton nincs mit megfigyelni. Az sem
-kapcsolódik a képességkapuzáshoz: egy sértés megtagadott rendszerhívásból
-származik, soha nem képességkeresésből.
+a folyamatot — egy háttérrendszer nélküli hoszton nincs mit megfigyelni. A korlátokhoz sem kapcsolódik: egy sértés megtagadott rendszerhívásból származik, soha nem szabálykeresésből.
 
 ## A megerősítések a korlátokból jönnek, nem a homokozóból
 
@@ -279,5 +308,5 @@ az egyetlen hely, amely elmondja, mi ellenőrizhető kézzel.
 
 ## Kapcsolódó útmutatók
 
-- [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/): képességjelzők és fájlrendszer-beállítás
+- [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/): műveleti szabályok, push-érvényesítés és fájlrendszer-beállítás
 - [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/): mit fednek le a diagnosztikai ellenőrzések

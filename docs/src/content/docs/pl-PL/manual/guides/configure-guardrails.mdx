@@ -2,7 +2,7 @@
 title: Skonfiguruj guardraile
 description: Ustaw reguły zezwalania, pytania i odmowy dla akcji agentów, przetestuj je sondą A co jeśli? i dostrój autonomię w każdej przestrzeni.
 slug: pl-PL/podrecznik/poradniki/konfiguracja-guardraili
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Ten poradnik pokazuje, jak skonfigurować guardraile: reguły, które decydują, czy
@@ -134,12 +134,14 @@ zestawienia w aplikacji: dla każdej klasy efektów mówi, czy dany runner
 przechwytuje ją na bramce reguł, pozostawia sandboxowi, czy nie potrafi jej
 przechwycić wcale.
 
-- **Adapter Claude Code** nie jest objęty bramką w przypadku własnych wywołań
+- **Adapter Claude Code** jest objęty bramką tylko w części własnych wywołań
   narzędzi. Claude Code jest uruchamiany z `--dangerously-skip-permissions`,
-  więc jego wywołania odczytu, zapisu, edycji i bash nigdy nie przechodzą przez
-  guard. Bramką objęte są natomiast powierzchnia narzędzi MCP, do której ten
-  adapter kieruje wywołania, oraz polecenie powłoki, które Control Center
-  uruchamia, aby go wystartować.
+  więc jego wywołania odczytu, zapisu i edycji nigdy nie przechodzą przez
+  guard. Jego polecenia bash docierają do niego przez hook, który klasyfikuje
+  wiersz poleceń, a jego push przechodzi przez bramę push jak u każdego agenta.
+  Bramką objęte są też powierzchnia narzędzi MCP, do której ten adapter kieruje
+  wywołania, oraz polecenie powłoki, które Control Center uruchamia, aby go
+  wystartować.
 - **Własny czasownik wyjściowy trybu** (`submit_plan`, `propose_orchestration`)
   jest przypięty i nigdy nie można go odrzucić — w przeciwnym razie tryb byłby
   strukturalnie niezdolny do wytworzenia swojego jedynego rezultatu.

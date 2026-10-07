@@ -2,7 +2,7 @@
 title: Beveiligingen — één beleid voor elke actie die iets wijzigt
 description: Waarom Control Center elk neveneffect van een agent door één engine voor toestaan/eerst vragen/weigeren leidt, waarom de ActionClass-taxonomie bewust klein blijft en wat de autonomieschakelaar werkelijk verandert.
 slug: nl-NL/handleiding/concepten/beveiligingen
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agents in Control Center kunnen bestanden verwijderen, branches pushen, pull
@@ -244,8 +244,7 @@ ingebouwde harness verklaart dat zijn bestandshulpmiddelen in-process **niet** i
 een sandbox draaien — het toolaanbod en deze beleidsengine zijn de enige
 bestandssysteemgrens die hij heeft. Claude Code verklaart dat zijn eigen
 toolaanroepen **niet** te onderscheppen zijn, omdat het wordt gestart met
-`--dangerously-skip-permissions`; Control Center ziet alleen zijn `mcp__*`-aanroepen,
-en zijn eigen lees-, schrijf-, bewerkings- en shellhulpmiddelen draaien ongezien.
+`--dangerously-skip-permissions`; Control Center ziet zijn `mcp__*`-aanroepen en, via een hook, zijn `Bash`-opdrachtregels, terwijl zijn eigen lees-, schrijf- en bewerkingshulpmiddelen ongezien draaien.
 
 Het instellingenscherm toont deze matrix, want de enige onvergeeflijke fout voor
 een beveiligingssysteem is dekking claimen die niet bestaat.

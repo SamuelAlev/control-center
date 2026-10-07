@@ -2,7 +2,7 @@
 title: Configuração de agentes
 description: Todos os campos da entidade de agente e os enums que ela usa.
 slug: pt-BR/manual/referencia/configuracao-de-agentes
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Esta referência lista todos os campos da entidade de agente, além dos enums e das flags que ela usa. Para um passo a passo de criação ou edição de um agente no app, consulte [Criar e configurar um agente](/pt-BR/manual/guias/criar-agente/).
@@ -26,7 +26,6 @@ Esta referência lista todos os campos da entidade de agente, além dos enums e 
 | `effort`                | `String?`              | Não         | ID do nível de raciocínio (por ex. `'low'`, `'xhigh'`), obtido dos `thinkingLevels` do modelo selecionado                                                                                |
 | `contextSize`           | `int?`                 | Não         | Tamanho máximo da janela de contexto                                                                                                                                                     |
 | `role`                  | `AgentRole?`           | Não         | Função do agente                                                                                                                                                                         |
-| `capabilities`          | `AgentCapabilities?`   | Não         | Padrão de capacidades específico do agente; quando nulo, o padrão do nível de usuário se aplica no despacho e uma conversa ainda pode substituí-lo                                       |
 | `monthlyBudgetCents`    | `int`                  | Não         | Teto de gastos mensais em centavos (padrão `0`, ilimitado)                                                                                                                               |
 | `silenceTimeoutMinutes` | `int?`                 | Não         | Substituição do tempo limite de silêncio em minutos; deve ser nulo ou estar entre 1 e 240 (verificado pelo construtor)                                                                   |
 | `maxConcurrentTasks`    | `int`                  | Não         | Padrão `1`. Número de capacidade informado pelo modelo de presença (as contagens de execuções em andamento e na fila são comparadas com ele)                                             |
@@ -67,18 +66,9 @@ Esta referência lista todos os campos da entidade de agente, além dos enums e 
 | `paused`   | Definido pela parada forçada do orçamento. Exibido na lista de presença; o despacho ainda aceita trabalho |
 | `archived` | Aposentado e oculto das listas de presença ativas                                                         |
 
-## Flags de AgentCapabilities
+## Permissões
 
-Resolvidas a cada despacho: o padrão do agente, com recuo para o padrão do nível de usuário quando aquele for nulo, e uma substituição por conversa por cima. Aplicadas por ausência — o broker de credenciais simplesmente não emite nem injeta o que uma capacidade desativada cobre.
-
-| Flag               | Tipo   | Padrão  | Descrição                                                                                                     |
-| ------------------ | ------ | ------- | ------------------------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Faz push de commits para o remoto; condiciona a injeção do token do GitHub junto com `canCallGitHubApi`       |
-| `canCallGitHubApi` | `bool` | `false` | Chama api.github.com; condiciona a injeção de `GH_TOKEN` e os domínios de saída do GitHub                     |
-| `canCallTicketing` | `bool` | `false` | Chama a API do provedor de tickets; condiciona a injeção da chave de API do provedor e seus domínios de saída |
-| `canAccessNetwork` | `bool` | `true`  | Saída de rede arbitrária. Também condiciona as ferramentas `web_fetch` e `web_search` do harness              |
-
-`AgentCapabilities.safeDefault` corresponde aos quatro padrões do construtor. `legacyDefault` (os quatro como verdadeiro) é usado apenas pela migração que preencheu retroativamente as conversas criadas antes de as capacidades existirem. Um blob armazenado malformado ou vazio é interpretado como `safeDefault`; a chave herdada `canCallLinear` é lida como `canCallTicketing`.
+Um agente não carrega flags de permissão. Fazer push, abrir e publicar pull requests, escrever em um rastreador e a saída de rede são classes de ação (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) que as [barreiras](/pt-BR/manual/conceitos/barreiras/) resolvem no escopo do espaço de trabalho, do agente ou do espaço. O token do GitHub de uma execução tem sempre escopo de leitura; os pushes passam pelo gateway de execuções de agentes, que pergunta à regra `gitPush` antes de encaminhá-los.
 
 ## AgentSkills
 

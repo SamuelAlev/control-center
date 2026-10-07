@@ -1,20 +1,20 @@
 import 'package:cc_domain/cc_domain.dart' show UndoClass, newIdempotencyKey;
-import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
-import 'package:control_center/core/providers/sync_engine_provider.dart';
-import 'package:control_center/core/sync/optimistic_mutation.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/undo/action_journal.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Applies a per-field ticket edit (title / description / priority / labels) through the
-/// deterministic sync engine's optimistic path (PRD 16 §6).
+/// Applies a per-field ticket edit (title / description / priority / labels)
+/// through the `tickets.patch` per-column LWW op.
 /// [fields] is the `tickets.patch` wire shape (only `title`, `description`, `priority`,
 /// `labels` are patchable — `priority` as its storage int, see
-/// [TicketPriority.toStorageInt]; the host rejects any other key).
+/// `TicketPriority.toStorageInt`; the host rejects any other key).
 /// [previousFields] must hold the SAME keys as [fields], carrying their pre-edit values.
 /// The patch (and its inverse) each carry a fresh idempotency key so a retry/replay
 /// collapses to one apply.
-Future<void> patchTicketOptimistic(
+Future<void> patchTicketFields(
   WidgetRef ref, {
   required String workspaceId,
   required String ticketId,
@@ -22,24 +22,21 @@ Future<void> patchTicketOptimistic(
   Map<String, dynamic>? previousFields,
   String? undoLabel,
 }) async {
-  final store = ref.read(syncEngineProvider).storeFor('tickets', workspaceId);
   final repo = ref.read(remoteTicketRepositoryProvider);
-  // Optimistic apply → reconcile; a rejection reverts and surfaces loudly
-  // (never silently) so the operator never believes a failed edit landed.
-  final applied = await runOptimistic(
-    store: store,
-    table: 'tickets',
-    pk: ticketId,
-    overlay: _rowOverlayFields(fields),
-    mutate: () => repo.patchFields(
+  try {
+    await repo.patchFields(
       workspaceId,
       ticketId,
       fields,
       idempotencyKey: newIdempotencyKey(),
-    ),
-    onError: surfaceOptimisticFailure,
-  );
-  if (applied && previousFields != null && undoLabel != null) {
+    );
+  } catch (_) {
+    // A rejection surfaces loudly (never silently) so the operator never
+    // believes a failed edit landed.
+    _surfacePatchFailure();
+    return;
+  }
+  if (previousFields != null && undoLabel != null) {
     ref
         .read(actionJournalProvider.notifier)
         .record(
@@ -63,16 +60,15 @@ Future<void> patchTicketOptimistic(
   }
 }
 
-/// Translates the `tickets.patch` fields shape into the `tickets` store's row
-/// shape (the `TicketDto`/`ticketToWire` shape the synced rows carry) so the
-/// optimistic overlay never disagrees with what `TicketDto.fromJson` expects:
-/// `priority` rides the wire as its enum NAME (see `ticketToWire`), not the
-/// storage int the patch op takes. Every other patchable key (`title`,
-/// `description`, `labels`) is already shaped identically in both places.
-Map<String, dynamic> _rowOverlayFields(Map<String, dynamic> fields) {
-  final priority = fields['priority'];
-  if (priority is! int) {
-    return fields;
+/// Shows a danger toast on the root overlay (which sits under the app's
+/// [CcToastScope]); called from a callback with no local context.
+void _surfacePatchFailure() {
+  final ctx = rootNavigatorKey.currentContext;
+  if (ctx == null) {
+    return;
   }
-  return {...fields, 'priority': TicketPriority.fromStorage(priority).name};
+  CcToastScope.maybeOf(ctx)?.show(
+    AppLocalizations.of(ctx).optimisticChangeReverted,
+    variant: CcToastVariant.danger,
+  );
 }

@@ -2,7 +2,7 @@
 title: Configure guardrails
 description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
 slug: en-GB/manual/guides/configure-guardrails
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 This guide shows you how to configure guardrails: the rules that decide whether
@@ -123,11 +123,13 @@ The **Where rules are enforced** table at the bottom of the same page is the
 in-app version of this: per effect class, it says whether each runner catches it
 at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
+- **The Claude Code adapter** is only partly gated on its own tool calls.
+  Claude Code is launched with `--dangerously-skip-permissions`, so its read,
+  write and edit calls never pass through the guard. Its bash commands reach
+  the guard through a hook that classifies the command line, and its pushes go
+  through the push gateway like every agent's. The MCP tool surface it calls
+  back into and the shell command Control Center spawns to launch it are gated
+  too.
 - **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
   and can never be denied — otherwise a mode would be structurally unable to
   produce its only deliverable.

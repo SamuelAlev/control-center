@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
@@ -27,7 +26,6 @@ void main() {
   Future<RunLogWriter> openWriter({
     String cliName = 'test-cli',
     String? agentId,
-    AgentCapabilities capabilities = const AgentCapabilities(),
     Set<String>? coalesceableLogTypes,
     Duration logCoalesceWindow = const Duration(milliseconds: 50),
     int logCoalesceMaxChars = 4000,
@@ -41,7 +39,6 @@ void main() {
       agentDirHostPath: agentDir,
       agentId: agentId,
       cliName: cliName,
-      capabilities: capabilities,
     );
     return writer;
   }
@@ -79,14 +76,7 @@ void main() {
       }, timeout: const Timeout.factor(2));
 
       test('start event contains metadata', () async {
-        final writer = await openWriter(
-          agentId: 'a1',
-          cliName: 'test-cli',
-          capabilities: const AgentCapabilities(
-            canPushToRepo: true,
-            canCallGitHubApi: false,
-          ),
-        );
+        final writer = await openWriter(agentId: 'a1', cliName: 'test-cli');
         final lines = await closeAndRead(writer);
         final start = lines.first;
 
@@ -95,10 +85,9 @@ void main() {
         expect(start['cliName'], 'test-cli');
         expect(start['runId'], contains('a1'));
         expect(start['ts'], isNotNull);
-        expect(start['capabilities'], isA<Map>());
-        final capsJson = start['capabilities'] as Map<String, dynamic>;
-        expect(capsJson['canPushToRepo'], isTrue);
-        expect(capsJson['canCallGitHubApi'], isFalse);
+        // The action policy is the only permission system: a run log no
+        // longer records a capability snapshot.
+        expect(start.containsKey('capabilities'), isFalse);
       }, timeout: const Timeout.factor(2));
 
       test('runId includes agentId when provided', () async {
@@ -309,10 +298,6 @@ void main() {
         final writer = await openWriter(
           agentId: 'lifecycle-test',
           cliName: 'claude',
-          capabilities: const AgentCapabilities(
-            canPushToRepo: true,
-            canAccessNetwork: true,
-          ),
           logCoalesceWindow: const Duration(seconds: 10),
         );
 
@@ -353,20 +338,12 @@ void main() {
           logCoalesceWindow: const Duration(seconds: 10),
         );
 
-        await writer.open(
-          agentDirHostPath: agentDir,
-          cliName: 'first',
-          capabilities: const AgentCapabilities(),
-        );
+        await writer.open(agentDirHostPath: agentDir, cliName: 'first');
 
         writer.logEvent(ThinkingEvent(content: 'leftover'));
         // Don't flush — the buffer should be cleared on re-open.
 
-        await writer.open(
-          agentDirHostPath: agentDir,
-          cliName: 'second',
-          capabilities: const AgentCapabilities(),
-        );
+        await writer.open(agentDirHostPath: agentDir, cliName: 'second');
 
         writer.logEvent(TextEvent(content: 'new session'));
 
@@ -476,11 +453,7 @@ void main() {
 
     group('extended start event metadata', () {
       test('workspaceId, conversationId, ticketId in start event', () async {
-        final writer = await openWriter(
-          agentId: 'a1',
-          cliName: 'test-cli',
-          capabilities: const AgentCapabilities(),
-        );
+        final writer = await openWriter(agentId: 'a1', cliName: 'test-cli');
         // Re-open with extended metadata.
         await writer.close();
 
@@ -492,7 +465,6 @@ void main() {
           workspaceId: 'ws-42',
           conversationId: 'conv-7',
           ticketId: 'tkt-99',
-          capabilities: const AgentCapabilities(),
         );
         final lines = await closeAndRead(writer2);
         final start = lines.first;
@@ -508,7 +480,6 @@ void main() {
           cliName: 'test-cli',
           agentId: 'a1',
           modelId: 'gpt-5',
-          capabilities: const AgentCapabilities(),
         );
         final lines = await closeAndRead(writer);
         final start = lines.first;
@@ -560,7 +531,6 @@ void main() {
             content: 'denied: file-read',
             action: 'file-read',
             target: '/etc/passwd',
-            suggestedCapability: 'canReadFiles',
           ),
         );
         final lines = await closeAndRead(writer);
@@ -569,7 +539,7 @@ void main() {
         expect(meta, isNotNull);
         expect(meta['action'], 'file-read');
         expect(meta['target'], '/etc/passwd');
-        expect(meta['suggestedCapability'], 'canReadFiles');
+        expect(meta.containsKey('suggestedCapability'), isFalse);
       }, timeout: const Timeout.factor(2));
     });
 

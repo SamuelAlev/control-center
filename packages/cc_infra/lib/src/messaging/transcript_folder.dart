@@ -140,11 +140,11 @@ class TranscriptFolder {
             message: event.content,
             action: event.action,
             target: event.target,
-            suggestedCapability: event.suggestedCapability,
             startedAt: event.timestamp,
           ),
         );
       case UsageEvent():
+      case ContextWindowEvent():
       case DebugEvent():
       case DoneEvent():
         return false;

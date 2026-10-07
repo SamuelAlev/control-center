@@ -2,7 +2,7 @@
 title: 术语表
 description: 贯穿 Control Center 全站的关键术语定义。
 slug: zh-CN/手册/参考/术语表
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['智能体', '具备身份、角色、技能和能力的 AI 工作者。恰好属于一个工作区。系统中的主要行动者。'],
+['智能体', '具备身份、角色、技能和适配器的 AI 工作者。恰好属于一个工作区。系统中的主要行动者。'],
 ['适配器', '执行智能体回合的运行器。产品内置两种：Control Center（内置）——与模型提供方通信的进程内 harness——以及通过 claude CLI 运行的 Claude Code。Cursor、Codex 及其他模型提供方都挂接到内置适配器上，而不是作为独立的运行器。'],
 ['工作区', '顶级的隔离租户。将智能体、仓库、空间、工单、记忆和流水线归组在一起。隔离是结构性的，而非约定俗成：每个工作区都有自己的 SQLite 文件，因此跨工作区读取无法通过编译。应用内每条路由都带 /workspaces/:workspaceId 前缀。'],
 ['代码托管平台', '代码托管服务——GitHub、GitLab 或 Bitbucket Cloud。每个仓库的属性，在注册时从其 origin 远端读取。一个工作区可以同时容纳来自这三者的仓库。'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', '一组不区分大小写的技能标识符，在派发时把相关上下文注入提示词。'],
 ['技能源', '按工作区注册为技能目录的 GitHub 仓库。按构造即不可信：该仓库的元数据仅用于展示，且每次安装都必须先通过失败即关闭的扫描闸门，之后任何内容才能落到磁盘或进入提示词。'],
 ['skills-lock.json', '按工作区记录的已安装技能清单：每个技能的源仓库、仓库内路径、所固定的提交，以及一个汇总内容哈希。安装、更新和卸载都会让它保持最新；verify_skills 会拿它与磁盘核对。'],
-['AgentCapabilities', '四个标志（推送到仓库、GitHub API、工单、网络出口），在派发时解析：先取智能体默认值，再取用户默认值，并允许按对话覆盖。通过“缺失即禁用”来强制执行，因为某项能力被禁用就意味着对应的令牌或出口根本不会被注入。'],
+['智能体运行网关', 'cc_server 上的一个回环端点，在智能体的沙盒内应用操作策略。智能体发起的每一次 GitHub 推送都会被路由到这里，按推送到远程仓库规则检查，再用一个智能体从不持有的写入令牌转发；Claude Code 的 Bash 命令则经由同一端点上的钩子检查。'],
 ['模式', 'chat、plan、review 或 orchestrate。按空间存储，因此同一个智能体可以在不同空间处于不同模式；空间内的每段对话共享它。它控制系统提示词、沙盒写入规则和 MCP 工具允许列表。'],
 ['SandboxBackend', 'microvm（隔离的虚拟机——唯一带有内核边界的后端，用于交互式终端）、native（操作系统原生的沙盒：macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap）或 none。启动时探测一次；native 可用时会包裹智能体派发。Windows 没有原生后端，Linux 需要 bwrap 加 socat，因此那里的运行不会被包裹；--sandbox off 会刻意选择退出。'],
 ['机台', '智能体实时操控的一台可丢弃机器：一个隔离的浏览器或 Linux 桌面、由宿主机管理的 Android 模拟器或 iOS 模拟器，或一个隔离终端。通过它自己的全分辨率通道实时观看，接管由服务器端强制执行。以对话为作用域，因此人类标签页与智能体工具面对的是同一台机器。'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', '单次智能体运行的令牌/成本统计（输入令牌、输出令牌、以分为单位的估算成本）。'],
 ['唤醒原因', '智能体被派发的原因。共六个取值：用户消息、工单指派、失败后的恢复性重派、子工单完成、定时的后续心跳和流水线步骤。'],
 ['SandboxPort', '管理沙盒生命周期（探测、启动、事件、exec、销毁）。'],
-['CredentialBrokerPort', '为沙盒启动铸造按作用域限定、受能力门控的凭据，并在拆除时撤销它们。'],
+['CredentialBrokerPort', '为沙盒启动铸造按作用域限定的凭据（智能体环境中为只读，写入权限仅用于服务器端的推送路径），并在拆除时撤销它们。'],
 ['GitRepoInspectorPort', '从本地 Git 仓库路径中提取元数据（owner、repo、branch）。'],
 ['EmbeddingPort', '生成用于语义搜索的单位范数文本嵌入向量。'],
 ['NotificationPort', '显示原生的桌面通知，并遵守类别/路由门控。'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## 核心实体
 
-**智能体**：具备身份、角色、技能和能力的 AI 工作者。恰好属于一个工作区。系统中的主要行动者。
+**智能体**：具备身份、角色、技能和适配器的 AI 工作者。恰好属于一个工作区。系统中的主要行动者。
 
 **适配器**：执行智能体回合的运行器。产品内置两种：**Control Center（内置）**——与模型提供方通信的进程内 harness——以及通过 `claude -p` 运行的 **Claude Code**。Cursor、Codex、Anthropic、OpenAI 等其余都是内置适配器上的提供方，而不是独立的 CLI。参见[管理适配器与模型](/zh-CN/手册/操作指南/适配器/)。
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**：按工作区记录的已安装技能清单：每个技能的源仓库、仓库内路径、所固定的提交，以及一个汇总内容哈希。安装、更新和卸载都会让它保持最新；`verify_skills` 会拿它与磁盘核对。
 
-**AgentCapabilities**：四个标志（推送到仓库、GitHub API、工单、网络出口），在派发时解析——先取智能体默认值 → 再取用户默认值，并允许按对话覆盖。通过“缺失即禁用”来强制执行：某项能力被禁用，就意味着对应的令牌或出口根本不会被注入。
+**智能体运行网关**：`cc_server` 上的一个回环端点，在智能体的沙盒内应用操作策略。智能体发起的每一次 GitHub 推送都会被路由到这里，按**推送到远程仓库**规则检查，再用一个智能体从不持有的写入令牌转发；Claude Code 的 `Bash` 命令则经由同一端点上的钩子检查。参见[沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)。
 
 **模式**：`chat`、`plan`、`review` 或 `orchestrate`。**按空间**存储，因此同一个智能体可以在不同空间处于不同模式；空间内的每段对话共享它。它控制系统提示词、沙盒写入规则和 MCP 工具允许列表。输入框只提供 `chat`、`plan` 和 `orchestrate`；`chat` 的标签是“智能体”。
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**：管理沙盒生命周期（探测、启动、事件、exec、销毁）。
 
-**CredentialBrokerPort**：为沙盒启动铸造按作用域限定、受能力门控的凭据，并在拆除时撤销它们。
+**CredentialBrokerPort**：为沙盒启动铸造按作用域限定的凭据——智能体环境中为只读，写入权限仅用于服务器端的推送路径——并在拆除时撤销它们。
 
 **GitRepoInspectorPort**：从本地 Git 仓库路径中提取元数据（owner、repo、branch）。
 

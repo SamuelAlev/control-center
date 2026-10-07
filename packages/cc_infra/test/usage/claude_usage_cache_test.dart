@@ -55,6 +55,42 @@ void main() {
     expect(calls, 2, reason: 'past the TTL it refetches');
   });
 
+  test('a forced read refetches a reading the TTL would reuse', () async {
+    final cache = build();
+    await cache.get('/a');
+    clock = clock.add(const Duration(minutes: 1));
+    await cache.get('/a', force: true);
+    expect(calls, 2);
+  });
+
+  test('a forced read still respects the floor', () async {
+    // A refresh button clicked five times must not become five requests to
+    // an endpoint that throttles hard.
+    final cache = build();
+    await cache.get('/a');
+    clock = clock.add(const Duration(seconds: 10));
+    await cache.get('/a', force: true);
+    expect(calls, 1);
+  });
+
+  test('a forced read retries a cached failure past the floor', () async {
+    final cache = build(answer: () => _throttled);
+    await cache.get('/a');
+    clock = clock.add(const Duration(seconds: 45));
+    await cache.get('/a', force: true);
+    expect(calls, 2, reason: 'errorTtl alone would have held it');
+  });
+
+  test('a forced read joins a fetch already in flight', () async {
+    final gate = Completer<SubscriptionUsage>();
+    final cache = build(gate: gate);
+    final first = cache.get('/a');
+    final second = cache.get('/a', force: true);
+    gate.complete(_ok());
+    await Future.wait([first, second]);
+    expect(calls, 1);
+  });
+
   test('accounts are cached independently', () async {
     // The whole reason this class exists is a per-ACCOUNT fan-out, so one
     // account's reading must never answer for another's.

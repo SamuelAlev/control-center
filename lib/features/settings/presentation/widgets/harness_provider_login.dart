@@ -88,11 +88,9 @@ class _HarnessProviderLoginPanelState
             ),
           const SizedBox(height: 8),
         ],
-        // Rotation, once there is more than one credential to rotate BETWEEN.
-        if (info.credentials.length > 1) ...[
-          HarnessRotationEditor(info: info),
-          const SizedBox(height: 8),
-        ],
+        // Rotation: the editor applies the shared visibility rule itself (two
+        // or more keys, or a pool naming only removed ones).
+        if (info.credentials.isNotEmpty) HarnessRotationEditor(info: info),
         // An OAuth-only provider (a plan, not a metered API) issues no key —
         // showing a key box would invite pasting one that can never work.
         if (info.supportsApiKey)

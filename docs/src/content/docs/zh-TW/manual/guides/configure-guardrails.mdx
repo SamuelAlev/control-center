@@ -2,7 +2,7 @@
 title: 設定護欄
 description: 為代理動作設定允許、先詢問與拒絕規則，用假設情境探測器測試，並調整各空間的自主程度。
 slug: zh-TW/手冊/操作指南/設定護欄
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 本指南說明如何設定護欄：決定代理動作要執行、先要求核准，還是直接拒絕的規則。
@@ -97,7 +97,7 @@ sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 
 同一頁面底部的**規則套用位置**表格，就是這件事的應用程式內版本：它會針對每個效果類別，說明各個執行器是在政策閘門攔截它、交給沙箱處理，還是根本無法攔截。
 
-- **Claude Code 配接器**自身的工具呼叫不受閘控。Claude Code 是以 `--dangerously-skip-permissions` 啟動，因此它的讀取、寫入、編輯與 bash 呼叫永遠不會通過這道防護。對該配接器設有閘門的，是它回呼的 MCP 工具介面，以及 Control Center 為了啟動它而生成的 shell 命令。
+- **Claude Code 配接器**自身的工具呼叫只有一部分受閘控。Claude Code 是以 `--dangerously-skip-permissions` 啟動，因此它的讀取、寫入與編輯呼叫永遠不會通過這道防護。它的 bash 命令會經由一個將命令列分類的鉤子抵達防護，它的推送也和所有代理一樣經過推送閘道。它回呼的 MCP 工具介面，以及 Control Center 為了啟動它而生成的 shell 命令，同樣設有閘門。
 - **模式自身的輸出動詞**（`submit_plan`、`propose_orchestration`）是固定的，永遠無法被拒絕——否則模式在結構上就無法產出它唯一的交付成果。
 - **沙箱是否為這些規則提供後盾，取決於主機。** 當 `cc_server` 找到後端時，它會包裝 Claude Code CLI 與執行環境的 `bash` 工具，因此即使規則不是你寫的，底下仍有作業系統下限。在 **Windows 上完全沒有下限**，而在缺少 `bwrap` 與 `socat` 的 Linux 或 WSL2 上也沒有——在那些環境裡，護欄加上模式的工具介面就是全部的強制執行，而不是第二道防線。請用[設定沙箱原則](/zh-TW/手冊/操作指南/沙箱原則/)確認你屬於哪一種情況。
 

@@ -116,6 +116,25 @@ void main() {
     expect(find.byType(CcDialog), findsNothing);
   });
 
+  testWidgets('a pool of removed accounts asks for an edit, not a sign-in', (
+    tester,
+  ) async {
+    final controller = StreamController<List<RunCredentialBlockDto>>();
+    addTearDown(controller.close);
+    await _pump(tester, controller.stream);
+
+    controller.add([_block(reason: RunCredentialReason.accountsRemoved)]);
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.credentialGateAccountsRemovedTitle), findsOneWidget);
+    expect(find.text(l10n.credentialGateAccountsRemovedHint), findsOneWidget);
+    // Signing in cannot fix it, and the sign-in page is not where the list is
+    // edited.
+    expect(find.text(l10n.credentialGateClaudeSignInHint), findsNothing);
+    expect(find.text(l10n.credentialGateOpenSettings), findsNothing);
+  });
+
   testWidgets('a harness block names the provider', (tester) async {
     final controller = StreamController<List<RunCredentialBlockDto>>();
     addTearDown(controller.close);

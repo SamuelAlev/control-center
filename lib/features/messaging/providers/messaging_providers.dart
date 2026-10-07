@@ -822,6 +822,38 @@ final spaceConversationsProvider = StreamProvider.autoDispose
           .watchForSpace(workspaceId: workspaceId, spaceId: spaceId);
     });
 
+/// Which conversations in a space are having their title generated right now
+/// (the automatic pass after the first message). The tab, header and sidebar
+/// scramble the label while an id is in here.
+///
+/// One subscription per space, ownership-gated like
+/// [spaceConversationsProvider]. A host without automatic titling has no
+/// `conversation.watchTitleGenerating`; that error reads as "none", since the
+/// signal is decoration and a missing one must not break the label.
+final spaceTitleGeneratingIdsProvider = StreamProvider.autoDispose
+    .family<Set<String>, String>((ref, spaceId) {
+      final workspaceId = _workspaceOwningSpace(ref, spaceId);
+      if (workspaceId == null) {
+        return Stream.value(const <String>{});
+      }
+      return ref
+          .watch(conversationTitlePortProvider)
+          .watchGenerating(workspaceId: workspaceId, spaceId: spaceId)
+          .handleError((Object _) {});
+    });
+
+/// Whether the keyed conversation's title is being generated right now.
+final conversationTitleGeneratingProvider = Provider.autoDispose
+    .family<bool, ({String spaceId, String conversationId})>(
+      (ref, key) =>
+          ref
+              .watch(spaceTitleGeneratingIdsProvider(key.spaceId))
+              .asData
+              ?.value
+              .contains(key.conversationId) ??
+          false,
+    );
+
 /// The space's STANDING conversation id — its oldest active conversation,
 /// minted server-side (titled after the space) when the space has none yet.
 ///

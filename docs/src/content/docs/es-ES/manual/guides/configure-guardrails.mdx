@@ -2,7 +2,7 @@
 title: Configurar barandillas
 description: Define reglas de permitir, preguntar primero y denegar para las acciones de los agentes, pruébalas con la sonda de hipótesis y ajusta la autonomía de cada espacio.
 slug: es-ES/manual/guias/configurar-barandillas
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Esta guía te muestra cómo configurar barandillas: las reglas que deciden si la
@@ -133,12 +133,14 @@ es la versión integrada de esto: para cada clase de efecto, indica si cada
 ejecutor la intercepta en la puerta de política, la deja en manos del entorno
 aislado o no puede interceptarla en absoluto.
 
-- **El adaptador Claude Code** no está sujeto a control en sus propias llamadas a
-  herramientas. Claude Code se inicia con `--dangerously-skip-permissions`, así
-  que sus llamadas de lectura, escritura, edición y bash nunca pasan por la
-  guardia. Lo que sí está controlado en ese adaptador es la superficie de
-  herramientas MCP a la que llama de vuelta y el comando de shell que Control
-  Center lanza para iniciarlo.
+- **El adaptador Claude Code** solo está sujeto a control en parte de sus
+  propias llamadas a herramientas. Claude Code se inicia con
+  `--dangerously-skip-permissions`, así que sus llamadas de lectura, escritura y
+  edición nunca pasan por la guardia. Sus comandos de bash llegan a ella
+  mediante un hook que clasifica la línea de comandos, y sus push pasan por la
+  pasarela de push como los de cualquier agente. También están controlados la
+  superficie de herramientas MCP a la que llama de vuelta y el comando de shell
+  que Control Center lanza para iniciarlo.
 - **El propio verbo de salida de un modo** (`submit_plan`, `propose_orchestration`)
   está fijado y nunca se puede denegar; de lo contrario, un modo sería
   estructuralmente incapaz de producir su único entregable.

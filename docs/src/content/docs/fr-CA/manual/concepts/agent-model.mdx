@@ -2,12 +2,12 @@
 title: Le modèle d’agent
 description: Ce qu’est réellement un agent dans Control Center, lesquels de ses champs modifient le comportement et comment l’adaptateur sur lequel il s’exécute détermine ce qui peut être appliqué.
 slug: fr-CA/manuel/concepts/modele-agent
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Qu’est-ce qu’un agent ?
 
-Un agent est un acteur nommé doté d’une personnalité, d’un ensemble de skills, d’un adaptateur sur lequel s’exécuter et d’un ensemble de capacités. Les agents sont des acteurs de plein droit, au même titre que les humains : ils rédigent des messages, possèdent des tickets, laissent des révisions et figurent sur la même liste. Ce sont eux qui font le travail.
+Un agent est un acteur nommé doté d’une personnalité, d’un ensemble de skills et d’un adaptateur sur lequel s’exécuter. Les agents sont des acteurs de plein droit, au même titre que les humains : ils rédigent des messages, possèdent des tickets, laissent des révisions et figurent sur la même liste. Ce sont eux qui font le travail.
 
 Chaque agent appartient à exactement un espace de travail. C’est un invariant absolu — `agent.workspaceId` n’est jamais nul, c’est l’espace de travail de l’agent lui-même qui détermine dans quel fichier de base de données ses lignes atterrissent, et la création d’un agent sans espace de travail est refusée.
 
@@ -26,7 +26,6 @@ Un agent est aussi un répertoire. Sa définition se trouve dans `agents/<slug>/
 | `modelId`               | Le modèle à utiliser au sein de cet adaptateur                                                                       |
 | `effort`                | Niveau de raisonnement, tiré du vocabulaire propre au modèle sélectionné                                             |
 | `contextSize`           | Remplacement de la taille de la fenêtre de contexte                                                                  |
-| `capabilities`          | Indicateurs d’identifiants et de sortie réseau, vérifiés au lancement                                                |
 | `silenceTimeoutMinutes` | Remplacement par agent (1–240) du chien de garde d’inactivité                                                        |
 | `reportsTo`             | Identifiant de l’agent parent — la chaîne hiérarchique que dessine l’organigramme                                    |
 
@@ -51,18 +50,13 @@ Cette délimitation est une décision de budget de contexte. L’index des skill
 
 Les skills de dépôt sont chargés pour **chaque** adaptateur, pas seulement pour le harnais intégré. Les skills du dépôt actif sont matérialisés dans le répertoire de travail de l’agent, soit le chemin que Claude Code analyse déjà ; le même index est composé dans l’`AGENTS.md` que lit le harnais intégré. Les skills d’un dépôt passent la même analyse à refus par défaut qu’un skill installé avant que tout cela ne se produise — un dépôt extrait est du contenu cloné, et son frontmatter atteint un prompt.
 
-## Capacités
+## Autorisations
 
-Les capacités régissent ce qui est _remis_ à une exécution, et non ce que son système de fichiers lui permet de toucher. Le courtier d’identifiants les vérifie au lancement : si une capacité est désactivée, le jeton correspondant n’est tout simplement pas injecté.
+Un agent ne porte aucun indicateur d’autorisation qui lui soit propre. Le droit de créer un commit, de pousser, d’ouvrir une pull request, d’écrire dans un outil de suivi ou d’atteindre le réseau relève des [garde-fous d’action](/fr-CA/manuel/concepts/garde-fous/) — autoriser, demander d’abord ou refuser, à la portée de l’espace de travail, de l’agent ou de l’espace — et les mêmes règles s’appliquent quel que soit l’adaptateur qui l’exécute.
 
-- **Push vers un dépôt** — régit l’injection du jeton GitHub utilisé pour `git push`.
-- **API GitHub** — régit l’injection de `GH_TOKEN` et la sortie réseau vers api.github.com.
-- **Système de tickets** — régit la clé API du fournisseur de tickets et la sortie réseau vers ses domaines.
-- **Sortie réseau** — les requêtes sortantes arbitraires.
+Ce qui est _remis_ à une exécution ne change pas avec ces règles. Une exécution dans un arbre de travail GitHub reçoit toujours un jeton GitHub en lecture seule, et un push fait l’objet d’une question au moment où il a lieu : la configuration git de l’agent fait passer chaque push GitHub par Control Center, qui applique la règle **Pousser vers un dépôt distant** avant de le transmettre.
 
-Une exécution les résout à partir de la ligne de l’agent lui-même. Quand l’agent n’en a aucun, une valeur par défaut conservatrice fixe s’applique : les trois indicateurs d’identifiants désactivés, la sortie réseau activée. Le commutateur « Permissions du sandbox » du formulaire de l’agent choisit entre ce repli et un ensemble personnalisé stocké sur l’agent.
-
-Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) pour l’autre moitié de l’histoire, y compris ce qui est appliqué ou non au niveau du système de fichiers.
+Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) pour le fonctionnement de ce mécanisme, y compris ce qui est ou n’est pas appliqué au niveau du système de fichiers.
 
 ## L’adaptateur détermine ce qui peut être appliqué
 
@@ -71,7 +65,7 @@ Le champ le plus déterminant d’un agent est son adaptateur, parce que le tran
 | Transport        | Adaptateurs               | Ce que Control Center applique                                                                                                                                                                                                                                             |
 | ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Harnais intégré  | Control Center (built-in) | Tout. La surface d’outils est _construite_ à partir du mode, de sorte qu’un outil non autorisé est invisible plutôt que simplement refusé ; chaque appel passe le contrôle d’approbation et les garde-fous d’action ; le contrat d’achèvement peut relancer, puis faire échouer, une exécution qui se termine sans son livrable |
-| CLI Claude       | Claude Code               | Uniquement les outils `mcp__*` qui lui sont fournis. Les outils de lecture, d’écriture, d’édition et de shell propres à Claude vivent dans son processus et s’exécutent sans être vus — et il est lancé avec `--dangerously-skip-permissions`, parce que `claude -p` en mode non interactif bloquerait sinon indéfiniment sur son propre prompt |
+| CLI Claude       | Claude Code               | Les outils `mcp__*` qui lui sont fournis, plus ses commandes `Bash`, qu’un hook envoie à la politique d’action avant leur exécution. Les outils de lecture, d’écriture et d’édition propres à Claude vivent dans son processus et s’exécutent sans être vus — et il est lancé avec `--dangerously-skip-permissions`, parce que `claude -p` en mode non interactif bloquerait sinon indéfiniment sur son propre prompt |
 
 Concrètement, **seul le harnais intégré prend en charge les sous-agents, le pilotage en cours d’exécution, la mise en pause et la reprise (et donc la prise de contrôle) ainsi que l’application structurelle des modes.** Claude Code n’a rien de tout cela.
 

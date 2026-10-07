@@ -22,21 +22,30 @@ import 'package:cc_natives/cc_natives.dart';
 class LocalGitPrDiffSource implements PrDiffSource {
   /// Creates a [LocalGitPrDiffSource] used when a PR exceeds a forge cap,
   /// falling back to a local blobless clone for diffs.
+  ///
+  /// `githubTokenFor` resolves the fetch credential per clone, for the
+  /// request's workspace and repo owner: the workspace's GitHub identity mode
+  /// decides which token may read a private repo, and an installation token
+  /// captured once would expire within the hour.
   const LocalGitPrDiffSource({
     required this._git,
     required this._filesystem,
-    required this._githubToken,
+    required this._githubTokenFor,
     this._rift,
   });
 
   final GitCommandPort _git;
   final WorkspaceFilesystemPort _filesystem;
-  final String _githubToken;
+  final Future<String?> Function(String workspaceId, String owner)
+  _githubTokenFor;
   final RiftClient? _rift;
 
   @override
   Stream<PrFilesLoad> watchFiles(PrSourceRequest req) async* {
-    final manager = _buildManager(req);
+    final manager = _buildManager(
+      req,
+      githubToken: await _githubTokenFor(req.workspaceId, req.owner),
+    );
 
     // 1. Ensure clone + fetch.
     await for (final progress in manager.ensureCloneAndFetch(
@@ -310,9 +319,8 @@ class LocalGitPrDiffSource implements PrDiffSource {
   ///
   /// Fetches both refs first, so the answer is about the branch as it is on
   /// the forge now rather than whenever the clone last fetched. [githubToken]
-  /// overrides the boot-time token this source was built with — the caller's
-  /// own credential reaches a private repo the server's may not, and a boot
-  /// snapshot of an installation token is an hour from expiring.
+  /// overrides the workspace's background token — the caller's own credential
+  /// reaches a private repo the workspace's may not.
   ///
   /// Throws when the clone or fetch fails, or when another fetch of the same
   /// clone is already running (the refs could be stale or missing mid-fetch).
@@ -320,7 +328,12 @@ class LocalGitPrDiffSource implements PrDiffSource {
     PrSourceRequest req, {
     String? githubToken,
   }) async {
-    final manager = _buildManager(req, githubToken: githubToken);
+    final manager = _buildManager(
+      req,
+      githubToken: (githubToken == null || githubToken.isEmpty)
+          ? await _githubTokenFor(req.workspaceId, req.owner)
+          : githubToken,
+    );
     var ran = false;
     await for (final progress in manager.ensureCloneAndFetch(
       prNumber: req.prNumber,
@@ -341,6 +354,8 @@ class LocalGitPrDiffSource implements PrDiffSource {
     );
   }
 
+  /// [githubToken] is only needed by paths that fetch; the read-only commit
+  /// views inspect an existing clone and pass none.
   PrCloneManager _buildManager(PrSourceRequest req, {String? githubToken}) {
     return PrCloneManager(
       git: _git,
@@ -348,9 +363,7 @@ class LocalGitPrDiffSource implements PrDiffSource {
       workspaceId: req.workspaceId,
       owner: req.owner,
       repo: req.repo,
-      githubToken: (githubToken == null || githubToken.isEmpty)
-          ? _githubToken
-          : githubToken,
+      githubToken: githubToken ?? '',
       localCheckoutPath: req.localCheckoutPath,
       rift: _rift,
     );

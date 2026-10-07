@@ -2,7 +2,7 @@
 title: Diagnosticar um agente
 description: Percorra o log de execução, a sondagem de adaptadores, o status do servidor e o diagnóstico do host quando um agente para de produzir execuções.
 slug: pt-BR/manual/guias/diagnosticar-agente
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Este guia mostra como descobrir por que um agente não está produzindo execuções.
@@ -60,19 +60,18 @@ Duas coisas que vale a pena saber quando uma alteração "funciona nos testes, m
 
 **Configurações → Servidor → Diagnóstico e privacidade** (`/settings/server/diagnostics`) é a página de nível do host. Ela traz:
 
-- **Sandbox** — o interruptor principal, o backend detectado, uma dica de instalação e os interruptores de capacidade padrão. Apenas o backend detectado vem do servidor; veja o aviso abaixo. Não há controle de redefinição.
+- **Sandbox** — o interruptor principal, o backend detectado e uma dica de instalação. Apenas o backend detectado vem do servidor; veja o aviso abaixo. Não há controle de redefinição.
 - **Busca semântica** — o ciclo de vida do modelo de embedding no dispositivo: instalado, sendo baixado com uma porcentagem, não instalado ou um erro de instalação. Enquanto ele não estiver instalado, a busca em memória e em código permanece apenas por palavra-chave.
 - **Comportamento do sistema** — manter o computador acordado enquanto os agentes são executados.
-- **Motor de sincronização** — interruptores de desligamento por armazenamento para tickets, mensagens e notas. São válvulas de escape de emergência de volta para assinaturas de snapshot completo; uma alteração só afeta novas assinaturas, então só produz efeito total depois de um recarregamento.
 - **Nível de log** — aumente-o antes de reproduzir uma falha.
 - **Privacidade** — se o conteúdo bruto do diff pode ser encaminhado ao modelo do agente e se relatórios de falhas são enviados.
 
 :::caution[Esta seção relata o host, e seus controles ficam no lado do cliente]
-A detecção e a aplicação agora concordam: onde o detector relata um backend nativo, as execuções de agentes nesse host realmente são envolvidas por ele. Mas o detector é a única coisa viva nesta seção. O interruptor principal, o seletor de backend e os interruptores de capacidade padrão são preferências armazenadas no seu dispositivo, e o servidor não lê nenhuma delas — o interruptor do próprio servidor é `--sandbox` (`on` por padrão, `off` para desativar) e, para qualquer agente deixado em "Usar predefinição do espaço de trabalho", o servidor recorre ao seu padrão conservador: sem git push, sem API do GitHub, sem chave de tickets, rede ativada.
+A detecção e a aplicação agora concordam: onde o detector relata um backend nativo, as execuções de agentes nesse host realmente são envolvidas por ele. Mas o detector é a única coisa viva nesta seção. O interruptor principal e o seletor de backend são preferências armazenadas no seu dispositivo, e o servidor não lê nenhuma delas — o interruptor do próprio servidor é `--sandbox` (`on` por padrão, `off` para desativar).
 
 Então, vale a pena agir sobre um aviso aqui, mas ele normalmente não é o motivo pelo qual um agente está falhando. Para confirmar em que estado o servidor está, leia o log de inicialização dele: ele imprime `agent sandbox ON` com a observação do backend, `no OS-native agent sandbox on this host` com uma dica de instalação, ou `agent sandbox DISABLED by --sandbox off`. `GET /healthz` não traz nenhum campo de sandbox.
 
-Onde não há backend — sempre no Windows, e no Linux ou WSL2 sem `bwrap` e `socat` — as execuções **não** usam sandbox, e o que as limita é o próprio checkout da conversa, as capacidades que controlam quais credenciais são emitidas para ele, as guardrails de ação, a sanitização do ambiente e a superfície de ferramentas que o modo dela permite.
+Onde não há backend — sempre no Windows, e no Linux ou WSL2 sem `bwrap` e `socat` — as execuções **não** usam sandbox, e o que as limita é o próprio checkout da conversa, o token de forge somente leitura dela e o gateway de push, as guardrails de ação, a sanitização do ambiente e a superfície de ferramentas que o modo dela permite.
 :::
 
 ## Falhas comuns
@@ -83,7 +82,7 @@ Instale a CLI **no host do servidor** e clique em **Atualizar** na página Prove
 
 ### O agente não consegue fazer push nem abrir uma pull request
 
-As capacidades dele são o que controla o acesso. Abra **Configurações → Espaço de trabalho → Agentes** → o agente → **Permissões do sandbox**, ative o interruptor e habilite **Permitir git push** e **Permitir chamadas à API do GitHub**. Deixar o interruptor em "Usar predefinição do espaço de trabalho" não concede nenhuma delas ao agente.
+Leia o que o git ou o agente mostrou. `Control Center policy: …` significa que uma regra de ação negou ou que uma aprovação ficou sem resposta: verifique **Fazer push para um remoto** e **Abrir um pull request** em **Configurações → Espaço de trabalho → Permissões dos agentes**. Se o git disser que o Control Center não tem nenhuma credencial do GitHub capaz de fazer push, instale o GitHub App nesse repositório ou conecte o GitHub.
 
 ### A busca semântica não retorna nada útil
 

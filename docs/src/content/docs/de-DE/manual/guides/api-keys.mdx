@@ -2,7 +2,7 @@
 title: API-Schlüssel verwalten
 description: Wo die einzelnen Zugangsdaten liegen — bei deinem Nutzerkonto auf dem Server, beim Server selbst oder bei einer externen CLI — und wie du sie setzt, rotierst und entfernst.
 slug: de-DE/handbuch/anleitungen/api-schluessel
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Diese Anleitung zeigt, wo jede Zugangsdatenart, die Control Center nutzt, gespeichert ist und wie du sie änderst.
@@ -48,7 +48,7 @@ Der Dialog **Umgebungsvariablen** je Adapter sieht nach dem Ort für einen solch
 
 Die Karte **Tickets** unter **Einstellungen → Arbeitsbereich → Allgemein** hält beide Hälften einer Entscheidung: bei welchem Anbieter deine Tickets liegen und die Zugangsdaten dafür. Wählst du **Lokal**, blendet das die Zeile mit den Zugangsdaten aus — lokale Tickets liegen in der eigenen Datenbank dieses Servers und haben nichts, wogegen sie sich authentifizieren.
 
-Dein Schlüssel liegt auf dem Server unter deiner Nutzer-ID, wie der der Forge. Seinen eigenen Linear-Schlüssel hält der Server getrennt (**Anbieter-Apps**); darauf läuft die Ticket-Synchronisierung, wenn kein Mensch sie angefordert hat. Ein Schlüssel, den ein Agent erhält, wird nur injiziert, wenn der Agent die Befugnis **Ticketing-API-Aufrufe zulassen** hat. Siehe [Linear-Integration einrichten](/de-DE/handbuch/anleitungen/linear-integration/).
+Dein Schlüssel liegt auf dem Server unter deiner Nutzer-ID, wie der der Forge. Seinen eigenen Linear-Schlüssel hält der Server getrennt (**Anbieter-Apps**); darauf läuft die Ticket-Synchronisierung, wenn kein Mensch sie angefordert hat. In die Sandbox eines Agenten wird kein Ticketing-Schlüssel injiziert; Agenten schreiben Tickets über die Werkzeuge von Control Center, die die Regel **In einen externen Tracker schreiben** fragen. Siehe [Linear-Integration einrichten](/de-DE/handbuch/anleitungen/linear-integration/).
 
 ## Rotieren oder widerrufen
 

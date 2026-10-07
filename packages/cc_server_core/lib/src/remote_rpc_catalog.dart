@@ -81,6 +81,7 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_domain_repo
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
+import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
@@ -183,7 +184,7 @@ import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
 import 'package:cc_server_core/src/cc_server_runtime.dart'
-    show accountPoolKeyForLane;
+    show accountPoolKey;
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connection/network_runtime.dart';
@@ -209,7 +210,6 @@ import 'package:cc_server_core/src/rig_wire.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
 import 'package:cc_server_core/src/skills/installed_skills_list.dart';
-import 'package:cc_server_core/src/sync/sync_feed_service.dart';
 import 'package:cc_server_core/src/usage/harness_usage_accounts.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
@@ -358,10 +358,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // browse/preview/install/uninstall ops for the Skills settings surface.
   // Sources are the GitHub repositories the operator registers; install
   // always routes through the mandatory scan gate inside the service.
-  // Optional — absent when no source wiring is present.
+  // Optional — absent when no source wiring is present. The catalog is
+  // resolved per (workspace, repo owner) so a private source is read with the
+  // credential that workspace's GitHub identity mode selects.
   SkillBundlePort? skillBundles,
   SkillSourceRepository? skillSources,
-  SkillSourcePort? skillSourceCatalog,
+  SkillSourcePort Function(String workspaceId, String owner)?
+  skillSourceCatalogFor,
   // The skills antivirus as a pipeline (PRD 23 §2/§6): backs the scan /
   // analyze ops with run recording (projection rows the Pipelines UI shows).
   // Optional — absent when the host wires no analysis service.
@@ -480,11 +483,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // is NEVER persisted — no repository, no table, no DAO. Optional: when
   // null the presence ops are absent (bare test catalogs).
   PresenceHub? presenceHub,
-  // The authoritative delta feed behind `sync.watch` / `sync.pull`, plus the
-  // DAOs backing the per-column LWW ticket patch and the space extras
-  // (Notes doc, autonomy dial, reactions). Optional as a group: when null
-  // those ops are absent and every store stays in snapshot mode.
-  SyncFeedService? syncFeed,
   // The per-workspace databases, for the handful of ops that reach a DAO
   // directly rather than through a repository (space notes / reactions /
   // autonomy). Each resolves `workspaceDbs.of(ctx.workspaceId!)`, so the bound
@@ -554,8 +552,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   ReviewedByFetcher? fetchReviewedBy,
   // PR-queue free-text search (server-side gh search). Null → empty results.
   PrSearchFetcher? fetchPrSearch,
-  // Per-author PR counts for the profile rail. Null → all-zero counts.
-  PrCountsByAuthorFetcher? fetchPrCountsByAuthor,
   // The CALLER's merged PR history across a workspace's repos, resolved per
   // forge under that caller's own per-forge viewer identity. Null → empty.
   Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
@@ -592,6 +588,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // config dir per account, so an operator can pick which login a run uses.
   // Server-side only; null ⇒ the ops are omitted.
   ClaudeAccountStore? claudeAccounts,
+  // Runs after any credential of an account-pool lane is removed (a Claude
+  // Code account, a harness key, a whole custom provider) so the removed id
+  // leaves every workspace's pools for that lane too. One hook for every lane.
+  // Null ⇒ pools keep the id (dispatch skips it, and refuses a pool left
+  // naming only removed accounts).
+  Future<void> Function(String lane)? onAccountPoolCredentialsRemoved,
   // Per-account 5h/weekly quota, so the picker can show which login still has
   // headroom. Null ⇒ accounts list without usage.
   ClaudeAccountUsageFetcher? fetchClaudeAccountUsage,
@@ -1132,6 +1134,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // The conversation repository backs the `conversation.*` mutate ops and the
   // `conversation.watchForSpace` subscription. Null leaves those ops absent.
   ConversationRepository? conversationRepository,
+  // Proposes a title on the workspace's short-task runner for the rename
+  // dialog (`conversation.suggestTitle`). Null leaves that op absent.
+  ConversationTitlePort? conversationTitles,
   Stream<List<Conversation>> Function(String workspaceId, String spaceId)?
   watchConversationsForSpace,
   Future<Map<String, dynamic>> Function({
@@ -2147,26 +2152,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // `sync.pull` is the gap-fill for the `sync.watch` delta stream: a
-    // client whose frame contiguity broke pulls `(from_seq, now]`; a
-    // `snapshot_required` answer (range pruned) drops that store back to
-    // snapshot mode — the kill-switch path, exercised automatically.
-    if (syncFeed != null)
-      RepoOp(
-        name: 'sync.pull',
-        kind: RepoOpKind.read,
-        requiredArgs: ['store', 'from_seq'],
-        handler: (ctx) async {
-          final store = ctx.args['store'];
-          final fromSeq = ctx.args['from_seq'];
-          if (store is! String || fromSeq is! int) {
-            throw const ValidationException(
-              'store must be a string, from_seq an int',
-            );
-          }
-          return syncFeed.pull(ctx.workspaceId!, store, fromSeq);
-        },
-      ),
     // Per-column LWW field edits (PRD 16 §6): concurrent edits to DIFFERENT
     // ticket fields both land in server receipt order — neither clobbers the
     // other and no client clock is consulted. Workflow/status transitions
@@ -6428,6 +6413,26 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
+      if (conversationTitles != null)
+        RepoOp(
+          name: 'conversation.suggestTitle',
+          // A read: it spends a model call but writes nothing — the human
+          // keeps or discards the suggestion in the rename dialog.
+          kind: RepoOpKind.read,
+          requiredArgs: ['conversation_id'],
+          handler: (ctx) async {
+            // Scoped by the bound workspace: a foreign id is not found.
+            final suggestion = await conversationTitles.suggestTitle(
+              workspaceId: ctx.workspaceId!,
+              conversationId: ctx.args['conversation_id'] as String,
+            );
+            return {
+              'title': ?suggestion.title,
+              'unavailable': suggestion.unavailable,
+              'empty': suggestion.empty,
+            };
+          },
+        ),
       RepoOp(
         name: 'conversation.archive',
         kind: RepoOpKind.mutate,
@@ -8630,7 +8635,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           };
         },
       ),
-    if (skillSources != null && skillSourceCatalog != null)
+    if (skillSources != null && skillSourceCatalogFor != null)
       RepoOp(
         name: 'skills.sourcesAdd',
         kind: RepoOpKind.mutate,
@@ -8658,9 +8663,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'already_exists': true,
             };
           }
-          // Existence + metadata probe: a 404 (or a private repo the host's
-          // credentials cannot see) fails the add with a typed error.
-          final snapshot = await skillSourceCatalog.repoSnapshot(owner, repo);
+          // Existence + metadata probe: a 404 (or a private repo the
+          // workspace's credentials cannot see) fails the add with a typed
+          // error.
+          final snapshot = await skillSourceCatalogFor(
+            workspaceId,
+            owner,
+          ).repoSnapshot(owner, repo);
           final source = SkillSource(
             id: const Uuid().v4(),
             workspaceId: workspaceId,
@@ -8695,7 +8704,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     if (skillSources != null &&
-        skillSourceCatalog != null &&
+        skillSourceCatalogFor != null &&
         skillBundles != null)
       RepoOp(
         name: 'skills.sourceListings',
@@ -8713,10 +8722,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           }
           final List<SourceSkillListing> listings;
           try {
-            listings = await skillSourceCatalog.listSkills(
+            listings = await skillSourceCatalogFor(
+              workspaceId,
               source.owner,
-              source.repo,
-            );
+            ).listSkills(source.owner, source.repo);
             await skillSources.update(
               workspaceId,
               source.copyWith(
@@ -8769,7 +8778,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     if (skillSources != null &&
-        skillSourceCatalog != null &&
+        skillSourceCatalogFor != null &&
         skillBundles != null)
       RepoOp(
         name: 'skills.sourceSkillDetail',
@@ -8789,11 +8798,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // One resolve serves both the README and the scan preview — the
           // bytes are the exact bytes an install would write, so the later
           // install's scan is a free cache hit.
-          final resolved = await skillSourceCatalog.resolve(
+          final resolved = await skillSourceCatalogFor(
+            workspaceId,
             source.owner,
-            source.repo,
-            path,
-          );
+          ).resolve(source.owner, source.repo, path);
           final scan = await skillBundles.previewFiles(
             workspaceId: workspaceId,
             slug: slugForSkillPath(path),
@@ -9416,6 +9424,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             accountLabel: ctx.args['account_label'] as String?,
             credentialId: ctx.args['credential_id'] as String?,
           );
+          await onAccountPoolCredentialsRemoved?.call(
+            AccountPoolLanes.harness(id),
+          );
           return {'ok': true};
         },
       ),
@@ -9512,6 +9523,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           }
           await harnessCreds.remove(id);
           harnessModelOverrides?.removeProvider(id);
+          await onAccountPoolCredentialsRemoved?.call(
+            AccountPoolLanes.harness(id),
+          );
           return {'ok': true};
         },
       ),
@@ -10807,7 +10821,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (ghRepos.isEmpty) {
           return {'repos': <Map<String, dynamic>>[]};
         }
-        final groups = await fetch(ghRepos, ctx.args['query'] as String);
+        final groups = await fetch(
+          ghRepos,
+          ctx.args['query'] as String,
+          workspaceId: ctx.workspaceId!,
+        );
         return {
           'repos': [
             for (final g in groups)
@@ -10878,7 +10896,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (owners.isEmpty) {
           return {'members': <Map<String, dynamic>>[]};
         }
-        return {'members': await fetch(owners)};
+        return {'members': await fetch(owners, workspaceId: ctx.workspaceId!)};
       },
     ),
     // Profile analytics are workspace-scoped: the linked repo set is derived
@@ -10944,7 +10962,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Invalid argument: kind must be user or team',
             );
         }
-        final activity = await read.profileActivity(repos, logins, ctx.userId);
+        final activity = await read.profileActivity(
+          repos,
+          logins,
+          ctx.userId,
+          workspaceId: ctx.workspaceId!,
+        );
         return {
           'metrics': activity.metrics.toWire(),
           'repos': [
@@ -11121,6 +11144,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           owner,
           repo,
           (ctx.args['number'] as num).toInt(),
+          workspaceId: ctx.workspaceId!,
         );
         if (pc == null) {
           return {'content': null};
@@ -11156,6 +11180,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           owner,
           repo,
           ctx.args['query'] as String,
+          workspaceId: ctx.workspaceId!,
         );
         return {
           'issues': [
@@ -11342,7 +11367,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 store: harnessCreds,
                 oauthBroker: oauthBroker,
               );
-        return {'providers': await fetch(accounts)};
+        return {
+          'providers': await fetch(
+            accounts,
+            force: ctx.args['force'] == true,
+          ),
+        };
       },
     ),
     // One `CLAUDE_CONFIG_DIR` per login, under `<dataDir>/claude-accounts/`.
@@ -11436,6 +11466,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           requireServerAdmin(ctx);
           await claudeAccounts.remove(ctx.args['id'] as String);
+          await onAccountPoolCredentialsRemoved?.call(
+            AccountPoolLanes.claudeCode,
+          );
           return {'ok': true};
         },
       ),
@@ -11467,6 +11500,62 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'argv': cmd.argv, 'environment': cmd.environment};
         },
       ),
+      // The long-lived alternative to `loginCommand`. The interactive login's
+      // refresh token rotates, so its copies (keychain item, mirrored file)
+      // sign each other out; a `claude setup-token` token never refreshes and
+      // stays signed in for about a year. Control Center still mints nothing:
+      // the CLI prints the token in the operator's terminal and they paste it
+      // into `setToken`. It is written into the account directory on the host
+      // and never read back out — `list` only reports that one is present.
+      RepoOp(
+        name: 'claude_accounts.setupTokenCommand',
+        serverAuthority: ServerAuthority.serverOwner,
+        kind: RepoOpKind.read,
+        workspaceScoped: false,
+        requiredArgs: ['id'],
+        handler: (ctx) async {
+          requireServerAdmin(ctx);
+          final cmd = claudeAccounts.setupTokenCommand(
+            ctx.args['id'] as String,
+          );
+          return {'argv': cmd.argv, 'environment': cmd.environment};
+        },
+      ),
+      RepoOp(
+        name: 'claude_accounts.setToken',
+        serverAuthority: ServerAuthority.serverOwner,
+        kind: RepoOpKind.mutate,
+        workspaceScoped: false,
+        requiredArgs: ['id', 'token'],
+        handler: (ctx) async {
+          requireServerAdmin(ctx);
+          try {
+            await claudeAccounts.setLongLivedToken(
+              ctx.args['id'] as String,
+              ctx.args['token'] as String,
+            );
+          } on ArgumentError catch (e) {
+            // The message names the problem, never the value: the store
+            // redacts the token before it can reach an error.
+            throw ValidationException('${e.message}');
+          }
+          // A run parked on this account being signed out can go now.
+          await credentialBlockRegistry?.nudge();
+          return {'ok': true};
+        },
+      ),
+      RepoOp(
+        name: 'claude_accounts.clearToken',
+        serverAuthority: ServerAuthority.serverOwner,
+        kind: RepoOpKind.mutate,
+        workspaceScoped: false,
+        requiredArgs: ['id'],
+        handler: (ctx) async {
+          requireServerAdmin(ctx);
+          await claudeAccounts.clearLongLivedToken(ctx.args['id'] as String);
+          return {'ok': true};
+        },
+      ),
     ],
     // Which credentials a workspace (or one of its agents) may spend, in what
     // order, and whether to drain them one at a time or spread runs across
@@ -11487,7 +11576,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final lane = ctx.args['lane'] as String;
           final agentId = ctx.args['agent_id'] as String?;
-          final key = accountPoolKeyForLane(lane, agentId);
+          final key = accountPoolKey(lane, agentId);
           if (key == null) {
             throw const NotFoundException('Unknown account pool lane');
           }
@@ -11500,7 +11589,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // misleading empty list.
           final inheritedKey = agentId == null
               ? null
-              : accountPoolKeyForLane(lane, null);
+              : accountPoolKey(lane, null);
           final inherited = inheritedKey == null
               ? null
               : await workspaceSettingsRepository.get(
@@ -11521,7 +11610,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final lane = ctx.args['lane'] as String;
           final agentId = ctx.args['agent_id'] as String?;
-          final key = accountPoolKeyForLane(lane, agentId);
+          final key = accountPoolKey(lane, agentId);
           if (key == null) {
             throw const NotFoundException('Unknown account pool lane');
           }
@@ -11592,6 +11681,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           owner,
           repo,
           (ctx.args['page'] as num).toInt(),
+          workspaceId: ctx.workspaceId!,
         );
         return {
           'prs': [for (final pr in page.prs) pullRequestToWire(pr)],
@@ -13857,17 +13947,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               },
             ),
       ),
-    if (syncFeed != null)
-      WatchQuery(
-        name: 'sync.watch',
-        handler: (ctx) {
-          final store = ctx.args['store'];
-          if (store is! String || store.isEmpty) {
-            throw const ValidationException('store must be a non-empty string');
-          }
-          return syncFeed.watch(ctx.workspaceId!, store);
-        },
-      ),
     if (workspaceDbs != null) ...[
       WatchQuery(
         name: 'notes.watchForSpace',
@@ -14272,7 +14351,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             ctx.workspaceId!,
             spaceId,
             conversationId,
-          ).map((t) => {'tokens': t.tokens, 'chars': t.chars});
+          ).map(
+            (t) => {
+              'tokens': t.tokens,
+              'chars': t.chars,
+              'reported_context_tokens': ?t.reportedContextTokens,
+              'reported_window_tokens': ?t.reportedWindowTokens,
+            },
+          );
         },
       ),
     // Composer recall: this caller's recent plain-text prompts, not the
@@ -14390,6 +14476,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           yield* watchConversationsForSpace(ctx.workspaceId!, spaceId).map(
             (list) => {'conversations': list.map(conversationToWire).toList()},
           );
+        },
+      ),
+    // Conversations in a space whose automatic title is being generated
+    // right now — the tab, header and sidebar scramble their label meanwhile.
+    // In-memory and transient: never snapshot-cached on the client.
+    if (conversationTitles != null)
+      WatchQuery(
+        name: 'conversation.watchTitleGenerating',
+        handler: (ctx) async* {
+          final spaceId = ctx.args['space_id'] as String?;
+          if (spaceId == null) {
+            throw const NotFoundException('Missing space_id');
+          }
+          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          yield* conversationTitles
+              .watchGenerating(workspaceId: ctx.workspaceId!, spaceId: spaceId)
+              .map((ids) => {'conversation_ids': ids.toList()});
         },
       ),
     // Per-thread rollups for the whole space, so the feed can draw a

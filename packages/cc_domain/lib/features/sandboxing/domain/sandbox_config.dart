@@ -66,6 +66,7 @@ class NetworkConfig {
     this.allowAll = true,
     this.allowedDomains = const [],
     this.deniedDomains = const [],
+    this.loopbackPorts = const [],
   });
 
   /// Whether all network access is allowed by default.
@@ -76,6 +77,10 @@ class NetworkConfig {
 
   /// Domains explicitly denied for network access.
   final List<String> deniedDomains;
+
+  /// Host loopback ports reachable even when the network is restricted or off
+  /// (bridged into the namespace on Linux). See `SandboxSpec.loopbackPorts`.
+  final List<int> loopbackPorts;
 
   /// Whether network access is restricted (not fully open).
   bool get isRestricted =>

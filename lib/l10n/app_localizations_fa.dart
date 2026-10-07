@@ -2645,15 +2645,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get allow => 'اجازه';
 
   @override
-  String get allowGitPush => 'اجازهٔ git push';
-
-  @override
-  String get allowGithubApi => 'اجازهٔ فراخوانی‌های GitHub API';
-
-  @override
-  String get allowNetwork => 'اجازهٔ دسترسی عمومی به شبکه';
-
-  @override
   String get apiKeys => 'کلیدهای API';
 
   @override
@@ -3057,9 +3048,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get currentParticipants => 'مشارکت‌کنندگان فعلی';
 
   @override
-  String get customCapabilitiesDescription => 'شرح قابلیت‌های سفارشی';
-
-  @override
   String get customSystemPrompt => 'پرامپت سیستم سفارشی برای این عامل…';
 
   @override
@@ -3075,9 +3063,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get deactivate => 'غیرفعال‌سازی';
-
-  @override
-  String get defaultCapabilities => 'قابلیت‌های پیش‌فرض · فضاهای جدید';
 
   @override
   String get defaultChat => 'گفتگوی پیش‌فرض';
@@ -3482,10 +3467,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get forward => 'جلو';
 
   @override
-  String get gatesGithubPatPush =>
-      'تزریق GitHub PAT را محدود می‌کند. برای پوش عامل لازم است.';
-
-  @override
   String get general => 'عمومی';
 
   @override
@@ -3552,6 +3533,11 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'قطعی';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'وضعیت سرویس';
@@ -4014,6 +4000,9 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get navSettings => 'تنظیمات';
+
+  @override
+  String get exitSettings => 'خروج از تنظیمات';
 
   @override
   String networkBlockCount(int count) {
@@ -4529,10 +4518,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get react => 'واکنش';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'به عامل اجازه می‌دهد PRها، ایشوها و فرادادهٔ مخزن را بخواند.';
-
-  @override
   String get readerPreferences => 'ترجیحات خواننده';
 
   @override
@@ -4785,9 +4770,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'سندباکس بومی روی macOS داخلی است — از Apple Seatbelt (⁨sandbox-exec⁩) استفاده می‌کند. نصب لازم نیست.';
-
-  @override
-  String get sandboxPermissions => 'مجوزهای سندباکس';
 
   @override
   String get sandboxUnsupported =>
@@ -5372,9 +5354,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get useSandbox => 'استفاده از سندباکس';
 
   @override
-  String get useWorkspaceDefault => 'استفاده از پیش‌فرض فضای کاری';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5417,10 +5396,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'جداسازی ضعیف — فقط مرز فضای نام، بدون مرز هسته.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'وقتی خاموش است، سندباکس بدون مسیر پیش‌فرض بوت می‌شود.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6634,14 +6609,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get pipelineRunNoRepos => 'هنوز مخزنی در این فضای کاری نیست.';
 
   @override
-  String get allowTicketingApi => 'اجازهٔ فراخوانی‌های API تیکتینگ';
-
-  @override
   String get ticketingApiKey => 'کلید API تیکتینگ';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'کلید API ارائه‌دهندهٔ تیکتینگ را به سندباکس تزریق می‌کند.';
 
   @override
   String get ticketingProvider => 'ارائه‌دهندهٔ تیکتینگ';
@@ -9004,28 +8972,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'حتی هنگام کار عامل رایانه ممکن است بخوابد';
-
-  @override
-  String get syncEngineSectionTitle => 'موتور همگام‌سازی';
-
-  @override
-  String get syncEngineDescription =>
-      'تیکت‌ها، پیام‌رسانی و یادداشت‌ها با تغییرات افزایشی کوچک به‌جای اسنپ‌شات کامل زنده به‌روز می‌شوند. خاموش کردن یک کلید آن فروشگاه را به حالت اسنپ‌شات کامل برمی‌گرداند — برای اعمال، برنامه را دوباره بارگذاری کنید.';
-
-  @override
-  String get syncEngineTicketsTitle => 'تیکت‌ها';
-
-  @override
-  String get syncEngineMessagingTitle => 'پیام‌رسانی';
-
-  @override
-  String get syncEngineNotesTitle => 'یادداشت‌ها';
-
-  @override
-  String get syncEngineOnSubtitle => 'همگام‌سازی دلتا زنده فعال است';
-
-  @override
-  String get syncEngineOffSubtitle => 'همگام‌سازی اسنپ‌شات کامل';
 
   @override
   String get spaces => 'فضاها';
@@ -12934,23 +12880,22 @@ class AppLocalizationsFa extends AppLocalizations {
       'اختیاری — خالی بگذارید تا مدل عنوان خودش نام‌گذاری کند';
 
   @override
-  String get conversationTitlesSectionTitle => 'عناوین گفتگو';
+  String get shortTaskOff => 'خاموش';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'اجراکننده‌ای را انتخاب کنید که گفتگوهای جدید این فضای کاری را خودکار نام‌گذاری کند. تا انتخاب آداپتر عناوین خاموش می‌مانند و برای همهٔ اعضا اعمال می‌شود.';
+  String get shortTaskUnavailable =>
+      'برای استفاده از این، در تنظیمات ← آداپتورها یک مدل کار کوتاه انتخاب کنید';
 
   @override
-  String get conversationTitlesModelLabel => 'مدل عنوان';
+  String get conversationTitleGenerate => 'تولید';
 
   @override
-  String get conversationTitlesAdapterLabel => 'آداپتر';
+  String get conversationTitleNoMessages =>
+      'ابتدا یک پیام بفرستید؛ عنوان از روی آن ساخته می‌شود.';
 
   @override
-  String get conversationTitlesAdapterHint => 'خاموش';
-
-  @override
-  String get conversationTitlesAdapterOff => 'خاموش';
+  String get conversationTitleGenerateFailed =>
+      'ساخت عنوان ممکن نشد. دوباره تلاش کنید.';
 
   @override
   String get startThread => 'شروع رشته';
@@ -13115,6 +13060,16 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'گفتگو';
+
+  @override
+  String get contextSegmentRunner => 'پرامپت اجراکننده، ابزارها و کار نوبت';
+
+  @override
+  String get contextUsageMeasured => 'گزارش‌شده توسط آخرین فراخوانی مدل';
+
+  @override
+  String get contextUsageEstimated =>
+      'تخمینی تا زمانی که یک اجرا مصرف را گزارش کند';
 
   @override
   String get contextExplorerTitle => 'زمینه';
@@ -13504,12 +13459,15 @@ class AppLocalizationsFa extends AppLocalizations {
       'فرآیندها و نوشتن فایل عامل واقعاً کجا رخ می‌دهد.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'خودکار قوی‌ترین مورد پشتیبانی‌شدهٔ این میزبان را برمی‌دارد. یکی را قفل کنید تا زیر پایتان عوض نشود.';
+  String get sandboxGroupAgentActions => 'کارهایی که عامل‌ها مجازند';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'سوراخ‌های زده‌شده از مرز. هر کدام چیزی است که عامل ایزوله هنوز می‌تواند به دنیای بیرون بکند.';
+  String get sandboxGroupAgentActionsDescription =>
+      'اینکه پوش، باز کردن pull request و دسترسی به شبکه مجاز باشد، نیاز به پرسش داشته باشد یا رد شود، در مجوزهای عامل تعیین می‌شود.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'خودکار قوی‌ترین مورد پشتیبانی‌شدهٔ این میزبان را برمی‌دارد. یکی را قفل کنید تا زیر پایتان عوض نشود.';
 
   @override
   String get sandboxSummaryInForce => 'در حال اجرا';
@@ -13652,6 +13610,26 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'این را در ترمینال روی سرور اجرا کنید. مرورگر را برای اتمام ورود باز می‌کند و اعتبارنامه را در پوشهٔ این حساب می‌نویسد.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'توکن بلندمدت';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'استفاده از توکن بلندمدت';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'جایگزینی توکن بلندمدت';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'حذف توکن بلندمدت';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'ورود معمولی باید تمدید شود و ممکن است یک‌شبه منقضی شود. توکن بلندمدت حدود یک سال معتبر می‌ماند. این دستور را در ترمینال اجرا کنید، مراحل را در مرورگر تمام کنید و سپس توکنی را که چاپ می‌کند جای‌گذاری کنید.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'این توکنِ claude setup-token نیست. با sk-ant-oat01- شروع می‌شود.';
 
   @override
   String get claudeAccountSignedOut => 'خارج‌شده';
@@ -14078,10 +14056,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'باز کردن در برنامهٔ پیش‌فرض';
-
-  @override
-  String get asideUnavailable =>
-      'برای استفاده از این، مدل یک‌بارمصرف را در تنظیمات فضای کاری بگذارید';
 
   @override
   String get asideEmpty => 'هنوز چیزی برای کار نیست';
@@ -14619,6 +14593,21 @@ class AppLocalizationsFa extends AppLocalizations {
   String get credentialGateOpenSettings => 'باز کردن تنظیمات';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'حساب‌های Claude Code پیوست‌شده حذف شدند';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'در تنظیمات حساب این عامل یا فضای کاری، حساب دیگری پیوست کنید یا فهرست را پاک کنید تا از حساب پیش‌فرض استفاده شود. اجرا خودبه‌خود ادامه می‌یابد.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'همهٔ حساب‌های این فهرست از سرور حذف شده‌اند. حساب دیگری پیوست کنید یا فهرست را پاک کنید.';
+
+  @override
+  String get accountPoolClear => 'پاک کردن فهرست';
+
+  @override
   String get selectModel => 'انتخاب مدل';
 
   @override
@@ -15054,6 +15043,10 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'فایل‌های گفتگو را با نام جست‌وجو کنید و یکی را در یک زبانه باز کنید';
+
+  @override
+  String get prQuickOpenDescription =>
+      'فایل‌های pull request را با نام جست‌وجو کنید و یکی را در یک زبانه باز کنید';
 
   @override
   String get ideQuickOpenHint => 'جست‌وجوی فایل‌ها با نام';

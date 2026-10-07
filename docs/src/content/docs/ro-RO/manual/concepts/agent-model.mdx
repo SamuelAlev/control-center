@@ -2,12 +2,12 @@
 title: Modelul agenților
 description: Ce este de fapt un agent în Control Center, care dintre câmpurile lui schimbă comportamentul și cum decide adaptorul pe care rulează ce anume poate fi impus.
 slug: ro-RO/manual/concepte/modelul-agentilor
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Ce este un agent?
 
-Un agent este un actor numit, cu o persona, un set de skill-uri, un adaptor pe care să ruleze și un set de capacități. Agenții sunt actori cu drepturi depline în același sens în care sunt și oamenii: redactează mesaje, dețin tichete, lasă revizuiri și apar în aceeași listă. Ei sunt cei care fac munca.
+Un agent este un actor numit, cu o persona, un set de skill-uri și un adaptor pe care să ruleze. Agenții sunt actori cu drepturi depline în același sens în care sunt și oamenii: redactează mesaje, dețin tichete, lasă revizuiri și apar în aceeași listă. Ei sunt cei care fac munca.
 
 Fiecare agent aparține exact unui singur spațiu de lucru. Acesta este un invariant strict — `agent.workspaceId` nu este niciodată nul, spațiul de lucru al agentului este cel care alege fișierul de bază de date în care ajung rândurile lui, iar crearea unui agent fără spațiu de lucru este refuzată.
 
@@ -26,7 +26,6 @@ Un agent este și un director. Definiția lui se află la `agents/<slug>/AGENTS.
 | `modelId`               | Modelul din cadrul acelui adaptor                                                      |
 | `effort`                | Nivel de raționament, preluat din vocabularul propriu al modelului selectat            |
 | `contextSize`           | Suprascrierea ferestrei de context                                                     |
-| `capabilities`          | Indicatori de acreditări și de ieșire în rețea, verificați la lansare                  |
 | `silenceTimeoutMinutes` | Suprascriere per agent (1–240) pentru monitorizarea tăcerii                            |
 | `reportsTo`             | Id-ul agentului părinte — lanțul ierarhic pe care îl desenează organigrama             |
 
@@ -51,18 +50,13 @@ Limitarea este o decizie de buget de context. Indexul de skill-uri stă în prom
 
 Skill-urile de repo sunt încărcate pentru **fiecare** adaptor, nu doar pentru harness-ul încorporat. Skill-urile repo-ului activ sunt materializate în directorul de lucru al agentului, care este calea pe care Claude Code o scanează deja; același index este compus în `AGENTS.md`, pe care îl citește harness-ul încorporat. Skill-urile unui repo trec prin aceeași scanare cu eșec închis ca un skill instalat, înainte să se întâmple oricare dintre acestea — un repo extras este conținut clonat, iar frontmatter-ul lui ajunge într-un prompt.
 
-## Capacități
+## Permisiuni
 
-Capacitățile controlează ce _primește_ o rulare, nu la ce îi permite sistemul de fișiere să ajungă. Brokerul de acreditări le verifică la lansare: dacă o capacitate este oprită, tokenul corespunzător pur și simplu nu este injectat.
+Un agent nu are indicatori de permisiune proprii. Dacă poate crea un commit, face push, deschide un pull request, scrie într-un tracker sau ajunge la rețea decid [guardrail-urile de acțiune](/ro-RO/manual/concepte/guardrail-uri/) — permite, întreabă întâi sau refuză, la nivelul spațiului de lucru, al agentului sau al spațiului — iar aceleași reguli se aplică indiferent de adaptorul care îl rulează.
 
-- **Push către repo** — controlează injectarea tokenului GitHub folosit pentru `git push`.
-- **API GitHub** — controlează injectarea `GH_TOKEN` și ieșirea către api.github.com.
-- **Tichete** — controlează cheia API a furnizorului de tichete și ieșirea către domeniile acestuia.
-- **Ieșire în rețea** — cereri arbitrare către exterior.
+Ce _primește_ o rulare nu se schimbă odată cu aceste reguli. O rulare într-un worktree GitHub primește întotdeauna un token GitHub doar pentru citire, iar despre un push se întreabă în momentul în care are loc: configurația git a agentului trimite fiecare push către GitHub prin Control Center, care aplică regula **Push către un remote** înainte de a-l transmite mai departe.
 
-O rulare le rezolvă din rândul propriu al agentului. Când agentul nu are niciuna, se aplică o valoare implicită conservatoare fixă: cele trei indicatoare de acreditare oprite, ieșirea în rețea pornită. Comutatorul „Permisiuni sandbox" din formularul agentului alege între această variantă de rezervă și un set personalizat stocat pe agent.
-
-Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru cealaltă jumătate a poveștii, inclusiv ce se impune și ce nu la nivel de sistem de fișiere.
+Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru cum funcționează asta, inclusiv ce se impune și ce nu la nivel de sistem de fișiere.
 
 ## Adaptorul decide ce poate fi impus
 
@@ -71,7 +65,7 @@ Cel mai important câmp al unui agent este adaptorul, pentru că transportul ada
 | Transport        | Adaptoare                 | Ce impune Control Center                                                                                                                                                                                                                                                    |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Harness încorporat | Control Center (built-in) | Totul. Suprafața de instrumente este _construită_ din mod, așa că un instrument nepermis este invizibil, nu doar refuzat; fiecare apel trece prin poarta de aprobare și prin guardrail-urile de acțiune; contractul de finalizare poate îndemna și apoi poate marca drept eșuată o rulare care se termină fără livrabilul ei |
-| Claude CLI       | Claude Code               | Doar instrumentele `mcp__*` care îi sunt puse la dispoziție. Instrumentele proprii de citire, scriere, editare și shell ale Claude trăiesc în procesul lui și rulează nevăzute — iar el este lansat cu `--dangerously-skip-permissions`, pentru că un `claude -p` neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt |
+| Claude CLI       | Claude Code               | Instrumentele `mcp__*` care îi sunt puse la dispoziție, plus comenzile lui `Bash`, pe care un hook le trimite politicii de acțiuni înainte să ruleze. Instrumentele proprii de citire, scriere și editare ale Claude trăiesc în procesul lui și rulează nevăzute — iar el este lansat cu `--dangerously-skip-permissions`, pentru că un `claude -p` neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt |
 
 Concret, **doar harness-ul încorporat suportă subagenți, dirijare pe parcursul rulării, pauză și reluare (și, prin urmare, preluarea controlului) și impunerea structurală a modului.** Claude Code nu beneficiază de nimic din toate acestea.
 

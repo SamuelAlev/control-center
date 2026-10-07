@@ -2,7 +2,7 @@
 title: Configuração de agentes
 description: Todos os campos da entidade agente e as enumerações que utiliza.
 slug: pt-PT/manual/referencia/configuracao-de-agentes
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Esta referência enumera todos os campos da entidade agente, além das enumerações e dos indicadores que utiliza. Para um guia passo a passo sobre como criar ou editar um agente na aplicação, consulta [Criar e configurar um agente](/pt-PT/manual/guias/criar-agente/).
@@ -26,7 +26,6 @@ Esta referência enumera todos os campos da entidade agente, além das enumeraç
 | `effort`                | `String?`              | Não         | Id do nível de raciocínio (por exemplo, `'low'`, `'xhigh'`), obtido a partir dos `thinkingLevels` do modelo selecionado                                                                            |
 | `contextSize`           | `int?`                 | Não         | Dimensão máxima da janela de contexto                                                                                                                                                              |
 | `role`                  | `AgentRole?`           | Não         | Função do agente                                                                                                                                                                                   |
-| `capabilities`          | `AgentCapabilities?`   | Não         | Valor predefinido das capacidades por agente; quando é nulo, aplica-se no despacho o predefinido ao nível do utilizador e uma conversa pode ainda substituí-lo                                      |
 | `monthlyBudgetCents`    | `int`                  | Não         | Limite de gastos mensal em cêntimos (predefinido `0`, ilimitado)                                                                                                                                   |
 | `silenceTimeoutMinutes` | `int?`                 | Não         | Substituição do tempo limite de silêncio em minutos; tem de ser nulo ou estar entre 1 e 240 (verificado no construtor)                                                                             |
 | `maxConcurrentTasks`    | `int`                  | Não         | Predefinido `1`. Número de capacidade que o modelo de presença reporta (as contagens de execuções em curso e em fila são comparadas com ele)                                                      |
@@ -69,18 +68,9 @@ Esta referência enumera todos os campos da entidade agente, além das enumeraç
 | `paused`   | Definido pela paragem rígida do orçamento. Apresentado na lista de presenças; o despacho continua a aceitar trabalho |
 | `archived` | Retirado e oculto das listas de presenças ativas                                         |
 
-## Indicadores de AgentCapabilities
+## Permissões
 
-Resolvidos a cada despacho: o predefinido do agente, com recurso ao predefinido ao nível do utilizador quando é nulo, e por cima uma substituição por conversa. Aplicados pela ausência — o mediador de credenciais simplesmente não emite nem injeta aquilo que uma capacidade desativada abrange.
-
-| Indicador          | Tipo   | Predefinido | Descrição                                                                                     |
-| ------------------ | ------ | ----------- | --------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`     | Faz push de commits para o remoto; condiciona a injeção do token do GitHub em conjunto com `canCallGitHubApi` |
-| `canCallGitHubApi` | `bool` | `false`     | Chama api.github.com; condiciona a injeção de `GH_TOKEN` e os domínios de saída do GitHub      |
-| `canCallTicketing` | `bool` | `false`     | Chama a API do fornecedor de tickets; condiciona a injeção da chave de API do fornecedor e os respetivos domínios de saída |
-| `canAccessNetwork` | `bool` | `true`      | Saída de rede arbitrária. Condiciona também as ferramentas `web_fetch` e `web_search` do harness |
-
-`AgentCapabilities.safeDefault` corresponde aos quatro valores predefinidos do construtor. `legacyDefault` (os quatro a true) é usado apenas pela migração que preencheu retroativamente as conversas criadas antes de existirem capacidades. Um blob armazenado malformado ou vazio é interpretado como `safeDefault`; a chave legacy `canCallLinear` é lida como `canCallTicketing`.
+Um agente não transporta indicadores de permissão. Fazer push, abrir e publicar pull requests, escrever num rastreador e a saída de rede são classes de ação (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) que as [barreiras](/pt-PT/manual/conceitos/barreiras/) resolvem no âmbito do espaço de trabalho, do agente ou do espaço. O token do GitHub de uma execução tem sempre âmbito de leitura; os pushes passam pelo gateway de execuções de agentes, que pergunta à regra `gitPush` antes de os reencaminhar.
 
 ## AgentSkills
 

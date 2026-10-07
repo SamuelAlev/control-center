@@ -2,13 +2,13 @@
 title: Backend del sandbox
 description: I backend del sandbox, dove vengono applicati e ogni value object usato dal runtime del sandbox.
 slug: it-IT/manuale/riferimento/backend-sandbox
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Se un'esecuzione è racchiusa in un sandbox dipende dall'host]
 `cc_server` sonda l'host una volta all'avvio e avvolge l'invio degli agenti nel backend nativo quando la sonda ne segnala uno disponibile e `--sandbox` non è `off`. Entrambi i punti di innesto dell'invio vengono avvolti: la CLI di Claude Code attraverso la porta del sandbox, e ACP più lo strumento `bash` dell'harness integrato attraverso il gestore del sandbox.
 
-Dove la sonda non segnala alcun backend — **su Windows sempre** e su Linux o WSL2 senza `bwrap` e `socat` — le esecuzioni degli agenti **non** sono racchiuse in un sandbox. ACP e lo strumento `bash` dell'harness vengono comunque avviati con la sanificazione dell'ambiente; Claude Code passa per `NoSandboxAdapter` ed eredita l'ambiente dell'host. I confini rimanenti sono: il worktree proprio dell'esecuzione (copy-on-write dove `rift` è distribuito; `git worktree` su Windows), le credenziali vincolate dalle capacità, mediate a ogni avvio e revocate alla dismissione, la policy dei comandi per modalità, i [guardrail delle azioni](/it-IT/manuale/concetti/guardrail/) unificati (fail-closed), la sanificazione dell'ambiente sui percorsi ACP e `bash` dell'harness, e la superficie degli strumenti che la sua modalità consente.
+Dove la sonda non segnala alcun backend — **su Windows sempre** e su Linux o WSL2 senza `bwrap` e `socat` — le esecuzioni degli agenti **non** sono racchiuse in un sandbox. ACP e lo strumento `bash` dell'harness vengono comunque avviati con la sanificazione dell'ambiente; Claude Code passa per `NoSandboxAdapter` ed eredita l'ambiente dell'host. I confini rimanenti sono: il worktree proprio dell'esecuzione (copy-on-write dove `rift` è distribuito; `git worktree` su Windows), un token del forge di sola lettura, mediato a ogni avvio e revocato alla dismissione, i push che devono superare la regola di push al gateway delle esecuzioni degli agenti, la policy dei comandi per modalità, i [guardrail delle azioni](/it-IT/manuale/concetti/guardrail/) unificati (fail-closed), la sanificazione dell'ambiente sui percorsi ACP e `bash` dell'harness, e la superficie degli strumenti che la sua modalità consente.
 
 Gli strumenti file in-process dell'harness (read, write, edit, apply patch, search, find, search_files) restano fuori dal sandbox su ogni host: vengono eseguiti nel processo del server, quindi solo `bash` viene avvolto.
 :::
@@ -83,7 +83,7 @@ Nessun sandbox. Il processo viene eseguito direttamente sull'host, con accesso a
 
 Il terminale viene racchiuso in un sandbox secondo regole proprie, non dalla sonda dell'invio. Il `defaultBackend` di `TerminalSessionService` è `none` e `cc_server` non lo sovrascrive, quindi una sessione di terminale esegue la shell dell'host a meno che il client non chieda esplicitamente `native` — il pannello del terminale del desktop non lo fa.
 
-Quando viene richiesto `native`, la shell viene avvolta tramite `SandboxManager` con un profilo di terminale fisso: `$HOME` e la directory di lavoro della sessione sono scrivibili, la rete è aperta e `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains` sono negati in lettura. Il controllo delle capacità non si applica — è una questione di invio. Se l'avvolgimento non è supportato, la sessione fallisce invece di mostrare un badge nativo su un PTY con la shell dell'host.
+Quando viene richiesto `native`, la shell viene avvolta tramite `SandboxManager` con un profilo di terminale fisso: `$HOME` e la directory di lavoro della sessione sono scrivibili, la rete è aperta e `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains` sono negati in lettura. Il token del forge di sola lettura e il gateway dei push non si applicano — sono una questione di invio. Se l'avvolgimento non è supportato, la sessione fallisce invece di mostrare un badge nativo su un PTY con la shell dell'host.
 
 ## Egress di rete
 
@@ -92,9 +92,9 @@ Quando viene avviato un sandbox, l'accesso di rete in uscita è applicato da pro
 - Il runtime del sandbox esegue un proxy HTTP/HTTPS e un proxy SOCKS5 su `127.0.0.1` all'interno del processo `cc_server`, **una coppia per sessione limitata** (`http_proxy.dart`, `socks_proxy.dart`). Esecuzioni concorrenti non condividono una coppia.
 - I processi racchiusi in un sandbox ricevono le variabili d'ambiente dei proxy (`HTTP_PROXY`/`HTTPS_PROXY` → il proxy HTTP, `ALL_PROXY` → il proxy SOCKS; `GIT_SSH_COMMAND` instrada git-over-SSH attraverso il proxy SOCKS). Su Linux il namespace di rete non è condiviso, quindi i proxy sono l'unica via d'uscita; su macOS il sandbox condivide il loopback dell'host e comunica direttamente con loro.
 - L'host di destinazione di ogni connessione viene confrontato con la lista di autorizzazione dei domini della sessione; qualsiasi altra cosa viene negata. Due forme con caratteri jolly, ciascuna con esattamente un `*`: un `*.example.com` iniziale corrisponde a qualsiasi sottodominio (compreso `a.b.example.com`) ma non al dominio radice stesso; un `bedrock.*.amazonaws.com` con etichetta centrale corrisponde esattamente a un'etichetta (`bedrock.us-east-1.amazonaws.com`, non `bedrock.evil.attacker.amazonaws.com`).
-- La lista di autorizzazione viene risolta per sessione dalla base di riferimento curata (`kBaselineAllowedDomains`: provider LLM, hosting Git, registry dei pacchetti), più i domini GitHub quando l'agente ha le capacità GitHub o push, più `SandboxSpec.egressAllowlist`. Il resolver accetta anche i domini dei fornitori di ticketing quando l'agente può chiamare il ticketing, ma il percorso di invio non passa mai quella lista (né voci `egressAllowlist` aggiuntive), quindi in pratica ogni esecuzione ottiene la base di riferimento più i domini GitHub che le sue capacità le fanno guadagnare.
+- La lista di autorizzazione viene risolta per sessione dalla base di riferimento curata (`kBaselineAllowedDomains`: provider LLM, hosting Git, registry dei pacchetti), più i domini GitHub (`kGithubDomains`), più `SandboxSpec.egressAllowlist`. Il percorso di invio non passa mai voci `egressAllowlist` aggiuntive, quindi in pratica ogni esecuzione ottiene la base di riferimento più GitHub.
 - Un elenco fisso di domini negati (`kBaselineDeniedDomains`: endpoint di metadati cloud, destinazioni di telemetria) prevale su tutte le autorizzazioni.
-- `networkEnabled: false` (o un agente senza la capacità di rete) avvia comunque i proxy per sessione, ma la lista di autorizzazione è vuota, quindi ogni connessione in uscita viene rifiutata.
+- `networkEnabled: false` avvia comunque i proxy per sessione, ma la lista di autorizzazione è vuota, quindi ogni connessione in uscita viene rifiutata. L'invio lo imposta all'avvio dell'esecuzione dalla regola **Accedere alla rete**: nega disattiva la rete, consenti e chiedi prima la lasciano attiva.
 
 ## SandboxSpec
 
@@ -106,11 +106,10 @@ La specifica passata a `SandboxPort.launch`:
 | `workspaceId` | `String` | Id dello spazio di lavoro proprietario |
 | `agentId` | `String?` | Agente attualmente associato al sandbox, se presente |
 | `bindMounts` | `List<SandboxBindMount>` | Mount host→guest; il sandbox vede solo i percorsi dell'host elencati qui |
-| `networkEnabled` | `bool` (predefinito `true`) | Combinato con la capacità di rete dell'agente. Se disattivato, i proxy per sessione si avviano comunque ma la lista di autorizzazione è vuota, quindi ogni connessione in uscita viene rifiutata |
-| `egressAllowlist` | `List<String>` (predefinito `[]`) | Domini di egress consentiti in aggiunta; caratteri jolly supportati (`*.example.com`, più una forma centrale a un'etichetta). L'invio non popola mai questo campo, quindi un'esecuzione avvolta ottiene la base di riferimento curata più i domini GitHub che le sue capacità le fanno guadagnare |
+| `networkEnabled` | `bool` (predefinito `true`) | Impostato all'invio dalla regola di uscita di rete (disattivato solo quando si risolve in nega). Se disattivato, i proxy per sessione si avviano comunque ma la lista di autorizzazione è vuota, quindi ogni connessione in uscita viene rifiutata |
+| `egressAllowlist` | `List<String>` (predefinito `[]`) | Domini di egress consentiti in aggiunta; caratteri jolly supportati (`*.example.com`, più una forma centrale a un'etichetta). L'invio non popola mai questo campo, quindi un'esecuzione avvolta ottiene la base di riferimento curata più i domini GitHub |
 | `guestWorkdir` | `String?` | Directory di lavoro predefinita dentro il sandbox; le singole chiamate `exec` possono sovrascriverla |
 | `mode` | `Mode` (predefinito `chat`) | Ritaglia le regole di scrittura del filesystem: `chat` mantiene scrivibili i bind mount; `review`, `plan` e `orchestrate` sono di sola lettura |
-| `capabilities` | `AgentCapabilities` (predefinito `safeDefault`) | Deriva la decisione di attivazione della rete e i domini di egress GitHub. I domini di ticketing sono un argomento del resolver che il percorso di invio non fornisce mai |
 | `protectedPaths` | `List<String>` (predefinito `[]`) | Percorsi dell'host che non devono mai essere scrivibili dentro il sandbox, in nessuna modalità |
 | `runnerStateDirs` | `List<String>` (predefinito `[]`) | Directory dell'host in cui il runner conserva il proprio stato, scrivibili in ogni modalità (quella attuale è una `CLAUDE_CONFIG_DIR` gestita da Control Center) |
 | `execGrantRoots` | `List<String>` (predefinito `[]`) | Alberi di directory approvati dall'operatore che riaprono il blocco di exec delle directory scrivibili su macOS. Linux li ignora — bwrap non ha alcun blocco di exec su `$HOME` da riaprire |
@@ -168,7 +167,6 @@ Restituito da `SandboxPort.launch`:
 | --- | --- | --- |
 | `action` | `String` | Il verbo negato (ad es. `file-read*`, `network-outbound`) |
 | `target` | `String` | Percorso o host che era l'obiettivo dell'operazione negata |
-| `suggestedCapability` | `String?` | Il flag di capacità che consentirebbe questa azione (ad es. `canCallGitHubApi`) |
 | `raw` | `String?` | Riga di log grezza, utile per il debug |
 
 ## Vedi anche

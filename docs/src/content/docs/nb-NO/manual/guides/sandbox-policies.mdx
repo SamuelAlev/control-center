@@ -1,19 +1,19 @@
 ---
 title: Konfigurer sandkassepolicyer
-description: Hva som begrenser en agentkjøring, hvordan du ser om OS-sandkassen pakker den inn, og hvilke kapabilitetsinnstillinger serveren faktisk leser.
+description: Hva som begrenser en agentkjøring, hvordan du ser om OS-sandkassen pakker den inn, og hvordan handlingsreglene avgjør hva en agent får pushe eller nå.
 slug: nb-NO/handbok/slik-gjor-du/sandkassepolicyer
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Om en agentkjøring er sandkasset, avgjøres på serveren, ved oppstart
-(`--sandbox`). Bryteren **Slå på sandkasse**, velgeren **Backend** og bryterne
-**Standardkapasiteter · nye områder** under **Innstillinger → Server →
-Diagnostikk og personvern** er innstillinger som lagres på enheten din.
-Sonderingen av verten i **Sandkasse**-kortet rapporterer hva serververten kan
-pakke inn.
+(`--sandbox`). Bryteren **Slå på sandkasse** og velgeren **Backend** under
+**Innstillinger → Server → Diagnostikk og personvern** er innstillinger som
+lagres på enheten din. Sonderingen av verten i **Sandkasse**-kortet rapporterer
+hva serververten kan pakke inn.
 
 To kontroller når fram til en kjøring, og denne guiden dekker begge:
-**Sandkassetillatelsene** per agent nedenfor og serverens eget
+handlingsreglene under **Innstillinger → Arbeidsområde → Agenttillatelser**, som
+avgjør hva en agent får pushe, åpne eller nå, og serverens eget
 `--sandbox`-flagg.
 
 ## Hva som begrenser en agentkjøring
@@ -25,7 +25,7 @@ som er betinget — de fem andre holder på alle verter.
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OS-sandkassen              | Seatbelt på macOS, bubblewrap på Linux og WSL2. Pakker inn Claude Code-CLI-et, ACP-adaptere og harnessets `bash`-verktøy. **Finnes ikke på Windows og på Linux uten `bwrap` og `socat`** |
 | Sin egen worktree          | Hver samtale får sin egen copy-on-write-arbeidskopi. Den opprinnelige arbeidskopien legges inn i kjøringen som en skrivenekt-sti, og det er sandkassen som håndhever den                                                                                          |
-| Formidlet legitimasjon     | Legitimasjonsmegleren utsteder et miljø per kjøring ut fra agentens kapabiliteter og tilbakekaller det ved avslutning. Ingen kapabilitet, ingen token i miljøet                                                                                                    |
+| Formidlet legitimasjon     | Legitimasjonsmegleren utsteder et miljø per kjøring og tilbakekaller det ved avslutning. GitHub-tokenet i det kan lese, men ikke pushe: en push går gjennom Control Center, som først spør push-regelen |
 | Tillatelsesregler for handlinger | Hvert muterende verktøy deklarerer effektklassene sine, og vakten løser dem før kallet kjøres. Et `prompt` uten tilkoblet godkjenner nektes                                                                                                               |
 | Sanering av miljøet        | ACP og harnessets `bash`-verktøy får et filtrert miljø. Claude Code gjennom `NoSandboxAdapter` arver vertens miljø                                                                                                                                                 |
 | Modusens verktøyflate      | En skrivebeskyttet modus fjerner verktøyene som muterer worktreet, helt, og fester modusens eget utdataverb så den fortsatt kan levere                                                                            |
@@ -37,8 +37,7 @@ Tre ting er svakere enn de ser ut:
   Code-adapteren gjør det ikke. Nettopp Claude
   Code startes med `--dangerously-skip-permissions`, fordi en
   ikke-interaktiv `claude -p` ellers ville blokkere for alltid på sin egen prompt
-  — så Claudes egne lese-, skrive-, redigerings- og bash-kall verken ses eller
-  portes av Control Center. Der sandkassen er på, er den grensen rundt dem.
+  — så Claudes egne lese-, skrive- og redigeringskall verken ses eller portes av Control Center, og bash-kommandoene kontrolleres bare av en hook som leser kommandolinjen. Der sandkassen er på, er den grensen rundt dem.
 - Harnessets prosessinterne filverktøy (read, write, edit, apply patch, search,
   find, search_files) kjører inne i serverprosessen, så ingen sandkasseprofil
   begrenser dem. Bare `bash`-verktøyet går gjennom den sandkasseinnpakkede
@@ -49,45 +48,62 @@ Tre ting er svakere enn de ser ut:
   kommandopolicyen; Claude Code arver vertens miljø gjennom `NoSandboxAdapter`.
   Serveren sier fra om dette i oppstartsloggen. Sjekk din nedenfor.
 
-## Still inn kapabilitetene til en agent
+## Avgjør hva en agent får pushe
 
-Dette er den ene kapabilitetskontrollen serveren leser. Den er per agent, og
-den avgjør hva legitimasjonsmegleren legger i miljøet til den agenten.
+Det finnes ingen bryter per agent for git push, GitHub, saker eller nettverket.
+Hver av dem er en handlingsregel:
 
-1. Gå til **Innstillinger → Arbeidsområde → Agenter**
-2. Velg agenten i listen
-3. På fanen **Innstillinger** ruller du ned til **Sandkassetillatelser**
-4. Slå på bryteren — teksten på raden endres fra **Bruk standard for
-   arbeidsområde**
-5. Still inn de fire bryterne:
+| Regel                                          | Innebygd standard | Hva den dekker                                                            |
+| ---------------------------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| **Push til en remote**                         | Spør først        | Hver `git push` til GitHub, uansett adapter                               |
+| **Åpne en pull request**                       | Spør først        | `gh pr create` og verktøyene for pull requests                            |
+| **Publiser en gjennomgang eller sammenslåing** | Spør først        | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`             |
+| **Skriv til et eksternt oppfølgingssystem**    | Spør først        | Saksskriving gjennom Control Centers verktøy og `gh issue`                |
+| **Bruk nettverket**                            | Tillat            | Om sandkassen har nettverk i det hele tatt, og harnessens nettverktøy     |
 
-| Bryter                              | Hva den styrer                                                                                                                                                                                                                             |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Tillat git push**                 | Med denne av får kjøringen `GIT_ASKPASS=/usr/bin/false` og `GIT_TERMINAL_PROMPT=0`, så en push kan ikke spørre om legitimasjon                                                                                                              |
-| **Tillat GitHub API-kall**          | Sammen med **Tillat git push** styrer denne om megleren injiserer GitHub-tokenet som `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                             |
-| **Tillat API-kall for saker**       | Styrer om megleren injiserer `TICKETING_API_KEY`                                                                                                                                                                                            |
-| **Tillat generell nettverkstilgang** | Der sandkassen er på, er dette en ekte port for utgående trafikk: med den av er kjøringens tillatelsesliste tom, og hver utgående forespørsel avvises i proxyen. Der det ikke finnes noen backend, registreres den på kjøringen, men blokkerer ingenting en startet prosess gjør |
+1. Gå til **Innstillinger → Arbeidsområde → Agenttillatelser**
+2. Velg omfang — **Arbeidsområde**, **Agent** eller **Område** — og velg
+   **Tillat**, **Spør først** eller **Nekt** på regelens rad
 
-6. Lagre
+Push-regler som er begrenset til grener, for eksempel en som nekter push til
+`main`, gjelder også: se [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/).
 
-Kontrollpunkt: åpne agenten på nytt, og bryteren er fortsatt på med bryterne
-dine — et lagret kapabilitetssett går en runde gjennom serveren, og en agent
-uten noe faller tilbake på den konservative standarden (push av, GitHub API av,
-saker av, nettverk på).
+Kontrollpunkt: be agenten pushe en gren. Med **Spør først** får du en
+godkjenning som oppgir repoet og refs; med **Nekt** skriver git ut
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[To måter dette biter på]
-Teksten sier **Bruk standard for arbeidsområde**, men det finnes ingen
-kapabilitetsinnstilling på arbeidsområdenivå som serveren leser. En agent med
-bryteren av får den innebygde, konservative standarden.
+Slik når hver regel kjøringen:
 
-Hver for seg: GitHub-legitimasjonen til kjøringen er alltid bare meglerens — et
-repo-begrenset installasjonstoken for GitHub App, eller PAT-reserveløsningen fra
-miljøet — aldri det egne lagrede tokenet til medlemmet som ba om kjøringen.
-`actingUserId` sendes inn slik at megleren kan *holde tilbake* serverens PAT fra
-et medlem som ikke er eieren og ikke har koblet til GitHub; den legger ikke et
-personlig token oppå en kapabilitet som er av. Ikke behandle **Tillat GitHub
-API-kall** som en hard grense for utgående trafikk på en vert uten
-OS-sandkasse: en startet prosess kan fortsatt nå nettverket.
+- **Push** håndheves gjennom det kjøringen har. GitHub-tokenet er et
+  installasjonstoken for GitHub App som bare kan lese: det kan lese innhold og
+  jobbe med pull requests. Git-konfigurasjonen sender hver push til GitHub til
+  en loopback-gateway på `cc_server`, som spør regelen og først da sender pushen
+  videre med et skrivetoken agenten aldri ser. Gatewayen sender bare videre til
+  worktreens eget repo eller til et GitHub-repo som er koblet til
+  arbeidsområdet. Dette gjelder for alle adaptere.
+- **Pull requests og saker fra et skall** gjenkjennes på kommandolinjen, i
+  harnessens `bash`-verktøy og, gjennom en hook, i Claude Codes `Bash`-verktøy.
+  En agent som skjuler kommandoen (et skript, `eval`, et direkte API-kall),
+  kommer forbi denne kontrollen, men ikke forbi push-gatewayen.
+- **Saksnøkler** legges aldri i sandkassen. Agenter skriver saker gjennom
+  Control Centers MCP-verktøy, som spør regelen.
+- **Nettverket** løses opp én gang, når kjøringen starter. **Nekt** slår av
+  sandkassens nettverk; **Tillat** og **Spør først** lar det stå på, og med
+  **Spør først** spør harnessens `web_fetch`- og `web_search`-verktøy fortsatt
+  ved hvert kall. Så lenge nettverket er på, står GitHub alltid på den utgående
+  tillatelseslisten.
+
+:::caution[Uten GitHub App er push-regelen bare veiledende]
+Uten en konfigurert GitHub App får kjøringen det personlige tilgangstokenet som
+reserve, og det kan ikke begrenses til bare lesing. `git push` går fortsatt
+gjennom gatewayen og regelen, men kode som bruker tokenet direkte, kan pushe
+forbi den. Konfigurer GitHub App-en for å gjøre regelen bindende.
+
+GitHub-legitimasjonen til kjøringen er alltid bare meglerens — et
+repo-begrenset installasjonstoken for GitHub App, eller PAT-reserven — aldri
+det egne lagrede tokenet til medlemmet som ba om kjøringen. Serverens PAT
+holdes tilbake fra en kjøring som handler for et medlem som ikke er eieren og
+ikke har koblet til GitHub.
 :::
 
 ## Sjekk om agentkjøringene dine er sandkasset
@@ -163,10 +179,13 @@ løsningsrekkefølgen.
 
 ### En agent kan ikke pushe, og jeg nektet det aldri
 
-Sjekk **Sandkassetillatelsene** til agenten. En agent uten et egendefinert
-kapabilitetssett får den konservative standarden, der **Tillat git push** er av
-— så megleren injiserer ingen GitHub-token, og git har ingen måte å autentisere
-seg på.
+Les hva git skrev ut. `Control Center policy: …` betyr at en regel nektet
+pushen, eller at en **Spør først** ikke ble besvart.
+`… is not linked to this workspace` betyr at pushen sikter mot et repo som
+verken er worktreens eget eller koblet til arbeidsområdet.
+`Control Center has no GitHub credential that can push …` betyr at GitHub
+App-en ikke er installert på det repoet, og at ingen reservelegitimasjon kunne
+pushe: installer appen på repoet eller koble til GitHub.
 
 ### Sandkasse-kortet rapporterer ingen innebygd sandkasse
 

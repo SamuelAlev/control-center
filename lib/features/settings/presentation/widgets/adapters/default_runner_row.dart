@@ -16,6 +16,9 @@ class DefaultRunnerRow extends ConsumerWidget {
     required this.adapterIdProvider,
     required this.modelIdProvider,
     required this.available,
+    this.enabled = true,
+    this.offLabel,
+    this.footnote,
   });
 
   /// What this default is for.
@@ -33,6 +36,18 @@ class DefaultRunnerRow extends ConsumerWidget {
   /// The runners installed on the server host — the only offerable set.
   final List<Adapter> available;
 
+  /// False renders both pickers read-only (a member viewing workspace state
+  /// only an admin may change).
+  final bool enabled;
+
+  /// When set, the adapter picker leads with a row of this label that clears
+  /// the adapter — for a runner whose absence means "off". CcSelect has no
+  /// clear affordance, so off has to be a row you can pick.
+  final String? offLabel;
+
+  /// A caption under the pickers.
+  final String? footnote;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -47,41 +62,74 @@ class DefaultRunnerRow extends ConsumerWidget {
     final adapterItems = <String, String>{
       for (final adapter in available) adapter.name: adapter.id,
     };
+    final off = offLabel;
 
     return SettingsField(
       label: label,
       description: description,
       layout: SettingsFieldLayout.stacked,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: CcSelect<String>(
-              options: adapterItems.entries
-                  .map((e) => CcSelectOption(value: e.value, label: e.key))
-                  .toList(),
-              value: currentAdapterId,
-              hintText: l10n.adapterLabel,
-              onChanged: (id) {
-                // ignore: avoid_dynamic_calls
-                ref.read(adapterIdProvider.notifier).set(id);
-                // ignore: avoid_dynamic_calls
-                ref.read(modelIdProvider.notifier).set(null);
-              },
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: CcSelect<String>(
+                  options: [
+                    if (off != null)
+                      CcSelectOption(value: _offValue, label: off),
+                    ...adapterItems.entries.map(
+                      (e) => CcSelectOption(value: e.value, label: e.key),
+                    ),
+                  ],
+                  value: currentAdapterId ?? (off != null ? _offValue : null),
+                  enabled: enabled,
+                  hintText: l10n.adapterLabel,
+                  onChanged: (picked) {
+                    final id = picked == _offValue ? null : picked;
+                    // Re-picking the selected adapter is not a change;
+                    // treating it as one would wipe a model nobody touched.
+                    if (id == currentAdapterId) {
+                      return;
+                    }
+                    // ignore: avoid_dynamic_calls
+                    ref.read(adapterIdProvider.notifier).set(id);
+                    // Model ids are per-adapter, so switching adapters
+                    // clears the model too.
+                    // ignore: avoid_dynamic_calls
+                    ref.read(modelIdProvider.notifier).set(null);
+                  },
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: ModelPickerField(
+                  adapterId: currentAdapterId,
+                  selectedModelId: currentModelId,
+                  enabled: enabled,
+                  onChange: (id) {
+                    // ignore: avoid_dynamic_calls
+                    ref.read(modelIdProvider.notifier).set(id);
+                  },
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: ModelPickerField(
-              adapterId: currentAdapterId,
-              selectedModelId: currentModelId,
-              onChange: (id) {
-                // ignore: avoid_dynamic_calls
-                ref.read(modelIdProvider.notifier).set(id);
-              },
+          if (footnote case final note?) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              note,
+              style: CcTypography.caption.copyWith(
+                color: context.designSystem?.textTertiary,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
+
+/// Sentinel for the "off" row. Not an adapter id, and never stored: picking
+/// it clears the adapter.
+const String _offValue = '';

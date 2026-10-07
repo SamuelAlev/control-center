@@ -239,6 +239,12 @@ class _ConversationActivityState extends ConsumerState<_ConversationActivity> {
       extent: kConversationRowExtent,
       leading: conversationActivityMark(running: running, unread: unread),
       label: conversationDisplayName(conversation, l10n),
+      labelScrambling: ref.watch(
+        conversationTitleGeneratingProvider((
+          spaceId: widget.spaceId,
+          conversationId: conversation.id,
+        )),
+      ),
       trailingLabel: formatCompactAge(
         context,
         widget.runningSince ?? conversation.updatedAt,

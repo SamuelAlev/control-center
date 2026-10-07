@@ -2,12 +2,12 @@
 title: Il modello degli agenti
 description: Che cos'è davvero un agente in Control Center, quali dei suoi campi ne cambiano il comportamento e come l'adattatore su cui viene eseguito decide che cosa si può imporre.
 slug: it-IT/manuale/concetti/modello-agenti
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Che cos'è un agente?
 
-Un agente è un attore con un nome, un personaggio, un insieme di skill, un adattatore su cui essere eseguito e un insieme di capacità. Gli agenti sono soggetti esattamente come lo sono le persone: scrivono messaggi, possiedono ticket, lasciano revisioni e compaiono nello stesso elenco. Sono le entità che fanno il lavoro.
+Un agente è un attore con un nome, un personaggio, un insieme di skill e un adattatore su cui essere eseguito. Gli agenti sono soggetti esattamente come lo sono le persone: scrivono messaggi, possiedono ticket, lasciano revisioni e compaiono nello stesso elenco. Sono le entità che fanno il lavoro.
 
 Ogni agente appartiene esattamente a uno spazio di lavoro. È un invariante rigido: `agent.workspaceId` non è mai null, è lo spazio di lavoro dell'agente a stabilire in quale file di database finiscono le sue righe, e creare un agente senza spazio di lavoro viene rifiutato.
 
@@ -26,7 +26,6 @@ Un agente è anche una directory. La sua definizione vive in `agents/<slug>/AGEN
 | `modelId`               | Quale modello all'interno di quell'adattatore                                                                                   |
 | `effort`                | Livello di ragionamento, tratto dal vocabolario del modello selezionato                                                         |
 | `contextSize`           | Override della finestra di contesto                                                                                             |
-| `capabilities`          | Flag di credenziali e di uscita di rete, verificati all'avvio                                                                    |
 | `silenceTimeoutMinutes` | Override per singolo agente (1–240) del watchdog del silenzio                                                                     |
 | `reportsTo`             | Id dell'agente padre — la catena di riporto che l'organigramma disegna                                                          |
 
@@ -51,18 +50,13 @@ La scelta dell'ambito è una decisione di budget di contesto. L'indice delle ski
 
 Le skill di repository vengono caricate per **ogni** adattatore, non solo per l'harness integrato. Le skill del repository attivo vengono materializzate nella directory di lavoro dell'agente, che è il percorso che Claude Code già analizza; lo stesso indice viene composto nell'`AGENTS.md` che l'harness integrato legge. Le skill di un repository passano la stessa scansione fail-closed di una skill installata prima che tutto questo avvenga — un repository di cui è stato fatto il checkout è contenuto clonato, e il suo frontmatter arriva a un prompt.
 
-## Capacità
+## Permessi
 
-Le capacità controllano ciò che viene _fornito_ a un'esecuzione, non ciò che il suo filesystem le lascia toccare. Il broker delle credenziali le verifica all'avvio: se una capacità è disattivata, il token corrispondente semplicemente non viene iniettato.
+Un agente non porta flag di permesso propri. Se può creare un commit, eseguire un push, aprire una pull request, scrivere su un tracker o raggiungere la rete lo decidono i [guardrail delle azioni](/it-IT/manuale/concetti/guardrail/) — consenti, chiedi prima o nega, nell'ambito dello spazio di lavoro, dell'agente o dello spazio — e le stesse regole valgono qualunque sia l'adapter che lo esegue.
 
-- **Push al repository** — controlla l'iniezione del token GitHub usato per `git push`.
-- **GitHub API** — controlla l'iniezione di `GH_TOKEN` e l'uscita verso api.github.com.
-- **Ticket** — controlla la chiave API del provider di ticket e l'uscita verso i suoi domini.
-- **Uscita di rete** — richieste arbitrarie verso l'esterno.
+Ciò che viene _fornito_ a un'esecuzione non cambia con queste regole. Un'esecuzione in un worktree GitHub riceve sempre un token GitHub di sola lettura, e per un push la domanda arriva nel momento in cui avviene: la configurazione git dell'agente fa passare ogni push verso GitHub da Control Center, che applica la regola **Eseguire il push a un remoto** prima di inoltrarlo.
 
-Un'esecuzione le risolve dalla riga dell'agente stesso. Quando l'agente non ne ha nessuna, si applica un valore predefinito prudente e fisso: i tre flag delle credenziali disattivati, l'uscita di rete attiva. L'interruttore «Permessi del sandbox» del modulo dell'agente sceglie fra quel valore di riserva e un insieme personalizzato memorizzato sull'agente.
-
-Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/) per l'altra metà della storia, compreso ciò che viene e ciò che non viene imposto a livello di filesystem.
+Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/) per come funziona, compreso ciò che viene e ciò che non viene imposto a livello di filesystem.
 
 ## L'adattatore decide che cosa si può imporre
 
@@ -71,7 +65,7 @@ Il campo più determinante di un agente è il suo adattatore, perché il traspor
 | Trasporto        | Adattatori                | Che cosa impone Control Center                                                                                                                                                                                                                                            |
 | ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Harness integrato | Control Center (built-in) | Tutto. La superficie degli strumenti viene _costruita_ a partire dalla modalità, quindi uno strumento non consentito è invisibile invece che semplicemente negato; ogni chiamata passa dal controllo di approvazione e dai guardrail delle azioni; il contratto di completamento può sollecitare e poi far fallire un'esecuzione che termina senza il suo risultato |
-| Claude CLI       | Claude Code               | Solo gli strumenti `mcp__*` che gli vengono serviti. Gli strumenti di lettura, scrittura, modifica e shell di Claude vivono nel suo processo e vengono eseguiti senza essere visti — ed è avviato con `--dangerously-skip-permissions`, perché `claude -p` non interattivo altrimenti resterebbe bloccato per sempre sul proprio prompt    |
+| Claude CLI       | Claude Code               | Gli strumenti `mcp__*` che gli vengono serviti, più i suoi comandi `Bash`, che un hook invia alla policy delle azioni prima che vengano eseguiti. Gli strumenti di lettura, scrittura e modifica di Claude vivono nel suo processo e vengono eseguiti senza essere visti — ed è avviato con `--dangerously-skip-permissions`, perché `claude -p` non interattivo altrimenti resterebbe bloccato per sempre sul proprio prompt    |
 
 In concreto, **solo l'harness integrato supporta i sottoagenti, la guida durante l'esecuzione, la pausa e la ripresa (e quindi la possibilità di prendere il controllo) e l'applicazione strutturale della modalità.** Claude Code non ha nulla di tutto questo.
 

@@ -22,6 +22,9 @@ enum AgentProcessEventType {
   /// Usage / token-count event.
   usage,
 
+  /// The provider-reported size of the context the model just read.
+  contextWindow,
+
   /// Error event.
   error,
 
@@ -51,6 +54,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return 'tool_result';
       case AgentProcessEventType.usage:
         return 'usage';
+      case AgentProcessEventType.contextWindow:
+        return 'context_window';
       case AgentProcessEventType.error:
         return 'error';
       case AgentProcessEventType.sandboxViolation:
@@ -76,6 +81,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return AgentProcessEventType.toolResult;
       case 'usage':
         return AgentProcessEventType.usage;
+      case 'context_window':
+        return AgentProcessEventType.contextWindow;
       case 'error':
       case 'stderr':
         return AgentProcessEventType.error;
@@ -267,6 +274,47 @@ class UsageEvent extends AgentProcessEvent {
   };
 }
 
+/// How full the model's context window was on its latest call, as the
+/// provider reported it.
+///
+/// Spend ([UsageEvent]) and occupancy are different questions: a turn's usage
+/// sums every call it made, while this is the size of ONE request — the
+/// prompt the model actually read (uncached + cache read + cache write input)
+/// plus what it wrote back, which the next call carries forward. Emitted once
+/// per main-thread model call; the newest one wins.
+class ContextWindowEvent extends AgentProcessEvent {
+  /// Creates a context-window reading.
+  ContextWindowEvent({
+    required this.contextTokens,
+    this.windowTokens,
+    this.compactions = 0,
+    super.timestamp,
+  }) : assert(contextTokens >= 0, 'context tokens must be non-negative'),
+       assert(compactions >= 0, 'compactions must be non-negative');
+
+  @override
+  AgentProcessEventType get type => AgentProcessEventType.contextWindow;
+
+  @override
+  String get content => '';
+
+  /// Tokens occupying the window after this call.
+  final int contextTokens;
+
+  /// The window those tokens are measured against, when the runner knows it.
+  final int? windowTokens;
+
+  /// Automatic compactions the runner performed so far in this run.
+  final int compactions;
+
+  @override
+  Map<String, dynamic>? get metadata => {
+    'contextTokens': contextTokens,
+    'windowTokens': ?windowTokens,
+    if (compactions > 0) 'compactions': compactions,
+  };
+}
+
 /// Error from the agent process.
 
 class ErrorEvent extends AgentProcessEvent {
@@ -296,7 +344,6 @@ class SandboxViolationEvent extends AgentProcessEvent {
     required this.content,
     this.action,
     this.target,
-    this.suggestedCapability,
     super.timestamp,
   });
 
@@ -312,14 +359,10 @@ class SandboxViolationEvent extends AgentProcessEvent {
   /// Target of the denied action.
   final String? target;
 
-  /// Capability the user could grant to allow this.
-  final String? suggestedCapability;
-
   @override
   Map<String, dynamic>? get metadata => {
     if (action != null) 'action': action,
     if (target != null) 'target': target,
-    if (suggestedCapability != null) 'suggestedCapability': suggestedCapability,
   };
 }
 

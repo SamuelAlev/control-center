@@ -196,7 +196,8 @@ void main() {
       'meeting.watchSpeakers',
       // Messaging / conversations / notifications.
       'chat.watchUserLinks', 'conversation.watchForSpace',
-      'conversation.watchThreadSummaries', 'dictation.watchPartials',
+      'conversation.watchThreadSummaries',
+      'conversation.watchTitleGenerating', 'dictation.watchPartials',
       'messaging.watchConversationTokens', 'messaging.watchMessages',
       'messaging.watchUserPromptHistory',
       'messaging.watchMessagesWindow', 'messaging.watchParticipants',
@@ -246,9 +247,6 @@ void main() {
       'terminal.output',
       'terminal.titles', 'soundscape.watchScene', 'weather.watchCurrent',
       'fleet.watchJobs', 'fleet.watchPlacements',
-      // The sync change feed: carries rows the guest-readable read surface
-      // already exposes; role narrowing happens per-surface, not here.
-      'sync.watch',
     };
 
     // Unscoped watches with no serverAuthority: each must self-scope (to the

@@ -4,7 +4,6 @@ import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
@@ -80,7 +79,7 @@ class _FakeBroker implements CredentialBrokerPort {
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
@@ -97,7 +96,7 @@ class _FakeBroker implements CredentialBrokerPort {
 }
 
 /// Minimal [AgentRepository] stub. Only [getById] is called by
-/// `DispatchSession._capabilitiesFor`; unused methods use [noSuchMethod].
+/// `DispatchSession`; unused methods use [noSuchMethod].
 class _FakeAgentRepo implements AgentRepository {
   @override
   Future<Agent?> getById(String workspaceId, String id) async => null;
@@ -122,7 +121,6 @@ SandboxedAgentDispatchAdapter _adapter({
     credentialBroker: broker ?? _FakeBroker(),
     agentRepository: agentRepo ?? _FakeAgentRepo(),
     runLogRepository: null,
-    defaultCapabilities: AgentCapabilities.safeDefault,
     eventBus: null,
   );
 }
@@ -139,26 +137,6 @@ void main() {
 
       // The sandbox port is stored; we verify indirectly by calling a method
       // that touches it.
-      expect(adapter, isNotNull);
-    });
-
-    test('stores default capabilities', () {
-      const caps = AgentCapabilities(
-        canPushToRepo: true,
-        canCallGitHubApi: true,
-        canAccessNetwork: false,
-      );
-      final adapter = SandboxedAgentDispatchAdapter(
-        sandbox: _FakeSandboxPort(),
-        credentialBroker: _FakeBroker(),
-        agentRepository: _FakeAgentRepo(),
-        runLogRepository: null,
-        defaultCapabilities: caps,
-        eventBus: null,
-      );
-
-      // Capabilities used by DispatchSession later; here we just verify
-      // the constructor doesn't throw and adapter is created.
       expect(adapter, isNotNull);
     });
 
@@ -263,7 +241,6 @@ void main() {
         credentialBroker: _FakeBroker(),
         agentRepository: _FakeAgentRepo(),
         runLogRepository: null,
-        defaultCapabilities: AgentCapabilities.safeDefault,
         eventBus: null,
       );
 

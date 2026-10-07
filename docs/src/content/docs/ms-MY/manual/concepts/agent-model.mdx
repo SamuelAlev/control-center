@@ -2,12 +2,12 @@
 title: Model ejen
 description: Apakah sebenarnya ejen dalam Control Center, medan mana yang mengubah tingkah lakunya dan bagaimana penyesuai yang menjalankannya menentukan apa yang boleh dikuatkuasakan.
 slug: ms-MY/manual-pengguna/konsep/model-ejen
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Apakah itu ejen?
 
-Ejen ialah pelaku bernama yang mempunyai persona, satu set kemahiran, penyesuai untuk dijalankan dan satu set keupayaan. Ejen ialah prinsipal dalam erti kata yang sama seperti manusia: mereka menulis mesej, memiliki tiket, meninggalkan semakan dan muncul dalam senarai yang sama. Merekalah yang melakukan kerja.
+Ejen ialah pelaku bernama yang mempunyai persona, satu set kemahiran dan penyesuai untuk dijalankan. Ejen ialah prinsipal dalam erti kata yang sama seperti manusia: mereka menulis mesej, memiliki tiket, meninggalkan semakan dan muncul dalam senarai yang sama. Merekalah yang melakukan kerja.
 
 Setiap ejen tergolong dalam tepat satu ruang kerja. Ini invarian yang tegas — `agent.workspaceId` tidak boleh nol, ruang kerja ejen sendiri yang memilih fail pangkalan data tempat barisnya disimpan, dan penciptaan ejen tanpa ruang kerja ditolak.
 
@@ -26,7 +26,6 @@ Ejen juga ialah direktori. Definisinya terletak di `agents/<slug>/AGENTS.md` di 
 | `modelId`               | Model mana dalam penyesuai itu                                                                                        |
 | `effort`                | Tahap penaakulan, diambil daripada perbendaharaan kata model yang dipilih itu sendiri                                 |
 | `contextSize`           | Penggantian tetingkap konteks                                                                                         |
-| `capabilities`          | Tanda kelayakan dan keluar rangkaian, diperiksa semasa pelancaran                                                      |
 | `silenceTimeoutMinutes` | Penggantian setiap ejen (1–240) untuk pemantau senyap                                                                 |
 | `reportsTo`             | Id ejen induk — rantaian pelaporan yang dilukis oleh carta organisasi                                                  |
 
@@ -51,18 +50,13 @@ Penskopan ini ialah keputusan bajet konteks. Indeks kemahiran berada dalam promp
 
 Kemahiran repositori dimuatkan untuk **setiap** penyesuai, bukan hanya harness terbina. Kemahiran repositori aktif diwujudkan ke dalam direktori kerja ejen, iaitu laluan yang sudah diimbas oleh Claude Code; indeks yang sama disusun ke dalam `AGENTS.md` yang dibaca oleh harness terbina. Kemahiran sesuatu repositori melalui imbasan menolak secara lalai yang sama seperti kemahiran yang dipasang sebelum semua itu berlaku — repositori yang telah di-checkout ialah kandungan klon, dan frontmatter-nya mencapai prompt.
 
-## Keupayaan
+## Kebenaran
 
-Keupayaan mengawal apa yang _diberikan_ kepada sesuatu larian, bukan apa yang dibenarkan oleh sistem failnya untuk disentuh. Broker kelayakan memeriksanya semasa pelancaran: jika sesuatu keupayaan dimatikan, token yang sepadan sememangnya tidak disuntik.
+Ejen tidak membawa bendera kebenaran sendiri. Sama ada ia boleh mencipta commit, push, membuka pull request, menulis ke penjejak atau mencapai rangkaian ditentukan oleh [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) — benarkan, tanya dahulu atau tolak, pada skop ruang kerja, ejen atau ruang — dan peraturan yang sama terpakai tanpa mengira penyesuai yang menjalankannya.
 
-- **Push ke repositori** — mengawal suntikan token GitHub yang digunakan untuk `git push`.
-- **API GitHub** — mengawal suntikan `GH_TOKEN` dan keluar ke api.github.com.
-- **Tiket** — mengawal kunci API penyedia tiket dan keluar ke domainnya.
-- **Keluar rangkaian** — permintaan keluar sewenang-wenangnya.
+Apa yang _diberikan_ kepada sesuatu larian tidak berubah dengan peraturan itu. Larian dalam worktree GitHub sentiasa mendapat token GitHub baca sahaja, dan push ditanya pada saat ia berlaku: konfigurasi git ejen menghantar setiap push GitHub melalui Control Center, yang menggunakan peraturan **Push ke remote** sebelum memajukannya.
 
-Sesuatu larian menyelesaikannya daripada baris ejen itu sendiri. Apabila ejen tiada keupayaan sedemikian, satu lalai konservatif yang tetap terpakai: tiga tanda kelayakan dimatikan, keluar rangkaian dihidupkan. Togol "Kebenaran kotak pasir" dalam borang ejen memilih antara sandaran itu dan set tersuai yang disimpan pada ejen.
-
-Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk separuh lagi cerita ini, termasuk apa yang dikuatkuasakan dan tidak dikuatkuasakan pada peringkat sistem fail.
+Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk cara ia berfungsi, termasuk apa yang dikuatkuasakan dan tidak dikuatkuasakan pada peringkat sistem fail.
 
 ## Penyesuai menentukan apa yang boleh dikuatkuasakan
 
@@ -71,7 +65,7 @@ Medan yang paling besar kesannya pada sesuatu ejen ialah penyesuainya, kerana pe
 | Pengangkutan    | Penyesuai                | Apa yang dikuatkuasakan oleh Control Center                                                                                                                                                                                                                                                                  |
 | --------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Harness terbina | Control Center (built-in) | Semuanya. Permukaan alat _dibina_ daripada modus, jadi alat yang tidak dibenarkan adalah tidak kelihatan dan bukan sekadar ditolak; setiap panggilan melalui pintu kelulusan dan guardrail tindakan; kontrak penyiapan boleh menyentil dan kemudian menggagalkan larian yang tamat tanpa hasil serahannya |
-| Claude CLI      | Claude Code              | Hanya alat `mcp__*` yang disajikan kepadanya. Alat baca, tulis, edit dan shell Claude sendiri berada dalam prosesnya dan berjalan tanpa dilihat — dan ia dilancarkan dengan `--dangerously-skip-permissions`, kerana `claude -p` yang tidak interaktif jika tidak akan tergantung selama-lamanya pada promptnya sendiri                                    |
+| Claude CLI      | Claude Code              | Alat `mcp__*` yang disajikan kepadanya, serta perintah `Bash`-nya, yang dihantar oleh hook kepada polisi tindakan sebelum dijalankan. Alat baca, tulis dan edit Claude sendiri berada dalam prosesnya dan berjalan tanpa dilihat — dan ia dilancarkan dengan `--dangerously-skip-permissions`, kerana `claude -p` yang tidak interaktif jika tidak akan tergantung selama-lamanya pada promptnya sendiri                                    |
 
 Secara konkritnya, **hanya harness terbina menyokong subejen, pemanduan pertengahan larian, jeda dan sambung semula (dan oleh itu pengambilalihan) serta penguatkuasaan modus secara struktur.** Claude Code tidak mendapat satu pun daripada itu.
 

@@ -1009,9 +1009,6 @@
     "description": "Locale string for allSources"
   },
   "allow": "Erlauben",
-  "allowGitPush": "git push erlauben",
-  "allowGithubApi": "GitHub-API-Aufrufe erlauben",
-  "allowNetwork": "Allgemeinen Netzwerkzugriff erlauben",
   "apiKeys": "API-Schlüssel",
   "appFont": "App-Schriftart",
   "appLogLevelDebugDescription": "Fügt detaillierte Traces hinzu - für Entwicklung.",
@@ -1255,17 +1252,12 @@
   "@currentParticipants": {
     "description": "Current participants"
   },
-  "customCapabilitiesDescription": "Benutzerdefinierte Fähigkeiten für diesen Agenten",
-  "@customCapabilitiesDescription": {
-    "description": "Locale string for customCapabilitiesDescription"
-  },
   "customSystemPrompt": "Benutzerdefinierter System-Prompt für diesen Agenten...",
   "daysAgo": "{count, plural, =1{vor 1 Tag} other{vor {count} Tagen}}",
   "deactivate": "Deaktivieren",
   "@deactivate": {
     "description": "Button to deactivate a policy"
   },
-  "defaultCapabilities": "Standardfähigkeiten · neue Konversationen",
   "defaultChat": "Standard-Chat",
   "defaultRunners": "Standard-Runner",
   "delete": "Löschen",
@@ -1535,7 +1527,6 @@
     "description": "Confirm button in focus mode config dialog"
   },
   "forward": "Weiterleiten",
-  "gatesGithubPatPush": "Steuert GitHub PAT-Injektion. Erforderlich, damit der Agent pushen kann.",
   "general": "Allgemein",
   "githubLink": "GitHub-Link",
   "claudeStatusFetchFailed": "status.claude.com konnte nicht erreicht werden",
@@ -1556,6 +1547,7 @@
   "serviceStatusMinorIssues": "Kleinere Probleme",
   "serviceStatusOperational": "Betriebsbereit",
   "serviceStatusOutage": "Ausfall",
+  "serviceStatusOverflowCount": "{count}+",
   "serviceStatusTitle": "Dienststatus",
   "serviceStatusUnknown": "Unbekannt",
   "lastChecked": "Geprüft {time}",
@@ -1920,6 +1912,7 @@
   },
   "navObservability": "Observability",
   "navSettings": "Einstellungen",
+  "exitSettings": "Einstellungen verlassen",
   "networkBlockCount": "{count} Netzwerkblocke",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2388,7 +2381,6 @@
   "questionLabel": "FRAGE",
   "queued": "In Warteschlange",
   "react": "Reagieren",
-  "readPrsIssuesMetadata": "Erlaubt dem Agenten, PRs, Issues und Repository-Metadaten zu lesen.",
   "readerPreferences": "Leser-Einstellungen",
   "reasoningEffort": "Reasoning-Aufwand",
   "@reasoningEffort": {
@@ -2526,10 +2518,6 @@
   "sandboxMacosBuiltIn": "Nativer Sandbox ist in macOS integriert — verwendet Apple Seatbelt (`sandbox-exec`). Keine Installation erforderlich.",
   "@sandboxMacosBuiltIn": {
     "description": "Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required."
-  },
-  "sandboxPermissions": "Sandbox-Berechtigungen",
-  "@sandboxPermissions": {
-    "description": "Locale string for sandboxPermissions"
   },
   "sandboxUnsupported": "Nativer Sandbox wird auf dieser Plattform noch nicht unterstützt. Fällt zurück auf \"Keine Isolierung\".",
   "@sandboxUnsupported": {
@@ -3029,10 +3017,6 @@
   "@useSandbox": {
     "description": "Locale string for useSandbox"
   },
-  "useWorkspaceDefault": "Arbeitsbereichsstandard verwenden",
-  "@useWorkspaceDefault": {
-    "description": "Locale string for useWorkspaceDefault"
-  },
   "userAgent": "User-Agent",
   "userAgentDescription": "Leer lassen, um den Standard-User-Agent der App zu verwenden. Einige Seiten blockieren Nicht-Browser-User-Agents.",
   "usersLabel": "Benutzer",
@@ -3058,7 +3042,6 @@
   "@weakIsolationDescription": {
     "description": "Weak isolation - namespace boundary only, no kernel boundary."
   },
-  "whenOffNoDefaultRoute": "Wenn deaktiviert, startet die Sandbox ohne Standardroute.",
   "whenOffServerStaysStopped": "Wenn deaktiviert, bleibt der Server gestoppt, bis du ihn startest.",
   "speechModel": "Sprachmodell",
   "speechModelHint": "Wird für Besprechungstranskription und das Composer-Mikrofon verwendet.",
@@ -3733,9 +3716,7 @@
   "triggerDisabledTag": "aus",
   "pipelineInputTypeRepo": "Repository",
   "pipelineRunNoRepos": "Noch keine Repositorys in diesem Workspace.",
-  "allowTicketingApi": "Ticketing-API-Aufrufe zulassen",
   "ticketingApiKey": "Ticketing-API-Schlüssel",
-  "ticketingApiKeySubtitle": "Fügt den API-Schlüssel des Ticketing-Anbieters in die Sandbox ein.",
   "ticketingProvider": "Ticketing-Anbieter",
   "connectGitHubAndTicketing": "Verbinde einen Code-Host, damit Control Center deine Pull Requests, Issues und Reviews lesen kann. Optional einen Ticketing-Anbieter verbinden. Zugangsdaten liegen auf deinem Server, nie auf diesem Rechner.",
   "triggerEventTicketAssigned": "Ticket zugewiesen",
@@ -4424,13 +4405,6 @@
   "keepAwakeTitle": "Computer wach halten, während Agenten laufen",
   "keepAwakeOnSubtitle": "Der Computer wechselt nicht in den Ruhezustand, während ein Agent arbeitet",
   "keepAwakeOffSubtitle": "Der Computer kann in den Ruhezustand wechseln, auch während ein Agent arbeitet",
-  "syncEngineSectionTitle": "Sync-Engine",
-  "syncEngineDescription": "Tickets, Nachrichten und Notizen werden live über kleine inkrementelle Änderungen aktualisiert statt über vollständige Snapshots. Das Deaktivieren eines Schalters versetzt diesen Speicher zurück in den Vollständige-Snapshot-Modus – starte die App neu, damit die Änderung wirksam wird.",
-  "syncEngineTicketsTitle": "Tickets",
-  "syncEngineMessagingTitle": "Nachrichten",
-  "syncEngineNotesTitle": "Notizen",
-  "syncEngineOnSubtitle": "Live-Delta-Synchronisierung ist aktiv",
-  "syncEngineOffSubtitle": "Vollständige Snapshot-Synchronisierung wird verwendet",
   "spaces": "Bereiche",
   "spacesHomeDescription": "Wähle einen Bereich aus der Liste oder starte einen neuen.",
   "noSpacesYet": "Noch keine Bereiche",
@@ -7041,12 +7015,11 @@
   "newConversation": "Neue Konversation",
   "untitledConversation": "Unterhaltung ohne Titel",
   "conversationTitleOptionalHint": "Optional — leer lassen, dann benennt das Titelmodell sie automatisch",
-  "conversationTitlesSectionTitle": "Unterhaltungstitel",
-  "conversationTitlesSectionCaption": "Wähle den Runner, der neue Unterhaltungen in diesem Arbeitsbereich automatisch benennt. Titel bleiben aus, bis ein Adapter gewählt wird, und gelten für jedes Mitglied.",
-  "conversationTitlesModelLabel": "Titelmodell",
-  "conversationTitlesAdapterLabel": "Adapter",
-  "conversationTitlesAdapterHint": "Aus",
-  "conversationTitlesAdapterOff": "Aus",
+  "shortTaskOff": "Aus",
+  "shortTaskUnavailable": "Wähle unter Einstellungen → Adapter ein Modell für kurze Aufgaben, um dies zu nutzen",
+  "conversationTitleGenerate": "Generieren",
+  "conversationTitleNoMessages": "Sende zuerst eine Nachricht. Der Titel wird daraus erzeugt.",
+  "conversationTitleGenerateFailed": "Titel konnte nicht erzeugt werden. Versuche es erneut.",
   "startThread": "Thread starten",
   "deleteSpaceConfirm": "Diesen Bereich löschen? Alle Nachrichten gehen verloren.",
   "threadTabTitle": "Thread: {title}",
@@ -7092,6 +7065,9 @@
   "contextSegmentSubagents": "Subagent-Definitionen",
   "contextSegmentMemory": "Speicher",
   "contextSegmentConversation": "Konversation",
+  "contextSegmentRunner": "Runner-Prompt, Tools und Arbeit im Zug",
+  "contextUsageMeasured": "Vom letzten Modellaufruf gemeldet",
+  "contextUsageEstimated": "Geschätzt, bis ein Lauf die Nutzung meldet",
   "contextExplorerTitle": "Kontext",
   "contextExplorerEverything": "Alles",
   "contextExplorerSelectPart": "Wähle einen Teil aus, um seinen Inhalt zu prüfen",
@@ -7249,8 +7225,9 @@
   "sandboxSummaryHost": "Host",
   "sandboxGroupIsolation": "Isolation",
   "sandboxGroupIsolationDescription": "Wo die Prozesse und Dateischreibvorgänge eines Agenten tatsächlich stattfinden.",
+  "sandboxGroupAgentActions": "Was Agenten dürfen",
+  "sandboxGroupAgentActionsDescription": "Ob Pushen, das Öffnen eines Pull Requests und der Netzwerkzugriff zugelassen, erst erfragt oder verweigert werden, wird in den Agent-Berechtigungen festgelegt.",
   "sandboxBackendFieldDescription": "Automatisch wählt den stärksten, den dieser Host unterstützt. Fixieren Sie einen, damit er sich nicht von selbst ändert.",
-  "sandboxCapabilitiesDescription": "Die Löcher in der Abgrenzung. Jedes ist etwas, das ein isolierter Agent weiterhin nach außen tun kann.",
   "sandboxSummaryInForce": "Aktiv in Kraft",
   "rigsInstallHintLabel": "So installieren Sie es",
   "rigsStarting": "Startet",
@@ -7297,6 +7274,12 @@
   "claudeAccountSignIn": "Anmelden",
   "claudeAccountSignInAgain": "Erneut anmelden",
   "claudeAccountSignInHint": "Führen Sie dies in einem Terminal auf dem Server aus. Ein Browser öffnet sich, um die Anmeldung abzuschließen, und die Zugangsdaten werden in das Verzeichnis dieses Kontos geschrieben.",
+  "claudeAccountLongLivedToken": "Langlebiges Token",
+  "claudeAccountUseLongLivedToken": "Langlebiges Token verwenden",
+  "claudeAccountReplaceLongLivedToken": "Langlebiges Token ersetzen",
+  "claudeAccountRemoveLongLivedToken": "Langlebiges Token entfernen",
+  "claudeAccountLongLivedTokenHint": "Eine normale Anmeldung muss erneuert werden und kann über Nacht ablaufen. Ein langlebiges Token bleibt etwa ein Jahr angemeldet. Führe diesen Befehl in einem Terminal aus, schließe die Anmeldung im Browser ab und füge dann das ausgegebene Token ein.",
+  "claudeAccountLongLivedTokenInvalid": "Das ist kein Token von claude setup-token. Es beginnt mit sk-ant-oat01-.",
   "claudeAccountSignedOut": "Abgemeldet",
   "claudeAccountExpired": "Anmeldung abgelaufen",
   "claudeAccountExpiredDetail": "Die Anmeldung ist um {when} abgelaufen. Melde dich erneut an, um dieses Konto zu nutzen.",
@@ -7591,7 +7574,6 @@
   "attachmentPreviewUnsupported": "Keine Vorschau für diesen Dateityp",
   "attachmentTooLargeToPreview": "Zu groß für eine Vorschau",
   "attachmentOpenExternally": "In der Standard-App öffnen",
-  "asideUnavailable": "Lege in den Einstellungen ein One-Shot-Modell fest, um dies zu nutzen",
   "asideEmpty": "Noch nichts, worauf man aufbauen kann",
   "asideFailed": "Keine Antwort erhalten",
   "handoffTitle": "Übergabe",
@@ -7778,6 +7760,10 @@
   "credentialGateAccountsTried": "Versuchte Konten",
   "credentialGateClaudeSignInHint": "Melde dich unter Einstellungen → Adapter → Claude Code an oder führe den Anmeldebefehl in einem Terminal aus. Der Lauf erkennt das von selbst.",
   "credentialGateOpenSettings": "Einstellungen öffnen",
+  "credentialGateAccountsRemovedTitle": "Die zugeordneten Claude-Code-Konten wurden entfernt",
+  "credentialGateAccountsRemovedHint": "Ordne in den Kontoeinstellungen dieses Agenten oder des Workspaces ein anderes Konto zu, oder leere die Liste, um das Standardkonto zu verwenden. Der Lauf setzt dann von selbst fort.",
+  "accountPoolAllRemoved": "Alle Konten in dieser Liste wurden vom Server entfernt. Ordne ein anderes zu oder leere die Liste.",
+  "accountPoolClear": "Liste leeren",
   "selectModel": "Modell auswählen",
   "allModels": "Alle Modelle",
   "noModelsMatchSearch": "Keine Modelle entsprechen deiner Suche",
@@ -7986,6 +7972,7 @@
   "sandboxCheckAgain": "Erneut prüfen",
   "ideQuickOpen": "Zu Datei wechseln",
   "ideQuickOpenDescription": "Dateien der Unterhaltung nach Namen suchen und eine in einem Tab öffnen",
+  "prQuickOpenDescription": "Dateien des Pull Requests nach Namen suchen und eine in einem Tab öffnen",
   "ideQuickOpenHint": "Dateien nach Namen suchen",
   "ideQuickOpenRecentlyOpened": "Zuletzt geöffnet",
   "ideQuickOpenOpenToSide": "Seitlich öffnen",

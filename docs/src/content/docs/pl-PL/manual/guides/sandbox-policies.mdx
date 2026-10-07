@@ -1,20 +1,20 @@
 ---
 title: Skonfiguruj polityki sandboxa
-description: Co ogranicza uruchomienie agenta, jak rozpoznać, czy opakowuje je sandbox systemowy, i które ustawienia możliwości serwer faktycznie odczytuje.
+description: Co ogranicza uruchomienie agenta, jak rozpoznać, czy opakowuje je sandbox systemowy, i jak reguły akcji decydują, co agent może wypchnąć lub osiągnąć.
 slug: pl-PL/podrecznik/poradniki/polityki-sandboxa
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 O tym, czy uruchomienie agenta działa w sandboxie, decyduje serwer przy starcie
-(`--sandbox`). Przełącznik **Włącz sandboxowanie**, selektor **Backend** oraz
-przełączniki **Domyślne możliwości · nowe przestrzenie** w sekcji **Ustawienia
-→ Serwer → Diagnostyka i prywatność** to preferencje przechowywane na Twoim
-urządzeniu. Wykrywanie hosta na karcie **Piaskownica** pokazuje, co host
-serwera potrafi opakować.
+(`--sandbox`). Przełącznik **Włącz sandboxowanie** i selektor **Backend** w
+sekcji **Ustawienia → Serwer → Diagnostyka i prywatność** to preferencje
+przechowywane na Twoim urządzeniu. Wykrywanie hosta na karcie **Piaskownica**
+pokazuje, co host serwera potrafi opakować.
 
-Do uruchomienia docierają dwie kontrolki i obie opisuje ten poradnik: omówione
-poniżej **Uprawnienia piaskownicy** na poziomie agenta oraz flaga `--sandbox`
-samego serwera.
+Do uruchomienia docierają dwie kontrolki i obie opisuje ten poradnik: reguły
+akcji w **Ustawienia → Obszar roboczy → Uprawnienia agentów**, które decydują,
+co agent może wypchnąć, otworzyć lub osiągnąć, oraz flaga `--sandbox` samego
+serwera.
 
 ## Co ogranicza uruchomienie agenta
 
@@ -25,7 +25,7 @@ warunkowa — pozostałe pięć obowiązuje na każdym hoście.
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sandbox systemowy            | Seatbelt w macOS, bubblewrap w Linuksie i WSL2. Opakowuje CLI Claude Code, adaptery ACP i narzędzie `bash` harnessa. **Nieobecny w systemie Windows oraz w Linuksie bez `bwrap` i `socat`** |
 | Własne drzewo robocze        | Każda rozmowa dostaje kopię roboczą copy-on-write. Oryginalna kopia robocza jest włączana do uruchomienia jako ścieżka objęta zakazem zapisu, a egzekwuje to sandbox                                        |
-| Poświadczenia z brokera      | Broker poświadczeń tworzy środowisko dla danego uruchomienia na podstawie możliwości agenta i unieważnia je, gdy uruchomienie się kończy. Nie ma możliwości — nie ma tokenu w środowisku                   |
+| Poświadczenia z brokera      | Broker poświadczeń tworzy środowisko dla danego uruchomienia i unieważnia je, gdy uruchomienie się kończy. Token GitHub w nim pozwala czytać, ale nie wykonać push: push przechodzi przez Control Center, który najpierw pyta regułę push |
 | Guardraile działań           | Każde narzędzie zmieniające stan deklaruje swoje klasy efektów, a strażnik rozstrzyga je, zanim wywołanie się wykona. `prompt` bez podłączonego zatwierdzającego jest odrzucany                                |
 | Oczyszczanie środowiska      | ACP i narzędzie `bash` harnessa dostają przefiltrowane środowisko. Claude Code przez `NoSandboxAdapter` dziedziczy środowisko hosta                                                                        |
 | Powierzchnia narzędzi trybu  | Tryb tylko do odczytu usuwa z powierzchni narzędzia mutujące drzewo robocze i przypina własny czasownik wyjściowy trybu, żeby nadal mógł coś dostarczyć                                                   |
@@ -36,8 +36,7 @@ Trzy rzeczy pozostają słabsze, niż wyglądają:
   strukturalne reguły trybu. Adapter Claude Code tego nie robi. Claude Code
   jest w szczególności uruchamiany z `--dangerously-skip-permissions`, bo
   nieinteraktywne `claude -p` w przeciwnym razie zablokowałoby się na zawsze
-  na własnym pytaniu — jego własne wywołania odczytu, zapisu, edycji i bash nie
-  są więc ani widziane, ani bramkowane przez Control Center. Tam, gdzie sandbox
+  na własnym pytaniu — jego własne wywołania odczytu, zapisu i edycji nie są więc ani widziane, ani bramkowane przez Control Center, a polecenia bash sprawdza tylko hook, który czyta wiersz poleceń. Tam, gdzie sandbox
   jest włączony, to on jest granicą wokół nich.
 - Narzędzia plikowe harnessa działające w procesie (read, write, edit, apply
   patch, search, find, search_files) uruchamiają się wewnątrz procesu serwera,
@@ -49,48 +48,62 @@ Trzy rzeczy pozostają słabsze, niż wyglądają:
   poleceń; Claude Code dziedziczy środowisko hosta przez `NoSandboxAdapter`.
   Serwer mówi o tym w swoim logu startowym. Sprawdź swój poniżej.
 
-## Ustaw możliwości agenta
+## Zdecyduj, co agent może wypchnąć
 
-To jedyna kontrolka możliwości, którą serwer odczytuje. Działa na poziomie
-agenta i decyduje o tym, co broker poświadczeń umieści w środowisku tego
-agenta.
+Nie ma przełącznika na poziomie agenta dla git push, GitHuba, zgłoszeń ani
+sieci. Każde z nich to reguła akcji:
 
-1. Przejdź do **Ustawienia → Obszar roboczy → Agenci**
-2. Wybierz agenta z listy
-3. Na karcie **Ustawienia** przewiń do **Uprawnienia piaskownicy**
-4. Włącz przełącznik — podpis wiersza zmieni się z **Użyj domyślnych ustawień
-   obszaru roboczego**
-5. Ustaw cztery przełączniki:
+| Reguła                                    | Wbudowana wartość domyślna | Co obejmuje                                                                   |
+| ----------------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| **Push do zdalnego repozytorium**         | Zapytaj najpierw           | Każdy `git push` do GitHuba, niezależnie od adaptera                          |
+| **Otwarcie pull requesta**                | Zapytaj najpierw           | `gh pr create` i narzędzia do pull requestów                                  |
+| **Opublikowanie recenzji lub scalenie**   | Zapytaj najpierw           | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                 |
+| **Zapis do zewnętrznego trackera**        | Zapytaj najpierw           | Zapisy zgłoszeń przez narzędzia Control Center i `gh issue`                   |
+| **Dostęp do sieci**                       | Zezwól                     | Czy sandbox w ogóle ma sieć, oraz narzędzia webowe harnessa                   |
 
-| Przełącznik                        | Co bramkuje                                                                                                                                                                                                                                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Zezwól na git push**             | Gdy jest wyłączony, uruchomienie dostaje `GIT_ASKPASS=/usr/bin/false` i `GIT_TERMINAL_PROMPT=0`, więc push nie może zapytać o poświadczenie                                                                                                        |
-| **Zezwól na wywołania GitHub API** | Razem z **Zezwól na git push** bramkuje to, czy broker wstrzykuje token GitHub jako `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                                    |
-| **Zezwalaj na wywołania API zgłoszeń** | Bramkuje to, czy broker wstrzykuje `TICKETING_API_KEY`                                                                                                                                                                                        |
-| **Zezwól na ogólny dostęp do sieci** | Tam, gdzie sandbox jest włączony, to prawdziwa bramka ruchu wychodzącego: gdy jest wyłączony, lista dozwolonych uruchomienia jest pusta, a każde połączenie wychodzące jest odrzucane na proxy. Tam, gdzie nie ma backendu, jest zapisywany przy uruchomieniu, ale nie blokuje niczego, co robi uruchomiony proces |
+1. Przejdź do **Ustawienia → Obszar roboczy → Uprawnienia agentów**
+2. Wybierz zakres — **Obszar roboczy**, **Agent** lub **Przestrzeń** — i w
+   wierszu reguły wybierz **Zezwól**, **Zapytaj najpierw** lub **Odmów**
 
-6. Zapisz
+Reguły push ograniczone do gałęzi, na przykład taka, która odmawia push do
+`main`, też obowiązują: zobacz [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/).
 
-Punkt kontrolny: otwórz agenta ponownie, a przełącznik nadal będzie włączony z
-Twoimi ustawieniami — zapisany zestaw możliwości przechodzi przez serwer w obie
-strony, a agent bez żadnego wraca do konserwatywnej wartości domyślnej (push
-wyłączony, GitHub API wyłączone, zgłoszenia wyłączone, sieć włączona).
+Punkt kontrolny: poproś agenta o wypchnięcie gałęzi. Przy **Zapytaj najpierw**
+dostaniesz prośbę o zatwierdzenie z nazwą repozytorium i refami; przy
+**Odmów** git wypisze `! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Dwa sposoby, w jakie to gryzie]
-Podpis mówi **Użyj domyślnych ustawień obszaru roboczego**, ale nie istnieje
-ustawienie możliwości na poziomie obszaru roboczego, które serwer odczytuje.
-Agent z wyłączonym przełącznikiem dostaje wbudowaną konserwatywną wartość
-domyślną.
+Jak każda reguła dociera do uruchomienia:
 
-Osobno: poświadczenie GitHub uruchomienia zawsze należy wyłącznie do brokera —
-to token instalacji GitHub App o zakresie repozytorium albo zapasowy PAT ze
-środowiska — nigdy własny zapisany token członka, który o nie prosi.
-`actingUserId` jest przekazywany, żeby broker mógł *wstrzymać* serwerowy PAT
-wobec członka, który nie jest właścicielem i nie połączył GitHuba; nie scala on
-osobistego tokenu ponad możliwością, która jest wyłączona. Nie traktuj
-**Zezwól na wywołania GitHub API** jako twardej granicy ruchu wychodzącego na
-hoście bez sandboxa systemowego: uruchomiony proces i tak może dotrzeć do
-sieci.
+- **Push** jest egzekwowany przez to, co uruchomienie posiada. Jego token
+  GitHub to token instalacji GitHub App tylko do odczytu, który może czytać
+  zawartość i pracować z pull requestami. Jego konfiguracja gita wysyła każdy
+  push do GitHuba do bramy na pętli zwrotnej w `cc_server`, która pyta regułę i
+  dopiero wtedy przekazuje push z tokenem zapisu, którego agent nigdy nie widzi.
+  Brama przekazuje tylko do własnego repozytorium worktree albo do repozytorium
+  GitHuba połączonego z obszarem roboczym. Dotyczy to każdego adaptera.
+- **Pull requesty i zgłoszenia z powłoki** są rozpoznawane po wierszu poleceń,
+  w narzędziu `bash` harnessa oraz, przez hook, w narzędziu `Bash` Claude Code.
+  Agent, który ukryje polecenie (skrypt, `eval`, bezpośrednie wywołanie API),
+  przejdzie przez to sprawdzenie, ale nie przez bramę push.
+- **Klucze zgłoszeń** nigdy nie trafiają do sandboxa. Agenci zapisują
+  zgłoszenia przez narzędzia MCP Control Center, które pytają regułę.
+- **Sieć** jest rozstrzygana raz, na starcie uruchomienia. **Odmów** wyłącza
+  sieć sandboxa; **Zezwól** i **Zapytaj najpierw** zostawiają ją włączoną, a
+  przy **Zapytaj najpierw** narzędzia `web_fetch` i `web_search` harnessa nadal
+  pytają przy każdym wywołaniu. Dopóki sieć jest włączona, GitHub zawsze jest
+  na liście dozwolonego ruchu wychodzącego.
+
+:::caution[Bez GitHub App reguła push jest tylko doradcza]
+Bez skonfigurowanej GitHub App uruchomienie dostaje zapasowy osobisty token
+dostępu, którego nie da się ograniczyć do odczytu. `git push` nadal przechodzi
+przez bramę i regułę, ale kod, który bezpośrednio używa tokenu, może wykonać
+push z jej pominięciem. Skonfiguruj GitHub App, aby reguła była wiążąca.
+
+Poświadczenie GitHub uruchomienia zawsze należy wyłącznie do brokera — to token
+instalacji GitHub App o zakresie repozytorium albo zapasowy PAT — nigdy własny
+zapisany token członka, który o nie prosi. Serwerowy PAT jest wstrzymywany dla
+uruchomienia działającego w imieniu członka, który nie jest właścicielem i nie
+połączył GitHuba.
 :::
 
 ## Sprawdź, czy uruchomienia Twojego agenta działają w sandboxie
@@ -165,10 +178,14 @@ odrzucona. Pełną kolejność rozstrzygania opisuje
 
 ### Agent nie może wypchnąć zmian, a nigdy tego nie zabraniałem
 
-Sprawdź **Uprawnienia piaskownicy** agenta. Agent bez własnego zestawu
-możliwości dostaje konserwatywną wartość domyślną, w której **Zezwól na git
-push** jest wyłączone — broker nie wstrzykuje więc tokenu GitHub, a git nie ma
-jak się uwierzytelnić.
+Przeczytaj, co wypisał git. `Control Center policy: …` oznacza, że reguła
+odmówiła push albo że **Zapytaj najpierw** zostało bez odpowiedzi.
+`… is not linked to this workspace` oznacza, że push celuje w repozytorium,
+które nie jest ani repozytorium worktree, ani nie jest połączone z obszarem
+roboczym. `Control Center has no GitHub credential that can push …` oznacza,
+że GitHub App nie jest zainstalowana w tym repozytorium i żadne zapasowe
+poświadczenie nie mogło wykonać push: zainstaluj tam aplikację albo połącz
+GitHuba.
 
 ### Karta Piaskownica nie zgłasza natywnego sandboxa
 

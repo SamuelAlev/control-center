@@ -2,12 +2,12 @@
 title: Het agentmodel
 description: Wat een agent in Control Center nu eigenlijk is, welke velden het gedrag veranderen en hoe de adapter waarop hij draait bepaalt wat er kan worden afgedwongen.
 slug: nl-NL/handleiding/concepten/agentmodel
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Wat is een agent?
 
-Een agent is een benoemde actor met een persona, een set skills, een adapter om op te draaien en een set mogelijkheden. Agenten zijn principalen in dezelfde zin als mensen: ze schrijven berichten, bezitten tickets, laten reviews achter en staan op dezelfde ledenlijst. Zij zijn degenen die het werk doen.
+Een agent is een benoemde actor met een persona, een set skills en een adapter om op te draaien. Agenten zijn principalen in dezelfde zin als mensen: ze schrijven berichten, bezitten tickets, laten reviews achter en staan op dezelfde ledenlijst. Zij zijn degenen die het werk doen.
 
 Elke agent hoort bij precies één werkruimte. Dat is een harde invariant — `agent.workspaceId` is niet null, de eigen werkruimte van de agent bepaalt in welk databasebestand zijn rijen terechtkomen, en het aanmaken van een agent zonder werkruimte wordt geweigerd.
 
@@ -26,7 +26,6 @@ Een agent is ook een map. Zijn definitie staat in `agents/<slug>/AGENTS.md` onde
 | `modelId`               | Welk model binnen die adapter                                                         |
 | `effort`                | Redeneerniveau, uit het eigen vocabulaire van het geselecteerde model                 |
 | `contextSize`           | Overschrijving van het contextvenster                                                 |
-| `capabilities`          | Vlaggen voor inloggegevens en uitgaand verkeer, gecontroleerd bij het starten         |
 | `silenceTimeoutMinutes` | Overschrijving per agent (1–240) voor de stiltewatchdog                               |
 | `reportsTo`             | Id van de bovenliggende agent — de rapportagelijn die het organigram tekent           |
 
@@ -51,18 +50,13 @@ Die beperking is een beslissing over het contextbudget. De skillindex staat bij 
 
 Reposkills worden voor **elke** adapter geladen, niet alleen voor de ingebouwde harness. De skills van de actieve repo worden gematerialiseerd in de werkmap van de agent, het pad dat Claude Code al scant; dezelfde index wordt samengesteld in de `AGENTS.md` die de ingebouwde harness leest. De skills van een repo doorlopen, voordat dit alles gebeurt, dezelfde scan die bij twijfel weigert als een geïnstalleerde skill — een uitgecheckte repo is gekloonde inhoud, en zijn frontmatter bereikt een prompt.
 
-## Mogelijkheden
+## Machtigingen
 
-Mogelijkheden bepalen wat een run _aangereikt krijgt_, niet wat zijn bestandssysteem hem laat aanraken. De broker voor inloggegevens controleert ze bij het starten: staat een mogelijkheid uit, dan wordt het bijbehorende token simpelweg niet geïnjecteerd.
+Een agent draagt geen eigen machtigingsvlaggen. Of hij een commit mag maken, mag pushen, een pull request mag openen, naar een tracker mag schrijven of het netwerk mag bereiken, beslissen de [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) — toestaan, eerst vragen of weigeren, op het bereik werkruimte, agent of ruimte — en dezelfde regels gelden welke adapter hem ook draait.
 
-- **Push naar repo** — regelt de injectie van het GitHub-token dat voor `git push` wordt gebruikt.
-- **GitHub API** — regelt de injectie van `GH_TOKEN` en uitgaand verkeer naar api.github.com.
-- **Tickets** — regelt de API-sleutel van de ticketingprovider en uitgaand verkeer naar zijn domeinen.
-- **Netwerkuitgang** — willekeurige uitgaande verzoeken.
+Wat een run _aangereikt krijgt_, verandert niet met die regels. Een run in een GitHub-worktree krijgt altijd een GitHub-token met alleen leesrechten, en een push wordt gevraagd op het moment dat hij gebeurt: de git-configuratie van de agent stuurt elke GitHub-push via Control Center, dat de regel **Naar een remote pushen** toepast voordat het hem doorstuurt.
 
-Een run leidt ze af uit de eigen rij van de agent. Heeft de agent er geen, dan geldt een vaste, behoudende standaard: de drie vlaggen voor inloggegevens uit, netwerkuitgang aan. De schakelaar "Sandbox-machtigingen" in het agentformulier kiest tussen die terugval en een eigen set die op de agent is opgeslagen.
-
-Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor de andere helft van het verhaal, waaronder wat er op bestandssysteemniveau wel en niet wordt afgedwongen.
+Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor hoe dat werkt, waaronder wat er op bestandssysteemniveau wel en niet wordt afgedwongen.
 
 ## De adapter bepaalt wat er kan worden afgedwongen
 
@@ -71,7 +65,7 @@ Het veld met de grootste gevolgen op een agent is zijn adapter, want het transpo
 | Transport           | Adapters                  | Wat Control Center afdwingt                                                                                                                                                                                                                                                |
 | ------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Ingebouwde harness  | Control Center (built-in) | Alles. Het tooloppervlak wordt _gebouwd_ vanuit de modus, dus een niet-toegestane tool is onzichtbaar in plaats van alleen maar geweigerd; elke call passeert de goedkeuringspoort en de actiebeveiligingen; het voltooiingscontract kan een zetje geven en daarna een run laten mislukken die eindigt zonder zijn oplevering |
-| Claude CLI          | Claude Code               | Alleen de `mcp__*`-tools die het worden aangeboden. Claudes eigen lees-, schrijf-, bewerk- en shelltools leven in zijn proces en draaien ongezien — en hij wordt gestart met `--dangerously-skip-permissions`, omdat een niet-interactieve `claude -p` anders voor altijd zou blijven hangen op zijn eigen prompt |
+| Claude CLI          | Claude Code               | De `mcp__*`-tools die het worden aangeboden, plus zijn `Bash`-opdrachten, die een hook vóór uitvoering naar het actiebeleid stuurt. Claudes eigen lees-, schrijf- en bewerktools leven in zijn proces en draaien ongezien — en hij wordt gestart met `--dangerously-skip-permissions`, omdat een niet-interactieve `claude -p` anders voor altijd zou blijven hangen op zijn eigen prompt |
 
 Concreet: **alleen de ingebouwde harness ondersteunt subagents, bijsturing midden in een run, pauzeren en hervatten (en dus overname) en structurele afdwinging van de modus.** Claude Code krijgt niets daarvan.
 

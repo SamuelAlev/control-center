@@ -2,7 +2,7 @@
 title: Chẩn đoán một agent
 description: Lần theo nhật ký chạy, thăm dò adapter, trạng thái máy chủ và chẩn đoán máy đang chạy khi một agent không còn tạo ra lần chạy nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Hướng dẫn này chỉ cách tìm ra vì sao một agent không tạo ra lần chạy nào.
@@ -60,19 +60,18 @@ Hai điều đáng biết khi một thay đổi "chạy được trong kiểm th
 
 **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư** (`/settings/server/diagnostics`) là trang cấp máy đang chạy. Trang này gồm:
 
-- **Sandbox** — công tắc tổng, backend đã phát hiện, gợi ý cài đặt và các công tắc khả năng mặc định. Chỉ backend đã phát hiện là đến từ máy chủ; xem phần chú ý bên dưới. Không có điều khiển đặt lại.
+- **Sandbox** — công tắc tổng, backend đã phát hiện và gợi ý cài đặt. Chỉ backend đã phát hiện là đến từ máy chủ; xem phần chú ý bên dưới. Không có điều khiển đặt lại.
 - **Tìm kiếm ngữ nghĩa** — vòng đời của mô hình embedding trên thiết bị: đã cài, đang tải xuống kèm tỷ lệ phần trăm, chưa cài, hoặc lỗi cài đặt. Cho tới khi nó được cài, bộ nhớ và tìm kiếm mã vẫn chỉ dùng từ khóa.
 - **Hành vi hệ thống** — giữ máy tính luôn thức trong khi agent chạy.
-- **Công cụ đồng bộ** — công tắc ngắt riêng cho từng kho đối với phiếu, tin nhắn và ghi chú. Đây là những lối thoát khẩn cấp quay về đăng ký ảnh chụp toàn phần; một thay đổi chỉ ảnh hưởng tới các đăng ký mới, nên chỉ phát huy đầy đủ tác dụng sau khi tải lại.
 - **Mức nhật ký** — hãy nâng mức này trước khi tái hiện một lỗi.
 - **Quyền riêng tư** — liệu nội dung diff thô có được chuyển tiếp tới mô hình của agent hay không và liệu báo cáo sự cố có được gửi đi hay không.
 
 :::caution[Phần này báo cáo về máy đang chạy, còn các điều khiển của nó nằm ở phía máy khách]
-Việc phát hiện và việc thực thi giờ đã khớp với nhau: ở nơi bộ phát hiện báo có backend gốc, các lần chạy agent trên máy đó thực sự được bao bọc trong backend ấy. Nhưng bộ phát hiện là thứ duy nhất còn sống trong phần này. Công tắc tổng, bộ chọn backend và các công tắc khả năng mặc định là những tùy chọn được lưu trên thiết bị của bạn và máy chủ không đọc thứ nào trong số đó — công tắc riêng của máy chủ là `--sandbox` (`on` theo mặc định, `off` để từ chối) và với bất kỳ agent nào còn để ở "Dùng mặc định không gian làm việc", máy chủ sẽ quay về mặc định thận trọng của nó: không git push, không GitHub API, không khóa ticketing, bật mạng.
+Việc phát hiện và việc thực thi giờ đã khớp với nhau: ở nơi bộ phát hiện báo có backend gốc, các lần chạy agent trên máy đó thực sự được bao bọc trong backend ấy. Nhưng bộ phát hiện là thứ duy nhất còn sống trong phần này. Công tắc tổng và bộ chọn backend là những tùy chọn được lưu trên thiết bị của bạn và máy chủ không đọc thứ nào trong số đó — công tắc riêng của máy chủ là `--sandbox` (`on` theo mặc định, `off` để từ chối).
 
 Vì vậy một cảnh báo ở đây vẫn đáng để xử lý, nhưng thường thì đó không phải lý do khiến agent thất bại. Để xác nhận máy chủ đang ở trạng thái nào, hãy đọc nhật ký khởi động của nó: nhật ký in `agent sandbox ON` kèm ghi chú về backend, `no OS-native agent sandbox on this host` kèm gợi ý cài đặt, hoặc `agent sandbox DISABLED by --sandbox off`. `GET /healthz` không chứa trường sandbox nào.
 
-Ở nơi không có backend — Windows luôn vậy, còn Linux hay WSL2 khi thiếu `bwrap` và `socat` — các lần chạy **không** được sandbox, và thứ giới hạn chúng là checkout của chính cuộc hội thoại, các khả năng quyết định những thông tin xác thực nào được tạo vào đó, các rào chắn hành động, việc làm sạch môi trường và bề mặt công cụ mà chế độ của nó cho phép.
+Ở nơi không có backend — Windows luôn vậy, còn Linux hay WSL2 khi thiếu `bwrap` và `socat` — các lần chạy **không** được sandbox, và thứ giới hạn chúng là checkout của chính cuộc hội thoại, token forge chỉ đọc của nó và cổng push, các rào chắn hành động, việc làm sạch môi trường và bề mặt công cụ mà chế độ của nó cho phép.
 :::
 
 ## Các lỗi thường gặp
@@ -83,7 +82,7 @@ Hãy cài CLI **trên máy chạy máy chủ**, rồi nhấn **Làm mới** trê
 
 ### Agent không thể push hoặc mở pull request
 
-Các khả năng của nó chính là cổng chặn. Mở **Cài đặt → Không gian làm việc → Agent** → agent → **Quyền sandbox**, bật công tắc lên rồi bật **Cho phép git push** và **Cho phép gọi GitHub API**. Để công tắc ở "Dùng mặc định không gian làm việc" sẽ không cấp cho agent bất kỳ quyền nào trong số đó.
+Hãy đọc những gì git hoặc agent in ra. `Control Center policy: …` nghĩa là một quy tắc hành động đã từ chối hoặc một yêu cầu phê duyệt không được trả lời: hãy kiểm tra **Push lên remote** và **Mở một pull request** trong **Cài đặt → Không gian làm việc → Quyền của agent**. Nếu git báo Control Center không có thông tin xác thực GitHub nào push được, hãy cài GitHub App lên kho mã đó hoặc kết nối GitHub.
 
 ### Tìm kiếm ngữ nghĩa không trả về gì hữu ích
 

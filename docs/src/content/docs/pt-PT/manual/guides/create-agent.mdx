@@ -2,7 +2,7 @@
 title: Criar e configurar um agente
 description: Adicione um agente a um espaço de trabalho, atribua-lhe um adaptador, um modelo, skills e permissões e confirme que ele é executado.
 slug: pt-PT/manual/guias/criar-agente
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Este guia mostra como adicionar um agente a um espaço de trabalho e configurá-lo até que consiga realmente ser executado.
@@ -68,19 +68,12 @@ Aqui não escolhe as skills próprias de um repo. Um repo que as inclua (em `.ag
 
 ## Conceder permissões
 
-**Permissões do sandbox** começa em “Usar predefinição do espaço de trabalho”. Ative o interruptor para as definir para este agente e, em seguida, ative ou desative cada opção:
+Um agente não tem interruptores de permissão próprios. Aquilo que pode enviar, abrir, integrar ou alcançar é definido pelas regras de ação em **Definições → Espaço de trabalho → Permissões dos agentes**, onde uma regra pode ser limitada a este agente. Por predefinição, um push, um pull request, uma revisão ou merge e uma escrita num rastreador perguntam-lhe primeiro, cada um, e o acesso à rede é permitido.
 
-- **Permitir git push** — injeta o token do GitHub de que o agente precisa para fazer push
-- **Permitir chamadas à API do GitHub** — permite ao agente ler PRs, issues e metadados de repos
-- **Permitir chamadas à API de tickets** — injeta a chave do fornecedor de tickets
-- **Permitir acesso geral à rede** — ativa também as ferramentas `web_fetch` e `web_search` do harness integrado
+O token do GitHub do agente é sempre só de leitura. Um push passa pelo Control Center, que pergunta à regra **Fazer push para um remoto** antes de o reencaminhar. Consulte [Configurar políticas de sandbox](/pt-PT/manual/guias/politicas-de-sandbox/) para ver como cada regra chega a uma execução.
 
-Cada opção é verificada pelo broker de credenciais quando a execução arranca: uma capacidade desativada significa simplesmente que o token correspondente nunca é gerado no ambiente da execução.
-
-:::caution[A predefinição do espaço de trabalho é o conjunto conservador do servidor]
-Um agente deixado em “Usar predefinição do espaço de trabalho” é executado com o git push, a API do GitHub e os tickets **desativados** e a rede **ativada**. As predefinições de capacidades apresentadas em Definições → Servidor → Diagnóstico e privacidade são uma preferência do lado do cliente. Se quiser que um agente faça push ou abra PRs, ative o interruptor e conceda as capacidades explicitamente.
-
-Estas capacidades controlam o acesso a credenciais e às ferramentas do harness, que é uma camada separada do sandbox do sistema operativo. O `cc_server` envolve as execuções dos agentes no sandbox do host quando este existe — o Windows não tem backend nativo, e o Linux e o WSL2 precisam de `bwrap` e `socat`. Consulte [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/) para ver o conjunto completo de fronteiras.
+:::note[As regras e o sandbox do sistema operativo são camadas separadas]
+As regras decidem o que um agente pode fazer; o sandbox do sistema operativo limita onde os seus processos podem ler, escrever e ligar-se. O `cc_server` envolve as execuções dos agentes no sandbox do host quando este existe — o Windows não tem backend nativo, e o Linux e o WSL2 precisam de `bwrap` e `socat`. Consulte [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/) para ver o conjunto completo de fronteiras.
 :::
 
 ## Verificar que é executado

@@ -2,7 +2,7 @@
 title: Gi en agent en maskin å teste på
 description: Gi en agent en kastbar nettleser, et skrivebord, en Android-emulator eller en iOS-simulator — overvåket i sanntid, med kontroller du kan ta over.
 slug: nb-NO/handbok/slik-gjor-du/bruk-stasjoner
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 En **stasjon** er en kastbar maskin en agent åpner når den faktisk må prøve
@@ -194,9 +194,11 @@ Hva som endres:
 - Ingenting du kjører, når verten. En `rm -rf` der inne koster deg stasjonen.
 - Nettverket avviser som standard. Bare verter på stasjonens tillatelsesliste
   kan nås, og alt går gjennom en sluse som håndhever den.
-- `git push` fungerer fortsatt. Stasjonen har ingen lagret legitimasjon; den ber
-  serveren om en kortlevd en per operasjon, og tokenet tilbakekalles når
-  stasjonen lukkes.
+- `git push` fungerer fortsatt i en terminal du har åpnet. Stasjonen har ingen
+  lagret legitimasjon; den ber serveren om en kortlevd en per operasjon,
+  avgrenset av din egen tilgang til kodeverten, og tokenet tilbakekalles når
+  stasjonen lukkes. En stasjon som en agent har åpnet, får legitimasjon som
+  bare kan lese, så den kan hente, men ikke pushe.
 
 Hva du bør vite:
 

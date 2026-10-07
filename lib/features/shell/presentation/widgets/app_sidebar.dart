@@ -4,8 +4,10 @@ import 'package:control_center/features/inbox/providers/inbox_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/service_status/presentation/widgets/service_status_indicator.dart';
+import 'package:control_center/features/settings/presentation/widgets/settings_sidebar_nav.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar_header.dart';
 import 'package:control_center/features/shell/presentation/widgets/offline_pending_pill.dart';
+import 'package:control_center/features/shell/presentation/widgets/sidebar_chrome.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/new_project_dialog.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/project_visuals.dart';
@@ -27,7 +29,12 @@ import 'package:go_router/go_router.dart';
 /// (command-palette) affordance live in the header; the per-user pillars
 /// (newsfeed, observability) + settings live in the footer; workspace
 /// destinations sit in the body with no section header, always expanded.
-class AppSidebar extends ConsumerWidget {
+///
+/// Settings is a drill-in rather than a second sidebar: on a settings route
+/// everything below the header slides over to the settings destinations
+/// ([SettingsSidebarNav]) behind an "Exit settings" row, and back out again on
+/// leaving. The header stays put so the workspace switcher never moves.
+class AppSidebar extends ConsumerStatefulWidget {
   /// Creates an [AppSidebar]. [location] is the current router location and
   /// [workspaceId] the active workspace (both sourced from the route), used to
   /// build prefixed navigation targets and resolve the active item.
@@ -43,6 +50,50 @@ class AppSidebar extends ConsumerWidget {
   /// The active workspace id from the route (`:workspaceId`).
   final String workspaceId;
 
+  @override
+  ConsumerState<AppSidebar> createState() => _AppSidebarState();
+}
+
+class _AppSidebarState extends ConsumerState<AppSidebar> {
+  /// The last location outside settings — where "Exit settings" returns to.
+  String? _returnLocation;
+
+  String get location => widget.location;
+  String get workspaceId => widget.workspaceId;
+
+  static bool _isSettings(String location) =>
+      workspaceShellLogicalRoute(location).startsWith('/settings');
+
+  @override
+  void initState() {
+    super.initState();
+    _rememberReturnLocation();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppSidebar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _rememberReturnLocation();
+  }
+
+  void _rememberReturnLocation() {
+    if (!_isSettings(location)) {
+      _returnLocation = location;
+    }
+  }
+
+  /// Leaves settings for the page it was entered from. A deep link straight
+  /// into settings, or a workspace switch made from inside it, has nothing in
+  /// this workspace to return to, so it lands on the inbox.
+  void _exitSettings() {
+    final remembered = _returnLocation;
+    final target =
+        remembered != null && remembered.startsWith('/workspaces/$workspaceId/')
+        ? remembered
+        : inboxRoute(workspaceId);
+    GoRouter.of(context).go(target);
+  }
+
   /// Active-item check against the *logical* route (prefix-stripped), so it is
   /// independent of which workspace is in the URL. [logicalPath] is e.g.
   /// `/inbox` or `/tickets`.
@@ -55,9 +106,12 @@ class AppSidebar extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final collapsed = ref.watch(sidebarCollapsedProvider);
+    if (_isSettings(location)) {
+      return _buildSettings(context, collapsed: collapsed);
+    }
     // A pre-reduced int feed, not the run list: the run stream re-emits on
     // every pipeline mutation (progress ticks, step transitions), which would
     // otherwise rebuild all of this chrome and its count is settled so a
@@ -79,7 +133,9 @@ class AppSidebar extends ConsumerWidget {
         icon: icon,
         label: label,
         iconBuilder: iconBuilder,
-        badge: badge > 0 ? _CountBadge(count: badge, selected: selected) : null,
+        badge: badge > 0
+            ? SidebarCountBadge(count: badge, selected: selected)
+            : null,
         selected: selected,
         onPressed: () => GoRouter.of(context).go(target),
       );
@@ -156,7 +212,7 @@ class AppSidebar extends ConsumerWidget {
         // The divider carries its own [AppSpacing.xs] vertical air; with the
         // neighbouring groups' [AppSpacing.xs] padding the total 8px matches
         // the sidebar's horizontal content inset — uniform spacing all around.
-        const _SidebarDivider(),
+        const SidebarHairline(),
       ],
       children: [
         // The conversation surface (DMs + groups) lives inline so spaces are
@@ -173,6 +229,34 @@ class AppSidebar extends ConsumerWidget {
         // the (deferred) sidebar scope itself, so the list folds into the
         // icon exactly when the nav items flip their geometry.
         _SpacesNavSlot(location: location, workspaceId: workspaceId),
+      ],
+    );
+  }
+
+  /// The settings drill-in: the same header, an exit row pinned above the
+  /// settings destinations, and no footer (it is one exit away).
+  Widget _buildSettings(BuildContext context, {required bool collapsed}) {
+    final l10n = AppLocalizations.of(context);
+    return CcSidebar(
+      collapsed: collapsed,
+      depth: 1,
+      header: AppSidebarHeader(collapsed: collapsed),
+      headerGap: AppSpacing.xs,
+      pinnedChildren: [
+        CcSidebarGroup(
+          children: [
+            CcSidebarItem(
+              // Mirrors under RTL: points at the edge the global nav returns to.
+              icon: AppIcons.chevronLeft,
+              label: l10n.exitSettings,
+              onPressed: _exitSettings,
+            ),
+          ],
+        ),
+        const SidebarHairline(),
+      ],
+      children: [
+        SettingsSidebarNav(location: location, workspaceId: workspaceId),
       ],
     );
   }
@@ -420,7 +504,7 @@ class _SidebarFooter extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SidebarDivider(),
+        const SidebarHairline(),
         if (!railMode) const OfflinePendingPill(),
         // sm: the divider brings 4px below itself; 4+8=12px matches the
         // body's md vertical container padding above the first group.
@@ -462,80 +546,6 @@ class _SidebarFooter extends ConsumerWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-/// Small count pill shown on a sidebar item (e.g. running agents).
-class _CountBadge extends StatelessWidget {
-  const _CountBadge({required this.count, required this.selected});
-
-  final int count;
-
-  /// Whether the pill rides [CcSidebarItem]'s selected row. That row is a
-  /// solid `bgBrandSolid` fill — the accent pill IS the fill's hue there, so
-  /// it inverts: `accentOn` pill, `bgBrandSolid` digits (4.5:1+ on white in
-  /// both brightnesses). Same treatment as the space rows'
-  /// `_PrCountAdornment`.
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    // The row's fill and ink lerp over CcMotion.fast; the pill travels WITH
-    // them on one tween, or a white pill snaps on while the row is still its
-    // pale mid-lerp self.
-    return TweenAnimationBuilder<double>(
-      duration: CcMotion.fast,
-      curve: CcMotion.standard,
-      tween: Tween<double>(end: selected ? 1 : 0),
-      builder: (context, progress, _) => Container(
-        constraints: const BoxConstraints(minWidth: 18),
-        height: 18,
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-        decoration: BoxDecoration(
-          color: Color.lerp(t.accent, t.accentOn, progress),
-          borderRadius: AppRadii.brSm,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          style: TextStyle(
-            color: Color.lerp(t.accentOn, t.bgBrandSolid, progress),
-            fontSize: 11,
-            height: 1,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A sidebar hairline divider drawn edge-to-edge, carrying its own vertical
-/// breathing room. [CcSidebar] pads its content by [AppSpacing.sm] on each
-/// side, so the divider bleeds out via an [OverflowBox] (which permits
-/// overflow by design, unlike negative padding, which asserts in debug) with
-/// its height bounded so the footer's unbounded column constraints can't trip
-/// it. The [AppSpacing.xs] vertical padding plus the neighbouring groups' own
-/// [AppSpacing.xs] padding totals 8px — matching the sidebar's horizontal
-/// content inset so the air reads uniform on all sides.
-class _SidebarDivider extends StatelessWidget {
-  const _SidebarDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: LayoutBuilder(
-        builder: (context, constraints) => SizedBox(
-          height: 1,
-          child: OverflowBox(
-            maxWidth: constraints.maxWidth + 2 * AppSpacing.sm,
-            child: const CcDivider(),
-          ),
-        ),
-      ),
     );
   }
 }

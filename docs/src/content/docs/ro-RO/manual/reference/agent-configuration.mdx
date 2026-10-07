@@ -2,7 +2,7 @@
 title: Configurarea agenților
 description: Fiecare câmp al entității de agent și enumerările pe care le folosește.
 slug: ro-RO/manual/referinta/configurarea-agentilor
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Această referință listează fiecare câmp al entității de agent, plus enumerările și flag-urile pe care le folosește. Pentru un parcurs pas cu pas de creare sau editare a unui agent în aplicație, vezi [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/).
@@ -26,7 +26,6 @@ Această referință listează fiecare câmp al entității de agent, plus enume
 | `effort`                | `String?`              | Nu          | Id-ul nivelului de raționament (de ex. `'low'`, `'xhigh'`), preluat din `thinkingLevels` ale modelului selectat                                                                                      |
 | `contextSize`           | `int?`                 | Nu          | Dimensiunea maximă a ferestrei de context                                                                                                                                                            |
 | `role`                  | `AgentRole?`           | Nu          | Rolul agentului                                                                                                                                                                                      |
-| `capabilities`          | `AgentCapabilities?`   | Nu          | Valoarea implicită de capabilități per agent; când este null, la trimitere se aplică valoarea implicită la nivel de utilizator, iar o conversație o mai poate suprascrie                             |
 | `monthlyBudgetCents`    | `int`                  | Nu          | Plafon lunar de cheltuieli, în cenți (implicit `0`, nelimitat)                                                                                                                                       |
 | `silenceTimeoutMinutes` | `int?`                 | Nu          | Suprascriere a timeout-ului de tăcere, în minute; trebuie să fie null sau între 1–240 (verificat în constructor)                                                                                     |
 | `maxConcurrentTasks`    | `int`                  | Nu          | Implicit `1`. Cifra de capacitate pe care o raportează modelul de prezență (numărătorile de rulări în execuție și în coadă sunt comparate cu ea)                                                     |
@@ -68,18 +67,9 @@ implicită `0` a `monthlyBudgetCents` înseamnă nelimitat. Scrie un plafon cu `
 | `paused`   | Setată de oprirea dură a bugetului. Afișată în lista de prezență; trimiterea acceptă în continuare muncă         |
 | `archived` | Retrasă și ascunsă din listele de prezență active                                                                |
 
-## Flag-urile AgentCapabilities
+## Permisiuni
 
-Se rezolvă la fiecare trimitere: valoarea implicită a agentului, cu revenire la valoarea implicită la nivel de utilizator când este null, plus o suprascriere per conversație deasupra. Se impun prin absență — brokerul de acreditări pur și simplu nu emite și nu injectează ceea ce acoperă o capabilitate dezactivată.
-
-| Flag               | Tip    | Implicit | Descriere                                                                                |
-| ------------------ | ------ | -------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`  | Trimite commit-uri către remote; condiționează injectarea tokenului GitHub alături de `canCallGitHubApi` |
-| `canCallGitHubApi` | `bool` | `false`  | Apelează api.github.com; condiționează injectarea `GH_TOKEN` și domeniile de egress GitHub |
-| `canCallTicketing` | `bool` | `false`  | Apelează API-ul providerului de tichete; condiționează injectarea cheii API a providerului și domeniile lui de egress |
-| `canAccessNetwork` | `bool` | `true`   | Egress arbitrar spre exterior. Condiționează și instrumentele `web_fetch` și `web_search` ale harness-ului |
-
-`AgentCapabilities.safeDefault` reprezintă toate cele patru valori implicite ale constructorului. `legacyDefault` (toate patru true) este folosit doar de migrarea care a completat retroactiv conversațiile create înainte să existe capabilitățile. Un blob stocat malformat sau gol se interpretează ca `safeDefault`; cheia veche `canCallLinear` este citită ca `canCallTicketing`.
+Un agent nu are indicatori de permisiune. Push-ul, deschiderea și publicarea pull request-urilor, scrierea într-un tracker și ieșirea în rețea sunt clase de acțiuni (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) pe care [guardrail-urile](/ro-RO/manual/concepte/guardrail-uri/) le rezolvă la nivelul spațiului de lucru, al agentului sau al spațiului. Tokenul GitHub al unei rulări are întotdeauna acces doar la citire; push-urile trec prin gateway-ul rulărilor de agenți, care întreabă regula `gitPush` înainte de a le transmite.
 
 ## AgentSkills
 

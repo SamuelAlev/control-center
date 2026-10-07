@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
+import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
 import 'package:dio/dio.dart';
 
@@ -107,6 +108,15 @@ class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
   Future<String?> _readToken({String? configDir}) async {
     final home = _homeDir;
     final dir = configDir ?? _env['CLAUDE_CONFIG_DIR'];
+    // A long-lived token is what runs on this account authenticate with, so it
+    // answers for the account; the interactive credential beside it may be a
+    // stale leftover nothing refreshes any more.
+    if (dir != null && dir.isNotEmpty) {
+      final token = readClaudeLongLivedToken(dir);
+      if (token != null) {
+        return token;
+      }
+    }
     // An EXPLICIT config dir is exclusive: it names one account, and falling
     // back to `~/.claude` or the keychain would silently report a different
     // account's quota next to that account's name.

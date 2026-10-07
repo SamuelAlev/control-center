@@ -2,7 +2,7 @@
 title: "Ciclo de vida del despacho de agentes"
 description: "Qué ocurre entre la llegada de un mensaje y el cierre de un registro de ejecución: el montaje del prompt, los worktrees, la identidad, qué delimita una ejecución y cómo se registra su resultado con honestidad."
 slug: es-ES/manual/conceptos/ciclo-de-vida-del-despacho
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Qué es un despacho
@@ -65,7 +65,7 @@ Se resuelven dos identidades por ejecución, antes de que se lance ningún proce
 
 Como la anulación por adaptador va primero, gana en silencio a una cuenta de proveedor conectada en la aplicación. Si una ejecución está facturando a la cuenta equivocada, esa anulación es el primer sitio donde mirar. Las credenciales de los proveedores son globales a la máquina: se comparten entre todos los espacios de trabajo de la instalación.
 
-Los tokens restringidos por capacidades (GitHub, tickets) vienen del bróker de credenciales, que solo inyecta lo que permiten las capacidades de la ejecución. Consulta [El modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/).
+El token de GitHub de la ejecución viene del bróker de credenciales: un token de solo lectura con alcance del repositorio del worktree. Un push pasa por la pasarela de ejecuciones de agentes, que pregunta a la regla **Enviar a un remoto** antes de reenviarlo, y no se inyecta ninguna clave de tickets. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/).
 
 ## Lanzamiento
 
@@ -76,9 +76,9 @@ La ejecución se lanza con su worktree como directorio de trabajo y, en el caso 
 
 Donde no hay backend, la ejecución **no** está aislada y nada más cambia para compensarlo. Eso significa Windows siempre (sin envoltura nativa; `microvm` es una ruta aparte, condicionada por el sondeo, para terminales y rigs) y Linux o WSL2 sin `bwrap` y `socat` en el `PATH`. El servidor indica en qué estado se encuentra en su línea de registro de arranque, y `--sandbox off` permite renunciar a él de forma deliberada.
 
-Dos lagunas sobreviven al entorno aislado incluso donde está activo. Las herramientas de archivos en proceso del arnés (read, write, edit, apply patch, search, find, search_files) se ejecutan dentro del proceso del servidor, así que ningún perfil las restringe: su límite es el propio confinamiento de rutas de las herramientas más las barandillas. Y Claude Code se lanza con `--dangerously-skip-permissions`, así que sus propias llamadas a archivos y de shell no quedan condicionadas por Control Center; el entorno aislado del sistema operativo es la frontera a su alrededor.
+Dos lagunas sobreviven al entorno aislado incluso donde está activo. Las herramientas de archivos en proceso del arnés (read, write, edit, apply patch, search, find, search_files) se ejecutan dentro del proceso del servidor, así que ningún perfil las restringe: su límite es el propio confinamiento de rutas de las herramientas más las barandillas. Y Claude Code se lanza con `--dangerously-skip-permissions`, así que sus propias llamadas a archivos no quedan condicionadas por Control Center, y sus comandos de shell solo por un hook que lee la línea de comandos; el entorno aislado del sistema operativo es la frontera a su alrededor.
 
-Los límites restantes se aplican en todas las máquinas, haya entorno aislado o no: el worktree propio de la ejecución (copy-on-write donde se distribuye `rift`; `git worktree` en Windows), las credenciales restringidas por capacidades que el bróker emite en cada lanzamiento y revoca al desmontar, las barandillas unificadas de acciones (con cierre de seguridad: una decisión `prompt` sin ningún aprobador conectado se deniega) y la superficie de herramientas que permite el modo de la conversación. ACP y el `bash` del arnés siguen saneando el entorno; Claude Code a través de `NoSandboxAdapter` hereda el entorno de la máquina.
+Los límites restantes se aplican en todas las máquinas, haya entorno aislado o no: el worktree propio de la ejecución (copy-on-write donde se distribuye `rift`; `git worktree` en Windows), un token de forja de solo lectura que el bróker emite en cada lanzamiento y revoca al desmontar, los push que tienen que pasar la regla de push en la pasarela de ejecuciones de agentes, las barandillas unificadas de acciones (con cierre de seguridad: una decisión `prompt` sin ningún aprobador conectado se deniega) y la superficie de herramientas que permite el modo de la conversación. ACP y el `bash` del arnés siguen saneando el entorno; Claude Code a través de `NoSandboxAdapter` hereda el entorno de la máquina.
 :::
 
 ## Flujo de eventos

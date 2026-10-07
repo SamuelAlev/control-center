@@ -3,7 +3,7 @@ title: アーキテクチャ
 description: Control Center が、シンクライアントのサーバーモデル、フィーチャー優先のクリーンアーキテクチャ、およびポートとアダプターによってどのように構成されているかを説明します。
 dateModified: 2026-09-19
 slug: ja-JP/マニュアル/コンセプト/アーキテクチャ
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## 概要
@@ -58,7 +58,7 @@ feature_name/
 - コアエンティティ: `Agent`、`AgentRunLog`、`Workspace`、`Repo`、`ReviewSpaceAssociation`
 - アイデンティティとマルチプレイヤー: `User`、`Principal`（sealed な `UserPrincipal` | `AgentPrincipal`）、`WorkspaceMember`、`WorkspaceRole`
 - メモリエンティティ: `MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
-- 共有値オブジェクト: `AgentCapabilities`、`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
+- 共有値オブジェクト: `AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
 - 共有ポート: `SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
 - ドメインサービス: `MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
 - `DomainEventBus` + イベント種別（ワークスペース/エージェント、PR/レビュー、メッセージング、チケッティング、パイプライン、オーケストレーション、メモリ、カレンダー/ミーティング、アイデンティティとメンバーシップ、オブザーバビリティ）

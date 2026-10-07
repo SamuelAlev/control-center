@@ -3,7 +3,7 @@ title: Architektura
 description: "Jak je Control Center složený: tenký klient nad serverem, Clean Architecture podle domén a porty s adaptéry."
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/koncepty/architektura
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Přehled
@@ -58,7 +58,7 @@ Doména **`guardrails`** má doménovou vrstvu v `cc_domain/features/guardrails/
 - Základní entity: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identita a multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Entity paměti: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Sdílené hodnotové objekty: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Sdílené hodnotové objekty: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Sdílené porty: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Doménové služby: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` a typy událostí (pracovní prostor/agent, PR/revize, zprávy, tickety, pipeline, orchestrace, paměť, kalendář/schůzky, identita a členství, pozorovatelnost)

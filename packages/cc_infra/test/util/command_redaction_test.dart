@@ -15,6 +15,18 @@ void main() {
   const sk40 = 'sk-abcd1234efgh5678ijkl9012mnop3456'; // 24+ body chars
 
   group('redactSecrets', () {
+    test('scrubs Anthropic keys and Claude Code setup tokens', () {
+      // The hyphens after `sk-` slip past the generic `sk-` pattern.
+      const setup = 'sk-ant-oat01-Ab_cD-ef012345678901234567890';
+      const api = 'sk-ant-api03-Ab_cD-ef012345678901234567890';
+      expect(redactSecrets('token $setup end'), 'token ***REDACTED*** end');
+      expect(redactSecrets(api), '***REDACTED***');
+      expect(
+        redactSecrets('CLAUDE_CODE_OAUTH_TOKEN=whatever'),
+        '***REDACTED***',
+      );
+    });
+
     test('leaves innocuous text untouched', () {
       expect(
         redactSecrets('git clone https://github.com/o/r.git main'),

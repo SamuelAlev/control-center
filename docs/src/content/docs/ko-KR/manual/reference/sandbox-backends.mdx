@@ -2,13 +2,13 @@
 title: 샌드박스 백엔드
 description: 샌드박스 백엔드, 각 백엔드가 적용되는 위치, 그리고 샌드박스 런타임이 사용하는 모든 값 객체를 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/샌드박스-백엔드
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[실행이 샌드박스로 감싸지는지는 호스트에 달려 있습니다]
 `cc_server`는 부팅할 때 호스트를 한 번 탐지하고, 탐지 결과 사용할 수 있는 백엔드가 있고 `--sandbox`가 `off`가 아닐 때 에이전트 디스패치를 네이티브 백엔드로 감쌉니다. 두 디스패치 이음매가 모두 감싸집니다. Claude Code CLI는 샌드박스 포트를 통해, ACP와 기본 제공 하네스의 `bash` 도구는 샌드박스 관리자를 통해 감싸집니다.
 
-탐지가 백엔드가 없다고 보고하는 곳 — **항상 Windows**, 그리고 `bwrap`과 `socat`이 없는 Linux나 WSL2 — 에서는 에이전트 실행이 샌드박스로 감싸지지 **않습니다**. ACP와 하네스 `bash` 도구는 여전히 환경 정리를 거쳐 스폰됩니다. Claude Code는 `NoSandboxAdapter`를 거치며 호스트 환경을 물려받습니다. 나머지 경계는 실행 자신의 워크트리(`rift`가 제공되는 곳에서는 쓰기 시 복사, Windows에서는 `git worktree`), 실행마다 브로커를 거쳐 발급되고 정리 시 회수되는 기능 제한 자격 증명, 모드별 명령 정책, 통합된 [작업 가드레일](/ko-KR/매뉴얼/개념/가드레일/)(실패 시 차단), ACP와 하네스 `bash` 경로의 환경 정리, 그리고 해당 모드가 허용하는 도구 표면입니다.
+탐지가 백엔드가 없다고 보고하는 곳 — **항상 Windows**, 그리고 `bwrap`과 `socat`이 없는 Linux나 WSL2 — 에서는 에이전트 실행이 샌드박스로 감싸지지 **않습니다**. ACP와 하네스 `bash` 도구는 여전히 환경 정리를 거쳐 스폰됩니다. Claude Code는 `NoSandboxAdapter`를 거치며 호스트 환경을 물려받습니다. 나머지 경계는 실행 자신의 워크트리(`rift`가 제공되는 곳에서는 쓰기 시 복사, Windows에서는 `git worktree`), 실행마다 브로커를 거쳐 발급되고 정리 시 회수되는 읽기 전용 forge 토큰, 에이전트 실행 게이트웨이에서 푸시 규칙을 통과해야 하는 푸시, 모드별 명령 정책, 통합된 [작업 가드레일](/ko-KR/매뉴얼/개념/가드레일/)(실패 시 차단), ACP와 하네스 `bash` 경로의 환경 정리, 그리고 해당 모드가 허용하는 도구 표면입니다.
 
 하네스의 프로세스 내 파일 도구(read, write, edit, apply patch, search, find, search_files)는 모든 호스트에서 샌드박스 밖에 있습니다. 이들은 서버 프로세스 안에서 실행되므로 `bash`만 감싸집니다.
 :::
@@ -96,7 +96,7 @@ bubblewrap은 기존 경로를 가릴 수는 있지만 쓰기 가능한 바인�
 
 터미널은 디스패치 탐지가 아니라 자체 기준에 따라 샌드박스로 감싸집니다. `TerminalSessionService`의 `defaultBackend`는 `none`이고 `cc_server`는 이를 재정의하지 않으므로, 클라이언트가 `native`를 명시적으로 요청하지 않는 한 터미널 세션은 호스트 셸을 실행합니다 — 데스크톱의 터미널 패널은 요청하지 않습니다.
 
-`native`를 요청하면 고정된 터미널 프로필 아래에서 `SandboxManager`를 통해 셸이 감싸집니다. `$HOME`과 세션의 작업 디렉터리는 쓰기 가능하고, 네트워크는 열려 있으며 `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains`는 읽기가 거부됩니다. 기능 게이팅은 적용되지 않습니다 — 그것은 디스패치의 관심사입니다. 래핑이 지원되지 않으면 세션은 호스트 셸 PTY에 네이티브 배지를 표시하는 대신 실패합니다.
+`native`를 요청하면 고정된 터미널 프로필 아래에서 `SandboxManager`를 통해 셸이 감싸집니다. `$HOME`과 세션의 작업 디렉터리는 쓰기 가능하고, 네트워크는 열려 있으며 `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains`는 읽기가 거부됩니다. 읽기 전용 forge 토큰과 푸시 게이트웨이는 적용되지 않습니다 — 그것은 디스패치의 관심사입니다. 래핑이 지원되지 않으면 세션은 호스트 셸 PTY에 네이티브 배지를 표시하는 대신 실패합니다.
 
 ## 네트워크 이그레스
 
@@ -105,9 +105,9 @@ bubblewrap은 기존 경로를 가릴 수는 있지만 쓰기 가능한 바인�
 - 샌드박스 런타임은 `cc_server` 프로세스 안에서 `127.0.0.1`에 HTTP/HTTPS 프록시와 SOCKS5 프록시를 실행합니다. **제한된 세션마다 한 쌍**입니다(`http_proxy.dart`, `socks_proxy.dart`). 동시 실행은 한 쌍을 공유하지 않습니다.
 - 샌드박스로 감싸진 프로세스는 프록시 환경 변수를 받습니다(`HTTP_PROXY`/`HTTPS_PROXY` → HTTP 프록시, `ALL_PROXY` → SOCKS 프록시, `GIT_SSH_COMMAND`는 git-over-SSH를 SOCKS 프록시로 라우팅합니다). Linux에서는 네트워크 네임스페이스가 공유되지 않으므로 프록시가 유일한 출구이고, macOS에서는 샌드박스가 호스트 루프백을 공유하며 프록시와 직접 통신합니다.
 - 각 연결의 대상 호스트는 세션의 도메인 허용 목록과 대조되며, 그 밖의 모든 것은 거부됩니다. 와일드카드 형식은 두 가지이며 각각 `*`가 정확히 하나입니다. 맨 앞의 `*.example.com`은 모든 하위 도메인(`a.b.example.com` 포함)과 일치하지만 최상위 도메인 자체와는 일치하지 않습니다. 중간 레이블 형식 `bedrock.*.amazonaws.com`은 정확히 레이블 하나와 일치합니다(`bedrock.us-east-1.amazonaws.com`은 일치하고 `bedrock.evil.attacker.amazonaws.com`은 일치하지 않습니다).
-- 허용 목록은 세션마다 큐레이션된 기준선(`kBaselineAllowedDomains`: LLM 공급자, Git 호스팅, 패키지 레지스트리)과, 에이전트에 GitHub 또는 푸시 기능이 있으면 GitHub 도메인, 그리고 `SandboxSpec.egressAllowlist`에서 해석됩니다. 리졸버는 에이전트가 티켓팅을 호출할 수 있을 때 티켓팅 공급자 도메인도 받아들이지만, 디스패치 경로는 그 목록(또는 추가 `egressAllowlist` 항목)을 결코 전달하지 않으므로 실제로는 모든 실행이 기준선과 자신의 기능이 얻어낸 GitHub 도메인을 받습니다.
+- 허용 목록은 세션마다 큐레이션된 기준선(`kBaselineAllowedDomains`: LLM 공급자, Git 호스팅, 패키지 레지스트리)과 GitHub 도메인(`kGithubDomains`), 그리고 `SandboxSpec.egressAllowlist`에서 해석됩니다. 디스패치 경로는 추가 `egressAllowlist` 항목을 결코 전달하지 않으므로 실제로는 모든 실행이 기준선과 GitHub를 받습니다.
 - 고정된 거부 목록(`kBaselineDeniedDomains`: 클라우드 메타데이터 엔드포인트, 텔레메트리 싱크)이 모든 허용보다 우선합니다.
-- `networkEnabled: false`(또는 네트워크 기능이 없는 에이전트)에서도 세션별 프록시는 시작되지만 허용 목록이 비어 있으므로 모든 아웃바운드 연결이 거부됩니다.
+- `networkEnabled: false`에서도 세션별 프록시는 시작되지만 허용 목록이 비어 있으므로 모든 아웃바운드 연결이 거부됩니다. 디스패치는 실행이 시작될 때 **네트워크 접근** 규칙에서 이 값을 정합니다. 거부는 네트워크를 끄고, 허용과 먼저 묻기는 켜 둡니다.
 
 ## SandboxSpec
 
@@ -119,11 +119,10 @@ bubblewrap은 기존 경로를 가릴 수는 있지만 쓰기 가능한 바인�
 | `workspaceId`     | `String`                                    | 소유 워크스페이스 ID                                                                                                                         |
 | `agentId`         | `String?`                                   | 현재 샌드박스에 바인딩된 에이전트(있는 경우)                                                                                                |
 | `bindMounts`      | `List<SandboxBindMount>`                    | 호스트→게스트 마운트. 샌드박스는 여기에 나열된 호스트 경로만 봅니다                                                                         |
-| `networkEnabled`  | `bool` (기본값 `true`)                     | 에이전트의 네트워크 기능과 결합됩니다. 꺼져 있으면 세션별 프록시는 여전히 시작되지만 허용 목록이 비어 있어 모든 아웃바운드 연결이 거부됩니다 |
-| `egressAllowlist` | `List<String>` (기본값 `[]`)               | 추가로 허용되는 이그레스 도메인으로, 와일드카드(`*.example.com` 및 레이블 하나짜리 중간 형식)를 지원합니다. 디스패치는 이 필드를 채우지 않으므로 감싸진 실행은 큐레이션된 기준선과 자신의 기능이 얻어낸 GitHub 도메인을 받습니다 |
+| `networkEnabled`  | `bool` (기본값 `true`)                     | 디스패치 시 네트워크 이그레스 규칙에서 설정됩니다(거부로 해석될 때만 꺼짐). 꺼져 있으면 세션별 프록시는 여전히 시작되지만 허용 목록이 비어 있어 모든 아웃바운드 연결이 거부됩니다 |
+| `egressAllowlist` | `List<String>` (기본값 `[]`)               | 추가로 허용되는 이그레스 도메인으로, 와일드카드(`*.example.com` 및 레이블 하나짜리 중간 형식)를 지원합니다. 디스패치는 이 필드를 채우지 않으므로 감싸진 실행은 큐레이션된 기준선과 GitHub 도메인을 받습니다 |
 | `guestWorkdir`    | `String?`                                   | 샌드박스 안의 기본 작업 디렉터리로, 개별 `exec` 호출이 재정의할 수 있습니다                                                                   |
 | `mode`            | `Mode` (기본값 `chat`)                     | 파일시스템 쓰기 규칙을 정합니다. `chat`은 바인드 마운트를 쓰기 가능하게 유지하고, `review`, `plan`, `orchestrate`는 읽기 전용입니다         |
-| `capabilities`    | `AgentCapabilities` (기본값 `safeDefault`) | 네트워크 켜짐/꺼짐 결정과 GitHub 이그레스 도메인을 도출합니다. 티켓팅 도메인은 리졸버 인자이지만 디스패치 경로는 이를 결코 제공하지 않습니다 |
 | `protectedPaths`  | `List<String>` (기본값 `[]`)               | 어떤 모드에서든 샌드박스 안에서 결코 쓰기 가능해서는 안 되는 호스트 경로                                                                      |
 | `runnerStateDirs` | `List<String>` (기본값 `[]`)               | 러너가 자체 상태를 보관하는 호스트 디렉터리로, 모든 모드에서 쓰기 가능합니다(현재는 Control-Center가 관리하는 `CLAUDE_CONFIG_DIR`) |
 | `execGrantRoots`  | `List<String>` (기본값 `[]`)               | macOS에서 쓰기 가능 디렉터리 실행 차단을 다시 여는, 운영자가 승인한 디렉터리 트리입니다. Linux에서는 무시됩니다 — bwrap에는 다시 열 `$HOME` 실행 차단이 없습니다 |
@@ -181,7 +180,6 @@ bubblewrap은 기존 경로를 가릴 수는 있지만 쓰기 가능한 바인�
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | 거부된 동작(예: `file-read*`, `network-outbound`)                    |
 | `target`              | `String`  | 거부된 작업의 대상이 된 경로 또는 호스트                   |
-| `suggestedCapability` | `String?` | 이 작업을 허용하게 될 기능 플래그(예: `canCallGitHubApi`) |
 | `raw`                 | `String?` | 디버깅에 유용한 원시 로그 줄                                         |
 
 ## 함께 보기

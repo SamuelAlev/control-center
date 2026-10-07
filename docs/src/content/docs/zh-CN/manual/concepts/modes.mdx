@@ -2,7 +2,7 @@
 title: 模式
 description: 为什么承载模式的是空间而不是智能体；四种模式各自保证什么；以及这项保证在哪些地方是结构性的，而不只是靠提示词。
 slug: zh-CN/手册/概念/模式
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## 模式是什么
@@ -77,7 +77,7 @@ sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 
 模式的工具面由**内置 harness** 构建并强制执行。它是唯一能把工具变得不可见、而不只是拒绝调用，能在每次调用运行前加以门控，并能观察完成契约的传输通道。
 
-在 Claude Code 传输通道上，非聊天的模式会以 `--permission-mode plan` 传入。Claude 只是按惯例遵守这一点；它自己的读取、写入、编辑和 shell 工具都在视野之外运行。对该传输通道而言，模式只是指导，而不是 Control Center 的边界——参见[智能体模型](/zh-CN/手册/概念/智能体模型/)。
+在 Claude Code 传输通道上，非聊天的模式会以 `--permission-mode plan` 传入。Claude 只是按惯例遵守这一点；它自己的读取、写入和编辑工具都在视野之外运行，shell 命令也只由一个读取命令行的钩子检查。对该传输通道而言，模式只是指导，而不是 Control Center 的边界——参见[智能体模型](/zh-CN/手册/概念/智能体模型/)。
 
 允许列表约束的是写入层级及以上的工具。内置 harness 的读取层级仍能触达没有任何列表点名的工具；而在 Claude Code 上，允许列表未收录的工具会被拒绝，无论服务器是否提供它。
 

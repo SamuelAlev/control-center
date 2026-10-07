@@ -2,7 +2,7 @@
 title: Tạo và cấu hình một agent
 description: Thêm một agent vào không gian làm việc, gán cho nó bộ điều hợp, mô hình, kỹ năng và quyền hạn rồi xác nhận rằng nó chạy được.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Hướng dẫn này chỉ cho bạn cách thêm một agent vào không gian làm việc và cấu hình nó cho tới khi nó thực sự chạy được.
@@ -68,19 +68,12 @@ Bạn không chọn kỹ năng riêng của kho mã ở đây. Một kho mã man
 
 ## Cấp quyền hạn
 
-**Quyền sandbox** khởi đầu ở “Dùng mặc định không gian làm việc”. Bật công tắc lên để đặt quyền riêng cho agent này, rồi bật/tắt:
+Agent không có công tắc quyền hạn riêng. Những gì nó được push, mở, merge hay truy cập do các quy tắc hành động trong **Cài đặt → Không gian làm việc → Quyền của agent** quyết định, nơi một quy tắc có thể được giới hạn cho agent này. Mặc định, một lần push, một pull request, một review hoặc merge và một lần ghi vào tracker đều hỏi bạn trước, từng cái một, còn truy cập mạng được cho phép.
 
-- **Cho phép git push** — chèn token GitHub mà agent cần để push
-- **Cho phép gọi GitHub API** — cho phép agent đọc PR, issue và siêu dữ liệu kho mã
-- **Cho phép gọi API phiếu** — chèn khóa của nhà cung cấp dịch vụ phiếu
-- **Cho phép truy cập mạng chung** — cũng bật các công cụ `web_fetch` và `web_search` của harness tích hợp sẵn
+Token GitHub của agent luôn chỉ đọc. Một lần push đi qua Control Center, nơi hỏi quy tắc **Push lên remote** trước khi chuyển tiếp. Xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/) để biết mỗi quy tắc tác động tới một lượt chạy thế nào.
 
-Mỗi công tắc được bộ môi giới thông tin đăng nhập kiểm tra khi lượt chạy khởi chạy: một quyền hạn bị tắt đơn giản có nghĩa là token tương ứng không bao giờ được phát hành vào môi trường của lượt chạy.
-
-:::caution[Mặc định không gian làm việc nghĩa là bộ thiết lập thận trọng của máy chủ]
-Một agent để ở “Dùng mặc định không gian làm việc” sẽ chạy với git push, GitHub API và dịch vụ phiếu đều **tắt** và mạng **bật**. Những mặc định về quyền hạn hiển thị tại Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư là một tùy chọn phía máy khách. Nếu bạn muốn một agent push hoặc mở PR, hãy bật công tắc lên và cấp các quyền hạn một cách minh thị.
-
-Những quyền hạn này đóng vai trò cổng cho thông tin đăng nhập và các công cụ của harness, một tầng tách biệt với sandbox của hệ điều hành. `cc_server` bọc các lượt chạy agent trong sandbox của máy chủ ở nơi có một sandbox như vậy — Windows không có backend gốc, còn Linux và WSL2 cần `bwrap` và `socat`. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết toàn bộ các ranh giới.
+:::note[Quy tắc và sandbox của hệ điều hành là hai tầng tách biệt]
+Quy tắc quyết định agent được làm gì; sandbox của hệ điều hành giới hạn nơi các tiến trình của nó có thể đọc, ghi và kết nối. `cc_server` bọc các lượt chạy agent trong sandbox của máy chủ ở nơi có một sandbox như vậy — Windows không có backend gốc, còn Linux và WSL2 cần `bwrap` và `socat`. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết toàn bộ các ranh giới.
 :::
 
 ## Xác nhận nó chạy

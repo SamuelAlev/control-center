@@ -2,7 +2,7 @@
 title: Dar a um agente uma máquina para testar
 description: Dê a um agente um navegador, um ambiente de trabalho, um emulador Android ou um Simulador de iOS descartáveis — observado em direto, com controlos que pode assumir.
 slug: pt-PT/manual/guias/usar-rigs
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Um **rig** é uma máquina descartável que um agente abre quando precisa mesmo de
@@ -203,9 +203,11 @@ O que muda:
 - Nada do que executa chega ao anfitrião. Um `rm -rf` lá dentro custa-lhe o rig.
 - A rede tem negação por predefinição. Só os anfitriões da lista de permitidos
   do rig são alcançáveis, e tudo passa por um portão que a aplica.
-- `git push` continua a funcionar. O rig não guarda nenhuma credencial; pede ao
-  servidor uma de curta duração por operação, e esse token é revogado quando o
-  rig fecha.
+- `git push` continua a funcionar num terminal que abriu. O rig não guarda
+  nenhuma credencial; pede ao servidor uma de curta duração por operação,
+  limitada pelo seu próprio acesso ao forge, e esse token é revogado quando o
+  rig fecha. Um rig aberto por um agente recebe uma credencial só de leitura,
+  pelo que pode fazer fetch, mas não push.
 
 O que deve saber:
 

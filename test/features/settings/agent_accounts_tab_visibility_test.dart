@@ -1,10 +1,16 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_harness/provider.dart'
-    show HarnessAuthMethod, HarnessProviderEnabled, HarnessProviderInfo;
+    show
+        HarnessAuthMethod,
+        HarnessCredentialSummary,
+        HarnessProviderEnabled,
+        HarnessProviderInfo;
 import 'package:control_center/features/settings/presentation/settings_contributions.dart';
 import 'package:control_center/features/settings/presentation/widgets/agent_account_pools_tab.dart';
+import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:flutter/widgets.dart';
@@ -28,22 +34,47 @@ Agent _agent({String? adapterId}) => Agent(
 List<ClaudeAccountView> _claudeAccounts(int n) => [
   for (var i = 0; i < n; i++)
     ClaudeAccountView(
-      account: ClaudeAccount(id: 'acct-$i', label: 'Account $i', loggedIn: true),
+      account: ClaudeAccount(
+        id: 'acct-$i',
+        label: 'Account $i',
+        loggedIn: true,
+      ),
     ),
 ];
+
+HarnessProviderInfo _provider({int keys = 2}) => HarnessProviderInfo(
+  id: 'anthropic',
+  displayName: 'Anthropic',
+  authMethods: const [HarnessAuthMethod.apiKey],
+  enabled: HarnessProviderEnabled.account,
+  hasCredential: keys > 0,
+  credentials: [
+    for (var i = 0; i < keys; i++)
+      HarnessCredentialSummary(
+        credentialId: 'key-$i',
+        method: HarnessAuthMethod.apiKey,
+        isActive: i == 0,
+        removable: true,
+      ),
+  ],
+);
 
 /// Evaluates the contributed predicate inside a real `WidgetRef`.
 Future<bool> _visible(
   WidgetTester tester, {
   required Agent agent,
   int claudeAccounts = 0,
-  List<HarnessProviderInfo> rotatable = const [],
+  List<HarnessProviderInfo> providers = const [],
+  AccountPool agentPool = const AccountPool(),
 }) async {
   final overrides = <Override>[
     claudeAccountsProvider.overrideWith(
       (ref) async => _claudeAccounts(claudeAccounts),
     ),
-    rotatableHarnessProvidersProvider.overrideWithValue(rotatable),
+    harnessProvidersProvider.overrideWith((ref) async => providers),
+    accountPoolProvider.overrideWith(
+      (ref, scope) async => (pool: agentPool, inherited: null),
+    ),
   ];
 
   late bool result;
@@ -58,7 +89,8 @@ Future<bool> _visible(
       ),
     ),
   );
-  // The account probe is a future; let it land before reading the verdict.
+  // The account probes are futures; let them land before reading the verdict.
+  await tester.pump();
   await tester.pump();
   return result;
 }
@@ -76,14 +108,17 @@ void main() {
       expect(accountLaneForAdapter('claude-code'), AccountLane.claudeCode);
     });
 
-    test('an unknown adapter id is the built-in harness, matching dispatch', () {
-      // Deleted runners (Codex, OpenCode, cursor-agent) fall through the same
-      // lookup `DispatchAgentUseCase` uses, so a leftover id still describes
-      // the lane the run actually takes.
-      expect(accountLaneForAdapter('codex'), AccountLane.harness);
-      expect(accountLaneForAdapter('opencode'), AccountLane.harness);
-      expect(accountLaneForAdapter('cursor-agent'), AccountLane.harness);
-    });
+    test(
+      'an unknown adapter id is the built-in harness, matching dispatch',
+      () {
+        // Deleted runners (Codex, OpenCode, cursor-agent) fall through the same
+        // lookup `DispatchAgentUseCase` uses, so a leftover id still describes
+        // the lane the run actually takes.
+        expect(accountLaneForAdapter('codex'), AccountLane.harness);
+        expect(accountLaneForAdapter('opencode'), AccountLane.harness);
+        expect(accountLaneForAdapter('cursor-agent'), AccountLane.harness);
+      },
+    );
   });
 
   group('the Accounts tab is offered only when it has a choice to make', () {
@@ -113,10 +148,7 @@ void main() {
 
     testWidgets('claude-code with no accounts hides it', (tester) async {
       expect(
-        await _visible(
-          tester,
-          agent: _agent(adapterId: 'claude-code'),
-        ),
+        await _visible(tester, agent: _agent(adapterId: 'claude-code')),
         isFalse,
       );
     });
@@ -141,15 +173,7 @@ void main() {
         await _visible(
           tester,
           agent: _agent(adapterId: 'cc-harness'),
-          rotatable: const [
-            HarnessProviderInfo(
-              id: 'anthropic',
-              displayName: 'Anthropic',
-              authMethods: [HarnessAuthMethod.apiKey],
-              enabled: HarnessProviderEnabled.account,
-              hasCredential: true,
-            ),
-          ],
+          providers: [_provider()],
         ),
         isTrue,
       );
@@ -163,15 +187,46 @@ void main() {
           tester,
           agent: _agent(adapterId: 'codex'),
           claudeAccounts: 3,
-          rotatable: const [
-            HarnessProviderInfo(
-              id: 'anthropic',
-              displayName: 'Anthropic',
-              authMethods: [HarnessAuthMethod.apiKey],
-              enabled: HarnessProviderEnabled.account,
-              hasCredential: true,
-            ),
-          ],
+          providers: [_provider()],
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('a harness provider with one key hides it', (tester) async {
+      expect(
+        await _visible(
+          tester,
+          agent: _agent(adapterId: 'cc-harness'),
+          providers: [_provider(keys: 1)],
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('a pool naming only removed accounts keeps the tab', () {
+    // Dispatch holds the agent's runs on such a pool, on every lane, so the
+    // editor that fixes it must stay reachable with one credential left.
+    testWidgets('on the Claude Code lane', (tester) async {
+      expect(
+        await _visible(
+          tester,
+          agent: _agent(adapterId: 'claude-code'),
+          claudeAccounts: 1,
+          agentPool: const AccountPool(accountIds: ['gone']),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('on a harness lane', (tester) async {
+      expect(
+        await _visible(
+          tester,
+          agent: _agent(adapterId: 'cc-harness'),
+          providers: [_provider(keys: 1)],
+          agentPool: const AccountPool(accountIds: ['gone']),
         ),
         isTrue,
       );

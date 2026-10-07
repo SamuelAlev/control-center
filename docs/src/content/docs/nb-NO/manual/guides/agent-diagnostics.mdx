@@ -2,7 +2,7 @@
 title: Diagnostiser en agent
 description: Gå gjennom kjøreloggen, adaptersonderingen, serverstatusen og vertsdiagnostikken når en agent slutter å produsere kjøringer.
 slug: nb-NO/handbok/slik-gjor-du/diagnostiser-agent
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Denne guiden viser deg hvordan du finner ut hvorfor en agent ikke produserer kjøringer.
@@ -60,19 +60,18 @@ To ting det er verdt å vite når en endring «fungerer i tester, men ikke i app
 
 **Innstillinger → Server → Diagnostikk og personvern** (`/settings/server/diagnostics`) er siden på vertsnivå. Den inneholder:
 
-- **Sandkasse** — hovedbryteren, den oppdagede backenden, et installasjonstips og standardbryterne for kapasiteter. Bare den oppdagede backenden kommer fra serveren; se advarselen nedenfor. Det finnes ingen nullstillingskontroll.
+- **Sandkasse** — hovedbryteren, den oppdagede backenden og et installasjonstips. Bare den oppdagede backenden kommer fra serveren; se advarselen nedenfor. Det finnes ingen nullstillingskontroll.
 - **Semantisk søk** — livssyklusen til embedding-modellen på enheten: installert, laster ned med en prosentandel, ikke installert eller en installasjonsfeil. Inntil den er installert, holder minne- og kodesøk seg til kun nøkkelord.
 - **Systematferd** — hold datamaskinen våken mens agenter kjører.
-- **Synkroniseringsmotor** — kill-brytere per lager for saker, meldinger og notater. Dette er nødutganger tilbake til abonnementer med fulle øyeblikksbilder; en endring påvirker bare nye abonnementer, så den får full effekt først når appen lastes på nytt.
 - **Loggnivå** — øk det før du reproduserer en feil.
 - **Personvern** — om rå diff-innhold kan videresendes til agentens modell, og om krasjrapporter sendes.
 
 :::caution[Denne delen rapporterer om verten, og kontrollene er klientside]
-Deteksjon og håndheving stemmer nå overens: der detektoren rapporterer en innebygd backend, er agentkjøringer på den verten faktisk pakket inn i den. Men detektoren er det eneste levende i denne delen. Hovedbryteren, backend-velgeren og standardbryterne for kapasiteter er innstillinger som lagres på enheten din, og serveren leser ingen av dem — serverens egen bryter er `--sandbox` (`on` som standard, `off` for å velge det bort), og for enhver agent som står på «Bruk standard for arbeidsområde», faller serveren tilbake til sin konservative standard: ingen git push, ingen GitHub-API, ingen nøkkel for saker, nettverk på.
+Deteksjon og håndheving stemmer nå overens: der detektoren rapporterer en innebygd backend, er agentkjøringer på den verten faktisk pakket inn i den. Men detektoren er det eneste levende i denne delen. Hovedbryteren og backend-velgeren er innstillinger som lagres på enheten din, og serveren leser ingen av dem — serverens egen bryter er `--sandbox` (`on` som standard, `off` for å velge det bort).
 
 Så en advarsel her er verdt å handle på, men den er vanligvis ikke grunnen til at en agent feiler. For å bekrefte hvilken tilstand serveren er i, leser du oppstartsloggen: den skriver ut `agent sandbox ON` med backend-merknaden, `no OS-native agent sandbox on this host` med et installasjonstips, eller `agent sandbox DISABLED by --sandbox off`. `GET /healthz` inneholder ingen sandkasse-felt.
 
-Der det ikke finnes noen backend — alltid på Windows, og på Linux eller WSL2 uten `bwrap` og `socat` — er kjøringer **ikke** sandkasset, og det som avgrenser dem, er samtalens egen checkout, kapabilitetene som styrer hvilken påloggingsinformasjon som utstedes inn i den, tillatelsesreglene for handlinger, sanering av miljøet og verktøyflaten modusen tillater.
+Der det ikke finnes noen backend — alltid på Windows, og på Linux eller WSL2 uten `bwrap` og `socat` — er kjøringer **ikke** sandkasset, og det som avgrenser dem, er samtalens egen checkout, kodeverttokenet som bare kan lese, og push-gatewayen, tillatelsesreglene for handlinger, sanering av miljøet og verktøyflaten modusen tillater.
 :::
 
 ## Vanlige feil
@@ -83,7 +82,7 @@ Installer CLI-en **på serververten**, og klikk deretter **Oppdater** på siden 
 
 ### Agenten kan ikke pushe eller åpne en pull request
 
-Kapabilitetene er porten. Åpne **Innstillinger → Arbeidsområde → Agenter** → agenten → **Sandkassetillatelser**, slå på bryteren og aktiver **Tillat git push** og **Tillat GitHub API-kall**. Hvis bryteren står på «Bruk standard for arbeidsområde», får agenten ingen av dem.
+Les hva git eller agenten skrev ut. `Control Center policy: …` betyr at en handlingsregel nektet det, eller at en godkjenning ikke ble besvart: sjekk **Push til en remote** og **Åpne en pull request** under **Innstillinger → Arbeidsområde → Agenttillatelser**. Hvis git sier at Control Center ikke har noen GitHub-legitimasjon som kan pushe, installerer du GitHub App-en på det repoet eller kobler til GitHub.
 
 ### Semantisk søk gir ingenting nyttig
 

@@ -165,33 +165,6 @@ void main() {
     });
   });
 
-  group('SyncChangesTableData generated methods', () {
-    test('serialization + equality + copyWith run', () async {
-      await db
-          .into(db.syncChangesTable)
-          .insert(
-            SyncChangesTableCompanion.insert(
-              workspaceId: 'ws',
-              seq: 1,
-              store: 'tickets',
-              tbl: 'tickets',
-              pk: 't-1',
-              op: 'upsert',
-              createdAtMs: DateTime(2026, 1, 1).millisecondsSinceEpoch,
-            ),
-          );
-      final row = await (db.select(
-        db.syncChangesTable,
-      )..where((t) => t.pk.equals('t-1'))).getSingle();
-      exercise<SyncChangesTableData>(
-        row,
-        'tickets',
-        'pk',
-        () => row.copyWith(pk: row.pk),
-      );
-    });
-  });
-
   group('ApprovalsTableData generated methods', () {
     test('serialization + equality + copyWith run', () async {
       await db.approvalDao.upsert(

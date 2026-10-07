@@ -1,9 +1,11 @@
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/service_status/presentation/widgets/service_status_badge.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/open_url.dart';
+import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
 import 'package:flutter/widgets.dart';
@@ -66,12 +68,22 @@ class _ServiceStatusSidebarEntryState
     final claude = ref.watch(claudeStatusProvider);
     final openai = ref.watch(openaiStatusProvider);
     final kimi = ref.watch(kimiStatusProvider);
+    // Only the services this install uses: a provider nobody here signed in
+    // to neither colours the dot nor joins the logo stack.
+    final inUse = ref.watch(servicesInUseProvider);
+    final used = [
+      (StatusService.github, AiBrand.github, github),
+      (StatusService.claude, AiBrand.claude, claude),
+      (StatusService.openai, AiBrand.codex, openai),
+      (StatusService.kimi, AiBrand.kimi, kimi),
+    ].where((s) => inUse.contains(s.$1));
     final headline = _worstIndicator([
-      github.value?.indicator,
-      claude.value?.indicator,
-      openai.value?.indicator,
-      kimi.value?.indicator,
+      for (final (_, _, status) in used) status.value?.indicator,
     ]);
+    final faulty = [
+      for (final (_, brand, status) in used)
+        if (_isFaulty(status)) brand,
+    ];
     // The refresh flag is a property of the ONE combined fetch, so it comes
     // from the poller itself: during a reload the slices keep serving the
     // retained snapshot (that is what keeps the dot green) and so no longer
@@ -101,6 +113,7 @@ class _ServiceStatusSidebarEntryState
         claude: claude,
         openai: openai,
         kimi: kimi,
+        inUse: inUse,
         refreshing: refreshing,
         onRefresh: () async {
           await ref.read(serviceStatusProvider.notifier).refresh();
@@ -117,7 +130,12 @@ class _ServiceStatusSidebarEntryState
           selected: _controller.isOpen,
           // Trailing badge (the row default): the dot anchors to the row's
           // right edge instead of hugging the label's words.
-          badge: _StatusBadge(indicator: headline),
+          badge: ServiceStatusBadge(
+            color: serviceIndicatorColor(context.designSystem, headline),
+            semanticLabel: serviceStatusWord(l10n, headline),
+            faulty: faulty,
+            selected: _controller.isOpen,
+          ),
           onPressed: _open,
         ),
       ),
@@ -169,6 +187,22 @@ bool _isFaulty(AsyncValue<GitHubServiceStatus> status) {
   return indicator != GitHubStatusIndicator.none;
 }
 
+/// A block that renders more than its header row — faulty, or carrying an
+/// incident card or degraded component even while the page still reads
+/// "Operational" — and so needs a divider before the next one.
+bool _hasDetail(AsyncValue<GitHubServiceStatus> status) =>
+    _isFaulty(status) ||
+    (status.value?.incidents.isNotEmpty ?? false) ||
+    _degraded(status.value?.components ?? const []).isNotEmpty;
+
+/// Components worth listing: neither healthy nor of unknown state.
+List<GitHubStatusComponent> _degraded(List<GitHubStatusComponent> all) => [
+  for (final c in all)
+    if (c.status != GitHubComponentStatus.operational &&
+        c.status != GitHubComponentStatus.unknown)
+      c,
+];
+
 /// Short status word for the tag / provider blocks ("Operational", …). Never
 /// the API's own description string — it is English-only and verbose.
 ///
@@ -187,60 +221,13 @@ String serviceStatusWord(
   GitHubStatusIndicator.unknown || null => l10n.serviceStatusUnknown,
 };
 
-/// The entry's live status badge: a colored dot. The status word is not
-/// painted — colour is the signal — and rides along as a semantic label so
-/// screen readers still hear the state. In the icon-only rail the badge
-/// straddles the item square's top-right corner (the tooltip still names
-/// the entry).
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.indicator});
-
-  /// Headline indicator (worst across providers); null before the first load.
-  final GitHubStatusIndicator? indicator;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    return Semantics(
-      label: serviceStatusWord(l10n, indicator),
-      child: _StatusDot(color: _indicatorColor(tokens, indicator)),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.color, this.size = 8});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 4,
-            spreadRadius: 0.5,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _StatusFlyout extends StatelessWidget {
   const _StatusFlyout({
     required this.github,
     required this.claude,
     required this.openai,
     required this.kimi,
+    required this.inUse,
     required this.refreshing,
     required this.onRefresh,
   });
@@ -249,6 +236,9 @@ class _StatusFlyout extends StatelessWidget {
   final AsyncValue<GitHubServiceStatus> claude;
   final AsyncValue<GitHubServiceStatus> openai;
   final AsyncValue<GitHubServiceStatus> kimi;
+
+  /// The services that get a block (see [servicesInUseProvider]).
+  final Set<StatusService> inUse;
 
   /// Whether the combined snapshot fetch is in flight — from the poller, not
   /// derived from the slices (see the entry).
@@ -272,43 +262,55 @@ class _StatusFlyout extends StatelessWidget {
     }
     final providers =
         <
-          ({
-            String name,
-            AsyncValue<GitHubServiceStatus> status,
-            String pageUrl,
-            String openLabel,
-            String fetchFailedLabel,
-          })
-        >[
-          (
-            name: 'GitHub',
-            status: github,
-            pageUrl: _githubStatusPageUrl,
-            openLabel: l10n.githubStatusOpenInBrowser,
-            fetchFailedLabel: l10n.githubStatusFetchFailed,
-          ),
-          (
-            name: 'Claude',
-            status: claude,
-            pageUrl: _claudeStatusPageUrl,
-            openLabel: l10n.claudeStatusOpenInBrowser,
-            fetchFailedLabel: l10n.claudeStatusFetchFailed,
-          ),
-          (
-            name: 'Codex',
-            status: openai,
-            pageUrl: _openaiStatusPageUrl,
-            openLabel: l10n.openaiStatusOpenInBrowser,
-            fetchFailedLabel: l10n.openaiStatusFetchFailed,
-          ),
-          (
-            name: 'Kimi',
-            status: kimi,
-            pageUrl: _kimiStatusPageUrl,
-            openLabel: l10n.kimiStatusOpenInBrowser,
-            fetchFailedLabel: l10n.kimiStatusFetchFailed,
-          ),
-        ];
+              ({
+                StatusService service,
+                String name,
+                AiBrand brand,
+                AsyncValue<GitHubServiceStatus> status,
+                String pageUrl,
+                String openLabel,
+                String fetchFailedLabel,
+              })
+            >[
+              (
+                service: StatusService.github,
+                name: 'GitHub',
+                brand: AiBrand.github,
+                status: github,
+                pageUrl: _githubStatusPageUrl,
+                openLabel: l10n.githubStatusOpenInBrowser,
+                fetchFailedLabel: l10n.githubStatusFetchFailed,
+              ),
+              (
+                service: StatusService.claude,
+                name: 'Claude',
+                brand: AiBrand.claude,
+                status: claude,
+                pageUrl: _claudeStatusPageUrl,
+                openLabel: l10n.claudeStatusOpenInBrowser,
+                fetchFailedLabel: l10n.claudeStatusFetchFailed,
+              ),
+              (
+                service: StatusService.openai,
+                name: 'Codex',
+                brand: AiBrand.codex,
+                status: openai,
+                pageUrl: _openaiStatusPageUrl,
+                openLabel: l10n.openaiStatusOpenInBrowser,
+                fetchFailedLabel: l10n.openaiStatusFetchFailed,
+              ),
+              (
+                service: StatusService.kimi,
+                name: 'Kimi',
+                brand: AiBrand.kimi,
+                status: kimi,
+                pageUrl: _kimiStatusPageUrl,
+                openLabel: l10n.kimiStatusOpenInBrowser,
+                fetchFailedLabel: l10n.kimiStatusFetchFailed,
+              ),
+            ]
+            .where((p) => inUse.contains(p.service))
+            .toList();
 
     // Off-Material overlay: supply a concrete text style so nothing falls
     // through to the 48px yellow error fallback (same guard as the
@@ -391,7 +393,7 @@ class _StatusFlyout extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 for (var i = 0; i < providers.length; i++) ...[
                   if (i > 0) ...[
-                    if (_isFaulty(providers[i - 1].status)) ...[
+                    if (_hasDetail(providers[i - 1].status)) ...[
                       const SizedBox(height: AppSpacing.sm),
                       CcDivider(color: tokens.borderSecondary),
                       const SizedBox(height: AppSpacing.sm),
@@ -400,6 +402,7 @@ class _StatusFlyout extends StatelessWidget {
                   ],
                   _ProviderBlock(
                     name: providers[i].name,
+                    brand: providers[i].brand,
                     status: providers[i].status,
                     pageUrl: providers[i].pageUrl,
                     openLabel: providers[i].openLabel,
@@ -424,6 +427,7 @@ class _StatusFlyout extends StatelessWidget {
 class _ProviderBlock extends StatelessWidget {
   const _ProviderBlock({
     required this.name,
+    required this.brand,
     required this.status,
     required this.pageUrl,
     required this.openLabel,
@@ -431,6 +435,7 @@ class _ProviderBlock extends StatelessWidget {
   });
 
   final String name;
+  final AiBrand brand;
   final AsyncValue<GitHubServiceStatus> status;
   final String pageUrl;
   final String openLabel;
@@ -469,24 +474,20 @@ class _ProviderBlock extends StatelessWidget {
         ],
       ),
       data: (s) {
-        final degraded = s.components
-            .where(
-              (c) =>
-                  c.status != GitHubComponentStatus.operational &&
-                  c.status != GitHubComponentStatus.unknown,
-            )
-            .toList();
+        final degraded = _degraded(s.components);
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                _StatusDot(
-                  color: _indicatorColor(tokens, s.indicator),
+                ServiceStatusDot(
+                  color: serviceIndicatorColor(tokens, s.indicator),
                   size: 10,
                 ),
                 const SizedBox(width: 8),
+                AiBrandLogo(brand: brand, color: tokens.textPrimary),
+                const SizedBox(width: 6),
                 Text(
                   name,
                   style: TextStyle(
@@ -499,7 +500,7 @@ class _ProviderBlock extends StatelessWidget {
                 Text(
                   serviceStatusWord(l10n, s.indicator),
                   style: TextStyle(
-                    color: _indicatorColor(tokens, s.indicator),
+                    color: serviceIndicatorColor(tokens, s.indicator),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -520,7 +521,7 @@ class _ProviderBlock extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
-                      _StatusDot(
+                      ServiceStatusDot(
                         color: _componentColor(tokens, c.status),
                         size: 7,
                       ),
@@ -663,31 +664,6 @@ class _IncidentTile extends StatelessWidget {
 
 void _open(String url) {
   openExternalUrl(url);
-}
-
-Color _indicatorColor(
-  DesignSystemTokens? tokens,
-  GitHubStatusIndicator? indicator, {
-  bool hasError = false,
-}) {
-  if (hasError) {
-    return tokens?.muted ?? const Color(0xFF8B8B8B);
-  }
-  switch (indicator) {
-    case GitHubStatusIndicator.none:
-      return tokens?.success ?? const Color(0xFF1FAE5C);
-    case GitHubStatusIndicator.minor:
-      return tokens?.warn ?? const Color(0xFFE0B400);
-    case GitHubStatusIndicator.major:
-      return tokens?.warn ?? const Color(0xFFE07B00);
-    case GitHubStatusIndicator.critical:
-      return tokens?.danger ?? const Color(0xFFD93636);
-    case GitHubStatusIndicator.maintenance:
-      return tokens?.muted ?? const Color(0xFF3478F6);
-    case GitHubStatusIndicator.unknown:
-    case null:
-      return tokens?.muted ?? const Color(0xFF8B8B8B);
-  }
 }
 
 Color _componentColor(

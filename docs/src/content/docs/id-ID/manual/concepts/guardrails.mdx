@@ -2,7 +2,7 @@
 title: Pagar pengaman â€” satu kebijakan untuk setiap tindakan yang mengubah keadaan
 description: Mengapa Control Center mengalirkan setiap efek samping agen melalui satu mesin allow/prompt/deny, mengapa taksonomi ActionClass sengaja dibiarkan kecil, dan apa yang sebenarnya diubah oleh dial otonomi.
 slug: id-ID/panduan-pengguna/konsep/pagar-pengaman
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agen di Control Center dapat menghapus file, mem-push branch, memublikasikan
@@ -246,9 +246,7 @@ Harness bawaan menyatakan bahwa alat file in-process-nya **tidak** di-sandbox â€
 permukaan alat dan mesin kebijakan ini adalah satu-satunya batas sistem file
 yang dimilikinya. Claude Code menyatakan bahwa panggilan alatnya sendiri
 **tidak** dapat dicegat, karena ia dijalankan dengan
-`--dangerously-skip-permissions`; Control Center hanya melihat panggilan
-`mcp__*`-nya, sedangkan alat baca, tulis, edit, dan shell miliknya berjalan
-tanpa terlihat.
+`--dangerously-skip-permissions`; Control Center melihat panggilan `mcp__*`-nya dan, melalui hook, baris perintah `Bash`-nya, sedangkan alat baca, tulis, dan edit miliknya berjalan tanpa terlihat.
 
 Layar pengaturan menampilkan matriks ini, karena satu-satunya kegagalan yang
 tidak dapat dimaafkan bagi sistem pagar pengaman adalah mengklaim cakupan yang

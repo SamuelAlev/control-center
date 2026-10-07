@@ -10,9 +10,9 @@
 # the server files; codeServer.openFile/closeFile moved to catalog/code_server_file_ops.dart.
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
-packages/cc_domain/lib/src/dtos/dtos.dart  4179
+packages/cc_domain/lib/src/dtos/dtos.dart  4173
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2611
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2592
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1713
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1586
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2351
@@ -23,9 +23,9 @@ packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1803
 packages/cc_infra/lib/src/rigs/rig_service.dart  2976
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2889
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3360
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7958
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3354
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7924
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2435
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16108
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16071
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2563

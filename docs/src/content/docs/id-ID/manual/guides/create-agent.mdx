@@ -2,7 +2,7 @@
 title: Buat dan konfigurasi agen
 description: Tambahkan agen ke ruang kerja, berikan adapter, model, skill, dan izin kepadanya, lalu pastikan agen dapat berjalan.
 slug: id-ID/panduan-pengguna/panduan-praktis/buat-agen
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Panduan ini menunjukkan cara menambahkan agen ke ruang kerja dan mengonfigurasinya hingga benar-benar dapat berjalan.
@@ -68,19 +68,12 @@ Anda tidak memilih skill milik repo sendiri di sini. Repo yang menyertakannya (d
 
 ## Berikan izin
 
-**Izin sandbox** dimulai pada "Gunakan default ruang kerja". Nyalakan tombolnya untuk menyetel izin bagi agen ini, lalu aktifkan:
+Agen tidak memiliki tombol izin sendiri. Apa yang boleh di-push, dibuka, di-merge, atau dijangkaunya ditetapkan oleh aturan aksi di **Pengaturan → Ruang kerja → Izin agen**, tempat sebuah aturan dapat dibatasi ke agen ini. Secara bawaan, push, pull request, review atau merge, dan penulisan ke pelacak masing-masing menanyakan Anda terlebih dahulu, dan akses jaringan diizinkan.
 
-- **Izinkan git push** — menyuntikkan token GitHub yang dibutuhkan agen untuk push
-- **Izinkan panggilan API GitHub** — memungkinkan agen membaca PR, issue, dan metadata repo
-- **Izinkan panggilan API ticketing** — menyuntikkan kunci penyedia ticketing
-- **Izinkan akses jaringan umum** — juga mengaktifkan alat `web_fetch` dan `web_search` milik harness bawaan
+Token GitHub agen selalu hanya-baca. Push melewati Control Center, yang menanyakan aturan **Push ke remote** sebelum meneruskannya. Lihat [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/) untuk cara setiap aturan menjangkau sebuah run.
 
-Setiap tombol diperiksa oleh broker kredensial saat run diluncurkan: kemampuan yang mati berarti token yang sesuai tidak akan pernah dibuat ke dalam lingkungan run.
-
-:::caution[Default ruang kerja berarti kumpulan konservatif server]
-Agen yang dibiarkan pada "Gunakan default ruang kerja" berjalan dengan git push, API GitHub, dan ticketing semuanya **mati** serta jaringan **aktif**. Default kemampuan yang ditampilkan di Pengaturan → Server → Diagnostik & privasi adalah preferensi sisi klien. Jika Anda ingin agen push atau membuka PR, nyalakan tombolnya dan berikan kemampuannya secara eksplisit.
-
-Kemampuan ini menjadi gerbang bagi kredensial dan alat harness, yang merupakan lapisan terpisah dari sandbox OS. `cc_server` membungkus run agen dalam sandbox host bila tersedia — Windows tidak memiliki backend native, sedangkan Linux dan WSL2 memerlukan `bwrap` dan `socat`. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk keseluruhan batasnya.
+:::note[Aturan dan sandbox OS adalah lapisan yang terpisah]
+Aturan menentukan apa yang boleh dilakukan agen; sandbox OS membatasi di mana prosesnya dapat membaca, menulis, dan terhubung. `cc_server` membungkus run agen dalam sandbox host bila tersedia — Windows tidak memiliki backend native, sedangkan Linux dan WSL2 memerlukan `bwrap` dan `socat`. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk keseluruhan batasnya.
 :::
 
 ## Pastikan agen dapat berjalan

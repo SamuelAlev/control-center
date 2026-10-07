@@ -384,7 +384,8 @@ void main() {
       final github = _FakeGitHubPrClient();
       final reviews = _FakeReviewSpaces(_assoc());
       final service = ReviewPublisherService(
-        githubPrClientFor: (_) => github,
+        githubPrClientFor: (_, {required workspaceId, required owner}) =>
+            github,
         messaging: _FakeMessaging([
           // consensus + anchored → inline
           _node(
@@ -427,7 +428,8 @@ void main() {
 
     test('rejects a space owned by another workspace', () async {
       final service = ReviewPublisherService(
-        githubPrClientFor: (_) => _FakeGitHubPrClient(),
+        githubPrClientFor: (_, {required workspaceId, required owner}) =>
+            _FakeGitHubPrClient(),
         messaging: _FakeMessaging([]),
         reviewSpaces: _FakeReviewSpaces(_assoc(workspaceId: 'ws-A')),
       );
@@ -443,7 +445,8 @@ void main() {
       () async {
         final github = _FakeGitHubPrClient(rejectInlineWith422: true);
         final service = ReviewPublisherService(
-          githubPrClientFor: (_) => github,
+          githubPrClientFor: (_, {required workspaceId, required owner}) =>
+              github,
           messaging: _FakeMessaging([
             _node(
               id: 'n-1',
@@ -473,7 +476,8 @@ void main() {
     test('all_open selection includes unconfirmed findings', () async {
       final github = _FakeGitHubPrClient();
       final service = ReviewPublisherService(
-        githubPrClientFor: (_) => github,
+        githubPrClientFor: (_, {required workspaceId, required owner}) =>
+            github,
         messaging: _FakeMessaging([
           _node(
             id: 'n-1',
@@ -502,7 +506,8 @@ void main() {
 
     test('errors when the space is not linked to a review', () async {
       final service = ReviewPublisherService(
-        githubPrClientFor: (_) => _FakeGitHubPrClient(),
+        githubPrClientFor: (_, {required workspaceId, required owner}) =>
+            _FakeGitHubPrClient(),
         messaging: _FakeMessaging([]),
         reviewSpaces: _FakeReviewSpaces(_assoc(spaceId: 'ch-OTHER')),
       );

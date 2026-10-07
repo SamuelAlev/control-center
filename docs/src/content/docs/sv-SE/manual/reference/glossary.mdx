@@ -2,7 +2,7 @@
 title: Ordlista
 description: Definitioner av centrala begrepp som används i Control Center.
 slug: sv-SE/handbok/referens/ordlista
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'En AI-arbetare med identitet, roll, skills och förmågor. Tillhör exakt en arbetsyta. Systemets främsta aktör.'],
+['Agent', 'En AI-arbetare med identitet, roll, skills och en adapter. Tillhör exakt en arbetsyta. Systemets främsta aktör.'],
 ['Adapter', 'Den körare som utför en agenttur. Två levereras: Control Center (inbyggd) – den inbyggda harnessen i processen som talar med modellleverantörer – och Claude Code via CLI:t claude. Cursor, Codex och de övriga modellleverantörerna ansluter till den inbyggda adaptern, inte som separata körare.'],
 ['Arbetsyta', 'Den isolerande tenanten på toppnivå. Grupperar agenter, repos, ytor, ärenden, minne och pipelines. Isoleringen är strukturell, inte konventionell: varje arbetsyta har sin egen SQLite-fil, så en läsning över arbetsytor kompilerar inte. Varje rutt i appen har prefixet /workspaces/:workspaceId.'],
 ['Kodvärd', 'En kodvärd – GitHub, GitLab eller Bitbucket Cloud. En egenskap hos varje repo, läst från dess origin-remote vid registreringen. En arbetsyta kan hålla repos hos alla tre.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Skiftlägesokänslig mängd skill-identifierare som injicerar relevant kontext i prompter vid dispatchtillfället.'],
 ['Skillkälla', 'Ett GitHub-repositorium som registreras per arbetsyta som en skillkatalog. Opålitligt till sin konstruktion: repositoriets metadata är enbart för visning och varje installation passerar skanningsgrinden som faller stängt innan något innehåll når disk eller en prompt.'],
 ['skills-lock.json', 'Manifestet per arbetsyta över installerade skills: för var och en dess källrepositorium, sökvägen i repot, den commit den är fäst vid och en sammanräknad innehållshash. Installationer, uppdateringar och avinstallationer håller det aktuellt; verify_skills kontrollerar det mot disken.'],
-['AgentCapabilities', 'Fyra flaggor (push till repo, GitHub-API, ärendehantering, utgående nätverkstrafik) som löses upp per dispatch: agentens standard, sedan användarens standard, med en åsidosättning per samtal. Upprätthålls genom frånvaro, eftersom en avstängd förmåga innebär att token eller den utgående trafiken helt enkelt aldrig injiceras.'],
+['Agentkörningsgateway', 'En loopback-slutpunkt på cc_server som tillämpar åtgärdspolicyn inuti en agents sandlåda. Varje GitHub-push som en agent gör leds dit, kontrolleras mot regeln Pusha till en remote och skickas vidare med en skrivtoken som agenten aldrig har; Claude Codes Bash-kommandon kontrolleras via en hook på samma slutpunkt.'],
 ['Mode', 'chat, plan, review eller orchestrate. Lagras per yta, så en agent kan vara i olika lägen i olika ytor; varje samtal i en yta delar det. Grindar systemprompten, sandlådans skrivregler och MCP-verktygens tillåtelselista.'],
 ['SandboxBackend', 'microvm (en avskild VM – den enda backend som har en kärngräns, tillämpad på interaktiva terminaler), native (OS-native Seatbelt på macOS, bubblewrap på Linux och WSL2) eller none. Sonderas en gång vid start; native lindar in agentdispatch när den finns tillgänglig. Windows har ingen native-backend och Linux behöver bwrap plus socat, så körningar där lindas inte in; --sandbox off väljer bort det medvetet.'],
 ['Station', 'En tillfällig maskin som en agent kör i realtid: en avskild webbläsare eller ett Linux-skrivbord, en värdhanterad Android-emulator eller iOS Simulator, eller en avskild terminal. Bevakas live över sin egen kanal i full upplösning, med övertagande framtvingat på serversidan. Avgränsad till ett samtal så att människans flik och agentens verktyg adresserar en och samma maskin.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i cent) för en enskild agentkörning.'],
 ['WakeReason', 'Varför en agent dispatchades. Sex värden: användarmeddelande, ärendetilldelning, återdispatch efter ett fel, underärende slutfört, schemalagt uppföljningshjärtslag och pipelinesteg.'],
 ['SandboxPort', 'Hanterar sandlådans livscykel (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Präglar avgränsade, förmågegrindade autentiseringsuppgifter för sandlådestart och återkallar dem vid nedrivning.'],
+['CredentialBrokerPort', 'Präglar avgränsade autentiseringsuppgifter för sandlådestart (bara läsning för en agents miljö, skrivning bara för pushvägen på servern) och återkallar dem vid nedrivning.'],
 ['GitRepoInspectorPort', 'Extraherar metadata (ägare, repo, gren) från en lokal Git-reposökväg.'],
 ['EmbeddingPort', 'Producerar enhetsnormerade textinbäddningsvektorer för semantisk sökning.'],
 ['NotificationPort', 'Visar nativa skrivbordsaviseringar och respekterar grindning per kategori/rutt.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Kärnentiteter
 
-**Agent**: En AI-arbetare med identitet, roll, skills och förmågor. Tillhör exakt en arbetsyta. Systemets främsta aktör.
+**Agent**: En AI-arbetare med identitet, roll, skills och en adapter. Tillhör exakt en arbetsyta. Systemets främsta aktör.
 
 **Adapter**: Den körare som utför en agenttur. Två levereras: **Control Center (inbyggd)** – den inbyggda harnessen i processen som talar med modellleverantörer – och **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI och övriga är leverantörer på den inbyggda adaptern, inte separata CLI:n. Se [Hantera adapters och modeller](/sv-SE/handbok/how-to-guider/adapters/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifestet per arbetsyta över installerade skills: för var och en dess källrepositorium, sökvägen i repot, den commit den är fäst vid och en sammanräknad innehållshash. Installationer, uppdateringar och avinstallationer håller det aktuellt; `verify_skills` kontrollerar det mot disken.
 
-**AgentCapabilities**: Fyra flaggor (push till repo, GitHub-API, ärendehantering, utgående nätverkstrafik) som löses upp per dispatch – agentens standard → användarens standard, med en åsidosättning per samtal. Upprätthålls genom frånvaro: en avstängd förmåga innebär att token eller den utgående trafiken helt enkelt aldrig injiceras.
+**Agentkörningsgateway**: En loopback-slutpunkt på `cc_server` som tillämpar åtgärdspolicyn inuti en agents sandlåda. Varje GitHub-push som en agent gör leds dit, kontrolleras mot regeln **Pusha till en remote** och skickas vidare med en skrivtoken som agenten aldrig har; Claude Codes `Bash`-kommandon kontrolleras via en hook på samma slutpunkt. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
 
 **Mode**: `chat`, `plan`, `review` eller `orchestrate`. Lagras **per yta**, så en agent kan vara i olika lägen i olika ytor; varje samtal i en yta delar det. Grindar systemprompten, sandlådans skrivregler och MCP-verktygens tillåtelselista. Composern erbjuder bara `chat`, `plan` och `orchestrate`; `chat` märks som "Agent".
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Hanterar sandlådans livscykel (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Präglar avgränsade, förmågegrindade autentiseringsuppgifter för sandlådestart och återkallar dem vid nedrivning.
+**CredentialBrokerPort**: Präglar avgränsade autentiseringsuppgifter för sandlådestart – bara läsning för en agents miljö, skrivning bara för pushvägen på servern – och återkallar dem vid nedrivning.
 
 **GitRepoInspectorPort**: Extraherar metadata (ägare, repo, gren) från en lokal Git-reposökväg.
 

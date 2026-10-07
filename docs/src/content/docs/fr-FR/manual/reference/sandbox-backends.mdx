@@ -2,13 +2,13 @@
 title: Backends de bac à sable
 description: Les backends de bac à sable, où ils s’appliquent et chaque objet valeur utilisé par le runtime du bac à sable.
 slug: fr-FR/manuel/reference/backends-de-bac-a-sable
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Qu’un lancement soit isolé dans un bac à sable dépend de l’hôte]
 `cc_server` sonde l’hôte une fois au démarrage et encapsule le lancement des agents dans le backend natif lorsque la sonde en signale un disponible et que `--sandbox` n’est pas `off`. Les deux jointures du lancement sont encapsulées : la CLI Claude Code via le port de bac à sable, et ACP ainsi que l’outil `bash` du harnais intégré via le gestionnaire de bac à sable.
 
-Là où la sonde ne signale aucun backend — **Windows toujours**, et Linux ou WSL2 sans `bwrap` ni `socat` — les exécutions d’agent ne sont **pas** isolées dans un bac à sable. ACP et l’outil `bash` du harnais démarrent tout de même avec un environnement assaini ; Claude Code passe par `NoSandboxAdapter` et hérite de l’environnement de l’hôte. Les frontières restantes sont l’arbre de travail propre à l’exécution (copie sur écriture là où `rift` est livré ; `git worktree` sous Windows), les identifiants soumis aux capacités, courtiers par lancement et révoqués au démontage, la politique de commandes propre au mode, les [garde-fous d’action](/fr-FR/manuel/concepts/garde-fous/) unifiés (à échec fermé), l’assainissement de l’environnement sur les chemins ACP et `bash` du harnais, et la surface d’outils que son mode autorise.
+Là où la sonde ne signale aucun backend — **Windows toujours**, et Linux ou WSL2 sans `bwrap` ni `socat` — les exécutions d’agent ne sont **pas** isolées dans un bac à sable. ACP et l’outil `bash` du harnais démarrent tout de même avec un environnement assaini ; Claude Code passe par `NoSandboxAdapter` et hérite de l’environnement de l’hôte. Les frontières restantes sont l’arbre de travail propre à l’exécution (copie sur écriture là où `rift` est livré ; `git worktree` sous Windows), un jeton de forge en lecture seule, délivré par lancement et révoqué au démontage, des push qui doivent passer la règle de push à la passerelle d’exécution d’agent, la politique de commandes propre au mode, les [garde-fous d’action](/fr-FR/manuel/concepts/garde-fous/) unifiés (à échec fermé), l’assainissement de l’environnement sur les chemins ACP et `bash` du harnais, et la surface d’outils que son mode autorise.
 
 Les outils de fichiers in-process du harnais (read, write, edit, apply patch, search, find, search_files) sont hors du bac à sable sur tout hôte : ils s’exécutent dans le processus du serveur, si bien que seul `bash` est encapsulé.
 :::
@@ -101,7 +101,7 @@ Aucun bac à sable. Le processus s’exécute directement sur l’hôte, avec l�
 
 Le terminal est isolé selon ses propres règles, et non par la sonde de lancement. Le `defaultBackend` de `TerminalSessionService` vaut `none` et `cc_server` ne le remplace pas, si bien qu’une session de terminal exécute le shell de l’hôte à moins que le client ne demande explicitement `native` — le panneau de terminal de l’application de bureau ne le fait pas.
 
-Lorsque `native` est demandé, le shell est encapsulé via `SandboxManager` sous un profil de terminal fixe : `$HOME` et le répertoire de travail de la session sont inscriptibles, le réseau est ouvert et la lecture de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` et `~/Library/Keychains` est refusée. Le conditionnement par capacités ne s’applique pas — cela relève du lancement. Si l’encapsulation n’est pas prise en charge, la session échoue au lieu d’afficher un badge natif sur un PTY de shell hôte.
+Lorsque `native` est demandé, le shell est encapsulé via `SandboxManager` sous un profil de terminal fixe : `$HOME` et le répertoire de travail de la session sont inscriptibles, le réseau est ouvert et la lecture de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` et `~/Library/Keychains` est refusée. Le jeton de forge en lecture seule et la passerelle de push ne s’appliquent pas — ils relèvent du lancement. Si l’encapsulation n’est pas prise en charge, la session échoue au lieu d’afficher un badge natif sur un PTY de shell hôte.
 
 ## Sortie réseau
 
@@ -110,9 +110,9 @@ Quand un bac à sable est lancé, l’accès réseau sortant est appliqué par d
 - Le runtime du bac à sable exécute un proxy HTTP/HTTPS et un proxy SOCKS5 sur `127.0.0.1` à l’intérieur du processus `cc_server`, **une paire par session restreinte** (`http_proxy.dart`, `socks_proxy.dart`). Les exécutions concurrentes ne partagent pas de paire.
 - Les processus isolés reçoivent des variables d’environnement de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → le proxy HTTP, `ALL_PROXY` → le proxy SOCKS ; `GIT_SSH_COMMAND` achemine git-over-SSH via le proxy SOCKS). Sous Linux, l’espace de noms réseau n’est pas partagé, si bien que les proxys sont la seule sortie ; sous macOS, le bac à sable partage la boucle locale de l’hôte et leur parle directement.
 - L’hôte cible de chaque connexion est comparé à la liste d’autorisation de domaines de la session ; tout le reste est refusé. Deux formes de joker, chacune avec exactement un `*` : un `*.example.com` en tête correspond à n’importe quel sous-domaine (y compris `a.b.example.com`) mais pas au domaine apex lui-même ; un `bedrock.*.amazonaws.com` en milieu de libellé correspond à exactement un libellé (`bedrock.us-east-1.amazonaws.com`, et non `bedrock.evil.attacker.amazonaws.com`).
-- La liste d’autorisation est résolue par session à partir de la base curatée (`kBaselineAllowedDomains` : fournisseurs de LLM, hébergement Git, registres de paquets), plus les domaines GitHub lorsque l’agent dispose des capacités GitHub ou de push, plus `SandboxSpec.egressAllowlist`. Le résolveur accepte aussi les domaines de fournisseurs de billetterie lorsque l’agent peut appeler la billetterie, mais le chemin de lancement ne transmet jamais cette liste (ni d’entrées `egressAllowlist` supplémentaires), si bien qu’en pratique chaque exécution obtient la base plus les domaines GitHub que ses capacités lui valent.
+- La liste d’autorisation est résolue par session à partir de la base curatée (`kBaselineAllowedDomains` : fournisseurs de LLM, hébergement Git, registres de paquets), plus les domaines GitHub (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Le chemin de lancement ne transmet jamais d’entrées `egressAllowlist` supplémentaires, si bien qu’en pratique chaque exécution obtient la base plus GitHub.
 - Une liste de refus fixe (`kBaselineDeniedDomains` : points de terminaison de métadonnées cloud, récepteurs de télémétrie) l’emporte sur toutes les autorisations.
-- `networkEnabled: false` (ou un agent dépourvu de la capacité réseau) démarre quand même les proxys de la session, mais la liste d’autorisation est vide, si bien que toute connexion sortante est refusée.
+- `networkEnabled: false` démarre quand même les proxys de la session, mais la liste d’autorisation est vide, si bien que toute connexion sortante est refusée. Le lancement le règle au démarrage de l’exécution à partir de la règle **Accéder au réseau** : un refus désactive le réseau, autoriser et demander d’abord le laissent activé.
 
 ## SandboxSpec
 
@@ -124,11 +124,10 @@ La spécification transmise à `SandboxPort.launch` :
 | `workspaceId`     | `String`                                    | Identifiant de l’espace de travail propriétaire                                                                                                                         |
 | `agentId`         | `String?`                                   | Agent actuellement lié au bac à sable, le cas échéant                                                                                                |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Montages hôte→invité ; le bac à sable ne voit que les chemins d’hôte listés ici                                                                         |
-| `networkEnabled`  | `bool` (par défaut `true`)                     | Combiné à la capacité réseau de l’agent. Lorsqu’il est désactivé, les proxys de la session démarrent quand même, mais la liste d’autorisation est vide, si bien que toute connexion sortante est refusée |
-| `egressAllowlist` | `List<String>` (par défaut `[]`)               | Domaines de sortie supplémentaires autorisés ; jokers pris en charge (`*.example.com`, ainsi qu’une forme en milieu de libellé unique). Le lancement ne renseigne jamais ce champ, si bien qu’une exécution encapsulée obtient la base curatée plus les domaines GitHub que ses capacités lui valent |
+| `networkEnabled`  | `bool` (par défaut `true`)                     | Réglé au lancement à partir de la règle de sortie réseau (désactivé seulement si elle aboutit à un refus). Lorsqu’il est désactivé, les proxys de la session démarrent quand même, mais la liste d’autorisation est vide, si bien que toute connexion sortante est refusée |
+| `egressAllowlist` | `List<String>` (par défaut `[]`)               | Domaines de sortie supplémentaires autorisés ; jokers pris en charge (`*.example.com`, ainsi qu’une forme en milieu de libellé unique). Le lancement ne renseigne jamais ce champ, si bien qu’une exécution encapsulée obtient la base curatée plus les domaines GitHub |
 | `guestWorkdir`    | `String?`                                   | Répertoire de travail par défaut à l’intérieur du bac à sable ; les appels `exec` individuels peuvent le remplacer                                                       |
 | `mode`            | `Mode` (par défaut `chat`)                     | Définit les règles d’écriture du système de fichiers : `chat` garde les montages par liaison inscriptibles ; `review`, `plan` et `orchestrate` sont en lecture seule                      |
-| `capabilities`    | `AgentCapabilities` (par défaut `safeDefault`) | Détermine l’activation ou la désactivation du réseau et les domaines GitHub de sortie. Les domaines de billetterie sont un argument du résolveur que le chemin de lancement ne fournit jamais |
 | `protectedPaths`  | `List<String>` (par défaut `[]`)               | Chemins d’hôte qui ne doivent jamais être inscriptibles à l’intérieur du bac à sable, quel que soit le mode                                                                      |
 | `runnerStateDirs` | `List<String>` (par défaut `[]`)               | Répertoires de l’hôte où l’exécuteur conserve son propre état, inscriptibles dans tous les modes (un `CLAUDE_CONFIG_DIR` géré par Control Center est le cas actuel) |
 | `execGrantRoots`  | `List<String>` (par défaut `[]`)               | Arborescences de répertoires approuvées par l’opérateur qui rouvrent le blocage d’exécution dans les répertoires inscriptibles sous macOS. Linux les ignore — bwrap n’a aucun blocage d’exécution `$HOME` à rouvrir |
@@ -186,7 +185,6 @@ Renvoyé par `SandboxPort.launch` :
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Le verbe refusé (par ex. `file-read*`, `network-outbound`)                    |
 | `target`              | `String`  | Chemin ou hôte qui était la cible de l’opération refusée                   |
-| `suggestedCapability` | `String?` | L’indicateur de capacité qui autoriserait cette action (par ex. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Ligne de journal brute, utile pour le débogage                                         |
 
 ## Voir aussi

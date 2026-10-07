@@ -2,7 +2,7 @@
 title: Životní cyklus odeslání agenta
 description: Co se stane mezi příchodem zprávy a uzavřením záznamu běhu. Skládání promptu, worktree, identita, co běh ohraničuje a jak se výsledek zapíše poctivě.
 slug: cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Co je odeslání
@@ -65,7 +65,7 @@ Na každý běh se před startem jakéhokoli procesu vyřeší dvě identity.
 
 Přepsání u adaptéru je první, takže potichu přebije účet poskytovatele připojený v aplikaci. Když běh účtuje špatný účet, podívej se nejdřív tam. Pověření poskytovatelů platí pro celého hostitele a sdílí je každý pracovní prostor na instalaci.
 
-Tokeny vázané na schopnosti (GitHub, tickety) jdou z brokeru pověření. Vloží jen to, co schopnosti běhu dovolí. Viz [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/).
+Token GitHub běhu jde z brokeru pověření: je jen pro čtení a vázaný na repozitář worktree. Push jde přes bránu běhů agentů, která se před předáním dál zeptá pravidla **Odeslat na remote**, a žádný klíč k ticketům se nevkládá. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 
 ## Spuštění
 
@@ -76,9 +76,9 @@ Běh se spustí s worktree jako pracovním adresářem a u Claude Code ještě s
 
 Kde backend není, běh **není** v sandboxu a nic jiného to nenahrazuje. To platí vždy na Windows (nativní obal není; `microvm` je samostatná cesta braná sondou, pro terminály a stanice) a na Linuxu nebo WSL2 bez `bwrap` a `socat` na `PATH`. Server na řádku startovacího logu řekne, ve kterém stavu je. `--sandbox off` sandbox vypne schválně.
 
-Dvě skuliny zůstanou i tam, kde sandbox běží. Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search, find, search_files) běží uvnitř procesu serveru, takže je neváže žádný profil. Drží je jen vlastní omezení cest nástrojů a guardraily. Claude Code se navíc spouští s `--dangerously-skip-permissions`, takže jeho volání souborů a shellu Control Center nehlídá. Kolem nich je hranicí sandbox operačního systému.
+Dvě skuliny zůstanou i tam, kde sandbox běží. Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search, find, search_files) běží uvnitř procesu serveru, takže je neváže žádný profil. Drží je jen vlastní omezení cest nástrojů a guardraily. Claude Code se navíc spouští s `--dangerously-skip-permissions`, takže jeho volání souborů Control Center nehlídá a jeho příkazy shellu hlídá jen hook, který čte příkazový řádek. Kolem nich je hranicí sandbox operačního systému.
 
-Ostatní hranice platí na každém hostiteli, se sandboxem i bez něj: vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), pověření vázaná na schopnosti, která broker přidělí při spuštění a odebere při úklidu, sjednocené guardraily akcí (při selhání se zavře: rozhodnutí `prompt` bez připojeného schvalovatele se zamítne) a sada nástrojů, kterou režim konverzace dovolí. ACP a `bash` harnessu prostředí pořád čistí. Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele.
+Ostatní hranice platí na každém hostiteli, se sandboxem i bez něj: vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), token forge jen pro čtení, který broker přidělí při spuštění a odebere při úklidu, pushe, které musí projít pravidlem pro push v bráně běhů agentů, sjednocené guardraily akcí (při selhání se zavře: rozhodnutí `prompt` bez připojeného schvalovatele se zamítne) a sada nástrojů, kterou režim konverzace dovolí. ACP a `bash` harnessu prostředí pořád čistí. Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele.
 :::
 
 ## Streamování

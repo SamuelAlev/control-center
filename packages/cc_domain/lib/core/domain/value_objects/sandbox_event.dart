@@ -60,14 +60,13 @@ class SandboxEvent {
   int get hashCode => Object.hash(type, content, exitCode, violation);
 }
 
-/// Structured form of a sandbox denial — what was attempted, what was
-/// blocked and (when known) which capability would unblock it on retry.
+/// Structured form of a sandbox denial — what was attempted and what was
+/// blocked.
 class SandboxViolation {
   /// Creates a [SandboxViolation].
   const SandboxViolation({
     required this.action,
     required this.target,
-    this.suggestedCapability,
     this.raw,
   });
 
@@ -76,10 +75,6 @@ class SandboxViolation {
 
   /// Path or host that was the target of the denied operation.
   final String target;
-
-  /// When non-null, the agent capability flag the user can flip to allow
-  /// the operation next time (e.g. `canCallGitHubApi`).
-  final String? suggestedCapability;
 
   /// Raw log line, useful for debugging / "Show details".
   final String? raw;
@@ -91,9 +86,8 @@ class SandboxViolation {
           runtimeType == other.runtimeType &&
           action == other.action &&
           target == other.target &&
-          suggestedCapability == other.suggestedCapability &&
           raw == other.raw;
 
   @override
-  int get hashCode => Object.hash(action, target, suggestedCapability, raw);
+  int get hashCode => Object.hash(action, target, raw);
 }

@@ -2,7 +2,7 @@
 title: Crear y configurar un agente
 description: Añade un agente a un espacio de trabajo, dale un adaptador, un modelo, skills y permisos, y confirma que se ejecuta.
 slug: es-ES/manual/guias/crear-agente
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Esta guía te muestra cómo añadir un agente a un espacio de trabajo y configurarlo hasta que pueda ejecutarse de verdad.
@@ -68,19 +68,12 @@ Aquí no eliges las skills propias de un repo. Un repo que las incluya (en `.age
 
 ## Conceder permisos
 
-**Permisos del sandbox** empieza en «Usar valor por defecto del espacio de trabajo». Activa el interruptor para definirlos en este agente y, después, alterna:
+Un agente no tiene interruptores de permisos propios. Lo que puede enviar, abrir, fusionar o alcanzar lo fijan las reglas de acciones de **Ajustes → Espacio de trabajo → Permisos de agentes**, donde una regla se puede limitar a este agente. De entrada, un push, una pull request, una revisión o fusión y una escritura en un rastreador te preguntan primero cada uno, y el acceso a la red está permitido.
 
-- **Permitir git push** — inyecta el token de GitHub que el agente necesita para hacer push
-- **Permitir llamadas a la API de GitHub** — deja que el agente lea PRs, issues y metadatos del repo
-- **Permitir llamadas a la API de tickets** — inyecta la clave del proveedor de tickets
-- **Permitir acceso general a la red** — además habilita las herramientas `web_fetch` y `web_search` del arnés integrado
+El token de GitHub del agente es siempre de solo lectura. Un push pasa por Control Center, que pregunta a la regla **Enviar a un remoto** antes de reenviarlo. Consulta [Configurar políticas del entorno aislado](/es-ES/manual/guias/politicas-de-entorno-aislado/) para ver cómo llega cada regla a una ejecución.
 
-El bróker de credenciales comprueba cada interruptor cuando se lanza la ejecución: que una capacidad esté desactivada significa simplemente que el token correspondiente nunca se inyecta en el entorno de la ejecución.
-
-:::caution[El valor por defecto del espacio de trabajo es el conjunto conservador del servidor]
-Un agente que se deje en «Usar valor por defecto del espacio de trabajo» se ejecuta con git push, la API de GitHub y los tickets **desactivados**, y la red **activada**. Los valores predeterminados de capacidades que se muestran en Ajustes → Servidor → Diagnóstico y privacidad son una preferencia del cliente. Si quieres que un agente haga push o abra PRs, activa el interruptor y concédele esas capacidades de forma explícita.
-
-Estas capacidades controlan el acceso a credenciales y a herramientas del arnés, una capa distinta del sandbox del sistema operativo. `cc_server` envuelve las ejecuciones de agentes en el sandbox del host cuando existe: Windows no tiene backend nativo, y Linux y WSL2 necesitan `bwrap` y `socat`. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/) para ver el conjunto completo de fronteras.
+:::note[Las reglas y el sandbox del sistema operativo son capas distintas]
+Las reglas deciden qué puede hacer un agente; el sandbox del sistema operativo acota dónde pueden leer, escribir y conectarse sus procesos. `cc_server` envuelve las ejecuciones de agentes en el sandbox del host cuando existe: Windows no tiene backend nativo, y Linux y WSL2 necesitan `bwrap` y `socat`. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/) para ver el conjunto completo de fronteras.
 :::
 
 ## Comprobar que se ejecuta

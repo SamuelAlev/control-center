@@ -2,7 +2,7 @@
 title: 护栏——为每一种会改变状态的操作统一策略
 description: 为什么 Control Center 让智能体的每一个副作用都经过同一个允许／先询问／拒绝引擎，ActionClass 分类法为何刻意保持精简，以及自主程度旋钮究竟改变了什么。
 slug: zh-CN/手册/概念/护栏
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Control Center 中的智能体可以删除文件、推送分支、发布 pull request，
@@ -195,8 +195,8 @@ Control Center 中的智能体可以删除文件、推送分支、发布 pull re
 在信任某个配置之前，有两行值得一读。内置运行器声明它的进程内文件工具**不受**
 沙盒约束——工具面和这套策略引擎是它仅有的文件系统边界。Claude Code 声明它
 自己的工具调用**不可**拦截，因为它以 `--dangerously-skip-permissions` 启动；
-Control Center 只能看到它的 `mcp__*` 调用，而它自带的读取、写入、编辑和 shell
-工具则在无人察觉的情况下运行。
+Control Center 能看到它的 `mcp__*` 调用，以及经由钩子的 `Bash` 命令行，而它
+自带的读取、写入和编辑工具则在无人察觉的情况下运行。
 
 设置界面会展示这份矩阵，因为对一个护栏系统来说，唯一不可原谅的失败，就是
 声称拥有并不存在的覆盖范围。

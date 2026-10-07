@@ -3,7 +3,7 @@ title: Arkitektur
 description: Hur Control Center är uppbyggt med en servermodell för tunna klienter, funktionsorienterad Clean Architecture samt portar och adaptrar.
 dateModified: 2026-09-19
 slug: sv-SE/handbok/koncept/arkitektur
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Översikt
@@ -58,7 +58,7 @@ Funktionen **`guardrails`** lägger sitt domänlager i `cc_domain/features/guard
 - Kärnentiteter: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identitet och multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Minneentiteter: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Delade värdeobjekt: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Delade värdeobjekt: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Delade portar: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Domäntjänster: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + händelsetyper (arbetsyta/agent, PR/granskning, meddelanden, ärenden, pipeline, orkestrering, minne, kalender/möten, identitet och medlemskap, observerbarhet)

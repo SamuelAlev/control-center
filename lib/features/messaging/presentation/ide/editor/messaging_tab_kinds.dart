@@ -1,4 +1,5 @@
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
+import 'package:control_center/router/routes.dart' show conversationTabKey;
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/attachment_preview_pane.dart'
@@ -73,7 +74,8 @@ abstract final class MessagingTabKinds {
   /// Dedup key (and thus `?tab=` URL key) of the chat tab showing
   /// [conversationId]. The one identity scheme for conversation tabs — the
   /// IDE layout builds tabs with it and the global sidebar deep-links with it.
-  static String chatTabKey(String conversationId) => 'chat:$conversationId';
+  static String chatTabKey(String conversationId) =>
+      conversationTabKey(conversationId);
 
   /// Dedup key of the SEEDED chat tab of [spaceId] — the tab that carries no
   /// conversation arg and renders whatever the space's standing conversation

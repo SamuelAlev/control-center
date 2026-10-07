@@ -2,7 +2,7 @@
 title: Cho agent một máy để kiểm thử
 description: Cho agent một trình duyệt, desktop, trình giả lập Android hoặc Trình mô phỏng iOS dùng một lần — xem trực tiếp, kèm quyền điều khiển bạn có thể tiếp quản.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Một **rig** là một cỗ máy dùng một lần mà agent mở ra khi cần thực sự thử một
@@ -194,8 +194,11 @@ Những gì thay đổi:
 - Mạng từ chối theo mặc định. Chỉ những host trong danh sách máy chủ được phép
   của rig mới truy cập được, và mọi thứ đều đi qua một cổng thực thi danh sách
   đó.
-- `git push` vẫn hoạt động. Rig không lưu thông tin xác thực nào; nó hỏi máy chủ
-  một token ngắn hạn cho từng thao tác, và token đó bị thu hồi khi rig đóng.
+- `git push` vẫn hoạt động trong một terminal do bạn mở. Rig không lưu thông tin
+  xác thực nào; nó hỏi máy chủ một token ngắn hạn cho từng thao tác, bị giới hạn
+  bởi quyền truy cập forge của chính bạn, và token đó bị thu hồi khi rig đóng.
+  Một rig do agent mở nhận thông tin xác thực chỉ đọc, nên nó có thể fetch nhưng
+  không thể push.
 
 Những gì cần biết:
 

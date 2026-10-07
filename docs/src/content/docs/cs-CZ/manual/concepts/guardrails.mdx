@@ -2,7 +2,7 @@
 title: Guardraily — jedna politika pro každou měnící akci
 description: Proč Control Center vede každý vedlejší efekt agenta jedním enginem allow/prompt/deny, proč taxonomie ActionClass zůstává schválně malá a co volič autonomie skutečně mění.
 slug: cs-CZ/prirucka/koncepty/guardraily
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agenti v Control Center mohou mazat soubory, odesílat větve, publikovat pull
@@ -224,8 +224,7 @@ Dva záznamy si přečti, než konfiguraci uvěříš. Vestavěný harness dekla
 a tenhle engine politiky jsou jediná hranice souborového systému, kterou má.
 Claude Code deklaruje, že jeho vlastní volání nástrojů **nejsou**
 zachytitelná, protože se spouští s `--dangerously-skip-permissions`. Control
-Center vidí jen jeho volání `mcp__*` a jeho vlastní nástroje pro čtení,
-zápis, úpravy a shell běží mimo dohled.
+Center vidí jeho volání `mcp__*` a přes hook i jeho příkazové řádky `Bash`, zatímco jeho vlastní nástroje pro čtení, zápis a úpravy běží mimo dohled.
 
 Obrazovka nastavení tu matici ukazuje, protože jediné neodpustitelné selhání
 systému guardrailů je tvrdit pokrytí, které neexistuje.

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:cc_ui/src/components/cc_button.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_text_field.dart';
+import 'package:cc_ui/src/components/cc_toaster.dart';
 import 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
@@ -137,23 +138,26 @@ class _DialogFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: t.borderPrimary)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        // A Wrap, not a Row: the panel is a fixed 480 and a Row overflows into
-        // the yellow-and-black stripe as soon as three actions carry real
-        // words ("Cancel · Shut down · Keep running" misses by 52px). Wrapping
-        // is identical while they fit — same gap, same right alignment — and
-        // degrades to a second line instead of a rendering error when they do
-        // not, which is what a dialog in seven languages has to survive.
-        child: Wrap(
-          alignment: WrapAlignment.end,
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: actions,
+    // Toasts raised by these very actions ("Saved") must not land on them.
+    return CcToastObstruction(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: t.borderPrimary)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          // A Wrap, not a Row: the panel is a fixed 480 and a Row overflows into
+          // the yellow-and-black stripe as soon as three actions carry real
+          // words ("Cancel · Shut down · Keep running" misses by 52px). Wrapping
+          // is identical while they fit — same gap, same right alignment — and
+          // degrades to a second line instead of a rendering error when they do
+          // not, which is what a dialog in seven languages has to survive.
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: actions,
+          ),
         ),
       ),
     );

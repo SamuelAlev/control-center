@@ -2,7 +2,7 @@
 title: Ordliste
 description: Definisjoner av sentrale begreper som brukes gjennomgående i Control Center.
 slug: nb-NO/handbok/referanse/ordliste
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'En KI-arbeider med identitet, rolle, skills og evner. Tilhører nøyaktig ett arbeidsområde. Den viktigste aktøren i systemet.'],
+['Agent', 'En KI-arbeider med identitet, rolle, skills og en adapter. Tilhører nøyaktig ett arbeidsområde. Den viktigste aktøren i systemet.'],
 ['Adapter', 'Kjøreren som utfører en agenttur. To leveres: Control Center (innebygd) — den prosessinterne kjernen som snakker med modellleverandørene — og Claude Code via claude-CLI-en. Cursor, Codex og de andre modellleverandørene kobler seg til den innebygde adapteren, ikke som egne kjørere.'],
 ['Arbeidsområde', 'Den øverste isolasjonsleietakeren. Grupperer agenter, repoer, områder, saker, minne og pipelines. Isolasjonen er strukturell, ikke konvensjonell: hvert arbeidsområde har sin egen SQLite-fil, så en lesing på tvers av arbeidsområder kompilerer ikke. Hver rute i appen har prefikset /workspaces/:workspaceId.'],
 ['Kodevert', 'En kodevert — GitHub, GitLab eller Bitbucket Cloud. En egenskap ved hvert repo, lest fra fjernkilden origin ved registrering. Ett arbeidsområde kan ha repoer hos alle tre.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Sett av skill-identifikatorer uten hensyn til store og små bokstaver, som sprøyter relevant kontekst inn i prompter ved utsendingstidspunktet.'],
 ['Skill-kilde', 'Et GitHub-repositorium registrert per arbeidsområde som en skill-katalog. Uklarert av konstruksjon: metadataene til repositoriet er kun for visning, og hver installasjon passerer den feillukkede skanningsporten før noe innhold når disken eller en prompt.'],
 ['skills-lock.json', 'Manifestet per arbeidsområde over installerte skills: for hver av dem kilderepositoriet, repositoriestien, commiten den er festet til og en samlet innholdshash. Installasjoner, oppdateringer og avinstallasjoner holder det oppdatert; verify_skills sjekker det mot disken.'],
-['AgentCapabilities', 'Fire flagg (push til repo, GitHub-API, saksbehandling, utgående nettverk) løst opp per utsending: agentens standard, deretter brukerens standard, med en overstyring per samtale. Håndhevet ved fravær, siden en deaktivert evne betyr at tokenet eller den utgående trafikken rett og slett aldri sprøytes inn.'],
+['Agentkjøringsgateway', 'Et loopback-endepunkt på cc_server som bruker handlingspolicyen inne i en agents sandkasse. Hver GitHub-push en agent gjør, ledes dit, kontrolleres mot regelen Push til en remote og sendes videre med et skrivetoken agenten aldri har; Claude Codes Bash-kommandoer kontrolleres gjennom en hook på samme endepunkt.'],
 ['Modus', 'chat, plan, review eller orchestrate. Lagret per område, så én agent kan være i forskjellige moduser i forskjellige områder; hver samtale i et område deler den. Styrer systemprompten, sandkassens skriveregler og tillatelseslisten for MCP-verktøy.'],
 ['SandboxBackend', 'microvm (en lukket VM — den ene backenden med en kjernegrense, brukt på interaktive terminaler), native (OS-innfødt Seatbelt på macOS, bubblewrap på Linux og WSL2) eller none. Probres én gang ved oppstart; native pakker inn agentutsending når den er tilgjengelig. Windows har ingen native-backend, og Linux trenger bwrap pluss socat, så kjøringer der er uinnpakkede; --sandbox off velger bort med vilje.'],
 ['Stasjon', 'En kastbar maskin en agent styrer i sanntid: en lukket nettleser eller et Linux-skrivebord, en vertsstyrt Android-emulator eller iOS-simulator, eller en lukket terminal. Overvåkes direkte over sin egen bane i full oppløsning, med overtakelse håndhevet på serversiden. Knyttet til en samtale, slik at menneskefanen og agentverktøyet adresserer én maskin.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- og kostnadsopptelling (inndata-tokener, utdata-tokener, estimert kostnad i cent) for én enkelt agentkjøring.'],
 ['WakeReason', 'Hvorfor en agent ble sendt ut. Seks verdier: brukermelding, saktildeling, gjenopprettingsutsending etter en feil, fullført underordnet sak, planlagt oppfølgingsheartbeat og pipeline-steg.'],
 ['SandboxPort', 'Håndterer livssyklusen til sandkassen (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Utsteder avgrensede, evnekontrollerte legitimasjoner for oppstart av sandkassen og tilbakekaller dem ved nedriving.'],
+['CredentialBrokerPort', 'Utsteder avgrensede legitimasjoner for oppstart av sandkassen (bare lesing for en agents miljø, skriving bare for push-stien på serveren) og tilbakekaller dem ved nedriving.'],
 ['GitRepoInspectorPort', 'Henter ut metadata (eier, repo, gren) fra en lokal Git-repo-sti.'],
 ['EmbeddingPort', 'Produserer tekstembeddingvektorer med enhetsnorm for semantisk søk.'],
 ['NotificationPort', 'Viser innebygde skrivebordsvarsler og respekterer gating etter kategori og rute.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Kjernentiteter
 
-**Agent**: En KI-arbeider med identitet, rolle, skills og evner. Tilhører nøyaktig ett arbeidsområde. Den viktigste aktøren i systemet.
+**Agent**: En KI-arbeider med identitet, rolle, skills og en adapter. Tilhører nøyaktig ett arbeidsområde. Den viktigste aktøren i systemet.
 
 **Adapter**: Kjøreren som utfører en agenttur. To leveres: **Control Center (innebygd)** — den prosessinterne kjernen som snakker med modellleverandørene — og **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI og resten er leverandører på den innebygde adapteren, ikke separate CLI-er. Se [Administrer adaptere og modeller](/nb-NO/handbok/slik-gjor-du/adaptere/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifestet per arbeidsområde over installerte skills: for hver av dem kilderepositoriet, repositoriestien, commiten den er festet til og en samlet innholdshash. Installasjoner, oppdateringer og avinstallasjoner holder det oppdatert; `verify_skills` sjekker det mot disken.
 
-**AgentCapabilities**: Fire flagg (push til repo, GitHub-API, saksbehandling, utgående nettverk) løst opp per utsending — agentens standard → brukerens standard, med en overstyring per samtale. Håndhevet ved fravær: en deaktivert evne betyr at tokenet eller den utgående trafikken rett og slett aldri sprøytes inn.
+**Agentkjøringsgateway**: Et loopback-endepunkt på `cc_server` som bruker handlingspolicyen inne i en agents sandkasse. Hver GitHub-push en agent gjør, ledes dit, kontrolleres mot regelen **Push til en remote** og sendes videre med et skrivetoken agenten aldri har; Claude Codes `Bash`-kommandoer kontrolleres gjennom en hook på samme endepunkt. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
 
 **Modus**: `chat`, `plan`, `review` eller `orchestrate`. Lagret **per område**, så én agent kan være i forskjellige moduser i forskjellige områder; hver samtale i et område deler den. Styrer systemprompten, sandkassens skriveregler og tillatelseslisten for MCP-verktøy. Skrivefeltet tilbyr bare `chat`, `plan` og `orchestrate`; `chat` er merket «Agent».
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Håndterer livssyklusen til sandkassen (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Utsteder avgrensede, evnekontrollerte legitimasjoner for oppstart av sandkassen og tilbakekaller dem ved nedriving.
+**CredentialBrokerPort**: Utsteder avgrensede legitimasjoner for oppstart av sandkassen — bare lesing for en agents miljø, skriving bare for push-stien på serveren — og tilbakekaller dem ved nedriving.
 
 **GitRepoInspectorPort**: Henter ut metadata (eier, repo, gren) fra en lokal Git-repo-sti.
 

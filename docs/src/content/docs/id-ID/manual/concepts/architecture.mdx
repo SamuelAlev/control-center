@@ -3,7 +3,7 @@ title: Arsitektur
 description: Bagaimana Control Center disusun dengan model server klien tipis, Clean Architecture yang mengutamakan fitur, serta port dan adapter.
 dateModified: 2026-09-19
 slug: id-ID/panduan-pengguna/konsep/arsitektur
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Ringkasan
@@ -58,7 +58,7 @@ Fitur **`guardrails`** menempatkan lapisan domainnya di `cc_domain/features/guar
 - Entitas inti: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identitas dan multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Entitas memori: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Objek nilai bersama: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Objek nilai bersama: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Port bersama: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Layanan domain: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + jenis peristiwa (ruang kerja/agen, PR/tinjauan, perpesanan, tiket, pipeline, orkestrasi, memori, kalender/rapat, identitas & keanggotaan, observabilitas)

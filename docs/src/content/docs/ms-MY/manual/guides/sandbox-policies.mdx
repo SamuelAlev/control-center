@@ -1,19 +1,20 @@
 ---
 title: Konfigurasikan polisi kotak pasir
-description: Apa yang mengekang sesuatu larian ejen, cara mengetahui sama ada kotak pasir OS membalutnya dan tetapan keupayaan mana yang benar-benar dibaca oleh pelayan.
+description: Apa yang mengekang sesuatu larian ejen, cara mengetahui sama ada kotak pasir OS membalutnya dan bagaimana peraturan tindakan menentukan apa yang boleh di-push atau dicapai oleh ejen.
 slug: ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Sama ada sesuatu larian ejen dikotak pasirkan ditentukan pada pelayan, semasa boot
-(`--sandbox`). Togol **Dayakan kotak pasir**, pemilih **Bahagian belakang** dan
-togol **Keupayaan lalai · ruang baharu** di bawah **Tetapan → Pelayan →
-Diagnostik & privasi** ialah keutamaan yang disimpan pada peranti anda. Pengesanan
-hos oleh kad **Kotak pasir** melaporkan apa yang boleh dibalut oleh hos pelayan.
+(`--sandbox`). Togol **Dayakan kotak pasir** dan pemilih **Bahagian belakang** di
+bawah **Tetapan → Pelayan → Diagnostik & privasi** ialah keutamaan yang disimpan
+pada peranti anda. Pengesanan hos oleh kad **Kotak pasir** melaporkan apa yang
+boleh dibalut oleh hos pelayan.
 
 Dua kawalan sampai kepada sesuatu larian dan panduan ini merangkumi kedua-duanya:
-**Kebenaran kotak pasir** setiap ejen di bawah dan bendera `--sandbox` pelayan itu
-sendiri.
+peraturan tindakan di **Tetapan → Ruang kerja → Kebenaran ejen**, yang
+menentukan apa yang boleh di-push, dibuka atau dicapai oleh ejen, dan bendera
+`--sandbox` pelayan itu sendiri.
 
 ## Apa yang mengekang sesuatu larian ejen
 
@@ -24,7 +25,7 @@ itulah yang bersyarat — lima yang lain bertahan pada setiap hos.
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Kotak pasir OS           | Seatbelt pada macOS, bubblewrap pada Linux dan WSL2. Membalut CLI Claude Code, penyesuai ACP dan alat `bash` harness. **Tiada pada Windows dan pada Linux tanpa `bwrap` dan `socat`** |
 | Worktree-nya sendiri     | Setiap perbualan mendapat checkout salin-semasa-tulis. Checkout asal dilipat ke dalam larian sebagai laluan tolak-tulis dan kotak pasirlah yang menguatkuasakannya                                            |
-| Kelayakan melalui broker | Broker kelayakan menempa persekitaran setiap larian daripada keupayaan ejen dan membatalkannya semasa pembongkaran. Tiada keupayaan, tiada token dalam persekitaran                                            |
+| Kelayakan melalui broker | Broker kelayakan menempa persekitaran setiap larian dan membatalkannya semasa pembongkaran. Token GitHub di dalamnya boleh membaca tetapi tidak boleh push: push melalui Control Center, yang bertanya kepada peraturan push terlebih dahulu |
 | Guardrail tindakan       | Setiap alat yang mengubah keadaan mengisytiharkan kelas kesannya dan pengawal menyelesaikannya sebelum panggilan itu dijalankan. `prompt` tanpa pelulus yang bersambung ditolak                                                 |
 | Pensanitasi persekitaran | ACP dan alat `bash` harness mendapat persekitaran yang ditapis. Claude Code melalui `NoSandboxAdapter` mewarisi persekitaran hos                                                                  |
 | Permukaan alat modus     | Modus baca sahaja mengeluarkan alat yang mengubah worktree terus daripada permukaan dan memakukan kata kerja keluaran modus itu sendiri supaya ia masih boleh menyampaikan                                                                         |
@@ -35,8 +36,7 @@ Tiga perkara kekal lebih lemah daripada yang kelihatan:
   peraturan modus berstruktur. Penyesuai Claude Code tidak. Claude
   Code khususnya dilancarkan dengan `--dangerously-skip-permissions`, kerana
   `claude -p` bukan interaktif jika tidak akan tersekat selama-lamanya pada
-  gesaannya sendiri — jadi panggilan baca, tulis, edit dan bash Claude sendiri
-  tidak dilihat mahupun dipagari oleh Control Center. Di mana kotak pasir
+  gesaannya sendiri — jadi panggilan baca, tulis dan edit Claude sendiri tidak dilihat mahupun dipagari oleh Control Center, dan perintah bash-nya hanya diperiksa oleh hook yang membaca baris perintah. Di mana kotak pasir
   dihidupkan, itulah sempadan di sekelilingnya.
 - Alat fail dalam proses harness (read, write, edit, apply patch, search,
   find, search_files) berjalan di dalam proses pelayan, jadi tiada profil kotak
@@ -49,44 +49,62 @@ Tiga perkara kekal lebih lemah daripada yang kelihatan:
   `NoSandboxAdapter`. Pelayan menyatakan hal itu dalam log permulaannya. Semak
   milik anda di bawah.
 
-## Tetapkan keupayaan ejen
+## Tentukan apa yang boleh di-push oleh ejen
 
-Inilah satu-satunya kawalan keupayaan yang dibaca oleh pelayan. Ia per ejen dan
-ia menentukan apa yang broker kelayakan masukkan ke dalam persekitaran ejen itu.
+Tiada togol bagi setiap ejen untuk git push, GitHub, penetikan atau rangkaian.
+Setiap satunya ialah peraturan tindakan:
 
-1. Pergi ke **Tetapan → Ruang kerja → Ejen**
-2. Pilih ejen dalam senarai
-3. Pada tab **Tetapan**, tatal ke **Kebenaran kotak pasir**
-4. Hidupkan suis itu — kapsyen baris itu berubah daripada **Gunakan lalai ruang kerja**
-5. Tetapkan empat togol:
+| Peraturan                              | Lalai terbina | Apa yang diliputinya                                                        |
+| -------------------------------------- | ------------- | --------------------------------------------------------------------------- |
+| **Push ke remote**                     | Tanya dahulu  | Setiap `git push` ke GitHub, apa jua penyesuainya                           |
+| **Buka pull request**                  | Tanya dahulu  | `gh pr create` dan alat pull request                                        |
+| **Terbitkan semakan atau cantuman**    | Tanya dahulu  | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`               |
+| **Tulis ke penjejak luaran**           | Tanya dahulu  | Penulisan tiket melalui alat Control Center dan `gh issue`                  |
+| **Akses rangkaian**                    | Benarkan      | Sama ada kotak pasir mempunyai rangkaian langsung, dan alat web harness     |
 
-| Togol                            | Apa yang dipagari                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Benarkan git push**            | Apabila ini dimatikan, larian mendapat `GIT_ASKPASS=/usr/bin/false` dan `GIT_TERMINAL_PROMPT=0`, jadi sesuatu push tidak boleh meminta kelayakan                                                                                                                   |
-| **Benarkan panggilan API GitHub** | Bersama **Benarkan git push**, memagari sama ada broker menyuntik token GitHub sebagai `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Benarkan panggilan API tiket** | Memagari sama ada broker menyuntik `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Benarkan akses rangkaian am**  | Di mana kotak pasir dihidupkan, ini pintu keluar yang sebenar: apabila ia dimatikan, senarai benarkan larian itu kosong dan setiap permintaan keluar ditolak pada proksi. Di mana tiada bahagian belakang, ia direkodkan pada larian tetapi tidak menyekat apa-apa yang dilakukan oleh proses yang dijanakan |
+1. Pergi ke **Tetapan → Ruang kerja → Kebenaran ejen**
+2. Pilih skop — **Ruang kerja**, **Ejen** atau **Ruang** — dan pada baris
+   peraturan itu, pilih **Benarkan**, **Tanya dahulu** atau **Tolak**
 
-6. Simpan
+Peraturan push yang dihadkan kepada cabang, seperti satu yang menolak push ke
+`main`, turut terpakai: lihat [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/).
 
-Titik semak: buka semula ejen itu dan suisnya masih hidup dengan togol anda — set
-keupayaan yang disimpan berulang-alik melalui pelayan dan ejen yang tiada set
-berpatah balik kepada lalai konservatif (push mati, API GitHub mati, penetikan
-mati, rangkaian hidup).
+Titik semak: minta ejen push satu cabang. Dengan **Tanya dahulu** anda mendapat
+kelulusan yang menamakan repo dan ref; dengan **Tolak**, git mencetak
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Dua cara ini menggigit]
-Kapsyen itu berbunyi **Gunakan lalai ruang kerja**, tetapi tiada tetapan keupayaan
-peringkat ruang kerja yang dibaca oleh pelayan. Ejen dengan suis yang dimatikan
-mendapat lalai konservatif terbina.
+Bagaimana setiap peraturan sampai kepada larian:
 
-Secara berasingan, kelayakan GitHub larian itu hanya pernah milik broker — token
-pemasangan GitHub App berskop repo, atau sandaran PAT persekitaran — tidak pernah
-token tersimpan ahli yang meminta itu sendiri. `actingUserId` dihantar supaya
-broker boleh *menahan* PAT pelayan daripada ahli yang bukan pemilik dan belum
-menyambungkan GitHub; ia tidak menggabungkan token peribadi melebihi keupayaan
-yang dimatikan. Jangan anggap **Benarkan panggilan API GitHub** sebagai sempadan
-keluar yang keras pada hos tanpa kotak pasir OS: proses yang dijanakan masih boleh
-mencapai rangkaian.
+- **Push** dikuatkuasakan melalui apa yang dipegang larian. Token GitHub-nya
+  ialah token pemasangan GitHub App baca sahaja yang boleh membaca kandungan dan
+  bekerja dengan pull request. Konfigurasi git-nya menghantar setiap push GitHub
+  ke gerbang loopback pada `cc_server`, yang bertanya kepada peraturan dan
+  barulah memajukan push dengan token tulis yang tidak pernah dilihat ejen.
+  Gerbang itu hanya memajukan ke repo worktree itu sendiri atau ke repo GitHub
+  yang dipautkan kepada ruang kerja. Ini terpakai bagi setiap penyesuai.
+- **Pull request dan isu dari shell** dikenali melalui baris perintah, dalam
+  alat `bash` harness dan, melalui hook, dalam alat `Bash` Claude Code. Ejen
+  yang menyembunyikan perintah (skrip, `eval`, panggilan API terus) melepasi
+  semakan ini, tetapi tidak melepasi gerbang push.
+- **Kunci penetikan** tidak pernah diletakkan dalam kotak pasir. Ejen menulis
+  tiket melalui alat MCP Control Center, yang bertanya kepada peraturan.
+- **Rangkaian** diselesaikan sekali, apabila larian bermula. **Tolak**
+  mematikan rangkaian kotak pasir; **Benarkan** dan **Tanya dahulu**
+  membiarkannya hidup, dan dengan **Tanya dahulu** alat `web_fetch` dan
+  `web_search` harness masih bertanya pada setiap panggilan. Selagi rangkaian
+  hidup, GitHub sentiasa berada dalam senarai benarkan keluar.
+
+:::caution[Tanpa GitHub App, peraturan push hanya bersifat nasihat]
+Tanpa GitHub App dikonfigurasikan, larian mendapat token akses peribadi
+sandaran, yang tidak boleh disempitkan kepada baca sahaja. `git push` masih
+melalui gerbang dan peraturan, tetapi kod yang menggunakan token secara terus
+boleh push dengan memintasnya. Konfigurasikan GitHub App supaya peraturan itu
+mengikat.
+
+Kelayakan GitHub larian itu hanya pernah milik broker — token pemasangan
+GitHub App berskop repo, atau PAT sandaran — tidak pernah token tersimpan ahli
+yang meminta itu sendiri. PAT pelayan ditahan daripada larian yang bertindak
+bagi ahli yang bukan pemilik dan belum menyambungkan GitHub.
 :::
 
 ## Semak sama ada larian ejen anda dikotak pasirkan
@@ -161,9 +179,13 @@ urutan penyelesaian sepenuhnya.
 
 ### Ejen tidak boleh push dan saya tidak pernah menolaknya
 
-Semak **Kebenaran kotak pasir** ejen itu. Ejen tanpa set keupayaan tersuai
-mendapat lalai konservatif, yang mempunyai **Benarkan git push** dimatikan — jadi
-broker tidak menyuntik token GitHub dan git tiada cara untuk mengesahkan.
+Baca apa yang dicetak oleh git. `Control Center policy: …` bermakna satu
+peraturan menolak push itu atau **Tanya dahulu** tidak dijawab.
+`… is not linked to this workspace` bermakna push itu menyasarkan repo yang
+bukan repo worktree itu sendiri dan tidak dipautkan kepada ruang kerja.
+`Control Center has no GitHub credential that can push …` bermakna GitHub App
+tidak dipasang pada repo itu dan tiada kelayakan sandaran yang boleh push:
+pasang App pada repo itu atau sambungkan GitHub.
 
 ### Kad Kotak pasir melaporkan tiada kotak pasir natif
 

@@ -2,7 +2,7 @@
 title: Rig’ler ve yalıtılmış ortamlar
 description: Ajanlar neden sizin bilgisayarınız yerine atılabilir makineler alır — yalıtım sınırları, görüntü kanalları, kimlik bilgileri, portlar ve yaşam döngüsü.
 slug: tr-TR/kilavuz/kavramlar/rigler
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 **Rig**, bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makinedir — bir
@@ -161,13 +161,20 @@ kaydeder — ne söylediğini asla.
 
 ## Kimlik bilgileri asla misafirde yaşamaz
 
-`git push`, yalıtılmış bir terminalden çalışır; yine de misafir hiçbir forge
+`git push`, sizin açtığınız yalıtılmış bir terminalden çalışır; yine de misafir hiçbir forge
 token’ı saklamaz. Misafir, VM başına tek bir gizli değer tutar; bunun tek gücü,
 ana makinenin kimlik bilgisi broker’ından — ana makinenin denetlediği bir tünel
 üzerinden — işlem başına, hız sınırlı, çıkışla aynı ana makine izin listesiyle
 sınırlı ve rig kapanır kapanmaz iptal edilen, kısa ömürlü ve depo kapsamlı bir
 token’ı *istemektir*. Atılmak üzere kurulmuş bir makinede çalınmaya değer hiçbir
 şey olmamalıdır.
+
+Bu token'ın ne yapabileceği rig açılırken belirlenir. Bir insanın açtığı
+terminal rig'i, o üyenin kendi forge erişimiyle sınırlı, yazma yetkili bir
+token alır. Bir ajanın açtığı rig ise salt okunur bir token alır: bir git
+kimlik bilgisi yardımcısı push'u fetch'ten ayırt edemez; bu yüzden push kuralı,
+ajan çalıştırma ağ geçidinin ana makinede yaptığı gibi, misafir içinde her push
+için sorulamaz.
 
 ## Bir rig’deki worktree bir uydudur
 

@@ -2,7 +2,7 @@
 title: Konfiguracja agentów
 description: Każde pole encji agenta oraz używane przez nią typy wyliczeniowe.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/konfiguracja-agentow
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Niniejsza dokumentacja referencyjna wymienia każde pole encji agenta oraz używane przez nią typy wyliczeniowe i flagi. Instrukcję krok po kroku tworzenia i edytowania agenta w aplikacji znajdziesz w sekcji [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/).
@@ -26,7 +26,6 @@ Niniejsza dokumentacja referencyjna wymienia każde pole encji agenta oraz używ
 | `effort`                | `String?`              | Nie      | Identyfikator poziomu rozumowania (np. `'low'`, `'xhigh'`), czerpany z `thinkingLevels` wybranego modelu                                                                                                                                                             |
 | `contextSize`           | `int?`                 | Nie      | Maksymalny rozmiar okna kontekstu                                                                                                                                                                                                                                   |
 | `role`                  | `AgentRole?`           | Nie      | Rola agenta                                                                                                                                                                                                                                                         |
-| `capabilities`          | `AgentCapabilities?`   | Nie      | Domyślne uprawnienia dla danego agenta; gdy null, przy wysłaniu obowiązuje wartość domyślna na poziomie użytkownika, a rozmowa wciąż może ją nadpisać                                                                                                                |
 | `monthlyBudgetCents`    | `int`                  | Nie      | Miesięczny limit wydatków w centach (domyślnie `0`, bez limitu)                                                                                                                                                                                                     |
 | `silenceTimeoutMinutes` | `int?`                 | Nie      | Nadpisanie limitu ciszy w minutach; musi być null albo mieścić się w zakresie 1–240 (weryfikowane w konstruktorze)                                                                                                                                                  |
 | `maxConcurrentTasks`    | `int`                  | Nie      | Domyślnie `1`. Liczba określająca pojemność, którą raportuje model obecności (porównuje się z nią liczbę uruchomień w toku i w kolejce)                                                                                                                              |
@@ -68,18 +67,9 @@ wartość `monthlyBudgetCents` wynosząca `0` oznacza brak limitu. Pułap ustawi
 | `paused`   | Ustawiany przez twarde zatrzymanie budżetu. Pokazywany na liście obecności; wysyłanie nadal przyjmuje pracę |
 | `archived` | Wycofany i ukryty na aktywnych listach obecności                                                 |
 
-## Flagi AgentCapabilities
+## Uprawnienia
 
-Ustalane przy każdym wysłaniu: domyślna wartość agenta, z powrotem do wartości domyślnej na poziomie użytkownika, gdy jest null, a na wierzchu nadpisanie dla danej rozmowy. Egzekwowane przez brak — broker poświadczeń po prostu nie wytwarza ani nie wstrzykuje tego, co obejmuje wyłączone uprawnienie.
-
-| Flaga              | Typ    | Domyślnie | Opis                                                                                        |
-| ------------------ | ------ | --------- | ------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`   | Wypychanie commitów do zdalnego repozytorium; warunkuje wstrzyknięcie tokenu GitHub razem z `canCallGitHubApi` |
-| `canCallGitHubApi` | `bool` | `false`   | Wywoływanie api.github.com; warunkuje wstrzyknięcie `GH_TOKEN` i domeny ruchu wychodzącego GitHub |
-| `canCallTicketing` | `bool` | `false`   | Wywoływanie API dostawcy zgłoszeń; warunkuje wstrzyknięcie klucza API dostawcy i jego domeny ruchu wychodzącego |
-| `canAccessNetwork` | `bool` | `true`    | Dowolny ruch wychodzący. Warunkuje też narzędzia harnessu `web_fetch` i `web_search`          |
-
-`AgentCapabilities.safeDefault` to wszystkie cztery wartości domyślne z konstruktora. `legacyDefault` (wszystkie cztery ustawione na true) jest używany wyłącznie przez migrację, która uzupełniała rozmowy utworzone, zanim uprawnienia istniały. Błędny lub pusty zapisany blob jest parsowany do `safeDefault`; starszy klucz `canCallLinear` jest odczytywany jako `canCallTicketing`.
+Agent nie ma flag uprawnień. Push, otwieranie i publikowanie pull requestów, zapis do trackera i ruch wychodzący sieci to klasy akcji (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`), które [guardraile](/pl-PL/podrecznik/koncepcje/guardraile/) rozstrzygają w zakresie obszaru roboczego, agenta lub przestrzeni. Token GitHub uruchomienia zawsze ma zakres tylko do odczytu; push przechodzi przez bramę uruchomień agentów, która przed przekazaniem go dalej pyta regułę `gitPush`.
 
 ## AgentSkills
 

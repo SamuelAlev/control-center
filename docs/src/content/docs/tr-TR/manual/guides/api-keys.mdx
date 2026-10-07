@@ -2,7 +2,7 @@
 title: API anahtarlarını yönetme
 description: Her kimlik bilgisinin nerede yaşadığı — sunucudaki kullanıcı hesabınız, sunucunun kendisi ya da harici bir CLI — ve nasıl ayarlanacağı, döndürüleceği ve kaldırılacağı.
 slug: tr-TR/kilavuz/nasil-yapilir/api-anahtarlari
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Bu kılavuz, Control Center’ın kullandığı her kimlik bilgisinin nerede
@@ -81,8 +81,9 @@ bir şeyleri yoktur.
 Anahtarınız, forge’daki gibi, sunucuda kullanıcı kimliğinize bağlı olarak
 saklanır. Sunucu kendi Linear anahtarını ayrıca tutar (**Sağlayıcı
 uygulamaları**); hiçbir insan istemediğinde bilet eşitlemesi bunun üzerinden
-çalışır. Bir ajanın aldığı anahtar, yalnızca ajan **Bilet API çağrılarına izin
-ver** yeteneğine sahipse enjekte edilir. Bkz.
+çalışır. Bir ajanın sandbox'ına hiçbir biletleme anahtarı enjekte edilmez;
+ajanlar biletleri, **Harici takip sistemine yaz** kuralına soran Control Center
+araçlarıyla yazar. Bkz.
 [Linear entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/).
 
 ## Döndürme veya iptal etme

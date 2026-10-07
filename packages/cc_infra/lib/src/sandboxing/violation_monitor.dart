@@ -133,7 +133,6 @@ class SandboxViolationMonitor {
         violation: SandboxViolation(
           action: action,
           target: target,
-          suggestedCapability: suggestCapability(action, target),
           raw: line,
         ),
       );
@@ -228,18 +227,6 @@ class SandboxViolationMonitor {
     '.dylib',
     '.so',
   ];
-
-  /// Suggests a sandbox capability based on the denied action and target.
-  @visibleForTesting
-  static String? suggestCapability(String action, String target) {
-    if (action.startsWith('network')) {
-      if (target.contains('github.com')) {
-        return 'canCallGitHubApi';
-      }
-      return 'canAccessNetwork';
-    }
-    return null;
-  }
 }
 
 /// A parsed sandbox log line with optional process name and violation details.

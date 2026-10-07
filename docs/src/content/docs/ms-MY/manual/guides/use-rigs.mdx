@@ -2,7 +2,7 @@
 title: Berikan ejen mesin untuk diuji
 description: Berikan ejen penyemak imbas, desktop, emulator Android atau Simulator iOS pakai buang — ditonton secara langsung, dengan kawalan yang boleh anda ambil alih.
 slug: ms-MY/manual-pengguna/panduan-cara/gunakan-stesen
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Sebuah **stesen** ialah mesin pakai buang yang dibuka oleh ejen apabila ia
@@ -198,9 +198,11 @@ Apa yang berubah:
   anda kehilangan stesen itu.
 - Rangkaian ditolak secara lalai. Hanya hos dalam senarai kebenaran stesen boleh
   dicapai, dan segala-galanya melalui pintu yang menguatkuasakannya.
-- `git push` masih berfungsi. Stesen tidak menyimpan kelayakan; ia meminta token
-  berjangka pendek daripada pelayan bagi setiap operasi, dan token itu dibatalkan
-  apabila stesen ditutup.
+- `git push` masih berfungsi dalam terminal yang anda buka. Stesen tidak
+  menyimpan kelayakan; ia meminta token berjangka pendek daripada pelayan bagi
+  setiap operasi, dibatasi oleh akses hos kod anda sendiri, dan token itu
+  dibatalkan apabila stesen ditutup. Stesen yang dibuka oleh ejen mendapat
+  kelayakan baca sahaja, jadi ia boleh fetch tetapi tidak boleh push.
 
 Apa yang perlu diketahui:
 

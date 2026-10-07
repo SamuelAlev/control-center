@@ -2,13 +2,13 @@
 title: Backend-uri sandbox
 description: Backend-urile sandbox, unde se aplică și fiecare obiect-valoare folosit de runtime-ul sandbox-ului.
 slug: ro-RO/manual/referinta/backend-uri-sandbox
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Dacă o rulare este sandboxată depinde de gazdă]
 `cc_server` sondează gazda o dată la pornire și învelește trimiterea agenților în backend-ul nativ atunci când sonda raportează că unul este disponibil și `--sandbox` nu este `off`. Ambele cusături de trimitere sunt învelite: CLI-ul Claude Code prin portul de sandbox, iar ACP plus instrumentul `bash` al harness-ului încorporat prin managerul de sandbox.
 
-Acolo unde sonda nu raportează niciun backend — **Windows întotdeauna**, iar Linux sau WSL2 fără `bwrap` și `socat` — rulările de agent **nu** sunt sandboxate. ACP și instrumentul `bash` al harness-ului pornesc în continuare cu sanitizare a mediului; Claude Code trece prin `NoSandboxAdapter` și moștenește mediul gazdei. Granițele rămase sunt worktree-ul propriu al rulării (copy-on-write acolo unde este livrat `rift`; `git worktree` pe Windows), datele de autentificare limitate de capabilități, intermediate la fiecare lansare și revocate la desființare, politica de comenzi per mod, [guardrail-urile unificate de acțiuni](/ro-RO/manual/concepte/guardrail-uri/) (cu închidere la eșec), sanitizarea mediului pe căile ACP și `bash` ale harness-ului, și suprafața de instrumente pe care o permite modul său.
+Acolo unde sonda nu raportează niciun backend — **Windows întotdeauna**, iar Linux sau WSL2 fără `bwrap` și `socat` — rulările de agent **nu** sunt sandboxate. ACP și instrumentul `bash` al harness-ului pornesc în continuare cu sanitizare a mediului; Claude Code trece prin `NoSandboxAdapter` și moștenește mediul gazdei. Granițele rămase sunt worktree-ul propriu al rulării (copy-on-write acolo unde este livrat `rift`; `git worktree` pe Windows), un token de forge doar pentru citire, intermediat la fiecare lansare și revocat la desființare, push-uri care trebuie să treacă regula de push la gateway-ul rulărilor de agenți, politica de comenzi per mod, [guardrail-urile unificate de acțiuni](/ro-RO/manual/concepte/guardrail-uri/) (cu închidere la eșec), sanitizarea mediului pe căile ACP și `bash` ale harness-ului, și suprafața de instrumente pe care o permite modul său.
 
 Instrumentele de fișiere în proces ale harness-ului (read, write, edit, apply patch, search, find, search_files) sunt în afara sandbox-ului pe orice gazdă: rulează în procesul serverului, așa că doar `bash` este învelit.
 :::
@@ -99,7 +99,7 @@ Fără sandbox. Procesul rulează direct pe gazdă, cu accesul gazdei la sistemu
 
 Terminalul este sandboxat după propriile reguli, nu de sonda de trimitere. `defaultBackend` al `TerminalSessionService` este `none`, iar `cc_server` nu îl suprascrie, așa că o sesiune de terminal rulează shell-ul gazdei dacă clientul nu cere explicit `native` — panoul de terminal al aplicației desktop nu o face.
 
-Când se cere `native`, shell-ul este învelit prin `SandboxManager` sub un profil fix de terminal: `$HOME` și directorul de lucru al sesiunii sunt inscriptibile, rețeaua este deschisă, iar `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` și `~/Library/Keychains` au citirea interzisă. Limitarea pe capabilități nu se aplică — aceea este o problemă de trimitere. Dacă învelirea nu este acceptată, sesiunea eșuează în loc să afișeze o insignă de nativ pe un PTY cu shell-ul gazdei.
+Când se cere `native`, shell-ul este învelit prin `SandboxManager` sub un profil fix de terminal: `$HOME` și directorul de lucru al sesiunii sunt inscriptibile, rețeaua este deschisă, iar `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` și `~/Library/Keychains` au citirea interzisă. Tokenul de forge doar pentru citire și gateway-ul de push nu se aplică — acestea sunt probleme de trimitere. Dacă învelirea nu este acceptată, sesiunea eșuează în loc să afișeze o insignă de nativ pe un PTY cu shell-ul gazdei.
 
 ## Ieșirea în rețea
 
@@ -108,9 +108,9 @@ Când este lansat un sandbox, accesul de ieșire în rețea este impus de proxy-
 - Runtime-ul sandbox-ului rulează un proxy HTTP/HTTPS și un proxy SOCKS5 pe `127.0.0.1` în interiorul procesului `cc_server`, **o pereche per sesiune restricționată** (`http_proxy.dart`, `socks_proxy.dart`). Rulările concurente nu împart o pereche.
 - Procesele din sandbox primesc variabile de mediu pentru proxy (`HTTP_PROXY`/`HTTPS_PROXY` → proxy-ul HTTP, `ALL_PROXY` → proxy-ul SOCKS; `GIT_SSH_COMMAND` direcționează git-over-SSH prin proxy-ul SOCKS). Pe Linux namespace-ul de rețea este nepartajat, așa că proxy-urile sunt singura cale de ieșire; pe macOS sandbox-ul împarte loopback-ul gazdei și vorbește cu ele direct.
 - Gazda țintă a fiecărei conexiuni este potrivită cu lista de permisiuni de domenii a sesiunii; orice altceva este refuzat. Două forme de wildcard, fiecare cu exact un `*`: un `*.example.com` la început potrivește orice subdomeniu (inclusiv `a.b.example.com`), dar nu apexul însuși; un `bedrock.*.amazonaws.com` cu etichetă la mijloc potrivește exact o etichetă (`bedrock.us-east-1.amazonaws.com`, nu `bedrock.evil.attacker.amazonaws.com`).
-- Lista de permisiuni este rezolvată per sesiune din baza de referință atent selectată (`kBaselineAllowedDomains`: furnizori de LLM, găzduire Git, registre de pachete), plus domeniile GitHub când agentul are capabilitățile GitHub sau de push, plus `SandboxSpec.egressAllowlist`. Rezolvatorul acceptă de asemenea domeniile furnizorilor de tichete când agentul poate apela sistemul de tichete, dar calea de trimitere nu transmite niciodată acea listă (sau intrări suplimentare de `egressAllowlist`), așa că în practică fiecare rulare primește baza de referință plus domeniile GitHub pe care le câștigă capabilitățile sale.
+- Lista de permisiuni este rezolvată per sesiune din baza de referință atent selectată (`kBaselineAllowedDomains`: furnizori de LLM, găzduire Git, registre de pachete), plus domeniile GitHub (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Calea de trimitere nu transmite niciodată intrări suplimentare de `egressAllowlist`, așa că în practică fiecare rulare primește baza de referință plus GitHub.
 - O listă fixă de interdicții (`kBaselineDeniedDomains`: puncte finale de metadate din cloud, destinații de telemetrie) are prioritate față de toate permisiunile.
-- `networkEnabled: false` (sau un agent fără capabilitatea de rețea) pornește totuși proxy-urile per sesiune, dar lista de permisiuni este goală, așa că fiecare conexiune de ieșire este refuzată.
+- `networkEnabled: false` pornește totuși proxy-urile per sesiune, dar lista de permisiuni este goală, așa că fiecare conexiune de ieșire este refuzată. Trimiterea îl setează la pornirea rulării din regula **Accesează rețeaua**: refuzul oprește rețeaua, permite și întreabă întâi o lasă pornită.
 
 ## SandboxSpec
 
@@ -122,11 +122,10 @@ Specificația transmisă către `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id-ul spațiului de lucru proprietar                                                                                                                         |
 | `agentId`         | `String?`                                   | Agentul legat în prezent de sandbox, dacă există                                                                                                |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Montări gazdă→invitat; sandbox-ul vede doar căile de gazdă listate aici                                                                         |
-| `networkEnabled`  | `bool` (implicit `true`)                     | Combinat cu capabilitatea de rețea a agentului. Când este oprit, proxy-urile per sesiune pornesc totuși, dar lista de permisiuni este goală, așa că fiecare conexiune de ieșire este refuzată |
-| `egressAllowlist` | `List<String>` (implicit `[]`)               | Domenii de ieșire suplimentare permise; wildcard-uri acceptate (`*.example.com`, plus o formă de mijloc cu o singură etichetă). Trimiterea nu populează niciodată acest câmp, așa că o rulare învelită primește baza de referință atent selectată plus domeniile GitHub pe care le câștigă capabilitățile sale |
+| `networkEnabled`  | `bool` (implicit `true`)                     | Setat la trimitere din regula de ieșire în rețea (oprit doar când se rezolvă la refuz). Când este oprit, proxy-urile per sesiune pornesc totuși, dar lista de permisiuni este goală, așa că fiecare conexiune de ieșire este refuzată |
+| `egressAllowlist` | `List<String>` (implicit `[]`)               | Domenii de ieșire suplimentare permise; wildcard-uri acceptate (`*.example.com`, plus o formă de mijloc cu o singură etichetă). Trimiterea nu populează niciodată acest câmp, așa că o rulare învelită primește baza de referință atent selectată plus domeniile GitHub |
 | `guestWorkdir`    | `String?`                                   | Directorul de lucru implicit din interiorul sandbox-ului; apelurile `exec` individuale îl pot suprascrie                                                       |
 | `mode`            | `Mode` (implicit `chat`)                     | Decupează regulile de scriere în sistemul de fișiere: `chat` păstrează montările bind inscriptibile; `review`, `plan` și `orchestrate` sunt doar pentru citire                      |
-| `capabilities`    | `AgentCapabilities` (implicit `safeDefault`) | Derivă decizia de pornire/oprire a rețelei și domeniile de ieșire GitHub. Domeniile de tichete sunt un argument al rezolvatorului pe care calea de trimitere nu îl furnizează niciodată |
 | `protectedPaths`  | `List<String>` (implicit `[]`)               | Căi de gazdă care nu trebuie să fie niciodată inscriptibile în interiorul sandbox-ului, în orice mod                                                                      |
 | `runnerStateDirs` | `List<String>` (implicit `[]`)               | Directoare de gazdă în care runner-ul își păstrează propria stare, inscriptibile în orice mod (un `CLAUDE_CONFIG_DIR` gestionat de Control Center este cel actual) |
 | `execGrantRoots`  | `List<String>` (implicit `[]`)               | Arbori de directoare aprobați de operator care redeschid blocarea de execuție pentru directoare inscriptibile pe macOS. Linux le ignoră — bwrap nu are nicio blocare de execuție pe `$HOME` de redeschis |
@@ -184,7 +183,6 @@ Returnat de `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Verbul refuzat (de ex. `file-read*`, `network-outbound`)                    |
 | `target`              | `String`  | Calea sau gazda care a fost ținta operației refuzate                   |
-| `suggestedCapability` | `String?` | Flag-ul de capabilitate care ar permite această acțiune (de ex. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Linia brută de jurnal, utilă pentru depanare                                         |
 
 ## Vezi și

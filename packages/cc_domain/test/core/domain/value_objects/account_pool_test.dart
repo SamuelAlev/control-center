@@ -13,9 +13,9 @@ AccountAvailability _avail(
   availableAt: availableAt,
 );
 
-Map<String, AccountAvailability> _map(
-  List<AccountAvailability> list,
-) => {for (final a in list) a.id: a};
+Map<String, AccountAvailability> _map(List<AccountAvailability> list) => {
+  for (final a in list) a.id: a,
+};
 
 void main() {
   group('AccountRotationStrategy', () {
@@ -33,7 +33,10 @@ void main() {
     test('an unknown or absent strategy degrades to pinned', () {
       // A pool written by a newer build must not make an older one rotate in a
       // way it does not implement.
-      expect(AccountRotationStrategy.fromWire(null), AccountRotationStrategy.pinned);
+      expect(
+        AccountRotationStrategy.fromWire(null),
+        AccountRotationStrategy.pinned,
+      );
       expect(
         AccountRotationStrategy.fromWire('weighted-magic'),
         AccountRotationStrategy.pinned,
@@ -79,12 +82,15 @@ void main() {
       expect(choice, isA<AccountPoolUnset>());
     });
 
-    test('a pool naming only deleted accounts is unset', () {
+    test('a pool naming only deleted accounts is removed, NOT unset', () {
+      // Unset falls back to the server default — usually the very account the
+      // pool was written to keep this scope off.
       final choice = AccountSelector.select(
-        pool: const AccountPool(accountIds: ['gone']),
+        pool: const AccountPool(accountIds: ['gone', 'also-gone']),
         availability: _map([_avail('a')]),
       );
-      expect(choice, isA<AccountPoolUnset>());
+      expect(choice, isA<AccountsRemoved>());
+      expect((choice as AccountsRemoved).accountIds, ['gone', 'also-gone']);
     });
 
     test('a deleted account is skipped, the survivors still run', () {
@@ -132,36 +138,36 @@ void main() {
       );
       expect(
         (AccountSelector.select(
-              pool: pool,
-              availability: _map([_avail('a'), _avail('b'), _avail('c')]),
-            )
-            as AccountChosen)
+                  pool: pool,
+                  availability: _map([_avail('a'), _avail('b'), _avail('c')]),
+                )
+                as AccountChosen)
             .accountId,
         'a',
       );
       expect(
         (AccountSelector.select(
-              pool: pool,
-              availability: _map([
-                _avail('a', spent: true),
-                _avail('b'),
-                _avail('c'),
-              ]),
-            )
-            as AccountChosen)
+                  pool: pool,
+                  availability: _map([
+                    _avail('a', spent: true),
+                    _avail('b'),
+                    _avail('c'),
+                  ]),
+                )
+                as AccountChosen)
             .accountId,
         'b',
       );
       expect(
         (AccountSelector.select(
-              pool: pool,
-              availability: _map([
-                _avail('a', spent: true),
-                _avail('b', spent: true),
-                _avail('c'),
-              ]),
-            )
-            as AccountChosen)
+                  pool: pool,
+                  availability: _map([
+                    _avail('a', spent: true),
+                    _avail('b', spent: true),
+                    _avail('c'),
+                  ]),
+                )
+                as AccountChosen)
             .accountId,
         'c',
       );
@@ -258,6 +264,78 @@ void main() {
         availability: _map([_avail('a', signedIn: false)]),
       );
       expect((choice as AccountsAllSpent).earliestReset, isNull);
+    });
+  });
+
+  group('pruning removed accounts', () {
+    const pool = AccountPool(
+      accountIds: ['a', 'gone', 'b'],
+      strategy: AccountRotationStrategy.serial,
+    );
+
+    test('retainOnly drops removed ids and keeps order and strategy', () {
+      expect(
+        pool.retainOnly({'a', 'b'}),
+        const AccountPool(
+          accountIds: ['a', 'b'],
+          strategy: AccountRotationStrategy.serial,
+        ),
+      );
+    });
+
+    test('retainOnly reports no change when nothing was removed', () {
+      expect(pool.retainOnly({'a', 'gone', 'b', 'other'}), isNull);
+    });
+
+    test('retainOnly never empties a pool', () {
+      // An empty pool reads as "unconfigured" and falls back to the next scope
+      // out; the dangling ids are what make the dispatch refuse instead.
+      expect(pool.retainOnly({'other'}), isNull);
+      expect(pool.retainOnly(const {}), isNull);
+    });
+
+    test('namesOnlyRemoved', () {
+      expect(pool.namesOnlyRemoved({'other'}), isTrue);
+      expect(pool.namesOnlyRemoved({'b'}), isFalse);
+      expect(const AccountPool().namesOnlyRemoved(const {}), isFalse);
+    });
+  });
+
+  group('failover order — shared by every lane', () {
+    test('chosen first, then usable in pool order, standbys apart', () {
+      final choice =
+          AccountSelector.select(
+                pool: const AccountPool(
+                  accountIds: ['a', 'b', 'c', 'd'],
+                  strategy: AccountRotationStrategy.roundRobin,
+                ),
+                availability: _map([
+                  _avail('a'),
+                  _avail('b', spent: true),
+                  _avail('c'),
+                  _avail('d', signedIn: false),
+                ]),
+                cursor: 2,
+              )
+              as AccountChosen;
+      expect(choice.accountId, 'c');
+      expect(choice.order, ['c', 'a']);
+      expect(choice.standby, ['b', 'd']);
+    });
+  });
+
+  group('AccountPoolLanes', () {
+    test('one vocabulary for every lane', () {
+      expect(AccountPoolLanes.harness('qwen'), 'harness:qwen');
+      expect(AccountPoolLanes.harnessProviderOf('harness:qwen'), 'qwen');
+      expect(AccountPoolLanes.harnessProviderOf('harness:'), isNull);
+      expect(
+        AccountPoolLanes.harnessProviderOf(AccountPoolLanes.claudeCode),
+        isNull,
+      );
+      expect(AccountPoolLanes.isKnown(AccountPoolLanes.claudeCode), isTrue);
+      expect(AccountPoolLanes.isKnown('harness:qwen'), isTrue);
+      expect(AccountPoolLanes.isKnown('opencode'), isFalse);
     });
   });
 }

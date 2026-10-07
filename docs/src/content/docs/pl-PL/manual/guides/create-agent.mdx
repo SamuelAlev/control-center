@@ -2,7 +2,7 @@
 title: Utwórz i skonfiguruj agenta
 description: Dodaj agenta do obszaru roboczego, przypisz mu adapter, model, skille i uprawnienia i potwierdź, że działa.
 slug: pl-PL/podrecznik/poradniki/tworzenie-agenta
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Ten poradnik pokazuje, jak dodać agenta do obszaru roboczego i konfigurować go
@@ -119,35 +119,23 @@ w tym repozytorium, a gdy przenosi się on do innego, skille zostają podmienion
 
 ## Przyznaj uprawnienia
 
-**Uprawnienia piaskownicy** startują z ustawieniem „Użyj domyślnych ustawień
-obszaru roboczego”. Włącz przełącznik, aby ustawić je dla tego agenta,
-a następnie przełączaj:
+Agent nie ma własnych przełączników uprawnień. To, co może wypchnąć, otworzyć,
+scalić lub osiągnąć, ustalają reguły akcji w **Ustawienia → Obszar roboczy →
+Uprawnienia agentów**, gdzie regułę można ograniczyć do tego agenta. Domyślnie
+push, pull request, recenzja lub scalenie i zapis do trackera najpierw pytają
+Cię o zgodę, każde z osobna, a dostęp do sieci jest dozwolony.
 
-- **Zezwól na git push** — wstrzykuje token GitHub potrzebny agentowi do
-  wypychania zmian
-- **Zezwól na wywołania GitHub API** — pozwala agentowi odczytywać PR-y,
-  zgłoszenia i metadane repozytorium
-- **Zezwalaj na wywołania API zgłoszeń** — wstrzykuje klucz dostawcy zgłoszeń
-- **Zezwól na ogólny dostęp do sieci** — włącza także narzędzia `web_fetch`
-  i `web_search` wbudowanego harnessu
+Token GitHub agenta zawsze jest tylko do odczytu. Push przechodzi przez Control
+Center, który przed przekazaniem go dalej pyta regułę **Push do zdalnego
+repozytorium**. Jak każda reguła dociera do uruchomienia, opisuje
+[Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/).
 
-Każdy przełącznik jest sprawdzany przez brokera poświadczeń w momencie
-uruchomienia: wyłączona zdolność oznacza po prostu, że pasujący token nigdy nie
-trafia do środowiska uruchomienia.
-
-:::caution[Domyślne ustawienia obszaru roboczego oznaczają konserwatywny zestaw serwera]
-Agent pozostawiony na „Użyj domyślnych ustawień obszaru roboczego” działa
-z git push, GitHub API i zgłoszeniami **wyłączonymi**, a siecią **włączoną**.
-Domyślne wartości zdolności widoczne w Ustawienia → Serwer → Diagnostyka
-i prywatność to preferencja po stronie klienta. Jeśli chcesz, aby agent
-wypychał zmiany lub otwierał PR-y, włącz przełącznik i przyznaj te zdolności
-jawnie.
-
-Te zdolności kontrolują dostęp do poświadczeń i narzędzi harnessu, co jest
-warstwą odrębną od piaskownicy systemu operacyjnego. `cc_server` opakowuje
-uruchomienia agentów w piaskownicę hosta, tam gdzie ona istnieje — Windows nie
-ma natywnego backendu, a Linux i WSL2 wymagają `bwrap` i `socat`. Pełny zestaw
-granic znajdziesz w [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
+:::note[Reguły i piaskownica systemu operacyjnego to osobne warstwy]
+Reguły decydują, co agent może robić; piaskownica systemu operacyjnego
+ogranicza, gdzie jego procesy mogą czytać, zapisywać i się łączyć. `cc_server`
+opakowuje uruchomienia agentów w piaskownicę hosta, tam gdzie ona istnieje —
+Windows nie ma natywnego backendu, a Linux i WSL2 wymagają `bwrap` i `socat`.
+Pełny zestaw granic znajdziesz w [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 :::
 
 ## Sprawdź, czy działa

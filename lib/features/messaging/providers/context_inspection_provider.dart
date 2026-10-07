@@ -14,10 +14,12 @@ final contextInspectionRepositoryProvider = Provider<RemoteContextRepository>(
 );
 
 /// The server-side PERSISTENT context breakdown for one (space, agent) pair:
-/// system prompt, rules, skills, tool surface, subagents and memory — never
-/// the conversation, whose size arrives separately as an aggregate
-/// ([conversationTokenTotalsProvider]) and whose messages only the explorer
-/// reads (see [contextBreakdownProvider]).
+/// system prompt, rules, skills, tool surface, subagents and memory. For a
+/// built-in-harness agent never the conversation, whose size arrives
+/// separately as an aggregate ([conversationTokenTotalsProvider]) and whose
+/// messages only the explorer reads (see [contextBreakdownProvider]). For a
+/// Claude Code agent the server includes the history block the run actually
+/// receives, plus a runner segment the client sizes from the reported reading.
 ///
 /// `includeContent` asks the server to carry every part's verbatim text; the
 /// summary request (`false`, what the flyout uses) transfers counts only.
@@ -48,6 +50,7 @@ class ContextBreakdown {
     required this.windowTokens,
     required this.isLoading,
     required this.hasError,
+    this.isMeasured = false,
   });
 
   /// The server inspection, or null while the summary RPC has not landed yet
@@ -59,12 +62,18 @@ class ContextBreakdown {
   /// persistent segments followed by the client-composed conversation segment.
   final List<ContextSegment> segments;
 
-  /// Total tokens in play: persistent + conversation.
+  /// Total tokens in play: the provider-reported reading when a run reported
+  /// one, else persistent + conversation estimates.
   final int totalTokens;
 
-  /// The model's context window — the server's reading when known, else the
-  /// client estimate from the agent's configured context size.
+  /// The window [totalTokens] is measured against: the one the reporting run
+  /// used, else the server's resolution for the agent, else the agent's
+  /// configured context size.
   final int windowTokens;
+
+  /// Whether [totalTokens] is the provider's own count of the model's last
+  /// call rather than an estimate.
+  final bool isMeasured;
 
   /// Whether the summary RPC is in flight with no value yet.
   final bool isLoading;
@@ -122,36 +131,124 @@ ContextSegment buildConversationContextSegment(
   );
 }
 
+/// A run's provider-reported context reading: how many tokens the model held
+/// on its newest call, and the window it ran with when known.
+typedef ReportedContext = ({int tokens, int? windowTokens});
+
+/// The reported reading carried by [totals], or null when no run reported one.
+ReportedContext? reportedContextOf(ConversationTokenTotals totals) {
+  final tokens = totals.reportedContextTokens;
+  return tokens == null
+      ? null
+      : (tokens: tokens, windowTokens: totals.reportedWindowTokens);
+}
+
 /// Merges the server [inspection] (persistent segments, possibly null while
-/// loading) with the client-composed [conversation] segment into a single
-/// breakdown. Segments come out in [ContextSegmentKind] declaration order
-/// regardless of wire order, so the stacked bar is stable across renders.
-/// [fallbackWindowTokens] is the client-side window estimate used until the
+/// loading) with the client-composed [estimatedConversation] segment into a
+/// single breakdown. Segments come out in [ContextSegmentKind] declaration
+/// order regardless of wire order, so the stacked bar is stable across
+/// renders. [fallbackWindowTokens] is the client-side window used until the
 /// server's authoritative `windowTokens` lands.
+///
+/// With a [reported] reading the total is the provider's count, not a sum of
+/// estimates, and the part nobody can measure directly absorbs the
+/// difference: the conversation for the harness (whose transcript replay is
+/// the only unmeasured input), the runner segment for Claude Code (whose own
+/// prompt, tools and turn work are invisible here). A Claude Code inspection
+/// brings its own conversation segment — the history block the run receives —
+/// which replaces the estimate over the whole stored conversation.
 ContextBreakdown composeContextBreakdown(
   ContextInspection? inspection,
-  ContextSegment conversation,
+  ContextSegment estimatedConversation,
   int fallbackWindowTokens, {
+  ReportedContext? reported,
   required bool isLoading,
   required bool hasError,
 }) {
+  final serverConversation = inspection?.segmentFor(
+    ContextSegmentKind.conversation,
+  );
+  var known = 0;
+  for (final segment in inspection?.segments ?? const <ContextSegment>[]) {
+    if (segment.kind != ContextSegmentKind.runner &&
+        segment.kind != ContextSegmentKind.conversation) {
+      known += segment.tokens;
+    }
+  }
+  final remainder = reported == null || inspection == null
+      ? null
+      : reported.tokens - known - (serverConversation?.tokens ?? 0);
+
+  ContextSegment conversation() {
+    if (serverConversation != null) {
+      return serverConversation;
+    }
+    if (remainder == null) {
+      return estimatedConversation;
+    }
+    return _resized(estimatedConversation, remainder);
+  }
+
+  ContextSegment? runner() {
+    final segment = inspection?.segmentFor(ContextSegmentKind.runner);
+    if (segment == null || remainder == null) {
+      return segment;
+    }
+    return _resized(segment, remainder);
+  }
+
   final segments = <ContextSegment>[
     for (final kind in ContextSegmentKind.values)
       if (kind == ContextSegmentKind.conversation)
-        conversation
+        conversation()
+      else if (kind == ContextSegmentKind.runner)
+        ?runner()
       else
         ?inspection?.segmentFor(kind),
   ];
-  final windowTokens = inspection != null && inspection.windowTokens > 0
+  final reportedWindow = reported?.windowTokens;
+  final windowTokens = reportedWindow != null && reportedWindow > 0
+      ? reportedWindow
+      : inspection != null && inspection.windowTokens > 0
       ? inspection.windowTokens
       : fallbackWindowTokens;
+  var estimatedTotal = 0;
+  for (final segment in segments) {
+    estimatedTotal += segment.tokens;
+  }
   return ContextBreakdown(
     inspection: inspection,
     segments: segments,
-    totalTokens: (inspection?.persistentTokens ?? 0) + conversation.tokens,
+    totalTokens: reported?.tokens ?? estimatedTotal,
     windowTokens: windowTokens,
+    isMeasured: reported != null,
     isLoading: isLoading,
     hasError: hasError,
+  );
+}
+
+/// [segment] carrying [tokens] (never negative): the reading measured it, so
+/// the estimate it was built from no longer stands. A single-part segment's
+/// part is resized with it, so the explorer's rail agrees with the bar.
+ContextSegment _resized(ContextSegment segment, int tokens) {
+  final measured = tokens < 0 ? 0 : tokens;
+  final parts = segment.parts.length == 1
+      ? [
+          ContextPart(
+            id: segment.parts.single.id,
+            title: segment.parts.single.title,
+            subtitle: segment.parts.single.subtitle,
+            tokens: measured,
+            chars: segment.parts.single.chars,
+            content: segment.parts.single.content,
+          ),
+        ]
+      : segment.parts;
+  return ContextSegment(
+    kind: segment.kind,
+    tokens: measured,
+    chars: segment.chars,
+    parts: parts,
   );
 }
 
@@ -198,6 +295,7 @@ final contextBreakdownProvider = Provider.autoDispose
         inspection,
         conversation,
         fallbackWindow,
+        reported: reportedContextOf(totals),
         isLoading: async.isLoading && inspection == null,
         hasError: async.hasError && inspection == null,
       );

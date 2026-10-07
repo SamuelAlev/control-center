@@ -2,7 +2,7 @@
 title: Ajan yapılandırması
 description: Ajan varlığındaki her alan ve kullandığı enum'lar.
 slug: tr-TR/kilavuz/referans/ajan-yapilandirmasi
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları ve bayrakları listeler. Uygulamada bir ajan oluşturma ya da düzenlemenin adım adım anlatımı için [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/) sayfasına bakın.
@@ -26,7 +26,6 @@ Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları
 | `effort`                | `String?`              | Hayır   | Akıl yürütme düzeyi kimliği (örn. `'low'`, `'xhigh'`), seçilen modelin `thinkingLevels` değerinden alınır                                                                                     |
 | `contextSize`           | `int?`                 | Hayır   | En büyük bağlam penceresi boyutu                                                                                                                                                              |
 | `role`                  | `AgentRole?`           | Hayır   | Ajan rolü                                                                                                                                                                                     |
-| `capabilities`          | `AgentCapabilities?`   | Hayır   | Ajan başına yetenek varsayılanı; null olduğunda gönderimde kullanıcı düzeyi varsayılan geçerli olur ve bir konuşma yine de bunu geçersiz kılabilir                                            |
 | `monthlyBudgetCents`    | `int`                  | Hayır   | Sent cinsinden aylık harcama üst sınırı (varsayılan `0`, sınırsız)                                                                                                                            |
 | `silenceTimeoutMinutes` | `int?`                 | Hayır   | Dakika cinsinden sessizlik zaman aşımı geçersiz kılması; null olmalı ya da 1–240 arasında bulunmalıdır (kurucu tarafından doğrulanır)                                                         |
 | `maxConcurrentTasks`    | `int`                  | Hayır   | Varsayılan `1`. Varlık modelinin bildirdiği kapasite rakamı (çalışan ve kuyruktaki sayımlar bununla karşılaştırılır)                                                                          |
@@ -68,18 +67,9 @@ Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları
 | `paused`   | Bütçe katı durdurması tarafından ayarlanır. Varlık listesinde gösterilir; gönderim hâlâ iş kabul eder |
 | `archived` | Kullanımdan kaldırıldı ve etkin varlık listelerinden gizlendi                                         |
 
-## AgentCapabilities bayrakları
+## İzinler
 
-Her gönderimde çözümlenir: ajanın varsayılanı, null olduğunda kullanıcı düzeyi varsayılana geri düşülür ve bunların üzerine konuşma başına bir geçersiz kılma eklenir. Yoklukla uygulanır — kimlik bilgisi aracısı, devre dışı bir yeteneğin kapsadığı şeyi üretmez ya da enjekte etmez.
-
-| Bayrak             | Tür    | Varsayılan | Açıklama                                                                                                              |
-| ------------------ | ------ | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`    | Commit'leri uzak depoya push eder; `canCallGitHubApi` ile birlikte GitHub belirteci enjeksiyonunu denetler            |
-| `canCallGitHubApi` | `bool` | `false`    | api.github.com'u çağırır; `GH_TOKEN` enjeksiyonunu ve GitHub çıkış alan adlarını denetler                             |
-| `canCallTicketing` | `bool` | `false`    | Biletleme sağlayıcısının API'sini çağırır; sağlayıcı API anahtarı enjeksiyonunu ve kendi çıkış alan adlarını denetler |
-| `canAccessNetwork` | `bool` | `true`     | Rastgele giden çıkış. Ayrıca harness'ın `web_fetch` ve `web_search` araçlarını denetler                               |
-
-`AgentCapabilities.safeDefault` dört kurucu varsayılanının tamamıdır. `legacyDefault` (dördü de true) yalnızca yetenekler henüz yokken oluşturulmuş konuşmaları geriye dönük dolduran geçiş tarafından kullanılır. Bozuk ya da boş saklanan bir blob `safeDefault` olarak çözümlenir; eski `canCallLinear` anahtarı `canCallTicketing` olarak okunur.
+Bir ajanın izin bayrakları yoktur. Push, pull request açma ve yayınlama, bir takip sistemine yazma ve ağ çıkışı; [korumaların](/tr-TR/kilavuz/kavramlar/korumalar/) çalışma alanı, ajan veya alan kapsamında çözümlediği eylem sınıflarıdır (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`). Bir çalıştırmanın GitHub belirteci her zaman okuma kapsamlıdır; push'lar, iletmeden önce `gitPush` kuralına soran ajan çalıştırma ağ geçidinden geçer.
 
 ## AgentSkills
 

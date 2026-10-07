@@ -4,7 +4,6 @@ library;
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
@@ -38,7 +37,7 @@ void main() {
     int maxOutputChars = 16000,
   }) => SandboxedHarnessCommandRunner(
     mode: Mode.chat,
-    capabilities: const AgentCapabilities(),
+    networkEnabled: false,
     confirmationPort: confirmationPort,
     actionGuard: actionGuard,
     workspaceId: 'ws',
@@ -67,7 +66,7 @@ void main() {
     test('prompt with no approver connected is denied', () async {
       final res = await runner(
         confirmationPort: null,
-      ).run('git push', workdir: cwd.path);
+      ).run('npm publish', workdir: cwd.path);
       expect(res.denied, isTrue);
       expect(res.denyReason, contains('no approver'));
     });
@@ -75,7 +74,7 @@ void main() {
     test('prompt approved by the approver runs the command', () async {
       final res = await runner(
         confirmationPort: _Approver(approve: true),
-      ).run('git push', workdir: cwd.path);
+      ).run('npm publish', workdir: cwd.path);
       // git push with no repo fails the git binary, but the runner must NOT
       // have denied it — proving the approval gate passed.
       expect(res.denied, isFalse);
@@ -84,7 +83,7 @@ void main() {
     test('prompt denied by the approver is denied', () async {
       final res = await runner(
         confirmationPort: _Approver(approve: false),
-      ).run('git push', workdir: cwd.path);
+      ).run('npm publish', workdir: cwd.path);
       expect(res.denied, isTrue);
       expect(res.denyReason, contains('denied by user'));
     });
@@ -128,6 +127,39 @@ void main() {
       expect(audits.single.spaceId, 'space-1');
       expect(audits.single.decision, ActionDecision.deny);
     });
+
+    test(
+      'a shell `gh pr create` meets the "Open a pull request" rule',
+      () async {
+        final now = DateTime.now();
+        final audits = <GuardAudit>[];
+        final guard = ActionGuardService(
+          repository: _Rules([
+            ActionPolicyRule(
+              id: 'no-prs',
+              workspaceId: 'ws',
+              scopeType: ActionScopeType.workspace,
+              scopeId: '',
+              actionClass: ActionClass.prCreate,
+              decision: ActionDecision.deny,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ]),
+          onAudit: audits.add,
+        );
+
+        final result = await runner(
+          actionGuard: guard,
+        ).run('git add -A && gh pr create --fill', workdir: cwd.path);
+        expect(result.denied, isTrue);
+        expect(audits.single.ruleId, 'no-prs');
+        expect(
+          audits.single.actionClasses,
+          containsAll(['processSpawn', 'prCreate']),
+        );
+      },
+    );
   });
 
   group('SandboxedHarnessCommandRunner — env + output', () {

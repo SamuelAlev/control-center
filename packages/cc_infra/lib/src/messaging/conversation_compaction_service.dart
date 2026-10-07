@@ -126,6 +126,14 @@ class ConversationCompactionService {
       return CompactionOutcome.none;
     }
 
+    if (await _restampPrunedTurns(workspaceId, messages)) {
+      messages = await _repo.getMessages(
+        workspaceId,
+        spaceId,
+        conversationId: conversationId,
+      );
+    }
+
     final liveTokens = _liveTokens(messages);
     final underPressure = liveTokens + _config.buffer >= contextWindowTokens;
     if (!force && (!_config.auto || !underPressure)) {
@@ -351,6 +359,41 @@ class ConversationCompactionService {
     return dropped;
   }
 
+  /// Re-stamps `transcriptChars` on turns pruned before the prune write kept
+  /// it current. Returns whether any row changed.
+  ///
+  /// Only pruned turns are checked: their stored count is the one known to
+  /// drift, and an untouched turn's count is the folder's own.
+  Future<bool> _restampPrunedTurns(
+    String workspaceId,
+    List<Message> messages,
+  ) async {
+    var changed = false;
+    for (final message in messages) {
+      if (!message.isAgentTurn || message.compacted) {
+        continue;
+      }
+      final segments = message.transcript;
+      if (!segments.any((s) => s is ToolSegment && s.prunedAt != null)) {
+        continue;
+      }
+      final chars = transcriptCharCount(segments);
+      if (message.metadata?['transcriptChars'] == chars) {
+        continue;
+      }
+      await _repo.updateMessage(
+        workspaceId,
+        message.id,
+        metadata: <String, dynamic>{
+          ...?message.metadata,
+          'transcriptChars': chars,
+        },
+      );
+      changed = true;
+    }
+    return changed;
+  }
+
   Future<void> _applyPrunePlan(String workspaceId, PrunePlan plan) async {
     for (final entry in plan.updatedSegmentsByMessageId.entries) {
       final message = await _repo.getMessageById(workspaceId, entry.key);
@@ -360,6 +403,9 @@ class ConversationCompactionService {
       final metadata = <String, dynamic>{
         ...?message.metadata,
         'segments': encodeTranscript(entry.value),
+        // Re-stamped, or the stored count (what the meter sums) keeps
+        // describing the output this pass just dropped.
+        'transcriptChars': transcriptCharCount(entry.value),
       };
       await _repo.updateMessage(workspaceId, entry.key, metadata: metadata);
     }

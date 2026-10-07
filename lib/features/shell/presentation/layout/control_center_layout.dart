@@ -1,26 +1,20 @@
-import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/keybindings/keybinding_providers.dart';
 import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_space_auto_open.dart';
 import 'package:control_center/features/demo/presentation/widgets/demo_shell_overlay.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_overlay.dart';
-import 'package:control_center/features/forge/providers/forge_providers.dart';
-import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_recording_hud.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_overlay.dart';
 import 'package:control_center/features/messaging/presentation/widgets/spaces_sub_sidebar.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
-import 'package:control_center/features/settings/settings_nav.dart';
 import 'package:control_center/features/shell/presentation/layout/shell_title_bar.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar.dart';
 import 'package:control_center/features/shell/presentation/widgets/banner_rail.dart';
 import 'package:control_center/features/shell/presentation/widgets/web_update_banner.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/soundscape/presentation/widgets/soundscape_audio_host.dart';
-import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,9 +25,9 @@ import 'package:material_ui/material_ui.dart';
 /// runs edge to edge and, on macOS, its content clears the traffic-light
 /// cluster), then a row of the left [AppSidebar] (which therefore starts below
 /// the bar — no border segment runs up beside the traffic lights) and the
-/// routed content area. Settings exposes a contextual second sidebar next to
-/// content; the spaces surface gets one too while the global sidebar is
-/// collapsed to its rail.
+/// routed content area. Settings drills the global sidebar into its own
+/// navigation (see [AppSidebar]); the spaces surface gets a contextual second
+/// sidebar while the global sidebar is collapsed to its rail.
 class ControlCenterLayout extends ConsumerStatefulWidget {
   /// Creates a [ControlCenterLayout].
   const ControlCenterLayout({super.key, required this.child});
@@ -98,7 +92,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
     // Keep a Slack-bridged space opening itself even while this window is
     // in the background — otherwise the row only appears after a focus.
     ref.watch(chatBridgeSpaceAutoOpenProvider);
-    final inSettings = logicalRoute.startsWith('/settings');
     final inSpaces = logicalRoute.startsWith('/spaces');
     // In rail mode the global sidebar's inline space list is gone, so the
     // spaces surface gets a settings-like contextual sub-sidebar carrying
@@ -151,19 +144,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                             workspaceId: workspaceId,
                           ),
                         ),
-                        if (inSettings)
-                          RepaintBoundary(
-                            child: CcSidebar(
-                              width: 240,
-                              header: const _SettingsSidebarHeader(),
-                              children: _buildSettingsGroups(
-                                context,
-                                location,
-                                workspaceId,
-                                needsIntegrationSetup: _integrationsNeedSetup(),
-                              ),
-                            ),
-                          ),
                         if (showSpacesSubSidebar)
                           const RepaintBoundary(child: SpacesSubSidebar()),
                         Expanded(child: RepaintBoundary(child: widget.child)),
@@ -202,130 +182,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
               const SoundscapeAudioHost(),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  //
-  // Rendered from `kSettingsNav`, the single source of truth for the settings
-  // information architecture. Groups are SCOPES — You / Workspace / Server —
-  // each carrying a one-line statement of what a change there affects, because
-  // "who does this affect?" is the question the old topic-based grouping could
-  // not answer.
-
-  /// True when this user has connected no forge at all, so nothing can reach
-  /// a code host — surfaced as an attention dot on the profile item.
-  ///
-  /// "Any forge", not "GitHub": someone who works only on GitLab has a
-  /// complete setup, and dotting their sidebar forever would train them to
-  /// ignore the dot.
-  bool _integrationsNeedSetup() => !ref.watch(hasAnyForgeConnectedProvider);
-
-  List<Widget> _buildSettingsGroups(
-    BuildContext context,
-    String location,
-    String workspaceId, {
-    required bool needsIntegrationSetup,
-  }) {
-    final l10n = AppLocalizations.of(context);
-    // Install-wide destinations are the operator's; the server refuses every
-    // other caller, so offering them is a form that ends in an error.
-    final isServerOwner = ref.watch(isServerOwnerProvider);
-
-    CcSidebarItem? item(SettingsNavItem entry) {
-      if (entry.ownerOnly && !isServerOwner) {
-        return null;
-      }
-      final label = entry.label(l10n);
-      final route = entry.route(workspaceId);
-      final selected = entry.matchesSubroutes
-          ? (location == route || location.startsWith('$route/'))
-          : location == route;
-      // The only attention affordance: agents cannot reach a code host until a
-      // forge connection exists and that is configured here.
-      final attention =
-          needsIntegrationSetup && entry.id == 'workspace.profile';
-      return CcSidebarItem(
-        icon: entry.icon,
-        label: label,
-        badge: attention
-            ? _AttentionDot(
-                semanticLabel: l10n.needsSetupLabel,
-                selected: selected,
-              )
-            : null,
-        selected: selected,
-        onPressed: () => context.go(route),
-      );
-    }
-
-    final groups = <CcSidebarGroup>[];
-    for (final group in kSettingsNav) {
-      final visible = group.items.map(item).whereType<CcSidebarItem>().toList();
-      if (visible.isEmpty) {
-        continue;
-      }
-      groups.add(CcSidebarGroup(label: group.label(l10n), children: visible));
-    }
-    return groups;
-  }
-}
-
-/// Header for the settings sub-sidebar: a title row above the category list.
-class _SettingsSidebarHeader extends StatelessWidget {
-  const _SettingsSidebarHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
-      child: Row(
-        children: [
-          Icon(
-            AppIcons.settings,
-            size: 16,
-            color: context.designSystem?.textTertiary,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            l10n.navSettings,
-            style: CcTypography.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.ds.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A small caution-amber dot that flags a settings category needing setup.
-/// Paired with a [Semantics] label so it isn't status-by-color-alone.
-class _AttentionDot extends StatelessWidget {
-  const _AttentionDot({required this.semanticLabel, required this.selected});
-
-  final String semanticLabel;
-
-  /// On the selected row's solid brand fill the amber dot fails contrast, so
-  /// it renders in `accentOn` like the row's other content.
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected
-        ? (context.designSystem?.accentOn ?? const Color(0xFFFFFFFF))
-        : (context.designSystem?.fgWarningPrimary ?? const Color(0xFFCA8504));
-    return CcTooltip(
-      message: semanticLabel,
-      child: Semantics(
-        label: semanticLabel,
-        child: Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
       ),
     );

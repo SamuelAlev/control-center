@@ -2,7 +2,7 @@
 title: Linear 통합 설정
 description: 에이전트가 Linear를 호출할 수 있도록 서버에 Linear API 키를 저장하고, 새 티켓의 티켓팅 공급업체로 Linear를 선택합니다.
 slug: ko-KR/매뉴얼/사용-가이드/linear-통합
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 forge를 연결할 때와 같은 방식으로, 내 사용자 id에 연결되도록 서버에 Linear API
@@ -14,8 +14,9 @@ forge를 연결할 때와 같은 방식으로, 내 사용자 id에 연결되도�
 
 **티켓팅 API 키**는 **설정 → 워크스페이스 → 일반**의 티켓팅 카드에 있습니다. 이
 키는 내 사용자 id에 연결되어 서버에 저장됩니다. 무인 작업을 위한 서버 자체 키는
-`LINEAR_API_KEY` 또는 **프로바이더 앱** 카드에서 오며, 해당 에이전트에 **티켓팅 API
-호출 허용** 권한이 있을 때만 `TICKETING_API_KEY`로 주입됩니다.
+`LINEAR_API_KEY` 또는 **프로바이더 앱** 카드에서 옵니다. 에이전트의 샌드박스에는
+티켓팅 키가 놓이지 않습니다. 에이전트는 Control Center 자체 도구로 티켓을 쓰며,
+그 도구들이 먼저 **외부 트래커에 쓰기** 규칙에 묻습니다.
 
 ## 새 티켓을 Linear로 표시
 

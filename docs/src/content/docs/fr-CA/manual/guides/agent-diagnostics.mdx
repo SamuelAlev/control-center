@@ -2,7 +2,7 @@
 title: Diagnostiquer un agent
 description: Passez en revue le journal d’exécution, la sonde de l’adaptateur, l’état du serveur et les diagnostics de l’hôte lorsqu’un agent cesse de produire des exécutions.
 slug: fr-CA/manuel/guides/diagnostiquer-agent
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Ce guide montre comment déterminer pourquoi un agent ne produit pas d’exécutions.
@@ -60,19 +60,18 @@ Deux choses à savoir lorsqu’une modification « fonctionne dans les tests mai
 
 **Paramètres → Serveur → Diagnostics et confidentialité** (`/settings/server/diagnostics`) est la page de l’hôte. Elle contient :
 
-- **Bac à sable** — l’interrupteur principal, le backend détecté, un indice d’installation et les interrupteurs de capacités par défaut. Seul le backend détecté provient du serveur ; voir l’avertissement ci-dessous. Il n’y a aucune commande de réinitialisation.
+- **Bac à sable** — l’interrupteur principal, le backend détecté et un indice d’installation. Seul le backend détecté provient du serveur ; voir l’avertissement ci-dessous. Il n’y a aucune commande de réinitialisation.
 - **Recherche sémantique** — le cycle de vie du modèle d’embedding sur l’appareil : installé, en téléchargement avec un pourcentage, non installé ou en erreur d’installation. Tant qu’il n’est pas installé, la mémoire et la recherche de code restent limitées aux mots-clés.
 - **Comportement du système** — garder l’ordinateur éveillé pendant l’exécution des agents.
-- **Moteur de synchronisation** — des interrupteurs d’urgence par magasin pour les tickets, la messagerie et les notes. Ce sont des issues de secours vers les abonnements à instantané complet ; une modification ne touche que les nouveaux abonnements et ne prend donc pleinement effet qu’après un rechargement.
 - **Niveau de journalisation** — augmentez-le avant de reproduire une défaillance.
 - **Confidentialité** — si le contenu brut des diffs peut être transmis au modèle de l’agent et si des rapports de plantage sont envoyés.
 
 :::caution[Cette section décrit l’hôte, et ses commandes sont côté client]
-Détection et application concordent désormais : là où le détecteur signale un backend natif, les exécutions d’agents sur cet hôte y sont réellement enveloppées. Mais le détecteur est la seule chose active dans cette section. L’interrupteur principal, le sélecteur de backend et les interrupteurs de capacités par défaut sont des préférences enregistrées sur votre appareil, et le serveur n’en lit aucune — l’interrupteur propre au serveur est `--sandbox` (`on` par défaut, `off` pour s’en retirer) et, pour tout agent laissé sur « Utiliser la valeur par défaut de l’espace de travail », le serveur retombe sur sa valeur par défaut prudente : pas de git push, pas d’API GitHub, pas de clé de billetterie, réseau activé.
+Détection et application concordent désormais : là où le détecteur signale un backend natif, les exécutions d’agents sur cet hôte y sont réellement enveloppées. Mais le détecteur est la seule chose active dans cette section. L’interrupteur principal et le sélecteur de backend sont des préférences enregistrées sur votre appareil, et le serveur n’en lit aucune — l’interrupteur propre au serveur est `--sandbox` (`on` par défaut, `off` pour s’en retirer).
 
 Un avertissement ici mérite donc d’être pris en compte, mais ce n’est généralement pas la cause de l’échec d’un agent. Pour confirmer dans quel état se trouve le serveur, consultez son journal de démarrage : il affiche `agent sandbox ON` avec la note du backend, `no OS-native agent sandbox on this host` avec un indice d’installation, ou `agent sandbox DISABLED by --sandbox off`. `GET /healthz` ne comporte aucun champ de bac à sable.
 
-Là où il n’y a pas de backend — Windows en tout temps, Linux ou WSL2 sans `bwrap` ni `socat` — les exécutions **ne sont pas** isolées dans un bac à sable, et ce qui les borne est l’arbre de travail propre à la conversation, les capacités qui déterminent quels identifiants y sont créés, les garde-fous d’action, l’assainissement de l’environnement et la surface d’outils que son mode autorise.
+Là où il n’y a pas de backend — Windows en tout temps, Linux ou WSL2 sans `bwrap` ni `socat` — les exécutions **ne sont pas** isolées dans un bac à sable, et ce qui les borne est l’arbre de travail propre à la conversation, son jeton de forge en lecture seule et la passerelle de poussée, les garde-fous d’action, l’assainissement de l’environnement et la surface d’outils que son mode autorise.
 :::
 
 ## Défaillances courantes
@@ -83,7 +82,7 @@ Installez la CLI **sur l’hôte du serveur**, puis cliquez sur **Actualiser** d
 
 ### L’agent ne peut pas pousser ni ouvrir une demande de tirage
 
-Ses capacités sont le filtre. Ouvrez **Paramètres → Espace de travail → Agents** → l’agent → **Permissions du sandbox**, activez l’interrupteur et cochez **Autoriser git push** et **Autoriser les appels API GitHub**. Si l’interrupteur reste sur « Utiliser la valeur par défaut de l’espace de travail », l’agent n’obtient ni l’un ni l’autre.
+Lisez ce que git ou l’agent a affiché. `Control Center policy: …` signifie qu’une règle d’action l’a refusé ou qu’une approbation est restée sans réponse : vérifiez **Pousser vers un dépôt distant** et **Ouvrir une pull request** sous **Paramètres → Espace de travail → Autorisations des agents**. Si git indique que Control Center n’a aucun identifiant GitHub capable de pousser, installez la GitHub App sur ce dépôt ou connectez GitHub.
 
 ### La recherche sémantique ne renvoie rien d’utile
 

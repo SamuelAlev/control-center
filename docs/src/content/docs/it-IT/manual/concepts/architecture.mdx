@@ -3,7 +3,7 @@ title: "Architettura"
 description: "Come è strutturato Control Center: un modello a client leggero con server, Clean Architecture feature-first e porte e adattatori."
 dateModified: 2026-09-19
 slug: it-IT/manuale/concetti/architettura
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Panoramica
@@ -58,7 +58,7 @@ La feature **`guardrails`** colloca il proprio livello di dominio in `cc_domain/
 - Entità principali: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identità e multigiocatore: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Entità di memoria: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Value object condivisi: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Value object condivisi: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Porte condivise: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Servizi di dominio: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + tipi di evento (spazio di lavoro/agente, PR/revisione, messaggistica, ticketing, pipeline, orchestrazione, memoria, calendario/riunioni, identità e appartenenza, osservabilità)

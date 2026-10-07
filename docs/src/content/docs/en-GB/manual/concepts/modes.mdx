@@ -2,7 +2,7 @@
 title: Modes
 description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
 slug: en-GB/manual/concepts/modes
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## What a mode is
@@ -77,7 +77,7 @@ Resolution itself is simple. The dispatcher reads the space's `mode` column; a d
 
 A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/en-GB/manual/concepts/agent-model/).
+On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write and edit tools run unseen and its shell commands are checked only by a hook that reads the command line. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/en-GB/manual/concepts/agent-model/).
 
 The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
 

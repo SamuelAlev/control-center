@@ -7,6 +7,7 @@ import 'package:control_center/features/subscriptions/presentation/widgets/subsc
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/refresh_control.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +31,11 @@ class SubscriptionUsagePill extends ConsumerStatefulWidget {
 class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
   final CcOverlayController _controller = CcOverlayController();
 
+  /// Whether the refresh button's fetch is running. Tracked here rather than
+  /// read from the provider: a refresh keeps the last snapshot as plain data
+  /// (it never enters a loading state), so the provider cannot say it is busy.
+  bool _refreshing = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -41,6 +47,17 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
     // Opening the pill is an explicit "show me now" — refresh in the
     // background so the breakdown is fresh without blocking the open.
     ref.read(subscriptionUsageProvider.notifier).refresh();
+  }
+
+  Future<void> _refreshNow() async {
+    setState(() => _refreshing = true);
+    try {
+      await ref.read(subscriptionUsageProvider.notifier).refresh(force: true);
+    } finally {
+      if (mounted) {
+        setState(() => _refreshing = false);
+      }
+    }
   }
 
   @override
@@ -111,8 +128,11 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
       followerAnchor: AlignmentDirectional.topEnd,
       targetAnchor: AlignmentDirectional.bottomEnd,
       semanticLabel: l10n.subscriptionUsage,
-      overlayBuilder: (context, _) =>
-          _UsageOverlay(providers: configured, isLoading: async.isLoading),
+      overlayBuilder: (context, _) => _UsageOverlay(
+        providers: configured,
+        isLoading: async.isLoading || _refreshing,
+        onRefresh: _refreshNow,
+      ),
       target: SubscriptionUsageChip(
         readings: readings.values.toList(),
         onTap: _open,
@@ -122,10 +142,29 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
 }
 
 class _UsageOverlay extends StatelessWidget {
-  const _UsageOverlay({required this.providers, required this.isLoading});
+  const _UsageOverlay({
+    required this.providers,
+    required this.isLoading,
+    required this.onRefresh,
+  });
 
   final List<SubscriptionUsage> providers;
   final bool isLoading;
+  final VoidCallback onRefresh;
+
+  /// The OLDEST reading on screen. Readings come from caches of different
+  /// ages, and "checked a minute ago" is only honest if every number in the
+  /// flyout is at least that fresh.
+  DateTime? get lastChecked {
+    DateTime? oldest;
+    for (final p in providers) {
+      final at = p.fetchedAt;
+      if (at != null && (oldest == null || at.isBefore(oldest))) {
+        oldest = at;
+      }
+    }
+    return oldest;
+  }
 
   /// One group per provider, holding its accounts in report order.
   ///
@@ -188,7 +227,12 @@ class _UsageOverlay extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (isLoading) const CcSpinner(size: 12),
+                  RefreshControl(
+                    onRefresh: onRefresh,
+                    lastChecked: lastChecked,
+                    isLoading: isLoading,
+                    size: CcButtonSize.sm,
+                  ),
                 ],
               ),
             ),

@@ -1878,18 +1878,6 @@
   "@allow": {
     "description": "Allow"
   },
-  "allowGitPush": "Allow git push",
-  "@allowGitPush": {
-    "description": "Allow git push"
-  },
-  "allowGithubApi": "Allow GitHub API calls",
-  "@allowGithubApi": {
-    "description": "Allow GitHub API calls"
-  },
-  "allowNetwork": "Allow general network access",
-  "@allowNetwork": {
-    "description": "Allow general network access"
-  },
   "apiKeys": "API keys",
   "@apiKeys": {
     "description": "API Keys"
@@ -2319,10 +2307,6 @@
   "@currentParticipants": {
     "description": "Current participants"
   },
-  "customCapabilitiesDescription": "Custom capabilities description",
-  "@customCapabilitiesDescription": {
-    "description": "Locale string for customCapabilitiesDescription"
-  },
   "customSystemPrompt": "Custom system prompt for this agent...",
   "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
   "@daysAgo": {
@@ -2336,10 +2320,6 @@
   "deactivate": "Deactivate",
   "@deactivate": {
     "description": "Button to deactivate a policy"
-  },
-  "defaultCapabilities": "Default capabilities · new spaces",
-  "@defaultCapabilities": {
-    "description": "Default capabilities · new spaces"
   },
   "defaultChat": "Default chat",
   "@defaultChat": {
@@ -2842,7 +2822,6 @@
   "finish": "Finish",
   "fix": "Fix",
   "forward": "Forward",
-  "gatesGithubPatPush": "Gates GitHub PAT injection. Required for the agent to push.",
   "general": "General",
   "githubLink": "GitHub link",
   "claudeStatusFetchFailed": "Couldn't reach status.claude.com",
@@ -2928,6 +2907,15 @@
   "serviceStatusOutage": "Outage",
   "@serviceStatusOutage": {
     "description": "Service status word: critical outage"
+  },
+  "serviceStatusOverflowCount": "{count}+",
+  "@serviceStatusOverflowCount": {
+    "description": "Last circle of the overlapping service-logo stack on the sidebar service status entry, counting the faulty services whose logos did not fit (e.g. \"3+\")",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "serviceStatusTitle": "Service status",
   "@serviceStatusTitle": {
@@ -3415,6 +3403,10 @@
   "@navSettings": {
     "description": "Settings"
   },
+  "exitSettings": "Exit settings",
+  "@exitSettings": {
+    "description": "Sidebar row that leaves the settings navigation and returns to the page settings was opened from"
+  },
   "networkBlockCount": "{count} network blocks",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -3866,7 +3858,6 @@
   "questionLabel": "QUESTION",
   "queued": "Queued",
   "react": "React",
-  "readPrsIssuesMetadata": "Lets the agent read PRs, issues and repo metadata.",
   "readerPreferences": "Reader preferences",
   "@readerPreferences": {
     "description": "Reader preferences"
@@ -4132,10 +4123,6 @@
   "sandboxMacosBuiltIn": "Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required.",
   "@sandboxMacosBuiltIn": {
     "description": "Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required."
-  },
-  "sandboxPermissions": "Sandbox permissions",
-  "@sandboxPermissions": {
-    "description": "Locale string for sandboxPermissions"
   },
   "sandboxUnsupported": "Native sandbox is not supported on this platform yet. Falls back to \"No isolation\".",
   "@sandboxUnsupported": {
@@ -4874,10 +4861,6 @@
   "@useSandbox": {
     "description": "Locale string for useSandbox"
   },
-  "useWorkspaceDefault": "Use workspace default",
-  "@useWorkspaceDefault": {
-    "description": "Locale string for useWorkspaceDefault"
-  },
   "userAgent": "User-Agent",
   "@userAgent": {
     "description": "User-Agent"
@@ -4916,7 +4899,6 @@
   "@weakIsolationDescription": {
     "description": "Weak isolation - namespace boundary only, no kernel boundary."
   },
-  "whenOffNoDefaultRoute": "When off, the sandbox boots without a default route.",
   "whenOffServerStaysStopped": "When off, the server stays stopped until you start it.",
   "speechModel": "Speech model",
   "speechModelHint": "Used for meeting transcription and the composer mic.",
@@ -6277,9 +6259,7 @@
   "triggerDisabledTag": "off",
   "pipelineInputTypeRepo": "Repository",
   "pipelineRunNoRepos": "No repositories in this workspace yet.",
-  "allowTicketingApi": "Allow ticketing API calls",
   "ticketingApiKey": "Ticketing API key",
-  "ticketingApiKeySubtitle": "Injects the ticketing provider API key into the sandbox.",
   "ticketingProvider": "Ticketing provider",
   "connectGitHubAndTicketing": "Connect a code host so Control Center can read your pull requests, issues and reviews. Optionally connect a ticketing provider. Credentials are held by your server, never by this machine.",
   "triggerEventTicketAssigned": "Ticket assigned",
@@ -8089,13 +8069,6 @@
   "keepAwakeTitle": "Keep computer awake while agents run",
   "keepAwakeOnSubtitle": "The computer won't sleep while an agent is working",
   "keepAwakeOffSubtitle": "The computer may sleep even while an agent is working",
-  "syncEngineSectionTitle": "Sync engine",
-  "syncEngineDescription": "Tickets, messaging and notes update live via small incremental changes instead of full snapshots. Turning a toggle off falls that store back to full-snapshot mode — reload the app for the change to take effect.",
-  "syncEngineTicketsTitle": "Tickets",
-  "syncEngineMessagingTitle": "Messaging",
-  "syncEngineNotesTitle": "Notes",
-  "syncEngineOnSubtitle": "Live delta sync is active",
-  "syncEngineOffSubtitle": "Using full-snapshot sync",
   "spaces": "Spaces",
   "spacesHomeDescription": "Pick a space from the list, or start a new one.",
   "noSpacesYet": "No spaces yet",
@@ -11734,12 +11707,23 @@
   "newConversation": "New conversation",
   "untitledConversation": "Untitled conversation",
   "conversationTitleOptionalHint": "Optional — leave empty and the title model names it automatically",
-  "conversationTitlesSectionTitle": "Conversation titles",
-  "conversationTitlesSectionCaption": "Pick the runner that names new conversations in this workspace automatically. Titles stay off until an adapter is chosen, and apply to every member.",
-  "conversationTitlesModelLabel": "Title model",
-  "conversationTitlesAdapterLabel": "Adapter",
-  "conversationTitlesAdapterHint": "Off",
-  "conversationTitlesAdapterOff": "Off",
+  "shortTaskOff": "Off",
+  "shortTaskUnavailable": "Pick a short-task model in Settings → Adapters to use this",
+  "@shortTaskUnavailable": {
+    "description": "Shown when a feature needing the workspace short-task runner (side questions, title generation) runs with none configured; names the settings page to fix it"
+  },
+  "conversationTitleGenerate": "Generate",
+  "@conversationTitleGenerate": {
+    "description": "Button in the rename-conversation dialog that asks the short-task model to propose a title"
+  },
+  "conversationTitleNoMessages": "Send a message first. The title is generated from it.",
+  "@conversationTitleNoMessages": {
+    "description": "Rename-conversation dialog: generation needs a human message to name the conversation from"
+  },
+  "conversationTitleGenerateFailed": "Couldn't generate a title. Try again.",
+  "@conversationTitleGenerateFailed": {
+    "description": "Rename-conversation dialog: the short-task model failed or returned nothing usable"
+  },
   "startThread": "Start thread",
   "deleteSpaceConfirm": "Delete this space? All messages will be lost.",
   "threadTabTitle": "Thread: {title}",
@@ -11949,6 +11933,18 @@
   "@contextSegmentConversation": {
     "description": "Context breakdown category: the live conversation messages"
   },
+  "contextSegmentRunner": "Runner prompt, tools and turn work",
+  "@contextSegmentRunner": {
+    "description": "Context breakdown category: what an external runner such as Claude Code adds on its own (its system prompt, built-in tools, MCP schemas and the turn's tool calls)"
+  },
+  "contextUsageMeasured": "Reported by the model's last call",
+  "@contextUsageMeasured": {
+    "description": "Caption under the context usage total when the number is the provider-reported size of the model's most recent call"
+  },
+  "contextUsageEstimated": "Estimated until a run reports usage",
+  "@contextUsageEstimated": {
+    "description": "Caption under the context usage total when the number is an estimate because no run has reported its usage yet"
+  },
   "contextExplorerTitle": "Context",
   "@contextExplorerTitle": {
     "description": "Title of the context explorer tab and dialog"
@@ -12121,8 +12117,15 @@
   "sandboxSummaryHost": "Host",
   "sandboxGroupIsolation": "Isolation",
   "sandboxGroupIsolationDescription": "Where an agent's processes and file writes actually happen.",
+  "sandboxGroupAgentActions": "What agents may do",
+  "@sandboxGroupAgentActions": {
+    "description": "Settings → Sandboxing: heading of the group that points to agent permissions for what an agent may do."
+  },
+  "sandboxGroupAgentActionsDescription": "Pushing, opening a pull request and accessing the network are each allowed, asked about or denied in agent permissions.",
+  "@sandboxGroupAgentActionsDescription": {
+    "description": "Settings → Sandboxing: says push, pull requests and network access are decided by the allow/ask/deny action policy, not the sandbox."
+  },
   "sandboxBackendFieldDescription": "Auto picks the strongest one this host supports. Pin one to stop it changing under you.",
-  "sandboxCapabilitiesDescription": "The holes punched through the boundary. Each one is something an isolated agent can still do to the outside world.",
   "sandboxSummaryInForce": "In force",
   "rigsInstallHintLabel": "How to install it",
   "rigsStarting": "Starting",
@@ -12269,6 +12272,12 @@
   "claudeAccountSignIn": "Sign in",
   "claudeAccountSignInAgain": "Sign in again",
   "claudeAccountSignInHint": "Run this in a terminal on the server. It opens a browser to finish the login, and writes the credential into this account's directory.",
+  "claudeAccountLongLivedToken": "Long-lived token",
+  "claudeAccountUseLongLivedToken": "Use a long-lived token",
+  "claudeAccountReplaceLongLivedToken": "Replace long-lived token",
+  "claudeAccountRemoveLongLivedToken": "Remove long-lived token",
+  "claudeAccountLongLivedTokenHint": "A regular sign-in has to be renewed and can expire overnight. A long-lived token stays signed in for about a year. Run this in a terminal, finish in the browser, then paste the token it prints.",
+  "claudeAccountLongLivedTokenInvalid": "That isn't a token from claude setup-token. It starts with sk-ant-oat01-.",
   "claudeAccountSignedOut": "Signed out",
   "claudeAccountExpired": "Sign-in expired",
   "claudeAccountExpiredDetail": "The sign-in expired at {when}. Sign in again to use this account.",
@@ -12771,10 +12780,6 @@
   "attachmentOpenExternally": "Open in default app",
   "@attachmentOpenExternally": {
     "description": "Hands an attachment to the operating system's default handler."
-  },
-  "asideUnavailable": "Set a one-shot model in workspace settings to use this",
-  "@asideUnavailable": {
-    "description": "Toast when /handoff, /btw or /omfg has no configured runner."
   },
   "asideEmpty": "Nothing to work from yet",
   "@asideEmpty": {
@@ -13432,6 +13437,22 @@
   "@credentialGateOpenSettings": {
     "description": "Button that opens the settings screen"
   },
+  "credentialGateAccountsRemovedTitle": "The attached Claude Code accounts were removed",
+  "@credentialGateAccountsRemovedTitle": {
+    "description": "Credential-gate dialog title when every Claude Code account on the agent or workspace list was removed from the server"
+  },
+  "credentialGateAccountsRemovedHint": "Attach another account in this agent's or the workspace's account settings, or clear the list to use the default. The run picks it up on its own.",
+  "@credentialGateAccountsRemovedHint": {
+    "description": "Credential-gate dialog hint explaining how to fix a list of removed Claude Code accounts"
+  },
+  "accountPoolAllRemoved": "Every account on this list has been removed from the server. Attach another one, or clear the list.",
+  "@accountPoolAllRemoved": {
+    "description": "Account rotation editor notice when every account on the list was removed from the server"
+  },
+  "accountPoolClear": "Clear the list",
+  "@accountPoolClear": {
+    "description": "Button that clears an account rotation list"
+  },
   "selectModel": "Select model",
   "@selectModel": {
     "description": "Title of the model browser dialog and hint of the model picker field"
@@ -13777,6 +13798,8 @@
   "@ideQuickOpen": {"description": "Keyboard shortcut label (⌘P / Ctrl+P) for the IDE quick open file picker."},
   "ideQuickOpenDescription": "Search the conversation's files by name and open one in a tab",
   "@ideQuickOpenDescription": {"description": "Keyboard shortcut description for the IDE quick open file picker."},
+  "prQuickOpenDescription": "Search the pull request's files by name and open one in a tab",
+  "@prQuickOpenDescription": {"description": "Keyboard shortcut description for the pull request page's quick open file picker (⌘P / Ctrl+P)."},
   "ideQuickOpenHint": "Search files by name",
   "@ideQuickOpenHint": {"description": "Placeholder in the quick open picker's search field."},
   "ideQuickOpenRecentlyOpened": "Recently opened",

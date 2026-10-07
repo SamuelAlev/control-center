@@ -2,7 +2,7 @@
 title: Opprett og konfigurer en agent
 description: Legg til en agent i et arbeidsområde, gi den en adapter, modell, skills og tillatelser, og bekreft at den kjører.
 slug: nb-NO/handbok/slik-gjor-du/opprett-agent
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Denne veiledningen viser hvordan du legger en agent til i et arbeidsområde og konfigurerer den til den faktisk kan kjøre.
@@ -68,19 +68,12 @@ Du velger ikke et repos egne skills her. Et repo som leverer dem (i `.agents/ski
 
 ## Gi tillatelser
 
-**Sandkassetillatelser** starter på «Bruk standard for arbeidsområde». Slå på bryteren for å angi dem for denne agenten, og slå deretter av og på:
+En agent har ingen egne tillatelsesbrytere. Hva den får pushe, åpne, slå sammen eller nå, bestemmes av handlingsreglene under **Innstillinger → Arbeidsområde → Agenttillatelser**, der en regel kan begrenses til denne agenten. Som standard spør en push, en pull request, en gjennomgang eller sammenslåing og skriving til et oppfølgingssystem deg først, hver for seg, og nettverkstilgang er tillatt.
 
-- **Tillat git push** — injiserer GitHub-tokenet agenten trenger for å pushe
-- **Tillat GitHub API-kall** — lar agenten lese PR-er, saker og repometadata
-- **Tillat API-kall for saker** — injiserer nøkkelen til saksleverandøren
-- **Tillat generell nettverkstilgang** — slår også på det innebygde harnessets `web_fetch`- og `web_search`-verktøy
+Agentens GitHub-token kan alltid bare lese. En push går gjennom Control Center, som spør regelen **Push til en remote** før den sendes videre. Se [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/) for hvordan hver regel når en kjøring.
 
-Hver bryter kontrolleres av påloggingsmegleren når kjøringen starter: en kapasitet som er av, betyr rett og slett at det tilhørende tokenet aldri utstedes inn i kjøringens miljø.
-
-:::caution[Standard for arbeidsområde betyr serverens konservative sett]
-En agent som står på «Bruk standard for arbeidsområde», kjører med git push, GitHub API og saker alle **av** og nettverk **på**. Kapasitetsstandardene som vises under Innstillinger → Server → Diagnostikk og personvern, er en klientinnstilling. Vil du at en agent skal pushe eller åpne PR-er, slår du på bryteren og gir kapasitetene eksplisitt.
-
-Disse kapasitetene kontrollerer påloggingsinformasjon og harness-verktøy, som er et eget lag fra OS-sandkassen. `cc_server` pakker agentkjøringer inn i vertens sandkasse der en finnes — Windows har ingen innebygd backend, og Linux og WSL2 trenger `bwrap` og `socat`. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hele settet av grenser.
+:::note[Regler og OS-sandkassen er separate lag]
+Reglene avgjør hva en agent får gjøre; OS-sandkassen begrenser hvor prosessene dens kan lese, skrive og koble seg til. `cc_server` pakker agentkjøringer inn i vertens sandkasse der en finnes — Windows har ingen innebygd backend, og Linux og WSL2 trenger `bwrap` og `socat`. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hele settet av grenser.
 :::
 
 ## Kontroller at den kjører

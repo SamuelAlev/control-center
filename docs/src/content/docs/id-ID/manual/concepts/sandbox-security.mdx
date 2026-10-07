@@ -2,7 +2,7 @@
 title: Sandbox dan keamanan
 description: Apa yang sebenarnya membatasi agen di Control Center saat ini, sejauh mana sandbox OS menjangkau, dan batas mana yang tetap berlaku di host tanpa backend.
 slug: id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Sejauh mana sandbox OS menjangkau dan tidak menjangkau]
@@ -21,8 +21,7 @@ Dua celah tetap bertahan meski ada sandbox dan perlu diingat:
   pembatasan jalur di dalam alat itu sendiri plus pagar pengaman tindakan.
 - **Claude Code diluncurkan dengan `--dangerously-skip-permissions`**, karena
   `claude -p` yang non-interaktif akan tersendat selamanya pada prompt-nya
-  sendiri. Panggilan berkas dan shell-nya karena itu tidak dijaga oleh pagar
-  pengaman Control Center — sandbox OS adalah batas di sekelilingnya.
+  sendiri. Panggilan berkasnya karena itu tidak dijaga oleh pagar pengaman Control Center, dan perintah shell-nya hanya oleh hook yang membaca baris perintah — sandbox OS adalah batas di sekelilingnya.
   :::
 
 ## Mengapa isolasi penting di sini
@@ -93,9 +92,7 @@ tidak pernah menjadi ya. Lihat
 [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) untuk model
 penyelesaiannya.
 
-**Kredensial yang disaring berdasarkan kemampuan dan lingkungan yang
-disanitasi.** Kredensial dibuat per peluncuran dari flag kemampuan percakapan
-dan dicabut saat eksekusi berakhir. ACP, `bash` harness, dan Claude Code di
+**Kredensial dari broker dan lingkungan yang disanitasi.** Kredensial dibuat per peluncuran dan dicabut saat eksekusi berakhir, dan token GitHub yang dipegang eksekusi dapat membaca tetapi tidak dapat push — lihat "Push melewati Control Center" di bawah. ACP, `bash` harness, dan Claude Code di
 bawah pembungkus native mendapat lingkungan yang dibersihkan dari vektor
 injeksi dynamic-linker dan interpreter (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
 `NODE_OPTIONS`, `GIT_SSH_COMMAND`, dan sejenisnya) sebelum proses dimulai.
@@ -126,37 +123,69 @@ dievaluasi terpisah, dengan keputusan paling ketat yang menang.
 Claude Code, saat dipakai sebagai adapter, adalah kasus ketika sandbox
 memikul beban terbesar. Control Center meluncurkannya dengan
 `--dangerously-skip-permissions`, karena `claude -p` yang non-interaktif akan
-tersendat selamanya pada prompt persetujuannya sendiri. Panggilan baca, tulis,
-edit, dan shell-nya terjadi di dalam prosesnya sendiri dan Control Center
-tidak pernah melihatnya; satu-satunya panggilan yang sampai ke gerbang adalah
-alat `mcp__*` yang dilayani Control Center sendiri. Bila backend tersedia,
+tersendat selamanya pada prompt persetujuannya sendiri. Panggilan baca, tulis, dan edit-nya terjadi di dalam prosesnya sendiri dan Control Center tidak pernah melihatnya. Panggilan `Bash`-nya dikirim, sebelum dijalankan, ke hook di server yang mengklasifikasikan baris perintah dan menanyakan aturan yang cocok, dan alat `mcp__*` yang dilayani Control Center melewati gerbang seperti biasa. Bila backend tersedia,
 panggilan tak terlihat itu tetap terjadi di dalam pembungkus sandbox, jadi
 OS-lah batas di sekelilingnya. Bila tidak ada, tidak ada apa pun. Setiap
 adapter menyatakan hal ini dalam matriks penegakannya — lihat [matriks
 kejujuran adapter](/id-ID/panduan-pengguna/konsep/pagar-pengaman/#the-adapter-honesty-matrix).
 
-## Penyaringan kemampuan adalah penegakan lewat ketiadaan
+## Push melewati Control Center
 
-Sebuah percakapan membawa empat flag kemampuan: push ke repo, memanggil API
-GitHub, memanggil penyedia tiket, dan mengakses jaringan. Semuanya tidak
-diperiksa saat agen bertindak. Semuanya diperiksa sekali, saat peluncuran,
-oleh broker kredensial — dan kemampuan yang mati berarti token yang
-bersangkutan memang tidak pernah dimasukkan ke lingkungan.
+Tidak ada flag izin per agen. Apakah agen boleh membuat commit, melakukan push,
+membuka pull request, menulis ke pelacak, atau menjangkau jaringan ditentukan
+oleh [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) — izinkan, tanyakan dulu, atau
+tolak — dan aturan yang sama berlaku adapter mana pun yang menjalankan agen.
 
-Itulah keseluruhan mekanismenya, dan perlu dinyatakan terus terang karena mode
-kegagalannya tidak seperti yang orang duga. Mematikan “GitHub API” tidak
-menghasilkan pesan “kemampuan ditolak”. Yang muncul adalah `401` biasa di
-dalam agen, karena tidak ada `GH_TOKEN` yang bisa dikirim. Agen bisa saja
-menceritakannya sebagai masalah kredensial. Penegakan lewat ketiadaan itu
-kokoh — tidak ada pemeriksaan yang bisa dilewati — tetapi ia senyap dan agen
-tidak tahu mengapa ia gagal.
+Push adalah aksi yang harus tetap bertahan bahkan terhadap agen yang mencoba
+mengakali aturan, jadi push ditegakkan lewat apa yang dipegang agen, bukan lewat
+apa yang dijalankannya. Dengan GitHub App yang terkonfigurasi, eksekusi di
+worktree GitHub mendapat token instalasi bercakupan repo yang dapat membaca
+konten dan bekerja dengan pull request, tetapi tidak dapat push. Konfigurasi git
+eksekusi menulis ulang setiap URL push GitHub (`https://github.com/`,
+`git@github.com:`, `ssh://git@github.com/`) ke **gateway run agen**, sebuah
+endpoint loopback di `cc_server`. Gateway membaca ref mana yang diperbarui oleh
+push, menanyakan aturan **Push ke remote** — sehingga aturan yang dibatasi ke
+branch, seperti "tolak push ke `main`", ikut berlaku — dan baru setelah itu
+meneruskan push ke GitHub dengan token tulis yang dibuatnya untuk keperluan itu
+dan tidak pernah diserahkan ke agen. Push yang ditolak muncul di keluaran git
+itu sendiri:
 
-Flag jaringan berperilaku sama. Saat mati, alat `web_fetch` dan `web_search`
-milik harness menolak setiap panggilan dan daftar izin proksi sebuah spawn
-yang di-sandbox kosong, sehingga setiap koneksi keluar ditolak.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Kredensial dicabut saat eksekusi dibongkar, jadi handle tidak hidup lebih lama
-daripada eksekusi yang menerbitkannya.
+Gateway hanya meneruskan push ke repo milik worktree itu sendiri atau ke repo
+GitHub yang ditautkan ke ruang kerja. Fetch langsung ke GitHub dengan token
+baca.
+
+Perintah shell lainnya menemui gerbang yang lebih lunak. Alat `bash` milik
+harness dan, melalui hook, alat `Bash` milik Claude Code mengklasifikasikan
+setiap baris perintah dan menanyakan aturan yang menaunginya: `git commit`,
+`merge`, `rebase`, `cherry-pick`, `revert`, dan `am` adalah **Buat commit**;
+`gh pr create` adalah **Buka pull request**; `gh pr merge`, `review`,
+`comment`, dan `close` adalah **Publikasikan review atau merge**;
+`gh issue create`, `edit`, `comment`, dan `close` adalah **Tulis ke pelacak
+eksternal**; instalasi paket adalah **Instal paket**; `curl` dan `wget` adalah
+**Akses jaringan**. Ini mengenali penulisan lazim sebuah aksi, dan agen yang
+bertekad menyembunyikannya (`eval`, berkas skrip, panggilan API langsung) bisa
+melakukannya. Push tidak bergantung pada hal ini.
+
+:::caution[Tanpa GitHub App, aturan push hanya bersifat anjuran]
+Tanpa GitHub App yang terkonfigurasi, broker kembali ke personal access token,
+yang tidak dapat dipersempit menjadi hanya-baca. Aturan itu tetap berlaku untuk
+`git push`, karena git mengirim push ke gateway, tetapi kode yang memakai token
+di lingkungan secara langsung dapat push dengan melewatinya.
+:::
+
+Tidak ada kunci API tiket yang ditaruh di sandbox. Agen menulis tiket melalui
+alat MCP Control Center, yang menanyakan **Tulis ke pelacak eksternal**.
+
+Aturan **Akses jaringan** dibaca sekali, saat eksekusi dimulai. Jaringan sandbox
+hanya bisa menyala atau mati, jadi tolak mematikannya sementara izinkan dan
+tanyakan dulu membiarkannya menyala; alat `web_fetch` dan `web_search` milik
+harness tetap bertanya di setiap panggilan. Kredensial dicabut saat eksekusi
+dibongkar, bersama setiap token tulis yang dibuat gateway, jadi handle tidak
+hidup lebih lama daripada eksekusi.
 
 ## Apa yang ditambahkan sandbox dan di mana batasnya
 
@@ -228,33 +257,29 @@ melarangnya.
 
 Jaringan, di bawah sandbox, adalah daftar izin **domain** per sesi yang
 ditegakkan oleh proksi loopback dalam proses. Egress ditolak secara bawaan:
-saat kemampuan jaringan mati, proksi tetap dimulai tetapi daftar izinnya
-kosong, jadi setiap koneksi keluar ditolak. Saat menyala, resolver menyusun
-daftar izin dari baseline terkurasi — penyedia API LLM, hosting git, registri
-paket, katalog model — plus domain GitHub yang diperoleh dari kemampuan GitHub
-atau push milik agen, lalu mencocokkan host tujuan setiap koneksi dengannya.
-Wildcard berfungsi (`*.example.com` cocok dengan subdomain, bukan apex-nya).
-Daftar yang selalu ditolak terpisah menang atas daftar izin dan mencakup
-endpoint metadata cloud serta tujuan telemetri. Yang _tidak_ dapat
+saat jaringan mati, proksi tetap dimulai tetapi daftar izinnya kosong, jadi
+setiap koneksi keluar ditolak. Saat menyala, resolver menyusun daftar izin dari
+baseline terkurasi — penyedia API LLM, hosting git, registri paket, katalog
+model — plus domain GitHub, lalu mencocokkan host tujuan setiap koneksi
+dengannya. Wildcard berfungsi (`*.example.com` cocok dengan subdomain, bukan
+apex-nya). Daftar yang selalu ditolak terpisah menang atas daftar izin dan
+mencakup endpoint metadata cloud serta tujuan telemetri. Yang _tidak_ dapat
 dikonfigurasi adalah daftar itu sendiri: spesifikasi membawa bidang
-`egressAllowlist` untuk domain tambahan dan sebuah hook domain tiket, tetapi
-tidak ada apa pun di jalur pengiriman yang mengisi keduanya, jadi dalam
-praktiknya setiap eksekusi mendapat baseline plus domain turunan kemampuannya
-dan tidak lebih.
+`egressAllowlist` untuk domain tambahan, tetapi tidak ada apa pun di jalur
+pengiriman yang mengisinya, jadi dalam praktiknya setiap eksekusi mendapat
+baseline plus GitHub dan tidak lebih.
 
 Penolakan, di macOS, dapat diamati: sebuah monitor menyadap log sistem untuk
 penolakan Sandbox, menyaring derau yang dikenal, menghilangkan duplikat badai
 percobaan ulang, dan memunculkan masing-masingnya sebagai `SandboxViolation`
-yang menyebutkan apa yang dicoba dan kemampuan mana yang akan membukanya. Di
+yang menyebutkan apa yang dicoba dan apa yang diblokir. Di
 Linux jalur pembungkus mengurai stderr untuk `EPERM`,
 `Operation not permitted`, dan `Permission denied` lalu memancarkan jenis
 peristiwa yang sama — tidak ada penyadapan log sistem. Peristiwa itu tiba di
 aliran peristiwa milik eksekusi, sehingga panggilan sistem yang ditolak muncul
 di transkrip, bukan hanya di log. Telemetri ini hanya ada selama sandbox native
 benar-benar membungkus proses — di host tanpa backend tidak ada apa pun untuk
-diamati. Ini juga tidak berkaitan dengan penyaringan kemampuan: pelanggaran
-berasal dari
-panggilan sistem yang ditolak, tidak pernah dari pencarian kemampuan.
+diamati. Ini juga tidak berkaitan dengan pagar pengaman: pelanggaran berasal dari panggilan sistem yang ditolak, tidak pernah dari pencarian aturan.
 
 ## Konfirmasi berasal dari pagar pengaman, bukan sandbox
 
@@ -286,5 +311,5 @@ manual.
 
 ## Panduan terkait
 
-- [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/): flag kemampuan dan postur sistem berkas
+- [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/): aturan aksi, penegakan push, dan postur sistem berkas
 - [Jalankan diagnosis agen](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/): cakupan pemeriksaan diagnostik

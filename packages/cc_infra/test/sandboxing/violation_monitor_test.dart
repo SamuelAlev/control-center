@@ -5,10 +5,8 @@ import 'package:test/test.dart';
 
 /// Exercises the `@visibleForTesting` static helpers on [SandboxViolationMonitor]:
 /// [SandboxViolationMonitor.parseLogLine] (the macOS `log stream` NDJSON →
-/// [ParsedLine] decoder), [SandboxViolationMonitor.isNoise] (the
-/// agent-process + action + path allowlist) and
-/// [SandboxViolationMonitor.suggestCapability] (the action → capability
-/// mapping).
+/// [ParsedLine] decoder) and [SandboxViolationMonitor.isNoise] (the
+/// agent-process + action + path allowlist).
 void main() {
   /// Builds a macOS-style sandbox log NDJSON line carrying [message] in its
   /// `eventMessage` field.
@@ -97,35 +95,6 @@ void main() {
         logLine('Sandbox: bash(1) deny(2) file-read-data /a /b /c'),
       );
       expect(parsed!.violation.target, '/a /b /c');
-    });
-  });
-
-  group('suggestCapability', () {
-    test('network → github.com resolves to canCallGitHubApi', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'network-outbound',
-          'github.com',
-        ),
-        'canCallGitHubApi',
-      );
-    });
-
-    test('network → other host resolves to canAccessNetwork', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'network-outbound',
-          'example.com',
-        ),
-        'canAccessNetwork',
-      );
-    });
-
-    test('non-network action resolves to null', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability('file-read-data', '/x'),
-        isNull,
-      );
     });
   });
 

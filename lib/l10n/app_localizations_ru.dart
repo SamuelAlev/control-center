@@ -2678,15 +2678,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get allow => 'Разрешить';
 
   @override
-  String get allowGitPush => 'Разрешить git push';
-
-  @override
-  String get allowGithubApi => 'Разрешить вызовы GitHub API';
-
-  @override
-  String get allowNetwork => 'Разрешить общий доступ к сети';
-
-  @override
   String get apiKeys => 'Ключи API';
 
   @override
@@ -3095,10 +3086,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get currentParticipants => 'Текущие участники';
 
   @override
-  String get customCapabilitiesDescription =>
-      'Описание пользовательских возможностей';
-
-  @override
   String get customSystemPrompt =>
       'Пользовательский системный промпт для этого агента...';
 
@@ -3117,10 +3104,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get deactivate => 'Деактивировать';
-
-  @override
-  String get defaultCapabilities =>
-      'Возможности по умолчанию · новые пространства';
 
   @override
   String get defaultChat => 'Чат по умолчанию';
@@ -3527,10 +3510,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get forward => 'Вперёд';
 
   @override
-  String get gatesGithubPatPush =>
-      'Ограничивает внедрение GitHub PAT. Нужно, чтобы агент мог выполнять push.';
-
-  @override
   String get general => 'Общие';
 
   @override
@@ -3599,6 +3578,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Сбой';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Статус сервиса';
@@ -4074,6 +4058,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get navSettings => 'Настройки';
+
+  @override
+  String get exitSettings => 'Выйти из настроек';
 
   @override
   String networkBlockCount(int count) {
@@ -4597,10 +4584,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get react => 'React';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Позволяет агенту читать PR, issues и метаданные репозитория.';
-
-  @override
   String get readerPreferences => 'Настройки чтения';
 
   @override
@@ -4860,9 +4843,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Нативная песочница встроена в macOS — использует Apple Seatbelt (`sandbox-exec`). Установка не нужна.';
-
-  @override
-  String get sandboxPermissions => 'Права песочницы';
 
   @override
   String get sandboxUnsupported =>
@@ -5451,9 +5431,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get useSandbox => 'Использовать песочницу';
 
   @override
-  String get useWorkspaceDefault => 'По умолчанию рабочего пространства';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5496,10 +5473,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Слабая изоляция — только граница пространства имён, без границы ядра.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Если выключено, песочница запускается без маршрута по умолчанию.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6732,14 +6705,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'В этом рабочем пространстве пока нет репозиториев.';
 
   @override
-  String get allowTicketingApi => 'Разрешить вызовы API тикетов';
-
-  @override
   String get ticketingApiKey => 'API-ключ тикетов';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Передаёт API-ключ провайдера тикетов в песочницу.';
 
   @override
   String get ticketingProvider => 'Провайдер тикетов';
@@ -9144,30 +9110,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Компьютер может заснуть даже во время работы агента';
-
-  @override
-  String get syncEngineSectionTitle => 'Движок синхронизации';
-
-  @override
-  String get syncEngineDescription =>
-      'Тикеты, сообщения и заметки обновляются в реальном времени небольшими инкрементальными изменениями, а не полными снимками. Выключение переключателя возвращает это хранилище к режиму полных снимков — перезагрузите приложение, чтобы изменение вступило в силу.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Тикеты';
-
-  @override
-  String get syncEngineMessagingTitle => 'Сообщения';
-
-  @override
-  String get syncEngineNotesTitle => 'Заметки';
-
-  @override
-  String get syncEngineOnSubtitle =>
-      'Включена живая инкрементальная синхронизация';
-
-  @override
-  String get syncEngineOffSubtitle =>
-      'Используется синхронизация полными снимками';
 
   @override
   String get spaces => 'Пространства';
@@ -13152,23 +13094,22 @@ class AppLocalizationsRu extends AppLocalizations {
       'Необязательно — оставьте пустым, и модель заголовков назовёт его автоматически';
 
   @override
-  String get conversationTitlesSectionTitle => 'Заголовки разговоров';
+  String get shortTaskOff => 'Выкл.';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Выберите раннер, который автоматически называет новые разговоры в этом рабочем пространстве. Заголовки выключены, пока не выбран адаптер, и действуют для всех участников.';
+  String get shortTaskUnavailable =>
+      'Чтобы это использовать, выберите модель для коротких задач в Настройки → Адаптеры';
 
   @override
-  String get conversationTitlesModelLabel => 'Модель заголовков';
+  String get conversationTitleGenerate => 'Сгенерировать';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Адаптер';
+  String get conversationTitleNoMessages =>
+      'Сначала отправьте сообщение. Название создаётся по нему.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Выкл.';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Выкл.';
+  String get conversationTitleGenerateFailed =>
+      'Не удалось сгенерировать название. Попробуйте ещё раз.';
 
   @override
   String get startThread => 'Начать ветку';
@@ -13335,6 +13276,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Диалог';
+
+  @override
+  String get contextSegmentRunner =>
+      'Промпт исполнителя, инструменты и работа хода';
+
+  @override
+  String get contextUsageMeasured => 'По данным последнего вызова модели';
+
+  @override
+  String get contextUsageEstimated => 'Оценка, пока запуск не сообщит расход';
 
   @override
   String get contextExplorerTitle => 'Контекст';
@@ -13727,12 +13678,15 @@ class AppLocalizationsRu extends AppLocalizations {
       'Где на самом деле выполняются процессы агента и запись в файлы.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Авто выбирает самый сильный вариант, который поддерживает этот хост. Зафиксируйте один, чтобы он не менялся сам.';
+  String get sandboxGroupAgentActions => 'Что разрешено агентам';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Прорехи в границе. Каждая — то, что изолированный агент всё ещё может делать во внешнем мире.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Разрешать ли отправку в удалённый репозиторий, открытие pull request и доступ к сети, спрашивать ли сначала или запрещать, задаётся в разрешениях агента.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Авто выбирает самый сильный вариант, который поддерживает этот хост. Зафиксируйте один, чтобы он не менялся сам.';
 
   @override
   String get sandboxSummaryInForce => 'Действует';
@@ -13879,6 +13833,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Выполните это в терминале на сервере. Откроется браузер для завершения входа, а учётные данные запишутся в каталог этой учётной записи.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Долгосрочный токен';
+
+  @override
+  String get claudeAccountUseLongLivedToken =>
+      'Использовать долгосрочный токен';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken =>
+      'Заменить долгосрочный токен';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'Удалить долгосрочный токен';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Обычный вход нужно продлевать, и он может истечь за ночь. Долгосрочный токен остаётся действительным около года. Выполните эту команду в терминале, завершите вход в браузере, затем вставьте выведенный токен.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Это не токен от claude setup-token. Он начинается с sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Выход выполнен';
@@ -14314,10 +14290,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Открыть в приложении по умолчанию';
-
-  @override
-  String get asideUnavailable =>
-      'Чтобы это использовать, задайте one-shot модель в настройках рабочего пространства';
 
   @override
   String get asideEmpty => 'Пока не на чем работать';
@@ -14864,6 +14836,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get credentialGateOpenSettings => 'Открыть настройки';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Привязанные аккаунты Claude Code удалены';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Привяжите другой аккаунт в настройках аккаунтов этого агента или рабочего пространства либо очистите список, чтобы использовать аккаунт по умолчанию. Запуск продолжится сам.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Все аккаунты из этого списка удалены с сервера. Привяжите другой или очистите список.';
+
+  @override
+  String get accountPoolClear => 'Очистить список';
+
+  @override
   String get selectModel => 'Выбрать модель';
 
   @override
@@ -15305,6 +15292,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Найдите файлы беседы по имени и откройте один во вкладке';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Найдите файлы pull request по имени и откройте один во вкладке';
 
   @override
   String get ideQuickOpenHint => 'Поиск файлов по имени';

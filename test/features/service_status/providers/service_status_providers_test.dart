@@ -1,11 +1,38 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
+import 'package:cc_domain/features/subscriptions/subscriptions.dart';
+import 'package:cc_harness/provider.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
+import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
+import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Usage notifier that resolves to a fixed list, with no refresh timer.
+class _UsageNotifier extends SubscriptionUsageNotifier {
+  _UsageNotifier(this._usage);
+  final List<SubscriptionUsage> _usage;
+
+  @override
+  Future<List<SubscriptionUsage>> build() async => _usage;
+}
+
+SubscriptionUsage _plan(String id, SubscriptionStatus status) =>
+    SubscriptionUsage(providerId: id, displayName: id, status: status);
+
+HarnessProviderInfo _key(String id, HarnessProviderEnabled enabled) =>
+    HarnessProviderInfo(
+      id: id,
+      displayName: id,
+      authMethods: const [HarnessAuthMethod.apiKey],
+      enabled: enabled,
+      hasCredential: enabled != HarnessProviderEnabled.disabled,
+    );
 
 /// Minimal [RemoteRpcClient] stand-in answering only `serviceStatus.getAll`
 /// through a controllable callback; everything else throws if touched.
@@ -121,9 +148,9 @@ void main() {
       await container.read(serviceStatusProvider.notifier).refresh();
       // The rebuild's future rejects; the state lands in the error state so
       // the flyout renders its fetch-failed blocks exactly as before.
-      await container.read(serviceStatusProvider.future).catchError(
-        (Object _) => const ServiceStatuses(),
-      );
+      await container
+          .read(serviceStatusProvider.future)
+          .catchError((Object _) => const ServiceStatuses());
       expect(container.read(serviceStatusProvider).hasError, isTrue);
     });
 
@@ -142,6 +169,58 @@ void main() {
       final github = container.read(githubStatusProvider);
       expect(github.isLoading, isTrue);
       expect(github.hasValue, isFalse);
+    });
+  });
+
+  group('servicesInUseProvider', () {
+    Future<Set<StatusService>> inUse({
+      Set<ForgeHost> forges = const {},
+      List<SubscriptionUsage> plans = const [],
+      List<HarnessProviderInfo> keys = const [],
+    }) async {
+      final container = ProviderContainer(
+        overrides: [
+          connectedForgesProvider.overrideWithValue(forges),
+          subscriptionUsageProvider.overrideWith(() => _UsageNotifier(plans)),
+          harnessProvidersProvider.overrideWith((ref) async => keys),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(subscriptionUsageProvider.future);
+      await container.read(harnessProvidersProvider.future);
+      return container.read(servicesInUseProvider);
+    }
+
+    test('nothing signed in shows nothing', () async {
+      expect(await inUse(), isEmpty);
+    });
+
+    test('a forge, a plan and an API key each count', () async {
+      expect(
+        await inUse(
+          forges: {ForgeHost.github},
+          plans: [_plan('claude', SubscriptionStatus.ok)],
+          keys: [_key('openai', HarnessProviderEnabled.account)],
+        ),
+        {StatusService.github, StatusService.claude, StatusService.openai},
+      );
+    });
+
+    test('an exhausted plan is still in use', () async {
+      expect(
+        await inUse(plans: [_plan('kimi-code', SubscriptionStatus.exhausted)]),
+        {StatusService.kimi},
+      );
+    });
+
+    test('an unconfigured plan or a disabled key is not', () async {
+      expect(
+        await inUse(
+          plans: [_plan('kimi-code', SubscriptionStatus.unconfigured)],
+          keys: [_key('moonshotai', HarnessProviderEnabled.disabled)],
+        ),
+        isEmpty,
+      );
     });
   });
 }

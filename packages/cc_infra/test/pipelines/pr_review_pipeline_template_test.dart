@@ -25,7 +25,7 @@ void main() {
     registry = PipelineBodyRegistry();
     registerPrReviewBodies(
       registry,
-      githubPrClient: prClient,
+      githubPrClientFor: (_, _) => prClient,
       finalizeReview: finalize.call,
     );
   });

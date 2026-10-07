@@ -2653,15 +2653,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get allow => 'Cho phép';
 
   @override
-  String get allowGitPush => 'Cho phép git push';
-
-  @override
-  String get allowGithubApi => 'Cho phép gọi GitHub API';
-
-  @override
-  String get allowNetwork => 'Cho phép truy cập mạng chung';
-
-  @override
   String get apiKeys => 'Khóa API';
 
   @override
@@ -3065,9 +3056,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get currentParticipants => 'Người tham gia hiện tại';
 
   @override
-  String get customCapabilitiesDescription => 'Mô tả khả năng tùy chỉnh';
-
-  @override
   String get customSystemPrompt =>
       'Lời nhắc hệ thống tùy chỉnh cho agent này...';
 
@@ -3084,9 +3072,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deactivate => 'Vô hiệu hóa';
-
-  @override
-  String get defaultCapabilities => 'Khả năng mặc định · không gian mới';
 
   @override
   String get defaultChat => 'Chat mặc định';
@@ -3491,10 +3476,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get forward => 'Chuyển tiếp';
 
   @override
-  String get gatesGithubPatPush =>
-      'Kiểm soát tiêm GitHub PAT. Cần để agent đẩy mã.';
-
-  @override
   String get general => 'Chung';
 
   @override
@@ -3559,6 +3540,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Ngừng dịch vụ';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Trạng thái dịch vụ';
@@ -4025,6 +4011,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get navSettings => 'Cài đặt';
+
+  @override
+  String get exitSettings => 'Thoát cài đặt';
 
   @override
   String networkBlockCount(int count) {
@@ -4544,10 +4533,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get react => 'React';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Cho phép agent đọc PR, issue và metadata repo.';
-
-  @override
   String get readerPreferences => 'Tùy chọn trình đọc';
 
   @override
@@ -4802,9 +4787,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Sandbox gốc đã có sẵn trên macOS — dùng Apple Seatbelt (`sandbox-exec`). Không cần cài.';
-
-  @override
-  String get sandboxPermissions => 'Quyền sandbox';
 
   @override
   String get sandboxUnsupported =>
@@ -5387,9 +5369,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get useSandbox => 'Dùng sandbox';
 
   @override
-  String get useWorkspaceDefault => 'Dùng mặc định không gian làm việc';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5432,10 +5411,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Cô lập yếu — chỉ ranh giới namespace, không có ranh giới kernel.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Khi tắt, sandbox khởi động không có tuyến mặc định.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6651,14 +6626,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chưa có repository nào trong không gian làm việc này.';
 
   @override
-  String get allowTicketingApi => 'Cho phép gọi API phiếu';
-
-  @override
   String get ticketingApiKey => 'Khóa API phiếu';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Chèn khóa API nhà cung cấp phiếu vào sandbox.';
 
   @override
   String get ticketingProvider => 'Nhà cung cấp phiếu';
@@ -9025,28 +8993,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Máy tính vẫn có thể ngủ khi agent đang làm việc';
-
-  @override
-  String get syncEngineSectionTitle => 'Công cụ đồng bộ';
-
-  @override
-  String get syncEngineDescription =>
-      'Phiếu, tin nhắn và ghi chú cập nhật trực tiếp qua các thay đổi nhỏ tăng dần thay vì ảnh chụp toàn bộ. Tắt công tắc sẽ đưa kho đó về chế độ ảnh chụp toàn bộ — tải lại ứng dụng để thay đổi có hiệu lực.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Phiếu';
-
-  @override
-  String get syncEngineMessagingTitle => 'Tin nhắn';
-
-  @override
-  String get syncEngineNotesTitle => 'Ghi chú';
-
-  @override
-  String get syncEngineOnSubtitle => 'Đồng bộ delta trực tiếp đang bật';
-
-  @override
-  String get syncEngineOffSubtitle => 'Đang dùng đồng bộ ảnh chụp toàn bộ';
 
   @override
   String get spaces => 'Không gian';
@@ -12961,23 +12907,22 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tùy chọn — để trống thì mô hình tiêu đề sẽ đặt tên tự động';
 
   @override
-  String get conversationTitlesSectionTitle => 'Tiêu đề cuộc trò chuyện';
+  String get shortTaskOff => 'Tắt';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Chọn runner tự động đặt tên cuộc trò chuyện mới trong không gian làm việc này. Tiêu đề tắt cho đến khi chọn adapter, và áp dụng cho mọi thành viên.';
+  String get shortTaskUnavailable =>
+      'Chọn mô hình tác vụ ngắn trong Cài đặt → Bộ điều hợp để dùng tính năng này';
 
   @override
-  String get conversationTitlesModelLabel => 'Mô hình tiêu đề';
+  String get conversationTitleGenerate => 'Tạo';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adapter';
+  String get conversationTitleNoMessages =>
+      'Hãy gửi một tin nhắn trước. Tiêu đề được tạo từ tin nhắn đó.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Tắt';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Tắt';
+  String get conversationTitleGenerateFailed =>
+      'Không thể tạo tiêu đề. Hãy thử lại.';
 
   @override
   String get startThread => 'Bắt đầu luồng';
@@ -13142,6 +13087,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Hội thoại';
+
+  @override
+  String get contextSegmentRunner =>
+      'Prompt của trình chạy, công cụ và công việc trong lượt';
+
+  @override
+  String get contextUsageMeasured => 'Do lần gọi mô hình gần nhất báo cáo';
+
+  @override
+  String get contextUsageEstimated =>
+      'Ước tính cho đến khi một lần chạy báo cáo mức dùng';
 
   @override
   String get contextExplorerTitle => 'Ngữ cảnh';
@@ -13530,12 +13486,15 @@ class AppLocalizationsVi extends AppLocalizations {
       'Nơi tiến trình và thao tác ghi tệp của agent thực sự diễn ra.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Tự chọn loại mạnh nhất mà máy này hỗ trợ. Ghim một loại để tránh bị đổi khi bạn không để ý.';
+  String get sandboxGroupAgentActions => 'Những gì agent được phép làm';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Các cửa mở xuyên ranh giới. Mỗi mục là việc agent đã cách ly vẫn có thể làm với thế giới bên ngoài.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Việc push, mở pull request và truy cập mạng được cho phép, cần hỏi trước hay bị từ chối được thiết lập trong quyền của agent.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Tự chọn loại mạnh nhất mà máy này hỗ trợ. Ghim một loại để tránh bị đổi khi bạn không để ý.';
 
   @override
   String get sandboxSummaryInForce => 'Đang áp dụng';
@@ -13677,6 +13636,26 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Chạy lệnh này trong terminal trên máy chủ. Nó mở trình duyệt để hoàn tất đăng nhập và ghi thông tin xác thực vào thư mục của tài khoản này.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Mã thông báo dài hạn';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Dùng mã thông báo dài hạn';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'Thay mã thông báo dài hạn';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'Xóa mã thông báo dài hạn';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Đăng nhập thông thường phải được gia hạn và có thể hết hạn chỉ sau một đêm. Mã thông báo dài hạn giữ đăng nhập trong khoảng một năm. Chạy lệnh này trong terminal, hoàn tất trên trình duyệt, rồi dán mã thông báo mà lệnh in ra.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Đây không phải mã thông báo từ claude setup-token. Mã bắt đầu bằng sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Đã đăng xuất';
@@ -14105,10 +14084,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Mở trong ứng dụng mặc định';
-
-  @override
-  String get asideUnavailable =>
-      'Đặt mô hình one-shot trong cài đặt không gian làm việc để dùng tính năng này';
 
   @override
   String get asideEmpty => 'Chưa có gì để làm việc';
@@ -14647,6 +14622,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get credentialGateOpenSettings => 'Mở cài đặt';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Các tài khoản Claude Code đã gắn đã bị xóa';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Gắn tài khoản khác trong cài đặt tài khoản của tác tử này hoặc của không gian làm việc, hoặc xóa danh sách để dùng tài khoản mặc định. Lượt chạy sẽ tự tiếp tục.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Mọi tài khoản trong danh sách này đã bị xóa khỏi máy chủ. Hãy gắn tài khoản khác hoặc xóa danh sách.';
+
+  @override
+  String get accountPoolClear => 'Xóa danh sách';
+
+  @override
   String get selectModel => 'Chọn mô hình';
 
   @override
@@ -15081,6 +15071,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Tìm tệp của cuộc trò chuyện theo tên và mở một tệp trong thẻ';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Tìm tệp của pull request theo tên và mở một tệp trong thẻ';
 
   @override
   String get ideQuickOpenHint => 'Tìm tệp theo tên';

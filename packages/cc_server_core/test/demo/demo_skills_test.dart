@@ -19,6 +19,7 @@ void main() {
         filesystem: WorkspaceFilesystemService(CcPaths(tmp.path)),
         fetchGitHubSkill:
             ({
+              required String workspaceId,
               required String owner,
               required String repo,
               required String path,

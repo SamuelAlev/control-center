@@ -2,7 +2,7 @@
 title: Konfigurer tillatelsesregler
 description: Sett tillat-, spør først- og nekt-regler for agenthandlinger, test dem med «Hva om?»-proben og juster autonomien per område.
 slug: nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Denne guiden viser deg hvordan du konfigurerer tillatelsesregler: reglene som
@@ -130,11 +130,13 @@ Tabellen **Hvor regler håndheves** nederst på samme side er app-versjonen av
 dette: per effektklasse sier den om hver kjører fanger den opp ved policyporten,
 overlater den til sandkassen, eller ikke kan avskjære den i det hele tatt.
 
-- **Claude Code-adapteren** er ikke portet på sine egne verktøykall. Claude
-  Code startes med `--dangerously-skip-permissions`, så lese-, skrive-,
-  redigerings- og bash-kallene går aldri gjennom porten. Det som er portet for
-  den adapteren, er MCP-verktøyflaten den kaller tilbake til, og shell-kommandoen
-  Control Center starter for å kjøre den.
+- **Claude Code-adapteren** er bare delvis portet på sine egne verktøykall.
+  Claude Code startes med `--dangerously-skip-permissions`, så lese-, skrive-
+  og redigeringskallene går aldri gjennom porten. Bash-kommandoene når den
+  gjennom en hook som klassifiserer kommandolinjen, og pushene går gjennom
+  push-gatewayen som for alle agenter. MCP-verktøyflaten den kaller tilbake
+  til, og shell-kommandoen Control Center starter for å kjøre den, er også
+  portet.
 - **En modus' eget utdataverb** (`submit_plan`, `propose_orchestration`) er
   festet og kan aldri nektes — ellers ville en modus strukturelt sett ikke kunne
   produsere sin eneste leveranse.

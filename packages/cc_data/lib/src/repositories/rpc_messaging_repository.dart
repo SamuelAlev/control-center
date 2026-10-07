@@ -5,8 +5,6 @@ import 'package:cc_data/cc_data.dart' show RpcMessagingPort;
 import 'package:cc_data/src/repositories/remote_messaging_repository.dart';
 import 'package:cc_data/src/repositories/rpc_messaging_port.dart'
     show RpcMessagingPort;
-import 'package:cc_data/src/sync/row_entity_cache.dart';
-import 'package:cc_data/src/sync/synced_store.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
@@ -41,20 +39,13 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// compaction — throws [UnsupportedError] or returns an empty fallback.
 class RpcMessagingRepository
     implements MessagingRepository, SpaceTurnRelayPort, MessagingSummariesPort {
-  /// Creates an [RpcMessagingRepository] over [client]. When [_sync] is
-  /// supplied and its `messaging` kill-switch is on, [watchSpaces] /
-  /// [watchSpacesByWorkspace] / [watchParticipants] adopt the deterministic
-  /// sync engine (PRD 16 §6) instead of re-querying their legacy
-  /// full-snapshot subscriptions on every change. Message-body watches
-  /// (`watchMessages`/windows/turns) are unaffected — they keep their own
-  /// streaming pipeline.
-  RpcMessagingRepository(RemoteRpcClient client, {this._sync})
+  /// Creates an [RpcMessagingRepository] over [client].
+  RpcMessagingRepository(RemoteRpcClient client)
     : _remote = RemoteMessagingRepository(client),
       _client = client;
 
   final RemoteMessagingRepository _remote;
   final RemoteRpcClient _client;
-  final ClientSyncEngine? _sync;
 
   /// Rebuilds a [Space] from its wire DTO. Missing timestamps fall back to
   /// the epoch; a missing/unknown mode falls back to chat. Public so the
@@ -111,26 +102,11 @@ class RpcMessagingRepository
   // ---- Watches (served over the catalog `messaging.watch*` queries) ----
 
   @override
-  Stream<List<Space>> watchSpaces() {
-    // `watchSpaces` carries no workspace arg (the host binds it per
-    // session), so the adoption lookup reads the SAME id the RPC client is
-    // already stamping onto every call — see `RemoteRpcClient.activeWorkspaceId`.
-    final workspaceId = _client.activeWorkspaceId;
-    if (workspaceId == null || workspaceId.isEmpty) {
-      return _legacyWatchSpaces();
-    }
-    return watchSpacesByWorkspace(workspaceId);
-  }
+  Stream<List<Space>> watchSpaces() => _watchSpaces();
 
   @override
-  Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) {
-    final store = _sync?.storeFor('messaging', workspaceId);
-    if (store == null) {
-      // Kill-switch OFF (or the store demoted itself) — the legacy path.
-      return _legacyWatchSpaces(workspaceId);
-    }
-    return _watchAdoptedSpaces(store, workspaceId);
-  }
+  Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) =>
+      _watchSpaces(workspaceId);
 
   /// The snapshot subscription, pinned to [workspaceId] when the caller named
   /// one (null = the client's ambient active workspace, for [watchSpaces]).
@@ -145,33 +121,9 @@ class RpcMessagingRepository
   /// and vice versa, which then paired B with A's space ids on every
   /// workspace-scoped read). Threading it through keeps
   /// `watchSpacesByWorkspace(w)` an honest promise.
-  Stream<List<Space>> _legacyWatchSpaces([String? workspaceId]) => _remote
+  Stream<List<Space>> _watchSpaces([String? workspaceId]) => _remote
       .watchSpaces(workspaceId: workspaceId)
       .map((dtos) => dtos.map(spaceFromDto).toList());
-
-  /// Keeps snapshot revalidation attached while following optimistic row
-  /// updates. Taking only `.first` would seed the delta mirror from disk and
-  /// cancel the authoritative refresh before it could replace stale rows.
-  Stream<List<Space>> _watchAdoptedSpaces(
-    SyncedStore store,
-    String workspaceId,
-  ) {
-    // Reuse entities for unchanged rows from the delta mirror.
-    final cache = RowEntityCache<Space>();
-    return _watchRevalidatedRows(
-      store,
-      'spaces',
-      _remote
-          .watchSpaces(workspaceId: workspaceId)
-          .map((rows) => rows.map((row) => row.toJson()).toList()),
-    ).map(
-      (rows) =>
-          cache
-              .map(rows, (r) => spaceFromDto(SpaceDto.fromJson(r)))
-              .toList(growable: false)
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
-    );
-  }
 
   /// The full message, including finalized transcript segments, replayed from
   /// the client snapshot cache while the server read revalidates.
@@ -274,6 +226,10 @@ class RpcMessagingRepository
         (data) => ConversationTokenTotals(
           tokens: (data['tokens'] as num?)?.toInt() ?? 0,
           chars: (data['chars'] as num?)?.toInt() ?? 0,
+          reportedContextTokens: (data['reported_context_tokens'] as num?)
+              ?.toInt(),
+          reportedWindowTokens: (data['reported_window_tokens'] as num?)
+              ?.toInt(),
         ),
       );
 
@@ -281,112 +237,9 @@ class RpcMessagingRepository
   Stream<List<SpaceParticipant>> watchParticipants(
     String workspaceId,
     String spaceId,
-  ) {
-    // Keyed off the caller's [workspaceId], never the client's ambient active
-    // one: the space resolves in exactly one workspace and the ambient id
-    // flips on a switch independently of the space being watched.
-    final store = workspaceId.isEmpty
-        ? null
-        : _sync?.storeFor('messaging', workspaceId);
-    if (store == null) {
-      return _remote
-          .watchParticipants(workspaceId, spaceId)
-          .map((dtos) => dtos.map(_participantFromDto).toList());
-    }
-    return _watchAdoptedParticipants(store, workspaceId, spaceId);
-  }
-
-  /// Seeds [store]'s `space_participants` table for [spaceId] and follows
-  /// the store's own delta-fed rows, filtered back down to this space and
-  /// sorted to match the server's `messaging.watchParticipants` ordering
-  /// (oldest-`joinedAt`-first; see `MessagingDao.watchParticipants`).
-  ///
-  /// `space_participants` is a WHOLE-STORE table shared by every open
-  /// space, but the legacy watch (`messaging.watchParticipants`) is scoped
-  /// to just [spaceId] — unlike `spaces`/`tickets`, there is no
-  /// "every participant in the workspace" legacy query to seed from in one
-  /// shot. A plain `store.seed(...)` with only this space's rows would
-  /// therefore erase any OTHER space's rows already cached from a
-  /// concurrent watch (e.g. a second open space's participant list). So the
-  /// seed is a MERGE: keep every row for a different space, replace this
-  /// space's rows with the fresh snapshot.
-  Stream<List<SpaceParticipant>> _watchAdoptedParticipants(
-    SyncedStore store,
-    String workspaceId,
-    String spaceId,
-  ) {
-    final cache = RowEntityCache<SpaceParticipant>();
-    return _watchRevalidatedRows(
-      store,
-      'space_participants',
-      _remote
-          .watchParticipants(workspaceId, spaceId)
-          .map((rows) => rows.map((row) => row.toJson()).toList()),
-      preserve: (row) => row['space_id'] != spaceId,
-    ).map(
-      (rows) =>
-          cache
-              .map(
-                rows
-                    .where((r) => r['space_id'] == spaceId)
-                    .toList(growable: false),
-                (r) => _participantFromDto(SpaceParticipantDto.fromJson(r)),
-              )
-              .toList(growable: false)
-            ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt)),
-    );
-  }
-
-  Stream<List<Map<String, dynamic>>> _watchRevalidatedRows(
-    SyncedStore store,
-    String table,
-    Stream<List<Map<String, dynamic>>> snapshots, {
-    bool Function(Map<String, dynamic>)? preserve,
-  }) {
-    late final StreamController<List<Map<String, dynamic>>> controller;
-    StreamSubscription<List<Map<String, dynamic>>>? snapshotSub;
-    StreamSubscription<List<Map<String, dynamic>>>? rowSub;
-    var cancelled = false;
-    controller = StreamController<List<Map<String, dynamic>>>(
-      onListen: () {
-        snapshotSub = snapshots.listen(
-          (rows) {
-            if (cancelled) {
-              return;
-            }
-            final keep = preserve;
-            final existing = keep == null
-                ? const <Map<String, dynamic>>[]
-                : store.snapshotRows(table);
-            store.seed(table, [
-              if (keep != null) ...existing.where(keep),
-              ...rows,
-            ], (row) => row['id'] as String);
-            rowSub ??= store
-                .watchRows(table)
-                .listen(controller.add, onError: controller.addError);
-          },
-          onError: (Object error, StackTrace stack) {
-            if (cancelled) {
-              return;
-            }
-            cancelled = true;
-            unawaited(rowSub?.cancel());
-            controller.addError(error, stack);
-            unawaited(controller.close());
-          },
-        );
-      },
-      onCancel: () async {
-        cancelled = true;
-        final snapshotCancel = snapshotSub?.cancel();
-        final rowCancel = rowSub?.cancel();
-        await snapshotCancel;
-        await rowCancel;
-      },
-    );
-    return controller.stream;
-  }
+  ) => _remote
+      .watchParticipants(workspaceId, spaceId)
+      .map((dtos) => dtos.map(_participantFromDto).toList());
 
   /// Typed live turn relay: decodes `seed`/`updates` frames, skipping unknown
   /// frame kinds so protocol additions degrade to a no-op.
@@ -402,7 +255,7 @@ class RpcMessagingRepository
       // Pinned to [workspaceId] rather than the client's ambient active
       // workspace: this feeds a workspace-keyed provider family and the
       // ambient id flips on a switch independently of the workspace being
-      // asked about (see `_legacyWatchSpaces`).
+      // asked about (see `_watchSpaces`).
       _remote
           .watchSpaceActivity(workspaceId: workspaceId)
           .map(
@@ -435,8 +288,8 @@ class RpcMessagingRepository
   @override
   Future<Space?> getSpaceById(String workspaceId, String spaceId) =>
       throw UnsupportedError(
-        'getChannelById is host-only (the sync delta feed loads rows '
-        'server-side); clients read channels from their synced store.',
+        'getSpaceById is host-only; clients read spaces from the '
+        'messaging.watchSpaces subscription.',
       );
 
   @override

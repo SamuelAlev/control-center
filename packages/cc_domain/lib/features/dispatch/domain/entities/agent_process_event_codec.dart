@@ -69,6 +69,18 @@ abstract final class AgentProcessEventCodec {
         'estimatedCostCents': usage.estimatedCostCents,
         'durationMs': ?durationMs,
       },
+      ContextWindowEvent(
+        :final contextTokens,
+        :final windowTokens,
+        :final compactions,
+      ) =>
+        <String, dynamic>{
+          'kind': 'contextWindow',
+          'ts': ts,
+          'contextTokens': contextTokens,
+          'windowTokens': ?windowTokens,
+          'compactions': compactions,
+        },
       ErrorEvent(:final content, :final code, :final source) =>
         <String, dynamic>{
           'kind': 'error',
@@ -77,19 +89,13 @@ abstract final class AgentProcessEventCodec {
           'code': ?code,
           'source': ?source,
         },
-      SandboxViolationEvent(
-        :final content,
-        :final action,
-        :final target,
-        :final suggestedCapability,
-      ) =>
+      SandboxViolationEvent(:final content, :final action, :final target) =>
         <String, dynamic>{
           'kind': 'sandboxViolation',
           'ts': ts,
           'content': content,
           'action': ?action,
           'target': ?target,
-          'suggestedCapability': ?suggestedCapability,
         },
       DebugEvent(:final content) => <String, dynamic>{
         'kind': 'debug',
@@ -154,6 +160,13 @@ abstract final class AgentProcessEventCodec {
           durationMs: _intOrNull(json['durationMs']),
           timestamp: timestamp,
         );
+      case 'contextWindow':
+        return ContextWindowEvent(
+          contextTokens: _int(json['contextTokens']),
+          windowTokens: _intOrNull(json['windowTokens']),
+          compactions: _int(json['compactions']),
+          timestamp: timestamp,
+        );
       case 'error':
         return ErrorEvent(
           content: _string(json['content']),
@@ -166,7 +179,6 @@ abstract final class AgentProcessEventCodec {
           content: _string(json['content']),
           action: _stringOrNull(json['action']),
           target: _stringOrNull(json['target']),
-          suggestedCapability: _stringOrNull(json['suggestedCapability']),
           timestamp: timestamp,
         );
       case 'debug':

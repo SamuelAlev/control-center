@@ -2,7 +2,7 @@
 title: Rigs und Kapseln
 description: Warum Agenten Wegwerfmaschinen statt deines Rechners bekommen — Isolationsgrenzen, Anzeigekanäle, Zugangsdaten, Ports und Lebenszyklus.
 slug: de-DE/handbuch/konzepte/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Ein **Rig** ist eine Wegwerfmaschine, die ein Agent in Echtzeit steuert: ein
@@ -168,13 +168,21 @@ wie viel, nie den Wortlaut.
 
 ## Zugangsdaten leben nie im Gast
 
-`git push` funktioniert aus einem gekapselten Terminal, der Gast speichert
+`git push` funktioniert aus einem gekapselten Terminal, das du geöffnet hast, der Gast speichert
 aber kein Forge-Token. Er hält ein Geheimnis je VM. Dessen einzige Macht ist,
 den Zugangsdaten-Broker des Hosts zu *fragen*, über einen Tunnel, den der Host
 kontrolliert, nach einem kurzlebigen, auf das Repo begrenzten Token: je
 Vorgang, mit Ratenbegrenzung, begrenzt durch dieselbe Host-Zulassungsliste wie
 der Ausgang, und widerrufen, sobald das Rig schließt. Eine Maschine, die zum
 Wegwerfen gebaut ist, darf nichts enthalten, das sich zu stehlen lohnt.
+
+Was dieses Token darf, steht fest, wenn das Rig öffnet. Ein Terminal-Rig, das
+eine Person öffnet, bekommt ein Token mit Schreibrecht, begrenzt durch den
+eigenen Forge-Zugang dieses Mitglieds. Ein Rig, das ein Agent geöffnet hat,
+bekommt eines, das nur lesen darf: Ein Git-Credential-Helper kann einen Push
+nicht von einem Fetch unterscheiden, also lässt sich die Push-Regel in einem
+Gast nicht je Push fragen, wie es das Gateway für Agentenläufe auf dem Host
+tut.
 
 ## Der Worktree in einem Rig ist ein Satellit
 

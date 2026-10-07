@@ -2,13 +2,13 @@
 title: Sandkasse-backender
 description: Sandkasse-backendene, hvor de brukes, og hvert verdiobjekt som sandkassekjøretiden bruker.
 slug: nb-NO/handbok/referanse/sandkasse-backender
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Hvorvidt en kjøring er sandkasseinnpakket, avhenger av verten]
 `cc_server` sonderer verten én gang ved oppstart og pakker agentutsending inn i den native backenden når sonderingen rapporterer at en er tilgjengelig og `--sandbox` ikke er `off`. Begge utsendingssømmene pakkes inn: Claude Code-CLI-en gjennom sandkasseporten, og ACP pluss det innebygde harnessets `bash`-verktøy gjennom sandkassestyringen.
 
-Der sonderingen ikke rapporterer om noen backend — **alltid på Windows**, og på Linux eller WSL2 uten `bwrap` og `socat` — er agentkjøringer **ikke** sandkasseinnpakket. ACP og harnessets `bash`-verktøy starter fortsatt med sanert miljø; Claude Code går gjennom `NoSandboxAdapter` og arver vertens miljø. De gjenstående grensene er kjøringens egen worktree (copy-on-write der `rift` leveres; `git worktree` på Windows), kapabilitetsstyrt legitimasjon som megles ved hver oppstart og tilbakekalles ved nedriving, kommandopolicyen per modus, de enhetlige [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/) (fail-closed), miljøsanering på ACP- og harness-`bash`-stiene, og verktøyflaten modusen tillater.
+Der sonderingen ikke rapporterer om noen backend — **alltid på Windows**, og på Linux eller WSL2 uten `bwrap` og `socat` — er agentkjøringer **ikke** sandkasseinnpakket. ACP og harnessets `bash`-verktøy starter fortsatt med sanert miljø; Claude Code går gjennom `NoSandboxAdapter` og arver vertens miljø. De gjenstående grensene er kjøringens egen worktree (copy-on-write der `rift` leveres; `git worktree` på Windows), et kodeverttoken som bare kan lese, meglet ved hver oppstart og tilbakekalt ved nedriving, pusher som må gjennom push-regelen i agentkjøringsgatewayen, kommandopolicyen per modus, de enhetlige [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/) (fail-closed), miljøsanering på ACP- og harness-`bash`-stiene, og verktøyflaten modusen tillater.
 
 Harnessets prosessinterne filverktøy (read, write, edit, apply patch, search, find, search_files) står utenfor sandkassen på alle verter: de kjører i serverprosessen, så bare `bash` pakkes inn.
 :::
@@ -99,7 +99,7 @@ Ingen sandkasse. Prosessen kjører direkte på verten med vertens filsystem-, ne
 
 Terminalen sandkasseinnpakkes på egne vilkår, ikke av utsendingssonderingen. `defaultBackend` til `TerminalSessionService` er `none`, og `cc_server` overstyrer den ikke, så en terminaløkt kjører vertens skall med mindre klienten eksplisitt ber om `native` — terminalpanelet i skrivebordsappen gjør ikke det.
 
-Når `native` bes, pakkes skallet inn gjennom `SandboxManager` under en fast terminalprofil: `$HOME` og øktens arbeidskatalog er skrivbare, nettverket er åpent, og lesing av `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` og `~/Library/Keychains` er nektet. Kapabilitetsstyring gjelder ikke — det er en utsendingssak. Hvis innpakningen ikke støttes, feiler økten i stedet for å vise et native-merke på en PTY med vertens skall.
+Når `native` bes, pakkes skallet inn gjennom `SandboxManager` under en fast terminalprofil: `$HOME` og øktens arbeidskatalog er skrivbare, nettverket er åpent, og lesing av `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` og `~/Library/Keychains` er nektet. Kodeverttokenet som bare kan lese, og push-gatewayen gjelder ikke — de er utsendingssaker. Hvis innpakningen ikke støttes, feiler økten i stedet for å vise et native-merke på en PTY med vertens skall.
 
 ## Utgående nettverkstrafikk
 
@@ -108,9 +108,9 @@ Når en sandkasse startes, håndheves utgående nettverkstilgang av proxyer i sa
 - Sandkassekjøretiden kjører en HTTP/HTTPS-proxy og en SOCKS5-proxy på `127.0.0.1` inne i `cc_server`-prosessen, **ett par per begrenset økt** (`http_proxy.dart`, `socks_proxy.dart`). Samtidige kjøringer deler ikke et par.
 - Sandkasseinnpakkede prosesser får proxy-miljøvariabler (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP-proxyen, `ALL_PROXY` → SOCKS-proxyen; `GIT_SSH_COMMAND` ruter git-over-SSH gjennom SOCKS-proxyen). På Linux er nettverksnavnerommet ikke delt, så proxyene er den eneste veien ut; på macOS deler sandkassen vertens loopback og snakker direkte med dem.
 - Målverten for hver tilkobling matches mot øktens domenetillatelsesliste; alt annet nektes. To jokertegnformer, hver med nøyaktig én `*`: en ledende `*.example.com` matcher et hvilket som helst subdomene (inkludert `a.b.example.com`), men ikke toppdomenet selv; en midtstilt merkelapp som i `bedrock.*.amazonaws.com` matcher nøyaktig én merkelapp (`bedrock.us-east-1.amazonaws.com`, ikke `bedrock.evil.attacker.amazonaws.com`).
-- Tillatelseslisten løses opp per økt fra den kuraterte grunnlinjen (`kBaselineAllowedDomains`: LLM-leverandører, Git-hosting, pakkeregistre), pluss GitHub-domener når agenten har GitHub- eller push-kapabiliteter, pluss `SandboxSpec.egressAllowlist`. Oppløseren godtar også domener for saksleverandører når agenten kan kalle saksbehandling, men utsendingsstien sender aldri den listen (eller ekstra `egressAllowlist`-oppføringer), så i praksis får hver kjøring grunnlinjen pluss de GitHub-domenene kapabilitetene gir den.
+- Tillatelseslisten løses opp per økt fra den kuraterte grunnlinjen (`kBaselineAllowedDomains`: LLM-leverandører, Git-hosting, pakkeregistre), pluss GitHub-domenene (`kGithubDomains`), pluss `SandboxSpec.egressAllowlist`. Utsendingsstien sender aldri ekstra `egressAllowlist`-oppføringer, så i praksis får hver kjøring grunnlinjen pluss GitHub.
 - En fast nekteliste (`kBaselineDeniedDomains`: endepunkter for skymetadata, telemetrimottak) har forrang foran alle tillatelser.
-- `networkEnabled: false` (eller en agent uten nettverkskapabilitet) starter fortsatt proxyene per økt, men tillatelseslisten er tom, så hver utgående tilkobling avvises.
+- `networkEnabled: false` starter fortsatt proxyene per økt, men tillatelseslisten er tom, så hver utgående tilkobling avvises. Utsendingen setter verdien når kjøringen starter, ut fra regelen **Bruk nettverket**: nekt slår av nettverket, tillat og spør først lar det stå på.
 
 ## SandboxSpec
 
@@ -122,11 +122,10 @@ Spesifikasjonen som sendes til `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | ID-en til arbeidsområdet som eier den                                                                                                                                                                                                                |
 | `agentId`         | `String?`                                   | Agenten som for tiden er bundet til sandkassen, hvis noen                                                                                                                                                                                            |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Vert→gjest-monteringer; sandkassen ser bare vertsstiene som er listet opp her                                                                                                                                                                        |
-| `networkEnabled`  | `bool` (standard `true`)                    | Kombineres med agentens nettverkskapabilitet. Når den er av, starter proxyene per økt fortsatt, men tillatelseslisten er tom, så hver utgående tilkobling avvises                                                                                    |
-| `egressAllowlist` | `List<String>` (standard `[]`)              | Ekstra tillatte utgående domener; jokertegn støttes (`*.example.com`, pluss en midtform med én merkelapp). Utsending fyller aldri ut dette, så en innpakket kjøring får den kuraterte grunnlinjen pluss de GitHub-domenene kapabilitetene gir den      |
+| `networkEnabled`  | `bool` (standard `true`)                    | Settes ved utsending ut fra regelen for utgående nettverkstrafikk (av bare når den løses opp til nekt). Når den er av, starter proxyene per økt fortsatt, men tillatelseslisten er tom, så hver utgående tilkobling avvises |
+| `egressAllowlist` | `List<String>` (standard `[]`)              | Ekstra tillatte utgående domener; jokertegn støttes (`*.example.com`, pluss en midtform med én merkelapp). Utsending fyller aldri ut dette, så en innpakket kjøring får den kuraterte grunnlinjen pluss GitHub-domenene      |
 | `guestWorkdir`    | `String?`                                   | Standard arbeidskatalog inne i sandkassen; enkelte `exec`-kall kan overstyre den                                                                                                                                                                     |
 | `mode`            | `Mode` (standard `chat`)                    | Skjærer ut skrivereglene for filsystemet: `chat` holder bind-monteringer skrivbare; `review`, `plan` og `orchestrate` er skrivebeskyttet                                                                                                             |
-| `capabilities`    | `AgentCapabilities` (standard `safeDefault`) | Utleder avgjørelsen om nettverk av/på og GitHub-domener for utgående trafikk. Saksdomener er et oppløserargument som utsendingsstien aldri oppgir                                                                                                   |
 | `protectedPaths`  | `List<String>` (standard `[]`)              | Vertsstier som aldri må være skrivbare inne i sandkassen, i noen modus                                                                                                                                                                                |
 | `runnerStateDirs` | `List<String>` (standard `[]`)              | Vertskataloger der kjøreren holder sin egen tilstand, skrivbare i alle moduser (en `CLAUDE_CONFIG_DIR` administrert av Control Center er den gjeldende)                                                                                              |
 | `execGrantRoots`  | `List<String>` (standard `[]`)              | Katalogtrær godkjent av operatøren som åpner exec-blokkeringen for skrivbare kataloger på macOS igjen. Linux ignorerer dem — bwrap har ingen exec-blokkering for `$HOME` å åpne igjen                                                          |
@@ -184,7 +183,6 @@ Returneres av `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Det nektede verbet (f.eks. `file-read*`, `network-outbound`)               |
 | `target`              | `String`  | Stien eller verten som var mål for den nektede operasjonen                  |
-| `suggestedCapability` | `String?` | Kapabilitetsflagget som ville tillatt denne handlingen (f.eks. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Rå logglinje, nyttig for feilsøking                                        |
 
 ## Se også

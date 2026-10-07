@@ -2688,15 +2688,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get allow => 'السماح';
 
   @override
-  String get allowGitPush => 'السماح بـ ⁨git push⁩';
-
-  @override
-  String get allowGithubApi => 'السماح باستدعاءات GitHub API';
-
-  @override
-  String get allowNetwork => 'السماح بالوصول العام إلى الشبكة';
-
-  @override
   String get apiKeys => 'مفاتيح API';
 
   @override
@@ -3105,9 +3096,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get currentParticipants => 'المشاركون الحاليون';
 
   @override
-  String get customCapabilitiesDescription => 'وصف القدرات المخصصة';
-
-  @override
   String get customSystemPrompt => 'موجّه نظام مخصص لهذا الوكيل...';
 
   @override
@@ -3127,9 +3115,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deactivate => 'إلغاء التفعيل';
-
-  @override
-  String get defaultCapabilities => 'القدرات الافتراضية · المساحات الجديدة';
 
   @override
   String get defaultChat => 'الدردشة الافتراضية';
@@ -3535,10 +3520,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get forward => 'للأمام';
 
   @override
-  String get gatesGithubPatPush =>
-      'يتحكّم في حقن رمز GitHub PAT. مطلوب ليتمكن الوكيل من الدفع.';
-
-  @override
   String get general => 'عام';
 
   @override
@@ -3603,6 +3584,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'انقطاع';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'حالة الخدمات';
@@ -4077,6 +4063,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navSettings => 'الإعدادات';
+
+  @override
+  String get exitSettings => 'الخروج من الإعدادات';
 
   @override
   String networkBlockCount(int count) {
@@ -4593,10 +4582,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get react => 'تفاعل';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'يتيح للوكيل قراءة PRs والمشكلات والبيانات الوصفية للمستودع.';
-
-  @override
   String get readerPreferences => 'تفضيلات القراءة';
 
   @override
@@ -4860,9 +4845,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'البيئة المعزولة الأصلية مضمّنة في macOS - تستخدم Apple Seatbelt (`sandbox-exec`). لا يلزم أي تثبيت.';
-
-  @override
-  String get sandboxPermissions => 'أذونات البيئة المعزولة';
 
   @override
   String get sandboxUnsupported =>
@@ -5449,9 +5431,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get useSandbox => 'استخدام البيئة المعزولة';
 
   @override
-  String get useWorkspaceDefault => 'استخدام إعداد مساحة العمل الافتراضي';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5494,10 +5473,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'عزل ضعيف — حدود مساحة الأسماء فقط، دون حدود على مستوى النواة.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'عند إيقافه، تُقلع البيئة المعزولة دون مسار افتراضي.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6736,14 +6711,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pipelineRunNoRepos => 'لا مستودعات في مساحة العمل هذه بعد.';
 
   @override
-  String get allowTicketingApi => 'السماح باستدعاءات API للتذاكر';
-
-  @override
   String get ticketingApiKey => 'مفتاح API للتذاكر';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'يحقن مفتاح API لمزوّد التذاكر في البيئة المعزولة.';
 
   @override
   String get ticketingProvider => 'مزوّد التذاكر';
@@ -9150,28 +9118,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'قد يدخل الكمبيوتر في وضع السكون حتى أثناء عمل وكيل';
-
-  @override
-  String get syncEngineSectionTitle => 'محرك المزامنة';
-
-  @override
-  String get syncEngineDescription =>
-      'تُحدَّث التذاكر والمراسلة والملاحظات مباشرةً عبر تغييرات تزايدية صغيرة بدلًا من اللقطات الكاملة. إيقاف أحد المفاتيح يعيد ذلك المخزن إلى وضع اللقطات الكاملة — أعد تحميل التطبيق ليسري التغيير.';
-
-  @override
-  String get syncEngineTicketsTitle => 'التذاكر';
-
-  @override
-  String get syncEngineMessagingTitle => 'المراسلة';
-
-  @override
-  String get syncEngineNotesTitle => 'الملاحظات';
-
-  @override
-  String get syncEngineOnSubtitle => 'مزامنة الفروق المباشرة نشطة';
-
-  @override
-  String get syncEngineOffSubtitle => 'تُستخدم مزامنة اللقطات الكاملة';
 
   @override
   String get spaces => 'المساحات';
@@ -13178,23 +13124,22 @@ class AppLocalizationsAr extends AppLocalizations {
       'اختياري — اتركه فارغًا وسيسميه نموذج العناوين تلقائيًا';
 
   @override
-  String get conversationTitlesSectionTitle => 'عناوين المحادثات';
+  String get shortTaskOff => 'معطّل';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'اختر المشغّل الذي يسمّي المحادثات الجديدة في مساحة العمل هذه تلقائيًا. تبقى العناوين معطّلة حتى يُختار محوّل، وتنطبق على كل عضو.';
+  String get shortTaskUnavailable =>
+      'اختر نموذج المهام القصيرة في الإعدادات ← المحوّلات لاستخدام هذا';
 
   @override
-  String get conversationTitlesModelLabel => 'نموذج العناوين';
+  String get conversationTitleGenerate => 'توليد';
 
   @override
-  String get conversationTitlesAdapterLabel => 'المحوّل';
+  String get conversationTitleNoMessages =>
+      'أرسل رسالة أولًا، فالعنوان يُولَّد منها.';
 
   @override
-  String get conversationTitlesAdapterHint => 'معطّل';
-
-  @override
-  String get conversationTitlesAdapterOff => 'معطّل';
+  String get conversationTitleGenerateFailed =>
+      'تعذّر توليد عنوان. حاول مرة أخرى.';
 
   @override
   String get startThread => 'بدء سلسلة';
@@ -13363,6 +13308,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'المحادثة';
+
+  @override
+  String get contextSegmentRunner => 'موجّه المشغّل وأدواته وعمل الدورة';
+
+  @override
+  String get contextUsageMeasured => 'أبلغ عنه آخر استدعاء للنموذج';
+
+  @override
+  String get contextUsageEstimated => 'تقدير حتى يبلغ تشغيلٌ عن الاستخدام';
 
   @override
   String get contextExplorerTitle => 'السياق';
@@ -13751,12 +13705,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'أين تجري فعليًا عمليات الوكيل وكتاباته للملفات.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'الخيار التلقائي ينتقي أقوى ما يدعمه هذا المضيف. ثبّت واحدًا لمنع تغيّره دون علمك.';
+  String get sandboxGroupAgentActions => 'ما يُسمح للوكلاء بفعله';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'الثغرات المفتوحة عبر الحدود. كل واحدة منها شيء لا يزال بوسع الوكيل المعزول فعله تجاه العالم الخارجي.';
+  String get sandboxGroupAgentActionsDescription =>
+      'تُحدِّد أذونات الوكلاء ما إذا كان الدفع إلى مستودع بعيد وفتح طلب سحب والوصول إلى الشبكة مسموحًا به أو يتطلب السؤال أولًا أو مرفوضًا.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'الخيار التلقائي ينتقي أقوى ما يدعمه هذا المضيف. ثبّت واحدًا لمنع تغيّره دون علمك.';
 
   @override
   String get sandboxSummaryInForce => 'ساري المفعول';
@@ -13906,6 +13863,26 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'شغّل هذا في طرفية على الخادم. سيفتح متصفحًا لإكمال تسجيل الدخول، ويكتب بيانات الاعتماد في دليل هذا الحساب.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'رمز طويل الأمد';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'استخدام رمز طويل الأمد';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'استبدال الرمز طويل الأمد';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'إزالة الرمز طويل الأمد';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'يجب تجديد تسجيل الدخول العادي وقد تنتهي صلاحيته بين ليلة وضحاها. يبقى الرمز طويل الأمد صالحًا لمدة عام تقريبًا. شغّل هذا الأمر في الطرفية، وأكمل الخطوات في المتصفح، ثم الصق الرمز الذي يطبعه.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'هذا ليس رمزًا من claude setup-token. يبدأ الرمز بـ sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'مُسجَّل الخروج';
@@ -14342,10 +14319,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'فتح في التطبيق الافتراضي';
-
-  @override
-  String get asideUnavailable =>
-      'عيّن نموذج المهام السريعة في إعدادات مساحة العمل لاستخدام هذا';
 
   @override
   String get asideEmpty => 'لا شيء للعمل عليه بعد';
@@ -14896,6 +14869,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get credentialGateOpenSettings => 'فتح الإعدادات';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'تمت إزالة حسابات Claude Code المرفقة';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'أرفق حسابًا آخر في إعدادات حسابات هذا الوكيل أو مساحة العمل، أو امسح القائمة لاستخدام الحساب الافتراضي. سيكمل التشغيل تلقائيًا.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'تمت إزالة كل الحسابات في هذه القائمة من الخادم. أرفق حسابًا آخر، أو امسح القائمة.';
+
+  @override
+  String get accountPoolClear => 'مسح القائمة';
+
+  @override
   String get selectModel => 'اختيار النموذج';
 
   @override
@@ -15325,6 +15313,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'ابحث في ملفات المحادثة بالاسم وافتح أحدها في علامة تبويب';
+
+  @override
+  String get prQuickOpenDescription =>
+      'ابحث في ملفات طلب السحب بالاسم وافتح أحدها في علامة تبويب';
 
   @override
   String get ideQuickOpenHint => 'ابحث عن الملفات بالاسم';

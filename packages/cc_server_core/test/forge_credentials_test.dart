@@ -809,6 +809,35 @@ void main() {
       expect(token, 'gho_workspace_pat');
     });
 
+    test(
+      'pat mode reads as the background PAT for a member signed in globally',
+      () async {
+        // The profile activity lane: the member's global sign-in is an App
+        // user token that cannot see private repos the App is not installed
+        // on. A workspace set to "personal access token only" opted out of
+        // that App, so the actor lane must fall through to its PAT.
+        await secrets.writePsk(
+          WorkspaceGitHubAppSettings.backgroundPatSecret('ws-pat'),
+          'gho_workspace_pat',
+        );
+        final creds = await wired(
+          workspaces: {
+            'ws-pat': workspace(id: 'ws-pat', mode: GithubAuthMode.pat),
+          },
+        );
+        await creds.setToken(ForgeHost.github, 'ghu_global', userId: alice);
+
+        expect(
+          await creds.tokenForActor(
+            ForgeHost.github,
+            alice,
+            workspaceId: 'ws-pat',
+          ),
+          'gho_workspace_pat',
+        );
+      },
+    );
+
     test('a PAT saved in workspace B does not clear A or the global slot',
         () async {
       final creds = build();

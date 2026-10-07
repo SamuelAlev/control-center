@@ -2,13 +2,13 @@
 title: 沙箱後端
 description: 各沙箱後端、它們套用於何處，以及沙箱執行階段所用的每個值物件。
 slug: zh-HK/手冊/參考/沙箱後端
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[一次執行是否受沙箱包裝，取決於主機]
 `cc_server` 會在開機時探測主機一次，並在探測結果顯示有可用的原生後端、且 `--sandbox` 不是 `off` 時，以原生後端包裝代理派發。派發路徑的兩個接縫都會被包裝：Claude Code CLI 經由沙箱埠，而 ACP 加上內建執行框架的 `bash` 工具則經由沙箱管理程式。
 
-若探測結果顯示沒有後端 —— **Windows 一律如此**，缺少 `bwrap` 與 `socat` 的 Linux 或 WSL2 亦然 —— 代理執行便**不會**受沙箱包裝。ACP 與執行框架的 `bash` 工具仍會在淨化過的環境中啟動；Claude Code 則經由 `NoSandboxAdapter`，繼承主機環境。其餘界線包括：該次執行自己的 worktree（凡 `rift` 有出貨處即為寫入時複製；Windows 上是 `git worktree`）、按每次啟動仲介並在拆除時撤銷的以能力為閘憑證、各模式的指令政策、統一的[動作護欄](/zh-HK/手冊/概念/護欄/)（失效即拒絕）、ACP 與執行框架 `bash` 路徑上的環境淨化，以及該模式所允許的工具表面。
+若探測結果顯示沒有後端 —— **Windows 一律如此**，缺少 `bwrap` 與 `socat` 的 Linux 或 WSL2 亦然 —— 代理執行便**不會**受沙箱包裝。ACP 與執行框架的 `bash` 工具仍會在淨化過的環境中啟動；Claude Code 則經由 `NoSandboxAdapter`，繼承主機環境。其餘界線包括：該次執行自己的 worktree（凡 `rift` 有出貨處即為寫入時複製；Windows 上是 `git worktree`）、按每次啟動仲介並在拆除時撤銷的唯讀程式碼託管權杖、必須在代理執行閘道通過推送規則的推送、各模式的指令政策、統一的[動作護欄](/zh-HK/手冊/概念/護欄/)（失效即拒絕）、ACP 與執行框架 `bash` 路徑上的環境淨化，以及該模式所允許的工具表面。
 
 執行框架的行內檔案工具（read、write、edit、apply patch、search、find、search_files）在任何主機上都位於沙箱之外：它們在伺服器行程中執行，因此只有 `bash` 會受到包裝。
 :::
@@ -83,7 +83,7 @@ Bubblewrap 可以遮蔽既有路徑，但無法禁止可寫入綁定內*新增*�
 
 終端機按自己的條件受沙箱包裝，而不是由派發的探測決定。`TerminalSessionService` 的 `defaultBackend` 是 `none`，而 `cc_server` 不會覆寫它，因此除非用戶端明確要求 `native`，終端機工作階段會執行主機的 shell —— 桌面版的終端機面板並不會這樣要求。
 
-當要求 `native` 時，shell 會經由 `SandboxManager`、在固定的終端機設定檔之下受到包裝：`$HOME` 與該工作階段的工作目錄可寫入，網絡開放，而 `~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh` 與 `~/Library/Keychains` 則被拒絕讀取。能力閘控不適用 —— 那是派發層面的事。若無法進行包裝，該工作階段會失敗，而不是在主機 shell 的 PTY 上顯示原生徽章。
+當要求 `native` 時，shell 會經由 `SandboxManager`、在固定的終端機設定檔之下受到包裝：`$HOME` 與該工作階段的工作目錄可寫入，網絡開放，而 `~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh` 與 `~/Library/Keychains` 則被拒絕讀取。唯讀程式碼託管權杖與推送閘道不適用 —— 那是派發層面的事。若無法進行包裝，該工作階段會失敗，而不是在主機 shell 的 PTY 上顯示原生徽章。
 
 ## 網絡對外流量
 
@@ -92,9 +92,9 @@ Bubblewrap 可以遮蔽既有路徑，但無法禁止可寫入綁定內*新增*�
 - 沙箱執行階段會在 `cc_server` 行程內、於 `127.0.0.1` 上執行一個 HTTP/HTTPS 代理伺服器與一個 SOCKS5 代理伺服器，**每個受限制的工作階段各一對**（`http_proxy.dart`、`socks_proxy.dart`）。並行執行不會共用同一對。
 - 受沙箱包裝的行程會取得代理伺服器環境變數（`HTTP_PROXY`/`HTTPS_PROXY` → HTTP 代理伺服器，`ALL_PROXY` → SOCKS 代理伺服器；`GIT_SSH_COMMAND` 會將 git-over-SSH 導向 SOCKS 代理伺服器）。在 Linux 上，網絡命名空間是未共用的，因此代理伺服器是唯一的出路；在 macOS 上，沙箱共用主機的回送，並直接與它們通訊。
 - 每個連線的目標主機會與該工作階段的網域允許清單比對；其他一律拒絕。萬用字元有兩種形式，各含恰好一個 `*`：前置的 `*.example.com` 會匹配任何子網域（包括 `a.b.example.com`），但不匹配頂級網域本身；中間標籤的 `bedrock.*.amazonaws.com` 則恰好匹配一個標籤（`bedrock.us-east-1.amazonaws.com`，而非 `bedrock.evil.attacker.amazonaws.com`）。
-- 允許清單會按每個工作階段，從精選的基準清單（`kBaselineAllowedDomains`：LLM 供應商、Git 代管、套件註冊表）解析，若代理具備 GitHub 或推送能力則再加上 GitHub 網域，並加上 `SandboxSpec.egressAllowlist`。當代理可以呼叫工單系統時，解析器也接受工單供應商的網域，但派發路徑從不傳入該清單（或額外的 `egressAllowlist` 項目），因此實際上每次執行得到的，都是基準清單加上其能力賺得的 GitHub 網域。
+- 允許清單會按每個工作階段，從精選的基準清單（`kBaselineAllowedDomains`：LLM 供應商、Git 代管、套件註冊表）解析，再加上 GitHub 網域（`kGithubDomains`），以及 `SandboxSpec.egressAllowlist`。派發路徑從不傳入額外的 `egressAllowlist` 項目，因此實際上每次執行得到的，都是基準清單加上 GitHub。
 - 一份固定的拒絕清單（`kBaselineDeniedDomains`：雲端中繼資料端點、遙測接收端）優先於所有允許項。
-- `networkEnabled: false`（或沒有網絡能力的代理）仍會啟動按每個工作階段的代理伺服器，但允許清單是空的，因此每一個對外連線都會被拒絕。
+- `networkEnabled: false` 仍會啟動按每個工作階段的代理伺服器，但允許清單是空的，因此每一個對外連線都會被拒絕。派發會在執行開始時依**存取網絡**規則設定這個值：拒絕會關閉網絡，允許與先詢問會讓它保持開啟。
 
 ## SandboxSpec
 
@@ -106,11 +106,10 @@ Bubblewrap 可以遮蔽既有路徑，但無法禁止可寫入綁定內*新增*�
 | `workspaceId`     | `String`                                    | 所屬工作區 id                                                                                                                                 |
 | `agentId`         | `String?`                                   | 目前綁定至該沙箱的代理（如有）                                                                                                                |
 | `bindMounts`      | `List<SandboxBindMount>`                    | 主機 → 客體的掛載；沙箱只看得到此處列出的主機路徑                                                                                             |
-| `networkEnabled`  | `bool`（預設 `true`）                       | 與代理的網絡能力合併判定。關閉時，按每個工作階段的代理伺服器仍會啟動，但允許清單是空的，因此每一個對外連線都會被拒絕                          |
-| `egressAllowlist` | `List<String>`（預設 `[]`）                 | 額外允許的對外流量網域；支援萬用字元（`*.example.com`，以及一個標籤的中間形式）。派發從不填入此欄位，因此受包裝的執行只會得到精選基準清單，加上其能力賺得的 GitHub 網域 |
+| `networkEnabled`  | `bool`（預設 `true`）                       | 派發時依網絡對外連線規則設定（只有解析為拒絕時才關閉）。關閉時，按每個工作階段的代理伺服器仍會啟動，但允許清單是空的，因此每一個對外連線都會被拒絕 |
+| `egressAllowlist` | `List<String>`（預設 `[]`）                 | 額外允許的對外流量網域；支援萬用字元（`*.example.com`，以及一個標籤的中間形式）。派發從不填入此欄位，因此受包裝的執行只會得到精選基準清單，加上 GitHub 網域 |
 | `guestWorkdir`    | `String?`                                   | 沙箱內的預設工作目錄；個別的 `exec` 呼叫可以覆寫它                                                                                            |
 | `mode`            | `Mode`（預設 `chat`）                       | 劃定檔案系統寫入規則：`chat` 讓綁定掛載保持可寫入；`review`、`plan` 與 `orchestrate` 則為唯讀                                                 |
-| `capabilities`    | `AgentCapabilities`（預設 `safeDefault`）   | 衍生網絡開關的決定與 GitHub 對外流量網域。工單網域是解析器的引數，派發路徑從不提供                                                            |
 | `protectedPaths`  | `List<String>`（預設 `[]`）                 | 在任何模式下都絕不可在沙箱內寫入的主機路徑                                                                                                    |
 | `runnerStateDirs` | `List<String>`（預設 `[]`）                 | 執行器用來存放自身狀態的主機目錄，在每個模式下都可寫入（目前是由 Control Center 管理的 `CLAUDE_CONFIG_DIR`）                                  |
 | `execGrantRoots`  | `List<String>`（預設 `[]`）                 | 由操作員核准的目錄樹，會在 macOS 上重新開啟「可寫入目錄的 exec 封鎖」。Linux 會忽略它們 —— bwrap 沒有 `$HOME` 的 exec 封鎖可供重新開啟        |
@@ -168,7 +167,6 @@ Bubblewrap 可以遮蔽既有路徑，但無法禁止可寫入綁定內*新增*�
 | --------------------- | --------- | ----------------------------------------------------------------- |
 | `action`              | `String`  | 被拒的動作詞（例如 `file-read*`、`network-outbound`）             |
 | `target`              | `String`  | 被拒操作所針對的路徑或主機                                        |
-| `suggestedCapability` | `String?` | 可允許此動作的能力旗標（例如 `canCallGitHubApi`）                 |
 | `raw`                 | `String?` | 原始日誌行，可用於除錯                                            |
 
 ## 另請參閱

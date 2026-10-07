@@ -2,7 +2,7 @@
 title: Einem Agenten eine Testmaschine geben
 description: Gib einem Agenten einen Wegwerf-Browser, einen Desktop, einen Android-Emulator oder einen iOS-Simulator — live mitverfolgt, und die Steuerung kannst du übernehmen.
 slug: de-DE/handbuch/anleitungen/rigs-nutzen
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Ein **Rig** ist eine Wegwerfmaschine, die ein Agent öffnet, wenn er etwas
@@ -202,9 +202,12 @@ Was sich ändert:
   das Rig.
 - Das Netz verweigert standardmäßig. Erreichbar sind nur Hosts auf der
   Zulassungsliste des Rigs, und alles geht durch ein Tor, das das durchsetzt.
-- `git push` funktioniert weiter. Das Rig speichert keine Zugangsdaten; es
-  fragt den Server je Vorgang nach kurzlebigen, und dieses Token wird
-  widerrufen, wenn das Rig schließt.
+- `git push` funktioniert weiter in einem Terminal, das du geöffnet hast. Das
+  Rig speichert keine Zugangsdaten; es fragt den Server je Vorgang nach
+  kurzlebigen, begrenzt durch deinen eigenen Forge-Zugang, und dieses Token
+  wird widerrufen, wenn das Rig schließt. Ein Rig, das ein Agent geöffnet hat,
+  bekommt Zugangsdaten, die nur lesen dürfen: Es kann fetchen, aber nicht
+  pushen.
 
 Was du wissen solltest:
 

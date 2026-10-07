@@ -2,7 +2,7 @@
 title: Rigi i izolacje
 description: Dlaczego agenci dostają jednorazowe maszyny zamiast Twojego komputera — granice izolacji, tory wyświetlania, poświadczenia, porty i cykl życia.
 slug: pl-PL/podrecznik/koncepcje/rigi
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 **Rig** to jednorazowa maszyna, którą agent steruje w czasie rzeczywistym —
@@ -164,7 +164,7 @@ audytu odnotowuje, że wklejenie nastąpiło i ile go było — nigdy tego, co z
 
 ## Poświadczenia nigdy nie mieszkają w systemie gościa
 
-`git push` działa z odizolowanego terminala, a mimo to system gościa nie
+`git push` działa z odizolowanego terminala otwartego przez Ciebie, a mimo to system gościa nie
 przechowuje żadnego tokenu hosta kodu. Przechowuje jeden sekret na maszynę
 wirtualną, którego jedyną mocą jest *poproszenie* brokera poświadczeń hosta —
 przez tunel kontrolowany przez hosta — o krótkotrwały token ograniczony do
@@ -172,6 +172,13 @@ repozytorium, na każdą operację, z limitem częstości, ograniczony tą samą
 dozwolonych hostów co ruch wychodzący i unieważniany w chwili zamknięcia riga.
 Maszyna zbudowana po to, by ją wyrzucić, nie może zawierać niczego, co warto
 ukraść.
+
+To, co ten token może zrobić, ustala się przy otwarciu riga. Rig terminala
+otwarty przez człowieka dostaje token z prawem zapisu, ograniczony własnym
+dostępem tego członka do hosta kodu. Rig otwarty przez agenta dostaje token tylko
+do odczytu: pomocnik poświadczeń gita nie odróżnia push od fetch, więc reguły
+push nie da się zapytać przy każdym push wewnątrz gościa tak, jak robi to brama
+uruchomień agentów na hoście.
 
 ## Worktree w rigu jest satelitą
 

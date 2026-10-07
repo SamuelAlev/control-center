@@ -2,7 +2,7 @@
 title: Donner une machine de test à un agent
 description: Donnez à un agent un navigateur, un bureau, un émulateur Android ou un simulateur iOS jetable — observé en direct, avec des commandes que vous pouvez prendre en main.
 slug: fr-CA/manuel/guides/utiliser-rigs
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Un **rig** est une machine jetable qu'un agent ouvre quand il doit vraiment
@@ -207,9 +207,11 @@ Ce qui change :
   le rig.
 - Le réseau est refusé par défaut. Seuls les hôtes de la liste d'autorisation du
   rig sont joignables, et tout passe par une barrière qui l'applique.
-- `git push` fonctionne toujours. Le rig ne stocke aucun identifiant; il demande
-  au serveur un jeton de courte durée par opération, et ce jeton est révoqué à la
-  fermeture du rig.
+- `git push` fonctionne toujours dans un terminal que vous avez ouvert. Le rig
+  ne stocke aucun identifiant; il demande au serveur un jeton de courte durée
+  par opération, borné par votre propre accès à la forge, et ce jeton est
+  révoqué à la fermeture du rig. Un rig ouvert par un agent reçoit un
+  identifiant en lecture seule : il peut récupérer (fetch), mais pas pousser.
 
 Ce qu'il faut savoir :
 

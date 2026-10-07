@@ -201,7 +201,7 @@ Future<void> handleAsideCommand({
     return;
   }
   if (result.unavailable) {
-    toast?.show(l10n.asideUnavailable, variant: CcToastVariant.warning);
+    toast?.show(l10n.shortTaskUnavailable, variant: CcToastVariant.warning);
     return;
   }
   if (result.empty) {

@@ -29,6 +29,22 @@ Future<QuickOpenChoice?> showQuickOpen(
   required String workspaceId,
   required String spaceId,
 }) {
+  return showQuickOpenDialog(
+    context,
+    panel: (_) => QuickOpenPanel(workspaceId: workspaceId, spaceId: spaceId),
+  );
+}
+
+/// Presents a quick open [panel] in the picker's floating frame (upper third,
+/// like the ⌘K palette) and resolves to whatever the panel pops with.
+///
+/// Split from [showQuickOpen] for hosts whose worktree is not known up front
+/// — the pull request page wraps [QuickOpenPanel] in its own provisioning
+/// state but keeps the same frame.
+Future<QuickOpenChoice?> showQuickOpenDialog(
+  BuildContext context, {
+  required WidgetBuilder panel,
+}) {
   return showCcDialog<QuickOpenChoice>(
     context: context,
     builder: (dialogContext) {
@@ -52,10 +68,7 @@ Future<QuickOpenChoice?> showQuickOpen(
                   border: Border.all(color: ds.borderPrimary),
                   boxShadow: CcElevation.floating,
                 ),
-                child: QuickOpenPanel(
-                  workspaceId: workspaceId,
-                  spaceId: spaceId,
-                ),
+                child: panel(dialogContext),
               ),
             ),
           ),
@@ -86,13 +99,25 @@ class QuickOpenPanel extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     required this.spaceId,
+    this.ready = true,
+    this.status,
   });
 
   /// The workspace the conversation belongs to.
   final String workspaceId;
 
-  /// The conversation whose worktrees are searched.
-  final String spaceId;
+  /// The conversation whose worktrees are searched, or null while the host is
+  /// still resolving it (the picker then waits, as for [ready]).
+  final String? spaceId;
+
+  /// Whether the worktrees are checked out and searchable. While false the
+  /// query field is disabled and nothing is listed; once it turns true the
+  /// field is enabled and focused, so typing lands without a click.
+  final bool ready;
+
+  /// What the picker is waiting on, drawn above the query field — the strip
+  /// the composer shows while its space prepares. Null shows nothing.
+  final Widget? status;
 
   @override
   ConsumerState<QuickOpenPanel> createState() => _QuickOpenPanelState();
@@ -123,8 +148,28 @@ class _QuickOpenPanelState extends ConsumerState<QuickOpenPanel> {
   /// The rows of the last build, for keyboard actions.
   List<_Entry> _entries = const [];
 
-  RecentFilesArgs get _recentArgs =>
-      (workspaceId: widget.workspaceId, spaceId: widget.spaceId);
+  /// The recent-files key, or null until the worktrees are searchable.
+  RecentFilesArgs? get _recentArgs {
+    final spaceId = widget.spaceId;
+    if (!widget.ready || spaceId == null) {
+      return null;
+    }
+    return (workspaceId: widget.workspaceId, spaceId: spaceId);
+  }
+
+  @override
+  void didUpdateWidget(covariant QuickOpenPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasReady = oldWidget.ready && oldWidget.spaceId != null;
+    if (!wasReady && _recentArgs != null) {
+      // The field is enabled by this same build; focus it once it is.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focusNode.requestFocus();
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -182,8 +227,12 @@ class _QuickOpenPanelState extends ConsumerState<QuickOpenPanel> {
   }
 
   void _remove(RecentFile file) {
+    final args = _recentArgs;
+    if (args == null) {
+      return;
+    }
     ref
-        .read(recentFilesProvider(_recentArgs).notifier)
+        .read(recentFilesProvider(args).notifier)
         .remove(repoId: file.repoId, path: file.path);
     // The × may have taken focus; typing must keep landing in the query.
     _focusNode.requestFocus();
@@ -237,16 +286,19 @@ class _QuickOpenPanelState extends ConsumerState<QuickOpenPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final recents = ref.watch(recentFilesProvider(_recentArgs));
+    final recentArgs = _recentArgs;
+    final recents = recentArgs == null
+        ? const <RecentFile>[]
+        : ref.watch(recentFilesProvider(recentArgs));
 
     var loading = false;
     var failed = false;
-    if (_typed.isNotEmpty && _query.isNotEmpty) {
+    if (recentArgs != null && _typed.isNotEmpty && _query.isNotEmpty) {
       final async = ref.watch(
         repoFileSearchProvider((
           workspaceId: widget.workspaceId,
           query: _query,
-          spaceId: widget.spaceId,
+          spaceId: recentArgs.spaceId,
         )),
       );
       final fresh = async.value;
@@ -290,26 +342,35 @@ class _QuickOpenPanelState extends ConsumerState<QuickOpenPanel> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.status case final status?) ...[
+              status,
+              const CcDivider(),
+            ],
             _QueryField(
               controller: _controller,
               focusNode: _focusNode,
+              enabled: recentArgs != null,
               loading: loading,
               onChanged: _onChanged,
               // Enter flows through the field's submit, not a shortcut.
               onSubmitted: () => _open(_selected, toSide: false),
             ),
-            const CcDivider(),
-            if (_entries.isEmpty)
-              _EmptyMessage(
-                loading: loading,
-                message: _typed.isEmpty
-                    ? l10n.ideQuickOpenNoRecent
-                    : failed
-                    ? l10n.ideFileSearchFailed
-                    : l10n.noMatchingFiles,
-              )
-            else
-              _results(),
+            // Nothing to list until the worktrees exist: the status above
+            // says what is being waited on.
+            if (recentArgs != null) ...[
+              const CcDivider(),
+              if (_entries.isEmpty)
+                _EmptyMessage(
+                  loading: loading,
+                  message: _typed.isEmpty
+                      ? l10n.ideQuickOpenNoRecent
+                      : failed
+                      ? l10n.ideFileSearchFailed
+                      : l10n.noMatchingFiles,
+                )
+              else
+                _results(),
+            ],
           ],
         ),
       ),
@@ -354,6 +415,7 @@ class _QueryField extends StatelessWidget {
   const _QueryField({
     required this.controller,
     required this.focusNode,
+    required this.enabled,
     required this.loading,
     required this.onChanged,
     required this.onSubmitted,
@@ -361,6 +423,7 @@ class _QueryField extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
+  final bool enabled;
   final bool loading;
   final ValueChanged<String> onChanged;
   final VoidCallback onSubmitted;
@@ -384,6 +447,7 @@ class _QueryField extends StatelessWidget {
               controller: controller,
               focusNode: focusNode,
               autofocus: true,
+              enabled: enabled,
               chromeless: true,
               textStyle: CcTypography.body,
               hintText: AppLocalizations.of(context).ideQuickOpenHint,

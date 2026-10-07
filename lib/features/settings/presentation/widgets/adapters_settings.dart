@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_detail_pane.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_rail.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters/default_runner_row.dart';
@@ -10,6 +11,7 @@ import 'package:control_center/features/settings/presentation/widgets/usage_summ
 import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
@@ -194,6 +196,10 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
     AppLocalizations l10n,
     List<Adapter> available,
   ) {
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final isAdmin =
+        workspaceId != null &&
+        (ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false);
     return SectionCard(
       label: l10n.defaultRunners,
       subtitle: Text(l10n.configureDefaultRunners),
@@ -210,12 +216,18 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
           const SizedBox(height: AppSpacing.lg),
           const CcDivider(),
           const SizedBox(height: AppSpacing.lg),
+          // Workspace state, not a device preference: the server runs titles
+          // and side questions on it for every member, so only an admin may
+          // change it, and unset means those features are off.
           DefaultRunnerRow(
             label: l10n.shortTask,
             description: l10n.shortTaskDescription,
             adapterIdProvider: shortTaskAdapterProvider,
             modelIdProvider: shortTaskModelProvider,
             available: available,
+            enabled: isAdmin,
+            offLabel: l10n.shortTaskOff,
+            footnote: isAdmin ? null : l10n.settingsWorkspaceAdminOnly,
           ),
         ],
       ),

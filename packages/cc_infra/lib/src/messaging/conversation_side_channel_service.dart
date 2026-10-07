@@ -1,9 +1,9 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/conversation_title_model.dart'
-    show kConversationTitleAdapterSettingKey, kConversationTitleModelSettingKey;
 import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
+import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart'
+    show kShortTaskAdapterSettingKey, kShortTaskModelSettingKey;
 import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -113,14 +113,14 @@ class ConversationSideChannelService {
     // than the operator configured would be a surprise on their bill.
     final adapterId = (await _settings.get(
       workspaceId,
-      kConversationTitleAdapterSettingKey,
+      kShortTaskAdapterSettingKey,
     ))?.trim();
     if (adapterId == null || adapterId.isEmpty) {
       return const SideChannelResult(unavailable: true);
     }
     final modelId = (await _settings.get(
       workspaceId,
-      kConversationTitleModelSettingKey,
+      kShortTaskModelSettingKey,
     ))?.trim();
 
     final load = _sideChannelMessages;

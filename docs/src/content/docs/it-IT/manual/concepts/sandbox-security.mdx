@@ -2,7 +2,7 @@
 title: Sandbox e sicurezza
 description: Cosa vincola davvero un agente in Control Center oggi, fin dove arriva il sandbox del sistema operativo e quali confini tengono su un host privo di backend.
 slug: it-IT/manuale/concetti/sandbox-e-sicurezza
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Dove arriva e dove non arriva il sandbox del sistema operativo]
@@ -21,8 +21,7 @@ Due lacune sopravvivono al sandbox e vale la pena tenerle a mente:
   confinamento dei percorsi negli strumenti stessi più i guardrail delle azioni.
 - **Claude Code viene avviato con `--dangerously-skip-permissions`**, perché un
   `claude -p` non interattivo si bloccherebbe altrimenti per sempre sul proprio
-  prompt. Le sue chiamate ai file e alla shell, quindi, non passano dai guardrail
-  di Control Center — il sandbox del sistema operativo è il confine che le circonda.
+  prompt. Le sue chiamate ai file, quindi, non passano dai guardrail di Control Center, e i suoi comandi di shell solo da un hook che legge la riga di comando — il sandbox del sistema operativo è il confine che le circonda.
   :::
 
 ## Perché l'isolamento conta qui
@@ -88,9 +87,7 @@ deny prima che la chiamata venga eseguita. Un prompt senza alcun approvatore col
 si risolve in _denied_ — una domanda a cui nessuno può rispondere non è mai un sì.
 Vedi [Guardrail](/it-IT/manuale/concetti/guardrail/) per il modello di risoluzione.
 
-**Credenziali vincolate alle capacità e ambiente ripulito.** Le credenziali vengono
-coniate a ogni avvio dalle flag di capacità della conversazione e revocate alla fine
-dell'esecuzione. ACP, il `bash` dell'harness e Claude Code sotto l'incapsulamento
+**Credenziali del broker e ambiente ripulito.** Le credenziali vengono coniate a ogni avvio e revocate alla fine dell'esecuzione, e il token GitHub di un'esecuzione può leggere ma non eseguire push — vedi «I push passano da Control Center» più sotto. ACP, il `bash` dell'harness e Claude Code sotto l'incapsulamento
 nativo ricevono un ambiente ripulito dai vettori di iniezione del linker dinamico e
 dell'interprete (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`,
 `GIT_SSH_COMMAND` e simili) prima che il processo parta. Claude Code tramite
@@ -120,37 +117,74 @@ sotto-comando valutato separatamente, con la decisione più restrittiva che vinc
 Claude Code, quando è usato come adapter, è il caso in cui il sandbox porta il peso
 maggiore. Control Center lo avvia con `--dangerously-skip-permissions`, perché un
 `claude -p` non interattivo si bloccherebbe altrimenti per sempre sul proprio prompt
-di approvazione. Le sue chiamate di lettura, scrittura, modifica e shell avvengono
-dentro il suo processo e Control Center non le vede mai; le uniche chiamate che fa e
-che raggiungono un varco sono gli strumenti `mcp__*` che Control Center stesso serve.
+di approvazione. Le sue chiamate di lettura, scrittura e modifica avvengono dentro il suo processo e Control Center non le vede mai. Le sue chiamate `Bash` vengono inviate, prima dell'esecuzione, a un hook sul server che classifica la riga di comando e interroga la regola corrispondente, e gli strumenti `mcp__*` serviti da Control Center passano dal varco come sempre.
 Dove esiste un backend, quelle chiamate invisibili avvengono comunque dentro
 l'incapsulamento del sandbox, quindi il sistema operativo è il confine che le
 circonda. Dove non ne esiste alcuno, non c'è nulla. Ogni adapter lo dichiara nella
 propria matrice di applicazione — vedi [la matrice di onestà degli
 adapter](/it-IT/manuale/concetti/guardrail/#the-adapter-honesty-matrix).
 
-## Il controllo delle capacità è applicazione per assenza
+## I push passano da Control Center
 
-Una conversazione porta quattro flag di capacità: push verso il repository, chiamata
-all'API GitHub, chiamata al provider di ticketing e accesso alla rete. Non vengono
-controllate quando l'agente agisce. Vengono controllate una volta sola, all'avvio, dal
-broker delle credenziali — e una capacità disattivata significa semplicemente che il
-token corrispondente non viene mai messo nell'ambiente.
+Non esistono flag di permesso per agente. Se un agente può creare un commit,
+eseguire un push, aprire una pull request, scrivere su un tracker o raggiungere
+la rete lo decidono i [guardrail](/it-IT/manuale/concetti/guardrail/) — consenti, chiedi
+prima o nega — e le stesse regole valgono qualunque sia l'adapter che esegue
+l'agente.
 
-Questo è l'intero meccanismo e vale la pena enunciarlo chiaramente perché la modalità
-di guasto non è quella che le persone si aspettano. Disattivare «API GitHub» non
-produce un messaggio «capacità negata». Produce un normale `401` dentro l'agente,
-perché non c'è alcun `GH_TOKEN` da inviare. L'agente può benissimo raccontarlo come un
-problema di credenziali. L'applicazione per assenza è robusta — non c'è alcun controllo
-da aggirare — ma è silenziosa e l'agente non sa perché ha fallito.
+Il push è l'azione che deve reggere anche contro un agente che prova ad aggirare
+una regola, quindi viene applicato in base a ciò che l'agente possiede, non a
+ciò che esegue. Con una GitHub App configurata, un'esecuzione in un worktree
+GitHub riceve un token di installazione limitato al repo che può leggere i
+contenuti e lavorare con le pull request ma non eseguire push. La
+configurazione git dell'esecuzione riscrive ogni URL di push GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) verso il
+**gateway delle esecuzioni degli agenti**, un endpoint di loopback su
+`cc_server`. Il gateway legge quali ref il push aggiorna, interroga la regola
+**Eseguire il push a un remoto** — quindi si applica anche una regola limitata ai
+branch, come «nega i push su `main`» — e solo allora inoltra il push a GitHub
+con un token di scrittura che conia apposta e non consegna mai all'agente. Un
+push rifiutato compare nell'output di git stesso:
 
-La flag di rete si comporta allo stesso modo. Con essa disattivata, gli strumenti
-`web_fetch` e `web_search` dell'harness rifiutano ogni chiamata e la lista di
-autorizzazione dei proxy di un avvio nel sandbox è vuota, quindi ogni connessione in
-uscita viene rifiutata.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Le credenziali vengono revocate quando l'esecuzione viene smantellata, quindi un
-handle non sopravvive all'esecuzione che lo ha coniato.
+Il gateway inoltra i push solo al repo del worktree o a un repo GitHub
+collegato allo spazio di lavoro. I fetch vanno direttamente a GitHub con il
+token di lettura.
+
+Gli altri comandi di shell incontrano un varco più morbido. Lo strumento `bash`
+dell'harness e, tramite un hook, lo strumento `Bash` di Claude Code classificano
+ogni riga di comando e interrogano la regola a cui appartiene: `git commit`,
+`merge`, `rebase`, `cherry-pick`, `revert` e `am` sono **Creare un commit**;
+`gh pr create` è **Aprire una pull request**; `gh pr merge`, `review`,
+`comment` e `close` sono **Pubblicare una revisione o unire**;
+`gh issue create`, `edit`, `comment` e `close` sono **Scrivere su un tracker
+esterno**; le installazioni di pacchetti sono **Installare un pacchetto**;
+`curl` e `wget` sono **Accedere alla rete**. Questo riconosce il modo
+convenzionale di scrivere un'azione, e un agente deciso a nasconderne una
+(`eval`, un file di script, una chiamata API diretta) ci riesce. I push non
+dipendono da questo.
+
+:::caution[Senza GitHub App la regola di push è solo indicativa]
+Senza una GitHub App configurata, il broker ripiega su un personal access
+token, che non può essere limitato alla sola lettura. La regola vale ancora per
+`git push`, perché git invia il push al gateway, ma il codice che usa
+direttamente il token dell'ambiente può eseguire push aggirandola.
+:::
+
+In un sandbox non viene messa alcuna chiave API di ticketing. Gli agenti
+scrivono i ticket tramite gli strumenti MCP di Control Center, che interrogano
+**Scrivere su un tracker esterno**.
+
+La regola **Accedere alla rete** viene letta una sola volta, all'avvio
+dell'esecuzione. La rete di un sandbox è attiva o disattivata, quindi nega la
+disattiva, mentre consenti e chiedi prima la lasciano attiva; gli strumenti
+`web_fetch` e `web_search` dell'harness continuano a chiedere a ogni chiamata.
+Le credenziali vengono revocate quando l'esecuzione viene smantellata, insieme a
+ogni token di scrittura coniato dal gateway, quindi un handle non sopravvive
+all'esecuzione.
 
 ## Cosa aggiunge il sandbox e dove si ferma
 
@@ -219,31 +253,29 @@ sarebbe stato scrivibile mentre il profilo sembrava proibirlo.
 
 La rete, sotto un sandbox, è una lista di autorizzazione per **dominio** per sessione,
 applicata da proxy di loopback in-process. L'uscita è negata per impostazione
-predefinita: con la capacità di rete disattivata, i proxy si avviano comunque ma la
-loro lista di autorizzazione è vuota, quindi ogni connessione in uscita viene
-rifiutata. Con essa attiva, il resolver costruisce la lista di autorizzazione da una
-base di riferimento curata — provider di API LLM, hosting git, registry dei pacchetti,
-il catalogo dei modelli — più i domini GitHub che la capacità GitHub o push dell'agente
-gli fa guadagnare, e confronta con essa l'host di destinazione di ogni connessione. I
-caratteri jolly funzionano (`*.example.com` corrisponde ai sottodomini, non al dominio
-radice). Un elenco separato, sempre negato, prevale sulla lista di autorizzazione e
-copre gli endpoint di metadati cloud e le destinazioni di telemetria. Ciò che _non_ è
-configurabile è la lista stessa: la specifica porta un campo `egressAllowlist` per
-domini aggiuntivi e un hook per il dominio del ticketing, ma nulla nel percorso di
-invio popola l'uno o l'altro, quindi in pratica ogni esecuzione ottiene la base di
-riferimento più i propri domini derivati dalle capacità e nulla di più.
+predefinita: con la rete disattivata, i proxy si avviano comunque ma la loro
+lista di autorizzazione è vuota, quindi ogni connessione in uscita viene
+rifiutata. Con la rete attiva, il resolver costruisce la lista di autorizzazione
+da una base di riferimento curata — provider di API LLM, hosting git, registry
+dei pacchetti, il catalogo dei modelli — più i domini di GitHub, e confronta con
+essa l'host di destinazione di ogni connessione. I caratteri jolly funzionano
+(`*.example.com` corrisponde ai sottodomini, non al dominio radice). Un elenco
+separato, sempre negato, prevale sulla lista di autorizzazione e copre gli
+endpoint di metadati cloud e le destinazioni di telemetria. Ciò che _non_ è
+configurabile è la lista stessa: la specifica porta un campo `egressAllowlist`
+per domini aggiuntivi, ma nulla nel percorso di invio lo popola, quindi in
+pratica ogni esecuzione ottiene la base di riferimento più GitHub e nulla di
+più.
 
 Le negazioni, su macOS, sono osservabili: un monitor intercetta il log di sistema alla
 ricerca dei dinieghi del Sandbox, filtra il rumore noto, deduplica le tempeste di
-tentativi e le presenta ciascuna come una `SandboxViolation` che nomina ciò che è stato
-tentato e quale capacità lo sbloccherebbe. Su Linux il percorso di incapsulamento
+tentativi e le presenta ciascuna come una `SandboxViolation` che nomina ciò che è stato tentato e ciò che è stato bloccato. Su Linux il percorso di incapsulamento
 analizza stderr alla ricerca di `EPERM`, `Operation not permitted` e
 `Permission denied` ed emette lo stesso tipo di evento — non c'è alcuna intercettazione
 del log di sistema. Quelli arrivano sul flusso di eventi dell'esecuzione stessa, quindi
 una syscall negata compare nella trascrizione anziché solo in un log. La telemetria
 esiste solo mentre un sandbox nativo sta effettivamente incapsulando il processo — su
-un host senza backend non c'è nulla da osservare. È anche estranea al controllo delle
-capacità: una violazione deriva da una syscall negata, mai da una ricerca di capacità.
+un host senza backend non c'è nulla da osservare. È anche estranea ai guardrail: una violazione deriva da una syscall negata, mai dalla consultazione di una regola.
 
 ## Le conferme vengono dai guardrail, non dal sandbox
 
@@ -273,5 +305,5 @@ l'unico posto che dichiara cosa si può controllare a mano.
 
 ## Guide correlate
 
-- [Configura le policy del sandbox](/it-IT/manuale/guide/policy-sandbox/): flag di capacità e postura del filesystem
+- [Configura le policy del sandbox](/it-IT/manuale/guide/policy-sandbox/): regole delle azioni, applicazione dei push e postura del filesystem
 - [Esegui la diagnostica di un agente](/it-IT/manuale/guide/diagnostica-agente/): cosa coprono i controlli diagnostici

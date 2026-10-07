@@ -21,11 +21,11 @@ void main() {
   tearDown(() async => client.close());
 
   test('lane strings name the two lanes distinctly', () {
-    expect(RpcAccountPoolsRepository.claudeLane, 'claude-code');
-    expect(RpcAccountPoolsRepository.harnessLane('openai'), 'harness:openai');
+    expect(AccountPoolLanes.claudeCode, 'claude-code');
+    expect(AccountPoolLanes.harness('openai'), 'harness:openai');
     expect(
-      RpcAccountPoolsRepository.harnessLane('kimi-code'),
-      isNot(RpcAccountPoolsRepository.harnessLane('openai')),
+      AccountPoolLanes.harness('kimi-code'),
+      isNot(AccountPoolLanes.harness('openai')),
     );
   });
 
@@ -42,7 +42,7 @@ void main() {
         },
       };
       final view = await repo.get(
-        RpcAccountPoolsRepository.claudeLane,
+        AccountPoolLanes.claudeCode,
         agentId: 'agent-1',
       );
       expect(view.pool.accountIds, ['b', 'a']);
@@ -58,7 +58,7 @@ void main() {
       host.callResults['account_pools.get'] = {
         'pool': {'account_ids': <String>[], 'strategy': 'pinned'},
       };
-      final view = await repo.get(RpcAccountPoolsRepository.claudeLane);
+      final view = await repo.get(AccountPoolLanes.claudeCode);
       expect(view.pool.isEmpty, isTrue);
       expect(view.inherited, isNull);
       expect(
@@ -76,7 +76,7 @@ void main() {
   group('set', () {
     test('writes the pool with its order preserved', () async {
       await repo.set(
-        RpcAccountPoolsRepository.harnessLane('openai'),
+        AccountPoolLanes.harness('openai'),
         const AccountPool(
           accountIds: ['k2', 'k1'],
           strategy: AccountRotationStrategy.serial,
@@ -90,13 +90,15 @@ void main() {
       expect(pool['strategy'], 'serial');
     });
 
-    test('a null pool OMITS the key, which is how an agent re-inherits',
-        () async {
-      await repo.set('claude-code', null, agentId: 'agent-1');
-      final call = host.lastCall('account_pools.set')!;
-      expect(call.args['agent_id'], 'agent-1');
-      expect(call.args.containsKey('pool'), isFalse);
-    });
+    test(
+      'a null pool OMITS the key, which is how an agent re-inherits',
+      () async {
+        await repo.set('claude-code', null, agentId: 'agent-1');
+        final call = host.lastCall('account_pools.set')!;
+        expect(call.args['agent_id'], 'agent-1');
+        expect(call.args.containsKey('pool'), isFalse);
+      },
+    );
   });
 }
 

@@ -2656,15 +2656,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get allow => 'İzin ver';
 
   @override
-  String get allowGitPush => 'git push\'a izin ver';
-
-  @override
-  String get allowGithubApi => 'GitHub API çağrılarına izin ver';
-
-  @override
-  String get allowNetwork => 'Genel ağ erişimine izin ver';
-
-  @override
   String get apiKeys => 'API anahtarları';
 
   @override
@@ -3071,9 +3062,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get currentParticipants => 'Mevcut katılımcılar';
 
   @override
-  String get customCapabilitiesDescription => 'Özel yetenek açıklaması';
-
-  @override
   String get customSystemPrompt => 'Bu ajan için özel sistem promptu...';
 
   @override
@@ -3089,9 +3077,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deactivate => 'Devre dışı bırak';
-
-  @override
-  String get defaultCapabilities => 'Varsayılan yetenekler · yeni space\'ler';
 
   @override
   String get defaultChat => 'Varsayılan sohbet';
@@ -3497,10 +3482,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get forward => 'İleri';
 
   @override
-  String get gatesGithubPatPush =>
-      'GitHub PAT enjeksiyonunu kısıtlar. Ajanın push yapması için gerekli.';
-
-  @override
   String get general => 'Genel';
 
   @override
@@ -3565,6 +3546,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Kesinti';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Hizmet durumu';
@@ -4030,6 +4016,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get navSettings => 'Ayarlar';
+
+  @override
+  String get exitSettings => 'Ayarlardan çık';
 
   @override
   String networkBlockCount(int count) {
@@ -4546,10 +4535,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get react => 'React';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Ajanın PR\'ları, issue\'ları ve depo meta verilerini okumasına izin verir.';
-
-  @override
   String get readerPreferences => 'Okuyucu tercihleri';
 
   @override
@@ -4804,9 +4789,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'macOS\'ta yerel sandbox yerleşiktir — Apple Seatbelt (`sandbox-exec`) kullanır. Kurulum gerekmez.';
-
-  @override
-  String get sandboxPermissions => 'Sandbox izinleri';
 
   @override
   String get sandboxUnsupported =>
@@ -5393,9 +5375,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get useSandbox => 'Sandbox kullan';
 
   @override
-  String get useWorkspaceDefault => 'Çalışma alanı varsayılanını kullan';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5438,10 +5417,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Zayıf yalıtım — yalnızca namespace sınırı, çekirdek sınırı yok.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Kapalıyken sandbox varsayılan rota olmadan açılır.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6658,14 +6633,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get pipelineRunNoRepos => 'Bu çalışma alanında henüz repository yok.';
 
   @override
-  String get allowTicketingApi => 'Bilet API çağrılarına izin ver';
-
-  @override
   String get ticketingApiKey => 'Bilet API anahtarı';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Bilet sağlayıcısının API anahtarını sandbox\'a enjekte eder.';
 
   @override
   String get ticketingProvider => 'Bilet sağlayıcısı';
@@ -9036,29 +9004,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Bir ajan çalışırken bile bilgisayar uykuya geçebilir';
-
-  @override
-  String get syncEngineSectionTitle => 'Senkronizasyon motoru';
-
-  @override
-  String get syncEngineDescription =>
-      'Biletler, mesajlaşma ve notlar tam anlık görüntüler yerine küçük artımlı değişikliklerle canlı güncellenir. Bir anahtarı kapatmak o depoyu tam anlık görüntü moduna döndürür — değişikliğin geçerli olması için uygulamayı yeniden yükleyin.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Biletler';
-
-  @override
-  String get syncEngineMessagingTitle => 'Mesajlaşma';
-
-  @override
-  String get syncEngineNotesTitle => 'Notlar';
-
-  @override
-  String get syncEngineOnSubtitle => 'Canlı delta senkronizasyonu etkin';
-
-  @override
-  String get syncEngineOffSubtitle =>
-      'Tam anlık görüntü senkronizasyonu kullanılıyor';
 
   @override
   String get spaces => 'Alanlar';
@@ -12981,23 +12926,22 @@ class AppLocalizationsTr extends AppLocalizations {
       'İsteğe bağlı — boş bırakırsanız başlık modeli otomatik adlandırır';
 
   @override
-  String get conversationTitlesSectionTitle => 'Sohbet başlıkları';
+  String get shortTaskOff => 'Kapalı';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Bu çalışma alanında yeni sohbetleri otomatik adlandıran runner’ı seçin. Başlıklar bir adapter seçilene dek kapalı kalır ve tüm üyelere uygulanır.';
+  String get shortTaskUnavailable =>
+      'Bunu kullanmak için Ayarlar → Adaptörler bölümünden bir kısa görev modeli seçin';
 
   @override
-  String get conversationTitlesModelLabel => 'Başlık modeli';
+  String get conversationTitleGenerate => 'Oluştur';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adapter';
+  String get conversationTitleNoMessages =>
+      'Önce bir mesaj gönderin. Başlık ondan oluşturulur.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Kapalı';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Kapalı';
+  String get conversationTitleGenerateFailed =>
+      'Başlık oluşturulamadı. Yeniden deneyin.';
 
   @override
   String get startThread => 'Konu başlat';
@@ -13162,6 +13106,17 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Sohbet';
+
+  @override
+  String get contextSegmentRunner =>
+      'Çalıştırıcı istemi, araçlar ve tur çalışması';
+
+  @override
+  String get contextUsageMeasured => 'Modelin son çağrısının bildirdiği değer';
+
+  @override
+  String get contextUsageEstimated =>
+      'Bir çalıştırma kullanımı bildirene kadar tahmin';
 
   @override
   String get contextExplorerTitle => 'Bağlam';
@@ -13552,12 +13507,15 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir ajanın süreçlerinin ve dosya yazmalarının gerçekte nerede gerçekleştiği.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Bu hostun desteklediği en güçlüsünü otomatik seçer. Değişmesini önlemek için birini sabitleyin.';
+  String get sandboxGroupAgentActions => 'Ajanların yapabilecekleri';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Sınırda açılan delikler. Her biri, yalıtılmış bir ajanın dış dünyaya hâlâ yapabildiği bir şeydir.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Push, pull request açma ve ağa erişimin izinli mi, önce sorulacak mı yoksa reddedilecek mi olduğu ajan izinlerinde belirlenir.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Bu hostun desteklediği en güçlüsünü otomatik seçer. Değişmesini önlemek için birini sabitleyin.';
 
   @override
   String get sandboxSummaryInForce => 'Yürürlükte';
@@ -13700,6 +13658,28 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Bunu sunucudaki bir terminalde çalıştırın. Oturumu tamamlamak için bir tarayıcı açar ve kimlik bilgisini bu hesabın dizinine yazar.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Uzun ömürlü belirteç';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Uzun ömürlü belirteç kullan';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken =>
+      'Uzun ömürlü belirteci değiştir';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken =>
+      'Uzun ömürlü belirteci kaldır';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Normal oturum açmanın yenilenmesi gerekir ve bir gecede sona erebilir. Uzun ömürlü belirteç yaklaşık bir yıl oturumu açık tutar. Bunu bir terminalde çalıştırın, tarayıcıda tamamlayın ve ardından yazdırdığı belirteci yapıştırın.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Bu, claude setup-token\'dan alınmış bir belirteç değil. Belirteç sk-ant-oat01- ile başlar.';
 
   @override
   String get claudeAccountSignedOut => 'Oturum kapatıldı';
@@ -14128,10 +14108,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Varsayılan uygulamada aç';
-
-  @override
-  String get asideUnavailable =>
-      'Bunu kullanmak için çalışma alanı ayarlarında tek seferlik bir model belirleyin';
 
   @override
   String get asideEmpty => 'Henüz üzerinde çalışılacak bir şey yok';
@@ -14673,6 +14649,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get credentialGateOpenSettings => 'Ayarları aç';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Bağlı Claude Code hesapları kaldırıldı';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Bu ajanın veya çalışma alanının hesap ayarlarında başka bir hesap bağlayın ya da varsayılanı kullanmak için listeyi temizleyin. Çalıştırma kendiliğinden devam eder.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Bu listedeki tüm hesaplar sunucudan kaldırıldı. Başka bir hesap bağlayın veya listeyi temizleyin.';
+
+  @override
+  String get accountPoolClear => 'Listeyi temizle';
+
+  @override
   String get selectModel => 'Model seç';
 
   @override
@@ -15110,6 +15101,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Konuşmanın dosyalarını ada göre arayın ve birini sekmede açın';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Pull request\'in dosyalarını ada göre arayın ve birini sekmede açın';
 
   @override
   String get ideQuickOpenHint => 'Dosyaları ada göre ara';

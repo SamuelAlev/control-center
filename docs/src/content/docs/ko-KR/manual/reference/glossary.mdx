@@ -2,7 +2,7 @@
 title: 용어집
 description: Control Center 전반에서 사용되는 주요 용어의 정의.
 slug: ko-KR/매뉴얼/레퍼런스/용어집
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['에이전트', '신원, 역할, 스킬, 기능을 갖춘 AI 워커. 정확히 하나의 워크스페이스에 속합니다. 시스템의 주된 행위자입니다.'],
+['에이전트', '신원, 역할, 스킬, 어댑터를 갖춘 AI 워커. 정확히 하나의 워크스페이스에 속합니다. 시스템의 주된 행위자입니다.'],
 ['어댑터', '에이전트 턴을 실행하는 러너. 두 가지가 기본 제공됩니다. Control Center(내장) — 모델 공급자와 대화하는 인프로세스 하네스 — 와 claude CLI를 통한 Claude Code입니다. Cursor, Codex 및 기타 모델 공급자는 별도의 러너가 아니라 내장 어댑터에 붙습니다.'],
 ['워크스페이스', '최상위 격리 테넌트. 에이전트, 저장소, 스페이스, 티켓, 메모리, 파이프라인을 묶습니다. 격리는 관례가 아니라 구조적입니다. 각 워크스페이스는 자체 SQLite 파일을 가지므로 워크스페이스를 넘는 읽기는 컴파일되지 않습니다. 앱 내 모든 라우트에는 /workspaces/:workspaceId 접두사가 붙습니다.'],
 ['코드 호스트', 'GitHub, GitLab 또는 Bitbucket Cloud 같은 코드 호스트. 각 저장소의 속성으로, 등록 시 origin 리모트에서 읽습니다. 하나의 워크스페이스가 세 곳 모두의 저장소를 담을 수 있습니다.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', '디스패치 시점에 관련 컨텍스트를 프롬프트에 주입하는, 대소문자를 구분하지 않는 스킬 식별자 집합.'],
 ['스킬 소스', '스킬 카탈로그로 워크스페이스마다 등록하는 GitHub 저장소. 구조적으로 신뢰하지 않습니다. 저장소의 메타데이터는 표시 전용이며, 모든 설치가 내용이 디스크나 프롬프트에 도달하기 전에 실패 시 차단(fail-closed) 스캔 게이트를 통과합니다.'],
 ['skills-lock.json', '설치된 스킬의 워크스페이스별 매니페스트. 각 스킬마다 소스 저장소, 저장소 내 경로, 고정된 커밋, 롤업된 콘텐츠 해시를 담습니다. 설치, 업데이트, 제거가 이 파일을 최신으로 유지하며, verify_skills가 디스크와 대조합니다.'],
-['AgentCapabilities', '네 가지 플래그(저장소 푸시, GitHub API, 티켓팅, 네트워크 이그레스)로, 디스패치마다 해석됩니다. 에이전트 기본값, 그다음 사용자 기본값 순이며 대화별 재정의가 있습니다. 비활성화된 기능은 토큰이나 이그레스가 아예 주입되지 않는다는 뜻이므로, 부재로써 강제됩니다.'],
+['에이전트 실행 게이트웨이', '에이전트의 샌드박스 안에서 작업 정책을 적용하는 cc_server의 루프백 엔드포인트입니다. 에이전트가 하는 모든 GitHub 푸시는 이곳으로 보내져 리모트에 푸시 규칙으로 확인된 뒤, 에이전트가 결코 갖지 않는 쓰기 토큰으로 전달됩니다. Claude Code의 Bash 명령은 같은 엔드포인트의 훅을 통해 확인됩니다.'],
 ['Mode', 'chat, plan, review 또는 orchestrate. 스페이스별로 저장되므로 한 에이전트가 스페이스마다 다른 모드일 수 있고, 스페이스 안의 모든 대화가 이를 공유합니다. 시스템 프롬프트, 샌드박스 쓰기 규칙, MCP 도구 허용 목록을 게이팅합니다.'],
 ['SandboxBackend', 'microvm(커널 경계를 가진 유일한 백엔드인 격리 VM으로, 대화형 터미널에 적용됩니다), native(macOS의 Seatbelt, Linux와 WSL2의 bubblewrap) 또는 none. 부팅 시 한 번 탐지합니다. native는 사용 가능할 때 에이전트 디스패치를 감쌉니다. Windows에는 네이티브 백엔드가 없고 Linux에는 bwrap과 socat이 필요하므로 그곳의 실행은 감싸지지 않습니다. --sandbox off는 의도적으로 제외합니다.'],
 ['리그', '에이전트가 실시간으로 조작하는 일회용 머신. 격리된 브라우저나 Linux 데스크톱, 호스트가 관리하는 Android 에뮬레이터나 iOS 시뮬레이터, 또는 격리된 터미널입니다. 자체 전체 해상도 레인으로 라이브 관찰되며 테이크오버는 서버 측에서 강제됩니다. 대화 범위이므로 사람 탭과 에이전트 도구가 하나의 머신을 대상으로 합니다.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', '단일 에이전트 실행의 토큰/비용 집계(입력 토큰, 출력 토큰, 센트 단위 예상 비용).'],
 ['WakeReason', '에이전트가 디스패치된 이유. 여섯 가지 값: 사용자 메시지, 티켓 할당, 실패 후 복구 재디스패치, 하위 티켓 완료, 예약된 팔로업 하트비트, 파이프라인 단계.'],
 ['SandboxPort', '샌드박스 수명주기(탐지, 실행, 이벤트, exec, 파기)를 관리합니다.'],
-['CredentialBrokerPort', '샌드박스 실행을 위한 범위 지정·기능 게이트된 자격 증명을 발급하고 해제 시 폐기합니다.'],
+['CredentialBrokerPort', '샌드박스 실행을 위한 범위 지정 자격 증명을 발급하고(에이전트 환경에는 읽기 전용, 쓰기는 서버 측 푸시 경로 전용) 해제 시 폐기합니다.'],
 ['GitRepoInspectorPort', '로컬 Git 저장소 경로에서 메타데이터(owner, repo, branch)를 추출합니다.'],
 ['EmbeddingPort', '시맨틱 검색을 위한 단위 노름 텍스트 임베딩 벡터를 생성합니다.'],
 ['NotificationPort', '카테고리/라우트 게이팅을 존중하여 네이티브 데스크톱 알림을 표시합니다.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## 핵심 엔티티
 
-**에이전트**: 신원, 역할, 스킬, 기능을 갖춘 AI 워커입니다. 정확히 하나의 워크스페이스에 속합니다. 시스템의 주된 행위자입니다.
+**에이전트**: 신원, 역할, 스킬, 어댑터를 갖춘 AI 워커입니다. 정확히 하나의 워크스페이스에 속합니다. 시스템의 주된 행위자입니다.
 
 **어댑터**: 에이전트 턴을 실행하는 러너입니다. 두 가지가 기본 제공됩니다. **Control Center(내장)** — 모델 공급자와 대화하는 인프로세스 하네스 — 와 `claude -p`를 통한 **Claude Code**입니다. Cursor, Codex, Anthropic, OpenAI 및 나머지는 별도의 CLI가 아니라 내장 어댑터 위의 공급자입니다. [어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)를 참고하십시오.
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: 설치된 스킬의 워크스페이스별 매니페스트입니다. 각 스킬마다 소스 저장소, 저장소 내 경로, 고정된 커밋, 롤업된 콘텐츠 해시를 담습니다. 설치, 업데이트, 제거가 이 파일을 최신으로 유지하며, `verify_skills`가 디스크와 대조합니다.
 
-**AgentCapabilities**: 네 가지 플래그(저장소 푸시, GitHub API, 티켓팅, 네트워크 이그레스)로, 디스패치마다 해석됩니다. 에이전트 기본값 → 사용자 기본값 순이며 대화별 재정의가 있습니다. 비활성화된 기능은 토큰이나 이그레스가 아예 주입되지 않는다는 뜻이므로, 부재로써 강제됩니다.
+**에이전트 실행 게이트웨이**: 에이전트의 샌드박스 안에서 작업 정책을 적용하는 `cc_server`의 루프백 엔드포인트입니다. 에이전트가 하는 모든 GitHub 푸시는 이곳으로 보내져 **리모트에 푸시** 규칙으로 확인된 뒤, 에이전트가 결코 갖지 않는 쓰기 토큰으로 전달됩니다. Claude Code의 `Bash` 명령은 같은 엔드포인트의 훅을 통해 확인됩니다. [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)을 참고하세요.
 
 **Mode**: `chat`, `plan`, `review`, `orchestrate` 중 하나입니다. **스페이스별**로 저장되므로 한 에이전트가 스페이스마다 다른 모드일 수 있고, 스페이스 안의 모든 대화가 이를 공유합니다. 시스템 프롬프트, 샌드박스 쓰기 규칙, MCP 도구 허용 목록을 게이팅합니다. 컴포저는 `chat`, `plan`, `orchestrate`만 제공하며 `chat`에는 "Agent" 레이블이 붙습니다.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: 샌드박스 수명주기(탐지, 실행, 이벤트, exec, 파기)를 관리합니다.
 
-**CredentialBrokerPort**: 샌드박스 실행을 위한 범위 지정·기능 게이트된 자격 증명을 발급하고 해제 시 폐기합니다.
+**CredentialBrokerPort**: 샌드박스 실행을 위한 범위 지정 자격 증명을 발급하고 — 에이전트 환경에는 읽기 전용, 쓰기는 서버 측 푸시 경로 전용 — 해제 시 폐기합니다.
 
 **GitRepoInspectorPort**: 로컬 Git 저장소 경로에서 메타데이터(owner, repo, branch)를 추출합니다.
 

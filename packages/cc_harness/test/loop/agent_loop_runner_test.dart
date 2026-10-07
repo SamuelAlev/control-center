@@ -123,6 +123,29 @@ void main() {
     expect(history.last.role, HarnessRole.assistant);
   });
 
+  test('the final answer is saved for the next run to resume', () async {
+    final store = _MemoryTranscriptStore();
+    final provider = _ScriptedProvider([
+      [
+        const LlmTextDelta('Final answer'),
+        const LlmDone(stopReason: LlmStopReason.endTurn),
+      ],
+    ]);
+    await runner
+        .run(
+          history: <HarnessMessage>[],
+          userMessage: 'hi',
+          tools: const [],
+          provider: provider,
+          config: AgentLoopConfig(transcriptStore: store, transcriptKey: 'k'),
+        )
+        .toList();
+
+    final saved = store.saved['k']!.messages;
+    expect(saved.last.role, HarnessRole.assistant);
+    expect(saved.last.textContent, 'Final answer');
+  });
+
   test('executes a tool then continues to a final answer', () async {
     final tool = _RecordingTool(result: 'file contents');
     final provider = _ScriptedProvider([
@@ -1100,4 +1123,19 @@ class _DrippingProvider implements LlmProviderPort {
     }
     yield const LlmDone(stopReason: LlmStopReason.endTurn);
   }
+}
+
+/// Keeps the newest transcript per key, in memory.
+class _MemoryTranscriptStore implements HarnessTranscriptStore {
+  final Map<String, HarnessTranscript> saved = {};
+
+  @override
+  Future<HarnessTranscript?> load(String key) async => saved[key];
+
+  @override
+  Future<void> save(String key, HarnessTranscript transcript) async =>
+      saved[key] = transcript;
+
+  @override
+  Future<void> clear(String key) async => saved.remove(key);
 }

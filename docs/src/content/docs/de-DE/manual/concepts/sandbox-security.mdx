@@ -2,7 +2,7 @@
 title: Sandbox und Sicherheit
 description: Was einen Agenten in Control Center heute tatsächlich begrenzt, wie weit die Betriebssystem-Sandbox reicht und welche Grenzen auf einem Host ohne Backend halten.
 slug: de-DE/handbuch/konzepte/sandbox-und-sicherheit
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Wo die Betriebssystem-Sandbox reicht und wo nicht]
@@ -22,8 +22,7 @@ Zwei Lücken bleiben auch mit Sandbox, und die solltest du im Blick behalten:
   Pfadbeschränkung in den Werkzeugen selbst plus die Aktions-Schutzregeln.
 - **Claude Code startet mit `--dangerously-skip-permissions`**, weil ein nicht
   interaktives `claude -p` sonst endlos an seiner eigenen Rückfrage hängen
-  bliebe. Seine Datei- und Shell-Aufrufe laufen deshalb nicht durch die
-  Schutzregeln von Control Center. Die Grenze darum ist die
+  bliebe. Seine Dateiaufrufe laufen deshalb nicht durch die Schutzregeln von Control Center, seine Shell-Befehle nur durch einen Hook, der die Befehlszeile liest. Die Grenze darum ist die
   Betriebssystem-Sandbox.
   :::
 
@@ -95,9 +94,7 @@ verbundene zuständige Person wird _abgelehnt_. Eine Frage, die niemand
 beantworten kann, ist nie ein Ja. Das Auflösungsmodell steht unter
 [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/).
 
-**An Befugnisse gebundene Zugangsdaten und eine bereinigte Umgebung.**
-Zugangsdaten werden bei jedem Start aus den Befugnis-Flags der Unterhaltung
-ausgegeben und widerrufen, wenn der Lauf endet. ACP, das `bash` des Harness und
+**Vermittelte Zugangsdaten und eine bereinigte Umgebung.** Zugangsdaten werden bei jedem Start ausgegeben und widerrufen, wenn der Lauf endet, und das GitHub-Token eines Laufs kann lesen, aber nicht pushen — siehe „Pushes laufen durch Control Center“ weiter unten. ACP, das `bash` des Harness und
 Claude Code unter der nativen Umhüllung bekommen eine Umgebung, aus der die
 Vektoren für Dynamic-Linker- und Interpreter-Injektion (`LD_PRELOAD`,
 `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` und ihresgleichen)
@@ -129,37 +126,73 @@ strengste Entscheidung gewinnt.
 Claude Code als Adapter ist der Fall, in dem die Sandbox am meisten trägt.
 Control Center startet ihn mit `--dangerously-skip-permissions`, weil ein nicht
 interaktives `claude -p` sonst endlos an seiner eigenen Rückfrage hängen
-bliebe. Seine Aufrufe zum Lesen, Schreiben, Bearbeiten und für die Shell
-passieren in seinem eigenen Prozess, und Control Center sieht sie nie. Die
-einzigen Aufrufe, die ein Tor erreichen, sind die `mcp__*`-Werkzeuge, die
-Control Center selbst bereitstellt. Wo ein Backend existiert, passieren auch
+bliebe. Seine Aufrufe zum Lesen, Schreiben und Bearbeiten passieren in seinem eigenen Prozess, und Control Center sieht sie nie. Seine `Bash`-Aufrufe gehen vor der Ausführung an einen Hook auf dem Server, der die Befehlszeile einordnet und die passende Regel fragt, und die `mcp__*`-Werkzeuge, die Control Center bereitstellt, laufen wie gewohnt durch das Tor. Wo ein Backend existiert, passieren auch
 die ungesehenen Aufrufe innerhalb der Sandbox-Umhüllung, die Grenze darum ist
 also das Betriebssystem. Wo keines existiert, ist da nichts. Jeder Adapter hält
 das in seiner Durchsetzungsmatrix fest. Siehe [die Ehrlichkeitsmatrix der
 Adapter](/de-DE/handbuch/konzepte/schutzregeln/#die-ehrlichkeitsmatrix-der-adapter).
 
-## Befugnisse gelten durch Abwesenheit
+## Pushes laufen durch Control Center
 
-Eine Unterhaltung trägt vier Befugnis-Flags: Push ins Repo, Aufruf der GitHub
-API, Aufruf des Ticketing-Anbieters und Netzwerkzugriff. Geprüft werden sie
-nicht, wenn der Agent handelt. Der Zugangsdaten-Broker prüft sie einmal, beim
-Start, und ist eine Befugnis aus, wird das passende Token schlicht nie in die
-Umgebung gelegt.
+Es gibt keine Berechtigungs-Flags je Agent. Ob ein Agent committen, pushen,
+einen Pull Request öffnen, in einen Tracker schreiben oder das Netzwerk
+erreichen darf, entscheiden die [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) —
+zulassen, zuerst fragen oder verweigern —, und dieselben Regeln gelten, egal
+welcher Adapter den Agenten ausführt.
 
-Das ist der ganze Mechanismus, und er verdient eine klare Formulierung, denn
-der Fehlermodus ist nicht der erwartete. „GitHub API“ abzuschalten erzeugt
-keine Meldung „Befugnis verweigert“. Es erzeugt im Agenten ein gewöhnliches
-`401`, weil kein `GH_TOKEN` mitgeschickt werden kann. Der Agent schildert das
-durchaus als Problem mit den Zugangsdaten. Durchsetzung durch Abwesenheit ist
-robust: Es gibt keine Prüfung, die sich umgehen ließe. Still ist sie trotzdem,
-und der Agent weiß nicht, warum er gescheitert ist.
+Ein Push ist die Aktion, die auch gegen einen Agenten halten muss, der eine
+Regel umgehen will. Deshalb wird er über das durchgesetzt, was der Agent
+besitzt, nicht über das, was er ausführt. Ist eine GitHub App konfiguriert,
+bekommt ein Lauf in einem GitHub-Worktree ein auf das Repo begrenztes
+Installationstoken, das Inhalte lesen und mit Pull Requests arbeiten, aber
+nicht pushen kann. Die Git-Konfiguration des Laufs schreibt jede GitHub-Push-URL
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) auf das
+**Gateway für Agentenläufe** um, einen Loopback-Endpunkt auf `cc_server`. Das
+Gateway liest, welche Refs der Push aktualisiert, fragt die Regel **Zu einem
+Remote pushen** — eine auf Branches beschränkte Regel wie „Pushes auf `main`
+verweigern“ greift also — und leitet den Push erst dann an GitHub weiter, mit
+einem Schreib-Token, das es eigens dafür ausstellt und nie an den Agenten
+weitergibt. Ein abgelehnter Push erscheint in der Ausgabe von git selbst:
 
-Das Netzwerk-Flag verhält sich genauso. Ist es aus, lehnen `web_fetch` und
-`web_search` des Harness jeden Aufruf ab, und die Proxy-Zulassungsliste eines
-umhüllten Starts ist leer. Jede ausgehende Verbindung wird abgelehnt.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Zugangsdaten werden widerrufen, wenn der Lauf abgebaut wird. Ein Handle
-überdauert also nicht den Lauf, der es ausgegeben hat.
+Das Gateway leitet Pushes nur an das eigene Repo des Worktrees oder an ein
+GitHub-Repo weiter, das mit dem Arbeitsbereich verknüpft ist. Fetches gehen mit
+dem Lese-Token direkt an GitHub.
+
+Andere Shell-Befehle treffen auf ein weicheres Tor. Das Werkzeug `bash` des
+Harness und, über einen Hook, das Werkzeug `Bash` von Claude Code ordnen jede
+Befehlszeile ein und fragen die Regel, unter die sie fällt: `git commit`,
+`merge`, `rebase`, `cherry-pick`, `revert` und `am` sind **Einen Commit
+erstellen**; `gh pr create` ist **Einen Pull Request öffnen**; `gh pr merge`,
+`review`, `comment` und `close` sind **Eine Review veröffentlichen oder
+mergen**; `gh issue create`, `edit`, `comment` und `close` sind **In einen
+externen Tracker schreiben**; Paketinstallationen sind **Ein Paket
+installieren**; `curl` und `wget` sind **Auf das Netzwerk zugreifen**. Das
+erkennt die übliche Schreibweise einer Aktion, und ein Agent, der eine
+verstecken will (`eval`, eine Skriptdatei, ein direkter API-Aufruf), schafft
+das. Pushes hängen nicht davon ab.
+
+:::caution[Ohne GitHub App ist die Push-Regel nur ein Hinweis]
+Ist keine GitHub App konfiguriert, greift der Broker auf ein Personal Access
+Token zurück, das sich nicht auf Lesen beschränken lässt. Für `git push` gilt
+die Regel weiterhin, weil git den Push an das Gateway schickt, aber Code, der
+das Token aus der Umgebung direkt nutzt, kann an ihr vorbei pushen.
+:::
+
+In eine Sandbox wird kein Ticketing-API-Schlüssel gelegt. Agenten schreiben
+Tickets über die MCP-Werkzeuge von Control Center, die **In einen externen
+Tracker schreiben** fragen.
+
+Die Regel **Auf das Netzwerk zugreifen** wird einmal gelesen, wenn der Lauf
+startet. Das Netzwerk einer Sandbox ist entweder an oder aus, also schaltet
+Verweigern es ab, während Zulassen und Zuerst fragen es anlassen; `web_fetch`
+und `web_search` des Harness fragen weiterhin bei jedem Aufruf. Zugangsdaten
+werden widerrufen, wenn der Lauf abgebaut wird, zusammen mit jedem
+Schreib-Token, das das Gateway ausgestellt hat. Ein Handle überdauert also den
+Lauf nicht.
 
 ## Was die Sandbox hinzufügt und wo sie aufhört
 
@@ -233,33 +266,29 @@ zu verbieten schien.
 
 Netzwerk ist in einer Sandbox eine **Domain**-Zulassungsliste je Sitzung,
 durchgesetzt von prozessinternen Loopback-Proxys. Der Ausgang verweigert
-standardmäßig: Ist die Netzwerk-Befugnis aus, starten die Proxys trotzdem,
-ihre Zulassungsliste bleibt aber leer, also wird jede ausgehende Verbindung
-abgelehnt. Ist sie an, baut der Resolver die Zulassungsliste aus einer
+standardmäßig: Ist das Netzwerk aus, starten die Proxys trotzdem, ihre
+Zulassungsliste bleibt aber leer, also wird jede ausgehende Verbindung
+abgelehnt. Ist es an, baut der Resolver die Zulassungsliste aus einer
 kuratierten Basis, Anbieter von LLM-APIs, Git-Hosting, Paketregistries, der
-Modellkatalog, plus die GitHub-Domains, die die GitHub- oder Push-Befugnis
-eines Agenten einbringt, und prüft den Zielhost jeder Verbindung dagegen.
-Platzhalter funktionieren (`*.example.com` trifft Subdomains, nicht die
-Apex-Domain). Eine eigene Liste, die immer verweigert, gewinnt gegen die
-Zulassungsliste und umfasst Endpunkte für Cloud-Metadaten sowie Senken für
-Telemetrie. Was sich _nicht_ einstellen lässt, ist die Liste selbst: Die
-Spezifikation trägt ein Feld `egressAllowlist` für zusätzliche Domains und einen Hook für
-Ticketing-Domains, aber nichts im Ausführungspfad füllt eines von beiden. In
-der Praxis bekommt also jeder Lauf die Basis plus die aus seinen Befugnissen
-abgeleiteten Domains, und nichts darüber hinaus.
+Modellkatalog, plus die Domains von GitHub, und prüft den Zielhost jeder
+Verbindung dagegen. Platzhalter funktionieren (`*.example.com` trifft
+Subdomains, nicht die Apex-Domain). Eine eigene Liste, die immer verweigert,
+gewinnt gegen die Zulassungsliste und umfasst Endpunkte für Cloud-Metadaten
+sowie Senken für Telemetrie. Was sich _nicht_ einstellen lässt, ist die Liste
+selbst: Die Spezifikation trägt ein Feld `egressAllowlist` für zusätzliche
+Domains, aber nichts im Ausführungspfad füllt es. In der Praxis bekommt also
+jeder Lauf die Basis plus GitHub, und nichts darüber hinaus.
 
 Verweigerungen sind unter macOS beobachtbar. Ein Monitor zapft das
 Systemprotokoll nach Sandbox-Verweigerungen an, filtert bekanntes Rauschen,
-dedupliziert Wiederholungsstürme und meldet jede als `SandboxViolation`, mit
-dem Versuch und der Befugnis, die ihn freischalten würde. Unter Linux parst
+dedupliziert Wiederholungsstürme und meldet jede als `SandboxViolation`, mit dem Versuch und dem, was blockiert wurde. Unter Linux parst
 der Umhüllungspfad stderr nach `EPERM`, `Operation not permitted` und
 `Permission denied` und gibt denselben Ereignistyp aus. Einen Abgriff am
 Systemprotokoll gibt es dort nicht. Sie kommen auf dem eigenen Ereignisstrom
 des Laufs an, ein abgelehnter Syscall erscheint also im Transkript, nicht nur
 in einem Log. Die Telemetrie gibt es nur, solange eine native Sandbox den
 Prozess wirklich umhüllt. Auf einem Host ohne Backend gibt es nichts zu
-beobachten. Mit dem Befugnisgating hat sie außerdem nichts zu tun: Eine
-Verletzung kommt von einem abgelehnten Syscall, nie von einer Befugnisabfrage.
+beobachten. Mit den Schutzregeln hat sie außerdem nichts zu tun: Eine Verletzung kommt von einem abgelehnten Syscall, nie von einer Regelabfrage.
 
 ## Bestätigungen kommen von den Schutzregeln, nicht von der Sandbox
 
@@ -290,5 +319,5 @@ ist die eine Stelle, an der steht, was sich von Hand prüfen lässt.
 
 ## Verwandte Anleitungen
 
-- [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/): Befugnis-Flags und die Dateisystemhaltung
+- [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/): Aktionsregeln, Push-Durchsetzung und die Dateisystemhaltung
 - [Einen Agenten diagnostizieren](/de-DE/handbuch/anleitungen/agent-diagnostizieren/): was die Prüfungen der Diagnose abdecken

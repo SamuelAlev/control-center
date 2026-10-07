@@ -375,7 +375,6 @@ class AgentDto {
     this.effort,
     this.contextSize,
     this.role,
-    this.capabilities,
     this.monthlyBudgetCents = 0,
     this.silenceTimeoutMinutes,
     this.maxConcurrentTasks = 1,
@@ -404,9 +403,6 @@ class AgentDto {
     effort: json['effort'] as String?,
     contextSize: (json['context_size'] as num?)?.toInt(),
     role: json['role'] as String?,
-    capabilities: json['capabilities'] is Map
-        ? (json['capabilities'] as Map).cast<String, dynamic>()
-        : null,
     monthlyBudgetCents: (json['monthly_budget_cents'] as num?)?.toInt() ?? 0,
     silenceTimeoutMinutes: (json['silence_timeout_minutes'] as num?)?.toInt(),
     maxConcurrentTasks: (json['max_concurrent_tasks'] as num?)?.toInt() ?? 1,
@@ -432,7 +428,6 @@ class AgentDto {
   final String? effort;
   final int? contextSize;
   final String? role;
-  final Map<String, dynamic>? capabilities;
   final int monthlyBudgetCents;
   final int? silenceTimeoutMinutes;
 
@@ -462,7 +457,6 @@ class AgentDto {
     'effort': ?effort,
     'context_size': ?contextSize,
     'role': ?role,
-    'capabilities': ?capabilities,
     'monthly_budget_cents': monthlyBudgetCents,
     'silence_timeout_minutes': ?silenceTimeoutMinutes,
     'max_concurrent_tasks': maxConcurrentTasks,

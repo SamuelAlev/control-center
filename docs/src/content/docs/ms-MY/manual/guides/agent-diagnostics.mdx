@@ -2,7 +2,7 @@
 title: Diagnosis ejen
 description: Telusuri log larian, pemeriksaan penyesuai, status pelayan dan diagnostik hos apabila ejen berhenti menghasilkan larian.
 slug: ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Panduan ini menunjukkan cara mengetahui mengapa sesuatu ejen tidak menghasilkan larian.
@@ -60,19 +60,18 @@ Dua perkara yang wajar diketahui apabila sesuatu perubahan "berfungsi dalam ujia
 
 **Tetapan → Pelayan → Diagnostik & privasi** (`/settings/server/diagnostics`) ialah halaman peringkat hos. Ia membawa:
 
-- **Kotak pasir** — togel induk, bahagian belakang yang dikesan, petunjuk pemasangan dan togel keupayaan lalai. Hanya bahagian belakang yang dikesan datang daripada pelayan; lihat amaran di bawah. Tiada kawalan set semula.
+- **Kotak pasir** — togel induk, bahagian belakang yang dikesan dan petunjuk pemasangan. Hanya bahagian belakang yang dikesan datang daripada pelayan; lihat amaran di bawah. Tiada kawalan set semula.
 - **Carian semantik** — kitaran hayat model pembenaman pada peranti: dipasang, sedang memuat turun dengan peratusan, tidak dipasang, atau ralat pemasangan. Sehingga ia dipasang, carian memori dan kod kekal berasaskan kata kunci sahaja.
 - **Tingkah laku sistem** — kekalkan komputer terjaga semasa ejen berjalan.
-- **Enjin segerak** — suis mati bagi setiap stor untuk tiket, pemesejan dan nota. Ini ialah lubang keluar kecemasan kembali kepada langganan snapshot penuh; sesuatu perubahan hanya menjejaskan langganan baharu, jadi ia berkuat kuasa sepenuhnya selepas muat semula.
 - **Tahap log** — naikkannya sebelum menghasilkan semula sesuatu kegagalan.
 - **Privasi** — sama ada kandungan diff mentah boleh diteruskan kepada model ejen dan sama ada laporan ranap dihantar.
 
 :::caution[Bahagian ini melaporkan hos dan kawalannya berada di pihak klien]
-Pengesanan dan penguatkuasaan kini sependapat: apabila pengesan melaporkan bahagian belakang natif, larian ejen pada hos itu memang benar-benar dibalut dengannya. Tetapi pengesan ialah satu-satunya perkara yang langsung dalam bahagian ini. Togel induk, pemilih bahagian belakang dan togel keupayaan lalai ialah keutamaan yang disimpan pada peranti anda dan pelayan tidak membaca mana-mana daripadanya — suis pelayan sendiri ialah `--sandbox` (`on` secara lalai, `off` untuk menarik diri) dan bagi mana-mana ejen yang dibiarkan pada "Gunakan lalai ruang kerja", pelayan jatuh kembali kepada lalai konservatifnya: tiada git push, tiada API GitHub, tiada kunci penetikan, rangkaian hidup.
+Pengesanan dan penguatkuasaan kini sependapat: apabila pengesan melaporkan bahagian belakang natif, larian ejen pada hos itu memang benar-benar dibalut dengannya. Tetapi pengesan ialah satu-satunya perkara yang langsung dalam bahagian ini. Togel induk dan pemilih bahagian belakang ialah keutamaan yang disimpan pada peranti anda dan pelayan tidak membaca mana-mana daripadanya — suis pelayan sendiri ialah `--sandbox` (`on` secara lalai, `off` untuk menarik diri).
 
 Jadi amaran di sini wajar ditindaklanjuti, tetapi ia biasanya bukan sebab sesuatu ejen gagal. Untuk mengesahkan keadaan pelayan itu, baca log permulaannya: ia mencetak `agent sandbox ON` dengan nota bahagian belakang, `no OS-native agent sandbox on this host` dengan petunjuk pemasangan, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tiada medan kotak pasir.
 
-Di mana tiada bahagian belakang — Windows sentiasa, Linux atau WSL2 tanpa `bwrap` dan `socat` — larian **tidak** dikotak pasirkan dan apa yang membataskannya ialah checkout perbualan itu sendiri, keupayaan yang menyekat kelayakan mana yang ditempa ke dalamnya, guardrail tindakan, sanitasi persekitaran dan permukaan alat yang dibenarkan oleh modusnya.
+Di mana tiada bahagian belakang — Windows sentiasa, Linux atau WSL2 tanpa `bwrap` dan `socat` — larian **tidak** dikotak pasirkan dan apa yang membataskannya ialah checkout perbualan itu sendiri, token hos kod baca sahajanya dan gerbang push, guardrail tindakan, sanitasi persekitaran dan permukaan alat yang dibenarkan oleh modusnya.
 :::
 
 ## Kegagalan biasa
@@ -83,7 +82,7 @@ Pasang CLI itu **pada hos pelayan**, kemudian klik **Muat semula** pada halaman 
 
 ### Ejen tidak boleh push atau membuka pull request
 
-Keupayaannya ialah getnya. Buka **Tetapan → Ruang kerja → Ejen** → ejen itu → **Kebenaran kotak pasir**, hidupkan suis itu dan dayakan **Benarkan git push** dan **Benarkan panggilan API GitHub**. Membiarkan suis itu pada "Gunakan lalai ruang kerja" tidak memberikan ejen itu mana-mana daripadanya.
+Baca apa yang dicetak oleh git atau ejen. `Control Center policy: …` bermakna satu peraturan tindakan menolaknya atau kelulusan tidak dijawab: semak **Push ke remote** dan **Buka pull request** di **Tetapan → Ruang kerja → Kebenaran ejen**. Jika git menyatakan Control Center tiada kelayakan GitHub yang boleh push, pasang GitHub App pada repo itu atau sambungkan GitHub.
 
 ### Carian semantik tidak mengembalikan apa-apa yang berguna
 

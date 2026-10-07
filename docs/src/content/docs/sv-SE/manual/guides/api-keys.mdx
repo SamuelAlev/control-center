@@ -2,7 +2,7 @@
 title: Hantera API-nycklar
 description: Var varje autentiseringsuppgift finns – ditt användarkonto på servern, servern själv eller en extern CLI – och hur du anger, roterar och tar bort den.
 slug: sv-SE/handbok/how-to-guider/api-nycklar
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Den här guiden visar var varje autentiseringsuppgift som Control Center använder
@@ -79,8 +79,9 @@ inget att autentisera mot.
 Din nyckel lagras på servern knuten till ditt användar-id, precis som
 kodvärdsnyckeln. Servern håller sin egen Linear-nyckel separat
 (**Leverantörsappar**), och det är den ärendesynken kör på när ingen människa har
-bett om något. En nyckel som en agent tar emot injiceras bara när agenten har
-förmågan **Tillåt API-anrop för ärenden**. Se
+bett om något. Ingen ärendenyckel injiceras i en agents sandlåda; agenter
+skriver ärenden via Control Centers verktyg, som frågar regeln **Skriv till ett
+externt ärendesystem**. Se
 [Konfigurera Linear-integration](/sv-SE/handbok/how-to-guider/linear-integration/).
 
 ## Rotera eller återkalla

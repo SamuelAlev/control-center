@@ -2,7 +2,7 @@
 title: Ajan oluşturma ve yapılandırma
 description: Bir çalışma alanına ajan ekleyin, ona bir adaptör, model, beceri ve izin verin ve çalıştığını doğrulayın.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-olusturma
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Bu kılavuz, bir çalışma alanına nasıl ajan ekleyeceğinizi ve onu gerçekten çalışana kadar nasıl yapılandıracağınızı gösterir.
@@ -68,19 +68,12 @@ Bir deponun kendi becerilerini burada seçmezsiniz. Bunları içeren bir depo (`
 
 ## İzinleri verin
 
-**Sandbox izinleri** başlangıçta "Çalışma alanı varsayılanını kullan" olarak gelir. Bunları bu ajan için ayarlamak üzere anahtarı açın ve ardından şunları açıp kapatın:
+Bir ajanın kendine ait izin anahtarları yoktur. Neyi push edebileceğini, açabileceğini, birleştirebileceğini ya da nereye erişebileceğini **Ayarlar → Çalışma alanı → Ajan izinleri** altındaki eylem kuralları belirler; burada bir kural bu ajanla sınırlandırılabilir. Varsayılan olarak bir push, bir pull request, bir inceleme ya da birleştirme ve bir takip sistemine yazma, her biri önce size sorar; ağ erişimine ise izin verilir.
 
-- **git push'a izin ver** — ajanın push yapmak için ihtiyaç duyduğu GitHub belirtecini ortama enjekte eder
-- **GitHub API çağrılarına izin ver** — ajanın PR'ları, issue'ları ve depo meta verilerini okumasını sağlar
-- **Bilet API çağrılarına izin ver** — biletleme sağlayıcısının anahtarını ortama enjekte eder
-- **Genel ağ erişimine izin ver** — yerleşik harness'in `web_fetch` ve `web_search` araçlarını da etkinleştirir
+Ajanın GitHub belirteci her zaman salt okunurdur. Bir push, iletmeden önce **Uzak depoya push et** kuralına soran Control Center'dan geçer. Her kuralın bir çalıştırmaya nasıl ulaştığı için bkz. [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/).
 
-Her anahtar, çalıştırma başlatılırken kimlik bilgisi broker'ı tarafından denetlenir: kapalı olan bir yetenek, eşleşen belirtecin çalıştırmanın ortamına hiç üretilmeyeceği anlamına gelir.
-
-:::caution[Çalışma alanı varsayılanı, sunucunun tutucu kümesi anlamına gelir]
-"Çalışma alanı varsayılanını kullan" olarak bırakılan bir ajan, git push, GitHub API ve biletleme **kapalı**, ağ ise **açık** olacak şekilde çalışır. Ayarlar → Sunucu → Tanılama ve gizlilik altında gösterilen yetenek varsayılanları istemci tarafı bir tercihtir. Bir ajanın push yapmasını veya PR açmasını istiyorsanız anahtarı açın ve yetenekleri açıkça verin.
-
-Bu yetenekler kimlik bilgilerini ve harness araçlarını kapıdan geçirir; bu, işletim sistemi sandbox'ından ayrı bir katmandır. `cc_server`, bulunduğu yerde ajan çalıştırmalarını ana makinenin sandbox'ına sarar — Windows'ta yerel bir arka uç yoktur; Linux ve WSL2 ise `bwrap` ve `socat` gerektirir. Sınırların tamamı için bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
+:::note[Kurallar ve işletim sistemi sandbox'ı ayrı katmanlardır]
+Kurallar bir ajanın ne yapabileceğine karar verir; işletim sistemi sandbox'ı ise süreçlerinin nerede okuyup yazabileceğini ve nereye bağlanabileceğini sınırlar. `cc_server`, bulunduğu yerde ajan çalıştırmalarını ana makinenin sandbox'ına sarar — Windows'ta yerel bir arka uç yoktur; Linux ve WSL2 ise `bwrap` ve `socat` gerektirir. Sınırların tamamı için bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
 ## Çalıştığını doğrulayın

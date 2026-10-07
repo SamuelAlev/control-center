@@ -9,10 +9,7 @@ import '../../../../helpers/test_wrap.dart';
 void main() {
   const inset = EdgeInsets.symmetric(vertical: AppSpacing.sm);
 
-  Future<void> pump(
-    WidgetTester tester, {
-    String? subtitle,
-  }) async {
+  Future<void> pump(WidgetTester tester, {String? subtitle}) async {
     await tester.pumpWidget(
       testWrap(
         Align(
@@ -65,6 +62,52 @@ void main() {
     expect(mark, greaterThan(title));
     expect(mark, lessThan(branch));
     expect(mark, closeTo((title + branch) / 2, 1));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  testWidgets('a rail narrower than the mark columns does not overflow', (
+    tester,
+  ) async {
+    // The collapsed rail leaves 32px per item. Space rows keep expanded
+    // geometry until the width settles, so they lay out there mid-animation.
+    for (final subtitle in [null, 'feat/checks']) {
+      for (final indent in [
+        0.0,
+        kSpaceSidebarMarkSlot + kSpaceSidebarMarkGap,
+      ]) {
+        await tester.pumpWidget(
+          testWrap(
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: kCcSidebarItemExtent,
+                child: CcSidebarScope(
+                  collapsed: false,
+                  transitioning: true,
+                  child: SpaceRow(
+                    leading: const SpaceStatusMark(),
+                    label: 'a long space title',
+                    subtitle: subtitle,
+                    selected: false,
+                    status: SpaceStatus.idle,
+                    unread: true,
+                    leadingHandlesRunning: true,
+                    count: 12,
+                    indent: indent,
+                    cardInset: inset,
+                    onPress: () {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      }
+    }
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 100));

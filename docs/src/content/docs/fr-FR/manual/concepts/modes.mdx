@@ -2,7 +2,7 @@
 title: Modes
 description: Pourquoi un mode est porté par un espace, et non par un agent ; ce que garantit chacun des quatre modes ; et où cette garantie est structurelle plutôt que simplement demandée dans le prompt.
 slug: fr-FR/manuel/concepts/modes
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Ce qu’est un mode
@@ -77,7 +77,7 @@ La résolution elle-même est simple. Le répartiteur lit la colonne `mode` de l
 
 La surface d’outils d’un mode est construite et appliquée par le **harnais intégré**. C’est le seul transport capable de rendre un outil invisible plutôt que simplement refusé, de contrôler chaque appel avant son exécution et d’observer un contrat d’achèvement.
 
-Sur le transport Claude Code, un mode autre que le mode discussion est passé sous la forme `--permission-mode plan`. Claude le respecte par convention ; ses propres outils de lecture, d’écriture, de modification et de shell s’exécutent sans être vus. Pour ce transport, le mode est une indication, et non une frontière de Control Center — voir [Le modèle d’agent](/fr-FR/manuel/concepts/modele-agent/).
+Sur le transport Claude Code, un mode autre que le mode discussion est passé sous la forme `--permission-mode plan`. Claude le respecte par convention ; ses propres outils de lecture, d’écriture et de modification s’exécutent sans être vus, et ses commandes shell ne sont vérifiées que par un hook qui lit la ligne de commande. Pour ce transport, le mode est une indication, et non une frontière de Control Center — voir [Le modèle d’agent](/fr-FR/manuel/concepts/modele-agent/).
 
 Les listes d’autorisation contraignent les outils du palier écriture et des paliers supérieurs. Le palier lecture du harnais intégré atteint encore des outils qu’aucune liste ne nomme ; sur Claude Code, un outil que la liste d’autorisation omet est refusé, que le serveur le propose ou non.
 

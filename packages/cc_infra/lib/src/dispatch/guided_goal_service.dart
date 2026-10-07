@@ -1,6 +1,6 @@
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/conversation_title_model.dart'
-    show kConversationTitleAdapterSettingKey, kConversationTitleModelSettingKey;
+import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart'
+    show kShortTaskAdapterSettingKey, kShortTaskModelSettingKey;
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -69,14 +69,14 @@ class GuidedGoalService {
   }) async {
     final adapterId = (await _settings.get(
       workspaceId,
-      kConversationTitleAdapterSettingKey,
+      kShortTaskAdapterSettingKey,
     ))?.trim();
     if (adapterId == null || adapterId.isEmpty) {
       return const GuidedGoalStep(unavailable: true);
     }
     final modelId = (await _settings.get(
       workspaceId,
-      kConversationTitleModelSettingKey,
+      kShortTaskModelSettingKey,
     ))?.trim();
 
     final String? answer;

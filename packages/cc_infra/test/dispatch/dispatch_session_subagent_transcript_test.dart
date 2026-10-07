@@ -8,7 +8,6 @@ import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/run_transcript_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
@@ -47,7 +46,7 @@ class _NoopBroker implements CredentialBrokerPort {
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
@@ -234,7 +233,6 @@ _Harness _buildSession({
     broker: _NoopBroker(),
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: runLogs,
-    defaultCaps: AgentCapabilities.safeDefault,
     eventBus: null,
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),

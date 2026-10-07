@@ -10,6 +10,10 @@ final _redactionPatterns = <RegExp>[
   RegExp(r'(Authorization:\s*Bearer\s+)\S+', caseSensitive: false),
   RegExp(r'(Authorization:\s*Basic\s+)\S+', caseSensitive: false),
   RegExp(r'\bsk-[a-zA-Z0-9]{20,}\b'),
+  // Anthropic keys and Claude Code setup tokens (`sk-ant-api03-…`,
+  // `sk-ant-oat01-…`): the hyphens after `sk-` slip past the pattern above.
+  RegExp(r'\bsk-ant-[a-zA-Z0-9_\-]{20,}'),
+  RegExp(r'(CLAUDE_CODE_OAUTH_TOKEN\s*=\s*)\S+', caseSensitive: false),
   RegExp(r'\bghp_[a-zA-Z0-9]{36,}\b'),
   RegExp(r'\bgho_[a-zA-Z0-9]{36,}\b'),
   // VULN-012: GitHub App server-to-server / user-to-server / refresh token

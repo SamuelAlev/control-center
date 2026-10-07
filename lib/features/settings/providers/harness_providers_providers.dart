@@ -16,18 +16,6 @@ final harnessProvidersProvider = FutureProvider<List<HarnessProviderInfo>>(
   (ref) => ref.watch(harnessProviderRepositoryProvider).listProviders(),
 );
 
-/// The providers holding more than one credential, and so the only ones a
-/// rotation pool has anything to choose between.
-final rotatableHarnessProvidersProvider = Provider<List<HarnessProviderInfo>>((
-  ref,
-) {
-  final providers = ref.watch(harnessProvidersProvider).asData?.value;
-  return [
-    for (final p in providers ?? const <HarnessProviderInfo>[])
-      if (p.credentials.length > 1) p,
-  ];
-});
-
 /// Selectable models served live by the logged-in providers (qualified
 /// `provider/model` ids). Empty until at least one provider is connected.
 final harnessModelsProvider = FutureProvider<List<HarnessModelInfo>>(

@@ -1,7 +1,5 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:control_center/features/settings/presentation/widgets/agent_account_pools_tab.dart';
-import 'package:control_center/features/settings/providers/claude_account_providers.dart';
-import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -26,7 +24,9 @@ const List<AgentSettingsTab> settingsAgentSettingsTabs = [
 Widget _buildAccountPools(BuildContext context, Agent agent) =>
     AgentAccountPoolsTab(agentId: agent.id, lane: accountLaneFor(agent));
 
-/// Whether [agent]'s lane has more than one account to choose between.
+/// Whether [agent]'s runner has any pool editor worth showing — the same
+/// lanes and the same visibility rule the tab itself renders, so the tab never
+/// opens onto an empty state.
 ///
 /// The tab used to list EVERY lane unconditionally, on the reasoning that an
 /// agent's adapter can change and inferring one lane would hide the pool that
@@ -37,12 +37,11 @@ Widget _buildAccountPools(BuildContext context, Agent agent) =>
 /// build, and a pool that was written while the tab was visible keeps
 /// resolving server-side whether or not the editor is on screen.
 bool agentHasAccountsToRotate(WidgetRef ref, Agent agent) =>
-    switch (accountLaneFor(agent)) {
-      AccountLane.claudeCode => ref.watch(claudeAccountCountProvider) > 1,
-      AccountLane.harness =>
-        ref.watch(rotatableHarnessProvidersProvider).isNotEmpty,
-      AccountLane.none => false,
-    };
+    watchAgentPoolLanes(
+      ref,
+      agentId: agent.id,
+      lane: accountLaneFor(agent),
+    ).isNotEmpty;
 
 // Tear-off, so the contribution list stays `const`.
 String _accountsLabel(AppLocalizations l) => l.agentAccountsTab;

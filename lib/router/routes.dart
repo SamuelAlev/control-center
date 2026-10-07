@@ -172,7 +172,7 @@ String spacesRoute(String workspaceId) => '/workspaces/$workspaceId/spaces';
 /// space-selection parser and is consumed once on open.
 ///
 /// Pass [tab] to deep-link to a specific editor tab (`?tab=<key>`, an editor
-/// tab URL key such as a conversation's `chat:<conversationId>`) — how the
+/// tab URL key such as a conversation's [conversationTabKey]) — how the
 /// sidebar's conversation rows focus one conversation's tab.
 String spaceRoute(
   String workspaceId,
@@ -187,6 +187,13 @@ String spaceRoute(
   ].join('&');
   return query.isEmpty ? base : '$base?$query';
 }
+
+/// The `?tab=` key of the chat tab showing [conversationId] in its space.
+///
+/// Lives here rather than with the messaging tab kinds so layers that may not
+/// import a feature (notification deep links in `core/`) can still target one
+/// conversation of a space instead of whichever one is standing.
+String conversationTabKey(String conversationId) => 'chat:$conversationId';
 
 /// Ticketing board (work items the agents read from and act on).
 String ticketsRoute(String workspaceId) => '/workspaces/$workspaceId/tickets';

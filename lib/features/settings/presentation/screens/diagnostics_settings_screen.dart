@@ -3,7 +3,6 @@ import 'package:control_center/features/settings/presentation/widgets/sections/s
 import 'package:control_center/features/settings/presentation/widgets/sections/system/logging_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/privacy_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/sandboxing_sections.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/system/sync_engine_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/system_behavior_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -33,7 +32,6 @@ class DiagnosticsSettingsScreen extends StatelessWidget {
         SandboxingSections(),
         EmbeddingSection(),
         SystemBehaviorSection(),
-        SyncEngineSection(),
         LoggingSection(),
         PrivacySection(),
       ],

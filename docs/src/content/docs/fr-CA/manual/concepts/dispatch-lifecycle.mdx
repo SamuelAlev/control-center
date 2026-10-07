@@ -2,7 +2,7 @@
 title: Cycle de vie du lancement d’un agent
 description: Ce qui se passe entre l’arrivée d’un message et la fermeture d’un journal d’exécution — assemblage du prompt, arbres de travail, identité, ce qui borne une exécution et comment son résultat est consigné honnêtement.
 slug: fr-CA/manuel/concepts/cycle-de-vie-du-lancement
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Ce qu’est un lancement
@@ -65,7 +65,7 @@ Deux identités sont résolues par exécution, avant le lancement de tout proces
 
 Parce que la substitution propre à l’adaptateur vient en premier, elle l’emporte silencieusement sur un compte de fournisseur connecté dans l’application. Si une exécution est facturée au mauvais compte, cette substitution est le premier endroit à vérifier. Les identifiants de fournisseur sont globaux à l’hôte — partagés entre tous les espaces de travail de l’installation.
 
-Les jetons assujettis aux capacités (GitHub, billetterie) proviennent du courtier d’identifiants, qui n’injecte que ce que les capacités de l’exécution permettent. Voir [Le modèle d’agent](/fr-CA/manuel/concepts/modele-agent/).
+Le jeton GitHub de l’exécution provient du courtier d’identifiants : un jeton en lecture seule, limité au dépôt de l’arbre de travail. Un push passe par la passerelle d’exécution d’agent, qui interroge la règle **Pousser vers un dépôt distant** avant de le transmettre, et aucune clé de tickets n’est injectée. Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/).
 
 ## Lancement
 
@@ -76,9 +76,9 @@ L’exécution est lancée avec son arbre de travail comme répertoire de travai
 
 Là où il n’y a pas de backend, l’exécution **n’est pas** isolée dans un bac à sable et rien d’autre n’est modifié pour compenser. Cela signifie Windows en tout temps (aucun enveloppement natif — `microvm` est un chemin distinct, contrôlé par sonde, pour les terminaux et les rigs) et Linux ou WSL2 sans `bwrap` ni `socat` dans le `PATH`. Le serveur indique dans quel état il se trouve sur sa ligne de journal de démarrage, et `--sandbox off` permet de s’en retirer délibérément.
 
-Deux lacunes subsistent malgré le bac à sable, même lorsque celui-ci est actif. Les outils de fichiers en processus du harnais (read, write, edit, apply patch, search, find, search_files) s’exécutent à l’intérieur du processus serveur, de sorte qu’aucun profil ne les contraint — leur borne est le confinement de chemin propre aux outils, plus les garde-fous. Et Claude Code est lancé avec `--dangerously-skip-permissions`, de sorte que ses propres appels de fichiers et d’interpréteur de commandes ne sont pas contrôlés par Control Center ; le bac à sable du système d’exploitation est la frontière qui les entoure.
+Deux lacunes subsistent malgré le bac à sable, même lorsque celui-ci est actif. Les outils de fichiers en processus du harnais (read, write, edit, apply patch, search, find, search_files) s’exécutent à l’intérieur du processus serveur, de sorte qu’aucun profil ne les contraint — leur borne est le confinement de chemin propre aux outils, plus les garde-fous. Et Claude Code est lancé avec `--dangerously-skip-permissions`, de sorte que ses propres appels de fichiers ne sont pas contrôlés par Control Center, et ses commandes d’interpréteur ne le sont que par un hook qui lit la ligne de commande ; le bac à sable du système d’exploitation est la frontière qui les entoure.
 
-Les bornes restantes s’appliquent sur tous les hôtes, avec ou sans bac à sable : l’arbre de travail de l’exécution elle-même (copie sur écriture là où `rift` est livré ; `git worktree` sur Windows), des identifiants assujettis aux capacités, obtenus auprès du courtier à chaque lancement et révoqués au démantèlement, les garde-fous d’action unifiés (à refus par défaut — une décision `prompt` sans approbateur connecté est refusée) et la surface d’outils que le mode de la conversation autorise. ACP et le `bash` du harnais assainissent toujours l’environnement ; Claude Code au moyen de `NoSandboxAdapter` hérite de l’environnement de l’hôte.
+Les bornes restantes s’appliquent sur tous les hôtes, avec ou sans bac à sable : l’arbre de travail de l’exécution elle-même (copie sur écriture là où `rift` est livré ; `git worktree` sur Windows), un jeton de forge en lecture seule, obtenu auprès du courtier à chaque lancement et révoqué au démantèlement, des poussées qui doivent passer la règle de poussée à la passerelle d’exécution d’agent, les garde-fous d’action unifiés (à refus par défaut — une décision `prompt` sans approbateur connecté est refusée) et la surface d’outils que le mode de la conversation autorise. ACP et le `bash` du harnais assainissent toujours l’environnement ; Claude Code au moyen de `NoSandboxAdapter` hérite de l’environnement de l’hôte.
 :::
 
 ## Diffusion en continu

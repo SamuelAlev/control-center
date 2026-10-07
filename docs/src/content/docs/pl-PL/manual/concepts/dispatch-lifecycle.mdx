@@ -2,7 +2,7 @@
 title: Cykl życia wysyłania agentów
 description: Co dzieje się między nadejściem wiadomości a zamknięciem dziennika uruchomienia — składanie promptu, drzewa robocze, tożsamość, co ogranicza uruchomienie i jak jego wynik jest zapisywany rzetelnie.
 slug: pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Czym jest wysłanie
@@ -65,7 +65,7 @@ Przed startem jakiegokolwiek procesu dla każdego uruchomienia ustalane są dwie
 
 Ponieważ nadpisanie dla danego adaptera jest pierwsze, po cichu wygrywa z kontem dostawcy podłączonym w aplikacji. Jeśli uruchomienie rozlicza się na niewłaściwym koncie, to nadpisanie jest pierwszym miejscem, w którym warto zajrzeć. Dane uwierzytelniające dostawców są globalne dla hosta — współdzielone przez wszystkie obszary robocze w instalacji.
 
-Tokeny ograniczone uprawnieniami (GitHub, system zgłoszeń) pochodzą od brokera danych uwierzytelniających, który wstrzykuje tylko to, na co pozwalają możliwości uruchomienia. Zobacz [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/).
+Token GitHub uruchomienia pochodzi od brokera danych uwierzytelniających: to token tylko do odczytu o zakresie repozytorium worktree. Push przechodzi przez bramę uruchomień agentów, która przed przekazaniem go dalej pyta regułę **Push do zdalnego repozytorium**, a żaden klucz systemu zgłoszeń nie jest wstrzykiwany. Zobacz [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 
 ## Start
 
@@ -76,9 +76,9 @@ Uruchomienie startuje z drzewem roboczym jako swoim katalogiem roboczym i — w 
 
 Tam, gdzie nie ma backendu, uruchomienie **nie** jest objęte sandboxem i nic innego nie zmienia się w ramach rekompensaty. Dotyczy to zawsze systemu Windows (brak natywnego otoczenia — `microvm` to osobna ścieżka dla terminali i rigów, uruchamiana dopiero po pomyślnej sondzie) oraz systemu Linux lub WSL2 bez `bwrap` i `socat` w `PATH`. Serwer podaje swój stan w wierszu logu startowego, a `--sandbox off` świadomie z niego rezygnuje.
 
-Nawet gdy sandbox jest włączony, pozostają dwie luki. Narzędzia plikowe harnessu działające w procesie (read, write, edit, apply patch, search, find, search_files) działają wewnątrz procesu serwera, więc żaden profil ich nie ogranicza — ich granicą jest własne ograniczenie ścieżek tych narzędzi plus guardraile. A Claude Code jest uruchamiany z `--dangerously-skip-permissions`, więc jego własne wywołania plików i powłoki nie przechodzą przez bramki Control Center; sandbox systemu operacyjnego jest granicą wokół nich.
+Nawet gdy sandbox jest włączony, pozostają dwie luki. Narzędzia plikowe harnessu działające w procesie (read, write, edit, apply patch, search, find, search_files) działają wewnątrz procesu serwera, więc żaden profil ich nie ogranicza — ich granicą jest własne ograniczenie ścieżek tych narzędzi plus guardraile. A Claude Code jest uruchamiany z `--dangerously-skip-permissions`, więc jego własne wywołania plików nie przechodzą przez bramki Control Center, a polecenia powłoki tylko przez hook, który czyta wiersz poleceń; sandbox systemu operacyjnego jest granicą wokół nich.
 
-Pozostałe ograniczenia obowiązują na każdym hoście, z sandboxem czy bez: własne drzewo robocze uruchomienia (kopiowanie przy zapisie tam, gdzie dostarczany jest `rift`; `git worktree` w systemie Windows), dane uwierzytelniające ograniczone uprawnieniami, brokerowane przy każdym starcie i odwoływane przy zamknięciu, ujednolicone guardraile akcji (domyślnie odmawiające — decyzja `prompt` bez podłączonego zatwierdzającego jest odrzucana) oraz powierzchnia narzędzi dozwolona przez tryb rozmowy. ACP i `bash` harnessu nadal oczyszczają środowisko; Claude Code przez `NoSandboxAdapter` dziedziczy środowisko hosta.
+Pozostałe ograniczenia obowiązują na każdym hoście, z sandboxem czy bez: własne drzewo robocze uruchomienia (kopiowanie przy zapisie tam, gdzie dostarczany jest `rift`; `git worktree` w systemie Windows), token hosta kodu tylko do odczytu, brokerowany przy każdym starcie i odwoływany przy zamknięciu, push, który musi przejść regułę push w bramie uruchomień agentów, ujednolicone guardraile akcji (domyślnie odmawiające — decyzja `prompt` bez podłączonego zatwierdzającego jest odrzucana) oraz powierzchnia narzędzi dozwolona przez tryb rozmowy. ACP i `bash` harnessu nadal oczyszczają środowisko; Claude Code przez `NoSandboxAdapter` dziedziczy środowisko hosta.
 :::
 
 ## Strumieniowanie

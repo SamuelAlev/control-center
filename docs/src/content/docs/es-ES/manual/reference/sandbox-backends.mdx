@@ -2,13 +2,13 @@
 title: Backends del entorno aislado
 description: Los backends del entorno aislado, dónde se aplican y todos los objetos de valor que usa el runtime del entorno aislado.
 slug: es-ES/manual/referencia/backends-de-entorno-aislado
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Que una ejecución esté aislada depende del host]
 `cc_server` sondea el host una vez al arrancar y envuelve el despacho de agentes en el backend nativo cuando el sondeo informa de que hay uno disponible y `--sandbox` no es `off`. Ambas costuras del despacho se envuelven: la CLI de Claude Code a través del puerto del entorno aislado, y ACP más la herramienta `bash` del arnés integrado a través del gestor del entorno aislado.
 
-Donde el sondeo no informa de ningún backend —**Windows siempre**, y Linux o WSL2 sin `bwrap` y `socat`—, las ejecuciones de agentes **no** están aisladas. ACP y la herramienta `bash` del arnés siguen lanzándose con el entorno saneado; Claude Code pasa por `NoSandboxAdapter` y hereda el entorno del host. Las fronteras restantes son el propio worktree de la ejecución (copia en escritura donde se distribuye `rift`; `git worktree` en Windows), las credenciales con control por capacidades que se emiten en cada lanzamiento y se revocan al desmontar, la política de comandos de cada modo, las [barandillas de acciones](/es-ES/manual/conceptos/barandillas/) unificadas (de fallo cerrado), el entorno saneado en las rutas de ACP y del `bash` del arnés, y la superficie de herramientas que permite su modo.
+Donde el sondeo no informa de ningún backend —**Windows siempre**, y Linux o WSL2 sin `bwrap` y `socat`—, las ejecuciones de agentes **no** están aisladas. ACP y la herramienta `bash` del arnés siguen lanzándose con el entorno saneado; Claude Code pasa por `NoSandboxAdapter` y hereda el entorno del host. Las fronteras restantes son el propio worktree de la ejecución (copia en escritura donde se distribuye `rift`; `git worktree` en Windows), un token de forja de solo lectura que se emite en cada lanzamiento y se revoca al desmontar, los push que tienen que pasar la regla de push en la pasarela de ejecuciones de agentes, la política de comandos de cada modo, las [barandillas de acciones](/es-ES/manual/conceptos/barandillas/) unificadas (de fallo cerrado), el entorno saneado en las rutas de ACP y del `bash` del arnés, y la superficie de herramientas que permite su modo.
 
 Las herramientas de archivos en proceso del arnés (read, write, edit, apply patch, search, find, search_files) quedan fuera del entorno aislado en cualquier host: se ejecutan en el proceso del servidor, así que solo se envuelve `bash`.
 :::
@@ -83,7 +83,7 @@ Ningún entorno aislado. El proceso se ejecuta directamente en el host, con el a
 
 El terminal se aísla según sus propias reglas, no por el sondeo del despacho. El `defaultBackend` de `TerminalSessionService` es `none` y `cc_server` no lo sobrescribe, así que una sesión de terminal ejecuta el shell del host salvo que el cliente pida `native` explícitamente: el panel de terminal de la aplicación de escritorio no lo hace.
 
-Cuando se solicita `native`, el shell se envuelve a través de `SandboxManager` bajo un perfil de terminal fijo: `$HOME` y el directorio de trabajo de la sesión son escribibles, la red está abierta y se deniega la lectura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` y `~/Library/Keychains`. El control por capacidades no se aplica: eso es cosa del despacho. Si el envoltorio no es compatible, la sesión falla en lugar de mostrar una insignia nativa sobre un PTY del shell del host.
+Cuando se solicita `native`, el shell se envuelve a través de `SandboxManager` bajo un perfil de terminal fijo: `$HOME` y el directorio de trabajo de la sesión son escribibles, la red está abierta y se deniega la lectura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` y `~/Library/Keychains`. El token de forja de solo lectura y la pasarela de push no se aplican: son cosa del despacho. Si el envoltorio no es compatible, la sesión falla en lugar de mostrar una insignia nativa sobre un PTY del shell del host.
 
 ## Salida de red
 
@@ -92,9 +92,9 @@ Cuando se lanza un entorno aislado, el acceso saliente a la red lo aplican proxi
 - El runtime del entorno aislado ejecuta un proxy HTTP/HTTPS y un proxy SOCKS5 en `127.0.0.1` dentro del proceso `cc_server`, **un par por sesión restringida** (`http_proxy.dart`, `socks_proxy.dart`). Las ejecuciones simultáneas no comparten un par.
 - Los procesos aislados reciben variables de entorno de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → el proxy HTTP, `ALL_PROXY` → el proxy SOCKS; `GIT_SSH_COMMAND` encamina git por SSH a través del proxy SOCKS). En Linux el espacio de nombres de red no se comparte, así que los proxies son la única salida; en macOS el entorno aislado comparte el loopback del host y habla directamente con ellos.
 - El host de destino de cada conexión se compara con la lista de permitidos de dominios de la sesión; todo lo demás se deniega. Hay dos formas de comodín, cada una con exactamente un `*`: un `*.example.com` inicial coincide con cualquier subdominio (incluido `a.b.example.com`), pero no con el propio dominio raíz; un `bedrock.*.amazonaws.com` en una etiqueta intermedia coincide exactamente con una etiqueta (`bedrock.us-east-1.amazonaws.com`, no `bedrock.evil.attacker.amazonaws.com`).
-- La lista de permitidos se resuelve por sesión a partir de la línea base curada (`kBaselineAllowedDomains`: proveedores de LLM, alojamiento de Git, registros de paquetes), más los dominios de GitHub cuando el agente tiene las capacidades de GitHub o de push, más `SandboxSpec.egressAllowlist`. El resolutor también acepta dominios de proveedores de tickets cuando el agente puede llamar a tickets, pero la ruta de despacho nunca pasa esa lista (ni entradas adicionales de `egressAllowlist`), así que en la práctica cada ejecución recibe la línea base más los dominios de GitHub que le otorgan sus capacidades.
+- La lista de permitidos se resuelve por sesión a partir de la línea base curada (`kBaselineAllowedDomains`: proveedores de LLM, alojamiento de Git, registros de paquetes), más los dominios de GitHub (`kGithubDomains`), más `SandboxSpec.egressAllowlist`. La ruta de despacho nunca pasa entradas adicionales de `egressAllowlist`, así que en la práctica cada ejecución recibe la línea base más GitHub.
 - Una lista fija de denegados (`kBaselineDeniedDomains`: endpoints de metadatos de la nube, sumideros de telemetría) prevalece sobre todas las permitidas.
-- `networkEnabled: false` (o un agente sin la capacidad de red) sigue arrancando los proxies por sesión, pero la lista de permitidos está vacía, así que se rechaza toda conexión saliente.
+- `networkEnabled: false` sigue arrancando los proxies por sesión, pero la lista de permitidos está vacía, así que se rechaza toda conexión saliente. El despacho lo fija al arrancar la ejecución a partir de la regla **Acceder a la red**: denegar desactiva la red; permitir y preguntar primero la dejan activada.
 
 ## SandboxSpec
 
@@ -106,11 +106,10 @@ La especificación que se pasa a `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id del espacio de trabajo propietario                                                                                                       |
 | `agentId`         | `String?`                                   | Agente vinculado actualmente al entorno aislado, si lo hay                                                                                  |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Montajes host→huésped; el entorno aislado solo ve las rutas del host que se enumeran aquí                                                   |
-| `networkEnabled`  | `bool` (predeterminado `true`)              | Se combina con la capacidad de red del agente. Cuando está desactivado, los proxies por sesión siguen arrancando, pero la lista de permitidos está vacía, así que se rechaza toda conexión saliente |
-| `egressAllowlist` | `List<String>` (predeterminado `[]`)        | Dominios de salida permitidos adicionales; se admiten comodines (`*.example.com`, más una forma intermedia de una sola etiqueta). El despacho nunca rellena este campo, así que una ejecución envuelta recibe la línea base curada más los dominios de GitHub que le otorgan sus capacidades |
+| `networkEnabled`  | `bool` (predeterminado `true`)              | Lo fija el despacho a partir de la regla de salida a la red (desactivado solo cuando se resuelve como denegar). Cuando está desactivado, los proxies por sesión siguen arrancando, pero la lista de permitidos está vacía, así que se rechaza toda conexión saliente |
+| `egressAllowlist` | `List<String>` (predeterminado `[]`)        | Dominios de salida permitidos adicionales; se admiten comodines (`*.example.com`, más una forma intermedia de una sola etiqueta). El despacho nunca rellena este campo, así que una ejecución envuelta recibe la línea base curada más los dominios de GitHub |
 | `guestWorkdir`    | `String?`                                   | Directorio de trabajo predeterminado dentro del entorno aislado; cada llamada `exec` puede anularlo                                         |
 | `mode`            | `Mode` (predeterminado `chat`)              | Define las reglas de escritura del sistema de archivos: `chat` mantiene los montajes bind escribibles; `review`, `plan` y `orchestrate` son de solo lectura |
-| `capabilities`    | `AgentCapabilities` (predeterminado `safeDefault`) | Deriva la decisión de activar o desactivar la red y los dominios de salida de GitHub. Los dominios de tickets son un argumento del resolutor que la ruta de despacho nunca proporciona |
 | `protectedPaths`  | `List<String>` (predeterminado `[]`)        | Rutas del host que nunca deben ser escribibles dentro del entorno aislado, en ningún modo                                                 |
 | `runnerStateDirs` | `List<String>` (predeterminado `[]`)        | Directorios del host donde el runner guarda su propio estado, escribibles en todos los modos (el actual es un `CLAUDE_CONFIG_DIR` gestionado por Control Center) |
 | `execGrantRoots`  | `List<String>` (predeterminado `[]`)        | Árboles de directorios aprobados por el operador que vuelven a abrir el bloqueo de exec en directorios escribibles en macOS. Linux los ignora: bwrap no tiene ningún bloqueo de exec en `$HOME` que reabrir |
@@ -168,7 +167,6 @@ Lo devuelve `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | El verbo denegado (p. ej. `file-read*`, `network-outbound`)                |
 | `target`              | `String`  | Ruta o host que era el destino de la operación denegada                    |
-| `suggestedCapability` | `String?` | El indicador de capacidad que permitiría esta acción (p. ej. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Línea de registro sin procesar, útil para depurar                          |
 
 ## Conceptos relacionados

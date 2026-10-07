@@ -4,7 +4,6 @@ import 'package:control_center/shared/widgets/transcript/widgets/code_preview.da
 import 'package:control_center/shared/widgets/transcript/widgets/file_change_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/grep_result_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/inline_diff_view.dart';
-import 'package:control_center/shared/widgets/transcript/widgets/shimmer_text.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/split_diff_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -381,26 +380,6 @@ void main() {
       expect(find.byType(ListView), findsOneWidget);
       expect(find.textContaining('preview line 0'), findsOneWidget);
       expect(find.textContaining('preview line 199'), findsNothing);
-    });
-  });
-
-  group('ShimmerText', () {
-    testWidgets('reduced motion renders static text and settles', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(const ShimmerText('Thinking…'), reduceMotion: true),
-      );
-      expect(find.text('Thinking…'), findsOneWidget);
-      // No perpetual animation: the tree settles.
-      await tester.pumpAndSettle();
-      expect(find.text('Thinking…'), findsOneWidget);
-    });
-
-    testWidgets('animated variant still shows the label', (tester) async {
-      await tester.pumpWidget(_host(const ShimmerText('Working…')));
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Working…'), findsOneWidget);
     });
   });
 }

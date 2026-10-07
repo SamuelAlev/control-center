@@ -26,6 +26,7 @@ import 'package:control_center/features/messaging/presentation/ide/panels/agent_
 import 'package:control_center/features/messaging/presentation/ide/quick_open/quick_open_dialog.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/widgets/create_untitled_conversation.dart';
+import 'package:control_center/features/messaging/presentation/widgets/rename_conversation_dialog.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
@@ -172,6 +173,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// tab's header follows a rename (and a thread keeps its badge) without the
   /// tab having to be re-opened. Empty until the space's list arrives.
   Map<String, Conversation> _conversationsById = const {};
+
+  /// Conversations of the selected space whose title is being generated; their
+  /// chat tabs scramble the label meanwhile. Watched in [build] beside
+  /// [_conversationsById], for the same reason.
+  Set<String> _titleGeneratingIds = const {};
 
   /// The open space's standing conversation id, so the seeded chat tab — which
   /// deliberately carries no conversation arg — can still name what it shows.
@@ -517,6 +523,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         if (target.repoId.isNotEmpty) 'repoId': target.repoId,
         'path': target.path,
       },
+      // One editor per file (the refocus below matches on path), so the path
+      // is its `?tab=` identity — same shape as the PR workbench's editors.
+      dedupKey: '${MessagingTabKinds.codeServer}:${target.path}',
     );
     if (toSide) {
       _layout.openInSplit(_layout.activeLeafId, build(), DropEdge.right);
@@ -775,7 +784,14 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
 
   /// Builds a fresh terminal tab. With [backend] `'microvm'` the shell opens
   /// inside the conversation's enclosed VM instead of on the host.
-  EditorTab _newTerminalTab({String? backend}) => EditorTab(
+  EditorTab _newTerminalTab({String? backend}) => _terminalTab(
+    'ide-terminal-${DateTime.now().microsecondsSinceEpoch}',
+    backend: backend,
+  );
+
+  /// The terminal tab showing session [sessionId]. Keyed by the session so
+  /// `?tab=` names this shell rather than whichever terminal comes first.
+  EditorTab _terminalTab(String sessionId, {String? backend}) => EditorTab(
     kind: MessagingTabKinds.terminal,
     label: 'Terminal',
     icon: MessagingTabKinds.iconFor(MessagingTabKinds.terminal),
@@ -783,10 +799,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // after a space switch (the arg round-trips through the persisted
     // layout snapshot). The backend rides in args so a restored layout
     // reopens the shell where it was, not silently on the host.
-    args: {
-      'termSessionId': 'ide-terminal-${DateTime.now().microsecondsSinceEpoch}',
-      'backend': ?backend,
-    },
+    args: {'termSessionId': sessionId, 'backend': ?backend},
+    dedupKey: '${MessagingTabKinds.terminal}:$sessionId',
   );
 
   /// Builds the rig tab for [target] — the one construction shared by the
@@ -1159,6 +1173,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         kind: MessagingTabKinds.browser,
         label: _browserLabel(l10n),
         icon: MessagingTabKinds.iconFor(MessagingTabKinds.browser),
+        dedupKey: instanceTabKey(MessagingTabKinds.browser),
       ),
     );
   }
@@ -1553,6 +1568,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _standingConversationId = spaceId == null
         ? null
         : ref.watch(standingConversationIdProvider(spaceId)).value;
+    _titleGeneratingIds = spaceId == null
+        ? const {}
+        : ref.watch(spaceTitleGeneratingIdsProvider(spaceId)).value ?? const {};
 
     // Opening a space opens its conversations in the top tab strip. The data
     // above is watched, so whichever of (restore, conversation list, standing
@@ -1696,6 +1714,12 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                           // worktree — the copy the Explorer listed.
                           'spaceId': ?widget.selectedSpaceId,
                         },
+                        // Keyed by file, so `?tab=` names it and viewing the
+                        // same file again refocuses rather than stacking a
+                        // second identical read-only copy.
+                        dedupKey:
+                            '${MessagingTabKinds.file}:${target.repoId}:'
+                            '${target.path}',
                       ),
                     );
                   },
@@ -1949,8 +1973,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
   }
 
-  /// Context-menu extras per tab kind: a chat tab gets "Archive
-  /// conversation"; a terminal tab gets "Restart shell"; a code-server (file)
+  /// Context-menu extras per tab kind: a chat tab gets "Rename conversation"
+  /// and "Archive conversation"; a terminal tab gets "Restart shell"; a code-server (file)
   /// tab gets Copy path / Copy relative path. Browser tabs carry no extras.
   List<CcMenuItem> _tabContextExtras(EditorTab tab) {
     if (tab.kind == MessagingTabKinds.rig) {
@@ -1970,6 +1994,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
           .where((c) => !c.isArchived)
           .length;
       return [
+        CcMenuItem(
+          label: l10n.renameConversation,
+          enabled: conv != null,
+          onSelected: () => unawaited(_renameConversation(tab)),
+        ),
         CcMenuItem(
           label: l10n.archiveConversation,
           // The last active conversation stays: a space always keeps one live
@@ -2005,6 +2034,34 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         onSelected: () => _copyToClipboard(relative),
       ),
     ];
+  }
+
+  /// Renames the conversation a chat [tab] shows. The dialog can ask the
+  /// workspace's short-task runner for a title; the tab label follows the
+  /// live conversation watch.
+  Future<void> _renameConversation(EditorTab tab) async {
+    final workspaceId = _workspaceId;
+    final conv = _tabConversation(tab);
+    if (workspaceId == null || conv == null) {
+      return;
+    }
+    final title = await showRenameConversationDialog(
+      context,
+      initialValue: conv.title,
+      suggest: () => ref
+          .read(conversationTitlePortProvider)
+          .suggestTitle(workspaceId: workspaceId, conversationId: conv.id),
+    );
+    if (title == null || !mounted) {
+      return;
+    }
+    await ref
+        .read(conversationRepositoryProvider)
+        .rename(
+          workspaceId: workspaceId,
+          conversationId: conv.id,
+          title: title,
+        );
   }
 
   /// Archives the conversation a chat [tab] shows and closes the tab: the
@@ -2182,12 +2239,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _layout.openInActiveLeaf(
       kept == null
           ? _newTerminalTab()
-          : EditorTab(
-              kind: MessagingTabKinds.terminal,
-              label: 'Terminal',
-              icon: MessagingTabKinds.iconFor(MessagingTabKinds.terminal),
-              args: {'termSessionId': sessionId, 'backend': ?kept.backend},
-            ),
+          : _terminalTab(sessionId, backend: kept.backend),
     );
   }
 
@@ -2304,6 +2356,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       MessagingTabKinds.chat => _chatLabel(tab, l10n),
       _ => tab.label,
     },
+    scramblingFor: (tab) =>
+        tab.kind == MessagingTabKinds.chat &&
+        _titleGeneratingIds.contains(_tabConversation(tab)?.id),
     dirtyFor: _tabDirty,
     confirmClose: _confirmCloseTab,
     tabContextMenuExtras: _tabContextExtras,
@@ -2352,6 +2407,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
             kind: MessagingTabKinds.browser,
             label: _browserLabel(l10n),
             icon: MessagingTabKinds.iconFor(MessagingTabKinds.browser),
+            dedupKey: instanceTabKey(MessagingTabKinds.browser),
           ),
         ),
       ),

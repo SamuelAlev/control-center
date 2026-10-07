@@ -2,7 +2,7 @@
 title: Gestisci le chiavi API
 description: Dove vive ogni credenziale — il tuo account utente sul server, il server stesso o una CLI esterna — e come impostarla, ruotarla e rimuoverla.
 slug: it-IT/manuale/guide/chiavi-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Questa guida mostra dove è archiviata ogni credenziale usata da Control Center e
@@ -80,9 +80,10 @@ hanno nulla da autenticare.
 La tua chiave è archiviata sul server in base al tuo id utente, come quella della
 forge. Il server conserva separatamente la propria chiave Linear (**App del
 fornitore**), ed è quella su cui gira la sincronizzazione dei ticket quando
-nessun umano l'ha richiesto. Una chiave ricevuta da un agente viene iniettata
-solo quando l'agente ha la capacità **Consenti chiamate API dei ticket**. Vedi
-[Configura l'integrazione Linear](/it-IT/manuale/guide/integrazione-linear/).
+nessun umano l'ha richiesto. Nel sandbox di un agente non viene iniettata alcuna
+chiave di ticketing; gli agenti scrivono i ticket tramite gli strumenti di
+Control Center, che interrogano la regola **Scrivere su un tracker esterno**.
+Vedi [Configura l'integrazione Linear](/it-IT/manuale/guide/integrazione-linear/).
 
 ## Ruota o revoca
 

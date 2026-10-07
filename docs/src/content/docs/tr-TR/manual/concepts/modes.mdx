@@ -2,7 +2,7 @@
 title: Modlar
 description: Bir modu neden bir ajanın değil bir alanın taşıdığı; dört modun her birinin neyi garanti ettiği; ve bu garantinin nerede yalnızca istemle değil yapısal olarak sağlandığı.
 slug: tr-TR/kilavuz/kavramlar/modlar
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Mod nedir
@@ -77,7 +77,7 @@ Bir alanı **açan** bir pipeline düğümü, `extras['mode']` anahtarıyla (`ch
 
 Bir modun araç yüzeyi **yerleşik harness** tarafından oluşturulur ve uygulanır. Bir aracı yalnızca reddetmek yerine görünmez kılabilen, her çağrıyı çalışmadan önce kapıdan geçirebilen ve bir tamamlanma sözleşmesini gözlemleyebilen tek taşıma katmanıdır.
 
-Claude Code taşıma katmanında sohbet dışı bir mod `--permission-mode plan` olarak geçirilir. Claude bunu yalnızca bir gelenek olarak dikkate alır; kendi okuma, yazma, düzenleme ve shell araçları görünmeden çalışır. Bu taşıma katmanı için mod bir yönlendirmedir, bir Control Center sınırı değil — bkz. [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
+Claude Code taşıma katmanında sohbet dışı bir mod `--permission-mode plan` olarak geçirilir. Claude bunu yalnızca bir gelenek olarak dikkate alır; kendi okuma, yazma ve düzenleme araçları görünmeden çalışır, shell komutlarını ise yalnızca komut satırını okuyan bir hook denetler. Bu taşıma katmanı için mod bir yönlendirmedir, bir Control Center sınırı değil — bkz. [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
 
 İzin listeleri yazma kademesi ve üzerindeki araçları kısıtlar. Yerleşik harness'in okuma kademesi, hiçbir listenin adlandırmadığı araçlara yine de erişir; Claude Code'da ise izin listesinin dışarıda bıraktığı bir araç, sunucuda bulunsun ya da bulunmasın reddedilir.
 

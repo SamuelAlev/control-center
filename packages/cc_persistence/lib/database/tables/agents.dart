@@ -55,11 +55,6 @@ class AgentsTable extends Table {
   /// Context window size in tokens.
   IntColumn get contextSize => integer().nullable()();
 
-  /// JSON-encoded sandbox `AgentCapabilities` snapshot for this agent.
-  /// Empty string falls back to the user-level default at dispatch time.
-  TextColumn get sandboxCapabilitiesJson =>
-      text().withDefault(const Constant(''))();
-
   /// JSON-encoded per-agent command policy delta (deny/allow/prompt lists
   /// merged over the profile default). Empty string falls back to the
   /// mode-based default at dispatch time.

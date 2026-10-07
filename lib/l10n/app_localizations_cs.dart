@@ -2681,15 +2681,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get allow => 'Povolit';
 
   @override
-  String get allowGitPush => 'Povolit git push';
-
-  @override
-  String get allowGithubApi => 'Povolit volání GitHub API';
-
-  @override
-  String get allowNetwork => 'Povolit obecný přístup k síti';
-
-  @override
   String get apiKeys => 'API klíče';
 
   @override
@@ -3096,9 +3087,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get currentParticipants => 'Aktuální účastníci';
 
   @override
-  String get customCapabilitiesDescription => 'Vlastní popis schopností';
-
-  @override
   String get customSystemPrompt =>
       'Vlastní systémový prompt pro tohoto agenta…';
 
@@ -3117,9 +3105,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get deactivate => 'Deaktivovat';
-
-  @override
-  String get defaultCapabilities => 'Výchozí schopnosti · nové prostory';
 
   @override
   String get defaultChat => 'Výchozí chat';
@@ -3525,10 +3510,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get forward => 'Vpřed';
 
   @override
-  String get gatesGithubPatPush =>
-      'Řídí vložení GitHub PAT. Potřebné, aby agent mohl pushovat.';
-
-  @override
   String get general => 'Obecné';
 
   @override
@@ -3597,6 +3578,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Výpadek';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Stav služeb';
@@ -4070,6 +4056,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get navSettings => 'Nastavení';
+
+  @override
+  String get exitSettings => 'Opustit nastavení';
 
   @override
   String networkBlockCount(int count) {
@@ -4591,10 +4580,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get react => 'Reagovat';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Umožní agentovi číst PR, issues a metadata repozitáře.';
-
-  @override
   String get readerPreferences => 'Předvolby čtečky';
 
   @override
@@ -4855,9 +4840,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Nativní sandbox je na macOS vestavěný — používá Apple Seatbelt (`sandbox-exec`). Instalace není potřeba.';
-
-  @override
-  String get sandboxPermissions => 'Oprávnění sandboxu';
 
   @override
   String get sandboxUnsupported =>
@@ -5447,9 +5429,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get useSandbox => 'Použít sandbox';
 
   @override
-  String get useWorkspaceDefault => 'Použít výchozí pracovního prostoru';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5492,10 +5471,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Slabá izolace — jen hranice namespace, bez hranice jádra.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Když je vypnuto, sandbox nabootuje bez výchozí trasy.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6729,14 +6704,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'V tomto pracovním prostoru zatím nejsou žádné repozitáře.';
 
   @override
-  String get allowTicketingApi => 'Povolit volání ticketing API';
-
-  @override
   String get ticketingApiKey => 'API klíč ticketingu';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Vloží API klíč poskytovatele ticketingu do sandboxu.';
 
   @override
   String get ticketingProvider => 'Poskytovatel ticketingu';
@@ -9139,28 +9107,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Počítač může usnout i tehdy, když agent pracuje';
-
-  @override
-  String get syncEngineSectionTitle => 'Synchronizační engine';
-
-  @override
-  String get syncEngineDescription =>
-      'Tickety, zprávy a poznámky se aktualizují živě malými přírůstkovými změnami místo celých snímků. Vypnutím přepínače se toto úložiště vrátí k režimu celých snímků — aby se změna projevila, znovu načtěte aplikaci.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Tickety';
-
-  @override
-  String get syncEngineMessagingTitle => 'Zprávy';
-
-  @override
-  String get syncEngineNotesTitle => 'Poznámky';
-
-  @override
-  String get syncEngineOnSubtitle => 'Živá delta synchronizace je aktivní';
-
-  @override
-  String get syncEngineOffSubtitle => 'Používá se synchronizace celých snímků';
 
   @override
   String get spaces => 'Prostory';
@@ -13132,23 +13078,22 @@ class AppLocalizationsCs extends AppLocalizations {
       'Volitelné — nechte prázdné a model názvu ho pojmenuje automaticky';
 
   @override
-  String get conversationTitlesSectionTitle => 'Názvy konverzací';
+  String get shortTaskOff => 'Vypnuto';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Vyberte runner, který v tomto pracovním prostoru automaticky pojmenuje nové konverzace. Názvy zůstanou vypnuté, dokud není zvolen adaptér, a platí pro každého člena.';
+  String get shortTaskUnavailable =>
+      'Pro použití vyberte model pro krátké úkoly v Nastavení → Adaptéry';
 
   @override
-  String get conversationTitlesModelLabel => 'Model názvu';
+  String get conversationTitleGenerate => 'Vygenerovat';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adaptér';
+  String get conversationTitleNoMessages =>
+      'Nejdřív pošlete zprávu. Název se generuje z ní.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Vypnuto';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Vypnuto';
+  String get conversationTitleGenerateFailed =>
+      'Název se nepodařilo vygenerovat. Zkuste to znovu.';
 
   @override
   String get startThread => 'Začít vlákno';
@@ -13315,6 +13260,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Konverzace';
+
+  @override
+  String get contextSegmentRunner =>
+      'Prompt spouštěče, nástroje a práce v tahu';
+
+  @override
+  String get contextUsageMeasured => 'Nahlášeno posledním voláním modelu';
+
+  @override
+  String get contextUsageEstimated => 'Odhad, dokud běh nenahlásí využití';
 
   @override
   String get contextExplorerTitle => 'Kontext';
@@ -13706,12 +13661,15 @@ class AppLocalizationsCs extends AppLocalizations {
       'Kde se procesy agenta a zápisy souborů skutečně dějí.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Auto vybere nejsilnější, který tento hostitel podporuje. Připněte jeden, aby se pod vámi neměnil.';
+  String get sandboxGroupAgentActions => 'Co smí agenti dělat';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Díry proražené hranicí. Každá je něco, co izolovaný agent pořád může udělat vnějšímu světu.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Zda je odeslání na remote, otevření pull requestu a přístup k síti povolen, vyžaduje dotaz nebo je zakázán, se nastavuje v oprávněních agentů.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Auto vybere nejsilnější, který tento hostitel podporuje. Připněte jeden, aby se pod vámi neměnil.';
 
   @override
   String get sandboxSummaryInForce => 'V platnosti';
@@ -13858,6 +13816,26 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Spusťte toto v terminálu na serveru. Otevře prohlížeč k dokončení přihlášení a zapíše přihlašovací údaje do adresáře tohoto účtu.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Dlouhodobý token';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Použít dlouhodobý token';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'Nahradit dlouhodobý token';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'Odebrat dlouhodobý token';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Běžné přihlášení je nutné obnovovat a může přes noc vypršet. Dlouhodobý token zůstane přihlášený zhruba rok. Spusťte tento příkaz v terminálu, dokončete přihlášení v prohlížeči a vložte token, který vypíše.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Toto není token z claude setup-token. Začíná na sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Odhlášeno';
@@ -14290,10 +14268,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Otevřít ve výchozí aplikaci';
-
-  @override
-  String get asideUnavailable =>
-      'Pro použití nastavte jednorázový model v nastavení pracovního prostoru';
 
   @override
   String get asideEmpty => 'Zatím není z čeho vycházet';
@@ -14837,6 +14811,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get credentialGateOpenSettings => 'Otevřít nastavení';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Připojené účty Claude Code byly odebrány';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Připojte jiný účet v nastavení účtů tohoto agenta nebo pracovního prostoru, nebo seznam vymažte a použijte výchozí. Běh to převezme sám.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Všechny účty v tomto seznamu byly ze serveru odebrány. Připojte jiný, nebo seznam vymažte.';
+
+  @override
+  String get accountPoolClear => 'Vymazat seznam';
+
+  @override
   String get selectModel => 'Vybrat model';
 
   @override
@@ -15276,6 +15265,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Vyhledejte soubory konverzace podle názvu a otevřete jeden na kartě';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Vyhledejte soubory pull requestu podle názvu a otevřete jeden na kartě';
 
   @override
   String get ideQuickOpenHint => 'Hledat soubory podle názvu';

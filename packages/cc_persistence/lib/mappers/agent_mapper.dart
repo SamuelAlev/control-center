@@ -1,5 +1,4 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_lifecycle_status.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -33,9 +32,6 @@ class AgentMapper {
       strictMode: row.strictMode,
       effort: row.effort,
       contextSize: row.contextSize,
-      capabilities: row.sandboxCapabilitiesJson.isEmpty
-          ? null
-          : AgentCapabilities.fromJsonString(row.sandboxCapabilitiesJson),
       role: AgentRole.tryParse(row.role),
       monthlyBudgetCents: row.monthlyBudgetCents,
       silenceTimeoutMinutes: row.silenceTimeoutMinutes,

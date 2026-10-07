@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_ui/src/foundation/cc_depth_switcher.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -81,6 +82,10 @@ class CcSidebarScope extends InheritedWidget {
 /// expanded geometry until rail width arrives; expand swaps first. Icon centers
 /// stay on x=27 in both modes. Trailing 1px `borderPrimary` hairline is inside
 /// bounds (no layout shift).
+///
+/// [depth] drills the sidebar into a sub-navigation (e.g. settings) without
+/// swapping the [header]: everything below it — pinned, scrolling and footer —
+/// slides through a [CcDepthSwitcher] when the depth changes.
 class CcSidebar extends StatefulWidget {
   /// Creates a [CcSidebar].
   const CcSidebar({
@@ -93,6 +98,7 @@ class CcSidebar extends StatefulWidget {
     this.footerGap = AppSpacing.md,
     this.width = _kExpandedWidth,
     this.collapsed = false,
+    this.depth = 0,
     this.background,
   });
 
@@ -135,6 +141,12 @@ class CcSidebar extends StatefulWidget {
 
   /// Whether the sidebar is collapsed to the icon-only rail.
   final bool collapsed;
+
+  /// Navigation depth of the content below the [header]. Deeper pages arrive
+  /// from the end edge, shallower ones from the start; shallower pages stay
+  /// mounted while a deeper one is shown (see [CcDepthSwitcher]). The caller
+  /// swaps [pinnedChildren], [children] and [footer] along with it.
+  final int depth;
 
   /// The surface color. Defaults to the `sidebar` token.
   final Color? background;
@@ -274,49 +286,63 @@ class _CcSidebarState extends State<CcSidebar> {
                   SizedBox(height: widget.headerGap),
                 ],
                 Expanded(
-                  child: widget.pinnedChildren.isEmpty
-                      ? _fluidList(widget.children, contentPadding)
-                      : LayoutBuilder(
-                          builder: (context, constraints) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight:
-                                      constraints.maxHeight *
-                                      _kPinnedMaxFraction,
-                                ),
-                                child: ScrollConfiguration(
-                                  behavior: ScrollConfiguration.of(
-                                    context,
-                                  ).copyWith(scrollbars: false),
-                                  child: SingleChildScrollView(
-                                    padding: contentPadding,
-                                    child: _fluidCollection(
-                                      widget.pinnedChildren,
-                                      (context, registered) => Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: registered,
+                  child: CcDepthSwitcher(
+                    depth: widget.depth,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: widget.pinnedChildren.isEmpty
+                              ? _fluidList(widget.children, contentPadding)
+                              : LayoutBuilder(
+                                  builder: (context, constraints) => Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxHeight:
+                                              constraints.maxHeight *
+                                              _kPinnedMaxFraction,
+                                        ),
+                                        child: ScrollConfiguration(
+                                          behavior: ScrollConfiguration.of(
+                                            context,
+                                          ).copyWith(scrollbars: false),
+                                          child: SingleChildScrollView(
+                                            padding: contentPadding,
+                                            child: _fluidCollection(
+                                              widget.pinnedChildren,
+                                              (context, registered) => Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.stretch,
+                                                children: registered,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      Expanded(
+                                        child: _fluidList(
+                                          widget.children,
+                                          contentPadding,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: _fluidList(
-                                  widget.children,
-                                  contentPadding,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
+                        if (widget.footer != null) ...[
+                          SizedBox(height: widget.footerGap),
+                          Padding(
+                            padding: contentPadding,
+                            child: widget.footer!,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
-                if (widget.footer != null) ...[
-                  SizedBox(height: widget.footerGap),
-                  Padding(padding: contentPadding, child: widget.footer!),
-                ],
               ],
             );
           },

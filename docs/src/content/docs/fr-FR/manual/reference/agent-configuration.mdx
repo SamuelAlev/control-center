@@ -2,7 +2,7 @@
 title: Configuration des agents
 description: Tous les champs de l’entité agent et les énumérations qu’elle utilise.
 slug: fr-FR/manuel/reference/configuration-des-agents
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Cette référence énumère tous les champs de l’entité agent, ainsi que les énumérations et les indicateurs qu’elle utilise. Pour un pas à pas de création ou de modification d’un agent dans l’application, consultez [Créer et configurer un agent](/fr-FR/manuel/guides/creer-agent/).
@@ -26,7 +26,6 @@ Cette référence énumère tous les champs de l’entité agent, ainsi que les 
 | `effort`                | `String?`              | Non         | Identifiant du niveau de raisonnement (par ex. `'low'`, `'xhigh'`), tiré des `thinkingLevels` du modèle sélectionné                                                                               |
 | `contextSize`           | `int?`                 | Non         | Taille maximale de la fenêtre de contexte                                                                                                                                                         |
 | `role`                  | `AgentRole?`           | Non         | Rôle de l’agent                                                                                                                                                                                   |
-| `capabilities`          | `AgentCapabilities?`   | Non         | Valeur par défaut des capacités propre à l’agent ; lorsqu’elle est nulle, la valeur par défaut du niveau utilisateur s’applique au lancement et une conversation peut encore la remplacer         |
 | `monthlyBudgetCents`    | `int`                  | Non         | Plafond de dépenses mensuelles en cents (par défaut `0`, illimité)                                                                                                                                |
 | `silenceTimeoutMinutes` | `int?`                 | Non         | Remplacement du délai de silence en minutes ; doit être nul ou compris entre 1 et 240 (vérifié par le constructeur)                                                                               |
 | `maxConcurrentTasks`    | `int`                  | Non         | Par défaut `1`. Chiffre de capacité que rapporte le modèle de présence (les décomptes d’exécutions en cours et en file d’attente y sont comparés)                                                 |
@@ -68,18 +67,9 @@ Cette référence énumère tous les champs de l’entité agent, ainsi que les 
 | `paused`   | Défini par l’arrêt net du budget. Affiché dans la liste de présence ; le lancement accepte toujours du travail |
 | `archived` | Retiré et masqué des listes de présence actives                                                                |
 
-## Indicateurs d’AgentCapabilities
+## Autorisations
 
-Résolus à chaque lancement : la valeur par défaut de l’agent, avec repli sur la valeur par défaut du niveau utilisateur lorsqu’elle est nulle, puis un remplacement propre à la conversation par-dessus. Appliqués par l’absence — le courtier d’identifiants ne génère ni n’injecte ce que couvre une capacité désactivée.
-
-| Indicateur         | Type   | Par défaut | Description                                                                                                              |
-| ------------------ | ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `canPushToRepo`    | `bool` | `false`    | Pousser des commits vers le dépôt distant ; conditionne l’injection du jeton GitHub aux côtés de `canCallGitHubApi`      |
-| `canCallGitHubApi` | `bool` | `false`    | Appeler api.github.com ; conditionne l’injection de `GH_TOKEN` et les domaines de sortie GitHub                          |
-| `canCallTicketing` | `bool` | `false`    | Appeler l’API du fournisseur de tickets ; conditionne l’injection de la clé API du fournisseur et ses domaines de sortie |
-| `canAccessNetwork` | `bool` | `true`     | Sortie réseau arbitraire. Conditionne aussi les outils `web_fetch` et `web_search` du harnais                            |
-
-`AgentCapabilities.safeDefault` correspond aux quatre valeurs par défaut du constructeur. `legacyDefault` (les quatre à vrai) n’est utilisé que par la migration qui a rétro-rempli les conversations créées avant l’existence des capacités. Un blob stocké malformé ou vide est interprété comme `safeDefault` ; la clé héritée `canCallLinear` est lue comme `canCallTicketing`.
+Un agent ne porte aucun indicateur d’autorisation. Pousser, ouvrir et publier des pull requests, écrire dans un outil de suivi et la sortie réseau sont des classes d’action (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) que les [garde-fous](/fr-FR/manuel/concepts/garde-fous/) résolvent à la portée de l’espace de travail, de l’agent ou de l’espace. Le jeton GitHub d’une exécution est toujours limité à la lecture ; les push passent par la passerelle d’exécution d’agent, qui interroge la règle `gitPush` avant de les transmettre.
 
 ## AgentSkills
 

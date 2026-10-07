@@ -2,7 +2,7 @@
 title: Rào chắn — một chính sách cho mọi hành động gây thay đổi
 description: Vì sao Control Center đưa mọi tác động phụ của agent qua một cỗ máy cho phép/hỏi trước/từ chối duy nhất, cách hệ phân loại ActionClass cố ý giữ nhỏ, và núm tự chủ thực sự thay đổi điều gì.
 slug: vi-VN/so-tay/khai-niem/rao-chan
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agent trong Control Center có thể xóa tệp, push nhánh, xuất bản pull request
@@ -238,8 +238,7 @@ báo rằng các công cụ tệp trong tiến trình của nó **không** đư�
 sandbox — bề mặt công cụ và cỗ máy chính sách này là ranh giới hệ thống tệp duy
 nhất mà nó có. Claude Code khai báo rằng các lời gọi công cụ của chính nó
 **không** chặn được, vì nó được khởi chạy với `--dangerously-skip-permissions`;
-Control Center chỉ thấy các lời gọi `mcp__*` của nó, còn các công cụ đọc, ghi,
-sửa và shell của chính nó chạy mà không bị nhìn thấy.
+Control Center thấy các lời gọi `mcp__*` của nó và, qua một hook, các dòng lệnh `Bash` của nó, còn các công cụ đọc, ghi và sửa của chính nó chạy mà không bị nhìn thấy.
 
 Màn hình cài đặt hiển thị ma trận này, bởi vì thất bại không thể tha thứ duy
 nhất của một hệ thống rào chắn là tuyên bố có một phạm vi bao phủ không hề tồn

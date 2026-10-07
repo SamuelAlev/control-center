@@ -705,7 +705,7 @@ class _BulkActionBar extends ConsumerWidget {
                       title: ticketPriorityLabel(l10n, p),
                       onTap: () {
                         for (final id in ids) {
-                          patchTicketOptimistic(
+                          patchTicketFields(
                             ref,
                             workspaceId: workspaceId,
                             ticketId: id,
@@ -818,7 +818,7 @@ class _BulkActionBar extends ConsumerWidget {
                         onTap: () {
                           for (final tk in selectedTickets) {
                             if (!tk.labels.contains(label)) {
-                              patchTicketOptimistic(
+                              patchTicketFields(
                                 ref,
                                 workspaceId: workspaceId,
                                 ticketId: tk.id,
@@ -842,7 +842,7 @@ class _BulkActionBar extends ConsumerWidget {
                       title: l10n.clearLabels,
                       onTap: () {
                         for (final id in ids) {
-                          patchTicketOptimistic(
+                          patchTicketFields(
                             ref,
                             workspaceId: workspaceId,
                             ticketId: id,

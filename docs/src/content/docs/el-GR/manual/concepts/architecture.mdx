@@ -3,7 +3,7 @@ title: Αρχιτεκτονική
 description: Πώς είναι δομημένο το Control Center, με μοντέλο λεπτού πελάτη πάνω από διακομιστή, Καθαρή Αρχιτεκτονική με προτεραιότητα στα χαρακτηριστικά και θύρες και προσαρμογείς.
 dateModified: 2026-09-19
 slug: el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Επισκόπηση
@@ -58,7 +58,7 @@ feature_name/
 - Βασικές οντότητες: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Ταυτότητα και συνεργασία: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Οντότητες μνήμης: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Κοινά αντικείμενα τιμής: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Κοινά αντικείμενα τιμής: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Κοινές θύρες: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Υπηρεσίες τομέα: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + τύποι συμβάντων (χώρου εργασίας/πράκτορα, PR/κριτικής, μηνυμάτων, εισιτηρίων, pipeline, ενορχήστρωσης, μνήμης, ημερολογίου/συσκέψεων, ταυτότητας και ιδιότητας μέλους, παρατηρησιμότητας)

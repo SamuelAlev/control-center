@@ -2,7 +2,7 @@
 title: Modi
 description: Warum ein Bereich und nicht ein Agent einen Modus trägt, was jeder der vier Modi zusichert und wo diese Zusicherung strukturell gilt, statt nur im Prompt zu stehen.
 slug: de-DE/handbuch/konzepte/modi
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Was ein Modus ist
@@ -77,7 +77,7 @@ Die Auflösung selbst ist einfach. Der Dispatcher liest die Spalte `mode` des Be
 
 Die Werkzeugfläche eines Modus baut und erzwingt der **eingebaute Harness**. Nur dieser Transport kann ein Werkzeug unsichtbar machen, statt es bloß zu verweigern, jeden Aufruf vor der Ausführung durch ein Tor schicken und einen Abschlussvertrag beobachten.
 
-Auf dem Transport Claude Code wird ein Modus außer Chat als `--permission-mode plan` übergeben. Claude hält sich daran per Konvention. Seine eigenen Werkzeuge zum Lesen, Schreiben, Bearbeiten und für die Shell laufen ungesehen. Für diesen Transport ist der Modus eine Vorgabe und keine Grenze von Control Center. Siehe [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/).
+Auf dem Transport Claude Code wird ein Modus außer Chat als `--permission-mode plan` übergeben. Claude hält sich daran per Konvention. Seine eigenen Werkzeuge zum Lesen, Schreiben und Bearbeiten laufen ungesehen, und seine Shell-Befehle prüft nur ein Hook, der die Befehlszeile liest. Für diesen Transport ist der Modus eine Vorgabe und keine Grenze von Control Center. Siehe [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/).
 
 Die Zulassungslisten beschränken Werkzeuge ab der Schreibstufe. Die Lesestufe des eingebauten Harness erreicht weiterhin Werkzeuge, die keine Liste nennt. Auf Claude Code wird ein Werkzeug, das die Zulassungsliste auslässt, verweigert, ob der Server es hat oder nicht.
 

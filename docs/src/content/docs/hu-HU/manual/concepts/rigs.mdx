@@ -2,7 +2,7 @@
 title: Állomások és elszigetelt környezetek
 description: Miért kapnak az ügynökök eldobható gépeket a számítógépe helyett – az elszigetelési határok, a megjelenítési sávok, a hitelesítő adatok, a portok és az életciklus.
 slug: hu-HU/kezikonyv/fogalmak/allomasok
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Az **állomás** egy eldobható gép, amelyet egy ügynök valós időben vezérel – egy
@@ -171,7 +171,7 @@ mekkora volt – soha nem azt, hogy mit tartalmazott.
 
 ## A hitelesítő adatok soha nem a vendéggépen élnek
 
-A `git push` működik az elszigetelt terminálból, a vendéggép mégsem tárol
+A `git push` működik az Ön által megnyitott elszigetelt terminálból, a vendéggép mégsem tárol
 egyetlen kódhosting-tokent sem. Egyetlen, VM-enkénti titkot tárol, amelynek
 egyetlen jogosultsága, hogy *elkérjen* a gazdagép hitelesítőadat-közvetítőjétől
 – egy, a gazdagép által vezérelt alagúton keresztül – egy rövid életű, repóra
@@ -179,6 +179,14 @@ korlátozott tokent, műveletenként, sebességkorlátozással, ugyanazzal a
 gazdagép-engedélylistával korlátozva, mint a kimenő forgalom, és visszavonva
 abban a pillanatban, hogy az állomás bezárul. Egy eldobásra épített gépben nem
 lehet semmi, amit érdemes ellopni.
+
+Hogy ez a token mire jogosult, az állomás megnyitásakor dől el. Egy ember által
+megnyitott terminálállomás írási tokent kap, amelyet az adott tag saját
+kódhosting-hozzáférése korlátoz. Egy ügynök által megnyitott állomás csak
+olvasásra jogosult tokent kap: a git hitelesítőadat-segédje nem tud különbséget
+tenni push és fetch között, így a push-szabályt a vendéggépen belül nem lehet
+pushonként megkérdezni úgy, ahogy az ügynökfuttatási átjáró teszi a
+gazdagépen.
 
 ## Az állomásban lévő worktree egy műhold
 

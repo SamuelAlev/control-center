@@ -1,4 +1,6 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
+import 'dart:convert';
+
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
@@ -29,7 +31,7 @@ class RigSpec {
     this.slotId,
     this.agentId,
     this.openedByUserId,
-    this.capabilities = AgentCapabilities.safeDefault,
+    this.forgeTokenScope = ForgeTokenScope.read,
     this.repoOwner,
     this.repoName,
     this.homeTheme,
@@ -69,7 +71,7 @@ class RigSpec {
     EnclosureBackend? backend,
     int memoryMb = 512,
     int cpuCount = 2,
-    AgentCapabilities capabilities = AgentCapabilities.safeDefault,
+    ForgeTokenScope forgeTokenScope = ForgeTokenScope.read,
     String? repoOwner,
     String? repoName,
     String? openedByUserId,
@@ -85,7 +87,7 @@ class RigSpec {
     worktreePath: worktreePath,
     imageId: execImageId,
     conversationId: conversationId,
-    capabilities: capabilities,
+    forgeTokenScope: forgeTokenScope,
     repoOwner: repoOwner,
     repoName: repoName,
     openedByUserId: openedByUserId,
@@ -196,14 +198,15 @@ class RigSpec {
   /// server's own identity.
   final String? openedByUserId;
 
-  /// What the credential broker may mint for this rig.
+  /// What the rig's credential endpoint may mint for its guest.
   ///
-  /// Defaults to [AgentCapabilities.safeDefault], which grants NOTHING — the
-  /// broker then has no token to hand over and says so. That is the correct
-  /// floor for an agent-opened rig: an enclosure does not get push rights
-  /// because it exists. A terminal rig inherits the operator's own
-  /// capabilities, which is what makes `git push` work there.
-  final AgentCapabilities capabilities;
+  /// Defaults to [ForgeTokenScope.read]: an enclosure does not get push rights
+  /// because it exists. A git credential helper cannot tell a push from a
+  /// fetch, so the push rule cannot be consulted per push inside a guest the
+  /// way the agent run gateway does on the host — the scope is fixed when the
+  /// rig opens instead. A terminal rig is a human at a shell and carries
+  /// [ForgeTokenScope.write], which is what makes `git push` work there.
+  final ForgeTokenScope forgeTokenScope;
 
   /// The repo a scoped credential should be minted for, when known. Without
   /// it the GitHub broker cannot mint a fine-grained token and falls back to
@@ -243,7 +246,7 @@ class RigSpec {
     String? slotId,
     String? agentId,
     String? openedByUserId,
-    AgentCapabilities? capabilities,
+    ForgeTokenScope? forgeTokenScope,
     String? repoOwner,
     String? repoName,
     RigBrowserHomeTheme? homeTheme,
@@ -264,7 +267,7 @@ class RigSpec {
     slotId: slotId ?? this.slotId,
     agentId: agentId ?? this.agentId,
     openedByUserId: openedByUserId ?? this.openedByUserId,
-    capabilities: capabilities ?? this.capabilities,
+    forgeTokenScope: forgeTokenScope ?? this.forgeTokenScope,
     repoOwner: repoOwner ?? this.repoOwner,
     repoName: repoName ?? this.repoName,
     homeTheme: homeTheme ?? this.homeTheme,
@@ -288,7 +291,7 @@ class RigSpec {
     if (slotId != null) 'slotId': slotId,
     if (agentId != null) 'agentId': agentId,
     if (openedByUserId != null) 'openedByUserId': openedByUserId,
-    'capabilities': capabilities.toJsonString(),
+    'forgeTokenScope': forgeTokenScope.name,
     if (repoOwner != null) 'repoOwner': repoOwner,
     if (repoName != null) 'repoName': repoName,
     if (homeTheme != null) 'homeTheme': homeTheme!.wire,
@@ -335,9 +338,7 @@ class RigSpec {
       slotId: json['slotId'] as String?,
       agentId: json['agentId'] as String?,
       openedByUserId: json['openedByUserId'] as String?,
-      capabilities: json['capabilities'] is String
-          ? AgentCapabilities.fromJsonString(json['capabilities'] as String)
-          : AgentCapabilities.safeDefault,
+      forgeTokenScope: _forgeTokenScopeFromJson(json),
       repoOwner: json['repoOwner'] as String?,
       repoName: json['repoName'] as String?,
       homeTheme: RigBrowserHomeTheme.fromWire(json['homeTheme'] as String?),
@@ -413,7 +414,7 @@ class RigSpec {
         conversationId == other.conversationId &&
         slotId == other.slotId &&
         agentId == other.agentId &&
-        capabilities == other.capabilities &&
+        forgeTokenScope == other.forgeTokenScope &&
         repoOwner == other.repoOwner &&
         repoName == other.repoName;
   }
@@ -435,7 +436,7 @@ class RigSpec {
     conversationId,
     slotId,
     agentId,
-    capabilities,
+    forgeTokenScope,
     repoOwner,
     repoName,
   );
@@ -496,4 +497,28 @@ class RigSpec {
     }
     return true;
   }
+}
+
+/// Reads [RigSpec.forgeTokenScope], accepting the `capabilities` blob specs
+/// were written with before the scope existed: a spec that could push keeps
+/// [ForgeTokenScope.write] across the upgrade.
+ForgeTokenScope _forgeTokenScopeFromJson(Map<String, dynamic> json) {
+  final wire = json['forgeTokenScope'];
+  for (final scope in ForgeTokenScope.values) {
+    if (scope.name == wire) {
+      return scope;
+    }
+  }
+  final legacy = json['capabilities'];
+  if (legacy is String) {
+    try {
+      final decoded = jsonDecode(legacy);
+      if (decoded is Map && decoded['canPushToRepo'] == true) {
+        return ForgeTokenScope.write;
+      }
+    } on FormatException {
+      // A corrupt legacy blob grants nothing beyond the default.
+    }
+  }
+  return ForgeTokenScope.read;
 }

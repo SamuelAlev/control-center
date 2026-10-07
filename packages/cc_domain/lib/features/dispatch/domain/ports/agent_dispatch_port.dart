@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart'
     show AgentRunLog;
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart'
-    show ClaudeAccountRefusal;
+    show AccountPoolOrder, AccountPoolRefusal;
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
@@ -49,6 +49,10 @@ abstract interface class AgentDispatchPort {
   /// [claudeConfigDir] names the Claude credential directory; other adapters
   /// ignore it. Null lets the CLI find its own account, which on macOS reads
   /// as logged out because the sandbox denies the keychain.
+  /// [contextWindowTokens] is the agent's configured context window in tokens;
+  /// a runner that sizes its own window (the built-in harness) caps it there,
+  /// and every runner reports usage against it. Null leaves the model's window
+  /// in charge.
   /// Returns a [DispatchHandle] whose `dispatchId` stops only this dispatch.
   DispatchHandle start({
     required String cliName,
@@ -70,6 +74,7 @@ abstract interface class AgentDispatchPort {
     Map<String, String>? environment,
     List<String>? imagePaths,
     String? effortLevel,
+    int? contextWindowTokens,
     String? agentConfigDir,
     List<String>? adapterArgsOverride,
     Map<String, String>? adapterEnvOverride,
@@ -79,8 +84,8 @@ abstract interface class AgentDispatchPort {
     onClaudeAccountExhausted,
     Future<void> Function({required String accountId, String? reason})?
     onClaudeAccountAuthFailed,
-    ClaudeAccountRefusal? claudeAccountsSpent,
-    Future<List<String>?> Function({
+    AccountPoolRefusal? claudeAccountsSpent,
+    Future<AccountPoolOrder> Function({
       String? workspaceId,
       String? agentId,
       required String providerId,

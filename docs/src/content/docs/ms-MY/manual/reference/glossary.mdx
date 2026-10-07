@@ -2,7 +2,7 @@
 title: Glosari
 description: Takrif istilah penting yang digunakan di seluruh Control Center.
 slug: ms-MY/manual-pengguna/rujukan/glosari
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Ejen', 'Pekerja AI dengan identiti, peranan, kemahiran dan keupayaan. Tergolong dalam tepat satu ruang kerja. Pelaku utama dalam sistem.'],
+['Ejen', 'Pekerja AI dengan identiti, peranan, kemahiran dan penyesuai. Tergolong dalam tepat satu ruang kerja. Pelaku utama dalam sistem.'],
 ['Penyesuai', 'Pelari yang melaksanakan satu giliran ejen. Dua disertakan: Control Center (terbina) — harness dalam proses yang bercakap dengan penyedia model — dan Claude Code melalui CLI claude. Cursor, Codex dan penyedia model lain menyertai penyesuai terbina, bukan sebagai pelari berasingan.'],
 ['Ruang kerja', 'Penyewa pengasingan peringkat teratas. Mengelompokkan ejen, repo, ruang, tiket, memori dan pipeline. Pengasingan bersifat struktur, bukan konvensyen: setiap ruang kerja mempunyai fail SQLite sendiri, jadi bacaan merentas ruang kerja tidak dapat dikompil. Setiap laluan dalam apl diawali dengan /workspaces/:workspaceId.'],
 ['Forge', 'Hos kod — GitHub, GitLab atau Bitbucket Cloud. Properti setiap repo, dibaca daripada remote origin semasa pendaftaran. Satu ruang kerja boleh memegang repo pada ketiga-tiganya.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Set pengenal kemahiran yang tidak sensitif huruf besar-kecil yang menyuntik konteks berkaitan ke dalam prompt semasa penghantaran.'],
 ['Sumber kemahiran', 'Repositori GitHub yang didaftarkan bagi setiap ruang kerja sebagai katalog kemahiran. Tidak dipercayai secara binaan: metadata repositori itu hanya untuk paparan dan setiap pemasangan melalui pintu imbasan gagal-tertutup sebelum sebarang kandungan sampai ke cakera atau prompt.'],
 ['skills-lock.json', 'Manifes kemahiran yang dipasang bagi setiap ruang kerja: bagi setiap satu, repositori sumbernya, laluan dalam repo, commit yang dipinkan padanya dan hash kandungan terkumpul. Pemasangan, kemas kini dan nyahpasang menjaganya terkini; verify_skills menyemaknya terhadap cakera.'],
-['AgentCapabilities', 'Empat bendera (push ke repo, API GitHub, penetikan, keluar rangkaian) diselesaikan bagi setiap penghantaran: lalai ejen, kemudian lalai pengguna, dengan penggantian bagi setiap perbualan. Dikuatkuasakan melalui ketiadaan, kerana keupayaan yang dilumpuhkan bermakna token atau keluar itu semata-mata tidak pernah disuntik.'],
+['Gerbang larian ejen', 'Titik akhir loopback pada cc_server yang menerapkan polisi tindakan di dalam kotak pasir ejen. Setiap push GitHub yang dibuat ejen dihalakan ke situ, disemak terhadap peraturan Push ke remote dan dimajukan dengan token tulis yang tidak pernah dipegang ejen; perintah Bash Claude Code disemak melalui hook pada titik akhir yang sama.'],
 ['Modus', 'chat, plan, review, atau orchestrate. Disimpan mengikut ruang, jadi satu ejen boleh berada dalam modus berbeza dalam ruang berbeza; setiap perbualan dalam satu ruang berkongsinya. Mengawal prompt sistem, peraturan tulis kotak pasir dan senarai izin alat MCP.'],
 ['SandboxBackend', 'microvm (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), native (Seatbelt natif OS pada macOS, bubblewrap pada Linux dan WSL2) atau none. Diprobe sekali semasa but; native membalut penghantaran ejen apabila tersedia. Windows tiada bahagian belakang natif dan Linux memerlukan bwrap serta socat, jadi larian di sana tidak dibalut; --sandbox off memilih untuk keluar secara sengaja.'],
 ['Stesen', 'Mesin pakai buang yang dipandu ejen secara masa nyata: penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan alat ejen menuju ke satu mesin yang sama.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.'],
 ['WakeReason', 'Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.'],
 ['SandboxPort', 'Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Menempa kelayakan berskop yang digerbangi keupayaan untuk pelancaran kotak pasir dan mencabutnya semasa pembongkaran.'],
+['CredentialBrokerPort', 'Menempa kelayakan berskop untuk pelancaran kotak pasir (baca sahaja untuk persekitaran ejen, tulis hanya untuk laluan push di pihak pelayan) dan mencabutnya semasa pembongkaran.'],
 ['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.'],
 ['EmbeddingPort', 'Menghasilkan vektor embedding teks bernorma unit untuk carian semantik.'],
 ['NotificationPort', 'Menunjukkan pemberitahuan desktop natif dengan menghormati gerbang kategori/laluan.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Entiti teras
 
-**Ejen**: Pekerja AI dengan identiti, peranan, kemahiran dan keupayaan. Tergolong dalam tepat satu ruang kerja. Pelaku utama dalam sistem.
+**Ejen**: Pekerja AI dengan identiti, peranan, kemahiran dan penyesuai. Tergolong dalam tepat satu ruang kerja. Pelaku utama dalam sistem.
 
 **Penyesuai**: Pelari yang melaksanakan satu giliran ejen. Dua disertakan: **Control Center (terbina)** — harness dalam proses yang bercakap dengan penyedia model — dan **Claude Code** melalui `claude -p`. Cursor, Codex, Anthropic, OpenAI dan yang lain ialah penyedia pada penyesuai terbina, bukan CLI berasingan. Lihat [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifes kemahiran yang dipasang bagi setiap ruang kerja: bagi setiap satu, repositori sumbernya, laluan dalam repo, commit yang dipinkan padanya dan hash kandungan terkumpul. Pemasangan, kemas kini dan nyahpasang menjaganya terkini; `verify_skills` menyemaknya terhadap cakera.
 
-**AgentCapabilities**: Empat bendera (push ke repo, API GitHub, penetikan, keluar rangkaian) diselesaikan bagi setiap penghantaran — lalai ejen → lalai pengguna, dengan penggantian bagi setiap perbualan. Dikuatkuasakan melalui ketiadaan: keupayaan yang dilumpuhkan bermakna token atau keluar itu semata-mata tidak pernah disuntik.
+**Gerbang larian ejen**: Titik akhir loopback pada `cc_server` yang menerapkan polisi tindakan di dalam kotak pasir ejen. Setiap push GitHub yang dibuat ejen dihalakan ke situ, disemak terhadap peraturan **Push ke remote** dan dimajukan dengan token tulis yang tidak pernah dipegang ejen; perintah `Bash` Claude Code disemak melalui hook pada titik akhir yang sama. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
 
 **Modus**: `chat`, `plan`, `review`, atau `orchestrate`. Disimpan **mengikut ruang**, jadi satu ejen boleh berada dalam modus berbeza dalam ruang berbeza; setiap perbualan dalam satu ruang berkongsinya. Mengawal prompt sistem, peraturan tulis kotak pasir dan senarai izin alat MCP. Penggubah hanya menawarkan `chat`, `plan` dan `orchestrate`; `chat` dilabelkan "Ejen".
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Menempa kelayakan berskop yang digerbangi keupayaan untuk pelancaran kotak pasir dan mencabutnya semasa pembongkaran.
+**CredentialBrokerPort**: Menempa kelayakan berskop untuk pelancaran kotak pasir — baca sahaja untuk persekitaran ejen, tulis hanya untuk laluan push di pihak pelayan — dan mencabutnya semasa pembongkaran.
 
 **GitRepoInspectorPort**: Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.
 

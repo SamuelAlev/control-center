@@ -254,6 +254,106 @@ void main() {
     expect(richText.text.style?.fontSize, 13);
   });
 
+  group('CcToastObstruction', () {
+    const barKey = Key('save-bar');
+
+    Widget pane({required bool withBar}) => Column(
+      children: [
+        const Expanded(child: SizedBox.expand()),
+        if (withBar)
+          const CcToastObstruction(
+            child: SizedBox(key: barKey, height: 56, width: double.infinity),
+          ),
+      ],
+    );
+
+    Future<CcToastHandle> pumpPane(
+      WidgetTester tester, {
+      required ValueNotifier<bool> withBar,
+    }) async {
+      late CcToastHandle toaster;
+      await tester.pumpWidget(
+        ccTestApp(
+          CcToastScope(
+            duration: const Duration(minutes: 1),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: withBar,
+              builder: (context, value, _) {
+                toaster = CcToastScope.of(context);
+                return pane(withBar: value);
+              },
+            ),
+          ),
+        ),
+      );
+      return toaster;
+    }
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 250));
+      // The obstruction reports after paint; its relayout lands next frame.
+      await tester.pump();
+    }
+
+    Rect toastCard(WidgetTester tester, String message) => tester.getRect(
+      find
+          .ancestor(of: find.text(message), matching: find.byType(DecoratedBox))
+          .first,
+    );
+
+    testWidgets('lifts the stack clear of a pinned bar', (tester) async {
+      final withBar = ValueNotifier(true);
+      addTearDown(withBar.dispose);
+      final toaster = await pumpPane(tester, withBar: withBar);
+
+      toaster.show('Agent updated.');
+      toaster.show('Agent updated again.');
+      await settle(tester);
+
+      final bar = tester.getRect(find.byKey(barKey));
+      final newest = toastCard(tester, 'Agent updated again.');
+      expect(newest.bottom, lessThanOrEqualTo(bar.top));
+      expect(newest.overlaps(bar), isFalse);
+      expect(toastCard(tester, 'Agent updated.').overlaps(bar), isFalse);
+    });
+
+    testWidgets('returns to the corner once the bar is gone', (tester) async {
+      final withBar = ValueNotifier(true);
+      addTearDown(withBar.dispose);
+      final toaster = await pumpPane(tester, withBar: withBar);
+
+      toaster.show('Saved');
+      await settle(tester);
+      final lifted = toastCard(tester, 'Saved');
+
+      withBar.value = false;
+      await settle(tester);
+      final resting = toastCard(tester, 'Saved');
+
+      final screen = tester.getRect(find.byType(CcToastScope));
+      expect(resting.bottom, greaterThan(lifted.bottom));
+      expect(resting.bottom, closeTo(screen.bottom - AppSpacing.lg, 0.5));
+    });
+
+    testWidgets('leaves toasts alone when nothing is in the way', (
+      tester,
+    ) async {
+      final withBar = ValueNotifier(false);
+      addTearDown(withBar.dispose);
+      final toaster = await pumpPane(tester, withBar: withBar);
+
+      toaster.show('Saved');
+      await settle(tester);
+
+      final screen = tester.getRect(find.byType(CcToastScope));
+      final card = toastCard(tester, 'Saved');
+      expect(card.bottom, closeTo(screen.bottom - AppSpacing.lg, 0.5));
+      expect(card.right, closeTo(screen.right - AppSpacing.lg, 0.5));
+    });
+  });
+
   testWidgets('CcToastScope.maybeOf returns null with no scope ancestor', (
     tester,
   ) async {

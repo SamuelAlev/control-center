@@ -1,20 +1,20 @@
 ---
 title: Sandboxbeleid configureren
-description: Wat een agentrun begrenst, hoe je ziet of de OS-sandbox hem omhult en welke mogelijkheidsinstellingen de server werkelijk leest.
+description: Wat een agentrun begrenst, hoe je ziet of de OS-sandbox hem omhult en hoe de actieregels bepalen wat een agent mag pushen of bereiken.
 slug: nl-NL/handleiding/gidsen/sandboxbeleid
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Of een agentrun in een sandbox draait, wordt op de server beslist, bij het
-opstarten (`--sandbox`). De schakelaar **Sandboxing inschakelen**, de kiezer
-**Backend** en de schakelaars **Standaardmogelijkheden · nieuwe gesprekken**
-onder **Instellingen → Server → Diagnose en privacy** zijn voorkeuren die op je
-apparaat zijn opgeslagen. De hostdetectie van de kaart **Sandboxing** meldt wat
-de serverhost kan omhullen.
+opstarten (`--sandbox`). De schakelaar **Sandboxing inschakelen** en de kiezer
+**Backend** onder **Instellingen → Server → Diagnose en privacy** zijn voorkeuren
+die op je apparaat zijn opgeslagen. De hostdetectie van de kaart **Sandboxing**
+meldt wat de serverhost kan omhullen.
 
 Twee besturingselementen bereiken een run, en deze gids behandelt ze beide: de
-**Sandbox-machtigingen** per agent hieronder en de eigen `--sandbox`-vlag van de
-server.
+actieregels onder **Instellingen → Werkruimte → Agentmachtigingen**, die bepalen
+wat een agent mag pushen, openen of bereiken, en de eigen `--sandbox`-vlag van
+de server.
 
 ## Wat een agentrun begrenst
 
@@ -25,7 +25,7 @@ voorwaardelijke — de andere vijf gelden op elke host.
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | De OS-sandbox            | Seatbelt op macOS, bubblewrap op Linux en WSL2. Omhult de Claude Code CLI, ACP-adapters en de `bash`-tool van de harness. **Ontbreekt op Windows en op Linux zonder `bwrap` en `socat`**                                                                                                  |
 | Zijn eigen worktree      | Elk gesprek krijgt een copy-on-write-checkout. De oorspronkelijke checkout wordt als deny-write-pad in de run opgenomen, en de sandbox is wat dat afdwingt                                                                                                                                  |
-| Inloggegevens via de broker | De inloggegevensbroker maakt per run een omgeving aan op basis van de mogelijkheden van de agent en trekt die weer in bij het afbreken. Geen mogelijkheid, geen token in de omgeving                                                                                                      |
+| Inloggegevens via de broker | De inloggegevensbroker maakt per run een omgeving aan en trekt die weer in bij het afbreken. Het GitHub-token daarin kan lezen maar niet pushen: een push loopt via Control Center, dat eerst de pushregel raadpleegt |
 | Actiebeveiligingen       | Elke muterende tool verklaart zijn effectklassen en de beveiliging herleidt ze voordat de aanroep draait. Een `prompt` zonder verbonden goedkeurder wordt geweigerd                                                                                                                        |
 | Sanering van de omgeving | ACP en de `bash`-tool van de harness krijgen een gefilterde omgeving. Claude Code via `NoSandboxAdapter` erft de omgeving van de host                                                                                                                                                       |
 | Het tooloppervlak van de modus | Een alleen-lezen modus haalt de worktree-muterende tools volledig weg en zet het eigen uitvoerwerkwoord van de modus vast, zodat die toch kan opleveren                                                                                                                               |
@@ -36,9 +36,7 @@ Drie dingen blijven zwakker dan ze lijken:
   structurele modusregels. De Claude Code-adapter doet dat niet. Claude
   Code wordt in het bijzonder gestart met `--dangerously-skip-permissions`,
   omdat een niet-interactieve `claude -p` anders voor altijd blijft hangen op
-  zijn eigen prompt — de lees-, schrijf-, bewerkings- en bash-aanroepen van
-  Claude zelf worden dus niet door Control Center gezien of door een poort
-  gehaald. Waar de sandbox aan staat, is die de grens eromheen.
+  zijn eigen prompt — de lees-, schrijf- en bewerkingsaanroepen van Claude zelf worden dus niet door Control Center gezien of door een poort gehaald, en zijn bash-opdrachten controleert alleen een hook die de opdrachtregel leest. Waar de sandbox aan staat, is die de grens eromheen.
 - De in-process bestandstools van de harness (read, write, edit, apply patch,
   search, find, search_files) draaien in het serverproces, dus geen enkel
   sandboxprofiel beperkt ze. Alleen de `bash`-tool gaat door de gesandboxte
@@ -49,45 +47,64 @@ Drie dingen blijven zwakker dan ze lijken:
   opdrachtbeleid; Claude Code erft via `NoSandboxAdapter` de omgeving van de
   host. De server zegt dat in zijn opstartlog. Controleer het jouwe hieronder.
 
-## De mogelijkheden van een agent instellen
+## Bepalen wat een agent mag pushen
 
-Dit is de enige mogelijkheidsinstelling die de server leest. Ze geldt per agent
-en bepaalt wat de inloggegevensbroker in de omgeving van die agent zet.
+Er is geen schakelaar per agent voor git push, GitHub, ticketing of het netwerk.
+Elk daarvan is een actieregel:
 
-1. Ga naar **Instellingen → Werkruimte → Agenten**
-2. Selecteer de agent in de lijst
-3. Scrol op het tabblad **Instellingen** naar **Sandbox-machtigingen**
-4. Zet de schakelaar aan — het bijschrift van de rij verandert van **Werkruimtestandaard gebruiken**
-5. Stel de vier schakelaars in:
+| Regel                                 | Standaardwaarde | Wat die dekt                                                                  |
+| ------------------------------------- | --------------- | ----------------------------------------------------------------------------- |
+| **Naar een remote pushen**            | Eerst vragen    | Elke `git push` naar GitHub, welke adapter ook                                |
+| **Een pull request openen**           | Eerst vragen    | `gh pr create` en de pull-requesttools                                        |
+| **Een review publiceren of mergen**   | Eerst vragen    | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                 |
+| **Naar een externe tracker schrijven** | Eerst vragen   | Ticketschrijfacties via de tools van Control Center en `gh issue`             |
+| **Toegang tot het netwerk**           | Toestaan        | Of de sandbox überhaupt een netwerk heeft, en de webtools van de harness      |
 
-| Schakelaar                       | Wat die regelt                                                                                                                                                                                                                                                                                                                     |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **git push toestaan**            | Staat dit uit, dan krijgt de run `GIT_ASKPASS=/usr/bin/false` en `GIT_TERMINAL_PROMPT=0`, zodat een push niet om inloggegevens kan vragen                                                                                                                                |
-| **GitHub API-aanroepen toestaan** | Bepaalt samen met **git push toestaan** of de broker het GitHub-token als `GH_TOKEN` / `GITHUB_TOKEN` injecteert                                                                                                                                                     |
-| **Ticketing-API-aanroepen toestaan** | Bepaalt of de broker `TICKETING_API_KEY` injecteert                                                                                                                                                                                                              |
-| **Algemene netwerktoegang toestaan** | Waar de sandbox aan staat, is dit een echte uitgaandepoort: staat hij uit, dan is de toelatingslijst van de run leeg en wordt elk uitgaand verzoek bij de proxy geweigerd. Waar geen backend is, wordt het wel op de run vastgelegd, maar houdt het niets tegen wat een gestart proces doet |
+1. Ga naar **Instellingen → Werkruimte → Agentmachtigingen**
+2. Kies het bereik — **Werkruimte**, **Agent** of **Ruimte** — en kies op de rij
+   van de regel **Toestaan**, **Eerst vragen** of **Weigeren**
 
-6. Opslaan
+Pushregels die tot branches zijn beperkt, zoals een regel die pushes naar `main`
+weigert, gelden ook: zie [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/).
 
-Controlepunt: open de agent opnieuw en de schakelaar staat nog aan met jouw
-instellingen — een opgeslagen set mogelijkheden reist heen en weer via de server
-en een agent zonder set valt terug op de conservatieve standaard (push uit,
-GitHub API uit, ticketing uit, netwerk aan).
+Controlepunt: vraag de agent een branch te pushen. Bij **Eerst vragen** krijg je
+een goedkeuringsverzoek met de repo en de refs; bij **Weigeren** toont git
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Twee valkuilen hier]
-Het bijschrift zegt **Werkruimtestandaard gebruiken**, maar er is geen
-mogelijkheidsinstelling op werkruimteniveau die de server leest. Een agent met
-de schakelaar uit krijgt de ingebouwde conservatieve standaard.
+Hoe elke regel de run bereikt:
 
-Daarnaast zijn de GitHub-inloggegevens van de run altijd die van de broker — een
-tot de repo beperkt installatietoken van de GitHub App, of de terugvaloptie met
-een PAT uit de omgeving — nooit het eigen opgeslagen token van het aanvragende
-lid. `actingUserId` wordt meegegeven zodat de broker de server-PAT kan
-*achterhouden* voor een lid dat niet de eigenaar is en GitHub niet heeft
-gekoppeld; het voegt geen persoonlijk token samen over een mogelijkheid die uit
-staat. Zie **GitHub API-aanroepen toestaan** niet als een harde uitgaandegrens
-op een host zonder OS-sandbox: een gestart proces kan het netwerk nog steeds
-bereiken.
+- **Pushen** wordt afgedwongen via wat de run bezit. Het GitHub-token is een
+  installatietoken van de GitHub App met alleen leesrechten, dat inhoud kan
+  lezen en met pull requests kan werken. De git-configuratie stuurt elke
+  GitHub-push naar een loopback-gateway op `cc_server`, die de regel raadpleegt
+  en de push pas daarna doorstuurt met een schrijftoken dat de agent nooit ziet.
+  De gateway stuurt alleen door naar de eigen repo van de worktree of naar een
+  aan de werkruimte gekoppelde GitHub-repo. Dit geldt voor elke adapter.
+- **Pull requests en issues vanuit een shell** worden herkend aan de
+  opdrachtregel, in de `bash`-tool van de harness en, via een hook, in de
+  `Bash`-tool van Claude Code. Een agent die de opdracht verbergt (een script,
+  `eval`, een directe API-aanroep) komt langs deze controle, maar niet langs de
+  push-gateway.
+- **Ticketingsleutels** komen nooit in de sandbox. Agenten schrijven tickets via
+  de MCP-tools van Control Center, die de regel raadplegen.
+- **Netwerk** wordt één keer bepaald, wanneer de run start. **Weigeren** zet het
+  netwerk van de sandbox uit; **Toestaan** en **Eerst vragen** laten het aan, en
+  bij **Eerst vragen** blijven de tools `web_fetch` en `web_search` van de
+  harness bij elke aanroep vragen. Zolang het netwerk aan staat, staat GitHub
+  altijd op de uitgaande allowlist.
+
+:::caution[Zonder GitHub App is de pushregel alleen een advies]
+Zonder geconfigureerde GitHub App krijgt de run het personal access token als
+terugval, dat niet tot alleen lezen kan worden beperkt. `git push` loopt nog
+steeds via de gateway en de regel, maar code die het token rechtstreeks
+gebruikt, kan eromheen pushen. Configureer de GitHub App om de regel bindend te
+maken.
+
+De GitHub-inloggegevens van de run zijn altijd die van de broker — een tot de
+repo beperkt installatietoken van de GitHub App, of de PAT als terugval — nooit
+het eigen opgeslagen token van het aanvragende lid. De server-PAT wordt
+achtergehouden voor een run die handelt voor een lid dat niet de eigenaar is en
+GitHub niet heeft gekoppeld.
 :::
 
 ## Controleren of je agentruns in een sandbox draaien
@@ -161,10 +178,13 @@ bereikresolutie.
 
 ### Een agent kan niet pushen en ik heb het nooit geweigerd
 
-Controleer de **Sandbox-machtigingen** van de agent. Een agent zonder eigen
-mogelijkhedenset krijgt de conservatieve standaard, waarin **git push toestaan**
-uit staat — de broker injecteert dus geen GitHub-token en git heeft geen manier
-om zich te authenticeren.
+Lees wat git heeft getoond. `Control Center policy: …` betekent dat een regel de
+push heeft geweigerd of dat een **Eerst vragen** onbeantwoord bleef.
+`… is not linked to this workspace` betekent dat de push gericht is op een repo
+die niet die van de worktree is en ook niet aan de werkruimte is gekoppeld.
+`Control Center has no GitHub credential that can push …` betekent dat de
+GitHub App niet op die repo is geïnstalleerd en dat geen terugvalgegeven kon
+pushen: installeer de App op die repo of koppel GitHub.
 
 ### De kaart Sandboxing meldt geen native sandbox
 

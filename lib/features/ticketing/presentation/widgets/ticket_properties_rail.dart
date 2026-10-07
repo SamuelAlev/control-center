@@ -160,7 +160,7 @@ class TicketPropertiesRail extends ConsumerWidget {
                                 ? const Icon(AppIcons.check, size: 16)
                                 : null,
                             onTap: () {
-                              patchTicketOptimistic(
+                              patchTicketFields(
                                 ref,
                                 workspaceId: workspaceId,
                                 ticketId: ticket.id,

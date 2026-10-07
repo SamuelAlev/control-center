@@ -217,12 +217,12 @@ void main() {
         'created_at': 'ca',
       });
       expect(dto.skills, ['s1']);
-      expect(dto.capabilities, {'k': 1});
       expect(dto.strictMode, isTrue);
       expect(dto.maxConcurrentTasks, 3);
       expect(dto.visibility, 'private');
       final out = dto.toJson();
-      expect(out['capabilities'], {'k': 1});
+      // A stale client's capability blob is dropped, not carried.
+      expect(out.containsKey('capabilities'), isFalse);
       expect(out['strict_mode'], isTrue);
     });
 

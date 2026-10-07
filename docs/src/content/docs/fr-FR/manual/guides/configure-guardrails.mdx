@@ -2,7 +2,7 @@
 title: Configurer les garde-fous
 description: Définissez des règles Autoriser, Demander d’abord et Refuser pour les actions des agents, testez-les avec la sonde « et si ? » et réglez l’autonomie de chaque espace.
 slug: fr-FR/manuel/guides/configurer-garde-fous
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Ce guide explique comment configurer les garde-fous : les règles qui déterminent
@@ -134,12 +134,14 @@ version dans l’application : pour chaque classe d’effet, il indique si chaqu
 exécuteur l’intercepte au niveau du contrôle par règle, la laisse au bac à sable,
 ou ne peut pas l’intercepter du tout.
 
-- **L’adaptateur Claude Code** n’est pas soumis au garde-fou pour ses propres
-  appels d’outils. Claude Code est lancé avec `--dangerously-skip-permissions`, si
-  bien que ses appels de lecture, d’écriture, d’édition et de bash ne passent
-  jamais par le garde-fou. Ce qui est soumis au garde-fou pour cet adaptateur,
-  c’est la surface d’outils MCP vers laquelle il rappelle et la commande shell que
-  Control Center lance pour le démarrer.
+- **L’adaptateur Claude Code** n’est que partiellement soumis au garde-fou pour
+  ses propres appels d’outils. Claude Code est lancé avec
+  `--dangerously-skip-permissions`, si bien que ses appels de lecture,
+  d’écriture et d’édition ne passent jamais par le garde-fou. Ses commandes bash
+  l’atteignent via un hook qui classe la ligne de commande, et ses push passent
+  par la passerelle de push comme ceux de tout agent. La surface d’outils MCP
+  vers laquelle il rappelle et la commande shell que Control Center lance pour
+  le démarrer sont également soumises au garde-fou.
 - **Le verbe de sortie propre à un mode** (`submit_plan`, `propose_orchestration`)
   est épinglé et ne peut jamais être refusé — sinon un mode serait structurellement
   incapable de produire son unique livrable.

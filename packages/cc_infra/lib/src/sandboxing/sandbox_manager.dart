@@ -188,6 +188,7 @@ class SandboxManager {
               sessionId: config.sessionId,
               httpProxyPort: session.httpProxy!.port,
               socksProxyPort: session.socksProxy!.port,
+              loopbackPorts: config.network.loopbackPorts,
             )
           : const LinuxBridgeHandles(processes: [], bridges: []);
       session.linuxBridges.add(bridgeHandles);

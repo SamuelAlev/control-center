@@ -2,7 +2,7 @@
 title: Glosarium
 description: Definisi istilah-istilah penting yang digunakan di seluruh Control Center.
 slug: id-ID/panduan-pengguna/referensi/glosarium
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agen', 'Pekerja AI dengan identitas, peran, skill, dan kemampuan. Tergolong tepat pada satu ruang kerja. Aktor utama dalam sistem.'],
+['Agen', 'Pekerja AI dengan identitas, peran, skill, dan adapter. Tergolong tepat pada satu ruang kerja. Aktor utama dalam sistem.'],
 ['Adapter', 'Runner yang menjalankan satu giliran agen. Dua yang disertakan: Control Center (built-in) — harness dalam proses yang berbicara ke penyedia model — dan Claude Code melalui CLI claude. Cursor, Codex, dan penyedia model lain menempel pada adapter bawaan, bukan sebagai runner terpisah.'],
 ['Ruang kerja', 'Penyewa isolasi tingkat teratas. Mengelompokkan agen, repo, space, tiket, memori, dan pipeline. Isolasinya struktural, bukan konvensional: setiap ruang kerja memiliki berkas SQLite sendiri, sehingga pembacaan lintas ruang kerja tidak dapat dikompilasi. Setiap rute di dalam aplikasi diberi awalan /workspaces/:workspaceId.'],
 ['Forge', 'Host kode — GitHub, GitLab, atau Bitbucket Cloud. Properti setiap repo, dibaca dari remote origin-nya saat pendaftaran. Satu ruang kerja dapat memuat repo pada ketiganya.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Himpunan pengenal skill yang tidak peka huruf besar-kecil yang menyuntikkan konteks relevan ke prompt pada saat pengiriman.'],
 ['Sumber skill', 'Repositori GitHub yang terdaftar per ruang kerja sebagai katalog skill. Tidak tepercaya secara desain: metadata repo hanya untuk tampilan dan setiap pemasangan melewati gerbang pemindaian fail-closed sebelum konten apa pun mencapai disk atau prompt.'],
 ['skills-lock.json', 'Manifest per ruang kerja berisi skill yang terpasang: untuk masing-masing, repositori sumbernya, jalur di dalam repo, commit tempat ia dipatok, dan hash konten gabungan. Pemasangan, pembaruan, dan penghapusan menjaganya tetap mutakhir; verify_skills memeriksanya terhadap disk.'],
-['AgentCapabilities', 'Empat flag (push ke repo, API GitHub, tiket, egress jaringan) yang diresolusi per pengiriman: default agen, lalu default pengguna, dengan penggantian per percakapan. Ditegakkan melalui ketiadaan, karena kemampuan yang dinonaktifkan berarti token atau egress memang tidak pernah disuntikkan.'],
+['Gateway run agen', 'Endpoint loopback di cc_server yang menerapkan kebijakan aksi di dalam sandbox agen. Setiap push GitHub yang dilakukan agen dialihkan ke sana, diperiksa terhadap aturan Push ke remote, dan diteruskan dengan token tulis yang tidak pernah dipegang agen; perintah Bash milik Claude Code diperiksa melalui hook di endpoint yang sama.'],
 ['Mode', 'chat, plan, review, atau orchestrate. Disimpan per space, sehingga satu agen dapat berada dalam mode berbeda di space berbeda; setiap percakapan di satu space berbagi mode itu. Menggerbangi prompt sistem, aturan tulis sandbox, dan daftar izin alat MCP.'],
 ['SandboxBackend', 'microvm (VM tertutup — satu-satunya backend dengan batas kernel, diterapkan pada terminal interaktif), native (Seatbelt bawaan OS di macOS, bubblewrap di Linux dan WSL2), atau none. Diprobe sekali saat boot; native membungkus pengiriman agen bila tersedia. Windows tidak memiliki backend native dan Linux membutuhkan bwrap plus socat, sehingga run di sana tidak terbungkus; --sandbox off memilih keluar secara sengaja.'],
 ['Rig', 'Mesin sekali pakai yang dikendalikan agen secara real time: browser atau desktop Linux tertutup, emulator Android atau Simulator iOS yang dikelola host, atau terminal tertutup. Dipantau langsung melalui jalur resolusi penuhnya sendiri, dengan pengambilalihan yang ditegakkan di sisi server. Bercakupan satu percakapan sehingga tab manusia dan alat agen menuju satu mesin yang sama.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam sen) untuk satu run agen.'],
 ['WakeReason', 'Alasan agen dikirim. Enam nilai: pesan pengguna, penugasan tiket, pengiriman ulang pemulihan setelah kegagalan, tiket anak selesai, detak lanjutan terjadwal, dan langkah pipeline.'],
 ['SandboxPort', 'Mengelola siklus hidup sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Menerbitkan kredensial bercakupan dan bergerbang kemampuan untuk peluncuran sandbox, lalu mencabutnya saat pembongkaran.'],
+['CredentialBrokerPort', 'Menerbitkan kredensial bercakupan untuk peluncuran sandbox (hanya-baca untuk lingkungan agen, tulis hanya untuk jalur push di sisi server), lalu mencabutnya saat pembongkaran.'],
 ['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) dari jalur repo Git lokal.'],
 ['EmbeddingPort', 'Menghasilkan vektor embedding teks bernorma satuan untuk pencarian semantik.'],
 ['NotificationPort', 'Menampilkan notifikasi desktop native dengan menghormati gerbang kategori/rute.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Entitas inti
 
-**Agen**: Pekerja AI dengan identitas, peran, skill, dan kemampuan. Tergolong tepat pada satu ruang kerja. Aktor utama dalam sistem.
+**Agen**: Pekerja AI dengan identitas, peran, skill, dan adapter. Tergolong tepat pada satu ruang kerja. Aktor utama dalam sistem.
 
 **Adapter**: Runner yang menjalankan satu giliran agen. Dua yang disertakan: **Control Center (built-in)** — harness dalam proses yang berbicara ke penyedia model — dan **Claude Code** melalui `claude -p`. Cursor, Codex, Anthropic, OpenAI, dan sisanya adalah penyedia pada adapter bawaan, bukan CLI terpisah. Lihat [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifest per ruang kerja berisi skill yang terpasang: untuk masing-masing, repositori sumbernya, jalur di dalam repo, commit tempat ia dipatok, dan hash konten gabungan. Pemasangan, pembaruan, dan penghapusan menjaganya tetap mutakhir; `verify_skills` memeriksanya terhadap disk.
 
-**AgentCapabilities**: Empat flag (push ke repo, API GitHub, tiket, egress jaringan) yang diresolusi per pengiriman — default agen → default pengguna, dengan penggantian per percakapan. Ditegakkan melalui ketiadaan: kemampuan yang dinonaktifkan berarti token atau egress memang tidak pernah disuntikkan.
+**Gateway run agen**: Endpoint loopback di `cc_server` yang menerapkan kebijakan aksi di dalam sandbox agen. Setiap push GitHub yang dilakukan agen dialihkan ke sana, diperiksa terhadap aturan **Push ke remote**, dan diteruskan dengan token tulis yang tidak pernah dipegang agen; perintah `Bash` milik Claude Code diperiksa melalui hook di endpoint yang sama. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/).
 
 **Mode**: `chat`, `plan`, `review`, atau `orchestrate`. Disimpan **per space**, sehingga satu agen dapat berada dalam mode berbeda di space berbeda; setiap percakapan di satu space berbagi mode itu. Menggerbangi prompt sistem, aturan tulis sandbox, dan daftar izin alat MCP. Composer hanya menawarkan `chat`, `plan`, dan `orchestrate`; `chat` diberi label "Agen".
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Mengelola siklus hidup sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Menerbitkan kredensial bercakupan dan bergerbang kemampuan untuk peluncuran sandbox, lalu mencabutnya saat pembongkaran.
+**CredentialBrokerPort**: Menerbitkan kredensial bercakupan untuk peluncuran sandbox — hanya-baca untuk lingkungan agen, tulis hanya untuk jalur push di sisi server — lalu mencabutnya saat pembongkaran.
 
 **GitRepoInspectorPort**: Mengekstrak metadata (owner, repo, branch) dari jalur repo Git lokal.
 

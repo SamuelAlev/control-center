@@ -4,7 +4,6 @@ import 'package:control_center/features/chat_bridges/presentation/settings_contr
 import 'package:control_center/features/forge/presentation/settings_contributions.dart';
 import 'package:control_center/features/meetings/presentation/settings_contributions.dart';
 import 'package:control_center/features/memory/presentation/settings_contributions.dart';
-import 'package:control_center/features/messaging/presentation/settings_contributions.dart';
 import 'package:control_center/features/newsfeed/presentation/settings_contributions.dart';
 import 'package:control_center/features/remote_control/presentation/settings_contributions.dart';
 import 'package:control_center/features/repos/presentation/settings_contributions.dart';
@@ -30,7 +29,6 @@ final settingsRegistryProvider = Provider<SettingsRegistry>(
       ...ticketingSettingsSections,
       ...calendarSettingsSections,
       ...chatBridgesSettingsSections,
-      ...messagingSettingsSections,
     ],
     bodies: [
       ...agentsSettingsBodies,

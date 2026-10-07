@@ -1,16 +1,13 @@
 import 'dart:async';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 
 /// AppPreferences storage keys for sandbox settings.
 const String _kEnabledKey = 'sandbox_enabled';
 const String _kBackendKey = 'sandbox_backend';
-const String _kDefaultCapsKey = 'sandbox_default_capabilities';
 
-/// Read/write the user's sandbox preferences (master toggle, chosen backend,
-/// default capabilities for new conversations).
+/// Read/write the user's sandbox preferences (master toggle, chosen backend).
 ///
 /// Wrapping `SharedPreferences` instead of hitting it directly keeps the
 /// settings UI testable and avoids hard-coded keys outside this file.
@@ -57,18 +54,4 @@ class SandboxPreferences {
       await _prefs.setString(_kBackendKey, value.name);
     }
   }
-
-  /// Default capabilities applied to *new* conversations. Existing
-  /// conversations carry their own capability snapshot.
-  AgentCapabilities get defaultCapabilities {
-    final raw = _prefs.getString(_kDefaultCapsKey);
-    if (raw == null || raw.isEmpty) {
-      return AgentCapabilities.safeDefault;
-    }
-    return AgentCapabilities.fromJsonString(raw);
-  }
-
-  /// Sets the default capabilities for new conversations.
-  Future<void> setDefaultCapabilities(AgentCapabilities caps) =>
-      _prefs.setString(_kDefaultCapsKey, caps.toJsonString());
 }

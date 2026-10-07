@@ -2,7 +2,7 @@
 title: Rig e recinti
 description: Perché gli agenti ricevono macchine usa e getta invece del tuo computer — i confini di isolamento, le corsie di visualizzazione, le credenziali, le porte e il ciclo di vita.
 slug: it-IT/manuale/concetti/rig
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Un **rig** è una macchina usa e getta che un agente guida in tempo reale — un browser, un desktop Linux, un emulatore Android, un simulatore iOS o la macchina dietro un terminale isolato. La maggior parte dei rig sono VM; i simulatori mobili gestiti dall'host sono le eccezioni esplicite. Questa pagina spiega ogni confine e perché i pezzi hanno la forma che hanno. Per aprirne uno, vedi [Assegna a un agente una macchina su cui testare](/it-IT/manuale/guide/usa-rig/); per i verbi, le porte e i valori predefiniti esatti, vedi il [riferimento sui rig](/it-IT/manuale/riferimento/rig/).
@@ -68,7 +68,9 @@ Tutto ciò che viene letto da un guest resta contenuto non attendibile: il testo
 
 ## Le credenziali non risiedono mai nel guest
 
-`git push` funziona da un terminale isolato, eppure il guest non conserva alcun token del forge. Custodisce un solo segreto per VM, il cui unico potere è *chiedere* al broker delle credenziali dell'host — su un tunnel controllato dall'host — un token di breve durata e limitato al repo, per singola operazione, con limiti di frequenza, vincolato alla stessa allowlist degli host usata per l'uscita in rete e revocato nel momento in cui il rig si chiude. Una macchina costruita per essere buttata via non deve contenere nulla che valga la pena rubare.
+`git push` funziona da un terminale isolato che hai aperto tu, eppure il guest non conserva alcun token del forge. Custodisce un solo segreto per VM, il cui unico potere è *chiedere* al broker delle credenziali dell'host — su un tunnel controllato dall'host — un token di breve durata e limitato al repo, per singola operazione, con limiti di frequenza, vincolato alla stessa allowlist degli host usata per l'uscita in rete e revocato nel momento in cui il rig si chiude. Una macchina costruita per essere buttata via non deve contenere nulla che valga la pena rubare.
+
+Ciò che quel token può fare viene fissato all'apertura del rig. Un rig di terminale aperto da una persona riceve un token di scrittura, limitato all'accesso al forge di quel membro. Un rig aperto da un agente ne riceve uno di sola lettura: un credential helper di git non sa distinguere un push da un fetch, quindi nel guest la regola di push non può essere interrogata a ogni push come fa il gateway delle esecuzioni degli agenti sull'host.
 
 ## Il worktree in un rig è un satellite
 

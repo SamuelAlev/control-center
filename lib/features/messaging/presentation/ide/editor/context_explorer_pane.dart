@@ -114,10 +114,14 @@ class _ContextExplorerPaneState extends ConsumerState<ContextExplorerPane> {
           )),
         )
         .windowTokens;
+    final totals = ref
+        .watch(conversationTokenTotalsProvider(widget.spaceId))
+        .value;
     final breakdown = composeContextBreakdown(
       inspection,
       conversation,
       fallbackWindow,
+      reported: totals == null ? null : reportedContextOf(totals),
       isLoading: async.isLoading && inspection == null,
       hasError: async.hasError && inspection == null,
     );
@@ -252,7 +256,8 @@ class _Header extends StatelessWidget {
                 ),
               ),
               Text(
-                '~${formatContextTokenCount(breakdown.totalTokens)} / '
+                '${breakdown.isMeasured ? '' : '~'}'
+                '${formatContextTokenCount(breakdown.totalTokens)} / '
                 '${formatContextTokenCount(breakdown.windowTokens)} '
                 '${l10n.contextUsageTokens}',
                 style: CcFonts.code(
@@ -262,6 +267,13 @@ class _Header extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            breakdown.isMeasured
+                ? l10n.contextUsageMeasured
+                : l10n.contextUsageEstimated,
+            style: CcTypography.caption.copyWith(color: tokens.textTertiary),
           ),
         ],
       ),

@@ -2,7 +2,7 @@
 title: Ciclul de viață al trimiterii agenților
 description: Ce se întâmplă între sosirea unui mesaj și închiderea unui jurnal de rulare — asamblarea promptului, worktree-urile, identitatea, ce limitează o rulare și cum este înregistrat cu onestitate rezultatul ei.
 slug: ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Ce este o trimitere
@@ -65,7 +65,7 @@ Două identități sunt rezolvate pentru fiecare rulare, înainte de lansarea or
 
 Deoarece suprascrierea per adaptor vine prima, ea învinge în mod silențios un cont de furnizor conectat în aplicație. Dacă o rulare facturează pe contul greșit, acea suprascriere este primul loc de căutat. Datele de autentificare ale furnizorului sunt globale la nivel de gazdă — partajate între toate spațiile de lucru de pe instalare.
 
-Tokenurile limitate de capabilități (GitHub, tichete) vin de la brokerul de date de autentificare, care injectează doar ce permit capabilitățile rulării. Vezi [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/).
+Tokenul GitHub al rulării vine de la brokerul de date de autentificare: un token doar pentru citire, limitat la depozitul worktree-ului. Un push trece prin gateway-ul rulărilor de agenți, care întreabă regula **Push către un remote** înainte de a-l transmite, și nu este injectată nicio cheie de tichete. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
 
 ## Lansare
 
@@ -76,9 +76,9 @@ Rularea este pornită cu worktree-ul ei ca director de lucru și — pentru Clau
 
 Acolo unde nu există backend, rularea **nu** este pusă în sandbox și nimic altceva nu se schimbă pentru a compensa. Asta înseamnă Windows mereu (fără înveliș nativ — `microvm` este o cale separată, condiționată de sondare, pentru terminale și stații) și Linux sau WSL2 fără `bwrap` și `socat` în `PATH`. Serverul indică în ce stare se află pe linia lui de jurnal de pornire, iar `--sandbox off` renunță în mod deliberat.
 
-Două lacune supraviețuiesc sandbox-ului chiar și acolo unde acesta este activ. Instrumentele de fișiere în proces ale harnessului (read, write, edit, apply patch, search, find, search_files) rulează în interiorul procesului serverului, așa că niciun profil nu le constrânge — limita lor este confinarea de cale proprie instrumentelor plus guardrail-urile. Iar Claude Code este lansat cu `--dangerously-skip-permissions`, așa că propriile lui apeluri de fișiere și de shell nu sunt controlate de Control Center; sandbox-ul de sistem este granița din jurul lor.
+Două lacune supraviețuiesc sandbox-ului chiar și acolo unde acesta este activ. Instrumentele de fișiere în proces ale harnessului (read, write, edit, apply patch, search, find, search_files) rulează în interiorul procesului serverului, așa că niciun profil nu le constrânge — limita lor este confinarea de cale proprie instrumentelor plus guardrail-urile. Iar Claude Code este lansat cu `--dangerously-skip-permissions`, așa că propriile lui apeluri de fișiere nu sunt controlate de Control Center, iar comenzile de shell doar de un hook care citește linia de comandă; sandbox-ul de sistem este granița din jurul lor.
 
-Limitele rămase se aplică pe orice gazdă, cu sau fără sandbox: worktree-ul propriu al rulării (copy-on-write acolo unde `rift` este livrat; `git worktree` pe Windows), date de autentificare limitate de capabilități, intermediate per lansare și revocate la desființare, guardrail-urile unificate de acțiune (cu eșec închis — o decizie `prompt` fără niciun aprobator conectat este refuzată) și suprafața de instrumente pe care o permite modul conversației. ACP și `bash` din harness tot sanitizează mediul; Claude Code prin `NoSandboxAdapter` moștenește mediul gazdă.
+Limitele rămase se aplică pe orice gazdă, cu sau fără sandbox: worktree-ul propriu al rulării (copy-on-write acolo unde `rift` este livrat; `git worktree` pe Windows), un token de forge doar pentru citire, intermediat per lansare și revocat la desființare, push-uri care trebuie să treacă regula de push la gateway-ul rulărilor de agenți, guardrail-urile unificate de acțiune (cu eșec închis — o decizie `prompt` fără niciun aprobator conectat este refuzată) și suprafața de instrumente pe care o permite modul conversației. ACP și `bash` din harness tot sanitizează mediul; Claude Code prin `NoSandboxAdapter` moștenește mediul gazdă.
 :::
 
 ## Transmiterea în flux

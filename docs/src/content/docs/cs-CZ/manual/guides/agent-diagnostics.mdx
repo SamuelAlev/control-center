@@ -2,7 +2,7 @@
 title: Diagnostikujte agenta
 description: Když agent přestane produkovat běhy, projdi záznam běhu, sondu adaptéru, stav serveru a diagnostiku hostitele.
 slug: cs-CZ/prirucka/navody/diagnostika-agenta
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Tenhle návod ukáže, jak zjistit, proč agent nevytváří běhy.
@@ -60,19 +60,18 @@ Dvě věci, které se hodí vědět, když změna „funguje v testech, ale v ap
 
 **Nastavení → Server → Diagnostika a soukromí** (`/settings/server/diagnostics`) je stránka na úrovni hostitele. Obsahuje:
 
-- **Sandboxing** — hlavní přepínač, zjištěný backend, nápovědu k instalaci a výchozí přepínače schopností. Ze serveru pochází jen zjištěný backend; viz upozornění níž. Ovládání pro reset tu není.
+- **Sandboxing** — hlavní přepínač, zjištěný backend a nápovědu k instalaci. Ze serveru pochází jen zjištěný backend; viz upozornění níž. Ovládání pro reset tu není.
 - **Sémantické vyhledávání** — životní cyklus embeddingového modelu na zařízení: nainstalovaný, stahuje se a ukazuje procenta, není nainstalovaný, nebo chyba instalace. Dokud není nainstalovaný, paměť i hledání v kódu zůstávají jen na klíčových slovech.
 - **Chování systému** — udržet počítač vzhůru, dokud agenti běží.
-- **Synchronizační engine** — nouzové vypínače po úložištích pro tickety, zprávy a poznámky. Jsou to nouzové úniky zpátky k odběrům celého snímku; změna se týká jen nových odběrů, takže naplno zabere až po opětovném načtení.
 - **Úroveň protokolu** — zvedni ji, než selhání zopakuješ.
 - **Soukromí** — jestli se surový obsah diffu smí předat modelu agenta a jestli se posílají hlášení o pádech.
 
 :::caution[Tahle sekce hlásí hostitele a její ovládání je na straně klienta]
-Detekce a vynucení se teď shodují: kde detektor hlásí nativní backend, běhy agentů na tom hostiteli jsou jím opravdu obalené. V téhle sekci je ale živá jen detekce. Hlavní přepínač, výběr backendu a výchozí přepínače schopností jsou preference uložené na tvém zařízení a server žádnou z nich nečte — vlastní přepínač serveru je `--sandbox` (výchozí `on`, `off` pro vypnutí) a u agenta ponechaného na „Použít výchozí pracovního prostoru“ server spadne na konzervativní výchozí stav: žádný git push, žádné GitHub API, žádný klíč k ticketům, síť zapnutá.
+Detekce a vynucení se teď shodují: kde detektor hlásí nativní backend, běhy agentů na tom hostiteli jsou jím opravdu obalené. V téhle sekci je ale živá jen detekce. Hlavní přepínač a výběr backendu jsou preference uložené na tvém zařízení a server žádnou z nich nečte — vlastní přepínač serveru je `--sandbox` (výchozí `on`, `off` pro vypnutí).
 
 Varování tady stojí za reakci, ale obvykle to není důvod, proč agent selhává. V jakém stavu server je, ověříš ve startovacím logu: vypíše `agent sandbox ON` s poznámkou o backendu, `no OS-native agent sandbox on this host` s nápovědou k instalaci, nebo `agent sandbox DISABLED by --sandbox off`. `GET /healthz` pole sandboxu nenese.
 
-Kde backend není — na Windows vždy, na Linuxu nebo ve WSL2 bez `bwrap` a `socat` — běhy **nejsou** v sandboxu a ohraničuje je vlastní checkout konverzace, schopnosti, které rozhodují, jaké přihlašovací údaje se do něj vystaví, guardraily akcí, sanitizace prostředí a plocha nástrojů, kterou jeho režim povolí.
+Kde backend není — na Windows vždy, na Linuxu nebo ve WSL2 bez `bwrap` a `socat` — běhy **nejsou** v sandboxu a ohraničuje je vlastní checkout konverzace, token forge jen pro čtení a brána pro push, guardraily akcí, sanitizace prostředí a plocha nástrojů, kterou jeho režim povolí.
 :::
 
 ## Častá selhání
@@ -83,7 +82,7 @@ Nainstaluj CLI **na hostitele serveru** a pak na stránce Poskytovatelé modelů
 
 ### Agent nemůže pushnout ani otevřít pull request
 
-Bránou jsou jeho schopnosti. Otevři **Nastavení → Pracovní prostor → Agenti** → agent → **Oprávnění sandboxu**, zapni přepínač a povol **Povolit git push** a **Povolit volání GitHub API**. Necháš-li přepínač na „Použít výchozí pracovního prostoru“, agent nedostane nic z toho.
+Přečti si, co vypsal git nebo agent. `Control Center policy: …` znamená, že to zamítlo pravidlo akce nebo že schválení zůstalo bez odpovědi: zkontroluj **Odeslat na remote** a **Otevřít pull request** v **Nastavení → Pracovní prostor → Oprávnění agentů**. Pokud git hlásí, že Control Center nemá žádný přihlašovací údaj GitHubu, který umí pushovat, nainstaluj na ten repozitář GitHub App nebo připoj GitHub.
 
 ### Sémantické vyhledávání nevrací nic užitečného
 

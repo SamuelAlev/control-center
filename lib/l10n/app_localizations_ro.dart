@@ -2682,15 +2682,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get allow => 'Permite';
 
   @override
-  String get allowGitPush => 'Permite git push';
-
-  @override
-  String get allowGithubApi => 'Permite apeluri GitHub API';
-
-  @override
-  String get allowNetwork => 'Permite accesul general la rețea';
-
-  @override
   String get apiKeys => 'Chei API';
 
   @override
@@ -3099,10 +3090,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get currentParticipants => 'Participanți curenți';
 
   @override
-  String get customCapabilitiesDescription =>
-      'Descriere personalizată a capabilităților';
-
-  @override
   String get customSystemPrompt =>
       'Prompt de sistem personalizat pentru acest agent...';
 
@@ -3120,9 +3107,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deactivate => 'Dezactivează';
-
-  @override
-  String get defaultCapabilities => 'Capabilități implicite · spații noi';
 
   @override
   String get defaultChat => 'Chat implicit';
@@ -3529,10 +3513,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get forward => 'Înainte';
 
   @override
-  String get gatesGithubPatPush =>
-      'Controlează injectarea GitHub PAT. Necesar ca agentul să poată face push.';
-
-  @override
   String get general => 'General';
 
   @override
@@ -3597,6 +3577,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Întrerupere';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Starea serviciilor';
@@ -4071,6 +4056,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navSettings => 'Setări';
+
+  @override
+  String get exitSettings => 'Ieșire din setări';
 
   @override
   String networkBlockCount(int count) {
@@ -4595,10 +4583,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get react => 'Reacționează';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Permite agentului să citească PR-uri, issue-uri și metadatele depozitului.';
-
-  @override
   String get readerPreferences => 'Preferințe cititor';
 
   @override
@@ -4855,9 +4839,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Sandbox-ul nativ este inclus pe macOS — folosește Apple Seatbelt (`sandbox-exec`). Nu e nevoie de instalare.';
-
-  @override
-  String get sandboxPermissions => 'Permisiuni sandbox';
 
   @override
   String get sandboxUnsupported =>
@@ -5447,9 +5428,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get useSandbox => 'Folosește sandbox';
 
   @override
-  String get useWorkspaceDefault => 'Folosește implicitul spațiului de lucru';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5492,10 +5470,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Izolare slabă — doar graniță de namespace, fără graniță de kernel.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Când e oprit, sandbox-ul pornește fără o rută implicită.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6724,14 +6698,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun depozit în acest spațiu de lucru încă.';
 
   @override
-  String get allowTicketingApi => 'Permite apeluri ticketing API';
-
-  @override
   String get ticketingApiKey => 'Cheie API ticketing';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Injectează cheia API a providerului de ticketing în sandbox.';
 
   @override
   String get ticketingProvider => 'Provider de ticketing';
@@ -9131,30 +9098,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Computerul poate intra în somn chiar dacă un agent lucrează';
-
-  @override
-  String get syncEngineSectionTitle => 'Motor de sincronizare';
-
-  @override
-  String get syncEngineDescription =>
-      'Tichetele, mesageria și notele se actualizează live prin modificări incrementale mici, nu prin snapshot-uri complete. Oprirea unui comutator readuce acel depozit la modul snapshot complet — reîncarcă aplicația ca modificarea să aibă efect.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Tichete';
-
-  @override
-  String get syncEngineMessagingTitle => 'Mesagerie';
-
-  @override
-  String get syncEngineNotesTitle => 'Note';
-
-  @override
-  String get syncEngineOnSubtitle =>
-      'Sincronizarea live prin delta este activă';
-
-  @override
-  String get syncEngineOffSubtitle =>
-      'Se folosește sincronizarea prin snapshot complet';
 
   @override
   String get spaces => 'Spații';
@@ -13123,23 +13066,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Opțional — lasă gol și modelul de titluri o numește automat';
 
   @override
-  String get conversationTitlesSectionTitle => 'Titluri de conversații';
+  String get shortTaskOff => 'Oprit';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Alege runnerul care numește automat conversațiile noi din acest spațiu de lucru. Titlurile rămân oprite până se alege un adaptor și se aplică fiecărui membru.';
+  String get shortTaskUnavailable =>
+      'Alege un model pentru sarcini scurte în Setări → Adaptori ca să folosești asta';
 
   @override
-  String get conversationTitlesModelLabel => 'Model de titluri';
+  String get conversationTitleGenerate => 'Generează';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adaptor';
+  String get conversationTitleNoMessages =>
+      'Trimite mai întâi un mesaj. Titlul este generat din el.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Oprit';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Oprit';
+  String get conversationTitleGenerateFailed =>
+      'Nu s-a putut genera un titlu. Încearcă din nou.';
 
   @override
   String get startThread => 'Pornește fir';
@@ -13305,6 +13247,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Conversație';
+
+  @override
+  String get contextSegmentRunner =>
+      'Promptul executorului, unelte și munca turei';
+
+  @override
+  String get contextUsageMeasured => 'Raportat de ultimul apel al modelului';
+
+  @override
+  String get contextUsageEstimated =>
+      'Estimat până când o rulare raportează utilizarea';
 
   @override
   String get contextExplorerTitle => 'Context';
@@ -13698,12 +13651,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Unde se întâmplă de fapt procesele și scrierile de fișiere ale unui agent.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Auto alege cel mai puternic pe care îl suportă această gazdă. Fixează unul ca să nu se schimbe sub tine.';
+  String get sandboxGroupAgentActions => 'Ce pot face agenții';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Găurile perforate prin graniță. Fiecare e ceva ce un agent izolat poate totuși face către lumea de afară.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Dacă push-ul, deschiderea unui pull request și accesul la rețea sunt permise, necesită confirmare sau sunt refuzate se stabilește în permisiunile agentului.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Auto alege cel mai puternic pe care îl suportă această gazdă. Fixează unul ca să nu se schimbe sub tine.';
 
   @override
   String get sandboxSummaryInForce => 'În vigoare';
@@ -13848,6 +13804,29 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Rulează asta într-un terminal pe server. Deschide un browser ca să termini autentificarea și scrie datele de autentificare în directorul acestui cont.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Token de lungă durată';
+
+  @override
+  String get claudeAccountUseLongLivedToken =>
+      'Folosește un token de lungă durată';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken =>
+      'Înlocuiește tokenul de lungă durată';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken =>
+      'Elimină tokenul de lungă durată';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'O autentificare obișnuită trebuie reînnoită și poate expira peste noapte. Un token de lungă durată rămâne autentificat aproximativ un an. Rulează comanda într-un terminal, finalizează în browser, apoi lipește tokenul afișat.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Acesta nu este un token de la claude setup-token. Începe cu sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Deconectat';
@@ -14281,10 +14260,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Deschide în aplicația implicită';
-
-  @override
-  String get asideUnavailable =>
-      'Setează un model one-shot în setările spațiului de lucru ca să folosești asta';
 
   @override
   String get asideEmpty => 'Nimic de la care să pornești încă';
@@ -14832,6 +14807,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get credentialGateOpenSettings => 'Deschide setările';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Conturile Claude Code atașate au fost eliminate';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Atașează alt cont în setările de conturi ale acestui agent sau ale spațiului de lucru, ori golește lista ca să folosești contul implicit. Rularea continuă singură.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Toate conturile din această listă au fost eliminate de pe server. Atașează altul sau golește lista.';
+
+  @override
+  String get accountPoolClear => 'Golește lista';
+
+  @override
   String get selectModel => 'Selectează modelul';
 
   @override
@@ -15274,6 +15264,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Caută fișierele conversației după nume și deschide unul într-o filă';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Caută fișierele pull request-ului după nume și deschide unul într-o filă';
 
   @override
   String get ideQuickOpenHint => 'Caută fișiere după nume';

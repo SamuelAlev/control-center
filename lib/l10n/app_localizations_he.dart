@@ -2650,15 +2650,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get allow => 'אפשר';
 
   @override
-  String get allowGitPush => 'אפשר git push';
-
-  @override
-  String get allowGithubApi => 'אפשר קריאות ל־API של GitHub';
-
-  @override
-  String get allowNetwork => 'אפשר גישה כללית לרשת';
-
-  @override
   String get apiKeys => 'מפתחות API';
 
   @override
@@ -3059,9 +3050,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get currentParticipants => 'משתתפים נוכחיים';
 
   @override
-  String get customCapabilitiesDescription => 'תיאור יכולות מותאמות אישית';
-
-  @override
   String get customSystemPrompt => 'הנחיית מערכת מותאמת אישית לסוכן זה...';
 
   @override
@@ -3079,9 +3067,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get deactivate => 'השבתה';
-
-  @override
-  String get defaultCapabilities => 'יכולות ברירת מחדל · מרחבים חדשים';
 
   @override
   String get defaultChat => 'צ׳אט ברירת מחדל';
@@ -3485,10 +3470,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get forward => 'קדימה';
 
   @override
-  String get gatesGithubPatPush =>
-      'שולט בהזרקת ה־PAT של GitHub. נדרש כדי שהסוכן יוכל לבצע push.';
-
-  @override
   String get general => 'כללי';
 
   @override
@@ -3553,6 +3534,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'הפסקת שירות';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '⁨$count+⁩';
+  }
 
   @override
   String get serviceStatusTitle => 'סטטוס שירותים';
@@ -4018,6 +4004,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get navSettings => 'הגדרות';
+
+  @override
+  String get exitSettings => 'יציאה מההגדרות';
 
   @override
   String networkBlockCount(int count) {
@@ -4531,10 +4520,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get react => 'הוסף ריאקציה';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'מאפשר לסוכן לקרוא PRs, issues ומטא־נתונים של המאגר.';
-
-  @override
   String get readerPreferences => 'העדפות קריאה';
 
   @override
@@ -4792,9 +4777,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'ארגז חול מקורי מובנה ב־macOS — משתמש ב־Apple Seatbelt (`sandbox-exec`). לא נדרשת התקנה.';
-
-  @override
-  String get sandboxPermissions => 'הרשאות ארגז חול';
 
   @override
   String get sandboxUnsupported =>
@@ -5379,9 +5361,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get useSandbox => 'שימוש בארגז חול';
 
   @override
-  String get useWorkspaceDefault => 'שימוש בברירת המחדל של סביבת העבודה';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5424,10 +5403,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'בידוד חלש — גבול namespace בלבד, ללא גבול kernel.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'כשהאפשרות כבויה, ארגז החול עולה ללא נתיב ברירת מחדל.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6648,14 +6623,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get pipelineRunNoRepos => 'אין עדיין מאגרים בסביבת העבודה הזו.';
 
   @override
-  String get allowTicketingApi => 'התרת קריאות API של ניהול כרטיסים';
-
-  @override
   String get ticketingApiKey => 'מפתח API לניהול כרטיסים';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'מזריק את מפתח ה-API של ספק ניהול הכרטיסים לתוך ארגז החול.';
 
   @override
   String get ticketingProvider => 'ספק ניהול כרטיסים';
@@ -9027,28 +8995,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'המחשב עשוי לעבור למצב שינה גם בזמן שסוכן עובד';
-
-  @override
-  String get syncEngineSectionTitle => 'מנוע סנכרון';
-
-  @override
-  String get syncEngineDescription =>
-      'כרטיסים, הודעות והערות מתעדכנים בזמן אמת באמצעות שינויים מצטברים קטנים במקום תמונות מצב מלאות. כיבוי מתג מחזיר את אותו רכיב לסנכרון בתמונת מצב מלאה — יש לטעון מחדש את האפליקציה כדי שהשינוי ייכנס לתוקף.';
-
-  @override
-  String get syncEngineTicketsTitle => 'כרטיסים';
-
-  @override
-  String get syncEngineMessagingTitle => 'הודעות';
-
-  @override
-  String get syncEngineNotesTitle => 'הערות';
-
-  @override
-  String get syncEngineOnSubtitle => 'סנכרון דלתא בזמן אמת פעיל';
-
-  @override
-  String get syncEngineOffSubtitle => 'משתמש בסנכרון תמונת מצב מלאה';
 
   @override
   String get spaces => 'מרחבים';
@@ -12988,23 +12934,22 @@ class AppLocalizationsHe extends AppLocalizations {
       'אופציונלי — השאירו ריק ומודל הכותרות ייתן שם אוטומטית';
 
   @override
-  String get conversationTitlesSectionTitle => 'כותרות שיחה';
+  String get shortTaskOff => 'כבוי';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'בחרו את המריץ שנותן שמות לשיחות חדשות בסביבת עבודה זו אוטומטית. הכותרות כבויות עד שנבחר מתאם, וחלות על כל החברים.';
+  String get shortTaskUnavailable =>
+      'כדי להשתמש בזה, בחרו מודל למשימות קצרות בהגדרות ← מתאמים';
 
   @override
-  String get conversationTitlesModelLabel => 'מודל כותרות';
+  String get conversationTitleGenerate => 'יצירה';
 
   @override
-  String get conversationTitlesAdapterLabel => 'מתאם';
+  String get conversationTitleNoMessages =>
+      'שלחו הודעה קודם. הכותרת נוצרת ממנה.';
 
   @override
-  String get conversationTitlesAdapterHint => 'כבוי';
-
-  @override
-  String get conversationTitlesAdapterOff => 'כבוי';
+  String get conversationTitleGenerateFailed =>
+      'לא ניתן היה ליצור כותרת. נסו שוב.';
 
   @override
   String get startThread => 'פתיחת שרשור';
@@ -13170,6 +13115,15 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'שיחה';
+
+  @override
+  String get contextSegmentRunner => 'הנחיית המריץ, כלים ועבודת התור';
+
+  @override
+  String get contextUsageMeasured => 'דווח על ידי הקריאה האחרונה למודל';
+
+  @override
+  String get contextUsageEstimated => 'הערכה עד שהרצה תדווח על שימוש';
 
   @override
   String get contextExplorerTitle => 'הקשר';
@@ -13557,12 +13511,15 @@ class AppLocalizationsHe extends AppLocalizations {
       'היכן התהליכים וכתיבות הקבצים של סוכן קורים בפועל.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'אוטומטי בוחר את החזק ביותר שהמארח הזה תומך בו. הצמידו אחד כדי שלא יתחלף מתחת לידיכם.';
+  String get sandboxGroupAgentActions => 'מה סוכנים רשאים לעשות';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'החורים שנוקבו בגבול. כל אחד מהם הוא משהו שסוכן מבודד עדיין יכול לעשות לעולם החיצון.';
+  String get sandboxGroupAgentActionsDescription =>
+      'בהרשאות הסוכנים נקבע אם דחיפה, פתיחת בקשת משיכה וגישה לרשת מותרות, דורשות אישור או חסומות.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'אוטומטי בוחר את החזק ביותר שהמארח הזה תומך בו. הצמידו אחד כדי שלא יתחלף מתחת לידיכם.';
 
   @override
   String get sandboxSummaryInForce => 'בתוקף';
@@ -13707,6 +13664,26 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'הריצו את זה בטרמינל על השרת. זה פותח דפדפן להשלמת הכניסה, וכותב את פרטי הגישה לתיקייה של החשבון הזה.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'אסימון לטווח ארוך';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'שימוש באסימון לטווח ארוך';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'החלפת האסימון לטווח ארוך';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'הסרת האסימון לטווח ארוך';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'כניסה רגילה צריכה להתחדש ועלולה לפוג בן לילה. אסימון לטווח ארוך נשאר מחובר כשנה. הריצו את הפקודה במסוף, השלימו בדפדפן והדביקו את האסימון שהיא מדפיסה.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'זה לא אסימון מ-claude setup-token. הוא מתחיל ב-sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'מנותק';
@@ -14136,10 +14113,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'פתיחה באפליקציית ברירת המחדל';
-
-  @override
-  String get asideUnavailable =>
-      'כדי להשתמש בזה, הגדירו מודל חד-פעמי בהגדרות סביבת העבודה';
 
   @override
   String get asideEmpty => 'אין עדיין ממה לעבוד';
@@ -14681,6 +14654,21 @@ class AppLocalizationsHe extends AppLocalizations {
   String get credentialGateOpenSettings => 'פתיחת ההגדרות';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'חשבונות Claude Code המצורפים הוסרו';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'צרפו חשבון אחר בהגדרות החשבונות של הסוכן הזה או של סביבת העבודה, או נקו את הרשימה כדי להשתמש בברירת המחדל. ההרצה תמשיך מעצמה.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'כל החשבונות ברשימה הזו הוסרו מהשרת. צרפו חשבון אחר או נקו את הרשימה.';
+
+  @override
+  String get accountPoolClear => 'ניקוי הרשימה';
+
+  @override
   String get selectModel => 'בחירת מודל';
 
   @override
@@ -15112,6 +15100,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'חיפוש קובצי השיחה לפי שם ופתיחת אחד מהם בכרטיסייה';
+
+  @override
+  String get prQuickOpenDescription =>
+      'חיפוש קובצי בקשת המשיכה לפי שם ופתיחת אחד מהם בכרטיסייה';
 
   @override
   String get ideQuickOpenHint => 'חיפוש קבצים לפי שם';

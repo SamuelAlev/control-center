@@ -2,12 +2,12 @@
 title: Model agen
 description: Apa sebenarnya agen di Control Center, bidang mana darinya yang mengubah perilaku dan bagaimana adapter yang menjalankannya menentukan apa yang dapat ditegakkan.
 slug: id-ID/panduan-pengguna/konsep/model-agen
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Apa itu agen?
 
-Agen adalah aktor bernama dengan persona, sekumpulan skill, adapter untuk menjalankannya dan sekumpulan kemampuan. Agen adalah prinsipal dalam pengertian yang sama seperti manusia: agen menulis pesan, memiliki tiket, meninggalkan tinjauan dan muncul di daftar yang sama. Agenlah yang mengerjakan pekerjaan.
+Agen adalah aktor bernama dengan persona, sekumpulan skill dan adapter untuk menjalankannya. Agen adalah prinsipal dalam pengertian yang sama seperti manusia: agen menulis pesan, memiliki tiket, meninggalkan tinjauan dan muncul di daftar yang sama. Agenlah yang mengerjakan pekerjaan.
 
 Setiap agen hanya milik satu ruang kerja. Ini adalah invarian keras — `agent.workspaceId` tidak boleh null, ruang kerja milik agen itu sendiri yang menentukan file basis data tempat barisnya disimpan dan pembuatan agen tanpa ruang kerja akan ditolak.
 
@@ -26,7 +26,6 @@ Agen juga merupakan sebuah direktori. Definisinya berada di `agents/<slug>/AGENT
 | `modelId`               | Model mana di dalam adapter tersebut                                                  |
 | `effort`                | Tingkat penalaran, diambil dari kosakata model yang dipilih                           |
 | `contextSize`           | Penimpaan jendela konteks                                                             |
-| `capabilities`          | Tanda kredensial dan egress, diperiksa saat peluncuran                                |
 | `silenceTimeoutMinutes` | Penimpaan per agen (1–240) untuk pengawas waktu diam                                  |
 | `reportsTo`             | ID agen induk — rantai pelaporan yang digambar bagan organisasi                       |
 
@@ -51,18 +50,13 @@ Pembatasan cakupan ini adalah keputusan anggaran konteks. Indeks skill berada di
 
 Skill repo dimuat untuk **setiap** adapter, bukan hanya harness bawaan. Skill repo aktif diwujudkan ke direktori kerja agen, yaitu path yang sudah dipindai Claude Code; indeks yang sama disusun ke dalam `AGENTS.md` yang dibaca harness bawaan. Skill sebuah repo melewati pemindaian yang menolak secara default yang sama dengan skill yang diinstal sebelum semua itu terjadi — repo yang di-checkout adalah konten hasil klon, dan frontmatter-nya mencapai prompt.
 
-## Kemampuan
+## Izin
 
-Kemampuan membatasi apa yang _diberikan_ ke sebuah run, bukan apa yang boleh disentuh oleh sistem filenya. Broker kredensial memeriksanya saat peluncuran: jika sebuah kemampuan dimatikan, token yang sesuai memang tidak disuntikkan.
+Agen tidak membawa flag izin sendiri. Apakah agen boleh membuat commit, melakukan push, membuka pull request, menulis ke pelacak, atau menjangkau jaringan ditentukan oleh [pagar pengaman aksi](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) — izinkan, tanyakan dulu, atau tolak, pada cakupan ruang kerja, agen, atau space — dan aturan yang sama berlaku adapter mana pun yang menjalankannya.
 
-- **Push ke repo** — membatasi injeksi token GitHub yang dipakai untuk `git push`.
-- **GitHub API** — membatasi injeksi `GH_TOKEN` dan egress ke api.github.com.
-- **Ticketing** — membatasi kunci API penyedia ticketing dan egress ke domainnya.
-- **Egress jaringan** — permintaan keluar sembarang.
+Apa yang _diberikan_ ke sebuah run tidak berubah karena aturan-aturan itu. Run di worktree GitHub selalu mendapat token GitHub hanya-baca, dan push ditanyakan saat push itu terjadi: konfigurasi git agen mengirim setiap push GitHub melalui Control Center, yang menerapkan aturan **Push ke remote** sebelum meneruskannya.
 
-Sebuah run menyelesaikannya dari baris agen itu sendiri. Saat agen tidak memilikinya, berlaku default konservatif yang tetap: ketiga tanda kredensial mati, egress jaringan menyala. Sakelar "Izin sandbox" di formulir agen memilih antara fallback itu dan kumpulan kustom yang disimpan pada agen.
-
-Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk separuh cerita lainnya, termasuk apa yang ditegakkan dan tidak ditegakkan di tingkat sistem file.
+Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk cara kerjanya, termasuk apa yang ditegakkan dan tidak ditegakkan di tingkat sistem file.
 
 ## Adapter menentukan apa yang bisa ditegakkan
 
@@ -71,7 +65,7 @@ Bidang yang paling berpengaruh pada agen adalah adapter-nya, karena transport ad
 | Transport       | Adapter                   | Apa yang ditegakkan Control Center                                                                                                                                                                                                                                        |
 | --------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Harness bawaan  | Control Center (built-in) | Semuanya. Permukaan alatnya _dibangun_ dari mode, jadi alat yang tidak diizinkan menjadi tidak terlihat, bukan sekadar ditolak; setiap panggilan melewati gerbang persetujuan dan pagar pengaman tindakan; kontrak penyelesaian dapat menegur lalu menggagalkan run yang berakhir tanpa hasil kerjanya |
-| Claude CLI      | Claude Code               | Hanya alat `mcp__*` yang disediakan untuknya. Alat baca, tulis, edit dan shell milik Claude sendiri berjalan di dalam prosesnya dan berjalan tanpa terlihat — dan CLI-nya diluncurkan dengan `--dangerously-skip-permissions`, karena `claude -p` yang non-interaktif jika tidak akan terblokir selamanya pada prompt-nya sendiri |
+| Claude CLI      | Claude Code               | Alat `mcp__*` yang disediakan untuknya, ditambah perintah `Bash`-nya, yang dikirim sebuah hook ke kebijakan aksi sebelum dijalankan. Alat baca, tulis, dan edit milik Claude sendiri berjalan di dalam prosesnya dan berjalan tanpa terlihat — dan CLI-nya diluncurkan dengan `--dangerously-skip-permissions`, karena `claude -p` yang non-interaktif jika tidak akan terblokir selamanya pada prompt-nya sendiri |
 
 Secara konkret, **hanya harness bawaan yang mendukung subagen, pengarahan di tengah run, jeda dan lanjutkan (dan karena itu ambil alih) serta penegakan mode secara struktural.** Claude Code tidak mendapat satu pun dari itu.
 

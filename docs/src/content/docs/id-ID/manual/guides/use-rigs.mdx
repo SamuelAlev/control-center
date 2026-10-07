@@ -2,7 +2,7 @@
 title: Berikan agen mesin untuk menguji
 description: Berikan agen browser, desktop, emulator Android, atau Simulator iOS sekali pakai — dipantau langsung, dengan kontrol yang dapat Anda ambil alih.
 slug: id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 **Rig** adalah mesin sekali pakai yang dibuka agen saat ia benar-benar perlu
@@ -196,8 +196,11 @@ Apa yang berubah:
   membuat Anda kehilangan rig.
 - Jaringannya menolak secara default. Hanya host di daftar izin rig yang dapat
   dijangkau, dan semuanya melewati gerbang yang menegakkannya.
-- `git push` tetap bekerja. Rig tidak menyimpan kredensial; ia meminta token
-  berumur pendek ke server per operasi, dan token itu dicabut saat rig ditutup.
+- `git push` tetap bekerja di terminal yang Anda buka. Rig tidak menyimpan
+  kredensial; ia meminta token berumur pendek ke server per operasi, dibatasi
+  oleh akses forge Anda sendiri, dan token itu dicabut saat rig ditutup. Rig
+  yang dibuka agen mendapat kredensial hanya-baca, sehingga dapat fetch tetapi
+  tidak dapat push.
 
 Yang perlu diketahui:
 

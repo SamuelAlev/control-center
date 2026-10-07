@@ -2,7 +2,7 @@
 title: Gerir chaves de API
 description: Onde reside cada credencial — a sua conta de utilizador no servidor, o próprio servidor ou uma CLI externa — e como defini-la, renová-la e removê-la.
 slug: pt-PT/manual/guias/chaves-de-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Este guia mostra onde é guardada cada credencial que o Control Center utiliza e
@@ -80,8 +80,9 @@ autenticar.
 A sua chave é guardada no servidor associada ao id do seu utilizador, tal como a
 do forge. O servidor guarda a sua própria chave do Linear em separado
 (**Aplicações do fornecedor**), que é a usada pela sincronização de tickets
-quando nenhuma pessoa o pediu. A chave que um agente recebe só é injetada quando
-o agente tem a capacidade **Permitir chamadas à API de tickets**. Consulte
+quando nenhuma pessoa o pediu. Nenhuma chave de tickets é injetada na sandbox de
+um agente; os agentes escrevem tickets através das ferramentas do Control
+Center, que perguntam à regra **Escrever num rastreador externo**. Consulte
 [Configurar a integração com o Linear](/pt-PT/manual/guias/integracao-linear/).
 
 ## Renovar ou revogar

@@ -11,9 +11,15 @@ import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart'
 /// The head and base of a pull request, as the forge currently reports them.
 typedef PrMergeRefs = ({String title, String baseRef, String headRef});
 
-/// Reads a pull request's refs from the forge, or null when it does not exist.
+/// Reads a pull request's refs from the forge with [workspaceId]'s GitHub
+/// identity, or null when it does not exist.
 typedef PrMergeRefsLookup =
-    Future<PrMergeRefs?> Function(String owner, String repo, int prNumber);
+    Future<PrMergeRefs?> Function(
+      String workspaceId,
+      String owner,
+      String repo,
+      int prNumber,
+    );
 
 /// Computes the files that conflict when the PR's head is merged into
 /// [baseRef], acting as [userId] (whose credential reaches the repo).
@@ -90,7 +96,7 @@ class PrMergeConflictService {
     required int prNumber,
     String? userId,
   }) async {
-    final refs = await _requireRefs(owner, repo, prNumber);
+    final refs = await _requireRefs(workspaceId, owner, repo, prNumber);
     final files = await _conflictFiles(
       workspaceId: workspaceId,
       owner: owner,
@@ -118,7 +124,7 @@ class PrMergeConflictService {
     required int prNumber,
     String? userId,
   }) async {
-    final refs = await _requireRefs(owner, repo, prNumber);
+    final refs = await _requireRefs(workspaceId, owner, repo, prNumber);
     // Best-effort: the list focuses the agent, but the merge it runs finds
     // the same files, so a failed probe must not stop the fix.
     var files = const <String>[];
@@ -191,8 +197,13 @@ class PrMergeConflictService {
     };
   }
 
-  Future<PrMergeRefs> _requireRefs(String owner, String repo, int n) async {
-    final refs = await _refs(owner, repo, n);
+  Future<PrMergeRefs> _requireRefs(
+    String workspaceId,
+    String owner,
+    String repo,
+    int n,
+  ) async {
+    final refs = await _refs(workspaceId, owner, repo, n);
     if (refs == null || refs.baseRef.isEmpty) {
       throw NotFoundException('Pull request $owner/$repo#$n was not found.');
     }

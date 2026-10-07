@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The "Issue" tab: the ticket's editable title and description, followed by
 /// its properties (status, priority, assignee, collaborators). Title and
-/// description autosave on blur via `patchTicketOptimistic`.
+/// description autosave on blur via `patchTicketFields`.
 class TicketIssueTab extends ConsumerStatefulWidget {
   /// Creates a [TicketIssueTab].
   const TicketIssueTab({super.key, required this.ticket});
@@ -64,7 +64,7 @@ class _TicketIssueTabState extends ConsumerState<TicketIssueTab> {
     if (text == widget.ticket.title) {
       return;
     }
-    patchTicketOptimistic(
+    patchTicketFields(
       ref,
       workspaceId: widget.ticket.workspaceId,
       ticketId: widget.ticket.id,
@@ -78,7 +78,7 @@ class _TicketIssueTabState extends ConsumerState<TicketIssueTab> {
     if (text == (widget.ticket.description ?? '')) {
       return;
     }
-    patchTicketOptimistic(
+    patchTicketFields(
       ref,
       workspaceId: widget.ticket.workspaceId,
       ticketId: widget.ticket.id,

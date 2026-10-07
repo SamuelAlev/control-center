@@ -2,7 +2,7 @@
 title: Modi
 description: Waarom een ruimte, en niet een agent, een modus draagt; wat elk van de vier modi garandeert; en waar die garantie structureel is in plaats van louter in de prompt.
 slug: nl-NL/handleiding/concepten/modi
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Wat een modus is
@@ -77,7 +77,7 @@ De bepaling zelf is eenvoudig. De dispatcher leest de kolom `mode` van de ruimte
 
 Het toolaanbod van een modus wordt opgebouwd en afgedwongen door de **ingebouwde harness**. Het is het enige transport dat een tool onzichtbaar kan maken in plaats van alleen te weigeren, elke aanroep kan afschermen voordat die draait, en een voltooiingscontract kan waarnemen.
 
-Op het Claude Code-transport wordt een niet-chatmodus doorgegeven als `--permission-mode plan`. Claude respecteert dat op basis van conventie; zijn eigen lees-, schrijf-, bewerk- en shelltools draaien ongezien. Voor dat transport is de modus een richtlijn, geen grens van Control Center — zie [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
+Op het Claude Code-transport wordt een niet-chatmodus doorgegeven als `--permission-mode plan`. Claude respecteert dat op basis van conventie; zijn eigen lees-, schrijf- en bewerktools draaien ongezien en zijn shellopdrachten controleert alleen een hook die de opdrachtregel leest. Voor dat transport is de modus een richtlijn, geen grens van Control Center — zie [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
 
 De toelatingslijsten begrenzen tools vanaf schrijfniveau. Het leesniveau van de ingebouwde harness bereikt nog steeds tools die geen enkele lijst noemt; op Claude Code wordt een tool die de toelatingslijst niet vermeldt, geweigerd, of de server hem nu heeft of niet.
 

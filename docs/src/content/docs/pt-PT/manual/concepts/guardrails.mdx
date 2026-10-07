@@ -2,7 +2,7 @@
 title: Barreiras — uma única política para todas as ações mutáveis
 description: Por que motivo o Control Center encaminha todos os efeitos secundários dos agentes através de um único motor allow/prompt/deny, como a taxonomia de ActionClass se mantém pequena de propósito e o que o dial de autonomia realmente altera.
 slug: pt-PT/manual/conceitos/barreiras
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Os agentes do Control Center podem eliminar ficheiros, fazer push de branches,
@@ -242,9 +242,7 @@ integrado declara que as suas ferramentas de ficheiros em processo **não** est�
 em sandbox — a superfície de ferramentas e este motor de políticas são a única
 fronteira de sistema de ficheiros de que dispõe. O Claude Code declara que as suas
 próprias chamadas de ferramentas **não** são intercetáveis, porque é lançado com
-`--dangerously-skip-permissions`; o Control Center vê apenas as suas chamadas
-`mcp__*` e as suas próprias ferramentas de leitura, escrita, edição e shell
-correm sem serem vistas.
+`--dangerously-skip-permissions`; o Control Center vê as suas chamadas `mcp__*` e, através de um hook, as suas linhas de comandos `Bash`, enquanto as suas próprias ferramentas de leitura, escrita e edição correm sem serem vistas.
 
 O ecrã de configurações mostra esta matriz, porque a única falha imperdoável num
 sistema de barreiras é reivindicar uma cobertura que não existe.

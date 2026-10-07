@@ -31,27 +31,46 @@ int _transcriptCharsOf(Map<dynamic, dynamic> metadata) {
   return 0;
 }
 
-/// Transcript size and list metadata from one decode of a metadata cell.
+/// `metadata['context']`'s provider-reported reading, or nulls when the
+/// turn carries none.
+({int? tokens, int? window}) _contextOf(Map<dynamic, dynamic> metadata) {
+  final context = metadata['context'];
+  if (context is! Map) {
+    return (tokens: null, window: null);
+  }
+  int? read(Object? value) => value is num ? value.toInt() : null;
+  return (tokens: read(context['tokens']), window: read(context['window']));
+}
+
+/// Transcript size, context reading and list metadata from one decode of a
+/// metadata cell.
 ///
 /// The returned list text is [raw] itself when there is no `segments` array, so a
 /// plain message stays byte-identical. An array is removed and replaced with
 /// `segments_elided` and `segment_count`.
-({int transcriptChars, String? listMetadata}) _stampMetadataJson(String? raw) {
+({
+  int transcriptChars,
+  ({int? tokens, int? window}) context,
+  String? listMetadata,
+})
+_stampMetadataJson(String? raw) {
+  const none = (tokens: null, window: null);
   if (raw == null || raw.isEmpty) {
-    return (transcriptChars: 0, listMetadata: raw);
+    return (transcriptChars: 0, context: none, listMetadata: raw);
   }
   try {
     final decoded = jsonDecode(raw);
     if (decoded is Map<dynamic, dynamic>) {
       return (
         transcriptChars: _transcriptCharsOf(decoded),
+        context: _contextOf(decoded),
         listMetadata: _listMetadataOf(decoded, raw),
       );
     }
   } on Object {
-    return (transcriptChars: 0, listMetadata: raw);
+    return (transcriptChars: 0, context: none, listMetadata: raw);
   }
-  return (transcriptChars: 0, listMetadata: raw);
+  return (transcriptChars: 0, context: none, listMetadata: raw);
 }
 
 /// [fallback] when [metadata] has no segment array, so the list cell does not
@@ -290,6 +309,48 @@ WHERE conversation_id = ? AND reverted = 0 AND compacted = 0
             )
             .toList(growable: false),
       );
+
+  /// Statement behind [latestContextReading].
+  ///
+  /// Public so a test can `EXPLAIN QUERY PLAN` it: the partial index
+  /// `idx_conversation_messages_context_reading` answers it without touching a
+  /// message row, so a streaming flush re-reads two integers, not a blob.
+  ///
+  /// No `rowid` tie-break, unlike the message lists: the index cannot order
+  /// by it, and asking makes SQLite walk a non-covering index instead — one
+  /// row read per flush, of the turn whose transcript is the largest blob in
+  /// the table. Two readings in the same second of one conversation would
+  /// need two turns finishing a model call within it.
+  static const latestContextReadingSql = '''
+SELECT context_tokens, context_window_tokens
+FROM conversation_messages
+WHERE conversation_id = ? AND reverted = 0 AND context_tokens IS NOT NULL
+ORDER BY created_at DESC
+LIMIT 1
+''';
+
+  /// The newest provider-reported context reading in a conversation, or null
+  /// when no turn has reported one.
+  ///
+  /// The newest reading wins even when a later turn reported none (it failed
+  /// before its first model call): the last thing the model actually read is
+  /// still the best answer to "how full is it".
+  Future<({int tokens, int? window})?> latestContextReading(
+    String conversationId,
+  ) async {
+    final row = await customSelect(
+      latestContextReadingSql,
+      variables: [Variable.withString(conversationId)],
+      readsFrom: {conversationMessagesTable},
+    ).getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return (
+      tokens: row.read<int>('context_tokens'),
+      window: row.read<int?>('context_window_tokens'),
+    );
+  }
 
   /// Returns one page of a conversation's messages strictly older than the cursor,
   /// newest-first, each paired with its stable `rowid`.
@@ -876,7 +937,7 @@ LIMIT 1
   /// Inserts a message.
   ///
   /// Stamps [ConversationMessagesTable.contentChars],
-  /// [ConversationMessagesTable.transcriptChars], and
+  /// [ConversationMessagesTable.transcriptChars], the context reading and
   /// [ConversationMessagesTable.listMetadata] in the same statement. A
   /// follow-up update would fire the sync trigger a second time and make the
   /// message-list watch run twice per send.
@@ -889,6 +950,8 @@ LIMIT 1
       entry.copyWith(
         contentChars: Value(_sqliteTextLength(content)),
         transcriptChars: Value(stamp.transcriptChars),
+        contextTokens: Value(stamp.context.tokens),
+        contextWindowTokens: Value(stamp.context.window),
         listMetadata: Value(stamp.listMetadata),
       ),
     );
@@ -1053,6 +1116,7 @@ LIMIT 1
   }) {
     final meta = metadata;
     final encoded = meta == null ? null : jsonEncode(meta);
+    final context = meta == null ? null : _contextOf(meta);
     return (update(
       conversationMessagesTable,
     )..where((t) => t.id.equals(messageId))).write(
@@ -1067,6 +1131,12 @@ LIMIT 1
             : Value(_listMetadataOf(meta, encoded!)),
         transcriptChars: meta != null
             ? Value(_transcriptCharsOf(meta))
+            : const Value.absent(),
+        contextTokens: context != null
+            ? Value(context.tokens)
+            : const Value.absent(),
+        contextWindowTokens: context != null
+            ? Value(context.window)
             : const Value.absent(),
         messageType: messageType != null
             ? Value(messageType)
@@ -1125,15 +1195,7 @@ LIMIT 1
   /// Deletes a space and all its messages and participants.
   ///
   /// The SPACE row goes first and FK `ON DELETE CASCADE` takes the children
-  /// with it. Order matters for cost, not correctness: the sync-feed triggers
-  /// on the child tables resolve their workspace with
-  /// `(SELECT workspace_id FROM spaces WHERE id = OLD.space_id)` and fire
-  /// only `WHEN` that is non-null. Deleting children first left the parent in
-  /// place, so every one of a 10k-message space's rows ran three statements
-  /// plus that subselect and wrote a `sync_changes` row — inside the database's
-  /// only write transaction. With the parent gone the guard is false and the
-  /// cascade is silent, which is also what delta clients expect: they see the
-  /// space's own delete change and cascade child removal locally.
+  /// with it.
   Future<void> deleteSpaceCascade(String spaceId) => transaction(() async {
     await (delete(spacesTable)..where((t) => t.id.equals(spaceId))).go();
     // Belt and braces for a row whose FK somehow did not cascade (a legacy

@@ -2,7 +2,7 @@
 title: Configurar la integración con GitHub
 description: Inicia sesión en GitHub para que funcionen la superficie de PR, el registro de repos y las ejecuciones de agentes.
 slug: es-ES/manual/guias/integracion-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Esta guía cubre las partes específicas de GitHub de la puesta en marcha. GitHub
@@ -80,7 +80,7 @@ del servidor y por último el entorno.
 | Ejecuciones de comprobación | La API Checks de GitHub                                                                                         |
 | Publicación de revisiones   | Un paso que activa el usuario y que publica tu revisión en la PR                                                |
 | Registro de repos           | Se acepta un checkout si su remoto `origin` apunta a github.com — o a gitlab.com / bitbucket.org                |
-| Acceso de los agentes a GitHub | El bróker de credenciales inyecta el token como `GH_TOKEN` / `GITHUB_TOKEN`, condicionado por las capacidades del agente |
+| Acceso de los agentes a GitHub | El bróker de credenciales inyecta un token de solo lectura como `GH_TOKEN` / `GITHUB_TOKEN`; los push pasan por Control Center |
 | Avisos de notificación      | Un sondeo en el servidor de tu bandeja de notificaciones de GitHub genera «Mencionado en pull request» y «Revisión solicitada» |
 | Perfiles de usuario         | Tarjetas de perfil al pasar el cursor y filtrado de PR por autor                                                |
 
@@ -100,8 +100,10 @@ minutos.
 
 ## Cómo actúan los agentes en GitHub
 
-- Un agente solo recibe un token de GitHub si tiene **Permitir llamadas a la API
-  de GitHub** o **Permitir git push**. Consulta
+- Un agente que trabaja en un worktree de GitHub recibe siempre un token de
+  GitHub de solo lectura. Un push pasa por Control Center, que pregunta a la
+  regla **Enviar a un remoto** y luego lo reenvía con un token de escritura que
+  el agente nunca tiene. Consulta
   [Configurar políticas del entorno aislado](/es-ES/manual/guias/politicas-de-entorno-aislado/)
 - Los commits que hace un agente se firman **como el agente** — el nombre
   visible más ` (agent)`, en una dirección sintética derivada del id del agente
@@ -112,11 +114,12 @@ minutos.
   lanzamiento, en lugar de entregar un token amplio. La instalación se resuelve
   a partir del **propietario** del repo de la ejecución, así que una app
   instalada en varias cuentas se limita correctamente a la que toque la
-  ejecución. Sin app, los agentes reciben el token del entorno
-- Una ejecución solicitada por un miembro que ha iniciado sesión actúa con **la
-  identidad de GitHub de ese miembro** — su credencial se combina después del
-  entorno del bróker, así que un commit o un comentario que un agente hace por
-  él es atribuible a él
+  ejecución. Sin app, los agentes reciben el token del entorno, que no se puede
+  restringir a solo lectura: la regla de push vincula entonces `git push`, pero
+  no el código que usa el token directamente
+- El token es siempre el del bróker, nunca el propio del miembro que lo pide.
+  El token del servidor se retiene a una ejecución que actúa por un miembro que
+  no es el propietario y no ha conectado GitHub
 
 ## Solución de problemas
 

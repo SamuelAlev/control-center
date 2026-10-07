@@ -2,7 +2,7 @@
 title: Configurar guardrails
 description: Defina regras de permitir, perguntar primeiro e negar para ações de agentes, teste-as com a sonda hipotética e ajuste a autonomia de cada espaço.
 slug: pt-BR/manual/guias/configurar-guardrails
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Este guia mostra como configurar guardrails: as regras que decidem se a ação de
@@ -133,12 +133,14 @@ dentro do app disto: por classe de efeito, ela diz se cada executor a captura no
 portão de política, se a deixa para o sandbox ou se não consegue interceptá-la
 de forma alguma.
 
-- **O adaptador Claude Code** não passa por nenhum portão nas próprias chamadas
-  de ferramentas. O Claude Code é iniciado com `--dangerously-skip-permissions`,
-  então suas chamadas de leitura, escrita, edição e bash nunca passam pela
-  verificação dos guardrails. O que passa pelo portão nesse adaptador é a
-  superfície de ferramentas MCP para a qual ele chama de volta e o comando de
-  shell que o Control Center gera para iniciá-lo.
+- **O adaptador Claude Code** só passa por um portão em parte das próprias
+  chamadas de ferramentas. O Claude Code é iniciado com
+  `--dangerously-skip-permissions`, então suas chamadas de leitura, escrita e
+  edição nunca passam pela verificação dos guardrails. Seus comandos de bash
+  chegam a ela por meio de um hook que classifica a linha de comando, e seus
+  pushes passam pelo gateway de push como os de qualquer agente. Também passam
+  pelo portão a superfície de ferramentas MCP para a qual ele chama de volta e
+  o comando de shell que o Control Center gera para iniciá-lo.
 - **O verbo de saída de um modo** (`submit_plan`, `propose_orchestration`) é
   fixado e nunca pode ser negado — caso contrário, um modo ficaria
   estruturalmente incapaz de produzir seu único entregável.

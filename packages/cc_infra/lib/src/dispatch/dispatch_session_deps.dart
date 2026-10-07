@@ -8,7 +8,6 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
@@ -22,6 +21,7 @@ import 'package:cc_harness/tools.dart' show FileSearchPort;
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
+import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/harness/cc_natives_file_search_port.dart';
@@ -37,7 +37,6 @@ class SandboxDispatchDeps {
     required this.broker,
     required this.agentRepo,
     required this.runLogRepo,
-    required this.defaultCaps,
     required this.eventBus,
     required this.backendRegistry,
     this.todoRepo,
@@ -55,6 +54,7 @@ class SandboxDispatchDeps {
     this.debugSupervisor,
     this.kernelLauncherFactory,
     this.actionGuard,
+    this.agentRunGateway,
     this.mcpRegistry,
     this.skillScanner,
     this.harnessCredentialStore,
@@ -112,7 +112,7 @@ class SandboxDispatchDeps {
   /// Credential broker that mints per-run scoped tokens.
   final CredentialBrokerPort broker;
 
-  /// Agent repository (capability lookup).
+  /// Agent repository (display-name lookup for the run's git identity).
   final AgentRepository agentRepo;
 
   /// Optional run-log repository.
@@ -130,9 +130,6 @@ class SandboxDispatchDeps {
   /// invocation as the conversation's working goal (surfaced in the General
   /// pane with the todos nested beneath it). Null skips goal persistence.
   final TodoRepository? todoRepo;
-
-  /// Default capabilities when an agent has none.
-  final AgentCapabilities defaultCaps;
 
   /// Optional domain event bus.
   final DomainEventBus? eventBus;
@@ -248,6 +245,12 @@ class SandboxDispatchDeps {
   /// the MCP dispatcher's guard never sees them). Null skips the gate; the
   /// autonomy dial + fail-closed approval remain the residual net.
   final ActionGuardService? actionGuard;
+
+  /// Puts the action policy between an agent's shell and the forge: every
+  /// GitHub push is routed through it ("Push to a remote"), and Claude Code's
+  /// `Bash` calls are asked about through its PreToolUse hook. Null leaves a
+  /// run with a read-only forge token and no push path — fail closed.
+  final AgentRunGateway? agentRunGateway;
 
   /// The MCP tool registry, exposing CC's orchestration tools to the built-in
   /// harness loop as first-class tools. Null disables MCP tools in the harness

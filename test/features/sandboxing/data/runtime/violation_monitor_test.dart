@@ -36,7 +36,6 @@ void main() {
       expect(result.violation.action, 'file-read-data');
       expect(result.violation.target, '/tmp/secret');
       expect(result.violation.raw, line);
-      expect(result.violation.suggestedCapability, isNull);
     });
 
     test('parses deny without error code', () {
@@ -74,19 +73,16 @@ void main() {
       expect(result, isNotNull);
       expect(result!.violation.action, 'network-outbound');
       expect(result.violation.target, 'github.com:443');
-      expect(result.violation.suggestedCapability, 'canCallGitHubApi');
     });
 
-    test(
-      'parses network-outbound to non-github host and suggests generic capability',
-      () {
-        const line =
-            '{"eventMessage":"Sandbox: curl(111) deny(1) network-outbound api.example.com:443"}';
-        final result = SandboxViolationMonitor.parseLogLine(line);
-        expect(result, isNotNull);
-        expect(result!.violation.suggestedCapability, 'canAccessNetwork');
-      },
-    );
+    test('parses network-outbound to a non-github host', () {
+      const line =
+          '{"eventMessage":"Sandbox: curl(111) deny(1) network-outbound api.example.com:443"}';
+      final result = SandboxViolationMonitor.parseLogLine(line);
+      expect(result, isNotNull);
+      expect(result!.violation.action, 'network-outbound');
+      expect(result.violation.target, 'api.example.com:443');
+    });
 
     test('handles eventMessage without process info gracefully', () {
       const line = '{"eventMessage":" deny(1) file-read-data /tmp/x"}';
@@ -133,15 +129,10 @@ void main() {
       String? processName,
       String action = 'file-read-data',
       String target = '/tmp/test',
-      String? suggestedCapability,
     }) {
       return ParsedLine(
         processName: processName,
-        violation: SandboxViolation(
-          action: action,
-          target: target,
-          suggestedCapability: suggestedCapability,
-        ),
+        violation: SandboxViolation(action: action, target: target),
       );
     }
 
@@ -452,92 +443,6 @@ void main() {
           );
           expect(SandboxViolationMonitor.isNoise(p), isTrue);
         },
-      );
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // suggestCapability — maps violations to agent capability flags
-  // -------------------------------------------------------------------------
-
-  group('suggestCapability', () {
-    test('network action targeting github.com → canCallGitHubApi', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'network-outbound',
-          'github.com:443',
-        ),
-        'canCallGitHubApi',
-      );
-    });
-
-    test('network action targeting api.github.com → canCallGitHubApi', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'network-outbound',
-          'api.github.com:443',
-        ),
-        'canCallGitHubApi',
-      );
-    });
-
-    test('network action targeting non-github host → canAccessNetwork', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'network-outbound',
-          'api.example.com:443',
-        ),
-        'canAccessNetwork',
-      );
-    });
-
-    test('network-inbound → canAccessNetwork', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'network-inbound',
-          '0.0.0.0:3000',
-        ),
-        'canAccessNetwork',
-      );
-    });
-
-    test('file-read-data → null (no capability suggested)', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'file-read-data',
-          '/tmp/secret',
-        ),
-        isNull,
-      );
-    });
-
-    test('file-write-create → null', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'file-write-create',
-          '/tmp/output.txt',
-        ),
-        isNull,
-      );
-    });
-
-    test('mach-lookup → null', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'mach-lookup',
-          'com.apple.audio',
-        ),
-        isNull,
-      );
-    });
-
-    test('user-preference-write → null', () {
-      expect(
-        SandboxViolationMonitor.suggestCapability(
-          'user-preference-write',
-          'com.apple.Terminal',
-        ),
-        isNull,
       );
     });
   });

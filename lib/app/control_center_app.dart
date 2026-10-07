@@ -17,7 +17,6 @@ import 'package:control_center/features/shell/presentation/widgets/title_bar_wor
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
 import 'package:control_center/features/workspaces/providers/rpc_client_workspace_sync_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_switch_gc_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -64,8 +63,6 @@ class ControlCenterApp extends ConsumerWidget {
     ref.watch(presenceLocusSyncProvider);
     ref.watch(followSyncProvider);
     ref.watch(spotlightSyncProvider);
-    // Reclaims the previous workspace's synced-store row mirrors on switch.
-    ref.watch(workspaceSwitchGcProvider);
     // Write-through cache of the active workspace's display info, so the
     // title-bar chip renders the right name/logo on a cold start instead of
     // flashing "no workspace". Watched from the ROOT on purpose: it is the one

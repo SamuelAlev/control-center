@@ -2,7 +2,7 @@
 title: GitHub entegrasyonunu kurma
 description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'da oturum açın.
 slug: tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Bu kılavuz, kurulumun GitHub'a özgü kısımlarını ele alır. GitHub, desteklenen üç
@@ -81,7 +81,7 @@ sahibinin kimlik bilgisini, ardından ortamı kullanır.
 | Kontrol çalıştırmaları | GitHub Checks API'si                                                                                          |
 | İnceleme yayımlama    | İncelemenizi PR'a gönderen, kullanıcı kapılı bir adım                                                          |
 | Depo kaydı            | Bir checkout, `origin` remote'u github.com'a — ya da gitlab.com / bitbucket.org'a — işaret ediyorsa kabul edilir |
-| Ajanın GitHub erişimi | Kimlik bilgisi broker'ı token'ı `GH_TOKEN` / `GITHUB_TOKEN` olarak enjekte eder; bu, ajanın yeteneklerine kapılıdır |
+| Ajanın GitHub erişimi | Kimlik bilgisi broker'ı salt okunur bir token'ı `GH_TOKEN` / `GITHUB_TOKEN` olarak enjekte eder; push'lar Control Center'dan geçer |
 | Bildirim ping'leri    | GitHub bildirim gelen kutunuzu sunucu tarafında yoklamak "Pull request'te bahsedildi" ve "İnceleme istendi" bildirimlerini tetikler |
 | Kullanıcı profilleri  | Profil üzerine gelme kartları ve yazara göre PR filtreleme                                                     |
 
@@ -100,8 +100,10 @@ için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
 
 ## Ajanların GitHub'da nasıl davrandığını bilin
 
-- Bir ajan GitHub token'ını yalnızca **GitHub API çağrılarına izin ver** ya da
-  **git push'a izin ver** yetkisi varsa alır. Bkz.
+- Bir GitHub çalışma ağacında çalışan bir ajan her zaman salt okunur bir GitHub
+  token'ı alır. Bir push, **Uzak depoya push et** kuralına soran ve ardından onu
+  ajanın asla elinde tutmadığı bir yazma token'ıyla ileten Control Center'dan
+  geçer. Bkz.
   [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
 - Bir ajanın yaptığı commit'ler **ajan olarak** yazılır — görünen ad artı
   ` (agent)`, ajanın kimliğine göre anahtarlanmış sentetik bir adreste — asla bir
@@ -110,11 +112,12 @@ için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
   başlatma için ince taneli, depo kapsamlı, kabaca bir saatlik kurulum token'ları
   üretir. Kurulum, çalıştırmanın deposunun **sahibinden** çözülür; böylece birkaç
   hesaba kurulmuş tek bir uygulama, çalıştırmanın hangisine dokunduğuna göre
-  doğru şekilde kapsamlanır. Uygulama yoksa ajanlar ortam token'ını alır
-- Oturum açmış bir üye tarafından istenen çalıştırma, **o üyenin** GitHub kimliği
-  altında hareket eder — kimlik bilgileri broker'ın ortamından sonra
-  birleştirilir; böylece bir ajanın onlar için yaptığı commit ya da yorum onlara
-  atfedilebilir
+  doğru şekilde kapsamlanır. Uygulama yoksa ajanlar, salt okunura daraltılamayan
+  ortam token'ını alır: push kuralı o zaman `git push`'u bağlar, ama token'ı
+  doğrudan kullanan kodu bağlamaz
+- Token her zaman broker'ındır, asla isteği yapan üyenin kendisinin değildir.
+  Sunucunun token'ı, sahibi olmayan ve GitHub'ı bağlamamış bir üye adına hareket
+  eden bir çalıştırmadan esirgenir
 
 ## Sorun giderme
 

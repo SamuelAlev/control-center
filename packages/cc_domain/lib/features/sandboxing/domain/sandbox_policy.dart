@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile.dart';
 import 'package:cc_domain/features/sandboxing/domain/network_baseline.dart';
@@ -27,6 +26,7 @@ class SandboxPolicySpec {
     this.runDir,
     this.runnerStateDirs = const [],
     this.execGrantRoots = const [],
+    this.loopbackPorts = const [],
   });
 
   /// Sandbox session id.
@@ -86,6 +86,9 @@ class SandboxPolicySpec {
   /// ignores them: bwrap has no `$HOME` exec block to re-open.
   final List<String> execGrantRoots;
 
+  /// See [SandboxSpec.loopbackPorts].
+  final List<int> loopbackPorts;
+
   /// Returns a copy with the given overrides.
   ///
   /// Exists for the infra materializer, which resolves symlinked paths to the
@@ -113,17 +116,18 @@ class SandboxPolicySpec {
     runDir: runDir,
     runnerStateDirs: runnerStateDirs ?? this.runnerStateDirs,
     execGrantRoots: execGrantRoots ?? this.execGrantRoots,
+    loopbackPorts: loopbackPorts,
   );
 }
 
-/// Pure-Dart resolver that turns a [SandboxSpec] + [AgentCapabilities] +
+/// Pure-Dart resolver that turns a [SandboxSpec] +
 /// mode into a [SandboxPolicySpec]. Holds the baseline domain lists, secrets
 /// globs and dangerous-file/dir names as data — the single source of truth
 /// the infra materializer consults.
 ///
 /// Default-deny network: when the agent cannot access the network, all
 /// egress is blocked. When it can, only the curated baseline plus
-/// capability-granted domains are reachable.
+/// GitHub and the spec's own allowlist are reachable.
 class SandboxPolicyResolver {
   const SandboxPolicyResolver();
 
@@ -245,32 +249,26 @@ class SandboxPolicyResolver {
     'sudo',
   ];
 
-  /// Resolves a sandbox policy from the session spec, capabilities and
-  /// environment anchors.
+  /// Resolves a sandbox policy from the session spec and environment anchors.
   ///
   /// [homeDir] is the real user home (for secrets/mandatory-deny expansion).
   /// [runDir] is the CC-managed writable run directory for the session.
-  /// [ticketingDomains] are added when the agent can call the ticketing
-  /// provider.
+  ///
+  /// GitHub is on the allowlist whenever the network is: what an agent may DO
+  /// there (push, open a PR) is the action policy's call, and the token in its
+  /// environment cannot push — pushes go through the agent run gateway.
   SandboxPolicySpec resolve({
     required SandboxSpec spec,
-    required AgentCapabilities capabilities,
     String? homeDir,
     String? runDir,
-    List<String> ticketingDomains = const [],
   }) {
     // --- Network: default-deny. ---
-    final networkOn = capabilities.canAccessNetwork && spec.networkEnabled;
+    final networkOn = spec.networkEnabled;
     final allowed = <String>[];
     final denied = <String>[...kBaselineDeniedDomains];
     if (networkOn) {
       allowed.addAll(kBaselineAllowedDomains);
-      if (capabilities.canCallGitHubApi || capabilities.canPushToRepo) {
-        allowed.addAll(kGithubDomains);
-      }
-      if (capabilities.canCallTicketing) {
-        allowed.addAll(ticketingDomains);
-      }
+      allowed.addAll(kGithubDomains);
       allowed.addAll(spec.egressAllowlist);
     }
 
@@ -346,6 +344,7 @@ class SandboxPolicyResolver {
         for (final root in spec.execGrantRoots)
           if (root.isNotEmpty) root,
       ],
+      loopbackPorts: spec.loopbackPorts,
     );
   }
 }

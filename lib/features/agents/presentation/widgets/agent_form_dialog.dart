@@ -1,5 +1,4 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/utils/string_utils.dart';
 import 'package:cc_domain/features/agents/domain/constants/builtin_agent_seeds.dart';
@@ -11,7 +10,6 @@ import 'package:control_center/features/agents/presentation/widgets/agent_effort
 import 'package:control_center/features/agents/presentation/widgets/claude_accounts_notice.dart';
 import 'package:control_center/features/agents/presentation/widgets/skill_assignment_section.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
-import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/field_placeholder.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
@@ -19,7 +17,6 @@ import 'package:control_center/features/settings/providers/settings_providers.da
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/capability_toggles.dart';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,8 +68,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
   bool _effortUserEdited = false;
   int? _contextSize;
   int? _silenceTimeout;
-  AgentCapabilities? _capabilities;
-  bool _useCustomCapabilities = false;
   late final TextEditingController _contextSizeCtl;
   late final TextEditingController _silenceTimeoutCtl;
   bool _saving = false;
@@ -131,8 +126,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
     _contextSizeCtl.text = agent.contextSize?.toString() ?? '';
     _silenceTimeout = agent.silenceTimeoutMinutes;
     _silenceTimeoutCtl.text = agent.silenceTimeoutMinutes?.toString() ?? '';
-    _capabilities = agent.capabilities;
-    _useCustomCapabilities = agent.capabilities != null;
   }
 
   void _onFieldChanged() {
@@ -182,8 +175,7 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         _strictMode != a.strictMode ||
         _effort != a.effort ||
         _contextSize != a.contextSize ||
-        _silenceTimeout != a.silenceTimeoutMinutes ||
-        (_useCustomCapabilities ? _capabilities : null) != a.capabilities;
+        _silenceTimeout != a.silenceTimeoutMinutes;
   }
 
   static String? _trimmedOrNull(TextEditingController c) {
@@ -261,7 +253,7 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
   /// one-press irreversible action wearing a ghost button.
   ///
   /// Only the values seeding actually chose are restored. The adapter, model,
-  /// reasoning effort, context window and capabilities are not part of a seed
+  /// reasoning effort and context window are not part of a seed
   /// — silently re-picking someone's runner because they asked for the default
   /// PROFILE would be answering a question they did not ask.
   void _resetToSeed(BuiltinAgentSeed seed) {
@@ -528,31 +520,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
           value: _strictMode,
           onChanged: (v) => setState(() => _strictMode = v),
         ),
-        SettingsToggle(
-          title: l10n.sandboxPermissions,
-          description: _useCustomCapabilities
-              ? l10n.customCapabilitiesDescription
-              : l10n.useWorkspaceDefault,
-          value: _useCustomCapabilities,
-          onChanged: (v) => setState(() {
-            _useCustomCapabilities = v;
-            if (v && _capabilities == null) {
-              _capabilities = ref.read(defaultCapabilitiesProvider);
-            }
-          }),
-        ),
-        if (_useCustomCapabilities)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(
-              start: AppSpacing.sm,
-              top: AppSpacing.xs,
-            ),
-            child: CapabilityToggles(
-              value: _capabilities ?? AgentCapabilities.safeDefault,
-              compact: true,
-              onChanged: (next) => setState(() => _capabilities = next),
-            ),
-          ),
       ],
     );
   }
@@ -708,8 +675,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         contextSize: _contextSize,
         silenceTimeoutMinutes: _silenceTimeout,
         removeSilenceTimeoutMinutes: _silenceTimeout == null,
-        capabilities: _useCustomCapabilities ? _capabilities : null,
-        removeCapabilities: !_useCustomCapabilities,
       );
       // Skill files and agent markdown live on the host filesystem. A demo
       // admits neither write. The agent row, including which skills it

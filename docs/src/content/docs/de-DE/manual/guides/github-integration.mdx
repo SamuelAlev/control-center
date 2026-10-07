@@ -2,7 +2,7 @@
 title: GitHub-Integration einrichten
 description: Melde dich bei GitHub an, damit PR-Oberfläche, Repo-Registrierung und Agentenläufe funktionieren.
 slug: de-DE/handbuch/anleitungen/github-integration
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Diese Anleitung behandelt die GitHub-spezifischen Teile der Einrichtung. GitHub ist einer von drei
@@ -76,7 +76,7 @@ Umgebung.
 | Check-Runs                | Die GitHub Checks API                                                                                          |
 | Review veröffentlichen    | Ein Schritt, den ein Nutzer auslöst und der dein Review an den PR postet                                      |
 | Repo-Registrierung        | Ein Checkout wird angenommen, wenn sein `origin`-Remote auf github.com zeigt — oder auf gitlab.com / bitbucket.org |
-| GitHub-Zugang für Agenten | Der Zugangsdaten-Broker injiziert das Token als `GH_TOKEN` / `GITHUB_TOKEN`, begrenzt durch die Befugnisse des Agenten |
+| GitHub-Zugang für Agenten | Der Zugangsdaten-Broker injiziert ein Token, das nur lesen darf, als `GH_TOKEN` / `GITHUB_TOKEN`; Pushes laufen durch Control Center |
 | Benachrichtigungen        | Eine serverseitige Abfrage deines GitHub-Benachrichtigungspostfachs erzeugt „In Pull Request erwähnt“ und „Review angefragt“ |
 | Nutzerprofile             | Profilkarten beim Überfahren und die Filterung der PRs nach Autor                                             |
 
@@ -95,8 +95,10 @@ Klicke auf das Kennzeichen, um ein Fenster mit dem Zustand jedes Anbieters und d
 
 ## So handeln Agenten auf GitHub
 
-- Ein Agent bekommt nur dann ein GitHub-Token, wenn er **GitHub-API-Aufrufe erlauben** oder
-  **git push erlauben** hat. Siehe
+- Ein Agent, der in einem GitHub-Worktree arbeitet, bekommt immer ein
+  GitHub-Token, das nur lesen darf. Ein Push läuft durch Control Center, das
+  die Regel **Zu einem Remote pushen** fragt und ihn dann mit einem
+  Schreib-Token weiterleitet, das der Agent nie besitzt. Siehe
   [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/)
 - Commits, die ein Agent macht, entstehen **als der Agent** — Anzeigename plus
   ` (agent)`, an einer synthetischen Adresse, die sich aus der ID des Agenten ableitet — nie als Mensch.
@@ -105,9 +107,12 @@ Klicke auf das Kennzeichen, um ein Fenster mit dem Zustand jedes Anbieters und d
   Installationstokens mit etwa einer Stunde Gültigkeit aus, statt ein breites Token
   weiterzugeben. Die Installation ergibt sich aus dem **Besitzer** des Repos dieses Laufs, deshalb
   gilt eine App, die auf mehreren Konten installiert ist, genau für das Konto, das der
-  Lauf berührt. Ohne App erhalten Agenten das Token aus der Umgebung
-- Ein Lauf, den ein angemeldetes Mitglied anfordert, handelt unter **der GitHub-Identität dieses Mitglieds** —
-  dessen Zugangsdatum wird nach der Umgebung des Brokers eingemischt, ein Commit oder Kommentar, den ein Agent für dieses Mitglied macht, lässt sich ihm also zuordnen
+  Lauf berührt. Ohne App erhalten Agenten das Token aus der Umgebung, das sich
+  nicht auf Lesen beschränken lässt: Die Push-Regel bindet dann `git push`,
+  aber nicht Code, der das Token direkt nutzt
+- Das Token ist immer das des Brokers, nie das eigene des anfragenden
+  Mitglieds. Das Token des Servers wird einem Lauf vorenthalten, der für ein
+  Mitglied handelt, das nicht der Besitzer ist und GitHub nicht verbunden hat
 
 ## Fehlersuche
 

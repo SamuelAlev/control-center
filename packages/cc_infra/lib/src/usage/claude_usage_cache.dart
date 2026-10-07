@@ -14,6 +14,7 @@ class ClaudeUsageCache {
     required this._fetch,
     this.ttl = const Duration(minutes: 5),
     this.errorTtl = const Duration(minutes: 2),
+    this.forceFloor = const Duration(seconds: 30),
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -27,15 +28,26 @@ class ClaudeUsageCache {
   /// How long a failed reading is reused before another request is allowed.
   final Duration errorTtl;
 
+  /// The youngest reading a forced read will replace. A refresh button is a
+  /// button: clicked repeatedly it must not become the 429 storm this cache
+  /// exists to prevent, so a reading this fresh is returned as-is.
+  final Duration forceFloor;
+
   final Map<String, ({DateTime at, SubscriptionUsage usage})> _entries = {};
   final Map<String, Future<SubscriptionUsage>> _inFlight = {};
 
   /// Usage for [configDir], from cache when it is fresh enough.
-  Future<SubscriptionUsage> get(String configDir) async {
+  ///
+  /// [force] is the operator asking for a new reading now: it ignores [ttl]
+  /// and [errorTtl] down to [forceFloor], and still joins a fetch already in
+  /// flight rather than starting a second one.
+  Future<SubscriptionUsage> get(String configDir, {bool force = false}) async {
     final cached = _entries[configDir];
     if (cached != null) {
       final age = _now().difference(cached.at);
-      final limit = cached.usage.status == SubscriptionStatus.ok
+      final limit = force
+          ? forceFloor
+          : cached.usage.status == SubscriptionStatus.ok
           ? ttl
           : errorTtl;
       if (age < limit) {

@@ -2,13 +2,13 @@
 title: Backendy sandboxa
 description: Backendy sandboxa, miejsca ich stosowania oraz każdy obiekt wartości używany przez runtime sandboxa.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/backendy-sandboxa
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[To, czy uruchomienie działa w sandboxie, zależy od hosta]
 `cc_server` sonduje host raz przy starcie i opakowuje wysyłanie agentów w backend natywny, gdy sonda zgłosi dostępny backend, a `--sandbox` nie ma wartości `off`. Opakowane są oba punkty podłączenia wysyłania: CLI Claude Code przez port sandboxa oraz ACP i wbudowane narzędzie `bash` harnessa przez menedżer sandboxa.
 
-Tam, gdzie sonda nie zgłasza żadnego backendu — **zawsze w Windows** oraz w Linuksie lub WSL2 bez `bwrap` i `socat` — uruchomienia agentów **nie są sandboxowane**. ACP i narzędzie `bash` harnessa nadal startują z sanityzacją środowiska; Claude Code przechodzi przez `NoSandboxAdapter` i dziedziczy środowisko hosta. Pozostałe granice to własny worktree uruchomienia (copy-on-write tam, gdzie dostarczany jest `rift`; `git worktree` w Windows), poświadczenia bramkowane możliwościami, brokerowane przy każdym starcie i odwoływane przy zamykaniu, polityka poleceń dla danego trybu, ujednolicone [guardraile akcji](/pl-PL/podrecznik/koncepcje/guardraile/) (domyślnie odmawiające), sanityzacja środowiska na ścieżkach ACP i `bash` harnessa oraz powierzchnia narzędzi dozwolona przez jego tryb.
+Tam, gdzie sonda nie zgłasza żadnego backendu — **zawsze w Windows** oraz w Linuksie lub WSL2 bez `bwrap` i `socat` — uruchomienia agentów **nie są sandboxowane**. ACP i narzędzie `bash` harnessa nadal startują z sanityzacją środowiska; Claude Code przechodzi przez `NoSandboxAdapter` i dziedziczy środowisko hosta. Pozostałe granice to własny worktree uruchomienia (copy-on-write tam, gdzie dostarczany jest `rift`; `git worktree` w Windows), token hosta kodu tylko do odczytu, brokerowany przy każdym starcie i odwoływany przy zamykaniu, push, który musi przejść regułę push w bramie uruchomień agentów, polityka poleceń dla danego trybu, ujednolicone [guardraile akcji](/pl-PL/podrecznik/koncepcje/guardraile/) (domyślnie odmawiające), sanityzacja środowiska na ścieżkach ACP i `bash` harnessa oraz powierzchnia narzędzi dozwolona przez jego tryb.
 
 Narzędzia plikowe harnessa działające w procesie (read, write, edit, apply patch, search, find, search_files) są poza sandboxem na każdym hoście: działają w procesie serwera, więc opakowany jest tylko `bash`.
 :::
@@ -98,7 +98,7 @@ Brak sandboxowania. Proces działa bezpośrednio na hoście, z dostępem hosta d
 
 Terminal jest sandboxowany na własnych zasadach, a nie przez sondę wysyłania. `defaultBackend` w `TerminalSessionService` ma wartość `none` i `cc_server` go nie nadpisuje, więc sesja terminala uruchamia powłokę hosta, chyba że klient wprost poprosi o `native` — panel terminala w aplikacji desktopowej tego nie robi.
 
-Gdy zażądano `native`, powłoka jest opakowywana przez `SandboxManager` w stałym profilu terminala: `$HOME` i katalog roboczy sesji mają prawo zapisu, sieć jest otwarta, a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` i `~/Library/Keychains` mają zakaz odczytu. Bramkowanie możliwości nie ma zastosowania — to sprawa wysyłania. Jeśli opakowanie nie jest obsługiwane, sesja kończy się błędem, zamiast pokazywać natywną plakietkę na PTY z powłoką hosta.
+Gdy zażądano `native`, powłoka jest opakowywana przez `SandboxManager` w stałym profilu terminala: `$HOME` i katalog roboczy sesji mają prawo zapisu, sieć jest otwarta, a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` i `~/Library/Keychains` mają zakaz odczytu. Token hosta kodu tylko do odczytu i brama push nie mają tu zastosowania — to sprawy wysyłania. Jeśli opakowanie nie jest obsługiwane, sesja kończy się błędem, zamiast pokazywać natywną plakietkę na PTY z powłoką hosta.
 
 ## Ruch wychodzący w sieci
 
@@ -107,9 +107,9 @@ Gdy sandbox jest uruchamiany, dostęp wychodzący do sieci jest egzekwowany prze
 - Runtime sandboxa uruchamia proxy HTTP/HTTPS oraz proxy SOCKS5 na `127.0.0.1` wewnątrz procesu `cc_server`, **po jednej parze na ograniczoną sesję** (`http_proxy.dart`, `socks_proxy.dart`). Równoległe uruchomienia nie dzielą pary.
 - Procesy w sandboxie otrzymują zmienne środowiskowe proxy (`HTTP_PROXY`/`HTTPS_PROXY` → proxy HTTP, `ALL_PROXY` → proxy SOCKS; `GIT_SSH_COMMAND` kieruje git po SSH przez proxy SOCKS). W Linuksie przestrzeń nazw sieci jest niewspółdzielona, więc proxy to jedyne wyjście; w macOS sandbox współdzieli pętlę zwrotną hosta i rozmawia z nimi bezpośrednio.
 - Docelowy host każdego połączenia jest dopasowywany do listy dozwolonych domen sesji; wszystko inne jest odrzucane. Istnieją dwie formy wieloznaczne, każda z dokładnie jednym `*`: wiodąca `*.example.com` pasuje do dowolnej subdomeny (w tym `a.b.example.com`), ale nie do samej domeny głównej; środkowa etykieta `bedrock.*.amazonaws.com` pasuje do dokładnie jednej etykiety (`bedrock.us-east-1.amazonaws.com`, a nie `bedrock.evil.attacker.amazonaws.com`).
-- Lista dozwolonych jest wyznaczana dla każdej sesji na podstawie wyselekcjonowanej bazy (`kBaselineAllowedDomains`: dostawcy LLM, hosting Git, rejestry pakietów) plus domeny GitHub, gdy agent ma możliwości GitHub lub push, plus `SandboxSpec.egressAllowlist`. Resolver przyjmuje też domeny dostawców systemów zgłoszeń, gdy agent może wywoływać system zgłoszeń, ale ścieżka wysyłania nigdy nie przekazuje tej listy (ani dodatkowych wpisów `egressAllowlist`), więc w praktyce każde uruchomienie dostaje bazę plus domeny GitHub, które zapewniają mu jego możliwości.
+- Lista dozwolonych jest wyznaczana dla każdej sesji na podstawie wyselekcjonowanej bazy (`kBaselineAllowedDomains`: dostawcy LLM, hosting Git, rejestry pakietów) plus domeny GitHub (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Ścieżka wysyłania nigdy nie przekazuje dodatkowych wpisów `egressAllowlist`, więc w praktyce każde uruchomienie dostaje bazę plus GitHuba.
 - Stała lista zakazów (`kBaselineDeniedDomains`: punkty końcowe metadanych chmury, ujścia telemetrii) ma pierwszeństwo przed wszystkimi zezwoleniami.
-- `networkEnabled: false` (albo agent bez możliwości sieciowej) nadal uruchamia proxy dla sesji, ale lista dozwolonych jest pusta, więc każde połączenie wychodzące jest odrzucane.
+- `networkEnabled: false` nadal uruchamia proxy dla sesji, ale lista dozwolonych jest pusta, więc każde połączenie wychodzące jest odrzucane. Wysyłanie ustawia tę wartość na starcie uruchomienia na podstawie reguły **Dostęp do sieci**: odmowa wyłącza sieć, zezwól i zapytaj najpierw zostawiają ją włączoną.
 
 ## SandboxSpec
 
@@ -121,11 +121,10 @@ Specyfikacja przekazywana do `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Identyfikator obszaru roboczego będącego właścicielem                                                                                                                         |
 | `agentId`         | `String?`                                   | Agent aktualnie powiązany z sandboxem, jeśli istnieje                                                                                                |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Montowania host→gość; sandbox widzi tylko wymienione tu ścieżki hosta                                                                         |
-| `networkEnabled`  | `bool` (domyślnie `true`)                     | Łączone z możliwością sieciową agenta. Gdy wyłączone, proxy dla sesji nadal startują, ale lista dozwolonych jest pusta, więc każde połączenie wychodzące jest odrzucane |
-| `egressAllowlist` | `List<String>` (domyślnie `[]`)               | Dodatkowe dozwolone domeny ruchu wychodzącego; obsługiwane wieloznaczniki (`*.example.com` oraz środkowa forma z jedną etykietą). Wysyłanie nigdy tego nie wypełnia, więc opakowane uruchomienie dostaje wyselekcjonowaną bazę plus domeny GitHub, które zapewniają mu jego możliwości |
+| `networkEnabled`  | `bool` (domyślnie `true`)                     | Ustawiane przy wysyłaniu na podstawie reguły ruchu wychodzącego sieci (wyłączone tylko wtedy, gdy rozstrzyga się na odmowę). Gdy wyłączone, proxy dla sesji nadal startują, ale lista dozwolonych jest pusta, więc każde połączenie wychodzące jest odrzucane |
+| `egressAllowlist` | `List<String>` (domyślnie `[]`)               | Dodatkowe dozwolone domeny ruchu wychodzącego; obsługiwane wieloznaczniki (`*.example.com` oraz środkowa forma z jedną etykietą). Wysyłanie nigdy tego nie wypełnia, więc opakowane uruchomienie dostaje wyselekcjonowaną bazę plus domeny GitHub |
 | `guestWorkdir`    | `String?`                                   | Domyślny katalog roboczy wewnątrz sandboxa; pojedyncze wywołania `exec` mogą go nadpisać                                                       |
 | `mode`            | `Mode` (domyślnie `chat`)                     | Wycina reguły zapisu systemu plików: `chat` pozostawia montowania z prawem zapisu; `review`, `plan` i `orchestrate` są tylko do odczytu                      |
-| `capabilities`    | `AgentCapabilities` (domyślnie `safeDefault`) | Wyprowadza decyzję o włączeniu/wyłączeniu sieci oraz domeny ruchu wychodzącego GitHub. Domeny systemu zgłoszeń to argument resolvera, którego ścieżka wysyłania nigdy nie dostarcza |
 | `protectedPaths`  | `List<String>` (domyślnie `[]`)               | Ścieżki hosta, które nigdy nie mogą mieć prawa zapisu wewnątrz sandboxa, w żadnym trybie                                                                      |
 | `runnerStateDirs` | `List<String>` (domyślnie `[]`)               | Katalogi hosta, w których runner trzyma własny stan, z prawem zapisu w każdym trybie (obecnie zarządzany przez Control Center `CLAUDE_CONFIG_DIR`) |
 | `execGrantRoots`  | `List<String>` (domyślnie `[]`)               | Zatwierdzone przez operatora drzewa katalogów, które ponownie otwierają blokadę wykonywania z katalogu z prawem zapisu w macOS. Linux je ignoruje — bwrap nie ma blokady wykonywania w `$HOME`, którą można by ponownie otworzyć |
@@ -183,7 +182,6 @@ Zwracany przez `SandboxPort.launch`:
 | --------------------- | --------- | -------------------------------------------------------------------------- |
 | `action`              | `String`  | Zabronione działanie (np. `file-read*`, `network-outbound`)                    |
 | `target`              | `String`  | Ścieżka lub host będący celem zabronionej operacji                   |
-| `suggestedCapability` | `String?` | Flaga możliwości, która pozwoliłaby na tę akcję (np. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Surowa linia logu, przydatna przy debugowaniu                                         |
 
 ## Zobacz też

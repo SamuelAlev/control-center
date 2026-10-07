@@ -111,6 +111,14 @@ class SpaceProvisioningService {
   /// "stopped" instead of overwriting it with `failed`.
   final Set<String> _cancelledSpaces = {};
 
+  /// The newest [provision] call per space, by [_runSeq]. Only that run
+  /// writes a terminal status: an older one still unwinding (a stopped run
+  /// whose copy outlived the stop, a run a Retry overtook) would otherwise
+  /// stamp `failed` over the run that replaced it. Never pruned, so an old run
+  /// cannot pass for the newest once the newest has finished.
+  final Map<String, int> _latestRun = {};
+  int _runSeq = 0;
+
   /// Resolves the repo ids a space selected at creation. Null result → no
   /// selection recorded, provision all workspace repos; an EMPTY list → the
   /// space explicitly checks out nothing. Null callback (or absent) means all
@@ -132,7 +140,10 @@ class SpaceProvisioningService {
     required String spaceId,
   }) async {
     _provisioner.clearSpaceProvisioningCancellation(workspaceId, spaceId);
-    _cancelledSpaces.remove(_key(workspaceId, spaceId));
+    final key = _key(workspaceId, spaceId);
+    _cancelledSpaces.remove(key);
+    final run = ++_runSeq;
+    _latestRun[key] = run;
     await _setStatus(
       workspaceId,
       spaceId,
@@ -142,8 +153,13 @@ class SpaceProvisioningService {
       await _provision(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        run: run,
       ).timeout(await _effectiveTimeout(workspaceId));
     } on Object catch (e, st) {
+      if (_isSuperseded(key, run)) {
+        CcHostLog.info('space provisioning: $spaceId run $run was superseded');
+        return;
+      }
       if (_wasCancelled(workspaceId, spaceId)) {
         // Stopped, not broken. [cancel] already wrote the terminal status;
         // writing `failed` over it here would blame a failure on work the
@@ -194,6 +210,31 @@ class SpaceProvisioningService {
   static String _key(String workspaceId, String spaceId) =>
       '$workspaceId/$spaceId';
 
+  /// Whether a newer [provision] of the same space started after [run]. A
+  /// timed-out run that completes late is still the newest unless someone
+  /// retried, so it still reports its result.
+  bool _isSuperseded(String key, int run) => _latestRun[key] != run;
+
+  /// Whether [run] should stop doing work: stopped, or overtaken by a newer
+  /// run that will do it instead.
+  bool _isStale(String workspaceId, String spaceId, int run) =>
+      _wasCancelled(workspaceId, spaceId) ||
+      _isSuperseded(_key(workspaceId, spaceId), run);
+
+  /// Writes [status] as the outcome of [run], unless a newer run owns the
+  /// space's status by now.
+  Future<void> _finish(
+    String workspaceId,
+    String spaceId,
+    int run,
+    SpaceProvisioningStatus status,
+  ) async {
+    if (_isSuperseded(_key(workspaceId, spaceId), run)) {
+      return;
+    }
+    await _setStatus(workspaceId, spaceId, status);
+  }
+
   /// The watchdog for this run: the base timeout plus one setup-script budget
   /// per scripted repo (see [_setupScriptedRepoCount]). Counted over all the
   /// workspace's repos rather than just this space's selection — conservative,
@@ -218,13 +259,14 @@ class SpaceProvisioningService {
   Future<void> _provision({
     required String workspaceId,
     required String spaceId,
+    required int run,
   }) async {
     // Nothing to provision without repos → ready immediately.
     final repos = await _workspaceRepository
         .watchReposForWorkspace(workspaceId)
         .first;
     if (repos.isEmpty) {
-      await _setStatus(workspaceId, spaceId, SpaceProvisioningStatus.ready);
+      await _finish(workspaceId, spaceId, run, SpaceProvisioningStatus.ready);
       return;
     }
 
@@ -254,7 +296,7 @@ class SpaceProvisioningService {
     // created with every repo deselected → ready without worktrees (the same
     // state as a space in a repo-less workspace).
     if (targetRepoIds.isEmpty) {
-      await _setStatus(workspaceId, spaceId, SpaceProvisioningStatus.ready);
+      await _finish(workspaceId, spaceId, run, SpaceProvisioningStatus.ready);
       return;
     }
 
@@ -268,7 +310,7 @@ class SpaceProvisioningService {
       // head so chat/terminal/files work before the first agent is summoned;
       // an ordinary empty space short-circuits to ready.
       if (prContext == null) {
-        await _setStatus(workspaceId, spaceId, SpaceProvisioningStatus.ready);
+        await _finish(workspaceId, spaceId, run, SpaceProvisioningStatus.ready);
         return;
       }
       await _provisioner.ensureSpaceWorkspace(
@@ -283,7 +325,7 @@ class SpaceProvisioningService {
         onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
         onRepoSetupScript: _setupScriptStepEmitter(workspaceId, spaceId),
       );
-      if (_wasCancelled(workspaceId, spaceId)) {
+      if (_isStale(workspaceId, spaceId, run)) {
         return;
       }
       final ready = await _verify(
@@ -292,9 +334,10 @@ class SpaceProvisioningService {
         repoCount: targetRepoIds.length,
         overlays: const [],
       );
-      await _setStatus(
+      await _finish(
         workspaceId,
         spaceId,
+        run,
         ready ? SpaceProvisioningStatus.ready : SpaceProvisioningStatus.failed,
       );
       return;
@@ -305,7 +348,7 @@ class SpaceProvisioningService {
     for (final agent in agents) {
       // A stop during the first agent's clone must not be answered by
       // provisioning the next agent's overlay.
-      if (_wasCancelled(workspaceId, spaceId)) {
+      if (_isStale(workspaceId, spaceId, run)) {
         return;
       }
       try {
@@ -353,9 +396,10 @@ class SpaceProvisioningService {
       }
     }
 
-    // Stopped mid-run: `cancel` already wrote the terminal status, so leave it
-    // alone rather than reporting a verification that was never going to pass.
-    if (_wasCancelled(workspaceId, spaceId)) {
+    // Stopped mid-run (`cancel` already wrote the terminal status) or overtaken
+    // by a Retry (which writes its own): leave it alone rather than reporting a
+    // verification that was never going to pass.
+    if (_isStale(workspaceId, spaceId, run)) {
       return;
     }
 
@@ -369,9 +413,10 @@ class SpaceProvisioningService {
       overlays: overlays,
     );
 
-    await _setStatus(
+    await _finish(
       workspaceId,
       spaceId,
+      run,
       ready ? SpaceProvisioningStatus.ready : SpaceProvisioningStatus.failed,
     );
   }

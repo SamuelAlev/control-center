@@ -38,15 +38,19 @@ const Map<ActionClass, Map<_GuardrailAdapter, _Enforcement>> _matrix = {
     _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
     _GuardrailAdapter.sandboxFloor: _Enforcement.sandboxFloor,
   },
+  // Claude Code: a PreToolUse hook classifies each Bash command and asks the
+  // policy before a commit runs.
   ActionClass.gitCommit: {
     _GuardrailAdapter.harness: _Enforcement.policyGate,
-    _GuardrailAdapter.claudeCli: _Enforcement.sandboxFloor,
+    _GuardrailAdapter.claudeCli: _Enforcement.policyGate,
     _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
     _GuardrailAdapter.sandboxFloor: _Enforcement.notEnforceable,
   },
+  // Claude Code: pushes go through the agent run gateway, which asks the push
+  // rule before forwarding them.
   ActionClass.gitPush: {
     _GuardrailAdapter.harness: _Enforcement.policyGate,
-    _GuardrailAdapter.claudeCli: _Enforcement.sandboxFloor,
+    _GuardrailAdapter.claudeCli: _Enforcement.policyGate,
     _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
     _GuardrailAdapter.sandboxFloor: _Enforcement.notEnforceable,
   },
@@ -68,6 +72,8 @@ const Map<ActionClass, Map<_GuardrailAdapter, _Enforcement>> _matrix = {
     _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
     _GuardrailAdapter.sandboxFloor: _Enforcement.notEnforceable,
   },
+  // Claude Code: the PreToolUse hook sees network commands too, but whether the
+  // sandbox has a network at all is the hard boundary, so this stays the floor.
   ActionClass.networkEgress: {
     _GuardrailAdapter.harness: _Enforcement.policyGate,
     _GuardrailAdapter.claudeCli: _Enforcement.sandboxFloor,
@@ -80,9 +86,11 @@ const Map<ActionClass, Map<_GuardrailAdapter, _Enforcement>> _matrix = {
     _GuardrailAdapter.mcpHttp: _Enforcement.notEnforceable,
     _GuardrailAdapter.sandboxFloor: _Enforcement.notEnforceable,
   },
+  // Claude Code: the same PreToolUse hook classifies package-manager installs
+  // and asks the policy first.
   ActionClass.packageInstall: {
     _GuardrailAdapter.harness: _Enforcement.policyGate,
-    _GuardrailAdapter.claudeCli: _Enforcement.sandboxFloor,
+    _GuardrailAdapter.claudeCli: _Enforcement.policyGate,
     _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
     _GuardrailAdapter.sandboxFloor: _Enforcement.sandboxFloor,
   },

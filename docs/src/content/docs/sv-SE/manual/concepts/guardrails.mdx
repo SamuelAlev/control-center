@@ -2,7 +2,7 @@
 title: Räcken – en policy för varje muterande åtgärd
 description: Varför Control Center leder varje sidoeffekt från en agent genom en enda motor för tillåt/fråga/neka, hur ActionClass-taxonomin medvetet hålls liten och vad autonomireglaget verkligen ändrar.
 slug: sv-SE/handbok/koncept/racken
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agenter i Control Center kan ta bort filer, pusha grenar, publicera pull
@@ -228,9 +228,7 @@ Två poster är värda att läsa innan du litar på en konfiguration. Den inbygg
 harnessen deklarerar att dess filverktyg i processen **inte** omfattas av
 sandlådan – verktygsytan och den här policymotorn är den enda filsystemgräns den
 har. Claude Code deklarerar att dess egna verktygsanrop **inte** går att fånga
-upp, eftersom den startas med `--dangerously-skip-permissions`; Control Center
-ser bara dess `mcp__*`-anrop, och dess egna läs-, skriv-, redigerings- och
-shellverktyg körs osedda.
+upp, eftersom den startas med `--dangerously-skip-permissions`; Control Center ser dess `mcp__*`-anrop och, via en hook, dess `Bash`-kommandorader, medan dess egna läs-, skriv- och redigeringsverktyg körs osedda.
 
 Inställningsskärmen visar den här matrisen, för det enda oförlåtliga
 misslyckandet för ett räckessystem är att påstå en täckning som inte finns.

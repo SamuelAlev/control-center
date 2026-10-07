@@ -2,7 +2,7 @@
 title: Konfigurasi ejen
 description: Setiap medan pada entiti ejen dan enum yang digunakannya.
 slug: ms-MY/manual-pengguna/rujukan/konfigurasi-ejen
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bendera yang digunakannya. Untuk panduan langkah demi langkah mencipta atau mengedit ejen dalam aplikasi, lihat [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/).
@@ -26,7 +26,6 @@ Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bender
 | `effort`                | `String?`              | Tidak | Id tahap penaakulan (cth. `'low'`, `'xhigh'`), bersumber daripada `thinkingLevels` model yang dipilih                                                                                               |
 | `contextSize`           | `int?`                 | Tidak | Saiz maksimum tetingkap konteks                                                                                                                                                                     |
 | `role`                  | `AgentRole?`           | Tidak | Peranan ejen                                                                                                                                                                                        |
-| `capabilities`          | `AgentCapabilities?`   | Tidak | Lalai keupayaan bagi setiap ejen; apabila null, lalai peringkat pengguna terpakai semasa penghantaran dan sesuatu perbualan masih boleh mengatasinya                                                 |
 | `monthlyBudgetCents`    | `int`                  | Tidak | Had perbelanjaan bulanan dalam sen (lalai `0`, tanpa had)                                                                                                                                           |
 | `silenceTimeoutMinutes` | `int?`                 | Tidak | Pengatasan tamat masa senyap dalam minit; mesti null atau dalam 1–240 (disahkan oleh pembina)                                                                                                       |
 | `maxConcurrentTasks`    | `int`                  | Tidak | Lalai `1`. Angka kapasiti yang dilaporkan oleh model kehadiran (kiraan sedang berjalan dan beratur dibandingkan dengannya)                                                                          |
@@ -68,18 +67,9 @@ Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bender
 | `paused`   | Ditetapkan oleh hentian keras belanjawan. Dipaparkan pada senarai kehadiran; penghantaran masih menerima kerja |
 | `archived` | Bersara dan tersembunyi daripada senarai aktif                                          |
 
-## Bendera AgentCapabilities
+## Kebenaran
 
-Dihuraikan bagi setiap penghantaran: lalai ejen, jatuh kembali kepada lalai peringkat pengguna apabila null, dengan pengatasan setiap perbualan di atasnya. Dikuatkuasakan melalui ketiadaan — broker kelayakan memang tidak menempa atau menyuntik apa yang diliputi oleh keupayaan yang dimatikan.
-
-| Bendera            | Jenis  | Lalai   | Penerangan                                                                               |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commit ke remote; mengawal suntikan token GitHub bersama `canCallGitHubApi`          |
-| `canCallGitHubApi` | `bool` | `false` | Memanggil api.github.com; mengawal suntikan `GH_TOKEN` dan domain keluar GitHub           |
-| `canCallTicketing` | `bool` | `false` | Memanggil API penyedia penetikan; mengawal suntikan kunci API penyedia dan domain keluarnya |
-| `canAccessNetwork` | `bool` | `true`  | Keluar ke luar sewenang-wenangnya. Turut mengawal alat `web_fetch` dan `web_search` harness |
-
-`AgentCapabilities.safeDefault` ialah keempat-empat nilai lalai pembina. `legacyDefault` (keempat-empatnya benar) hanya digunakan oleh migrasi yang mengisi semula perbualan yang dicipta sebelum keupayaan wujud. Blob tersimpan yang cacat atau kosong dihuraikan kepada `safeDefault`; kunci legasi `canCallLinear` dibaca sebagai `canCallTicketing`.
+Ejen tidak membawa bendera kebenaran. Push, membuka dan menerbitkan pull request, menulis ke penjejak dan keluar rangkaian ialah kelas tindakan (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) yang diselesaikan oleh [guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) pada skop ruang kerja, ejen atau ruang. Token GitHub sesuatu larian sentiasa berskop baca; push melalui gerbang larian ejen, yang bertanya kepada peraturan `gitPush` sebelum memajukannya.
 
 ## AgentSkills
 

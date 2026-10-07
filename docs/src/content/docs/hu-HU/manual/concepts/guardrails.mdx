@@ -2,7 +2,7 @@
 title: Korlátok – egy szabályzat minden állapotmódosító művelethez
 description: Miért vezeti át a Control Center minden ügynökmellékhatást egyetlen engedélyezés–kérdezés–tiltás motoron, miért marad szándékosan kicsi az ActionClass-taxonómia, és mit változtat meg valójában az autonómiatárcsa.
 slug: hu-HU/kezikonyv/fogalmak/korlatok
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 A Control Center ügynökei fájlokat törölhetnek, ágakat küldhetnek fel, pull
@@ -246,9 +246,7 @@ beépített harness azt jelenti be, hogy a folyamatán belüli fájleszközei
 **nincsenek** homokozóban – az eszközfelszín és ez a szabályzatmotor az
 egyetlen fájlrendszer-határ, amellyel rendelkezik. A Claude Code azt jelenti
 be, hogy a saját eszközhívásai **nem** foghatók el, mert
-`--dangerously-skip-permissions` kapcsolóval indul; a Control Center csak az
-`mcp__*` hívásait látja, a saját olvasó, író, szerkesztő és shell eszközei
-pedig láthatatlanul futnak.
+`--dangerously-skip-permissions` kapcsolóval indul; a Control Center az `mcp__*` hívásait és – egy hookon keresztül – a `Bash` parancssorait látja, a saját olvasó, író és szerkesztő eszközei pedig láthatatlanul futnak.
 
 A beállítások képernyője megmutatja ezt a mátrixot, mert egy korlátrendszer
 egyetlen megbocsáthatatlan hibája, ha nem létező lefedettséget állít.

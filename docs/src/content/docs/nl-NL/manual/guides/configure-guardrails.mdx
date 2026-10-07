@@ -2,7 +2,7 @@
 title: Beveiligingen configureren
 description: Stel regels voor toestaan, eerst vragen en weigeren in voor agentacties, test ze met de wat-als-probe en stem de autonomie per ruimte af.
 slug: nl-NL/handleiding/gidsen/beveiligingen-configureren
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Deze gids laat je zien hoe je beveiligingen configureert: de regels die bepalen
@@ -133,12 +133,14 @@ in-app-versie hiervan: per effectklasse geeft die aan of elke runner het bij de
 beleidscontrole onderschept, het aan de sandbox overlaat of het helemaal niet kan
 onderscheppen.
 
-- **De Claude Code-adapter** heeft geen poort voor zijn eigen toolaanroepen.
-  Claude Code wordt gestart met `--dangerously-skip-permissions`, dus de
-  aanroepen voor lezen, schrijven, bewerken en bash gaan nooit langs de
-  bewaking. Wat voor die adapter wel langs de poort gaat, is het MCP-tooloppervlak
-  waarnaar hij terugbelt en de shell-opdracht die Control Center start om hem te
-  lanceren.
+- **De Claude Code-adapter** heeft maar voor een deel van zijn eigen
+  toolaanroepen een poort. Claude Code wordt gestart met
+  `--dangerously-skip-permissions`, dus de aanroepen voor lezen, schrijven en
+  bewerken gaan nooit langs de bewaking. Zijn bash-opdrachten bereiken die via
+  een hook die de opdrachtregel indeelt, en zijn pushes lopen zoals die van elke
+  agent via de push-gateway. Ook het MCP-tooloppervlak waarnaar hij terugbelt en
+  de shell-opdracht die Control Center start om hem te lanceren gaan langs de
+  poort.
 - **Het eigen uitvoerwerkwoord van een modus** (`submit_plan`,
   `propose_orchestration`) is vastgezet en kan nooit worden geweigerd — anders zou
   een modus structureel niet in staat zijn zijn enige eindresultaat te produceren.

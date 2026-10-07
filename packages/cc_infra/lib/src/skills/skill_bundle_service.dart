@@ -21,10 +21,13 @@ import 'package:path/path.dart' as p;
 
 /// Resolves a GitHub skill to its full, pinned file set: given the repo-relative
 /// path of a skill's `SKILL.md` and a [ref], returns every file of the skill's
-/// directory (path relative to the directory) at a commit SHA. Injected so the
-/// service is testable without a live GitHub client.
+/// directory (path relative to the directory) at a commit SHA. [workspaceId]
+/// selects the credential: the workspace's GitHub identity mode decides which
+/// token may read a private source. Injected so the service is testable
+/// without a live GitHub client.
 typedef GitHubSkillFilesFetcher =
     Future<SourceSkillFiles> Function({
+      required String workspaceId,
       required String owner,
       required String repo,
       required String path,
@@ -35,6 +38,7 @@ typedef GitHubSkillFilesFetcher =
 /// default branch). Injected for the update-check; null disables it.
 typedef GitHubLatestCommitResolver =
     Future<String?> Function({
+      required String workspaceId,
       required String owner,
       required String repo,
       required String path,
@@ -43,7 +47,11 @@ typedef GitHubLatestCommitResolver =
 
 /// Resolves a repo's default branch. Injected for the update-check.
 typedef GitHubDefaultBranchResolver =
-    Future<String?> Function({required String owner, required String repo});
+    Future<String?> Function({
+      required String workspaceId,
+      required String owner,
+      required String repo,
+    });
 
 /// Content-addresses, pins and installs workspace skill bundles, persisting a
 /// `skills-lock.json` next to the workspace's skills.
@@ -200,6 +208,7 @@ class SkillBundleService implements SkillBundlePort {
     String? agentId,
   }) async {
     final resolved = await _fetch(
+      workspaceId: workspaceId,
       owner: owner,
       repo: repo,
       path: path,
@@ -342,10 +351,12 @@ class SkillBundleService implements SkillBundlePort {
       }
       try {
         final branch = await _defaultBranch?.call(
+          workspaceId: workspaceId,
           owner: parts[0],
           repo: parts[1],
         );
         final latest = await resolveLatest(
+          workspaceId: workspaceId,
           owner: parts[0],
           repo: parts[1],
           path: entry.skillPath,
@@ -397,6 +408,7 @@ class SkillBundleService implements SkillBundlePort {
     // Re-fetch at the target ref: ONE buffer through gate → manifest → write →
     // hash → re-pin (TOCTOU-safe, identical to install).
     final resolved = await _fetch(
+      workspaceId: workspaceId,
       owner: parts[0],
       repo: parts[1],
       path: existing.skillPath,

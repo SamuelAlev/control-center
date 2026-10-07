@@ -42,7 +42,7 @@ class SettingsNavItem {
   /// Stable identifier, used by tests and to key the route registry.
   final String id;
 
-  /// Leading glyph in the sub-sidebar.
+  /// Leading glyph in the settings sidebar (its whole label in the rail).
   final IconData icon;
 
   /// Localized display name.
@@ -90,8 +90,8 @@ class SettingsNavGroup {
 
 /// The settings information architecture — the single source of truth.
 ///
-/// The sub-sidebar, the J/K cycle order, the breadcrumb registry and the route
-/// title registry all derive from this list. Before it existed, five files each
+/// The settings sidebar, the J/K cycle order, the breadcrumb registry and the
+/// route title registry all derive from this list. Before it existed, five files each
 /// held their own copy of the nav model and drifted: Memory was in the sidebar
 /// but missing from the J/K list, so the shortcut silently skipped it and a
 /// doc comment described groups ("Resources", "Automation") that no longer

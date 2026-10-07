@@ -2,7 +2,7 @@
 title: Tillatelsesregler — én policy for hver muterende handling
 description: Hvorfor Control Center fører hver bivirkning fra en agent gjennom én enkelt allow/prompt/deny-motor, hvorfor ActionClass-taksonomien med vilje holdes liten, og hva autonomivriden egentlig endrer.
 slug: nb-NO/handbok/konsepter/tillatelsesregler
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agenter i Control Center kan slette filer, pushe grener, publisere pull
@@ -232,9 +232,7 @@ To oppføringer er verdt å lese før du stoler på en konfigurasjon. Den inneby
 harnessen erklærer at filverktøyene dens i samme prosess **ikke** er sandkasset
 — verktøyflaten og denne policymotoren er den eneste filsystemgrensen den har.
 Claude Code erklærer at dens egne verktøykall **ikke** kan avskjæres, fordi den
-startes med `--dangerously-skip-permissions`; Control Center ser bare
-`mcp__*`-kallene dens, og dens egne verktøy for lesing, skriving, redigering og
-shell kjører usett.
+startes med `--dangerously-skip-permissions`; Control Center ser `mcp__*`-kallene dens og, gjennom en hook, `Bash`-kommandolinjene dens, mens dens egne verktøy for lesing, skriving og redigering kjører usett.
 
 Innstillingsskjermen viser denne matrisen, for den ene utilgivelige feilen for
 et tillatelsesregelsystem er å påstå dekning som ikke finnes.

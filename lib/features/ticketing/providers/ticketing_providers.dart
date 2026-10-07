@@ -17,7 +17,6 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_repositorie
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
-import 'package:control_center/core/providers/sync_engine_provider.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/providers/workspace_settings_providers.dart';
 import 'package:control_center/features/ticketing/presentation/ticket_view_mode.dart';
@@ -28,20 +27,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Provides the [TicketRepository] over the unified RPC client seam — a
 /// connected `cc_server` on every target (spawned locally by desktop
 /// self-serve, or a remote instance). Never touches Drift directly.
-///
-/// Wired to the deterministic sync engine (PRD 16 §6): when the `tickets`
-/// kill-switch is on, `watchForWorkspace` adopts the live delta feed instead
-/// of re-querying the legacy full-snapshot subscription on every change.
 final ticketRepositoryProvider = Provider<TicketRepository>(
-  (ref) => RpcTicketRepository(
-    ref.watch(rpcClientProvider),
-    sync: ref.watch(syncEngineProvider),
-  ),
+  (ref) => RpcTicketRepository(ref.watch(rpcClientProvider)),
 );
 
 /// Provides the raw wire-DTO [RemoteTicketRepository] — the layer under
 /// [ticketRepositoryProvider] — for call sites that need the `tickets.patch`
-/// per-column LWW op directly (see `patchTicketOptimistic`).
+/// per-column LWW op directly (see `patchTicketFields`).
 final remoteTicketRepositoryProvider = Provider<RemoteTicketRepository>(
   (ref) => RemoteTicketRepository(ref.watch(rpcClientProvider)),
 );

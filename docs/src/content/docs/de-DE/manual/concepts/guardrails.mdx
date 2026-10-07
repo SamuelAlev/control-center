@@ -2,7 +2,7 @@
 title: Schutzregeln — eine Richtlinie für jede verändernde Aktion
 description: Warum Control Center jede Nebenwirkung eines Agenten durch eine einzige Policy-Engine für allow, prompt und deny führt, warum die ActionClass-Taxonomie absichtlich klein bleibt und was der Autonomieregler wirklich ändert.
 slug: de-DE/handbuch/konzepte/schutzregeln
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agenten in Control Center können Dateien löschen, Branches pushen, Pull
@@ -248,9 +248,7 @@ eingebaute Harness erklärt, dass seine prozessinternen Dateiwerkzeuge
 **nicht** in der Sandbox laufen — die Werkzeugfläche und diese Policy-Engine
 sind seine einzige Dateisystemgrenze. Claude Code erklärt, dass seine eigenen
 Werkzeugaufrufe **nicht** abfangbar sind, weil es mit
-`--dangerously-skip-permissions` gestartet wird. Control Center sieht nur
-seine `mcp__*`-Aufrufe, und seine eigenen Werkzeuge zum Lesen, Schreiben,
-Bearbeiten und für die Shell laufen ungesehen.
+`--dangerously-skip-permissions` gestartet wird. Control Center sieht seine `mcp__*`-Aufrufe und, über einen Hook, seine `Bash`-Befehlszeilen, während seine eigenen Werkzeuge zum Lesen, Schreiben und Bearbeiten ungesehen laufen.
 
 Der Einstellungsbildschirm zeigt diese Matrix, denn der eine unverzeihliche
 Fehler eines Schutzregelsystems ist, Abdeckung zu behaupten, die es nicht

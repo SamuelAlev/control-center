@@ -51,7 +51,6 @@ import 'package:cc_persistence/database/daos/skill_source_dao.dart';
 import 'package:cc_persistence/database/daos/space_extras_dao.dart';
 import 'package:cc_persistence/database/daos/space_repo_dao.dart';
 import 'package:cc_persistence/database/daos/space_stack_dao.dart';
-import 'package:cc_persistence/database/daos/sync_dao.dart';
 import 'package:cc_persistence/database/daos/team_activity_dao.dart';
 import 'package:cc_persistence/database/daos/team_dao.dart';
 import 'package:cc_persistence/database/daos/ticket_dao.dart';
@@ -143,7 +142,6 @@ import 'package:cc_persistence/database/tables/space_participants.dart';
 import 'package:cc_persistence/database/tables/space_repos.dart';
 import 'package:cc_persistence/database/tables/space_stack_entries.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
-import 'package:cc_persistence/database/tables/sync_changes_table.dart';
 import 'package:cc_persistence/database/tables/team_activity_log_table.dart';
 import 'package:cc_persistence/database/tables/teams_table.dart';
 import 'package:cc_persistence/database/tables/ticket_collaborators_table.dart';
@@ -175,7 +173,7 @@ part 'workspace_database.g.dart';
 ///
 /// Isolation boundary: this class does not declare global/other-workspace
 /// tables, so cross-workspace reads do not compile. `workspaceId` columns are
-/// still written (sync/FTS/self-describing). Multi-workspace reads go through
+/// still written (FTS/self-describing). Multi-workspace reads go through
 /// `CrossWorkspaceQueries` only. Opens lazily on first touch.
 @DriftDatabase(
   tables: [
@@ -193,8 +191,6 @@ part 'workspace_database.g.dart';
     SpaceNotesTable,
     SpaceAutonomyTable,
     MessageReactionsTable,
-    SyncSequencesTable,
-    SyncChangesTable,
     ConversationMessagesTable,
     ReviewSpacesTable,
     ActivityLogTable,
@@ -331,7 +327,6 @@ part 'workspace_database.g.dart';
     OrchestrationDao,
     PlanStudioDao,
     ReviewStudioDao,
-    SyncDao,
     SpaceExtrasDao,
     ProviderPolicyDao,
     GoalDao,
@@ -429,7 +424,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 14;
+  static const int currentSchemaVersion = 17;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -699,6 +694,47 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         await _createIndexIfMissing(m, idxSpaceStackSpace);
       },
     ),
+    // v14 → v15: the delta sync feed is gone. Drop its triggers before its
+    // tables: a trigger left behind would fail every write to the table it
+    // watches once `sync_changes` no longer exists. See [_dropSyncFeed].
+    MigrationStep(
+      14,
+      15,
+      (m) async {
+        await _dropSyncFeed();
+      },
+    ),
+    // v15 → v16: per-agent sandbox capabilities are gone — the action policy
+    // (allow / ask / deny) is the one permission system. See
+    // [_dropAgentSandboxCapabilities].
+    MigrationStep(
+      15,
+      16,
+      (m) async {
+        await _dropAgentSandboxCapabilities();
+      },
+    ),
+    // v16 → v17: the provider-reported context reading behind the meter.
+    // Nullable and not backfilled: no turn before this version stored one,
+    // and a null reading is what tells the meter to fall back to its
+    // estimate.
+    MigrationStep(
+      16,
+      17,
+      (m) async {
+        await _addColumnIfMissing(
+          m,
+          conversationMessagesTable,
+          conversationMessagesTable.contextTokens,
+        );
+        await _addColumnIfMissing(
+          m,
+          conversationMessagesTable,
+          conversationMessagesTable.contextWindowTokens,
+        );
+        await _createContextReadingIndex();
+      },
+    ),
   ];
 
   /// Creates [index] unless the file already has it.
@@ -750,7 +786,6 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       await _createCronIndexes();
       await _createHotPathIndexes();
       await _createChatIndexes();
-      await _createSyncTriggers();
       await into(workspaceMetaTable).insert(
         WorkspaceMetaTableCompanion.insert(
           workspaceId: workspaceId,
@@ -778,7 +813,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       // without this a reconciler tick can abort a user write outright.
       await customStatement('PRAGMA busy_timeout = 5000');
       // WAL + synchronous=NORMAL. FULL fsyncs every commit; a message send
-      // writes the row, the FTS index and the sync feed, and those fsyncs
+      // writes the row and the FTS index, and those fsyncs
       // are what push a loopback action past a frame. NORMAL syncs at
       // checkpoint time: an app crash does not lose committed transactions,
       // a power loss can lose the ones not yet checkpointed. That is the
@@ -814,10 +849,6 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       // otherwise never rebuilt and the failure is silent — inserts stop
       // reaching the index and search just returns less and less.
       await _createFts5Tables();
-      // Deterministic-sync change-feed triggers (PRD 16 §6). Idempotent
-      // (CREATE TRIGGER IF NOT EXISTS) and installed on every open like the
-      // FTS triggers, so the adopted stores always record into sync_changes.
-      await _createSyncTriggers();
       // One-time compaction after the v6→v7 edge cleanup: that step deletes
       // what was ~500MB of unresolved reference edges on graph-heavy
       // workspaces, and SQLite never returns freed pages to the OS on its own
@@ -873,89 +904,43 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     },
   );
 
-  /// Deterministic-sync change-feed triggers: AFTER INSERT/UPDATE/DELETE on
-  /// adopted tables allocate seq and append `sync_changes` in the same txn.
-  /// Messaging child deletes on space CASCADE are omitted (space delete covers).
-  Future<void> _createSyncTriggers() async {
-    // (table, store, workspaceExpr(NEW/OLD), pkColumn, ctxExpr)
-    const specs = [
-      ('tickets', 'tickets', '{ROW}.workspace_id', 'id', 'NULL'),
-      ('spaces', 'messaging', '{ROW}.workspace_id', 'id', 'NULL'),
-      (
-        'conversations',
-        'messaging',
-        '{ROW}.workspace_id',
-        'id',
-        '{ROW}.space_id',
-      ),
-      (
-        'conversation_messages',
-        'messaging',
-        '(SELECT workspace_id FROM spaces WHERE id = {ROW}.space_id)',
-        'id',
-        '{ROW}.space_id',
-      ),
-      (
-        'space_participants',
-        'messaging',
-        '(SELECT workspace_id FROM spaces WHERE id = {ROW}.space_id)',
-        'id',
-        '{ROW}.space_id',
-      ),
-      (
-        'space_notes',
-        'notes',
-        '{ROW}.workspace_id',
-        'id',
-        '{ROW}.space_id',
-      ),
-      (
-        'message_reactions',
-        'messaging',
-        '{ROW}.workspace_id',
-        'id',
-        '{ROW}.space_id',
-      ),
+  /// Removes the delta sync feed's triggers and tables from a file created
+  /// before v15.
+  ///
+  /// Every statement is IF EXISTS, so a re-entered step (see
+  /// [_addColumnIfMissing]) and a file that never had the feed both pass.
+  Future<void> _dropSyncFeed() async {
+    const tables = [
+      'tickets',
+      'spaces',
+      'conversations',
+      'conversation_messages',
+      'space_participants',
+      'space_notes',
+      'message_reactions',
     ];
-    for (final (table, store, wsTemplate, pk, ctxTemplate) in specs) {
-      for (final (op, sqlOp, row) in [
-        ('insert', 'INSERT', 'NEW'),
-        ('update', 'UPDATE', 'NEW'),
-        ('delete', 'DELETE', 'OLD'),
-      ]) {
-        final ws = wsTemplate.replaceAll('{ROW}', row);
-        final ctx = ctxTemplate.replaceAll('{ROW}', row);
-        final changeOp = op == 'delete' ? 'delete' : 'upsert';
-        // A message's `embedding` is not on the wire and no delta client can
-        // observe it, but the backfill writes one UPDATE per message (200 per
-        // batch) and each fired three statements plus a `spaces` subselect
-        // and produced a `sync_changes` row nobody reads. `updateMessageEmbedding`
-        // is the only writer of that column and it writes nothing else, so
-        // "the embedding is unchanged" cleanly separates real updates from
-        // backfill noise — and unlike an `UPDATE OF` column list it cannot go
-        // stale when the table gains a column.
-        final embeddingGuard =
-            table == 'conversation_messages' && op == 'update'
-            ? ' AND NEW.embedding IS OLD.embedding'
-            : '';
-        await customStatement(
-          'CREATE TRIGGER IF NOT EXISTS trg_sync_${table}_$op '
-          'AFTER $sqlOp ON $table '
-          'WHEN $ws IS NOT NULL$embeddingGuard '
-          'BEGIN '
-          'INSERT INTO sync_sequences(workspace_id, next_seq) '
-          'VALUES ($ws, 1) ON CONFLICT(workspace_id) DO NOTHING; '
-          'UPDATE sync_sequences SET next_seq = next_seq + 1 '
-          'WHERE workspace_id = $ws; '
-          'INSERT INTO sync_changes'
-          '(workspace_id, seq, store, tbl, pk, op, ctx, created_at_ms) '
-          'VALUES ($ws, '
-          '(SELECT next_seq - 1 FROM sync_sequences WHERE workspace_id = $ws), '
-          "'$store', '$table', $row.$pk, '$changeOp', $ctx, "
-          "CAST(strftime('%s', 'now') AS INTEGER) * 1000); "
-          'END',
-        );
+    for (final table in tables) {
+      for (final op in const ['insert', 'update', 'delete']) {
+        await customStatement('DROP TRIGGER IF EXISTS trg_sync_${table}_$op');
       }
+    }
+    await customStatement('DROP INDEX IF EXISTS idx_sync_changes_ws_seq');
+    await customStatement('DROP TABLE IF EXISTS sync_changes');
+    await customStatement('DROP TABLE IF EXISTS sync_sequences');
+  }
+
+  /// Drops `agents.sandbox_capabilities_json`. Re-run safe: a file that already
+  /// lost the column (a crash after the drop, a rewound `user_version`) is left
+  /// alone, because `DROP COLUMN` on a missing column throws and would keep the
+  /// workspace from opening.
+  Future<void> _dropAgentSandboxCapabilities() async {
+    final columns = await customSelect('PRAGMA table_info(agents)').get();
+    if (columns.any(
+      (row) => row.read<String>('name') == 'sandbox_capabilities_json',
+    )) {
+      await customStatement(
+        'ALTER TABLE agents DROP COLUMN sandbox_capabilities_json',
+      );
     }
   }
 
@@ -1144,9 +1129,9 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// One-time copy of the counts the meter used to compute on every read.
   ///
   /// The sync-update trigger would otherwise record a change for every
-  /// message. It is dropped for this statement and reinstalled immediately
-  /// after; the FTS trigger only watches `content` and `space_id`, so this
-  /// update does not touch the search index.
+  /// message, so it is dropped first; v15 removes the rest of the sync feed.
+  /// The FTS trigger only watches `content` and `space_id`, so this update
+  /// does not touch the search index.
   Future<void> _backfillConversationCharCounts() async {
     await customStatement(
       'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
@@ -1160,7 +1145,6 @@ SET content_chars = LENGTH(content),
     )
 ''',
     );
-    await _createSyncTriggers();
   }
 
   /// One-time copy of the metadata text list watches read.
@@ -1188,7 +1172,6 @@ SET list_metadata = CASE
 END
 ''',
     );
-    await _createSyncTriggers();
   }
 
   /// Covering index for [MessagingDao.conversationCharCountsSql].
@@ -1204,11 +1187,26 @@ END
     );
   }
 
+  /// Covering index for [MessagingDao.latestContextReadingSql].
+  ///
+  /// Partial on the rows that carry a reading, so it holds one entry per
+  /// agent turn rather than one per message, and ordered so the newest is the
+  /// first entry the lookup reads.
+  Future<void> _createContextReadingIndex() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_context_reading '
+      'ON conversation_messages ('
+      'conversation_id, created_at, context_tokens, context_window_tokens'
+      ') WHERE reverted = 0 AND context_tokens IS NOT NULL',
+    );
+  }
+
   /// Composite indexes for hot filter+sort paths single-column indexes miss
   /// (space/conversation message history, agent run logs, PRs). `IF NOT EXISTS`.
   Future<void> _createHotPathIndexes() async {
     await _createConversationActivityIndexes();
     await _createConversationCharIndex();
+    await _createContextReadingIndex();
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_conversation_messages_space_created '
       'ON conversation_messages (space_id, created_at)',

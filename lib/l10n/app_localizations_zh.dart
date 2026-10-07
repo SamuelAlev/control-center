@@ -2579,15 +2579,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get allow => '允许';
 
   @override
-  String get allowGitPush => '允许 git push';
-
-  @override
-  String get allowGithubApi => '允许调用 GitHub API';
-
-  @override
-  String get allowNetwork => '允许常规网络访问';
-
-  @override
   String get apiKeys => 'API 密钥';
 
   @override
@@ -2978,9 +2969,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get currentParticipants => '当前参与者';
 
   @override
-  String get customCapabilitiesDescription => '自定义能力描述';
-
-  @override
   String get customSystemPrompt => '此智能体的自定义系统提示词……';
 
   @override
@@ -2996,9 +2984,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deactivate => '停用';
-
-  @override
-  String get defaultCapabilities => '默认能力 · 新空间';
 
   @override
   String get defaultChat => '默认聊天';
@@ -3393,9 +3378,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forward => '前进';
 
   @override
-  String get gatesGithubPatPush => '对 GitHub PAT 注入进行门控。智能体推送时必需。';
-
-  @override
   String get general => '通用';
 
   @override
@@ -3460,6 +3442,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => '服务中断';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => '服务状态';
@@ -3900,6 +3887,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navSettings => '设置';
+
+  @override
+  String get exitSettings => '退出设置';
 
   @override
   String networkBlockCount(int count) {
@@ -4397,9 +4387,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get react => '回应';
 
   @override
-  String get readPrsIssuesMetadata => '允许智能体读取 PR、issue 与仓库元数据。';
-
-  @override
   String get readerPreferences => '阅读器偏好';
 
   @override
@@ -4650,9 +4637,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'macOS 上已内置原生沙箱，使用 Apple Seatbelt（`sandbox-exec`）。无需安装。';
-
-  @override
-  String get sandboxPermissions => '沙箱权限';
 
   @override
   String get sandboxUnsupported => '此平台尚不支持原生沙箱，将回退到「无隔离」。';
@@ -5228,9 +5212,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get useSandbox => '使用沙箱';
 
   @override
-  String get useWorkspaceDefault => '使用工作区默认值';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5269,9 +5250,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weakIsolationDescription => '弱隔离 - 仅命名空间边界，无内核边界。';
-
-  @override
-  String get whenOffNoDefaultRoute => '关闭时，沙箱启动时没有默认路由。';
 
   @override
   String get whenOffServerStaysStopped => '关闭时，服务器将保持停止，直至你启动它。';
@@ -6443,13 +6421,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pipelineRunNoRepos => '此工作区尚无仓库。';
 
   @override
-  String get allowTicketingApi => '允许工单 API 调用';
-
-  @override
   String get ticketingApiKey => '工单 API 密钥';
-
-  @override
-  String get ticketingApiKeySubtitle => '将工单服务商的 API 密钥注入沙箱。';
 
   @override
   String get ticketingProvider => '工单服务商';
@@ -8753,28 +8725,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keepAwakeOffSubtitle => '即使智能体正在工作，电脑仍可能休眠';
-
-  @override
-  String get syncEngineSectionTitle => '同步引擎';
-
-  @override
-  String get syncEngineDescription =>
-      '工单、消息和笔记通过小增量实时更新，而非完整快照。关闭开关会将该存储回退到完整快照模式 — 需重新加载应用后生效。';
-
-  @override
-  String get syncEngineTicketsTitle => '工单';
-
-  @override
-  String get syncEngineMessagingTitle => '消息';
-
-  @override
-  String get syncEngineNotesTitle => '笔记';
-
-  @override
-  String get syncEngineOnSubtitle => '实时增量同步已启用';
-
-  @override
-  String get syncEngineOffSubtitle => '使用完整快照同步';
 
   @override
   String get spaces => '空间';
@@ -12587,23 +12537,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get conversationTitleOptionalHint => '可选——留空则由标题模型自动命名';
 
   @override
-  String get conversationTitlesSectionTitle => '对话标题';
+  String get shortTaskOff => '关闭';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      '选择在此工作区中自动为新对话命名的运行器。在选择适配器之前标题保持关闭，且对所有成员生效。';
+  String get shortTaskUnavailable => '需先在“设置 → 适配器”中选择短任务模型才能使用此功能';
 
   @override
-  String get conversationTitlesModelLabel => '标题模型';
+  String get conversationTitleGenerate => '生成';
 
   @override
-  String get conversationTitlesAdapterLabel => '适配器';
+  String get conversationTitleNoMessages => '请先发送一条消息，标题将据此生成。';
 
   @override
-  String get conversationTitlesAdapterHint => '关';
-
-  @override
-  String get conversationTitlesAdapterOff => '关闭';
+  String get conversationTitleGenerateFailed => '无法生成标题，请重试。';
 
   @override
   String get startThread => '发起话题';
@@ -12761,6 +12707,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => '对话';
+
+  @override
+  String get contextSegmentRunner => '运行器提示词、工具与本轮工作';
+
+  @override
+  String get contextUsageMeasured => '由模型最近一次调用报告';
+
+  @override
+  String get contextUsageEstimated => '估算值，直到某次运行报告用量';
 
   @override
   String get contextExplorerTitle => '上下文';
@@ -13119,12 +13074,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sandboxGroupIsolationDescription => '智能体的进程和文件写入实际发生的位置。';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      '自动会选择此主机支持的最强方案。固定一个可防止它在你使用期间变化。';
+  String get sandboxGroupAgentActions => '智能体可以做什么';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      '边界上打通的孔洞。每一项都是被隔离的智能体仍能对外部世界做的事情。';
+  String get sandboxGroupAgentActionsDescription =>
+      '推送、打开 pull request 和访问网络是允许、先询问还是拒绝，在智能体权限中设置。';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      '自动会选择此主机支持的最强方案。固定一个可防止它在你使用期间变化。';
 
   @override
   String get sandboxSummaryInForce => '生效中';
@@ -13265,6 +13223,26 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       '在服务器上的终端中运行此命令。它会打开浏览器完成登录，并将凭据写入此账户的目录。';
+
+  @override
+  String get claudeAccountLongLivedToken => '长期令牌';
+
+  @override
+  String get claudeAccountUseLongLivedToken => '使用长期令牌';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => '替换长期令牌';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => '移除长期令牌';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      '普通登录需要续期，可能一夜之间就过期。长期令牌可保持登录约一年。请在终端中运行此命令，在浏览器中完成登录，然后粘贴它输出的令牌。';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      '这不是 claude setup-token 生成的令牌。令牌以 sk-ant-oat01- 开头。';
 
   @override
   String get claudeAccountSignedOut => '已退出登录';
@@ -13678,9 +13656,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => '在默认应用中打开';
-
-  @override
-  String get asideUnavailable => '需先在工作区设置中设定单次模型才能使用此功能';
 
   @override
   String get asideEmpty => '暂无可依据的内容';
@@ -14197,6 +14172,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get credentialGateOpenSettings => '打开设置';
 
   @override
+  String get credentialGateAccountsRemovedTitle => '已关联的 Claude Code 账号已被移除';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      '请在此智能体或工作区的账号设置中关联其他账号，或清空列表以使用默认账号。运行会自动继续。';
+
+  @override
+  String get accountPoolAllRemoved => '此列表中的所有账号都已从服务器移除。请关联其他账号，或清空列表。';
+
+  @override
+  String get accountPoolClear => '清空列表';
+
+  @override
   String get selectModel => '选择模型';
 
   @override
@@ -14613,6 +14601,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ideQuickOpenDescription => '按名称搜索对话中的文件并在标签页中打开';
 
   @override
+  String get prQuickOpenDescription => '按名称搜索 pull request 中的文件并在标签页中打开';
+
+  @override
   String get ideQuickOpenHint => '按名称搜索文件';
 
   @override
@@ -14809,9 +14800,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get notificationRigReclaimedBodyIdle => '因閒置過久，已關閉機器以釋放內存。';
-
-  @override
-  String get allowNetwork => '允許一般網絡存取';
 
   @override
   String get appLogLevelInfoLabel => '信息';
@@ -17495,15 +17483,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get allow => '允許';
 
   @override
-  String get allowGitPush => '允許 git push';
-
-  @override
-  String get allowGithubApi => '允許 GitHub API 呼叫';
-
-  @override
-  String get allowNetwork => '允許一般網路存取';
-
-  @override
   String get apiKeys => 'API 金鑰';
 
   @override
@@ -17894,9 +17873,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get currentParticipants => '目前參與者';
 
   @override
-  String get customCapabilitiesDescription => '自訂能力說明';
-
-  @override
   String get customSystemPrompt => '此代理的自訂系統提示…';
 
   @override
@@ -17912,9 +17888,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get deactivate => '停用';
-
-  @override
-  String get defaultCapabilities => '預設能力 · 新空間';
 
   @override
   String get defaultChat => '預設聊天';
@@ -18309,9 +18282,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get forward => '向前';
 
   @override
-  String get gatesGithubPatPush => '閘控 GitHub PAT 注入。代理推送時必須具備。';
-
-  @override
   String get general => '一般';
 
   @override
@@ -18376,6 +18346,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceStatusOutage => '服務中斷';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => '服務狀態';
@@ -18816,6 +18791,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get navSettings => '設定';
+
+  @override
+  String get exitSettings => '離開設定';
 
   @override
   String networkBlockCount(int count) {
@@ -19312,9 +19290,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get react => 'React';
 
   @override
-  String get readPrsIssuesMetadata => '允許代理讀取 PR、議題與存放庫中繼資料。';
-
-  @override
   String get readerPreferences => '閱讀偏好';
 
   @override
@@ -19565,9 +19540,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get sandboxMacosBuiltIn =>
       'macOS 內建原生沙箱—使用 Apple Seatbelt（`sandbox-exec`）。無需安裝。';
-
-  @override
-  String get sandboxPermissions => '沙箱權限';
 
   @override
   String get sandboxUnsupported => '此平台尚未支援原生沙箱。將退回「無隔離」。';
@@ -20143,9 +20115,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get useSandbox => '使用沙箱';
 
   @override
-  String get useWorkspaceDefault => '使用工作區預設值';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -20184,9 +20153,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weakIsolationDescription => '隔離力弱—僅有命名空間邊界，沒有核心邊界。';
-
-  @override
-  String get whenOffNoDefaultRoute => '關閉時，沙箱會在不設定預設路由的情況下啟動。';
 
   @override
   String get whenOffServerStaysStopped => '關閉時，伺服器會保持停止，直到你啟動它。';
@@ -21357,13 +21323,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pipelineRunNoRepos => '此工作區尚無儲存庫。';
 
   @override
-  String get allowTicketingApi => '允許工單 API 呼叫';
-
-  @override
   String get ticketingApiKey => '工單 API 金鑰';
-
-  @override
-  String get ticketingApiKeySubtitle => '將工單供應商的 API 金鑰注入沙箱。';
 
   @override
   String get ticketingProvider => '工單供應商';
@@ -23669,28 +23629,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get keepAwakeOffSubtitle => '即使代理正在工作，電腦仍可能睡眠';
-
-  @override
-  String get syncEngineSectionTitle => '同步引擎';
-
-  @override
-  String get syncEngineDescription =>
-      '工單、訊息與筆記會以小型增量變更即時更新，而非完整快照。關閉某個切換開關會讓該儲存區退回完整快照模式—請重新載入應用程式以套用變更。';
-
-  @override
-  String get syncEngineTicketsTitle => '工單';
-
-  @override
-  String get syncEngineMessagingTitle => '訊息';
-
-  @override
-  String get syncEngineNotesTitle => '筆記';
-
-  @override
-  String get syncEngineOnSubtitle => '即時差異同步已啟用';
-
-  @override
-  String get syncEngineOffSubtitle => '使用完整快照同步';
 
   @override
   String get spaces => '空間';
@@ -27504,23 +27442,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get conversationTitleOptionalHint => '選填——留空時，標題模型會自動命名';
 
   @override
-  String get conversationTitlesSectionTitle => '對話標題';
+  String get shortTaskOff => '關閉';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      '選擇要在此工作區自動為新對話命名的執行器。在選擇轉接器之前，標題功能會保持關閉，且套用於每個成員。';
+  String get shortTaskUnavailable => '需先在「設定 → 配接器」中選擇簡短任務模型，才能使用此功能';
 
   @override
-  String get conversationTitlesModelLabel => '標題模型';
+  String get conversationTitleGenerate => '產生';
 
   @override
-  String get conversationTitlesAdapterLabel => '轉接器';
+  String get conversationTitleNoMessages => '請先傳送一則訊息，標題會據此產生。';
 
   @override
-  String get conversationTitlesAdapterHint => '關閉';
-
-  @override
-  String get conversationTitlesAdapterOff => '關閉';
+  String get conversationTitleGenerateFailed => '無法產生標題，請再試一次。';
 
   @override
   String get startThread => '開始討論串';
@@ -27678,6 +27612,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get contextSegmentConversation => '對話';
+
+  @override
+  String get contextSegmentRunner => '執行器提示詞、工具與本輪工作';
+
+  @override
+  String get contextUsageMeasured => '由模型最近一次呼叫回報';
+
+  @override
+  String get contextUsageEstimated => '估算值，直到某次執行回報用量';
 
   @override
   String get contextExplorerTitle => '上下文';
@@ -28038,11 +27981,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sandboxGroupIsolationDescription => '代理的處理序與檔案寫入實際發生在哪裡。';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      '「自動」會選擇此主機支援的最強選項。釘選一個即可避免它在底下變動。';
+  String get sandboxGroupAgentActions => '代理可以做什麼';
 
   @override
-  String get sandboxCapabilitiesDescription => '在邊界上打穿的孔。每一項都是被隔離的代理仍能對外界做的事。';
+  String get sandboxGroupAgentActionsDescription =>
+      '推送、開啟 pull request 與存取網路是允許、先詢問還是拒絕，在代理權限中設定。';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      '「自動」會選擇此主機支援的最強選項。釘選一個即可避免它在底下變動。';
 
   @override
   String get sandboxSummaryInForce => '生效中';
@@ -28183,6 +28130,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get claudeAccountSignInHint =>
       '請在伺服器上的終端機執行此命令。它會開啟瀏覽器完成登入，並將憑證寫入此帳戶的目錄。';
+
+  @override
+  String get claudeAccountLongLivedToken => '長期權杖';
+
+  @override
+  String get claudeAccountUseLongLivedToken => '使用長期權杖';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => '取代長期權杖';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => '移除長期權杖';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      '一般登入需要續期，可能一夜之間就過期。長期權杖可維持登入約一年。請在終端機中執行此指令，在瀏覽器中完成登入，然後貼上它輸出的權杖。';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      '這不是 claude setup-token 產生的權杖。權杖以 sk-ant-oat01- 開頭。';
 
   @override
   String get claudeAccountSignedOut => '已登出';
@@ -28596,9 +28563,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get attachmentOpenExternally => '在預設應用程式中開啟';
-
-  @override
-  String get asideUnavailable => '需先在工作區設定中設定一次性模型，才能使用此功能';
 
   @override
   String get asideEmpty => '尚無可依據的內容';
@@ -29116,6 +29080,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get credentialGateOpenSettings => '開啟設定';
 
   @override
+  String get credentialGateAccountsRemovedTitle => '已連結的 Claude Code 帳號已被移除';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      '請在此代理程式或工作區的帳號設定中連結其他帳號，或清空清單以使用預設帳號。執行會自動繼續。';
+
+  @override
+  String get accountPoolAllRemoved => '此清單中的所有帳號都已從伺服器移除。請連結其他帳號，或清空清單。';
+
+  @override
+  String get accountPoolClear => '清空清單';
+
+  @override
   String get selectModel => '選擇模型';
 
   @override
@@ -29530,6 +29507,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get ideQuickOpenDescription => '依名稱搜尋對話中的檔案並在分頁中開啟';
+
+  @override
+  String get prQuickOpenDescription => '依名稱搜尋 pull request 中的檔案並在分頁中開啟';
 
   @override
   String get ideQuickOpenHint => '依名稱搜尋檔案';

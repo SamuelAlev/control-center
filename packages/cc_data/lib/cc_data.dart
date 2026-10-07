@@ -122,4 +122,3 @@ export 'src/repositories/rpc_weather_repository.dart';
 export 'src/repositories/rpc_work_product_repository.dart';
 export 'src/repositories/rpc_workspace_filesystem_port.dart';
 export 'src/repositories/rpc_workspace_repository.dart';
-export 'src/sync/synced_store.dart';

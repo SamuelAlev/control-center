@@ -2,7 +2,7 @@
 title: Configurar a integração com o Linear
 description: Guarde uma chave de API do Linear no servidor para que os agentes possam chamar o Linear e escolha o Linear como fornecedor de tickets para os novos tickets.
 slug: pt-PT/manual/guias/integracao-linear
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 Cole uma chave de API do Linear no servidor, associada ao seu utilizador, da
@@ -16,9 +16,10 @@ Center, sem ser preciso nenhum serviço externo — consulte
 A **Chave de API de tickets** encontra-se em **Definições → Espaço de trabalho →
 Geral**, no cartão **Tickets**. Guarda a chave no servidor associada ao id do seu
 utilizador. A chave do próprio servidor para trabalho sem supervisão vem de
-`LINEAR_API_KEY` ou do cartão **Aplicações do fornecedor** e só é injetada como
-`TICKETING_API_KEY` quando esse agente tem a capacidade **Permitir chamadas à API
-de tickets**.
+`LINEAR_API_KEY` ou do cartão **Aplicações do fornecedor**. Nenhuma chave de
+tickets é colocada na sandbox de um agente: os agentes escrevem tickets através
+das ferramentas do próprio Control Center, que perguntam primeiro à regra
+**Escrever num rastreador externo**.
 
 ## Marcar os novos tickets como Linear
 

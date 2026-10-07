@@ -52,11 +52,19 @@ jobs:
         with:
           persist-credentials: false
 
+      # GTK headers for the native-asset build. Background: the SDK download
+      # and pub get need none of it. The apt hosts above are for this.
+      - name: Install system packages (GTK)
+        id: system-packages
+        background: true
+        uses: $/.github/actions/linux-desktop-deps
+
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
-        with:
-          # cnativeapi's build hook (tool/ scripts and root tests build native assets).
-          linux-desktop-deps: "true"
+
+      # `dart run tool/...` builds native assets.
+      - name: Wait for system packages
+        wait: [system-packages]
 
       - name: Stamp build identity
         run: |

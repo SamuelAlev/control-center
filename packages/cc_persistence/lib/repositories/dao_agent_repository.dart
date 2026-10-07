@@ -74,9 +74,6 @@ class DaoAgentRepository implements AgentRepository {
           strictMode: drift.Value(agent.strictMode),
           effort: drift.Value.absentIfNull(agent.effort),
           contextSize: drift.Value.absentIfNull(agent.contextSize),
-          sandboxCapabilitiesJson: drift.Value(
-            agent.capabilities?.toJsonString() ?? '',
-          ),
           role: drift.Value.absentIfNull(agent.role?.name),
           monthlyBudgetCents: drift.Value(agent.monthlyBudgetCents),
           silenceTimeoutMinutes: drift.Value.absentIfNull(

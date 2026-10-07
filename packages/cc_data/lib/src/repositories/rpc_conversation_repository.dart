@@ -1,18 +1,21 @@
 import 'package:cc_data/src/wire_decode.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
+import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/thread_summary.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// A [ConversationRepository] backed by the RPC client (`conversation.*` ops +
-/// the `conversation.watchForSpace` subscription).
+/// A [ConversationRepository] and [ConversationTitlePort] backed by the RPC
+/// client (`conversation.*` ops + the `conversation.watchForSpace` and
+/// `conversation.watchTitleGenerating` subscriptions).
 ///
 /// Every call names its `workspace_id`: the host is stateless and binds no
 /// session workspace and the client's ambient active workspace follows the
 /// route — so it is the wrong scope for a keyed caller and absent entirely
 /// before a workspace is open.
-class RpcConversationRepository implements ConversationRepository {
+class RpcConversationRepository
+    implements ConversationRepository, ConversationTitlePort {
   /// Creates an [RpcConversationRepository] over [_client].
   RpcConversationRepository(this._client);
 
@@ -84,6 +87,38 @@ class RpcConversationRepository implements ConversationRepository {
     'conversation_id': conversationId,
     'title': title,
   });
+
+  @override
+  Future<ConversationTitleSuggestion> suggestTitle({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    final data = await _client.call('conversation.suggestTitle', {
+      'workspace_id': workspaceId,
+      'conversation_id': conversationId,
+    });
+    return ConversationTitleSuggestion(
+      title: data['title'] as String?,
+      unavailable: data['unavailable'] == true,
+      empty: data['empty'] == true,
+    );
+  }
+
+  @override
+  Stream<Set<String>> watchGenerating({
+    required String workspaceId,
+    required String spaceId,
+  }) => _client
+      .subscribe('conversation.watchTitleGenerating', {
+        'workspace_id': workspaceId,
+        'space_id': spaceId,
+      })
+      .map(
+        (data) => {
+          ...((data['conversation_ids'] as List?) ?? const [])
+              .whereType<String>(),
+        },
+      );
 
   @override
   Future<void> setStatus({

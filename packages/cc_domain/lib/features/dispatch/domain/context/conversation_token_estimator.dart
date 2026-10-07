@@ -2,6 +2,28 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_harness/context.dart';
 
+/// Character count of [segments], measured the way the live transcript folder
+/// counts a turn (text + reasoning + tool name/inputs/outputs + error prose).
+///
+/// Anything that rewrites a stored transcript (pruning) must re-stamp
+/// `metadata['transcriptChars']` with this, or the stored count — which the
+/// meter and the list wire read instead of the segments — keeps describing
+/// output that is no longer there.
+int transcriptCharCount(Iterable<TranscriptSegment> segments) {
+  var total = 0;
+  for (final segment in segments) {
+    total += switch (segment) {
+      TextSegment(:final text) => text.length,
+      ReasoningSegment(:final text) => text.length,
+      ToolSegment(:final toolName, :final inputs, :final outputs) =>
+        toolName.length + (inputs?.toString().length ?? 0) + outputs.length,
+      ErrorSegment(:final message) => message.length,
+      ViolationSegment(:final message) => message.length,
+    };
+  }
+  return total;
+}
+
 /// Conversation-shaped token estimation over the kernel's [TokenEstimator].
 ///
 /// The estimator itself moved into `cc_harness` (PRD 26.1) and is text-level

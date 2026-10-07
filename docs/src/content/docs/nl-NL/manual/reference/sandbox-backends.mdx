@@ -2,13 +2,13 @@
 title: Sandboxbackends
 description: De sandboxbackends, waar ze worden toegepast en elk waardeobject dat de sandboxruntime gebruikt.
 slug: nl-NL/handleiding/referentie/sandboxbackends
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Of een run gesandboxed is, hangt af van de host]
 `cc_server` probeert de host één keer bij het opstarten en omhult het dispatchen van agenten in de native backend wanneer de probe er een beschikbaar meldt en `--sandbox` niet `off` is. Beide aansluitpunten van het dispatchpad worden omhuld: de Claude Code CLI via de sandboxpoort, en ACP plus de `bash`-tool van de ingebouwde harness via de sandboxmanager.
 
-Waar de probe geen backend meldt — **altijd Windows**, en Linux of WSL2 zonder `bwrap` en `socat` — zijn agentruns **niet** gesandboxed. ACP en de `bash`-tool van de harness starten nog steeds met omgevingssanering; Claude Code gaat via `NoSandboxAdapter` en erft de omgeving van de host. De grenzen die overblijven zijn de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), inloggegevens met mogelijkheidsgebonden toegang die per start worden bemiddeld en bij het afbreken worden ingetrokken, het opdrachtbeleid per modus, de uniforme [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) (fail-closed), omgevingssanering op de ACP- en harness-`bash`-paden, en het tooloppervlak dat zijn modus toestaat.
+Waar de probe geen backend meldt — **altijd Windows**, en Linux of WSL2 zonder `bwrap` en `socat` — zijn agentruns **niet** gesandboxed. ACP en de `bash`-tool van de harness starten nog steeds met omgevingssanering; Claude Code gaat via `NoSandboxAdapter` en erft de omgeving van de host. De grenzen die overblijven zijn de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), een forge-token met alleen leesrechten dat per start wordt bemiddeld en bij het afbreken wordt ingetrokken, pushes die bij de agentrun-gateway langs de pushregel moeten, het opdrachtbeleid per modus, de uniforme [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) (fail-closed), omgevingssanering op de ACP- en harness-`bash`-paden, en het tooloppervlak dat zijn modus toestaat.
 
 De in-process bestandstools van de harness (read, write, edit, apply patch, search, find, search_files) vallen op elke host buiten de sandbox: ze draaien in het serverproces, dus alleen `bash` wordt omhuld.
 :::
@@ -98,7 +98,7 @@ Geen sandboxing. Het proces draait rechtstreeks op de host, met de bestandssyste
 
 De terminal wordt gesandboxed op zijn eigen voorwaarden, niet door de dispatchprobe. `defaultBackend` van `TerminalSessionService` is `none` en `cc_server` overschrijft dat niet, dus een terminalsessie draait de hostshell tenzij de client expliciet `native` vraagt — het terminalpaneel van de desktop doet dat niet.
 
-Wanneer `native` wordt gevraagd, wordt de shell omhuld via `SandboxManager` onder een vast terminalprofiel: `$HOME` en de werkmap van de sessie zijn beschrijfbaar, het netwerk staat open en `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` en `~/Library/Keychains` krijgen leesweigering. Mogelijkheidsgebonden afscherming is hier niet van toepassing — dat is een dispatchzaak. Als het omhullen niet wordt ondersteund, mislukt de sessie in plaats van een native badge te tonen op een PTY met de hostshell.
+Wanneer `native` wordt gevraagd, wordt de shell omhuld via `SandboxManager` onder een vast terminalprofiel: `$HOME` en de werkmap van de sessie zijn beschrijfbaar, het netwerk staat open en `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` en `~/Library/Keychains` krijgen leesweigering. Het forge-token met alleen leesrechten en de push-gateway zijn hier niet van toepassing — dat zijn dispatchzaken. Als het omhullen niet wordt ondersteund, mislukt de sessie in plaats van een native badge te tonen op een PTY met de hostshell.
 
 ## Netwerk-egress
 
@@ -107,9 +107,9 @@ Wanneer een sandbox wordt gestart, wordt uitgaande netwerktoegang afgedwongen do
 - De sandboxruntime draait een HTTP/HTTPS-proxy en een SOCKS5-proxy op `127.0.0.1` binnen het `cc_server`-proces, **één paar per beperkte sessie** (`http_proxy.dart`, `socks_proxy.dart`). Gelijktijdige runs delen geen paar.
 - Gesandboxte processen krijgen proxy-omgevingsvariabelen (`HTTP_PROXY`/`HTTPS_PROXY` → de HTTP-proxy, `ALL_PROXY` → de SOCKS-proxy; `GIT_SSH_COMMAND` leidt git-over-SSH via de SOCKS-proxy). Op Linux is de netwerknamespace niet gedeeld, dus zijn de proxies de enige uitweg; op macOS deelt de sandbox de loopback van de host en praat hij er rechtstreeks mee.
 - De doelhost van elke verbinding wordt gematcht tegen de domein-allowlist van de sessie; al het andere wordt geweigerd. Twee jokervormen, elk met precies één `*`: een vooraanstaande `*.example.com` matcht elk subdomein (inclusief `a.b.example.com`) maar niet het hoofddomein zelf; een middenlabel `bedrock.*.amazonaws.com` matcht precies één label (`bedrock.us-east-1.amazonaws.com`, niet `bedrock.evil.attacker.amazonaws.com`).
-- De allowlist wordt per sessie samengesteld uit de samengestelde basis (`kBaselineAllowedDomains`: LLM-providers, githosting, pakketregisters), plus GitHub-domeinen wanneer de agent de GitHub- of pushmogelijkheid heeft, plus `SandboxSpec.egressAllowlist`. De resolver accepteert ook domeinen van ticketingproviders wanneer de agent ticketing mag aanroepen, maar het dispatchpad geeft die lijst nooit door (of extra `egressAllowlist`-vermeldingen), dus in de praktijk krijgt elke run de basis plus de GitHub-domeinen die zijn mogelijkheden opleveren.
+- De allowlist wordt per sessie samengesteld uit de samengestelde basis (`kBaselineAllowedDomains`: LLM-providers, githosting, pakketregisters), plus de GitHub-domeinen (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Het dispatchpad geeft nooit extra `egressAllowlist`-vermeldingen door, dus in de praktijk krijgt elke run de basis plus GitHub.
 - Een vaste weigerlijst (`kBaselineDeniedDomains`: cloudmetadata-eindpunten, telemetrie-sinks) gaat vóór alle toestemmingen.
-- `networkEnabled: false` (of een agent zonder de netwerkmogelijkheid) start de proxies per sessie nog steeds, maar de allowlist is leeg, dus elke uitgaande verbinding wordt geweigerd.
+- `networkEnabled: false` start de proxies per sessie nog steeds, maar de allowlist is leeg, dus elke uitgaande verbinding wordt geweigerd. Dispatch stelt de waarde bij de start van de run in op basis van de regel **Toegang tot het netwerk**: weigeren zet het netwerk uit, toestaan en eerst vragen laten het aan.
 
 ## SandboxSpec
 
@@ -121,11 +121,10 @@ De specificatie die aan `SandboxPort.launch` wordt doorgegeven:
 | `workspaceId`     | `String`                                    | Id van de eigenaarswerkruimte                                                                                                                |
 | `agentId`         | `String?`                                   | Agent die momenteel aan de sandbox is gebonden, indien van toepassing                                                                        |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest-mounts; de sandbox ziet alleen de hostpaden die hier worden genoemd                                                               |
-| `networkEnabled`  | `bool` (standaard `true`)                   | Gecombineerd met de netwerkmogelijkheid van de agent. Staat die uit, dan starten de proxies per sessie nog steeds, maar is de allowlist leeg, dus wordt elke uitgaande verbinding geweigerd |
-| `egressAllowlist` | `List<String>` (standaard `[]`)             | Extra toegestane egress-domeinen; jokers worden ondersteund (`*.example.com`, plus een middenvorm met één label). Dispatch vult dit nooit, dus een omhulde run krijgt de samengestelde basis plus de GitHub-domeinen die zijn mogelijkheden opleveren |
+| `networkEnabled`  | `bool` (standaard `true`)                   | Door dispatch ingesteld op basis van de regel voor uitgaand netwerkverkeer (alleen uit wanneer die op weigeren uitkomt). Staat het uit, dan starten de proxies per sessie nog steeds, maar is de allowlist leeg, dus wordt elke uitgaande verbinding geweigerd |
+| `egressAllowlist` | `List<String>` (standaard `[]`)             | Extra toegestane egress-domeinen; jokers worden ondersteund (`*.example.com`, plus een middenvorm met één label). Dispatch vult dit nooit, dus een omhulde run krijgt de samengestelde basis plus de GitHub-domeinen |
 | `guestWorkdir`    | `String?`                                   | Standaardwerkmap binnen de sandbox; afzonderlijke `exec`-aanroepen kunnen die overschrijven                                                         |
 | `mode`            | `Mode` (standaard `chat`)                   | Bepaalt de schrijfregels voor het bestandssysteem: `chat` houdt bind-mounts beschrijfbaar; `review`, `plan` en `orchestrate` zijn alleen-lezen   |
-| `capabilities`    | `AgentCapabilities` (standaard `safeDefault`) | Leidt de netwerk-aan/uit-beslissing en de GitHub-egressdomeinen af. Ticketingdomeinen zijn een resolverargument dat het dispatchpad nooit aanlevert |
 | `protectedPaths`  | `List<String>` (standaard `[]`)             | Hostpaden die in geen enkele modus beschrijfbaar mogen zijn binnen de sandbox                                                                |
 | `runnerStateDirs` | `List<String>` (standaard `[]`)             | Hostmappen waarin de runner zijn eigen staat bewaart, in elke modus beschrijfbaar (een door Control Center beheerde `CLAUDE_CONFIG_DIR` is de huidige) |
 | `execGrantRoots`  | `List<String>` (standaard `[]`)             | Door de operator goedgekeurde mappenbomen die de exec-blokkade op beschrijfbare mappen op macOS weer openen. Linux negeert ze — bwrap heeft geen `$HOME`-execblokkade om te heropenen |
@@ -183,7 +182,6 @@ Teruggegeven door `SandboxPort.launch`:
 | --------------------- | --------- | --------------------------------------------------------------------------- |
 | `action`              | `String`  | Het geweigerde werkwoord (bijv. `file-read*`, `network-outbound`)           |
 | `target`              | `String`  | Pad of host die het doel was van de geweigerde handeling                     |
-| `suggestedCapability` | `String?` | De mogelijkheidsvlag die deze actie zou toestaan (bijv. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Ruwe logregel, nuttig voor het debuggen                                     |
 
 ## Zie ook

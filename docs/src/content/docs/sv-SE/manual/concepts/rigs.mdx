@@ -2,7 +2,7 @@
 title: Stationer och avskilda miljöer
 description: Varför agenter får tillfälliga maskiner i stället för din dator – isoleringsgränserna, visningskanalerna, autentiseringsuppgifterna, portarna och livscykeln.
 slug: sv-SE/handbok/koncept/stationer
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 En **station** är en tillfällig maskin som en agent kör i realtid – en
@@ -159,13 +159,20 @@ stod.
 
 ## Autentiseringsuppgifter bor aldrig i gästen
 
-`git push` fungerar från en avskild terminal, men gästen lagrar ingen
+`git push` fungerar från en avskild terminal som du har öppnat, men gästen lagrar ingen
 kodvärdstoken. Den håller en hemlighet per VM vars enda kraft är att *fråga*
 värdens broker för autentiseringsuppgifter – över en tunnel som värden
 kontrollerar – om en kortlivad, repo-avgränsad token, per åtgärd,
 hastighetsbegränsad, begränsad av samma värdtillåtelselista som den utgående
 trafiken, och återkallad i samma stund som stationen stängs. En maskin byggd för
 att slängas får inte innehålla något värt att stjäla.
+
+Vad den token får göra bestäms när stationen öppnas. En terminalstation som en
+person öppnar får en token med skrivrätt, begränsad av den medlemmens egen
+åtkomst till kodvärden. En station som en agent har öppnat får en som bara kan
+läsa: en credential helper för git kan inte skilja en push från en fetch, så
+pushregeln kan inte frågas per push inuti en gäst på det sätt som
+agentkörningsgatewayen gör på värden.
 
 ## Worktreen i en station är en satellit
 

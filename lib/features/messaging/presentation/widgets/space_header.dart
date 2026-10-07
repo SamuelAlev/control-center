@@ -69,6 +69,18 @@ class SpaceHeader extends ConsumerWidget {
     final title = conversation != null
         ? conversationDisplayName(conversation, l10n)
         : (space.name.isNotEmpty ? space.name : l10n.spaceLabel);
+    final titleGenerating =
+        conversation != null &&
+        ref.watch(
+          conversationTitleGeneratingProvider((
+            spaceId: space.id,
+            conversationId: conversation.id,
+          )),
+        );
+    final titleStyle = CcTypography.body.copyWith(
+      fontWeight: FontWeight.w600,
+      color: tokens.textPrimary,
+    );
     final subtitle = agents.isEmpty
         ? l10n.noAgents
         : l10n.agentCount(agents.length);
@@ -185,12 +197,11 @@ class SpaceHeader extends ConsumerWidget {
                     // the bottom edge (a 2px RenderFlex overflow). Truncate
                     // and disclose the full name on hover instead of stealing
                     // a second line.
-                    CcTruncatedText(
+                    CcScrambleText(
                       title,
-                      style: CcTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: tokens.textPrimary,
-                      ),
+                      scrambling: titleGenerating,
+                      style: titleStyle,
+                      child: CcTruncatedText(title, style: titleStyle),
                     ),
                     Text(
                       subtitle,

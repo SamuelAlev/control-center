@@ -1155,43 +1155,8 @@ void main() {
         expect((caps['repoRpc'] as Map)['catalogVersion'], 9);
         expect(caps['serverVersion'], BuildInfo.buildVersion);
         expect((caps['subscriptions'] as Map)['snapshot'], isTrue);
-        // No sync.watch query → delta honestly advertised false.
-        expect((caps['subscriptions'] as Map)['delta'], isFalse);
       },
     );
-
-    test('advertises delta when a sync.watch query is registered', () async {
-      final space = _FakeChannel();
-      final watchQueries = WatchQueryRegistry([
-        WatchQuery(
-          name: 'sync.watch',
-          workspaceScoped: false,
-          handler: (_) => const Stream<Map<String, dynamic>>.empty(),
-        ),
-      ]);
-      final session = RemoteRpcSession(
-        deviceId: 'd',
-        userId: 'u',
-        space: space,
-        dispatcher: _RecordingDispatcher(),
-        workspaceResolver: (_) async => const [],
-        capability: SessionCapability.phone,
-        repoOps: RepoOpDispatcher(
-          registry: RepoOpRegistry(const []),
-          mapException: (_) => null,
-        ),
-        watchQueries: watchQueries,
-      );
-      addTearDown(session.stop);
-      await session.start();
-      space.inject({'jsonrpc': '2.0', 'method': 'initialize', 'id': 1});
-      await pumpEventQueue(times: 5);
-      final subs =
-          ((space.sent.single['result'] as Map)['capabilities']
-                  as Map)['subscriptions']
-              as Map;
-      expect(subs['delta'], isTrue);
-    });
 
     test('initialize tolerates a non-Map capabilities block', () async {
       final space = _FakeChannel();

@@ -2,13 +2,13 @@
 title: Sandbox arka uçları
 description: Sandbox arka uçları, nerede uygulandıkları ve sandbox çalışma zamanının kullandığı her değer nesnesi.
 slug: tr-TR/kilavuz/referans/sandbox-arka-uclari
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Bir çalıştırmanın sandbox'a alınıp alınmadığı ana makineye bağlıdır]
 `cc_server` ana makineyi açılışta bir kez yoklar ve yoklama kullanılabilir bir arka uç bildirdiğinde ve `--sandbox` `off` olmadığında ajan gönderimini yerel arka uca sarar. Her iki gönderim ek noktası da sarılır: Claude Code CLI sandbox portu üzerinden, ACP ile yerleşik harness `bash` aracı ise sandbox yöneticisi üzerinden.
 
-Yoklamanın bir arka uç bildirmediği yerlerde — **her zaman Windows** ve `bwrap` ile `socat` bulunmayan Linux ya da WSL2 — ajan çalıştırmaları sandbox'a **alınmaz**. ACP ve harness `bash` aracı yine de ortam arındırmasıyla başlatılır; Claude Code `NoSandboxAdapter` üzerinden gider ve ana makinenin ortamını devralır. Geriye kalan sınırlar şunlardır: çalıştırmanın kendi çalışma ağacı (`rift`in bulunduğu yerde copy-on-write; Windows'ta `git worktree`), başlatma başına broker'la verilip kapatmada iptal edilen yetenek kapılı kimlik bilgileri, moda özgü komut politikası, birleşik [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) (başarısızlıkta kapalı), ACP ile harness `bash` yollarındaki ortam arındırması ve modun izin verdiği araç yüzeyi.
+Yoklamanın bir arka uç bildirmediği yerlerde — **her zaman Windows** ve `bwrap` ile `socat` bulunmayan Linux ya da WSL2 — ajan çalıştırmaları sandbox'a **alınmaz**. ACP ve harness `bash` aracı yine de ortam arındırmasıyla başlatılır; Claude Code `NoSandboxAdapter` üzerinden gider ve ana makinenin ortamını devralır. Geriye kalan sınırlar şunlardır: çalıştırmanın kendi çalışma ağacı (`rift`in bulunduğu yerde copy-on-write; Windows'ta `git worktree`), başlatma başına broker'la verilip kapatmada iptal edilen salt okunur bir forge token'ı, ajan çalıştırma ağ geçidinde push kuralından geçmesi gereken push'lar, moda özgü komut politikası, birleşik [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) (başarısızlıkta kapalı), ACP ile harness `bash` yollarındaki ortam arındırması ve modun izin verdiği araç yüzeyi.
 
 Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, search, find, search_files) her ana makinede sandbox'ın dışındadır: sunucu sürecinde çalışırlar, dolayısıyla yalnızca `bash` sarılır.
 :::
@@ -98,7 +98,7 @@ Sandbox yok. Süreç doğrudan ana makinede, ana makinenin dosya sistemi, ağ ve
 
 Terminal, gönderim yoklamasıyla değil, kendi koşullarıyla sandbox'a alınır. `TerminalSessionService`'in `defaultBackend` değeri `none`dır ve `cc_server` bunu geçersiz kılmaz; dolayısıyla bir terminal oturumu, istemci açıkça `native` istemedikçe ana makine kabuğunu çalıştırır — masaüstünün terminal paneli istemez.
 
-`native` istendiğinde kabuk, `SandboxManager` üzerinden sabit bir terminal profiliyle sarılır: `$HOME` ve oturumun çalışma dizini yazılabilirdir, ağ açıktır ve `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` ile `~/Library/Keychains` okumaya kapalıdır. Yetenek kapılaması geçerli değildir — o bir gönderim meselesidir. Sarmalama desteklenmiyorsa oturum, ana makine kabuğu PTY'sinde yerel bir rozet göstermek yerine başarısız olur.
+`native` istendiğinde kabuk, `SandboxManager` üzerinden sabit bir terminal profiliyle sarılır: `$HOME` ve oturumun çalışma dizini yazılabilirdir, ağ açıktır ve `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` ile `~/Library/Keychains` okumaya kapalıdır. Salt okunur forge token'ı ve push ağ geçidi geçerli değildir — bunlar gönderim meseleleridir. Sarmalama desteklenmiyorsa oturum, ana makine kabuğu PTY'sinde yerel bir rozet göstermek yerine başarısız olur.
 
 ## Ağ çıkışı
 
@@ -107,9 +107,9 @@ Bir sandbox başlatıldığında, dışa giden ağ erişimi çekirdek güvenlik 
 - Sandbox çalışma zamanı, `cc_server` sürecinin içinde `127.0.0.1` üzerinde bir HTTP/HTTPS proxy ve bir SOCKS5 proxy çalıştırır, **kısıtlı oturum başına bir çift** (`http_proxy.dart`, `socks_proxy.dart`). Eşzamanlı çalıştırmalar bir çifti paylaşmaz.
 - Sandbox'a alınmış süreçler proxy ortam değişkenlerini alır (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP proxy'si, `ALL_PROXY` → SOCKS proxy'si; `GIT_SSH_COMMAND`, SSH üzerinden git'i SOCKS proxy'sinden geçirir). Linux'ta ağ ad alanı paylaşılmaz, dolayısıyla çıkışın tek yolu proxy'lerdir; macOS'ta sandbox ana makinenin loopback'ini paylaşır ve onlarla doğrudan konuşur.
 - Her bağlantının hedef ana makinesi oturumun alan adı izin listesiyle eşleştirilir; başka her şey reddedilir. Her birinde tam olarak bir `*` bulunan iki joker biçim vardır: baştaki `*.example.com` her alt alan adıyla (`a.b.example.com` dahil) eşleşir ama kök alanın kendisiyle eşleşmez; ortada etiket bulunan `bedrock.*.amazonaws.com` tam olarak bir etiketle eşleşir (`bedrock.us-east-1.amazonaws.com`, `bedrock.evil.attacker.amazonaws.com` değil).
-- İzin listesi oturum başına, özenle seçilmiş temelden (`kBaselineAllowedDomains`: LLM sağlayıcıları, Git barındırma, paket kayıt defterleri), ajanın GitHub ya da push yeteneği varsa GitHub alan adlarından ve `SandboxSpec.egressAllowlist` değerinden çözülür. Çözümleyici, ajan biletleme çağırabildiğinde biletleme sağlayıcısı alan adlarını da kabul eder, ama gönderim yolu bu listeyi (ya da ek `egressAllowlist` girdilerini) asla geçirmez; dolayısıyla pratikte her çalıştırma temeli artı yeteneklerinin kazandırdığı GitHub alan adlarını alır.
+- İzin listesi oturum başına, özenle seçilmiş temelden (`kBaselineAllowedDomains`: LLM sağlayıcıları, Git barındırma, paket kayıt defterleri), GitHub alan adlarından (`kGithubDomains`) ve `SandboxSpec.egressAllowlist` değerinden çözülür. Gönderim yolu asla ek `egressAllowlist` girdileri geçirmez; dolayısıyla pratikte her çalıştırma temeli artı GitHub'ı alır.
 - Sabit bir ret listesi (`kBaselineDeniedDomains`: bulut meta veri uç noktaları, telemetri hedefleri) tüm izinlerin önüne geçer.
-- `networkEnabled: false` (ya da ağ yeteneği olmayan bir ajan) oturum başına proxy'leri yine de başlatır, ama izin listesi boştur, dolayısıyla her dışa giden bağlantı reddedilir.
+- `networkEnabled: false`, oturum başına proxy'leri yine de başlatır, ama izin listesi boştur, dolayısıyla her dışa giden bağlantı reddedilir. Gönderim bu değeri çalıştırma başlarken **Ağa eriş** kuralından ayarlar: reddet ağı kapatır, izin ver ve önce sor açık bırakır.
 
 ## SandboxSpec
 
@@ -121,11 +121,10 @@ Bir sandbox başlatıldığında, dışa giden ağ erişimi çekirdek güvenlik 
 | `workspaceId`     | `String`                                    | Sahip olan çalışma alanının kimliği                                                                                                                     |
 | `agentId`         | `String?`                                   | Sandbox'a bağlı olan ajan, varsa                                                                                                                        |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Ana makine→misafir mount'lar; sandbox yalnızca burada listelenen ana makine yollarını görür                                                              |
-| `networkEnabled`  | `bool` (varsayılan `true`)                  | Ajanın ağ yeteneğiyle birleştirilir. Kapalıyken oturum başına proxy'ler yine başlar ama izin listesi boştur, dolayısıyla her dışa giden bağlantı reddedilir |
-| `egressAllowlist` | `List<String>` (varsayılan `[]`)            | Ek izinli çıkış alan adları; joker karakterler desteklenir (`*.example.com`, ayrıca ortada tek etiketli biçim). Gönderim bunu asla doldurmaz, dolayısıyla sarılmış bir çalıştırma özenle seçilmiş temeli artı yeteneklerinin kazandırdığı GitHub alan adlarını alır |
+| `networkEnabled`  | `bool` (varsayılan `true`)                  | Gönderimde ağ çıkışı kuralından ayarlanır (yalnızca reddet olarak çözümlendiğinde kapalı). Kapalıyken oturum başına proxy'ler yine başlar ama izin listesi boştur, dolayısıyla her dışa giden bağlantı reddedilir |
+| `egressAllowlist` | `List<String>` (varsayılan `[]`)            | Ek izinli çıkış alan adları; joker karakterler desteklenir (`*.example.com`, ayrıca ortada tek etiketli biçim). Gönderim bunu asla doldurmaz, dolayısıyla sarılmış bir çalıştırma özenle seçilmiş temeli artı GitHub alan adlarını alır |
 | `guestWorkdir`    | `String?`                                   | Sandbox içindeki varsayılan çalışma dizini; tek tek `exec` çağrıları bunu geçersiz kılabilir                                                              |
 | `mode`            | `Mode` (varsayılan `chat`)                  | Dosya sistemi yazma kurallarını oyar: `chat` bind mount'ları yazılabilir tutar; `review`, `plan` ve `orchestrate` salt okunurdur                          |
-| `capabilities`    | `AgentCapabilities` (varsayılan `safeDefault`) | Ağın açık/kapalı kararını ve GitHub çıkış alan adlarını türetir. Biletleme alan adları, gönderim yolunun asla sağlamadığı bir çözümleyici argümanıdır     |
 | `protectedPaths`  | `List<String>` (varsayılan `[]`)            | Sandbox içinde hiçbir modda yazılabilir olmaması gereken ana makine yolları                                                                              |
 | `runnerStateDirs` | `List<String>` (varsayılan `[]`)            | Runner'ın kendi durumunu tuttuğu, her modda yazılabilir ana makine dizinleri (Control Center tarafından yönetilen bir `CLAUDE_CONFIG_DIR` şu anki örnektir) |
 | `execGrantRoots`  | `List<String>` (varsayılan `[]`)            | macOS'ta yazılabilir dizin exec engelini yeniden açan, operatör onaylı dizin ağaçları. Linux bunları yok sayar — bwrap'te yeniden açılacak bir `$HOME` exec engeli yoktur |
@@ -183,7 +182,6 @@ Her okuma-reddi ve yazma-reddi yolu hem düz yazımıyla hem de sembolik bağdan
 | --------------------- | --------- | -------------------------------------------------------------------- |
 | `action`              | `String`  | Reddedilen fiil (örn. `file-read*`, `network-outbound`)              |
 | `target`              | `String`  | Reddedilen işlemin hedefi olan yol ya da ana makine                  |
-| `suggestedCapability` | `String?` | Bu eyleme izin verecek yetenek bayrağı (örn. `canCallGitHubApi`)     |
 | `raw`                 | `String?` | Ham günlük satırı, hata ayıklama için kullanışlı                     |
 
 ## İlgili konular

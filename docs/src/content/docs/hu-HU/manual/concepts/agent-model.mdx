@@ -2,12 +2,12 @@
 title: Az ügynökmodell
 description: Mi is valójában egy ügynök a Control Centerben, mely mezői változtatják meg a viselkedését, és hogyan dönti el az adapter, amelyen fut, mi érvényesíthető.
 slug: hu-HU/kezikonyv/fogalmak/ugynokmodell
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Mi az ügynök?
 
-Az ügynök egy nevesített szereplő, aki personával, készségkészlettel, egy adapterrel, amelyen fut, és képességkészlettel rendelkezik. Az ügynökök ugyanolyan jogalanyok, mint az emberek: üzeneteket írnak, jegyeket birtokolnak, átnézéseket hagynak hátra, és ugyanazon a névsoron jelennek meg. Ők azok, amelyek a munkát végzik.
+Az ügynök egy nevesített szereplő, aki personával, készségkészlettel és egy adapterrel rendelkezik, amelyen fut. Az ügynökök ugyanolyan jogalanyok, mint az emberek: üzeneteket írnak, jegyeket birtokolnak, átnézéseket hagynak hátra, és ugyanazon a névsoron jelennek meg. Ők azok, amelyek a munkát végzik.
 
 Minden ügynök pontosan egy munkaterülethez tartozik. Ez kemény invariáns — az `agent.workspaceId` nem null, az ügynök saját munkaterülete az, ami kiválasztja azt az adatbázisfájlt, amelybe a sorai kerülnek, a munkaterület nélküli ügynök létrehozása pedig elutasításra kerül.
 
@@ -26,7 +26,6 @@ Az ügynök egyben egy könyvtár is. A definíciója a munkaterület adatkönyv
 | `modelId`               | Melyik modell az adott adapteren belül                                                |
 | `effort`                | Érvelési szint, a kiválasztott modell saját szókészletéből                            |
 | `contextSize`           | A kontextusablak felülbírálása                                                        |
-| `capabilities`          | Hitelesítőadat- és kimenőforgalom-jelzők, indításkor ellenőrizve                      |
 | `silenceTimeoutMinutes` | Ügynökönkénti felülbírálás (1–240) a csendfigyelő watchdoghoz                         |
 | `reportsTo`             | A szülő ügynök azonosítója — a jelentési lánc, amelyet a szervezeti ábra megrajzol    |
 
@@ -51,18 +50,13 @@ A hatókör szűkítése kontextusköltségvetési döntés. A készségindex mi
 
 A repókészségek **minden** adapterhez betöltődnek, nem csak a beépített harnesshez. Az aktív repó készségei az ügynök munkakönyvtárába materializálódnak, ami az az útvonal, amelyet a Claude Code már beolvas; ugyanez az index kerül bele abba az `AGENTS.md`-be, amelyet a beépített harness olvas. Egy repó készségei ugyanazon a hiba esetén elutasító vizsgálaton esnek át, mint egy telepített készség, mindezek előtt — egy checkoutolt repó klónozott tartalom, és a frontmatterje promptba kerül.
 
-## Képességek
+## Jogosultságok
 
-A képességek azt szabályozzák, hogy egy futás mit kap _kézhez_, nem azt, hogy a fájlrendszere mit enged megérinteni. A hitelesítőadat-közvetítő indításkor ellenőrzi őket: ha egy képesség ki van kapcsolva, a hozzá tartozó token egyszerűen nem kerül be.
+Az ügynöknek nincsenek saját jogosultságjelzői. Hogy létrehozhat-e commitot, pusholhat-e, nyithat-e pull requestet, írhat-e követőbe vagy elérheti-e a hálózatot, azt a [műveleti korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) döntik el — engedélyezés, előbb kérdezzen vagy tiltás, munkaterület, ügynök vagy tér hatókörében —, és ugyanazok a szabályok érvényesek, bármelyik adapter futtatja is.
 
-- **Push a repóba** — a `git push`-hoz használt GitHub-token beillesztését szabályozza.
-- **GitHub API** — a `GH_TOKEN` beillesztését és az api.github.com felé irányuló kimenő forgalmat szabályozza.
-- **Jegykezelés** — a jegykezelő szolgáltató API-kulcsát és a domainjei felé irányuló kimenő forgalmat szabályozza.
-- **Hálózati kimenő forgalom** — tetszőleges kimenő kérések.
+Az, hogy egy futás mit kap _kézhez_, ezektől a szabályoktól nem változik. Egy GitHub-worktree-ben zajló futás mindig csak olvasásra jogosult GitHub-tokent kap, a pushról pedig akkor születik döntés, amikor megtörténik: az ügynök git-konfigurációja minden GitHub-pusht a Control Centeren keresztül küld, amely a továbbítás előtt alkalmazza a **Küldés távoli tárolóra** szabályt.
 
-Egy futás ezeket az ügynök saját sorából oldja fel. Ha az ügynöknek nincs egy sem, egy rögzített, konzervatív alapértelmezés érvényes: a három hitelesítőadat-jelző kikapcsolva, a hálózati kimenő forgalom bekapcsolva. Az ügynök űrlapján a „Homokozó-jogosultságok” kapcsoló választ e visszaesés és az ügynökön tárolt egyéni készlet között.
-
-A történet másik felét, beleértve azt is, mi érvényesül és mi nem a fájlrendszer szintjén, lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
+Hogy ez hogyan működik, és mi érvényesül, illetve mi nem a fájlrendszer szintjén, azt lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
 
 ## Az adapter dönti el, mi érvényesíthető
 
@@ -71,7 +65,7 @@ Egy ügynök messze legkövetkezményesebb mezője az adaptere, mert az adapter 
 | Átvitel          | Adapterek                 | Mit érvényesít a Control Center                                                                                                                                                                                                                                            |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Beépített harness | Control Center (built-in) | Mindent. Az eszközfelület a módból _épül fel_, így egy nem engedélyezett eszköz láthatatlan, nem csupán megtagadott; minden hívás átmegy a jóváhagyási kapun és a műveleti korlátokon; a befejezési szerződés ösztökélni tudja, majd meg is buktathatja azt a futást, amely a szállítandója nélkül ér véget |
-| Claude CLI       | Claude Code               | Csak a kiszolgált `mcp__*` eszközöket. A Claude saját olvasó, író, szerkesztő és shell-eszközei a saját folyamatában élnek és láthatatlanul futnak — ráadásul `--dangerously-skip-permissions` kapcsolóval indul, mert a nem interaktív `claude -p` különben örökre a saját promptjánál akadna el    |
+| Claude CLI       | Claude Code               | A kiszolgált `mcp__*` eszközöket, valamint a `Bash` parancsait, amelyeket egy hook futás előtt elküld a műveleti szabályzatnak. A Claude saját olvasó, író és szerkesztő eszközei a saját folyamatában élnek és láthatatlanul futnak — ráadásul `--dangerously-skip-permissions` kapcsolóval indul, mert a nem interaktív `claude -p` különben örökre a saját promptjánál akadna el    |
 
 Konkrétan: **csak a beépített harness támogatja az alügynököket, a futás közbeni irányítást, a szüneteltetést és a folytatást (és így az átvételt), valamint a mód strukturális érvényesítését.** A Claude Code ezek egyikét sem kapja meg.
 

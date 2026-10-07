@@ -2,7 +2,7 @@
 title: Tesztgép adása egy ügynöknek
 description: Adjon az ügynöknek egy eldobható böngészőt, asztali környezetet, Android-emulátort vagy iOS-szimulátort — élőben figyelhető, és bármikor átveheti a vezérlést.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Az **állomás** egy eldobható gép, amelyet az ügynök akkor nyit meg, amikor
@@ -205,9 +205,12 @@ Mi változik:
 - A hálózat alapértelmezés szerint tilt. Csak az állomás engedélyezési listáján
   szereplő hosztok érhetők el, és minden egy olyan kapun megy át, amely
   kikényszeríti ezt a listát.
-- A `git push` továbbra is működik. Az állomás nem tárol hitelesítő adatot;
-  műveletenként egy rövid életű tokent kér a szervertől, amely az állomás
-  bezárásakor visszavonásra kerül.
+- A `git push` továbbra is működik az Ön által megnyitott terminálban. Az
+  állomás nem tárol hitelesítő adatot; műveletenként egy rövid életű tokent kér
+  a szervertől, amelyet az Ön saját kódhosting-hozzáférése korlátoz, és amely
+  az állomás bezárásakor visszavonásra kerül. Egy ügynök által megnyitott
+  állomás csak olvasásra jogosult hitelesítő adatot kap, így fetchelni tud,
+  pusholni nem.
 
 Amit érdemes tudni:
 

@@ -52,11 +52,21 @@ The server owns external APIs and background services. Dio adapters in `cc_infra
 
 `Principal` is `UserPrincipal | AgentPrincipal`; use it for attribution. Users are global; membership/roles and repo grants are workspace-scoped. See [authorization](SECURITY.md#authorization-and-isolation).
 
-- Durable state: optimistic mutation + server rebase + per-field LWW. Allocate monotonic workspace `syncSeq` in the mutation transaction; receipt order, never client time, decides the last writer. Per-store kill switches restore snapshot mode.
+- Durable state: clients render full-snapshot `*.watch*` subscriptions; there is no client delta mirror. Per-field ticket edits use `tickets.patch` (per-column LWW): server receipt order, never client time, decides the last writer.
 - Presence: server-hubbed, ephemeral, never persisted; filter by repo grants before fan-out. Agent presence derives from run/lifecycle events. With one human the lane idles and roster chrome is absent.
 - Follow/steer/interrupt/take-over and per-space autonomy use these lanes, not a CRDT.
 - Agent peer messages use durable spaces, exact ID/unique-name resolution and no cross-workspace recipient search. `ask_agent` has a mandatory timeout (default ten minutes, workspace-capped) and pairwise cycle detection. Delegation inherits budget and autonomy ceilings, with cycle detection and a default depth cap of three. Agent-only spaces do not increment human unread badges or send OS notifications.
 - `DomainEventBus` declarations under `cc_domain/lib/core/domain/events/` are authoritative. Device revocation watches `paired_devices`; there is no `UserDeviceRevoked` event. Workspace removal drops subscriptions without requiring the socket to close.
+
+### Agent run gateway
+
+Agents carry no permission flags: what a run may push, open, publish, write to a tracker or reach is action policy (`ActionClass` rules), the same for every adapter. `AgentRunGateway` (`packages/cc_infra/lib/src/dispatch/agent_run_gateway.dart`) is how that policy reaches code running inside an agent's sandbox. `cc_server_runtime.dart` constructs it over the action guard and credential broker and mounts it on the MCP surface's `/agent/` routes (`McpRequestHandler.agentRoutes`), so it rides the loopback port agents already dial for MCP.
+
+- Dispatch mints the run a `ForgeTokenScope.read` token (GitHub App installation: contents read, pull requests write; it cannot push) and opens a gateway lease. The lease's `GIT_CONFIG_*` entries set `url.<gateway>/agent/git/github.com/.pushInsteadOf` for `https://github.com/`, `git@github.com:` and `ssh://git@github.com/`, so every GitHub push lands on `/agent/git/…`; fetches stay direct. The gateway parses the ref updates, asks `gitPush` with the refs (branch constraints apply), checks the target is the worktree's repo or a GitHub repo linked to the workspace, then forwards on a `write` token it mints and keeps. A refusal is a `report-status` `ng`, shown by git as `! [remote rejected] <ref> (Control Center policy: …)`.
+- Claude Code is launched with `--settings` registering an HTTP PreToolUse hook on `Bash` → `/agent/hooks/pre-tool-use`. `ShellActionClassifier` (`cc_domain/features/guardrails/domain/services/`) maps the command line to classes (commit, PR create/publish, tracker write, package install, `curl`/`wget` egress); the built-in harness `bash` runner uses the same classifier. This is the soft gate; credential possession is the hard one, so `git push` is deliberately not classified and was dropped, with `gh pr create|merge|close|review`, from the harness approve-command list (read-only modes still deny them).
+- `networkEgress` is resolved once at run start into `SandboxSpec.networkEnabled`: deny turns the sandbox network off, allow/ask leave it on (the harness web tools still ask per call). GitHub domains are always on the egress allowlist while the network is on. No ticketing key enters a sandbox; agents write tickets through MCP tools gated by `vendorSyncWrite`.
+- Teardown closes the lease and revokes every write token minted for it. With no GitHub App the broker falls back to an unnarrowable PAT: the rule still binds `git push`, but is advisory for code using the token directly.
+- Rigs fix the scope at open (`RigSpec.forgeTokenScope`): a human-opened terminal rig gets `write`, bounded by that member's forge access; an agent-opened rig gets `read`, because a guest credential helper cannot tell a push from a fetch.
 
 ## Persistence
 

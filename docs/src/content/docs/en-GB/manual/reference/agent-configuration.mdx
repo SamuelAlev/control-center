@@ -2,7 +2,7 @@
 title: Agent configuration
 description: Every field on the agent entity and the enums it uses.
 slug: en-GB/manual/reference/agent-configuration
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/en-GB/manual/guides/create-agent/).
@@ -26,7 +26,6 @@ This reference lists every field on the agent entity, plus the enums and flags i
 | `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
 | `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
 | `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
 | `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
 | `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
 | `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
@@ -68,18 +67,9 @@ This reference lists every field on the agent entity, plus the enums and flags i
 | `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
 | `archived` | Retired and hidden from active rosters                                                |
 
-## AgentCapabilities flags
+## Permissions
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
-
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
-
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+An agent carries no permission flags. Pushing, opening and publishing pull requests, writing to a tracker and network egress are action classes (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) that the [guardrails](/en-GB/manual/concepts/guardrails/) resolve at the workspace, agent or space scope. A run's GitHub token is always read-scoped; pushes go through the agent run gateway, which asks the `gitPush` rule before forwarding them.
 
 ## AgentSkills
 

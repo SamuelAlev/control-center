@@ -1,7 +1,13 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
+import 'package:cc_domain/features/subscriptions/subscriptions.dart';
+import 'package:cc_harness/provider.dart' show HarnessProviderInfo;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
+import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One snapshot of every polled external status page (githubstatus.com,
@@ -146,6 +152,54 @@ final kimiStatusProvider = Provider<AsyncValue<GitHubServiceStatus>>(
   (ref) => _slice(ref.watch(serviceStatusProvider), 'kimi', (s) => s.kimi),
 );
 
+/// A status page the service status surfaces can show.
+enum StatusService {
+  /// githubstatus.com.
+  github,
+
+  /// status.claude.com.
+  claude,
+
+  /// status.openai.com, shown as Codex.
+  openai,
+
+  /// status.moonshot.cn, shown as Kimi.
+  kimi,
+}
+
+/// The services this install actually uses: a connected GitHub account, a
+/// signed-in plan (Claude Code, Codex, Kimi Code) or a stored API key. Only
+/// these get a row in the flyout and a say in the sidebar badge — an outage
+/// at a provider nobody here signed up for is noise.
+///
+/// Every source reads unresolved as absent, so a service appears once its
+/// credential is confirmed rather than flashing in and back out. Both reads
+/// ride pollers that are already running (the title-bar usage pill and the
+/// settings provider list); this adds no fetches of its own.
+final servicesInUseProvider = Provider<Set<StatusService>>((ref) {
+  final forges = ref.watch(connectedForgesProvider);
+  final plans = {
+    for (final usage
+        in ref.watch(subscriptionUsageProvider).value ??
+            const <SubscriptionUsage>[])
+      if (usage.status != SubscriptionStatus.unconfigured) usage.providerId,
+  };
+  final keys = {
+    for (final provider
+        in ref.watch(harnessProvidersProvider).value ??
+            const <HarnessProviderInfo>[])
+      if (provider.connected) provider.id,
+  };
+  bool any(Iterable<String> ids) =>
+      ids.any((id) => plans.contains(id) || keys.contains(id));
+  return {
+    if (forges.contains(ForgeHost.github)) StatusService.github,
+    if (any(const ['claude', 'anthropic'])) StatusService.claude,
+    if (any(const ['codex', 'openai'])) StatusService.openai,
+    if (any(const ['kimi-code', 'moonshotai'])) StatusService.kimi,
+  };
+});
+
 /// Maps the combined snapshot onto one provider's [AsyncValue]: loading stays
 /// loading, a failed combined fetch fails every slice, and a page the host
 /// could not return fails THAT slice only. A loading state that still carries
@@ -170,8 +224,9 @@ AsyncValue<GitHubServiceStatus> _slice(
     stackTrace,
   ),
   _ => switch (all.value) {
-    final statuses? when select(statuses) != null =>
-      AsyncData(select(statuses)!),
+    final statuses? when select(statuses) != null => AsyncData(
+      select(statuses)!,
+    ),
     _ => const AsyncLoading(),
   },
 };

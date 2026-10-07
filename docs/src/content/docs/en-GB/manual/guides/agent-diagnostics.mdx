@@ -2,7 +2,7 @@
 title: Diagnose an agent
 description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
 slug: en-GB/manual/guides/agent-diagnostics
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 This guide shows you how to find out why an agent is not producing runs.
@@ -60,19 +60,18 @@ Two things worth knowing when a change "works in tests but not in the app":
 
 **Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
+- **Sandboxing** — the master toggle, the detected backend and an install hint. Only the detected backend comes from the server; see the caution below. There is no reset control.
 - **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
 - **System behaviour** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
 - **Log level** — raise it before reproducing a failure.
 - **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
 
 :::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle and the backend picker are preferences stored on your device and the server reads neither — the server's own switch is `--sandbox` (`on` by default, `off` to opt out).
 
 So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitisation and the tool surface its mode allows.
+Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, its read-only forge token and the push gateway, the action guardrails, environment sanitisation and the tool surface its mode allows.
 :::
 
 ## Common failures
@@ -83,7 +82,7 @@ Install the CLI **on the server host**, then click **Refresh** on the Model prov
 
 ### The agent cannot push or open a pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Read what git or the agent printed. `Control Center policy: …` means an action rule denied it or an approval went unanswered: check **Push to a remote** and **Open a pull request** at **Settings → Workspace → Agent permissions**. If git says Control Center has no GitHub credential that can push, install the GitHub App on that repo or connect GitHub.
 
 ### Semantic search returns nothing useful
 

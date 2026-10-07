@@ -2,7 +2,7 @@
 title: Guardrail — satu polisi untuk setiap tindakan yang mengubah keadaan
 description: Mengapa Control Center menyalurkan setiap kesan sampingan ejen melalui satu enjin allow/prompt/deny, mengapa taksonomi ActionClass sengaja dibiarkan kecil dan apa yang sebenarnya diubah oleh dail autonomi.
 slug: ms-MY/manual-pengguna/konsep/guardrail
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Ejen dalam Control Center boleh memadam fail, push cawangan, menerbitkan pull
@@ -249,9 +249,7 @@ terbina mengisytiharkan bahawa alat fail in-processnya **tidak** diletakkan di
 dalam kotak pasir — permukaan alat dan enjin polisi ini ialah satu-satunya
 sempadan sistem fail yang dimilikinya. Claude Code mengisytiharkan bahawa
 panggilan alatnya sendiri **tidak** boleh dipintas, kerana ia dilancarkan dengan
-`--dangerously-skip-permissions`; Control Center hanya melihat panggilan
-`mcp__*`nya dan alat baca, tulis, edit serta shell miliknya sendiri berjalan
-tanpa dilihat.
+`--dangerously-skip-permissions`; Control Center melihat panggilan `mcp__*`nya dan, melalui hook, baris perintah `Bash`-nya, manakala alat baca, tulis dan edit miliknya sendiri berjalan tanpa dilihat.
 
 Layar tetapan memaparkan matriks ini, kerana satu-satunya kegagalan yang tidak
 boleh dimaafkan bagi sistem guardrail ialah menuntut liputan yang tidak wujud.

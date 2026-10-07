@@ -1,20 +1,20 @@
 ---
 title: Sandbox-Richtlinien konfigurieren
-description: Was einen Agentenlauf begrenzt, wie du erkennst, ob die Betriebssystem-Sandbox ihn umhüllt, und welche Befugniseinstellungen der Server wirklich liest.
+description: Was einen Agentenlauf begrenzt, wie du erkennst, ob die Betriebssystem-Sandbox ihn umhüllt, und wie die Aktionsregeln entscheiden, was ein Agent pushen oder erreichen darf.
 slug: de-DE/handbuch/anleitungen/sandbox-richtlinien
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Ob ein Agentenlauf in der Sandbox läuft, entscheidet der Server beim Start
-(`--sandbox`). Der Schalter **Sandboxing aktivieren**, die Auswahl **Backend**
-und die Schalter **Standardfähigkeiten · neue Konversationen** unter
-**Einstellungen → Server → Diagnose und Datenschutz** sind Einstellungen auf
-deinem Gerät. Die Hosterkennung der Karte **Sandboxing** meldet, was der
-Server-Host umhüllen kann.
+(`--sandbox`). Der Schalter **Sandboxing aktivieren** und die Auswahl
+**Backend** unter **Einstellungen → Server → Diagnose und Datenschutz** sind
+Einstellungen auf deinem Gerät. Die Hosterkennung der Karte **Sandboxing**
+meldet, was der Server-Host umhüllen kann.
 
 Zwei Steuerungen erreichen einen Lauf, und diese Anleitung deckt beide ab: die
-**Sandbox-Berechtigungen** je Agent weiter unten und das eigene Flag
-`--sandbox` des Servers.
+Aktionsregeln unter **Einstellungen → Arbeitsbereich → Agent-Berechtigungen**,
+die entscheiden, was ein Agent pushen, öffnen oder erreichen darf, und das
+eigene Flag `--sandbox` des Servers.
 
 ## Was einen Agentenlauf begrenzt
 
@@ -25,7 +25,7 @@ und sie ist die bedingte — die anderen fünf gelten auf jedem Host.
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Die Betriebssystem-Sandbox  | Seatbelt unter macOS, bubblewrap unter Linux und WSL2. Umhüllt die Claude-Code-CLI, ACP-Adapter und das Werkzeug `bash` des Harness. **Fehlt unter Windows und unter Linux ohne `bwrap` und `socat`** |
 | Der eigene Worktree         | Jede Unterhaltung bekommt einen Copy-on-Write-Checkout. Der ursprüngliche Checkout geht als Schreibverbotspfad in den Lauf ein, und die Sandbox setzt das durch                 |
-| Vermittelte Zugangsdaten    | Der Zugangsdaten-Broker stellt aus den Befugnissen des Agenten eine Umgebung je Lauf zusammen und widerruft sie beim Abbau. Keine Befugnis, kein Token in der Umgebung          |
+| Vermittelte Zugangsdaten    | Der Zugangsdaten-Broker stellt eine Umgebung je Lauf zusammen und widerruft sie beim Abbau. Ihr GitHub-Token kann lesen, aber nicht pushen: Ein Push läuft durch Control Center, das zuerst die Push-Regel fragt |
 | Aktions-Schutzregeln        | Jedes verändernde Werkzeug deklariert seine Effektklassen, und die Schutzregel löst sie auf, bevor der Aufruf läuft. Ein `prompt` ohne verbundene zuständige Person wird abgelehnt |
 | Bereinigung der Umgebung    | ACP und das Werkzeug `bash` des Harness bekommen eine gefilterte Umgebung. Claude Code über `NoSandboxAdapter` erbt die Umgebung des Hosts                                      |
 | Die Werkzeugfläche des Modus | Ein Nur-Lese-Modus nimmt die den Worktree verändernden Werkzeuge vollständig heraus und verankert das eigene Ausgabe-Verb des Modus, damit er trotzdem liefern kann            |
@@ -36,9 +36,7 @@ Drei Dinge sind schwächer, als sie aussehen:
   und die strukturellen Modusregeln durch. Der Adapter Claude Code tut das
   nicht. Claude Code startet insbesondere mit `--dangerously-skip-permissions`,
   weil ein nicht interaktives `claude -p` sonst für immer an seiner eigenen
-  Nachfrage hängen bliebe — die eigenen Aufrufe von Claude zum Lesen,
-  Schreiben, Bearbeiten und für die Shell sieht Control Center deshalb nicht
-  und lässt sie auch nicht durch ein Tor. Wo die Sandbox an ist, ist sie die
+  Nachfrage hängen bliebe — die eigenen Aufrufe von Claude zum Lesen, Schreiben und Bearbeiten sieht Control Center deshalb nicht und lässt sie auch nicht durch ein Tor, und seine Shell-Befehle prüft nur ein Hook, der die Befehlszeile liest. Wo die Sandbox an ist, ist sie die
   Grenze darum.
 - Die prozessinternen Dateiwerkzeuge des Harness (read, write, edit, apply
   patch, search, find, search_files) laufen im Serverprozess, also begrenzt
@@ -51,49 +49,66 @@ Drei Dinge sind schwächer, als sie aussehen:
   `NoSandboxAdapter`. Der Server sagt das in seinem Startlog. Deins prüfst du
   weiter unten.
 
-## Die Befugnisse eines Agenten setzen
+## Entscheiden, was ein Agent pushen darf
 
-Das ist die einzige Befugnissteuerung, die der Server liest. Sie gilt je Agent
-und entscheidet, was der Zugangsdaten-Broker in die Umgebung dieses Agenten
-legt.
+Es gibt keinen Schalter je Agent für git push, GitHub, Ticketing oder das
+Netzwerk. Jedes davon ist eine Aktionsregel:
 
-1. Öffne **Einstellungen → Arbeitsbereich → Agenten**
-2. Wähle den Agenten in der Liste
-3. Scrolle auf dem Tab **Einstellungen** zu **Sandbox-Berechtigungen**
-4. Schalte den Schalter ein — die Beschriftung der Zeile wechselt von
-   **Arbeitsbereichsstandard verwenden**
-5. Setze die vier Schalter:
+| Regel                                       | Eingebauter Standard | Was sie abdeckt                                                                  |
+| ------------------------------------------- | -------------------- | -------------------------------------------------------------------------------- |
+| **Zu einem Remote pushen**                  | Zuerst fragen        | Jedes `git push` zu GitHub, egal mit welchem Adapter                             |
+| **Einen Pull Request öffnen**               | Zuerst fragen        | `gh pr create` und die Pull-Request-Werkzeuge                                    |
+| **Eine Review veröffentlichen oder mergen** | Zuerst fragen        | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                    |
+| **In einen externen Tracker schreiben**     | Zuerst fragen        | Ticket-Schreibvorgänge über die Werkzeuge von Control Center und `gh issue`      |
+| **Auf das Netzwerk zugreifen**              | Zulassen             | Ob die Sandbox überhaupt ein Netzwerk hat, und die Web-Werkzeuge des Harness     |
 
-| Schalter                             | Was er steuert                                                                                                                                                                                                                          |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **git push erlauben**                | Ist er aus, bekommt der Lauf `GIT_ASKPASS=/usr/bin/false` und `GIT_TERMINAL_PROMPT=0`, ein Push kann also nicht nach Zugangsdaten fragen                                                                                               |
-| **GitHub-API-Aufrufe erlauben**      | Steuert zusammen mit **git push erlauben**, ob der Broker das GitHub-Token als `GH_TOKEN` / `GITHUB_TOKEN` injiziert                                                                                                                   |
-| **Ticketing-API-Aufrufe zulassen**   | Steuert, ob der Broker `TICKETING_API_KEY` injiziert                                                                                                                                                                                    |
-| **Allgemeinen Netzwerkzugriff erlauben** | Wo die Sandbox an ist, ist das ein echtes Ausgangstor: Ist er aus, ist die Zulassungsliste des Laufs leer, und jede ausgehende Anfrage wird am Proxy abgelehnt. Wo kein Backend da ist, wird er am Lauf vermerkt, blockiert aber nichts, was ein gestarteter Prozess tut |
+1. Öffne **Einstellungen → Arbeitsbereich → Agent-Berechtigungen**
+2. Wähle den Geltungsbereich — **Arbeitsbereich**, **Agent** oder **Bereich** —
+   und in der Zeile der Regel **Zulassen**, **Zuerst fragen** oder
+   **Verweigern**
 
-6. Speichern
+Auf Branches beschränkte Push-Regeln, etwa eine, die Pushes auf `main`
+verweigert, greifen ebenfalls: siehe [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/).
 
-Kontrollpunkt: Öffne den Agenten erneut, und der Schalter ist noch an, mit
-deinen Schaltern — ein gespeicherter Befugnissatz kommt über den Server
-unverändert zurück, und ein Agent ohne eigenen Satz fällt auf den
-zurückhaltenden Standard zurück (Push aus, GitHub-API aus, Ticketing aus,
-Netzwerk an).
+Kontrollpunkt: Bitte den Agenten, einen Branch zu pushen. Bei **Zuerst fragen**
+bekommst du eine Freigabe mit Repo und Refs; bei **Verweigern** gibt git
+`! [remote rejected] <ref> (Control Center policy: …)` aus.
 
-:::caution[Zwei Stolperfallen]
-Die Beschriftung sagt **Arbeitsbereichsstandard verwenden**, aber es gibt
-keine Befugniseinstellung auf Arbeitsbereichsebene, die der Server liest. Ein
-Agent mit ausgeschaltetem Schalter bekommt den eingebauten zurückhaltenden
-Standard.
+Wie jede Regel den Lauf erreicht:
 
-Getrennt davon sind die GitHub-Zugangsdaten des Laufs immer nur die des
-Brokers — ein auf das Repo begrenztes Installationstoken der GitHub App oder
-ersatzweise das PAT aus der Umgebung —, nie das gespeicherte Token des
-anfragenden Mitglieds. `actingUserId` wird übergeben, damit der Broker das
-Server-PAT einem Mitglied *vorenthalten* kann, das nicht der Besitzer ist und
-GitHub nicht verbunden hat. Er legt kein persönliches Token über eine
-Befugnis, die aus ist. Behandle **GitHub-API-Aufrufe erlauben** auf einem Host
-ohne Betriebssystem-Sandbox nicht als harte Ausgangsgrenze: Ein gestarteter
-Prozess erreicht das Netzwerk trotzdem.
+- **Push** wird über das durchgesetzt, was der Lauf besitzt. Sein GitHub-Token
+  ist ein Installationstoken der GitHub App, das nur lesen darf: Es kann
+  Inhalte lesen und mit Pull Requests arbeiten. Seine Git-Konfiguration
+  schickt jeden GitHub-Push an ein Loopback-Gateway auf `cc_server`, das die
+  Regel fragt und den Push erst dann mit einem Schreib-Token weiterleitet, das
+  der Agent nie sieht. Das Gateway leitet nur an das eigene Repo des Worktrees
+  oder an ein mit dem Arbeitsbereich verknüpftes GitHub-Repo weiter. Das gilt
+  für jeden Adapter.
+- **Pull Requests und Issues aus einer Shell** werden an der Befehlszeile
+  erkannt, im Werkzeug `bash` des Harness und, über einen Hook, im Werkzeug
+  `Bash` von Claude Code. Ein Agent, der den Befehl versteckt (ein Skript,
+  `eval`, ein direkter API-Aufruf), kommt an dieser Prüfung vorbei, aber nicht
+  am Push-Gateway.
+- **Ticketing**-Schlüssel landen nie in der Sandbox. Agenten schreiben Tickets
+  über die MCP-Werkzeuge von Control Center, die die Regel fragen.
+- **Netzwerk** wird einmal aufgelöst, wenn der Lauf startet. **Verweigern**
+  schaltet das Netzwerk der Sandbox ab; **Zulassen** und **Zuerst fragen**
+  lassen es an, und bei **Zuerst fragen** fragen `web_fetch` und `web_search`
+  des Harness weiterhin bei jedem Aufruf. Solange das Netzwerk an ist, steht
+  GitHub immer auf der Ausgangs-Zulassungsliste.
+
+:::caution[Ohne GitHub App ist die Push-Regel nur ein Hinweis]
+Ist keine GitHub App konfiguriert, bekommt der Lauf ersatzweise das Personal
+Access Token, das sich nicht auf Lesen beschränken lässt. `git push` läuft
+weiterhin durch das Gateway und die Regel, aber Code, der das Token direkt
+nutzt, kann an ihr vorbei pushen. Konfiguriere die GitHub App, damit die Regel
+bindet.
+
+Die GitHub-Zugangsdaten des Laufs sind immer nur die des Brokers — ein auf das
+Repo begrenztes Installationstoken der GitHub App oder ersatzweise das PAT —,
+nie das gespeicherte Token des anfragenden Mitglieds. Das Server-PAT wird einem
+Lauf vorenthalten, der für ein Mitglied handelt, das nicht der Besitzer ist und
+GitHub nicht verbunden hat.
 :::
 
 ## Prüfen, ob deine Agentenläufe in der Sandbox laufen
@@ -172,10 +187,13 @@ abgelehnt. Die volle Auflösungsreihenfolge steht unter
 
 ### Ein Agent kann nicht pushen, obwohl ich es nie verweigert habe
 
-Prüfe die **Sandbox-Berechtigungen** des Agenten. Ein Agent ohne eigenen
-Befugnissatz bekommt den zurückhaltenden Standard, und der hat **git push
-erlauben** aus — der Broker injiziert also kein GitHub-Token, und git kann
-sich nicht authentifizieren.
+Lies, was git ausgegeben hat. `Control Center policy: …` heißt, eine Regel hat
+den Push verweigert oder ein **Zuerst fragen** blieb unbeantwortet.
+`… is not linked to this workspace` heißt, der Push zielt auf ein Repo, das
+weder das eigene des Worktrees noch mit dem Arbeitsbereich verknüpft ist.
+`Control Center has no GitHub credential that can push …` heißt, die GitHub
+App ist auf diesem Repo nicht installiert und keine Ersatz-Zugangsdaten konnten
+pushen: Installiere die App dort oder verbinde GitHub.
 
 ### Die Karte Sandboxing meldet keine native Sandbox
 

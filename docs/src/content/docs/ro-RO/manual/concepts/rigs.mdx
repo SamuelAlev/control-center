@@ -2,7 +2,7 @@
 title: Stații și medii izolate
 description: De ce primesc agenții mașini de unică folosință în locul computerului tău — granițele de izolare, canalele de afișare, credențialele, porturile și ciclul de viață.
 slug: ro-RO/manual/concepte/statii
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 O **stație** este o mașină de unică folosință pe care un agent o conduce în timp
@@ -167,7 +167,7 @@ a implicat — niciodată ce spunea.
 
 ## Credențialele nu locuiesc niciodată în invitat
 
-`git push` funcționează dintr-un terminal izolat, și totuși invitatul nu
+`git push` funcționează dintr-un terminal izolat pe care l-ai deschis tu, și totuși invitatul nu
 stochează niciun token de platformă de găzduire a codului. Deține un singur
 secret per VM a cărui singură putere este să *ceară* brokerului de credențiale
 al gazdei — printr-un tunel controlat de gazdă — un token de scurtă durată,
@@ -175,6 +175,13 @@ limitat la un depozit, per operație, cu limită de frecvență, mărginit de ac
 listă de gazde permise ca și ieșirea, și revocat în momentul în care stația se
 închide. O mașină construită ca să fie aruncată nu trebuie să conțină nimic care
 merită furat.
+
+Ce poate face acel token se stabilește când se deschide stația. O stație de
+terminal deschisă de o persoană primește un token de scriere, limitat de accesul
+propriu al acelui membru la platforma de cod. O stație deschisă de un agent
+primește unul doar pentru citire: un credential helper git nu poate deosebi un
+push de un fetch, așa că regula de push nu poate fi întrebată la fiecare push în
+interiorul unui invitat, așa cum face gateway-ul rulărilor de agenți pe gazdă.
 
 ## Worktree-ul dintr-o stație este un satelit
 

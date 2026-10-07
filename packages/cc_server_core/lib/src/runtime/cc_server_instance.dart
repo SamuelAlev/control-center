@@ -183,7 +183,6 @@ class CcServer {
   /// reclaimed. Disposed with the other long-lived listeners.
   RigEventListener? _rigEventListener;
   NotificationFeedRecorder? _notificationFeedRecorder;
-  SyncFeedService? _syncFeed;
   AgentPresenceSynthesizer? _agentPresenceSynthesizer;
 
   /// Keeps every checkout's code-graph partition current (initial index on
@@ -334,7 +333,6 @@ class CcServer {
       _presenceHub?.dispose();
     });
     await step('dataSync', () async {
-      _syncFeed?.dispose();
       await _checkerListener?.stop();
       _worktreeGcListener?.dispose();
       await _rigEventListener?.dispose();

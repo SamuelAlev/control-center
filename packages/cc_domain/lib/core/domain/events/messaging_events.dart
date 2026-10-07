@@ -21,10 +21,19 @@ class MessageReceived implements DomainEvent {
     this.mentions = const [],
     this.requestedByUserId,
     this.senderUserId,
+    this.conversationId,
   });
 
   /// Space the message was posted in.
   final String spaceId;
+
+  /// Conversation within [spaceId] the message was posted to, when known.
+  ///
+  /// A space holds parallel conversations, so [spaceId] alone deep-links to
+  /// whichever one is standing; this is what lets a notification open the
+  /// conversation the message is actually in. Null when the publisher did not
+  /// pick one (the message landed in the standing conversation).
+  final String? conversationId;
 
   /// Owning workspace of the space, used to scope the in-app activity feed.
   ///

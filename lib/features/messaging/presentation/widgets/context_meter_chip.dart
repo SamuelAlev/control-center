@@ -244,9 +244,13 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
     );
   }
 
-  /// Formats a token count compactly: 145000 → "145k", 263000 → "263k",
-  /// 900 → "900".
+  /// Formats a token count compactly: 145000 → "145k", 1000000 → "1M",
+  /// 1500000 → "1.5M", 900 → "900".
   String _fmt(int tokens) {
+    if (tokens >= 1000000) {
+      final millions = (tokens / 1000000).toStringAsFixed(1);
+      return '${millions.endsWith('.0') ? millions.substring(0, millions.length - 2) : millions}M';
+    }
     if (tokens >= 1000) {
       return '${(tokens / 1000).round()}k';
     }

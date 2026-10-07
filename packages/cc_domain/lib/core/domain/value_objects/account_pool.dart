@@ -13,6 +13,38 @@
 /// other.
 library;
 
+/// The lanes an account pool can be attached to — ONE vocabulary for every
+/// runner, so the pool's storage, resolution, clean-up and editor never have
+/// to learn a new runner's name.
+///
+/// A lane names a family of credentials, not a runner: two runners that draw
+/// from the same credentials (the built-in harness and an ACP agent fed the
+/// same provider key) share one lane and so one pool. A runner that owns its
+/// own logins gets a new lane family here and a credential source on the
+/// server; nothing else about pools changes.
+// A namespace of constants and pure helpers, like [AccountSelector] below.
+// ignore: avoid_classes_with_only_static_members
+abstract final class AccountPoolLanes {
+  /// The Claude Code CLI's account directories.
+  static const String claudeCode = 'claude-code';
+
+  static const String _harnessPrefix = 'harness:';
+
+  /// One built-in-harness provider's stored credentials.
+  static String harness(String providerId) => '$_harnessPrefix$providerId';
+
+  /// The provider a [harness] lane names, or null for any other lane.
+  static String? harnessProviderOf(String lane) =>
+      lane.startsWith(_harnessPrefix) && lane.length > _harnessPrefix.length
+      ? lane.substring(_harnessPrefix.length)
+      : null;
+
+  /// Whether [lane] is one this install knows. Unknown lanes are refused at
+  /// the RPC edge so a client cannot mint arbitrary settings keys.
+  static bool isKnown(String lane) =>
+      lane == claudeCode || harnessProviderOf(lane) != null;
+}
+
 /// How an [AccountPool] picks which of its accounts a run signs in as.
 enum AccountRotationStrategy {
   /// Always the first account in the pool. The degenerate case, and the
@@ -94,6 +126,29 @@ class AccountPool {
     'strategy': strategy.wire,
   };
 
+  /// Whether this pool is configured but names none of the [existing] ids —
+  /// the state [AccountSelector.select] answers with [AccountsRemoved].
+  bool namesOnlyRemoved(Set<String> existing) =>
+      !isEmpty && !accountIds.any(existing.contains);
+
+  /// This pool narrowed to the ids in [existing], or null when nothing changes.
+  ///
+  /// A pool that would be left with NO account is kept as it is: an empty pool
+  /// means "unconfigured" and falls back to the next scope out, which would
+  /// quietly move this scope onto accounts it was configured to avoid. The
+  /// dangling ids instead make the dispatch refuse with [AccountsRemoved] until
+  /// someone attaches another account or clears the list on purpose.
+  AccountPool? retainOnly(Set<String> existing) {
+    final kept = [
+      for (final id in accountIds)
+        if (existing.contains(id)) id,
+    ];
+    if (kept.isEmpty || kept.length == accountIds.length) {
+      return null;
+    }
+    return copyWith(accountIds: kept);
+  }
+
   /// Returns a copy with the given overrides.
   AccountPool copyWith({
     List<String>? accountIds,
@@ -171,10 +226,32 @@ sealed class AccountChoice {
 /// An account was chosen.
 class AccountChosen extends AccountChoice {
   /// Creates a [AccountChosen].
-  const AccountChosen({required this.accountId, required this.cursor});
+  const AccountChosen({
+    required this.accountId,
+    required this.cursor,
+    this.failover = const [],
+    this.standby = const [],
+  });
 
   /// The account the run signs in as.
   final String accountId;
+
+  /// The pool's OTHER accounts that can serve a run right now, in pool order —
+  /// what a lane falls over to when [accountId] fails mid-run.
+  ///
+  /// Pool order, not rotation order: once the first choice has failed the
+  /// question is no longer "whose turn is it" but "which of these can finish
+  /// the work".
+  final List<String> failover;
+
+  /// The pool's remaining accounts that exist but cannot serve right now
+  /// (spent, cooling off or signed out), in pool order. A lane that retries
+  /// after backoff may still put them last; one that cannot should ignore
+  /// them.
+  final List<String> standby;
+
+  /// [accountId], then [failover].
+  List<String> get order => [accountId, ...failover];
 
   /// The cursor to persist for the next dispatch. Meaningful only for
   /// [AccountRotationStrategy.roundRobin]; the others leave it unchanged.
@@ -199,6 +276,20 @@ class AccountPoolUnset extends AccountChoice {
   const AccountPoolUnset();
 }
 
+/// The pool names accounts, but every one of them has been removed.
+///
+/// Distinct from [AccountPoolUnset] because the operator DID configure this
+/// scope: reading a pool of deleted ids as "unset" falls back to the server
+/// default, which is precisely the account the pool was written to keep this
+/// scope off.
+class AccountsRemoved extends AccountChoice {
+  /// Creates a [AccountsRemoved].
+  const AccountsRemoved({required this.accountIds});
+
+  /// The ids the pool still names.
+  final List<String> accountIds;
+}
+
 /// Chooses which account a dispatch runs on. Pure, so the rotation rules are
 /// testable without a host.
 // A namespace of pure functions — the rotation rules. Suppressed deliberately:
@@ -211,18 +302,22 @@ abstract final class AccountSelector {
   /// Accounts named by the pool but no longer present in [availability] are
   /// skipped rather than failing the dispatch: a pool outlives the accounts
   /// listed in it, and refusing to run because a deleted id is still on the
-  /// list would be a worse answer than using the ones that remain.
+  /// list would be a worse answer than using the ones that remain. When none
+  /// remain the answer is [AccountsRemoved], never [AccountPoolUnset].
   static AccountChoice select({
     required AccountPool pool,
     required Map<String, AccountAvailability> availability,
     int cursor = 0,
   }) {
+    if (pool.isEmpty) {
+      return const AccountPoolUnset();
+    }
     final candidates = [
       for (final id in pool.accountIds)
         if (availability[id] != null) availability[id]!,
     ];
     if (candidates.isEmpty) {
-      return const AccountPoolUnset();
+      return AccountsRemoved(accountIds: pool.accountIds);
     }
     final usable = [
       for (final c in candidates)
@@ -249,6 +344,19 @@ abstract final class AccountSelector {
       );
     }
 
+    AccountChosen chosen(String id, int next) => AccountChosen(
+      accountId: id,
+      cursor: next,
+      failover: [
+        for (final c in usable)
+          if (c.id != id) c.id,
+      ],
+      standby: [
+        for (final c in candidates)
+          if (!usable.contains(c)) c.id,
+      ],
+    );
+
     switch (pool.strategy) {
       case AccountRotationStrategy.pinned:
       case AccountRotationStrategy.serial:
@@ -257,7 +365,7 @@ abstract final class AccountSelector {
         // extras are standbys, `serial` says drain them in this order. The
         // headroom skip makes the mechanics identical, and saying so here is
         // cheaper than two code paths that must not drift.
-        return AccountChosen(accountId: usable.first.id, cursor: cursor);
+        return chosen(usable.first.id, cursor);
       case AccountRotationStrategy.roundRobin:
         // Advance over the FULL pool, not the usable subset, so a spent account
         // still consumes its turn in the cycle. Otherwise the remaining
@@ -269,14 +377,11 @@ abstract final class AccountSelector {
           final index = (start + step) % n;
           final candidate = candidates[index];
           if (candidate.signedIn && !candidate.spent) {
-            return AccountChosen(
-              accountId: candidate.id,
-              cursor: (index + 1) % n,
-            );
+            return chosen(candidate.id, (index + 1) % n);
           }
         }
         // Unreachable: `usable` was non-empty, so some candidate qualifies.
-        return AccountChosen(accountId: usable.first.id, cursor: cursor);
+        return chosen(usable.first.id, cursor);
     }
   }
 }

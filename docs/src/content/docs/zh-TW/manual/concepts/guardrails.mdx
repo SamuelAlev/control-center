@@ -2,7 +2,7 @@
 title: 護欄——為每個會變更狀態的動作提供同一套政策
 description: 為何 Control Center 讓代理的每一個副作用都經過單一的允許／先詢問／拒絕引擎、ActionClass 分類法為何刻意保持精簡，以及自主程度旋鈕真正改變了什麼。
 slug: zh-TW/手冊/概念/護欄
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Control Center 中的代理可以刪除檔案、推送分支、發佈 pull request，
@@ -207,9 +207,9 @@ Control Center 是否篩選工具面、是否攔截工具呼叫、是否檢視�
 在信任某項設定之前，有兩筆項目值得一讀。內建執行環境聲明，其處理序內
 的檔案工具**不受**沙盒約束——工具面和這套政策引擎是它僅有的檔案系統
 邊界。Claude Code 則聲明它自身的工具呼叫**無法**被攔截，因為它是以
-`--dangerously-skip-permissions` 啟動的；Control Center 只看得見它的
-`mcp__*` 呼叫，而它自帶的讀取、寫入、編輯與 shell 工具則在無人察覺
-的情況下執行。
+`--dangerously-skip-permissions` 啟動的；Control Center 看得見它的
+`mcp__*` 呼叫，以及經由鉤子的 `Bash` 命令列，而它自帶的讀取、寫入與
+編輯工具則在無人察覺的情況下執行。
 
 設定畫面會顯示這份矩陣，因為對一套護欄系統而言，唯一不可原諒的失敗，
 就是宣稱擁有並不存在的涵蓋範圍。

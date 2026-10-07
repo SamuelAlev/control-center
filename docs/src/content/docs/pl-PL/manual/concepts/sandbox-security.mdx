@@ -2,7 +2,7 @@
 title: Sandbox i bezpieczeństwo
 description: Co dziś realnie ogranicza agenta w Control Center, jak daleko sięga sandbox systemowy i które granice utrzymują się na hoście bez backendu.
 slug: pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Gdzie sandbox systemowy sięga, a gdzie nie]
@@ -21,8 +21,7 @@ Dwie luki przetrwają sandbox i warto je mieć na uwadze:
   izolacja ścieżek w samych narzędziach oraz guardraile działań.
 - **Claude Code jest uruchamiany z `--dangerously-skip-permissions`**, bo
   nieinteraktywne `claude -p` w przeciwnym razie zablokowałoby się na zawsze
-  na własnym pytaniu. Jego wywołania plików i powłoki nie są więc bramkowane
-  przez guardraile Control Center — granicą wokół nich jest sandbox systemowy.
+  na własnym pytaniu. Jego wywołania plików nie są więc bramkowane przez guardraile Control Center, a polecenia powłoki tylko przez hook, który czyta wiersz poleceń — granicą wokół nich jest sandbox systemowy.
   :::
 
 ## Dlaczego izolacja ma tu znaczenie
@@ -93,9 +92,7 @@ podłączonego zatwierdzającego rozstrzyga się na _odmowę_ — pytanie, na kt
 nikt nie może odpowiedzieć, nigdy nie jest zgodą. Model rozstrzygania opisują
 [guardraile](/pl-PL/podrecznik/koncepcje/guardraile/).
 
-**Poświadczenia bramkowane możliwościami i oczyszczone środowisko.**
-Poświadczenia są tworzone przy każdym uruchomieniu na podstawie flag
-możliwości rozmowy i unieważniane, gdy uruchomienie się kończy. ACP, `bash`
+**Poświadczenia z brokera i oczyszczone środowisko.** Poświadczenia są tworzone przy każdym uruchomieniu i unieważniane, gdy uruchomienie się kończy, a token GitHub, który ma uruchomienie, pozwala czytać, ale nie wykonać push — zobacz „Push przechodzi przez Control Center” poniżej. ACP, `bash`
 harnessa i Claude Code w natywnym opakowaniu dostają środowisko pozbawione
 wektorów wstrzykiwania przez konsolidator dynamiczny i interpreter
 (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` i im
@@ -127,38 +124,69 @@ decyzja.
 Claude Code użyty jako adapter to przypadek, w którym sandbox ma największe
 znaczenie. Control Center uruchamia go z `--dangerously-skip-permissions`,
 ponieważ nieinteraktywne `claude -p` w przeciwnym razie zablokowałoby się na
-zawsze na własnym pytaniu o zatwierdzenie. Jego wywołania odczytu, zapisu,
-edycji i powłoki odbywają się wewnątrz własnego procesu i Control Center ich
-nie widzi; jedyne wywołania, które trafiają do bramki, to narzędzia `mcp__*`,
-które udostępnia sam Control Center. Tam, gdzie istnieje backend, te
+zawsze na własnym pytaniu o zatwierdzenie. Jego wywołania odczytu, zapisu i edycji odbywają się wewnątrz własnego procesu i Control Center ich nie widzi. Jego wywołania `Bash` trafiają przed wykonaniem do hooka na serwerze, który klasyfikuje wiersz poleceń i pyta odpowiednią regułę, a narzędzia `mcp__*` udostępniane przez Control Center przechodzą przez bramkę jak zwykle. Tam, gdzie istnieje backend, te
 niewidoczne wywołania i tak odbywają się w opakowaniu sandboxa, więc granicą
 wokół nich jest system operacyjny. Tam, gdzie go nie ma, nie ma żadnej. Każdy
 adapter stwierdza to w swojej macierzy egzekwowania — zobacz [macierz
 uczciwości adapterów](/pl-PL/podrecznik/koncepcje/guardraile/#the-adapter-honesty-matrix).
 
-## Bramkowanie możliwości to egzekwowanie przez brak
+## Push przechodzi przez Control Center
 
-Rozmowa niesie cztery flagi możliwości: wypychanie do repozytorium, wywoływanie
-API GitHub, wywoływanie dostawcy zgłoszeń i dostęp do sieci. Nie są one
-sprawdzane w momencie działania agenta. Są sprawdzane raz, przy uruchomieniu,
-przez brokera poświadczeń — a wyłączona możliwość oznacza, że pasujący token
-po prostu nigdy nie trafia do środowiska.
+Nie ma flag uprawnień dla poszczególnych agentów. O tym, czy agent może utworzyć
+commit, wykonać push, otworzyć pull request, zapisywać do trackera albo sięgać
+do sieci, decydują [guardraile](/pl-PL/podrecznik/koncepcje/guardraile/) — zezwól, zapytaj
+najpierw lub odmów — i te same reguły obowiązują niezależnie od adaptera, który
+uruchamia agenta.
 
-To cały mechanizm i warto powiedzieć to wprost, bo tryb awarii nie jest taki,
-jakiego ludzie oczekują. Wyłączenie „GitHub API” nie daje komunikatu o odmowie
-możliwości. Daje zwykłe `401` wewnątrz agenta, bo nie ma `GH_TOKEN`, który
-można wysłać. Agent może to z powodzeniem opisać jako problem z
-poświadczeniami. Egzekwowanie przez brak jest solidne — nie ma sprawdzenia,
-które dałoby się obejść — ale jest ciche i agent nie wie, dlaczego poniósł
-porażkę.
+Push to akcja, która musi się utrzymać nawet wobec agenta próbującego obejść
+regułę, więc egzekwuje się ją przez to, co agent posiada, a nie przez to, co
+uruchamia. Przy skonfigurowanej GitHub App uruchomienie w worktree GitHuba
+dostaje token instalacji o zakresie repozytorium, który może czytać zawartość i
+pracować z pull requestami, ale nie może wykonać push. Konfiguracja gita
+uruchomienia przepisuje każdy adres URL push do GitHuba (`https://github.com/`,
+`git@github.com:`, `ssh://git@github.com/`) na **bramę uruchomień agentów**,
+punkt końcowy na pętli zwrotnej w `cc_server`. Brama odczytuje, które refy push
+aktualizuje, pyta regułę **Push do zdalnego repozytorium** — więc obowiązuje
+też reguła ograniczona do gałęzi, na przykład „odmów push do `main`” — i dopiero
+wtedy przekazuje push do GitHuba z tokenem zapisu, który tworzy w tym celu i
+nigdy nie przekazuje agentowi. Odrzucony push widać w wyjściu samego gita:
 
-Flaga sieci działa tak samo. Gdy jest wyłączona, narzędzia `web_fetch` i
-`web_search` harnessa odrzucają każde wywołanie, a lista dozwolonych serwera
-proxy sandboxowanego uruchomienia jest pusta, więc każde połączenie wychodzące
-jest odrzucane.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Poświadczenia są unieważniane, gdy uruchomienie się kończy, więc uchwyt nie
-przeżywa uruchomienia, które go utworzyło.
+Brama przekazuje push tylko do własnego repozytorium worktree albo do
+repozytorium GitHuba połączonego z obszarem roboczym. Fetch trafia bezpośrednio
+do GitHuba z tokenem odczytu.
+
+Inne polecenia powłoki napotykają łagodniejszą bramkę. Narzędzie `bash`
+harnessa oraz, przez hook, narzędzie `Bash` Claude Code klasyfikują każdy wiersz
+poleceń i pytają regułę, pod którą podpada: `git commit`, `merge`, `rebase`,
+`cherry-pick`, `revert` i `am` to **Utworzenie commita**; `gh pr create` to
+**Otwarcie pull requesta**; `gh pr merge`, `review`, `comment` i `close` to
+**Opublikowanie recenzji lub scalenie**; `gh issue create`, `edit`, `comment`
+i `close` to **Zapis do zewnętrznego trackera**; instalacje pakietów to
+**Instalacja pakietu**; `curl` i `wget` to **Dostęp do sieci**. To rozpoznaje
+typowy zapis akcji, a agent zdecydowany ją ukryć (`eval`, plik skryptu,
+bezpośrednie wywołanie API) jest w stanie to zrobić. Push od tego nie zależy.
+
+:::caution[Bez GitHub App reguła push jest tylko doradcza]
+Bez skonfigurowanej GitHub App broker sięga po osobisty token dostępu, którego
+nie da się ograniczyć do odczytu. Reguła nadal obowiązuje dla `git push`, bo git
+wysyła push do bramy, ale kod, który bezpośrednio używa tokenu ze środowiska,
+może wykonać push z jej pominięciem.
+:::
+
+Do sandboxa nie trafia żaden klucz API zgłoszeń. Agenci zapisują zgłoszenia
+przez narzędzia MCP Control Center, które pytają regułę **Zapis do zewnętrznego
+trackera**.
+
+Reguła **Dostęp do sieci** jest odczytywana raz, na starcie uruchomienia. Sieć
+sandboxa jest albo włączona, albo wyłączona, więc odmowa ją wyłącza, a zezwól i
+zapytaj najpierw zostawiają ją włączoną; narzędzia `web_fetch` i `web_search`
+harnessa nadal pytają przy każdym wywołaniu. Poświadczenia są unieważniane, gdy
+uruchomienie się kończy, razem z każdym tokenem zapisu utworzonym przez bramę,
+więc uchwyt nie przeżywa uruchomienia.
 
 ## Co dodaje sandbox i gdzie się zatrzymuje
 
@@ -230,31 +258,27 @@ zabraniał.
 
 Sieć w sandboxie to lista dozwolonych **domen** dla sesji, egzekwowana przez
 działające w procesie proxy na pętli zwrotnej. Ruch wychodzący jest domyślnie
-blokowany: przy wyłączonej możliwości sieci proxy wciąż startują, ale ich lista
-dozwolonych jest pusta, więc każde połączenie wychodzące jest odrzucane. Przy
-włączonej resolver buduje listę dozwolonych z wyselekcjonowanej bazy —
-dostawcy API LLM, hosting gita, rejestry pakietów, katalog modeli — plus
-domeny GitHub, które agent zyskuje dzięki możliwości GitHub albo wypychania, i
+blokowany: przy wyłączonej sieci proxy wciąż startują, ale ich lista dozwolonych
+jest pusta, więc każde połączenie wychodzące jest odrzucane. Przy włączonej
+resolver buduje listę dozwolonych z wyselekcjonowanej bazy — dostawcy API LLM,
+hosting gita, rejestry pakietów, katalog modeli — plus domeny GitHuba i
 dopasowuje do niej host docelowy każdego połączenia. Wieloznaczniki działają
 (`*.example.com` dopasowuje subdomeny, a nie samą domenę). Osobna, zawsze
 zabroniona lista wygrywa z listą dozwolonych i obejmuje punkty końcowe
 metadanych chmury oraz odbiorniki telemetrii. To, co _nie_ jest
 konfigurowalne, to sama lista: specyfikacja niesie pole `egressAllowlist` na
-dodatkowe domeny i hook domeny zgłoszeń, ale nic w ścieżce wysyłania nie
-wypełnia żadnego z nich, więc w praktyce każde uruchomienie dostaje bazę plus
-domeny wynikające z możliwości i nic więcej.
+dodatkowe domeny, ale nic w ścieżce wysyłania go nie wypełnia, więc w praktyce
+każde uruchomienie dostaje bazę plus GitHuba i nic więcej.
 
 Odmowy w macOS są obserwowalne: monitor podczepia się do logu systemowego pod
 kątem odmów Sandbox, filtruje znany szum, deduplikuje burze ponowień i pokazuje
-każdą jako `SandboxViolation`, nazywając to, czego próbowano, i możliwość,
-która by ją odblokowała. W Linuksie ścieżka opakowania parsuje stderr pod kątem
+każdą jako `SandboxViolation`, nazywając to, czego próbowano, i to, co zostało zablokowane. W Linuksie ścieżka opakowania parsuje stderr pod kątem
 `EPERM`, `Operation not permitted` i `Permission denied` i emituje ten sam typ
 zdarzenia — nie ma podczepienia do logu systemowego. Trafiają one do własnego
 strumienia zdarzeń uruchomienia, więc odrzucone wywołanie systemowe pojawia się
 w transkrypcie, a nie tylko w logu. Telemetria istnieje tylko wtedy, gdy
 natywny sandbox faktycznie opakowuje proces — na hoście bez backendu nie ma
-czego obserwować. Nie ma też związku z bramkowaniem możliwości: naruszenie
-pochodzi z odrzuconego wywołania systemowego, nigdy ze sprawdzenia możliwości.
+czego obserwować. Nie ma też związku z guardrailami: naruszenie pochodzi z odrzuconego wywołania systemowego, nigdy ze sprawdzenia reguły.
 
 ## Potwierdzenia pochodzą od guardraili, a nie od sandboxa
 
@@ -285,5 +309,5 @@ to jedyne miejsce, które opisuje, co można sprawdzić ręcznie.
 
 ## Powiązane poradniki
 
-- [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/): flagi możliwości i ustawienia systemu plików
+- [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/): reguły akcji, egzekwowanie push i ustawienia systemu plików
 - [Uruchom diagnostykę agenta](/pl-PL/podrecznik/poradniki/diagnostyka-agenta/): co obejmują sprawdzenia diagnostyczne

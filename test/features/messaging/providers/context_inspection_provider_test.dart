@@ -24,16 +24,19 @@ Message _message(
 ContextSegment _segment(ContextSegmentKind kind, int tokens) =>
     ContextSegment(kind: kind, tokens: tokens, chars: tokens * 4);
 
-ContextInspection _inspection(List<ContextSegment> segments) =>
-    ContextInspection(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-1',
-      agentId: 'ag-1',
-      agentName: 'Aria',
-      mode: 'chat',
-      windowTokens: 256000,
-      segments: segments,
-    );
+ContextInspection _inspection(
+  List<ContextSegment> segments, {
+  ContextRunner runner = ContextRunner.harness,
+}) => ContextInspection(
+  workspaceId: 'ws-1',
+  spaceId: 'sp-1',
+  agentId: 'ag-1',
+  agentName: 'Aria',
+  mode: 'chat',
+  runner: runner,
+  windowTokens: 256000,
+  segments: segments,
+);
 
 void main() {
   group('formatContextTokenCount', () {
@@ -139,6 +142,121 @@ void main() {
       expect(breakdown.segments.single.kind, ContextSegmentKind.conversation);
       expect(breakdown.totalTokens, 7);
       expect(breakdown.windowTokens, 100000);
+    });
+
+    test('a harness reading is the total; the conversation takes the rest', () {
+      final inspection = _inspection([
+        _segment(ContextSegmentKind.systemPrompt, 20000),
+        _segment(ContextSegmentKind.toolDefinitions, 30000),
+      ]);
+      final breakdown = composeContextBreakdown(
+        inspection,
+        // The stored transcript estimate — what the meter used to show.
+        _segment(ContextSegmentKind.conversation, 310000),
+        0,
+        reported: (tokens: 140000, windowTokens: 200000),
+        isLoading: false,
+        hasError: false,
+      );
+
+      expect(breakdown.isMeasured, isTrue);
+      expect(breakdown.totalTokens, 140000);
+      expect(breakdown.windowTokens, 200000);
+      final conversation = breakdown.segments.singleWhere(
+        (s) => s.kind == ContextSegmentKind.conversation,
+      );
+      expect(conversation.tokens, 90000);
+    });
+
+    test('a Claude Code reading sizes the runner, not the conversation', () {
+      final inspection = _inspection([
+        _segment(ContextSegmentKind.systemPrompt, 3000),
+        const ContextSegment(
+          kind: ContextSegmentKind.conversation,
+          tokens: 12000,
+          chars: 48000,
+          parts: [
+            ContextPart(
+              id: 'conversation:history-block',
+              title: 'Conversation history',
+              tokens: 12000,
+              chars: 48000,
+            ),
+          ],
+        ),
+        const ContextSegment(
+          kind: ContextSegmentKind.runner,
+          tokens: 0,
+          chars: 0,
+          parts: [
+            ContextPart(
+              id: 'runner:claude-code',
+              title: 'Claude Code',
+              tokens: 0,
+              chars: 0,
+            ),
+          ],
+        ),
+      ], runner: ContextRunner.claudeCode);
+      final breakdown = composeContextBreakdown(
+        inspection,
+        _segment(ContextSegmentKind.conversation, 310000),
+        0,
+        reported: (tokens: 60000, windowTokens: 1000000),
+        isLoading: false,
+        hasError: false,
+      );
+
+      expect(breakdown.totalTokens, 60000);
+      expect(breakdown.windowTokens, 1000000);
+      // The history block the run receives, never the stored transcript.
+      expect(
+        breakdown.segments
+            .singleWhere((s) => s.kind == ContextSegmentKind.conversation)
+            .tokens,
+        12000,
+      );
+      final runner = breakdown.segments.singleWhere(
+        (s) => s.kind == ContextSegmentKind.runner,
+      );
+      expect(runner.tokens, 45000);
+      expect(runner.parts.single.tokens, 45000);
+      // The bar's segments add up to the reported total.
+      expect(
+        breakdown.segments.fold<int>(0, (sum, s) => sum + s.tokens),
+        60000,
+      );
+    });
+
+    test('estimates stay estimates until a run reports', () {
+      final breakdown = composeContextBreakdown(
+        _inspection([_segment(ContextSegmentKind.systemPrompt, 20)]),
+        _segment(ContextSegmentKind.conversation, 7),
+        0,
+        isLoading: false,
+        hasError: false,
+      );
+      expect(breakdown.isMeasured, isFalse);
+      expect(breakdown.totalTokens, 27);
+    });
+
+    test('a reading below the known parts never goes negative', () {
+      final breakdown = composeContextBreakdown(
+        _inspection([_segment(ContextSegmentKind.systemPrompt, 5000)]),
+        _segment(ContextSegmentKind.conversation, 7),
+        0,
+        reported: (tokens: 4000, windowTokens: null),
+        isLoading: false,
+        hasError: false,
+      );
+      expect(
+        breakdown.segments
+            .singleWhere((s) => s.kind == ContextSegmentKind.conversation)
+            .tokens,
+        0,
+      );
+      // No reported window: the inspection's stands.
+      expect(breakdown.windowTokens, 256000);
     });
   });
 }

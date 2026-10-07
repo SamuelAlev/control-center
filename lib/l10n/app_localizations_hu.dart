@@ -2662,15 +2662,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get allow => 'Engedélyezés';
 
   @override
-  String get allowGitPush => 'git push engedélyezése';
-
-  @override
-  String get allowGithubApi => 'GitHub API-hívások engedélyezése';
-
-  @override
-  String get allowNetwork => 'Általános hálózati hozzáférés engedélyezése';
-
-  @override
   String get apiKeys => 'API-kulcsok';
 
   @override
@@ -3078,9 +3069,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get currentParticipants => 'Jelenlegi résztvevők';
 
   @override
-  String get customCapabilitiesDescription => 'Egyéni képességek leírása';
-
-  @override
   String get customSystemPrompt =>
       'Egyéni rendszerprompt ehhez az ügynökhöz...';
 
@@ -3097,9 +3085,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get deactivate => 'Deaktiválás';
-
-  @override
-  String get defaultCapabilities => 'Alapértelmezett képességek · új terek';
 
   @override
   String get defaultChat => 'Alapértelmezett csevegés';
@@ -3507,10 +3492,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get forward => 'Előre';
 
   @override
-  String get gatesGithubPatPush =>
-      'A GitHub PAT injektálását kapuzza. Szükséges, hogy az ügynök küldhessen.';
-
-  @override
   String get general => 'Általános';
 
   @override
@@ -3579,6 +3560,11 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Kiesés';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Szolgáltatás állapota';
@@ -4047,6 +4033,9 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get navSettings => 'Beállítások';
+
+  @override
+  String get exitSettings => 'Kilépés a beállításokból';
 
   @override
   String networkBlockCount(int count) {
@@ -4566,10 +4555,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get react => 'Reagálás';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Lehetővé teszi, hogy az ügynök olvassa a PR-eket, issue-kat és a tároló metaadatait.';
-
-  @override
   String get readerPreferences => 'Olvasóbeállítások';
 
   @override
@@ -4824,9 +4809,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'A natív homokozó beépített macOS-en – Apple Seatbeltet (`sandbox-exec`) használ. Nincs szükség telepítésre.';
-
-  @override
-  String get sandboxPermissions => 'Homokozó-jogosultságok';
 
   @override
   String get sandboxUnsupported =>
@@ -5415,9 +5397,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get useSandbox => 'Homokozó használata';
 
   @override
-  String get useWorkspaceDefault => 'Munkaterület alapértelmezettje';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5460,10 +5439,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Gyenge elszigetelés – csak névtérhatár, nincs kernelhatár.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Ha ki van kapcsolva, a homokozó alapértelmezett útvonal nélkül indul.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6686,14 +6661,7 @@ class AppLocalizationsHu extends AppLocalizations {
       'Még nincsenek tárolók ebben a munkaterületben.';
 
   @override
-  String get allowTicketingApi => 'Jegykezelő API-hívások engedélyezése';
-
-  @override
   String get ticketingApiKey => 'Jegykezelő API-kulcs';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'A jegykezelő szolgáltató API-kulcsát injektálja a homokozóba.';
 
   @override
   String get ticketingProvider => 'Jegykezelő szolgáltató';
@@ -9079,29 +9047,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'A számítógép elaludhat akkor is, ha egy ügynök dolgozik';
-
-  @override
-  String get syncEngineSectionTitle => 'Szinkronmotor';
-
-  @override
-  String get syncEngineDescription =>
-      'A jegyek, üzenetek és jegyzetek élőben frissülnek kis növekményes változásokkal, a teljes pillanatképek helyett. Egy kapcsoló kikapcsolása az adott tárat teljes pillanatkép módra állítja vissza — töltse újra az alkalmazást, hogy a változás érvényesüljön.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Jegyek';
-
-  @override
-  String get syncEngineMessagingTitle => 'Üzenetküldés';
-
-  @override
-  String get syncEngineNotesTitle => 'Jegyzetek';
-
-  @override
-  String get syncEngineOnSubtitle => 'Az élő delta-szinkron aktív';
-
-  @override
-  String get syncEngineOffSubtitle =>
-      'Teljes pillanatkép-szinkron van használatban';
 
   @override
   String get spaces => 'Terek';
@@ -13034,23 +12979,22 @@ class AppLocalizationsHu extends AppLocalizations {
       'Nem kötelező — hagyja üresen, és a címmodell automatikusan elnevezi';
 
   @override
-  String get conversationTitlesSectionTitle => 'Beszélgetéscímek';
+  String get shortTaskOff => 'Ki';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Válassza ki a futtatót, amely ebben a munkaterületben automatikusan elnevezi az új beszélgetéseket. A címek ki vannak kapcsolva, amíg nincs adapter kiválasztva, és minden tagra vonatkoznak.';
+  String get shortTaskUnavailable =>
+      'A használathoz válasszon rövid feladat modellt a Beállítások → Adapterek alatt';
 
   @override
-  String get conversationTitlesModelLabel => 'Címmodell';
+  String get conversationTitleGenerate => 'Generálás';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adapter';
+  String get conversationTitleNoMessages =>
+      'Előbb küldjön egy üzenetet. A cím abból készül.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Ki';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Ki';
+  String get conversationTitleGenerateFailed =>
+      'Nem sikerült címet generálni. Próbálja újra.';
 
   @override
   String get startThread => 'Szál indítása';
@@ -13214,6 +13158,16 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Beszélgetés';
+
+  @override
+  String get contextSegmentRunner => 'Futtató prompt, eszközök és kör munkája';
+
+  @override
+  String get contextUsageMeasured => 'A modell utolsó hívása jelentette';
+
+  @override
+  String get contextUsageEstimated =>
+      'Becslés, amíg egy futás nem jelent használatot';
 
   @override
   String get contextExplorerTitle => 'Kontextus';
@@ -13608,12 +13562,15 @@ class AppLocalizationsHu extends AppLocalizations {
       'Hol történnek ténylegesen az ügynök folyamatai és fájlírásai.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Az Auto a legerősebbet választja, amit ez a hoszt támogat. Rögzítsen egyet, hogy ne változzon a háta mögött.';
+  String get sandboxGroupAgentActions => 'Mit tehetnek az ügynökök';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'A határon ütött lyukak. Mindegyik valami, amit egy elszigetelt ügynök még tehet a külvilággal.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Az ügynökjogosultságokban állítható be, hogy a küldés távoli tárolóra, a pull request megnyitása és a hálózati hozzáférés engedélyezett, rákérdezést igényel vagy tiltott.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Az Auto a legerősebbet választja, amit ez a hoszt támogat. Rögzítsen egyet, hogy ne változzon a háta mögött.';
 
   @override
   String get sandboxSummaryInForce => 'Érvényben';
@@ -13756,6 +13713,29 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Futtassa ezt egy terminálban a szerveren. Böngészőt nyit a bejelentkezés befejezéséhez, és a hitelesítő adatot ebbe a fiók könyvtárába írja.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Hosszú élettartamú token';
+
+  @override
+  String get claudeAccountUseLongLivedToken =>
+      'Hosszú élettartamú token használata';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken =>
+      'Hosszú élettartamú token cseréje';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken =>
+      'Hosszú élettartamú token eltávolítása';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'A normál bejelentkezést meg kell újítani, és egyik napról a másikra lejárhat. A hosszú élettartamú token nagyjából egy évig bejelentkezve marad. Futtasd ezt egy terminálban, fejezd be a böngészőben, majd illeszd be a kiírt tokent.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Ez nem a claude setup-token által adott token. A token így kezdődik: sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Kijelentkezve';
@@ -14185,10 +14165,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get attachmentOpenExternally =>
       'Megnyitás az alapértelmezett alkalmazásban';
-
-  @override
-  String get asideUnavailable =>
-      'Állítson be egyszeri modellt a munkaterület beállításaiban a használathoz';
 
   @override
   String get asideEmpty => 'Még nincs miből dolgozni';
@@ -14732,6 +14708,21 @@ class AppLocalizationsHu extends AppLocalizations {
   String get credentialGateOpenSettings => 'Beállítások megnyitása';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'A hozzárendelt Claude Code-fiókokat eltávolították';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Rendelj hozzá másik fiókot ennek az ügynöknek vagy a munkaterületnek a fiókbeállításaiban, vagy ürítsd ki a listát az alapértelmezett használatához. A futás magától folytatódik.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'A lista összes fiókját eltávolították a szerverről. Rendelj hozzá egy másikat, vagy ürítsd ki a listát.';
+
+  @override
+  String get accountPoolClear => 'Lista ürítése';
+
+  @override
   String get selectModel => 'Modell kiválasztása';
 
   @override
@@ -15172,6 +15163,10 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'A beszélgetés fájljainak keresése név szerint, és egy megnyitása lapon';
+
+  @override
+  String get prQuickOpenDescription =>
+      'A pull request fájljainak keresése név szerint, és egy megnyitása lapon';
 
   @override
   String get ideQuickOpenHint => 'Fájlok keresése név szerint';

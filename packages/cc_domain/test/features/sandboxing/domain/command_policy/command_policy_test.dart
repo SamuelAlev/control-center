@@ -45,10 +45,18 @@ void main() {
       expect(policy.evaluate('rm -rf /'), CommandDecision.deny);
     });
 
-    test('chat prompts on push/publish', () {
+    test('chat prompts on publish', () {
       final policy = commandPolicyForMode(Mode.chat);
-      expect(policy.evaluate('git push'), CommandDecision.prompt);
       expect(policy.evaluate('npm publish'), CommandDecision.prompt);
+    });
+
+    test('chat leaves push and PR commands to the action policy', () {
+      // "Push to a remote" / "Open a pull request" decide these; prompting
+      // here as well would ask twice, and ask even under an allow rule.
+      final policy = commandPolicyForMode(Mode.chat);
+      expect(policy.evaluate('git push'), CommandDecision.allow);
+      expect(policy.evaluate('gh pr create'), CommandDecision.allow);
+      expect(policy.evaluate('gh pr merge 1'), CommandDecision.allow);
     });
 
     test('chat allows read/query commands', () {
@@ -58,9 +66,11 @@ void main() {
       expect(policy.evaluate('git diff'), CommandDecision.allow);
     });
 
-    test('plan denies git push (not prompt)', () {
+    test('plan denies git push and PR mutations (not prompt)', () {
       final policy = commandPolicyForMode(Mode.plan);
       expect(policy.evaluate('git push'), CommandDecision.deny);
+      expect(policy.evaluate('gh pr create'), CommandDecision.deny);
+      expect(policy.evaluate('gh pr merge 1'), CommandDecision.deny);
     });
 
     test('plan denies npm install', () {

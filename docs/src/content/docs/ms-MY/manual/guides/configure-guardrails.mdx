@@ -2,7 +2,7 @@
 title: Konfigurasikan guardrail
 description: Tetapkan peraturan benarkan, tanya dahulu dan tolak untuk tindakan ejen, ujinya dengan prob Bagaimana jika? dan laras autonomi setiap ruang.
 slug: ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Panduan ini menunjukkan cara mengkonfigurasi guardrail: peraturan yang menentukan
@@ -132,11 +132,13 @@ ialah versi dalam aplikasi bagi perkara ini: bagi setiap kelas kesan, ia
 menyatakan sama ada setiap pelari menangkapnya pada get polisi, menyerahkannya
 kepada kotak pasir, atau tidak dapat memintasnya sama sekali.
 
-- **Penyesuai Claude Code** tidak berget untuk panggilan alatnya sendiri. Claude
-  Code dilancarkan dengan `--dangerously-skip-permissions`, jadi panggilan baca,
-  tulis, edit dan bashnya tidak pernah melalui guardrail. Yang berget untuk
-  penyesuai itu ialah permukaan alat MCP yang dipanggilnya kembali dan perintah
-  shell yang dilancarkan oleh Control Center untuk memulakannya.
+- **Penyesuai Claude Code** hanya sebahagiannya berget untuk panggilan alatnya
+  sendiri. Claude Code dilancarkan dengan `--dangerously-skip-permissions`, jadi
+  panggilan baca, tulis dan editnya tidak pernah melalui guardrail. Perintah
+  bashnya sampai kepadanya melalui hook yang mengelaskan baris perintah, dan
+  pushnya melalui gerbang push seperti mana-mana ejen. Permukaan alat MCP yang
+  dipanggilnya kembali dan perintah shell yang dilancarkan oleh Control Center
+  untuk memulakannya juga berget.
 - **Kata kerja keluaran sesuatu modus sendiri** (`submit_plan`,
   `propose_orchestration`) dipakukan dan tidak pernah boleh ditolak — jika tidak,
   sesuatu modus akan secara strukturnya tidak mampu menghasilkan satu-satunya

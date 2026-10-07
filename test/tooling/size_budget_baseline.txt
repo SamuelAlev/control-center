@@ -159,7 +159,7 @@ lib/features/remote_control/presentation/widgets/server_pairing_panel.dart  398
 lib/features/repos/presentation/settings/repos_settings_view.dart  578
 lib/features/repos/presentation/widgets/add_repo_dialog.dart  495
 lib/features/repos/presentation/widgets/repo_scripts_dialog.dart  543
-lib/features/service_status/presentation/widgets/service_status_indicator.dart  726
+lib/features/service_status/presentation/widgets/service_status_indicator.dart  702
 lib/features/settings/presentation/screens/keybindings_settings_screen.dart  290
 lib/features/settings/presentation/widgets/adapter_enforcement_section.dart  351
 lib/features/settings/presentation/widgets/font_picker.dart  516
@@ -168,7 +168,6 @@ lib/features/settings/presentation/widgets/model_browser_dialog.dart  532
 lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  341
 lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
 lib/features/settings/presentation/widgets/providers/provider_model_list.dart  324
-lib/features/settings/presentation/widgets/sections/claude_account_row.dart  302
 lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  661
 lib/features/settings/presentation/widgets/sections/general/settings_shared.dart  384
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  345

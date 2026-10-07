@@ -2,7 +2,7 @@
 title: Cipta dan konfigurasikan ejen
 description: Tambah ejen ke ruang kerja, berikan penyesuai, model, kemahiran dan kebenaran, kemudian sahkan ia berjalan.
 slug: ms-MY/manual-pengguna/panduan-cara/cipta-ejen
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Panduan ini menunjukkan cara menambah ejen ke ruang kerja dan mengkonfigurasikannya sehingga ia benar-benar boleh berjalan.
@@ -68,19 +68,12 @@ Anda tidak memilih kemahiran milik repositori di sini. Repositori yang menyertak
 
 ## Berikan kebenaran
 
-**Kebenaran kotak pasir** bermula pada "Gunakan lalai ruang kerja". Hidupkan suis itu untuk menetapkannya bagi ejen ini, kemudian togol:
+Ejen tidak mempunyai togol kebenaran sendiri. Apa yang boleh di-push, dibuka, dicantum atau dicapainya ditetapkan oleh peraturan tindakan di **Tetapan → Ruang kerja → Kebenaran ejen**, tempat sesuatu peraturan boleh dihadkan kepada ejen ini. Secara lalai, push, pull request, semakan atau cantuman dan penulisan ke penjejak masing-masing bertanya kepada anda terlebih dahulu, dan akses rangkaian dibenarkan.
 
-- **Benarkan git push** — menyuntik token GitHub yang diperlukan ejen untuk push
-- **Benarkan panggilan API GitHub** — membolehkan ejen membaca PR, isu dan metadata repositori
-- **Benarkan panggilan API tiket** — menyuntik kunci penyedia penetikan
-- **Benarkan akses rangkaian am** — juga mendayakan alat `web_fetch` dan `web_search` harness terbina
+Token GitHub ejen sentiasa baca sahaja. Push melalui Control Center, yang bertanya kepada peraturan **Push ke remote** sebelum memajukannya. Lihat [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/) untuk cara setiap peraturan sampai kepada sesuatu larian.
 
-Setiap togol diperiksa oleh broker kelayakan apabila larian dilancarkan: keupayaan yang mati hanya bermakna token yang sepadan tidak pernah ditempa ke dalam persekitaran larian itu.
-
-:::caution[Lalai ruang kerja bermaksud set konservatif pelayan]
-Ejen yang dibiarkan pada "Gunakan lalai ruang kerja" berjalan dengan git push, API GitHub dan penetikan semuanya **mati** serta rangkaian **hidup**. Lalai keupayaan yang dipaparkan di bawah Tetapan → Pelayan → Diagnostik & privasi ialah keutamaan di pihak klien. Jika anda mahu ejen push atau membuka PR, hidupkan suis itu dan berikan keupayaan tersebut secara eksplisit.
-
-Keupayaan ini mengawal kelayakan dan alat harness, iaitu lapisan yang berasingan daripada kotak pasir OS. `cc_server` membalut larian ejen dalam kotak pasir hos jika ia wujud — Windows tiada bahagian belakang natif, dan Linux serta WSL2 memerlukan `bwrap` dan `socat`. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk set sempadan yang lengkap.
+:::note[Peraturan dan kotak pasir OS ialah lapisan yang berasingan]
+Peraturan menentukan apa yang boleh dilakukan ejen; kotak pasir OS membatasi di mana prosesnya boleh membaca, menulis dan menyambung. `cc_server` membalut larian ejen dalam kotak pasir hos jika ia wujud — Windows tiada bahagian belakang natif, dan Linux serta WSL2 memerlukan `bwrap` dan `socat`. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk set sempadan yang lengkap.
 :::
 
 ## Sahkan ia berjalan

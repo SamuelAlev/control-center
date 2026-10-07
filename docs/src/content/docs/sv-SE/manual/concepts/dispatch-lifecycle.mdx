@@ -2,7 +2,7 @@
 title: Livscykel för agentdispatch
 description: Vad som händer mellan att ett meddelande kommer in och att en körningslogg stängs — promptsammansättning, worktrees, identitet, vad som begränsar en körning och hur utfallet registreras ärligt.
 slug: sv-SE/handbok/koncept/livscykel-agentdispatch
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Vad en dispatch är
@@ -65,7 +65,7 @@ Två identiteter fastställs per körning, innan någon process startas.
 
 Eftersom åsidosättandet per adapter kommer först slår det tyst ett leverantörskonto som är anslutet i appen. Om en körning debiterar fel konto är det åsidosättandet det första du bör titta på. Leverantörsuppgifter är globala för värden — delade mellan alla arbetsytor i installationen.
 
-Tokens som styrs av kapabiliteter (GitHub, ärendehantering) kommer från uppgiftsbrokern, som bara injicerar det körningens kapabiliteter tillåter. Se [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/).
+Körningens GitHub-token kommer från uppgiftsbrokern: en repo-avgränsad token för worktreens repo som bara kan läsa. En push går genom agentkörningsgatewayen, som frågar regeln **Pusha till en remote** innan pushen skickas vidare, och ingen ärendenyckel injiceras. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
 
 ## Start
 
@@ -76,9 +76,9 @@ Körningen startas med sin worktree som arbetskatalog och — för Claude Code �
 
 Där det inte finns någon backend är körningen **inte** sandlådad och inget annat ändras för att kompensera. Det gäller alltid Windows (ingen inbyggd omslutning — `microvm` är en separat, avsökningsstyrd väg för terminaler och stationer) och Linux eller WSL2 utan `bwrap` och `socat` i `PATH`. Servern anger vilket läge den är i på sin startlogg-rad, och `--sandbox off` är ett avsiktligt val att avstå.
 
-Två luckor kvarstår trots sandlådan även när den är på. Harnessens filverktyg i processen (read, write, edit, apply patch, search, find, search_files) körs inuti serverprocessen, så ingen profil begränsar dem — deras gräns är verktygens egen sökvägsbegränsning plus räckena. Och Claude Code startas med `--dangerously-skip-permissions`, så dess egna fil- och skalanrop grindas inte av Control Center; operativsystemets sandlåda är gränsen runt dem.
+Två luckor kvarstår trots sandlådan även när den är på. Harnessens filverktyg i processen (read, write, edit, apply patch, search, find, search_files) körs inuti serverprocessen, så ingen profil begränsar dem — deras gräns är verktygens egen sökvägsbegränsning plus räckena. Och Claude Code startas med `--dangerously-skip-permissions`, så dess egna filanrop grindas inte av Control Center och dess skalkommandon bara av en hook som läser kommandoraden; operativsystemets sandlåda är gränsen runt dem.
 
-De återstående gränserna gäller på varje värd, med eller utan sandlåda: körningens egen worktree (copy-on-write där `rift` levereras; `git worktree` på Windows), kapabilitetsstyrda uppgifter som brokeras per start och återkallas vid avveckling, de enhetliga åtgärdsräckena (fail-closed — ett `prompt`-beslut utan ansluten godkännare nekas) och den verktygsyta som samtalets läge tillåter. ACP och harnessens `bash` rensar fortfarande miljön; Claude Code via `NoSandboxAdapter` ärver värdens miljö.
+De återstående gränserna gäller på varje värd, med eller utan sandlåda: körningens egen worktree (copy-on-write där `rift` levereras; `git worktree` på Windows), en kodvärdstoken som bara kan läsa, brokerad per start och återkallad vid avveckling, pushar som måste passera pushregeln i agentkörningsgatewayen, de enhetliga åtgärdsräckena (fail-closed — ett `prompt`-beslut utan ansluten godkännare nekas) och den verktygsyta som samtalets läge tillåter. ACP och harnessens `bash` rensar fortfarande miljön; Claude Code via `NoSandboxAdapter` ärver värdens miljö.
 :::
 
 ## Strömning

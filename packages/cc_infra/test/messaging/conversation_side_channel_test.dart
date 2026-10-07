@@ -3,7 +3,7 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/conversation_title_model.dart';
+import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -115,8 +115,8 @@ void main() {
   test('paged history does not scan the conversation', () async {
     final messaging = _ScanMessaging();
     final settings = _Settings()
-      ..values[kConversationTitleAdapterSettingKey] = 'cc-harness'
-      ..values[kConversationTitleModelSettingKey] = 'anthropic/x';
+      ..values[kShortTaskAdapterSettingKey] = 'cc-harness'
+      ..values[kShortTaskModelSettingKey] = 'anthropic/x';
     final factory = _Factory()..reply = 'the aside';
     final service = ConversationSideChannelService(
       repo: messaging,

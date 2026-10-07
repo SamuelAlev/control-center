@@ -2681,15 +2681,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get allow => 'Αποδοχή';
 
   @override
-  String get allowGitPush => 'Να επιτρέπεται git push';
-
-  @override
-  String get allowGithubApi => 'Να επιτρέπονται κλήσεις GitHub API';
-
-  @override
-  String get allowNetwork => 'Να επιτρέπεται γενική πρόσβαση στο δίκτυο';
-
-  @override
   String get apiKeys => 'Κλειδιά API';
 
   @override
@@ -3099,10 +3090,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get currentParticipants => 'Τρέχοντες συμμετέχοντες';
 
   @override
-  String get customCapabilitiesDescription =>
-      'Περιγραφή προσαρμοσμένων δυνατοτήτων';
-
-  @override
   String get customSystemPrompt =>
       'Προσαρμοσμένη προτροπή συστήματος για αυτόν τον πράκτορα...';
 
@@ -3119,9 +3106,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get deactivate => 'Απενεργοποίηση';
-
-  @override
-  String get defaultCapabilities => 'Προεπιλεγμένες δυνατότητες · νέοι χώροι';
 
   @override
   String get defaultChat => 'Προεπιλεγμένη συνομιλία';
@@ -3528,10 +3512,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get forward => 'Εμπρός';
 
   @override
-  String get gatesGithubPatPush =>
-      'Ελέγχει την εισαγωγή GitHub PAT. Απαιτείται για να κάνει ο πράκτορας push.';
-
-  @override
   String get general => 'Γενικά';
 
   @override
@@ -3600,6 +3580,11 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Διακοπή';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Κατάσταση υπηρεσιών';
@@ -4069,6 +4054,9 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get navSettings => 'Ρυθμίσεις';
+
+  @override
+  String get exitSettings => 'Έξοδος από τις ρυθμίσεις';
 
   @override
   String networkBlockCount(int count) {
@@ -4595,10 +4583,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get react => 'Αντίδραση';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Επιτρέπει στον πράκτορα να διαβάζει PR, issues και μεταδεδομένα αποθετηρίου.';
-
-  @override
   String get readerPreferences => 'Προτιμήσεις ανάγνωσης';
 
   @override
@@ -4853,9 +4837,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Το εγγενές sandbox είναι ενσωματωμένο στο macOS — χρησιμοποιεί Apple Seatbelt (`sandbox-exec`). Δεν απαιτείται εγκατάσταση.';
-
-  @override
-  String get sandboxPermissions => 'Δικαιώματα sandbox';
 
   @override
   String get sandboxUnsupported =>
@@ -5448,9 +5429,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get useSandbox => 'Χρήση sandbox';
 
   @override
-  String get useWorkspaceDefault => 'Χρήση προεπιλογής χώρου εργασίας';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5494,10 +5472,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Ασθενής απομόνωση — μόνο όριο χώρου ονομάτων, χωρίς όριο πυρήνα.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Όταν είναι απενεργοποιημένο, το sandbox εκκινεί χωρίς προεπιλεγμένη διαδρομή.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6725,14 +6699,7 @@ class AppLocalizationsEl extends AppLocalizations {
       'Δεν υπάρχουν ακόμη αποθετήρια σε αυτόν τον χώρο εργασίας.';
 
   @override
-  String get allowTicketingApi => 'Να επιτρέπονται κλήσεις API εισιτηρίων';
-
-  @override
   String get ticketingApiKey => 'Κλειδί API εισιτηρίων';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Εισάγει το κλειδί API του παρόχου εισιτηρίων στο sandbox.';
 
   @override
   String get ticketingProvider => 'Πάροχος εισιτηρίων';
@@ -9131,29 +9098,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Ο υπολογιστής μπορεί να κοιμηθεί ακόμη και ενώ εργάζεται ένας πράκτορας';
-
-  @override
-  String get syncEngineSectionTitle => 'Μηχανή συγχρονισμού';
-
-  @override
-  String get syncEngineDescription =>
-      'Εισιτήρια, μηνύματα και σημειώσεις ενημερώνονται ζωντανά μέσω μικρών προσαυξητικών αλλαγών αντί για πλήρη στιγμιότυπα. Η απενεργοποίηση ενός διακόπτη επιστρέφει αυτό το κατάστημα σε λειτουργία πλήρους στιγμιότυπου — επαναφορτώστε την εφαρμογή για να ισχύσει.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Εισιτήρια';
-
-  @override
-  String get syncEngineMessagingTitle => 'Μηνύματα';
-
-  @override
-  String get syncEngineNotesTitle => 'Σημειώσεις';
-
-  @override
-  String get syncEngineOnSubtitle =>
-      'Ο ζωντανός συγχρονισμός delta είναι ενεργός';
-
-  @override
-  String get syncEngineOffSubtitle => 'Χρήση συγχρονισμού πλήρους στιγμιότυπου';
 
   @override
   String get spaces => 'Χώροι';
@@ -13102,23 +13046,22 @@ class AppLocalizationsEl extends AppLocalizations {
       'Προαιρετικό — αφήστε κενό και το μοντέλο τίτλων το ονομάζει αυτόματα';
 
   @override
-  String get conversationTitlesSectionTitle => 'Τίτλοι συνομιλιών';
+  String get shortTaskOff => 'Ανενεργό';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Επιλέξτε τον εκτελεστή που ονομάζει αυτόματα νέες συνομιλίες σε αυτόν τον χώρο εργασίας. Οι τίτλοι μένουν απενεργοποιημένοι μέχρι να επιλεγεί προσαρμογέας και ισχύουν για κάθε μέλος.';
+  String get shortTaskUnavailable =>
+      'Επιλέξτε μοντέλο σύντομων εργασιών στις Ρυθμίσεις → Προσαρμογείς για να το χρησιμοποιήσετε';
 
   @override
-  String get conversationTitlesModelLabel => 'Μοντέλο τίτλων';
+  String get conversationTitleGenerate => 'Δημιουργία';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Προσαρμογέας';
+  String get conversationTitleNoMessages =>
+      'Στείλτε πρώτα ένα μήνυμα. Ο τίτλος δημιουργείται από αυτό.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Ανενεργό';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Ανενεργό';
+  String get conversationTitleGenerateFailed =>
+      'Δεν ήταν δυνατή η δημιουργία τίτλου. Δοκιμάστε ξανά.';
 
   @override
   String get startThread => 'Έναρξη νήματος';
@@ -13284,6 +13227,18 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Συνομιλία';
+
+  @override
+  String get contextSegmentRunner =>
+      'Οδηγίες εκτελεστή, εργαλεία και εργασία γύρου';
+
+  @override
+  String get contextUsageMeasured =>
+      'Αναφέρθηκε από την τελευταία κλήση του μοντέλου';
+
+  @override
+  String get contextUsageEstimated =>
+      'Εκτίμηση μέχρι μια εκτέλεση να αναφέρει χρήση';
 
   @override
   String get contextExplorerTitle => 'Συμφραζόμενα';
@@ -13679,12 +13634,15 @@ class AppLocalizationsEl extends AppLocalizations {
       'Πού συμβαίνουν πραγματικά οι διεργασίες και οι εγγραφές αρχείων ενός πράκτορα.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Το αυτόματο επιλέγει το ισχυρότερο που υποστηρίζει αυτός ο κεντρικός υπολογιστής. Καρφιτσώστε ένα για να μην αλλάζει από κάτω σας.';
+  String get sandboxGroupAgentActions => 'Τι επιτρέπεται στους πράκτορες';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Οι τρύπες που ανοίγονται στο όριο. Καθεμία είναι κάτι που ένας απομονωμένος πράκτορας μπορεί ακόμη να κάνει στον έξω κόσμο.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Το αν το push, το άνοιγμα pull request και η πρόσβαση στο δίκτυο επιτρέπονται, απαιτούν ερώτηση ή απορρίπτονται ορίζεται στα δικαιώματα πρακτόρων.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Το αυτόματο επιλέγει το ισχυρότερο που υποστηρίζει αυτός ο κεντρικός υπολογιστής. Καρφιτσώστε ένα για να μην αλλάζει από κάτω σας.';
 
   @override
   String get sandboxSummaryInForce => 'Σε ισχύ';
@@ -13827,6 +13785,28 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Τρέξτε αυτό σε τερματικό στον διακομιστή. Ανοίγει πρόγραμμα περιήγησης για ολοκλήρωση της σύνδεσης και γράφει το διαπιστευτήριο στον κατάλογο αυτού του λογαριασμού.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Μακροχρόνιο διακριτικό';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Χρήση μακροχρόνιου διακριτικού';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken =>
+      'Αντικατάσταση μακροχρόνιου διακριτικού';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken =>
+      'Αφαίρεση μακροχρόνιου διακριτικού';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Μια κανονική σύνδεση πρέπει να ανανεώνεται και μπορεί να λήξει μέσα σε μια νύχτα. Ένα μακροχρόνιο διακριτικό παραμένει συνδεδεμένο για περίπου έναν χρόνο. Εκτελέστε αυτή την εντολή σε τερματικό, ολοκληρώστε στο πρόγραμμα περιήγησης και επικολλήστε το διακριτικό που εμφανίζει.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Αυτό δεν είναι διακριτικό από το claude setup-token. Ξεκινά με sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Αποσυνδεδεμένος';
@@ -14259,10 +14239,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Άνοιγμα στην προεπιλεγμένη εφαρμογή';
-
-  @override
-  String get asideUnavailable =>
-      'Ορίστε ένα μοντέλο μίας βολής στις ρυθμίσεις χώρου εργασίας για να το χρησιμοποιήσετε';
 
   @override
   String get asideEmpty => 'Δεν υπάρχει ακόμη τίποτα να εργαστείτε';
@@ -14809,6 +14785,21 @@ class AppLocalizationsEl extends AppLocalizations {
   String get credentialGateOpenSettings => 'Άνοιγμα ρυθμίσεων';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Οι συνδεδεμένοι λογαριασμοί Claude Code αφαιρέθηκαν';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Συνδέστε άλλον λογαριασμό στις ρυθμίσεις λογαριασμών αυτού του πράκτορα ή του χώρου εργασίας, ή καθαρίστε τη λίστα για να χρησιμοποιηθεί ο προεπιλεγμένος. Η εκτέλεση συνεχίζει μόνη της.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Όλοι οι λογαριασμοί αυτής της λίστας αφαιρέθηκαν από τον διακομιστή. Συνδέστε άλλον ή καθαρίστε τη λίστα.';
+
+  @override
+  String get accountPoolClear => 'Εκκαθάριση λίστας';
+
+  @override
   String get selectModel => 'Επιλογή μοντέλου';
 
   @override
@@ -15255,6 +15246,10 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Αναζητήστε τα αρχεία της συνομιλίας με βάση το όνομα και ανοίξτε ένα σε καρτέλα';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Αναζητήστε τα αρχεία του pull request με βάση το όνομα και ανοίξτε ένα σε καρτέλα';
 
   @override
   String get ideQuickOpenHint => 'Αναζήτηση αρχείων με βάση το όνομα';

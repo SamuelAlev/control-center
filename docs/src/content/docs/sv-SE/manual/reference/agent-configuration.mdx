@@ -2,7 +2,7 @@
 title: Agentkonfiguration
 description: Alla fält på agententiteten och de uppräkningar den använder.
 slug: sv-SE/handbok/referens/agentkonfiguration
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Den här referensen listar alla fält på agententiteten, plus de uppräkningar och flaggor den använder. En steg-för-steg-genomgång av att skapa eller redigera en agent i appen finns i [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/).
@@ -26,7 +26,6 @@ Den här referensen listar alla fält på agententiteten, plus de uppräkningar 
 | `effort` | `String?` | Nej | Id för resonemangsnivå (t.ex. `'low'`, `'xhigh'`), hämtat från den valda modellens `thinkingLevels` |
 | `contextSize` | `int?` | Nej | Maximal storlek på kontextfönstret |
 | `role` | `AgentRole?` | Nej | Agentens roll |
-| `capabilities` | `AgentCapabilities?` | Nej | Standard för förmågor per agent; när den är null gäller användarnivåns standard vid dispatch och ett samtal kan fortfarande skriva över |
 | `monthlyBudgetCents` | `int` | Nej | Månatligt utgiftstak i cent (standard `0`, obegränsat) |
 | `silenceTimeoutMinutes` | `int?` | Nej | Överstyrning av tystnadsövervakningen i minuter; måste vara null eller mellan 1 och 240 (kontrolleras i konstruktorn) |
 | `maxConcurrentTasks` | `int` | Nej | Standard `1`. Kapacitetssiffran som närvaromodellen rapporterar (antalet körande och köade jämförs mot den) |
@@ -68,18 +67,9 @@ Både `name` och `title` måste vara icke-tomma (kontrolleras i konstruktorn). S
 | `paused` | Sätts av budgetens hårda stopp. Visas i närvarolistan; dispatch tar fortfarande emot arbete |
 | `archived` | Pensionerad och dold från aktiva personallistor |
 
-## AgentCapabilities-flaggor
+## Behörigheter
 
-Löses upp per dispatch: agentens standard, med fallback till användarnivåns standard när den är null, och med en överstyrning per samtal ovanpå. Framtvingas genom frånvaro — mäklaren för inloggningsuppgifter skapar eller injicerar helt enkelt inte det som en avstängd förmåga omfattar.
-
-| Flagga | Typ | Standard | Beskrivning |
-| ------ | --- | -------- | ----------- |
-| `canPushToRepo` | `bool` | `false` | Pusha commits till fjärren; styr injicering av GitHub-token tillsammans med `canCallGitHubApi` |
-| `canCallGitHubApi` | `bool` | `false` | Anropa api.github.com; styr injicering av `GH_TOKEN` och GitHubs utgående domäner |
-| `canCallTicketing` | `bool` | `false` | Anropa ärendehanteringsleverantörens API; styr injicering av leverantörens API-nyckel och dess utgående domäner |
-| `canAccessNetwork` | `bool` | `true` | Godtycklig utgående trafik. Styr även harnessens `web_fetch`- och `web_search`-verktyg |
-
-`AgentCapabilities.safeDefault` är konstruktorns fyra standardvärden. `legacyDefault` (alla fyra sanna) används bara av migreringen som efterfyllde samtal som skapades innan förmågor fanns. En felaktig eller tom lagrad blob tolkas som `safeDefault`; den äldre nyckeln `canCallLinear` läses som `canCallTicketing`.
+En agent bär inga behörighetsflaggor. Att pusha, öppna och publicera pull requests, skriva till ett ärendesystem och utgående nätverkstrafik är åtgärdsklasser (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) som [räckena](/sv-SE/handbok/koncept/racken/) löser upp i omfånget arbetsyta, agent eller yta. En körnings GitHub-token är alltid läsbegränsad; pushar går genom agentkörningsgatewayen, som frågar regeln `gitPush` innan de skickas vidare.
 
 ## AgentSkills
 

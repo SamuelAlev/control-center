@@ -2,7 +2,7 @@
 title: Chế độ
 description: Vì sao một space, chứ không phải một agent, mang chế độ; mỗi chế độ trong bốn chế độ bảo đảm điều gì; và ở đâu bảo đảm đó mang tính cấu trúc chứ không chỉ được nhắc trong prompt.
 slug: vi-VN/so-tay/khai-niem/che-do
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Chế độ là gì
@@ -77,7 +77,7 @@ Bản thân việc phân giải rất đơn giản. Bộ điều phối đọc c
 
 Bề mặt công cụ của một chế độ được **harness tích hợp** dựng nên và thực thi. Đây là kênh truyền duy nhất có thể khiến một công cụ trở nên vô hình thay vì chỉ bị từ chối, gác mọi lời gọi trước khi nó chạy và quan sát một hợp đồng hoàn tất.
 
-Trên kênh truyền Claude Code, một chế độ không phải trò chuyện được truyền dưới dạng `--permission-mode plan`. Claude tôn trọng điều đó theo quy ước; các công cụ đọc, ghi, sửa và shell của riêng nó vẫn chạy mà không bị nhìn thấy. Với kênh truyền đó, chế độ chỉ là hướng dẫn, không phải ranh giới của Control Center — xem [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
+Trên kênh truyền Claude Code, một chế độ không phải trò chuyện được truyền dưới dạng `--permission-mode plan`. Claude tôn trọng điều đó theo quy ước; các công cụ đọc, ghi và sửa của riêng nó vẫn chạy mà không bị nhìn thấy, còn các lệnh shell của nó chỉ được một hook đọc dòng lệnh kiểm tra. Với kênh truyền đó, chế độ chỉ là hướng dẫn, không phải ranh giới của Control Center — xem [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
 
 Các danh sách cho phép ràng buộc những công cụ từ cấp ghi trở lên. Cấp đọc của harness tích hợp vẫn chạm tới những công cụ mà không danh sách nào nêu tên; trên Claude Code, một công cụ bị danh sách cho phép bỏ qua sẽ bị từ chối dù máy chủ có nó hay không.
 

@@ -144,15 +144,19 @@ class DaoMessagingRepository implements MessagingRepository {
   /// The per-message counts are stored columns
   /// (`content_chars`, `transcript_chars`), not `LENGTH(content)` and not a
   /// parse of each transcript. Token estimates still round per message.
+  ///
+  /// The newest provider-reported context reading rides along: it is the
+  /// number the meter prefers, and the estimate is its fallback.
   Stream<ConversationTokenTotals> watchConversationTokens(
     String workspaceId,
     String spaceId,
     String conversationId,
   ) {
     const estimator = TokenEstimator.instance;
-    return _dao(workspaceId)
+    final dao = _dao(workspaceId);
+    return dao
         .watchConversationCharCounts(conversationId)
-        .map((rows) {
+        .asyncMap((rows) async {
           var tokens = 0;
           var chars = 0;
           for (final row in rows) {
@@ -166,7 +170,13 @@ class DaoMessagingRepository implements MessagingRepository {
             tokens += estimator.estimateChars(counted);
             chars += row.contentChars;
           }
-          return ConversationTokenTotals(tokens: tokens, chars: chars);
+          final reading = await dao.latestContextReading(conversationId);
+          return ConversationTokenTotals(
+            tokens: tokens,
+            chars: chars,
+            reportedContextTokens: reading?.tokens,
+            reportedWindowTokens: reading?.window,
+          );
         })
         // The subscription re-runs on ANY write to `conversation_messages`,
         // including ones that move neither number (a reaction, a read cursor, a

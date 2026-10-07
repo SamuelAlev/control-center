@@ -2,7 +2,7 @@
 title: Configurer l’intégration GitHub
 description: Connectez-vous à GitHub pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent.
 slug: fr-CA/manuel/guides/integration-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Ce guide couvre les volets propres à GitHub de la configuration. GitHub est l’un
@@ -85,7 +85,7 @@ puis l’identifiant du propriétaire du serveur, puis l’environnement.
 | Exécutions de vérification | L’API Checks de GitHub                                                                                        |
 | Publication des révisions | Une étape nécessitant une action de l’utilisateur, qui publie votre révision dans la PR                       |
 | Enregistrement des dépôts | Un checkout est accepté si son dépôt distant `origin` pointe vers github.com — ou vers gitlab.com / bitbucket.org |
-| Accès des agents à GitHub | Le courtier d’identifiants injecte le jeton sous forme de `GH_TOKEN` / `GITHUB_TOKEN`, selon les capacités de l’agent |
+| Accès des agents à GitHub | Le courtier d’identifiants injecte un jeton en lecture seule sous forme de `GH_TOKEN` / `GITHUB_TOKEN`; les poussées passent par Control Center |
 | Notifications             | Une interrogation côté serveur de votre boîte de réception GitHub déclenche « Mentionné dans une pull request » et « Revue demandée » |
 | Profils d’utilisateur     | Cartes de profil au survol et filtrage des PR par auteur                                                       |
 
@@ -106,24 +106,26 @@ toutes les deux minutes.
 
 ## Savoir comment les agents agissent sur GitHub
 
-- Un agent n’obtient un jeton GitHub que s’il dispose de **Autoriser les appels
-  API GitHub** ou de **Autoriser git push**. Voir
+- Un agent qui travaille dans un arbre de travail GitHub reçoit toujours un
+  jeton GitHub en lecture seule. Un push passe par Control Center, qui
+  interroge la règle **Pousser vers un dépôt distant** puis le transmet avec un
+  jeton d’écriture que l’agent ne détient jamais. Voir
   [Configurer les politiques de bac à sable](/fr-CA/manuel/guides/politiques-de-bac-a-sable/)
-- Les commits qu’un agent crée sont attribués **à l’agent** — le nom affiché
-  suivi de ` (agent)`, à une adresse synthétique indexée par l’identifiant de
-  l’agent — jamais à un humain. La personne qui a fait la demande est créditée
-  au moyen d’une ligne `Co-Authored-By`
-- Lorsqu’une GitHub App est configurée, le courtier émet par lancement des jetons
-  d’installation à granularité fine, limités au dépôt et d’une durée d’environ
-  une heure, plutôt que de remettre un jeton à portée large. L’installation est
-  résolue à partir du **propriétaire** du dépôt de l’exécution, de sorte qu’une
-  seule application installée sur plusieurs comptes est correctement limitée à
-  celui que l’exécution touche. Sans application, les agents reçoivent le jeton de
-  l’environnement
-- Une exécution demandée par un membre qui s’est connecté agit sous **l’identité
-  GitHub de ce membre** — son identifiant est fusionné après l’environnement du
-  courtier, de sorte qu’un commit ou un commentaire qu’un agent fait pour lui lui
-  est attribuable
+- Les commits créés par un agent sont signés **en tant qu’agent** — le nom
+  affiché suivi de ` (agent)`, à une adresse synthétique indexée par l’ID de
+  l’agent — jamais en tant qu’humain. La personne à l’origine de la demande est
+  créditée par un trailer `Co-Authored-By`
+- Avec une GitHub App configurée, le courtier génère à chaque lancement des jetons
+  d’installation à granularité fine, limités au dépôt et d’une durée d’environ une
+  heure, au lieu de transmettre un jeton large. L’installation est résolue à
+  partir du **propriétaire** du dépôt de l’exécution, de sorte qu’une application
+  installée sur plusieurs comptes s’applique correctement à celui que l’exécution
+  touche. Sans application, les agents reçoivent le jeton de l’environnement,
+  qu’il est impossible de restreindre à la lecture seule : la règle de push
+  contraint alors `git push`, mais pas le code qui utilise directement le jeton
+- Le jeton est toujours celui du courtier, jamais celui du membre demandeur. Le
+  jeton du serveur est retenu pour une exécution qui agit pour un membre qui
+  n’est pas propriétaire et n’a pas connecté GitHub
 
 ## Dépannage
 

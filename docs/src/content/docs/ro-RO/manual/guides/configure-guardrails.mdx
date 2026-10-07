@@ -2,7 +2,7 @@
 title: Configurează guardrail-urile
 description: Setează reguli de tip permite, întreabă întâi și refuză pentru acțiunile agenților, testează-le cu sonda „ce-ar fi dacă” și reglează autonomia fiecărui spațiu.
 slug: ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Acest ghid arată cum să configurezi guardrail-urile: regulile care decid dacă
@@ -135,12 +135,13 @@ este versiunea din aplicație a acestui lucru: pentru fiecare clasă de efect,
 spune dacă fiecare runner o prinde la poarta de politică, o lasă în seama
 sandbox-ului sau nu o poate intercepta deloc.
 
-- **Adaptorul Claude Code** nu este controlat pentru propriile apeluri de
-  instrumente. Claude Code este lansat cu `--dangerously-skip-permissions`, așa
-  că apelurile lui de citire, scriere, editare și bash nu trec niciodată prin
-  gardă. Ceea ce este controlat pentru acel adaptor este suprafața de
-  instrumente MCP în care apelează înapoi și comanda shell pe care Control
-  Center o pornește ca să îl lanseze.
+- **Adaptorul Claude Code** este controlat doar parțial pentru propriile apeluri
+  de instrumente. Claude Code este lansat cu `--dangerously-skip-permissions`,
+  așa că apelurile lui de citire, scriere și editare nu trec niciodată prin
+  gardă. Comenzile lui bash ajung la ea printr-un hook care clasifică linia de
+  comandă, iar push-urile lui trec prin gateway-ul de push ca ale oricărui
+  agent. Sunt controlate și suprafața de instrumente MCP în care apelează înapoi
+  și comanda shell pe care Control Center o pornește ca să îl lanseze.
 - **Verbul de ieșire propriu al unui mod** (`submit_plan`, `propose_orchestration`)
   este fixat și nu poate fi niciodată refuzat — altfel un mod ar fi structural
   incapabil să își producă singurul livrabil.

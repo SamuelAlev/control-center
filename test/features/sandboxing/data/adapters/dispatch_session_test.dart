@@ -9,7 +9,6 @@ import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
@@ -74,16 +73,20 @@ class FakeCredentialBrokerPort implements CredentialBrokerPort {
   int mintCount = 0;
   final Set<String> revoked = {};
 
+  /// Every scope a launch asked for, in order.
+  final List<ForgeTokenScope> scopes = [];
+
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
     String? workspaceId,
   }) async {
     mintCount++;
+    scopes.add(scope);
     return ScopedCredentials(
       handle: 'cred-$mintCount',
       environment: {'API_KEY': 'test-key-$mintCount'},
@@ -122,10 +125,8 @@ class FakeAgentRepository implements AgentRepository {
 }
 
 class FakeAgentRunLogRepository implements AgentRunLogRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<List<AgentRunLog>> forPipelineStep(
     String workspaceId,
@@ -258,7 +259,6 @@ SandboxDispatchDeps _makeDeps({
     broker: broker ?? FakeCredentialBrokerPort(),
     agentRepo: agentRepo ?? FakeAgentRepository(),
     runLogRepo: runLogRepo,
-    defaultCaps: const AgentCapabilities(),
     eventBus: eventBus,
     backendRegistry: buildBackendRegistry(),
   );
@@ -303,14 +303,12 @@ void main() {
       final agentRepo = FakeAgentRepository();
       final runLogRepo = FakeAgentRunLogRepository();
       final eventBus = DomainEventBus();
-      const caps = AgentCapabilities(canPushToRepo: true);
 
       final deps = SandboxDispatchDeps(
         sandbox: sandbox,
         broker: broker,
         agentRepo: agentRepo,
         runLogRepo: runLogRepo,
-        defaultCaps: caps,
         eventBus: eventBus,
         backendRegistry: buildBackendRegistry(),
       );
@@ -319,7 +317,6 @@ void main() {
       expect(deps.broker, same(broker));
       expect(deps.agentRepo, same(agentRepo));
       expect(deps.runLogRepo, same(runLogRepo));
-      expect(deps.defaultCaps, same(caps));
       expect(deps.eventBus, same(eventBus));
     });
   });
@@ -444,34 +441,6 @@ void main() {
 
     test('agentSessionPrefix is "agent-"', () {
       expect(DispatchSession.agentSessionPrefix, 'agent-');
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // capabilityEnv
-  // -----------------------------------------------------------------------
-  group('capabilityEnv', () {
-    test(
-      'sets GIT_ASKPASS and GIT_TERMINAL_PROMPT when canPushToRepo is false',
-      () {
-        const caps = AgentCapabilities(canPushToRepo: false);
-        final env = DispatchSession.capabilityEnv(caps);
-        expect(env['GIT_ASKPASS'], '/usr/bin/false');
-        expect(env['GIT_TERMINAL_PROMPT'], '0');
-      },
-    );
-
-    test('returns empty map when canPushToRepo is true', () {
-      const caps = AgentCapabilities(canPushToRepo: true);
-      final env = DispatchSession.capabilityEnv(caps);
-      expect(env, isEmpty);
-    });
-
-    test('does not set vars when canPushToRepo is true (legacyDefault)', () {
-      final env = DispatchSession.capabilityEnv(
-        AgentCapabilities.legacyDefault,
-      );
-      expect(env, isEmpty);
     });
   });
 
@@ -1236,39 +1205,6 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // capabilityEnv edge cases
-  // -----------------------------------------------------------------------
-  group('capabilityEnv edge cases', () {
-    test('canAccessNetwork does not affect env', () {
-      const caps = AgentCapabilities(
-        canPushToRepo: true,
-        canAccessNetwork: false,
-      );
-      final env = DispatchSession.capabilityEnv(caps);
-      // canAccessNetwork is gated by the sandbox spec, not env vars.
-      expect(env, isEmpty);
-    });
-
-    test('all capabilities true returns empty env', () {
-      const caps = AgentCapabilities(
-        canPushToRepo: true,
-        canCallGitHubApi: true,
-        canCallTicketing: true,
-        canAccessNetwork: true,
-      );
-      final env = DispatchSession.capabilityEnv(caps);
-      expect(env, isEmpty);
-    });
-
-    test('safe default caps set push guards', () {
-      const caps = AgentCapabilities();
-      final env = DispatchSession.capabilityEnv(caps);
-      expect(env['GIT_ASKPASS'], '/usr/bin/false');
-      expect(env['GIT_TERMINAL_PROMPT'], '0');
-    });
-  });
-
-  // -----------------------------------------------------------------------
   // controller lifecycle edge cases
   // -----------------------------------------------------------------------
   group('controller lifecycle edge cases', () {
@@ -1310,18 +1246,14 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // _capabilitiesFor — capability resolution via run()
+  // Credential scope — what lands in the agent's environment via run()
   // -----------------------------------------------------------------------
-  // These tests verify that the right capabilities are passed to the
-  // credential broker during dispatch. Even when the CLI binary is not
-  // found, _capabilitiesFor runs first so we can observe the minted creds.
-  group('capabilities resolution', () {
-    test('uses agent capabilities when agent has them', () async {
+  // The action policy is the only permission system: whoever the agent is,
+  // its own environment only ever gets a READ-scoped forge token. A push goes
+  // through the agent run gateway, which asks the push rule first.
+  group('credential scope', () {
+    test('mints a read-scoped token for a known agent', () async {
       final agentRepo = FakeAgentRepository();
-      const caps = AgentCapabilities(
-        canPushToRepo: true,
-        canCallGitHubApi: true,
-      );
       agentRepo.agentToReturn = Agent(
         id: 'agent-1',
         name: 'test-agent',
@@ -1329,7 +1261,6 @@ void main() {
         agentMdPath: '/tmp/test.md',
         workspaceId: 'ws-1',
         skills: AgentSkills([]),
-        capabilities: caps,
         createdAt: DateTime.now(),
       );
       final broker = FakeCredentialBrokerPort();
@@ -1338,42 +1269,16 @@ void main() {
       );
 
       // Call run() — it will stop at resolveBinaryPath or exec, but
-      // _capabilitiesFor and broker.mint happen first.
+      // broker.mint happens first.
       unawaited(session.run());
       // Pump the event loop so the first awaits settle.
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // The broker was minted with the agent's capabilities.
       expect(broker.mintCount, greaterThanOrEqualTo(1));
+      expect(broker.scopes, everyElement(ForgeTokenScope.read));
     });
 
-    test(
-      'falls back to default caps when agent has null capabilities',
-      () async {
-        final agentRepo = FakeAgentRepository();
-        agentRepo.agentToReturn = Agent(
-          id: 'agent-1',
-          name: 'test-agent',
-          title: 'Test Agent',
-          agentMdPath: '/tmp/test.md',
-          workspaceId: 'ws-1',
-          skills: AgentSkills([]),
-          capabilities: null,
-          createdAt: DateTime.now(),
-        );
-        final broker = FakeCredentialBrokerPort();
-        final session = _makeSession(
-          deps: _makeDeps(agentRepo: agentRepo, broker: broker),
-        );
-
-        unawaited(session.run());
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-
-        expect(broker.mintCount, greaterThanOrEqualTo(1));
-      },
-    );
-
-    test('falls back to default caps when agent not found', () async {
+    test('mints a read-scoped token when the agent is not found', () async {
       final agentRepo = FakeAgentRepository();
       agentRepo.agentToReturn = null;
       final broker = FakeCredentialBrokerPort();
@@ -1385,9 +1290,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(broker.mintCount, greaterThanOrEqualTo(1));
+      expect(broker.scopes, everyElement(ForgeTokenScope.read));
     });
 
-    test('falls back to default caps when agentId is null', () async {
+    test('mints a read-scoped token when agentId is null', () async {
       final broker = FakeCredentialBrokerPort();
       final session = DispatchSession(
         deps: _makeDeps(broker: broker),
@@ -1415,9 +1321,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(broker.mintCount, greaterThanOrEqualTo(1));
+      expect(broker.scopes, everyElement(ForgeTokenScope.read));
     });
 
-    test('falls back to default caps when agentRepo throws', () async {
+    test('mints a read-scoped token for an unknown agent id', () async {
       final agentRepo = FakeAgentRepository();
       agentRepo.agentToReturn = null;
       final broker = FakeCredentialBrokerPort();
@@ -1446,8 +1353,9 @@ void main() {
       unawaited(session.run());
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Should still mint with default caps even though agent lookup threw.
+      // Still mints, and still read-only, when the agent lookup finds nothing.
       expect(broker.mintCount, greaterThanOrEqualTo(1));
+      expect(broker.scopes, everyElement(ForgeTokenScope.read));
     });
   });
 
@@ -1622,7 +1530,6 @@ void main() {
           violation: SandboxViolation(
             action: 'file-write',
             target: '/etc/hosts',
-            suggestedCapability: 'canWriteEtcHosts',
           ),
         ),
       );
@@ -1636,7 +1543,6 @@ void main() {
       final v = violations.first;
       expect(v.action, 'file-write');
       expect(v.target, '/etc/hosts');
-      expect(v.suggestedCapability, 'canWriteEtcHosts');
     });
 
     test(
@@ -1774,10 +1680,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
 
-      expect(
-        events.whereType<ErrorEvent>().map((e) => e.content),
-        ['Error: Unknown option: --nope'],
-      );
+      expect(events.whereType<ErrorEvent>().map((e) => e.content), [
+        'Error: Unknown option: --nope',
+      ]);
       expect(
         events.whereType<DebugEvent>().any(
           (e) => e.content.contains('exited with code 1'),

@@ -1,20 +1,20 @@
 ---
 title: Homokozószabályzatok konfigurálása
-description: Mi korlátozza az ügynökfutást, hogyan állapíthatja meg, hogy az operációs rendszer homokozója becsomagolja-e, és mely képességbeállításokat olvassa valójában a szerver.
+description: Mi korlátozza az ügynökfutást, hogyan állapíthatja meg, hogy az operációs rendszer homokozója becsomagolja-e, és hogyan döntik el a műveleti szabályok, mit pusholhat vagy érhet el egy ügynök.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Hogy egy ügynökfutás homokozóba kerül-e, a szerver dönti el, indításkor
-(`--sandbox`). A **Homokozó engedélyezése** kapcsoló, a **Háttér** választó és az
-**Alapértelmezett képességek · új terek** kapcsolók a **Beállítások → Szerver →
-Diagnosztika és adatvédelem** alatt az eszközén tárolt beállítások. A
-**Homokozó** kártya hosztészlelése azt jelenti, mit tud becsomagolni a szerver
-hosztja.
+(`--sandbox`). A **Homokozó engedélyezése** kapcsoló és a **Háttér** választó a
+**Beállítások → Szerver → Diagnosztika és adatvédelem** alatt az eszközén tárolt
+beállítások. A **Homokozó** kártya hosztészlelése azt jelenti, mit tud
+becsomagolni a szerver hosztja.
 
-Két vezérlő ér el egy futást, és ez az útmutató mindkettőt tárgyalja: az alábbi,
-ügynökönkénti **Homokozó-jogosultságok** és a szerver saját `--sandbox`
-kapcsolója.
+Két vezérlő ér el egy futást, és ez az útmutató mindkettőt tárgyalja: a
+műveleti szabályok a **Beállítások → Munkaterület → Ügynökjogosultságok** alatt,
+amelyek eldöntik, mit pusholhat, nyithat meg vagy érhet el egy ügynök, és a
+szerver saját `--sandbox` kapcsolója.
 
 ## Mi korlátozza az ügynökfutást
 
@@ -25,7 +25,7 @@ az, amelyik feltételes — a másik öt minden hoszton tart.
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Az operációs rendszer homokozója | Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n. Becsomagolja a Claude Code CLI-t, az ACP-adaptereket és a harness `bash` eszközét. **Windowson és `bwrap` és `socat` nélküli Linuxon nincs** |
 | A saját worktree-je              | Minden beszélgetés kap egy copy-on-write checkoutot. Az eredeti checkout írásmegtagadási útvonalként kerül a futásba, és a homokozó az, ami érvényesíti                                            |
-| Közvetített hitelesítő adatok    | A hitelesítőadat-közvetítő az ügynök képességeiből futásonkénti környezetet állít ki, és a lebontáskor visszavonja. Nincs képesség, nincs token a környezetben                                  |
+| Közvetített hitelesítő adatok    | A hitelesítőadat-közvetítő futásonkénti környezetet állít ki, és a lebontáskor visszavonja. A benne lévő GitHub-token olvasni tud, pusholni nem: a push a Control Centeren megy át, amely előbb a push-szabályt kérdezi meg |
 | Műveleti korlátok                | Minden állapotmódosító eszköz deklarálja a hatásosztályait, és a korlátmotor a hívás lefutása előtt feloldja őket. Egy `prompt`, amelyhez nincs csatlakoztatott jóváhagyó, elutasításra kerül   |
 | A környezet megtisztítása        | Az ACP és a harness `bash` eszköze szűrt környezetet kap. A Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli                                                                |
 | A mód eszközfelülete             | Egy csak olvasható mód teljesen eltávolítja a worktree-t módosító eszközöket, és rögzíti a mód saját kimeneti igéjét, hogy így is le tudjon szállítani                                              |
@@ -36,8 +36,7 @@ Három dolog gyengébb marad, mint amilyennek látszik:
   szerződéseket és a szerkezeti módszabályokat. A Claude Code adapter nem. A
   Claude Code különösen `--dangerously-skip-permissions` kapcsolóval indul,
   mert egy nem interaktív `claude -p` egyébként örökre blokkolna a saját
-  kérdésénél — így a Claude saját olvasó, író, szerkesztő és bash hívásait a
-  Control Center sem nem látja, sem nem kapuzza. Ahol a homokozó be van
+  kérdésénél — így a Claude saját olvasó, író és szerkesztő hívásait a Control Center sem nem látja, sem nem kapuzza, a bash parancsait pedig csak egy hook ellenőrzi, amely a parancssort olvassa. Ahol a homokozó be van
   kapcsolva, az a határ körülöttük.
 - A harness folyamaton belüli fájleszközei (read, write, edit, apply patch,
   search, find, search_files) a szerverfolyamaton belül futnak, így egyetlen
@@ -50,47 +49,67 @@ Három dolog gyengébb marad, mint amilyennek látszik:
   keresztül a hoszt környezetét örökli. A szerver erről az indítási naplójában
   számol be. Az alábbiakban ellenőrizze a sajátját.
 
-## Ügynök képességeinek beállítása
+## Annak eldöntése, mit pusholhat egy ügynök
 
-Ez az egyetlen képességvezérlő, amelyet a szerver olvas. Ügynökönként értendő, és
-eldönti, mit tesz a hitelesítőadat-közvetítő az adott ügynök környezetébe.
+A git push, a GitHub, a jegykezelés és a hálózat számára nincs ügynökönkénti
+kapcsoló. Mindegyik egy műveleti szabály:
 
-1. Lépjen a **Beállítások → Munkaterület → Ügynökök** oldalra
-2. Válassza ki az ügynököt a listában
-3. A **Beállítások** lapon görgessen a **Homokozó-jogosultságok** részhez
-4. Kapcsolja be a kapcsolót — a sor felirata **Munkaterület alapértelmezettje**
-   értékről változik meg
-5. Állítsa be a négy kapcsolót:
+| Szabály                                         | Beépített alapértelmezett | Mire vonatkozik                                                         |
+| ----------------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| **Küldés távoli tárolóra**                      | Előbb kérdezzen           | Minden `git push` a GitHubra, bármelyik adapterrel                      |
+| **Pull request megnyitása**                     | Előbb kérdezzen           | `gh pr create` és a pull request-eszközök                               |
+| **Átnézés vagy összefésülés közzététele**       | Előbb kérdezzen           | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`           |
+| **Írás külső követőbe**                         | Előbb kérdezzen           | Jegyírás a Control Center eszközein keresztül és `gh issue`             |
+| **Hálózati hozzáférés**                         | Engedélyezés              | Van-e egyáltalán hálózata a homokozónak, és a harness webes eszközei    |
 
-| Kapcsoló                                      | Mit kapuz                                                                                                                                                                                                                                          |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **git push engedélyezése**                     | Ha ez ki van kapcsolva, a futás `GIT_ASKPASS=/usr/bin/false` és `GIT_TERMINAL_PROMPT=0` értéket kap, így egy push nem tud hitelesítő adatot kérni                                                                                                    |
-| **GitHub API-hívások engedélyezése**           | A **git push engedélyezése** kapcsolóval együtt azt kapuzza, hogy a közvetítő injektálja-e a GitHub-tokent `GH_TOKEN` / `GITHUB_TOKEN` néven                                                                                                       |
-| **Jegykezelő API-hívások engedélyezése**       | Azt kapuzza, hogy a közvetítő injektálja-e a `TICKETING_API_KEY` értéket                                                                                                                                                                           |
-| **Általános hálózati hozzáférés engedélyezése** | Ahol a homokozó be van kapcsolva, ez valódi kimenőforgalom-kapu: kikapcsolva a futás engedélylistája üres, és minden kimenő kérést elutasít a proxy. Ahol nincs háttérrendszer, ott rögzítésre kerül a futáson, de nem blokkol semmit, amit egy elindított folyamat tesz |
+1. Nyissa meg a **Beállítások → Munkaterület → Ügynökjogosultságok** oldalt
+2. Válassza ki a hatókört — **Munkaterület**, **Ügynök** vagy **Tér** —, és a
+   szabály sorában válassza az **Engedélyezés**, az **Előbb kérdezzen** vagy a
+   **Tiltás** lehetőséget
 
-6. Mentés
+Az ágakra korlátozott push-szabályok, például egy, amely tiltja a `main`-re
+irányuló pusht, szintén érvényesek: lásd a [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/)
+oldalt.
 
-Ellenőrzőpont: nyissa meg újra az ügynököt, és a kapcsoló továbbra is bekapcsolt
-állapotban van az Ön beállításaival — egy mentett képességkészlet körbejárja a
-szervert, és a készlettel nem rendelkező ügynök az óvatos alapértelmezésre esik
-vissza (push kikapcsolva, GitHub API kikapcsolva, jegykezelés kikapcsolva,
-hálózat bekapcsolva).
+Ellenőrzőpont: kérje meg az ügynököt, hogy pusholjon egy ágat. **Előbb
+kérdezzen** esetén jóváhagyási kérést kap a repóval és a refekkel; **Tiltás**
+esetén a git ezt írja ki:
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Két buktató]
-A felirat **Munkaterület alapértelmezettje**, de nincs olyan munkaterületszintű
-képességbeállítás, amelyet a szerver olvasna. A kikapcsolt kapcsolóval
-rendelkező ügynök a beépített óvatos alapértelmezést kapja.
+Hogyan érik el az egyes szabályok a futást:
 
-Külön említve: a futás GitHub-hitelesítő adata soha nem más, mint a
-közvetítőé — egy repóra korlátozott GitHub App telepítési token vagy a
-környezeti PAT tartalék —, soha nem a kérő tag saját tárolt tokenje. Az
-`actingUserId` átadása csak azt teszi lehetővé, hogy a közvetítő *visszatartsa*
-a szerver PAT-jét attól a tagtól, aki nem a tulajdonos, és nem csatlakoztatta a
-GitHubot; nem olvaszt össze egy személyes tokent egy kikapcsolt képesség fölé.
-Ne tekintse a **GitHub API-hívások engedélyezése** kapcsolót kemény
-kimenőforgalom-határnak egy operációs rendszer szintű homokozó nélküli hoszton:
-egy elindított folyamat továbbra is elérheti a hálózatot.
+- **A push** azzal érvényesül, ami a futás birtokában van. A GitHub-tokenje
+  egy csak olvasásra jogosult GitHub App telepítési token, amely tartalmat
+  olvashat és pull requestekkel dolgozhat. A git-konfigurációja minden
+  GitHub-pusht egy loopback átjáróhoz küld a `cc_server`-en, amely megkérdezi a
+  szabályt, és csak ezután továbbítja a pusht egy írási tokennel, amelyet az
+  ügynök soha nem lát. Az átjáró csak a worktree saját repójába vagy a
+  munkaterülethez kapcsolt GitHub-repóba továbbít. Ez minden adapterre érvényes.
+- **A shellből indított pull requesteket és issue-kat** a parancssor alapján
+  ismeri fel a harness `bash` eszköze és – egy hookon keresztül – a Claude Code
+  `Bash` eszköze. Egy ügynök, amely elrejti a parancsot (szkript, `eval`,
+  közvetlen API-hívás), átjut ezen az ellenőrzésen, a push-átjárón azonban nem.
+- **A jegykezelő kulcsok** soha nem kerülnek a homokozóba. Az ügynökök a
+  Control Center MCP eszközein keresztül írnak jegyeket, amelyek a szabályt
+  kérdezik meg.
+- **A hálózat** egyszer, a futás indulásakor oldódik fel. A **Tiltás**
+  kikapcsolja a homokozó hálózatát; az **Engedélyezés** és az **Előbb
+  kérdezzen** bekapcsolva hagyja, és **Előbb kérdezzen** esetén a harness
+  `web_fetch` és `web_search` eszköze továbbra is minden hívásnál kérdez. Amíg
+  a hálózat be van kapcsolva, a GitHub mindig szerepel a kimenő engedélylistán.
+
+:::caution[GitHub App nélkül a push-szabály csak tanácsadó jellegű]
+Beállított GitHub App nélkül a futás a tartalék személyes hozzáférési tokent
+kapja, amelyet nem lehet csak olvasásra korlátozni. A `git push` továbbra is az
+átjárón és a szabályon megy át, de az a kód, amely közvetlenül a tokent
+használja, megkerülheti. Állítsa be a GitHub Appot, hogy a szabály kötelező
+legyen.
+
+A futás GitHub-hitelesítő adata soha nem más, mint a közvetítőé — egy repóra
+korlátozott GitHub App telepítési token vagy a tartalék PAT —, soha nem a kérő
+tag saját tárolt tokenje. A szerver PAT-jét visszatartja a közvetítő attól a
+futástól, amely olyan tag nevében jár el, aki nem a tulajdonos, és nem
+csatlakoztatta a GitHubot.
 :::
 
 ## Ellenőrizze, hogy az ügynökfutásai homokozóba vannak-e zárva
@@ -170,10 +189,14 @@ elutasításra kerül. A teljes feloldási sorrendet lásd:
 
 ### Az ügynök nem tud pusholni, és soha nem tiltottam meg
 
-Ellenőrizze az ügynök **Homokozó-jogosultságok** beállítását. Az egyéni
-képességkészlet nélküli ügynök az óvatos alapértelmezést kapja, amelyben a **git
-push engedélyezése** ki van kapcsolva — így a közvetítő nem injektál
-GitHub-tokent, és a gitnek nincs módja hitelesíteni.
+Nézze meg, mit írt ki a git. A `Control Center policy: …` azt jelenti, hogy egy
+szabály elutasította a pusht, vagy egy **Előbb kérdezzen** megválaszolatlan
+maradt. A `… is not linked to this workspace` azt jelenti, hogy a push olyan
+repót céloz, amely sem a worktree sajátja, sem a munkaterülethez kapcsolt. A
+`Control Center has no GitHub credential that can push …` azt jelenti, hogy a
+GitHub App nincs telepítve az adott repóra, és egyetlen tartalék hitelesítő
+adat sem tudott pusholni: telepítse az alkalmazást a repóra, vagy csatlakoztassa
+a GitHubot.
 
 ### A Homokozó kártya nem jelez natív homokozót
 

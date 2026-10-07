@@ -2,7 +2,7 @@
 title: 配置护栏
 description: 为智能体的操作设置允许、先询问和拒绝规则，用预演探针测试这些规则，并按空间调整自主程度。
 slug: zh-CN/手册/操作指南/配置护栏
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 本指南介绍如何配置护栏：这些规则决定智能体的某项操作是直接运行、先请求批准，还是被拒绝。
@@ -109,9 +109,11 @@ sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 同一页面底部的**规则的执行位置**表就是这一内容的应用内版本：对于每个效果类别，它会说明每个运行器
 是在策略闸门处拦截它、把它交给沙盒，还是根本无法拦截它。
 
-- **Claude Code 适配器**自身的工具调用不受把关。Claude Code 以
-  `--dangerously-skip-permissions` 启动，因此它的 read、write、edit 和 bash 调用从不经过这道
-  护栏。该适配器受把关的是它回调的 MCP 工具集，以及 Control Center 为启动它而派生的 shell 命令。
+- **Claude Code 适配器**自身的工具调用只有一部分受把关。Claude Code 以
+  `--dangerously-skip-permissions` 启动，因此它的 read、write 和 edit 调用从不经过这道
+  护栏。它的 bash 命令会经由一个对命令行分类的钩子到达护栏，它的推送也和所有智能体
+  一样经过推送网关。它回调的 MCP 工具集，以及 Control Center 为启动它而派生的 shell
+  命令，同样受把关。
 - **模式自身的输出动词**（`submit_plan`、`propose_orchestration`）是被钉住的，永远无法被拒绝——
   否则模式在结构上将无法产出它唯一的交付物。
 - **沙盒是否为这些规则兜底取决于宿主。** 当 `cc_server` 找到可用后端时，它会包裹 Claude Code CLI

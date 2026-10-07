@@ -2,7 +2,7 @@
 title: Agentconfiguratie
 description: Elk veld van de agent-entiteit en de enums die hij gebruikt.
 slug: nl-NL/handleiding/referentie/agentconfiguratie
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Deze referentie somt elk veld van de agent-entiteit op, plus de enums en vlaggen die hij gebruikt. Zie [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/) voor een stap-voor-stap doorloop van het maken of bewerken van een agent in de app.
@@ -26,7 +26,6 @@ Deze referentie somt elk veld van de agent-entiteit op, plus de enums en vlaggen
 | `effort`                | `String?`              | Nee     | Id van het redeneerniveau (bijv. `'low'`, `'xhigh'`), afkomstig uit de `thinkingLevels` van het geselecteerde model                                                                                 |
 | `contextSize`           | `int?`                 | Nee     | Maximale grootte van het contextvenster                                                                                                                                                             |
 | `role`                  | `AgentRole?`           | Nee     | Agentrol                                                                                                                                                                                            |
-| `capabilities`          | `AgentCapabilities?`   | Nee     | Standaardmogelijkheid per agent; is die null, dan geldt bij het dispatchen de standaard op gebruikersniveau en kan een gesprek die nog steeds overschrijven                                            |
 | `monthlyBudgetCents`    | `int`                  | Nee     | Maandelijks uitgavenplafond in centen (standaard `0`, onbeperkt)                                                                                                                                    |
 | `silenceTimeoutMinutes` | `int?`                 | Nee     | Overschrijving van de stiltetime-out in minuten; moet null zijn of tussen 1–240 liggen (met een assert in de constructor)                                                                          |
 | `maxConcurrentTasks`    | `int`                  | Nee     | Standaard `1`. Capaciteitsgetal dat het aanwezigheidsmodel rapporteert (lopende en wachtende aantallen worden ermee vergeleken)                                                                     |
@@ -69,18 +68,9 @@ plafond met `agents.upsert`.
 | `paused`   | Gezet door de hard-stop van het budget. Getoond op de aanwezigheidslijst; dispatch accepteert nog steeds werk |
 | `archived` | Buiten gebruik gesteld en verborgen uit actieve lijsten                                 |
 
-## Vlaggen van AgentCapabilities
+## Machtigingen
 
-Per dispatch bepaald: de standaard van de agent, met terugval op de standaard op gebruikersniveau wanneer die null is, plus een overschrijving per gesprek daarbovenop. Gehandhaafd door afwezigheid — de inloggegevensbroker maakt of injecteert simpelweg niet wat een uitgeschakelde mogelijkheid dekt.
-
-| Vlag               | Type   | Standaard | Beschrijving                                                                             |
-| ------------------ | ------ | --------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`   | Pusht commits naar de remote; regelt samen met `canCallGitHubApi` de injectie van het GitHub-token |
-| `canCallGitHubApi` | `bool` | `false`   | Roept api.github.com aan; regelt de injectie van `GH_TOKEN` en de GitHub-egressdomeinen  |
-| `canCallTicketing` | `bool` | `false`   | Roept de API van de ticketingprovider aan; regelt de injectie van de API-sleutel van de provider en zijn egressdomeinen |
-| `canAccessNetwork` | `bool` | `true`    | Willekeurige uitgaande egress. Regelt ook de tools `web_fetch` en `web_search` van de harness |
-
-`AgentCapabilities.safeDefault` is alle vier de constructorstandaarden. `legacyDefault` (alle vier true) wordt alleen gebruikt door de migratie die gesprekken heeft teruggevuld die zijn aangemaakt voordat mogelijkheden bestonden. Een misvormde of lege opgeslagen blob wordt geparseerd naar `safeDefault`; de oude sleutel `canCallLinear` wordt gelezen als `canCallTicketing`.
+Een agent draagt geen machtigingsvlaggen. Pushen, pull requests openen en publiceren, naar een tracker schrijven en uitgaand netwerkverkeer zijn actieklassen (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) die de [beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) bepalen op het bereik werkruimte, agent of ruimte. Het GitHub-token van een run heeft altijd alleen leesrechten; pushes lopen via de agentrun-gateway, die de regel `gitPush` raadpleegt voordat hij ze doorstuurt.
 
 ## AgentSkills
 

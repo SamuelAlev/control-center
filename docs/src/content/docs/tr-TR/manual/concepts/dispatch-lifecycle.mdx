@@ -2,7 +2,7 @@
 title: Ajan gönderim yaşam döngüsü
 description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Gönderim nedir
@@ -65,7 +65,7 @@ Her çalıştırmada, herhangi bir süreç başlatılmadan önce iki kimlik çö
 
 Adaptör başına geçersiz kılma ilk sırada geldiği için uygulamada bağlı bir sağlayıcı hesabını sessizce yener. Bir çalıştırma yanlış hesaba faturalandırılıyorsa ilk bakılacak yer bu geçersiz kılmadır. Sağlayıcı kimlik bilgileri ana makine genelindedir — kurulumdaki her çalışma alanı arasında paylaşılır.
 
-Yetenekle kapılanmış belirteçler (GitHub, biletleme) kimlik bilgisi aracısından gelir; aracı yalnızca çalıştırmanın yeteneklerinin izin verdiğini enjekte eder. Bkz. [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
+Çalıştırmanın GitHub belirteci kimlik bilgisi aracısından gelir: çalışma ağacının deposuyla sınırlı, salt okunur bir belirteç. Bir push, iletmeden önce **Uzak depoya push et** kuralına soran ajan çalıştırma ağ geçidinden geçer ve hiçbir biletleme anahtarı enjekte edilmez. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 
 ## Başlatma
 
@@ -76,9 +76,9 @@ Yetenekle kapılanmış belirteçler (GitHub, biletleme) kimlik bilgisi aracıs�
 
 Arka uç olmadığında çalıştırma sandbox içinde **değildir** ve bunu telafi etmek için başka hiçbir şey değişmez. Bu, Windows'ta her zaman böyledir (yerel sarma yok — `microvm`, terminaller ve rig'ler için ayrı, yoklamayla kapılanmış bir yoldur) ve `PATH` üzerinde `bwrap` ile `socat` bulunmayan Linux veya WSL2'de de böyledir. Sunucu hangi durumda olduğunu başlangıç günlük satırında belirtir ve `--sandbox off` bilinçli bir çıkıştır.
 
-Sandbox açık olsa bile iki boşluk ondan sağ çıkar. Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, search, find, search_files) sunucu süreci içinde çalışır, bu yüzden onları hiçbir profil kısıtlamaz — sınırları, araçların kendi yol hapsinin ve korumaların toplamıdır. Ayrıca Claude Code `--dangerously-skip-permissions` ile başlatılır, yani kendi dosya ve kabuk çağrıları Control Center tarafından kapılanmaz; onların etrafındaki sınır işletim sistemi sandbox'ıdır.
+Sandbox açık olsa bile iki boşluk ondan sağ çıkar. Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, search, find, search_files) sunucu süreci içinde çalışır, bu yüzden onları hiçbir profil kısıtlamaz — sınırları, araçların kendi yol hapsinin ve korumaların toplamıdır. Ayrıca Claude Code `--dangerously-skip-permissions` ile başlatılır, yani kendi dosya çağrıları Control Center tarafından kapılanmaz, kabuk komutlarını ise yalnızca komut satırını okuyan bir hook denetler; onların etrafındaki sınır işletim sistemi sandbox'ıdır.
 
-Geri kalan sınırlar her ana makinede geçerlidir, sandbox olsun olmasın: çalıştırmanın kendi çalışma ağacı (`rift`'in geldiği yerde kopyala-üzerine-yaz; Windows'ta `git worktree`), her başlatmada aracılık edilen ve kapatmada iptal edilen yetenekle kapılanmış kimlik bilgileri, birleşik eylem korumaları (başarısız durumda kapalı — onaylayıcı bağlı değilken `prompt` kararı reddedilir) ve konuşmanın modunun izin verdiği araç yüzeyi. ACP ve harness `bash` ortamı hâlâ arındırır; `NoSandboxAdapter` üzerinden Claude Code ana makinenin ortamını devralır.
+Geri kalan sınırlar her ana makinede geçerlidir, sandbox olsun olmasın: çalıştırmanın kendi çalışma ağacı (`rift`'in geldiği yerde kopyala-üzerine-yaz; Windows'ta `git worktree`), her başlatmada aracılık edilen ve kapatmada iptal edilen salt okunur bir forge belirteci, ajan çalıştırma ağ geçidinde push kuralından geçmesi gereken push'lar, birleşik eylem korumaları (başarısız durumda kapalı — onaylayıcı bağlı değilken `prompt` kararı reddedilir) ve konuşmanın modunun izin verdiği araç yüzeyi. ACP ve harness `bash` ortamı hâlâ arındırır; `NoSandboxAdapter` üzerinden Claude Code ana makinenin ortamını devralır.
 :::
 
 ## Akış

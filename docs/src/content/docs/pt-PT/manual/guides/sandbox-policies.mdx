@@ -1,19 +1,20 @@
 ---
 title: Configurar políticas de sandbox
-description: O que limita uma execução de agente, como saber se a sandbox do sistema operativo a está a envolver e que definições de capacidade o servidor lê realmente.
+description: O que limita uma execução de agente, como saber se a sandbox do sistema operativo a está a envolver e como as regras de ação decidem o que um agente pode enviar ou alcançar.
 slug: pt-PT/manual/guias/politicas-de-sandbox
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Se uma execução de agente corre em sandbox decide-se no servidor, no arranque
-(`--sandbox`). O interruptor **Ativar sandboxing**, o seletor **Backend** e os
-interruptores **Capacidades padrão · novas conversas** em **Definições →
-Servidor → Diagnóstico e privacidade** são preferências guardadas no seu
-dispositivo. A deteção de anfitrião do cartão **Sandbox** reporta o que o
+(`--sandbox`). O interruptor **Ativar sandboxing** e o seletor **Backend** em
+**Definições → Servidor → Diagnóstico e privacidade** são preferências guardadas
+no seu dispositivo. A deteção de anfitrião do cartão **Sandbox** reporta o que o
 anfitrião do servidor consegue envolver.
 
-Dois controlos chegam a uma execução e este guia cobre ambos: as **Permissões do
-sandbox** por agente, abaixo, e o próprio flag `--sandbox` do servidor.
+Dois controlos chegam a uma execução e este guia cobre ambos: as regras de ação
+em **Definições → Espaço de trabalho → Permissões dos agentes**, que decidem o
+que um agente pode enviar, abrir ou alcançar, e o próprio flag `--sandbox` do
+servidor.
 
 ## O que limita uma execução de agente
 
@@ -24,7 +25,7 @@ Seis coisas limitam um agente. A primeira é a sandbox do sistema operativo e é
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A sandbox do sistema operativo  | Seatbelt no macOS, bubblewrap no Linux e no WSL2. Envolve a CLI do Claude Code, os adaptadores ACP e a ferramenta `bash` do harness. **Ausente no Windows e no Linux sem `bwrap` e `socat`** |
 | A sua própria worktree          | Cada conversa recebe um checkout copy-on-write. O checkout original é incorporado na execução como um caminho de negação de escrita e é a sandbox que o aplica                                                                                   |
-| Credenciais intermediadas       | O corretor de credenciais emite um ambiente por execução a partir das capacidades do agente e revoga-o quando a execução termina. Sem capacidade, sem token no ambiente                                                                            |
+| Credenciais intermediadas       | O corretor de credenciais emite um ambiente por execução e revoga-o quando a execução termina. O seu token do GitHub pode ler, mas não fazer push: um push passa pelo Control Center, que pergunta primeiro à regra de push |
 | Barreiras de ação               | Cada ferramenta que altera o estado declara as suas classes de efeito e o motor de políticas resolve-as antes de a chamada ser executada. Um `prompt` sem nenhum aprovador ligado é negado                                                           |
 | Sanitização do ambiente         | O ACP e a ferramenta `bash` do harness recebem um ambiente filtrado. O Claude Code através do `NoSandboxAdapter` herda o ambiente do anfitrião                                                                                                     |
 | A superfície de ferramentas do modo | Um modo só de leitura remove por completo as ferramentas que alteram a worktree e fixa o próprio verbo de saída do modo, para que ainda consiga entregar                                                                                        |
@@ -35,8 +36,7 @@ Três coisas permanecem mais fracas do que parecem:
   conclusão e as regras estruturais do modo. O adaptador Claude Code não. O
   Claude Code em particular é lançado com `--dangerously-skip-permissions`,
   porque um `claude -p` não interativo bloquearia para sempre no seu próprio
-  pedido de aprovação — por isso as próprias chamadas de leitura, escrita, edição
-  e bash do Claude não são vistas nem sujeitas a portão pelo Control Center. Onde
+  pedido de aprovação — por isso as próprias chamadas de leitura, escrita e edição do Claude não são vistas nem sujeitas a portão pelo Control Center, e os seus comandos de bash só são verificados por um hook que lê a linha de comandos. Onde
   a sandbox está ligada, é ela a fronteira à sua volta.
 - As ferramentas de ficheiros em processo do harness (read, write, edit, apply
   patch, search, find, search_files) correm dentro do processo do servidor, pelo
@@ -49,46 +49,66 @@ Três coisas permanecem mais fracas do que parecem:
   `NoSandboxAdapter`. O servidor di-lo no seu registo de arranque. Verifique o seu
   abaixo.
 
-## Definir as capacidades de um agente
+## Decidir o que um agente pode enviar
 
-Este é o único controlo de capacidades que o servidor lê. É por agente e decide
-o que o corretor de credenciais coloca no ambiente desse agente.
+Não existe nenhum interruptor por agente para git push, GitHub, tickets ou a
+rede. Cada um é uma regra de ação:
 
-1. Aceda a **Definições → Espaço de trabalho → Agentes**
-2. Selecione o agente na lista
-3. No separador **Definições**, desça até **Permissões do sandbox**
-4. Ative o interruptor — a legenda da linha muda de **Usar predefinição do espaço de trabalho**
-5. Defina os quatro interruptores:
+| Regra                                     | Predefinição       | O que abrange                                                                 |
+| ----------------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
+| **Fazer push para um remoto**             | Perguntar primeiro | Cada `git push` para o GitHub, seja qual for o adaptador                      |
+| **Abrir um pull request**                 | Perguntar primeiro | `gh pr create` e as ferramentas de pull request                               |
+| **Publicar uma revisão ou fazer merge**   | Perguntar primeiro | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                 |
+| **Escrever num rastreador externo**       | Perguntar primeiro | Escritas de tickets através das ferramentas do Control Center e `gh issue`    |
+| **Aceder à rede**                         | Permitir           | Se a sandbox tem rede, e as ferramentas web do harness                        |
 
-| Interruptor                          | O que controla                                                                                                                                                                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Permitir git push**                | Com isto desligado, a execução recebe `GIT_ASKPASS=/usr/bin/false` e `GIT_TERMINAL_PROMPT=0`, pelo que um push não consegue pedir uma credencial                                                                                                 |
-| **Permitir chamadas à API do GitHub** | Em conjunto com **Permitir git push**, controla se o corretor injeta o token do GitHub como `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                           |
-| **Permitir chamadas à API de tickets** | Controla se o corretor injeta `TICKETING_API_KEY`                                                                                                                                                                                                |
-| **Permitir acesso geral à rede**     | Onde a sandbox está ligada, este é um verdadeiro portão de saída: com ele desligado, a lista de permissões da execução fica vazia e todos os pedidos de saída são recusados no proxy. Onde não existe backend, fica registado na execução, mas não bloqueia nada do que um processo lançado faça |
+1. Aceda a **Definições → Espaço de trabalho → Permissões dos agentes**
+2. Escolha o âmbito — **Espaço de trabalho**, **Agente** ou **Espaço** — e, na
+   linha da regra, escolha **Permitir**, **Perguntar primeiro** ou **Negar**
 
-6. Guarde
+As regras de push limitadas a branches, como uma que nega push para `main`,
+também se aplicam: consulte [Barreiras](/pt-PT/manual/conceitos/barreiras/).
 
-Ponto de verificação: reabra o agente e o interruptor continua ligado, com os
-interruptores que definiu — um conjunto de capacidades guardado faz a viagem de
-ida e volta pelo servidor e um agente sem nenhum recai na predefinição
-conservadora (push desligado, API do GitHub desligada, tickets desligados, rede
-ligada).
+Ponto de verificação: peça ao agente que faça push de um branch. Com
+**Perguntar primeiro**, recebe uma aprovação que indica o repositório e as refs;
+com **Negar**, o git mostra
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Duas formas de isto morder]
-A legenda diz **Usar predefinição do espaço de trabalho**, mas não existe nenhuma
-definição de capacidades ao nível do espaço de trabalho que o servidor leia. Um
-agente com o interruptor desligado fica com a predefinição conservadora
-incorporada.
+Como cada regra chega à execução:
 
-Separadamente, a credencial de GitHub da execução é sempre apenas a do corretor —
-um token de instalação da GitHub App limitado ao repo, ou o PAT do ambiente como
-alternativa — nunca o token guardado do próprio membro que faz o pedido. O
-`actingUserId` é passado para que o corretor possa *reter* o PAT do servidor a um
-membro que não seja o proprietário e não tenha ligado o GitHub; não funde um
-token pessoal por cima de uma capacidade que está desligada. Não trate **Permitir
-chamadas à API do GitHub** como uma fronteira de saída rígida num anfitrião sem
-sandbox do sistema operativo: um processo lançado ainda consegue chegar à rede.
+- **O push** é imposto por aquilo que a execução detém. O seu token do GitHub é
+  um token de instalação da GitHub App só de leitura, que pode ler conteúdo e
+  trabalhar com pull requests. A sua configuração do git envia cada push para o
+  GitHub para um gateway de loopback no `cc_server`, que pergunta à regra e só
+  então reencaminha o push com um token de escrita que o agente nunca vê. O
+  gateway só reencaminha para o repositório da própria worktree ou para um
+  repositório do GitHub associado ao espaço de trabalho. Isto vale para todos
+  os adaptadores.
+- **Pull requests e issues a partir de uma shell** são reconhecidos pela linha
+  de comandos, na ferramenta `bash` do harness e, através de um hook, na
+  ferramenta `Bash` do Claude Code. Um agente que esconda o comando (um script,
+  `eval`, uma chamada direta à API) passa esta verificação, mas não o gateway
+  de push.
+- **As chaves de tickets** nunca são colocadas na sandbox. Os agentes escrevem
+  tickets através das ferramentas MCP do Control Center, que perguntam à regra.
+- **A rede** é resolvida uma única vez, quando a execução arranca. **Negar**
+  desliga a rede da sandbox; **Permitir** e **Perguntar primeiro** mantêm-na
+  ligada, e com **Perguntar primeiro** as ferramentas `web_fetch` e
+  `web_search` do harness continuam a perguntar em cada chamada. Enquanto a
+  rede está ligada, o GitHub está sempre na lista de permissões de saída.
+
+:::caution[Sem GitHub App, a regra de push é apenas indicativa]
+Sem uma GitHub App configurada, a execução recebe o token de acesso pessoal
+alternativo, que não pode ser restringido a só leitura. O `git push` continua a
+passar pelo gateway e pela regra, mas código que use o token diretamente
+consegue fazer push contornando-a. Configure a GitHub App para tornar a regra
+vinculativa.
+
+A credencial de GitHub da execução é sempre apenas a do corretor — um token de
+instalação da GitHub App limitado ao repo, ou o PAT alternativo —, nunca o token
+guardado do próprio membro que faz o pedido. O PAT do servidor é retido a uma
+execução que atua por um membro que não seja o proprietário e não tenha ligado
+o GitHub.
 :::
 
 ## Verificar se as suas execuções de agente correm em sandbox
@@ -162,10 +182,14 @@ de resolução completa.
 
 ### Um agente não consegue fazer push e eu nunca o neguei
 
-Verifique as **Permissões do sandbox** do agente. Um agente sem um conjunto de
-capacidades personalizado fica com a predefinição conservadora, que tem
-**Permitir git push** desligado — por isso o corretor não injeta nenhum token do
-GitHub e o git não tem forma de se autenticar.
+Leia o que o git mostrou. `Control Center policy: …` significa que uma regra
+negou o push ou que um **Perguntar primeiro** ficou sem resposta.
+`… is not linked to this workspace` significa que o push visa um repositório que
+não é o da worktree nem está associado ao espaço de trabalho.
+`Control Center has no GitHub credential that can push …` significa que a
+GitHub App não está instalada nesse repositório e nenhuma credencial
+alternativa conseguiu fazer push: instale a App nesse repositório ou ligue o
+GitHub.
 
 ### O cartão Sandbox não reporta nenhuma sandbox nativa
 

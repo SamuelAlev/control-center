@@ -2,7 +2,7 @@
 title: Quản lý khóa API
 description: Mỗi thông tin xác thực nằm ở đâu — tài khoản người dùng của bạn trên máy chủ, chính máy chủ, hay một CLI bên ngoài — và cách đặt, xoay vòng và gỡ bỏ nó.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Hướng dẫn này cho bạn biết mỗi thông tin xác thực mà Control Center dùng được
@@ -79,9 +79,9 @@ dữ liệu riêng của máy chủ này và không có gì để xác thực.
 Khóa của bạn được lưu trên máy chủ gắn với id người dùng của bạn, giống như khóa
 forge. Máy chủ giữ khóa Linear riêng của nó một cách tách biệt (**Ứng dụng nhà
 cung cấp**), và đó là thứ mà việc đồng bộ phiếu dùng khi không có con người yêu
-cầu. Một khóa mà agent nhận được chỉ được chèn vào khi agent có khả năng **Cho
-phép gọi API phiếu**. Xem
-[Thiết lập tích hợp Linear](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/).
+cầu. Không có khóa phiếu nào được chèn vào sandbox của agent; agent ghi phiếu qua
+các công cụ của Control Center, vốn hỏi quy tắc **Ghi vào tracker bên ngoài**.
+Xem [Thiết lập tích hợp Linear](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/).
 
 ## Xoay vòng hoặc thu hồi
 

@@ -68,86 +68,22 @@ void main() {
       },
     );
 
-    // -- Short Task Adapter --
-
-    test(
-      'getShortTaskAdapterId returns null initially',
-      timeout: const Timeout.factor(2),
-      () {
-        expect(prefs.getShortTaskAdapterId(), isNull);
-      },
-    );
-
-    test(
-      'setShortTaskAdapterId persists value',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setShortTaskAdapterId('claude-code');
-        expect(prefs.getShortTaskAdapterId(), 'claude-code');
-      },
-    );
-
-    test(
-      'setShortTaskAdapterId with null removes',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setShortTaskAdapterId('claude-code');
-        await prefs.setShortTaskAdapterId(null);
-        expect(prefs.getShortTaskAdapterId(), isNull);
-      },
-    );
-
-    // -- Short Task Model --
-
-    test(
-      'getShortTaskModelId returns null initially',
-      timeout: const Timeout.factor(2),
-      () {
-        expect(prefs.getShortTaskModelId(), isNull);
-      },
-    );
-
-    test(
-      'setShortTaskModelId persists value',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setShortTaskModelId('openai/gpt-5');
-        expect(prefs.getShortTaskModelId(), 'openai/gpt-5');
-      },
-    );
-
-    test(
-      'setShortTaskModelId with null removes',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setShortTaskModelId('model-x');
-        await prefs.setShortTaskModelId(null);
-        expect(prefs.getShortTaskModelId(), isNull);
-      },
-    );
-
     // -- Independence --
 
     test(
-      'all four preferences are independent',
+      'chat adapter and model are independent',
       timeout: const Timeout.factor(2),
       () async {
         await prefs.setDefaultChatAdapterId('chat-adapter');
         await prefs.setDefaultChatModelId('chat-model');
-        await prefs.setShortTaskAdapterId('task-adapter');
-        await prefs.setShortTaskModelId('task-model');
 
         expect(prefs.getDefaultChatAdapterId(), 'chat-adapter');
         expect(prefs.getDefaultChatModelId(), 'chat-model');
-        expect(prefs.getShortTaskAdapterId(), 'task-adapter');
-        expect(prefs.getShortTaskModelId(), 'task-model');
 
         // Clearing one doesn't affect others
         await prefs.setDefaultChatAdapterId(null);
         expect(prefs.getDefaultChatAdapterId(), isNull);
         expect(prefs.getDefaultChatModelId(), 'chat-model');
-        expect(prefs.getShortTaskAdapterId(), 'task-adapter');
-        expect(prefs.getShortTaskModelId(), 'task-model');
       },
     );
   });

@@ -2,7 +2,7 @@
 title: Režimy
 description: Proč režim nese prostor a ne agent, co každý ze čtyř režimů zaručuje a kde je ta záruka strukturální, ne jen v promptu.
 slug: cs-CZ/prirucka/koncepty/rezimy
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Co je režim
@@ -77,7 +77,7 @@ Samotné rozlišení je prosté. Dispečer čte sloupec `mode` prostoru; odeslá
 
 Plochu nástrojů režimu sestavuje a vynucuje **vestavěný harness**. Je to jediný transport, který umí nástroj zneviditelnit, ne ho jen odmítnout, každé volání zabránit dřív, než doběhne, a sledovat kontrakt dokončení.
 
-Na transportu Claude Code se režim jiný než chat předává jako `--permission-mode plan`. Claude to dodržuje konvencí; jeho vlastní nástroje pro čtení, zápis, úpravy a shell běží mimo dohled. Pro ten transport je režim vedení, ne hranice Control Center — viz [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/).
+Na transportu Claude Code se režim jiný než chat předává jako `--permission-mode plan`. Claude to dodržuje konvencí; jeho vlastní nástroje pro čtení, zápis a úpravy běží mimo dohled a jeho příkazy shellu kontroluje jen hook, který čte příkazový řádek. Pro ten transport je režim vedení, ne hranice Control Center — viz [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/).
 
 Seznamy povolených omezují nástroje od úrovně zápisu výš. Úroveň čtení vestavěného harnessu pořád dosáhne na nástroje, které žádný seznam nejmenuje; na Claude Code se nástroj, který seznam povolených vynechá, odmítne, ať ho server má, nebo ne.
 

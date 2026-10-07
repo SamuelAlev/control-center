@@ -1,6 +1,5 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
@@ -155,10 +154,8 @@ class _FakeTeamRepository implements TeamRepository {
 /// Minimal [MessagingPort] fake: creates spaces and returns a run-id per
 /// dispatch. The team-dispatch body dispatches into the run's conversation.
 class _FakeMessagingPort implements MessagingPort {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -445,7 +442,6 @@ Agent _testAgent(String id, String name) => Agent(
   agentMdPath: '/agents/$id.md',
   workspaceId: _workspaceId,
   skills: AgentSkills([]),
-  capabilities: const AgentCapabilities(),
   createdAt: DateTime(2024),
 );
 

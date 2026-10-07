@@ -1,17 +1,13 @@
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
 
-/// Default broker that maps capabilities → env vars.
+/// Default broker that hands the environment's GitHub token to a launch.
 ///
-/// * GitHub PAT is injected as both `GH_TOKEN` and `GITHUB_TOKEN` when the
-///   user has granted [AgentCapabilities.canCallGitHubApi] *or*
-///   [AgentCapabilities.canPushToRepo]. Pushes piggyback on the same token
-///   today — a fine-grained broker can replace this without changing the
-///   port shape (see `GitHubFineGrainedTokenBroker`).
-/// * Ticketing key → `TICKETING_API_KEY` when
-///   [AgentCapabilities.canCallTicketing] and a remote provider key is set.
-///   The raw key flows through; the note is surfaced in the UI.
+/// The token is injected as both `GH_TOKEN` and `GITHUB_TOKEN` whatever the
+/// [ForgeTokenScope]: one server-wide token cannot be narrowed, which is the
+/// reason `GitHubFineGrainedTokenBroker` exists. With this broker the push
+/// rule is enforced for `git push` (the agent run gateway) but not for code
+/// that uses the token directly.
 class EnvCredentialBroker implements CredentialBrokerPort {
   /// Creates an [EnvCredentialBroker] backed by the given `credentials` repo.
   EnvCredentialBroker(this._credentials);
@@ -25,7 +21,7 @@ class EnvCredentialBroker implements CredentialBrokerPort {
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     // Ignored here, and that is the point of this broker: it hands out ONE
@@ -39,21 +35,12 @@ class EnvCredentialBroker implements CredentialBrokerPort {
     final env = <String, String>{};
     final notes = <String>[];
 
-    if ((capabilities.canCallGitHubApi || capabilities.canPushToRepo) &&
-        creds.githubToken.isNotEmpty) {
+    if (creds.githubToken.isNotEmpty) {
       env['GH_TOKEN'] = creds.githubToken;
       env['GITHUB_TOKEN'] = creds.githubToken;
-      if (capabilities.canPushToRepo) {
-        notes.add(
-          'Using raw GitHub PAT — swap in fine-grained tokens via '
-          'GitHubFineGrainedTokenBroker for production deployments.',
-        );
-      }
-    }
-    if (capabilities.canCallTicketing && creds.ticketingApiKey.isNotEmpty) {
-      env['TICKETING_API_KEY'] = creds.ticketingApiKey;
       notes.add(
-        'The ticketing provider API key is injected into the sandbox env.',
+        'Using raw GitHub PAT — swap in fine-grained tokens via '
+        'GitHubFineGrainedTokenBroker for production deployments.',
       );
     }
 

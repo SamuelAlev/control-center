@@ -2,12 +2,12 @@
 title: Ajan modeli
 description: Control Center'da bir ajanın gerçekte ne olduğu, hangi alanlarının davranışı değiştirdiği ve üzerinde çalıştığı adaptörün nelerin uygulanabileceğine nasıl karar verdiği.
 slug: tr-TR/kilavuz/kavramlar/ajan-modeli
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Ajan nedir?
 
-Bir ajan; bir persona, bir beceri kümesi, üzerinde çalışacağı bir adaptör ve bir yetenek kümesine sahip adlandırılmış bir aktördür. Ajanlar da insanlarla aynı anlamda Principal'dir: mesaj yazar, bilet sahibi olur, inceleme bırakır ve aynı kadroda görünür. İşi yapan şey onlardır.
+Bir ajan; bir persona, bir beceri kümesi ve üzerinde çalışacağı bir adaptöre sahip adlandırılmış bir aktördür. Ajanlar da insanlarla aynı anlamda Principal'dir: mesaj yazar, bilet sahibi olur, inceleme bırakır ve aynı kadroda görünür. İşi yapan şey onlardır.
 
 Her ajan tam olarak bir çalışma alanına aittir. Bu katı bir değişmezdir — `agent.workspaceId` boş olamaz, ajanın satırlarının düştüğü veritabanı dosyasını ajanın kendi çalışma alanı seçer ve çalışma alanı olmayan bir ajan oluşturmak reddedilir.
 
@@ -26,7 +26,6 @@ Bir ajan aynı zamanda bir dizindir. Tanımı, çalışma alanının veri dizini
 | `modelId`               | O adaptör içindeki model                                                              |
 | `effort`                | Seçilen modelin kendi sözcük dağarcığından alınan akıl yürütme düzeyi                 |
 | `contextSize`           | Bağlam penceresi geçersiz kılması                                                     |
-| `capabilities`          | Başlatmada denetlenen kimlik bilgisi ve çıkış bayrakları                              |
 | `silenceTimeoutMinutes` | Sessizlik gözcüsü için ajan başına geçersiz kılma (1–240)                             |
 | `reportsTo`             | Üst ajan kimliği — organizasyon şemasının çizdiği bağlılık zinciri                    |
 
@@ -51,18 +50,13 @@ Bu kapsamlandırma bir bağlam bütçesi kararıdır. Beceri dizini her turda is
 
 Depo becerileri yalnızca yerleşik harness için değil, **her** adaptör için yüklenir. Etkin deponun becerileri ajanın çalışma dizinine — Claude Code'un zaten taradığı yola — somutlaştırılır; aynı dizin, yerleşik harness'ın okuduğu `AGENTS.md` içine de işlenir. Bir deponun becerileri, tüm bunlar olmadan önce kurulu bir becerinin geçtiği hataya kapalı taramadan geçer — checkout edilmiş bir depo klonlanmış içeriktir ve frontmatter'ı bir isteme ulaşır.
 
-## Yetenekler
+## İzinler
 
-Yetenekler, bir çalıştırmaya neyin _verildiğini_ denetler, dosya sisteminin neye dokunmasına izin verdiğini değil. Kimlik bilgisi aracısı bunları başlatmada denetler: bir yetenek kapalıysa, eşleşen belirteç yalnızca enjekte edilmez.
+Bir ajanın kendine ait izin bayrakları yoktur. Commit oluşturup oluşturamayacağına, push edip edemeyeceğine, pull request açıp açamayacağına, bir takip sistemine yazıp yazamayacağına ya da ağa erişip erişemeyeceğine [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) karar verir — çalışma alanı, ajan veya alan kapsamında izin ver, önce sor ya da reddet — ve onu hangi adaptör çalıştırırsa çalıştırsın aynı kurallar geçerlidir.
 
-- **Depoya push** — `git push` için kullanılan GitHub belirtecinin enjeksiyonunu denetler.
-- **GitHub API** — `GH_TOKEN` enjeksiyonunu ve api.github.com'a çıkışı denetler.
-- **Biletleme** — biletleme sağlayıcısının API anahtarını ve kendi alan adlarına çıkışı denetler.
-- **Ağ çıkışı** — rastgele giden istekler.
+Bir çalıştırmaya neyin _verildiği_ bu kurallarla değişmez. Bir GitHub çalışma ağacındaki çalıştırma her zaman salt okunur bir GitHub belirteci alır ve bir push, gerçekleştiği anda sorulur: ajanın git yapılandırması her GitHub push'unu Control Center üzerinden gönderir; Control Center da onu iletmeden önce **Uzak depoya push et** kuralını uygular.
 
-Bir çalıştırma bunları ajanın kendi satırından çözümler. Ajanın hiçbiri yoksa, sabit ve ihtiyatlı bir varsayılan geçerlidir: üç kimlik bilgisi bayrağı kapalı, ağ çıkışı açık. Ajan formundaki “Sandbox izinleri” anahtarı, bu geri düşme ile ajan üzerinde saklanan özel bir küme arasında seçim yapar.
-
-Hikâyenin diğer yarısı, dosya sistemi düzeyinde neyin uygulandığı ve neyin uygulanmadığı dâhil, [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) sayfasındadır.
+Bunun nasıl işlediği, dosya sistemi düzeyinde neyin uygulandığı ve neyin uygulanmadığı dâhil, [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) sayfasındadır.
 
 ## Neyin uygulanabileceğine adaptör karar verir
 
@@ -71,7 +65,7 @@ Bir ajan üzerindeki en sonuç doğuran tek alan adaptörüdür, çünkü adapt�
 | Taşıma katmanı  | Adaptörler                | Control Center'ın uyguladıkları                                                                                                                                                                                                                                            |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Yerleşik harness | Control Center (built-in) | Her şey. Araç yüzeyi moddan _inşa edilir_, bu yüzden izin verilmeyen bir araç yalnızca reddedilmekle kalmaz, görünmez olur; her çağrı onay kapısından ve eylem korumalarından geçer; tamamlama sözleşmesi dürtükleyebilir ve ardından teslimatı olmadan biten bir çalıştırmayı başarısız kılabilir |
-| Claude CLI       | Claude Code               | Yalnızca kendisine sunulan `mcp__*` araçları. Claude'un kendi okuma, yazma, düzenleme ve kabuk araçları kendi sürecinde yaşar ve görünmeden çalışır — ve `--dangerously-skip-permissions` ile başlatılır, çünkü etkileşimsiz `claude -p` aksi hâlde kendi isteminde sonsuza dek takılır    |
+| Claude CLI       | Claude Code               | Kendisine sunulan `mcp__*` araçları ve bir hook'un çalışmadan önce eylem politikasına gönderdiği `Bash` komutları. Claude'un kendi okuma, yazma ve düzenleme araçları kendi sürecinde yaşar ve görünmeden çalışır — ve `--dangerously-skip-permissions` ile başlatılır, çünkü etkileşimsiz `claude -p` aksi hâlde kendi isteminde sonsuza dek takılır    |
 
 Somut olarak, **alt ajanları, çalıştırma ortasında yönlendirmeyi, duraklatma ve sürdürmeyi (ve dolayısıyla devralmayı) ve yapısal mod uygulamasını yalnızca yerleşik harness destekler.** Claude Code bunların hiçbirini almaz.
 

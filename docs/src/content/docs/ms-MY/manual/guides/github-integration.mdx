@@ -2,7 +2,7 @@
 title: Sediakan integrasi GitHub
 description: Log masuk ke GitHub supaya permukaan PR, pendaftaran repo dan larian ejen berfungsi.
 slug: ms-MY/manual-pengguna/panduan-cara/integrasi-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Panduan ini merangkumi bahagian persediaan yang khusus untuk GitHub. GitHub
@@ -80,7 +80,7 @@ kemudian kelayakan pemilik pelayan, kemudian persekitaran.
 | Larian semakan        | API Checks GitHub                                                                                             |
 | Penerbitan semakan    | Langkah berpagar pengguna yang menyiarkan semakan anda ke PR                                                  |
 | Pendaftaran repo      | Checkout diterima jika remote `origin`-nya menunjuk ke github.com — atau ke gitlab.com / bitbucket.org        |
-| Akses GitHub ejen     | Broker kelayakan menyuntik token sebagai `GH_TOKEN` / `GITHUB_TOKEN`, dibatasi oleh keupayaan ejen            |
+| Akses GitHub ejen     | Broker kelayakan menyuntik token baca sahaja sebagai `GH_TOKEN` / `GITHUB_TOKEN`; push melalui Control Center |
 | Ping pemberitahuan    | Pengundian di sisi pelayan bagi peti masuk pemberitahuan GitHub anda memunculkan "disebut dalam pull request" dan "semakan diminta" |
 | Profil pengguna       | Kad hover profil dan penapisan PR mengikut pengarang                                                          |
 
@@ -99,8 +99,10 @@ butang muat semula. Status itu dimuat semula sendiri setiap dua minit.
 
 ## Fahami cara ejen bertindak di GitHub
 
-- Ejen hanya mendapat token GitHub jika ia mempunyai **Benarkan panggilan API GitHub** atau
-  **Benarkan git push**. Lihat
+- Ejen yang bekerja dalam worktree GitHub sentiasa mendapat token GitHub baca
+  sahaja. Push melalui Control Center, yang bertanya kepada peraturan **Push ke
+  remote** dan kemudian memajukannya dengan token tulis yang tidak pernah
+  dipegang ejen. Lihat
   [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/)
 - Commit yang dibuat ejen ditulis **atas nama ejen** — nama paparan ditambah
   ` (agent)`, pada alamat sintetik yang dikunci berdasarkan id ejen — tidak
@@ -111,11 +113,12 @@ butang muat semula. Status itu dimuat semula sendiri setiap dua minit.
   bukan menyerahkan token yang luas. Pemasangan itu diselesaikan daripada
   **pemilik** repo larian tersebut, jadi satu apl yang dipasang pada beberapa
   akaun berskop dengan betul kepada mana-mana akaun yang disentuh oleh larian
-  itu. Tanpa apl, ejen menerima token persekitaran
-- Larian yang diminta oleh ahli yang telah log masuk bertindak di bawah identiti
-  GitHub **ahli tersebut** — kelayakannya digabungkan selepas persekitaran
-  broker, jadi commit atau komen yang dibuat ejen untuknya boleh diatribusikan
-  kepadanya
+  itu. Tanpa apl, ejen menerima token persekitaran, yang tidak boleh
+  disempitkan kepada baca sahaja: peraturan push kemudian mengikat `git push`,
+  tetapi tidak kod yang menggunakan token secara terus
+- Token itu sentiasa milik broker, tidak pernah milik ahli yang meminta. Token
+  pelayan ditahan daripada larian yang bertindak bagi ahli yang bukan pemilik
+  dan belum menyambungkan GitHub
 
 ## Penyelesaian masalah
 

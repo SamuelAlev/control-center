@@ -1,5 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
-
 /// Outcome of a [CredentialBrokerPort.mint] call.
 class ScopedCredentials {
   /// Creates a new [ScopedCredentials].
@@ -13,8 +11,8 @@ class ScopedCredentials {
   /// Opaque token used to [CredentialBrokerPort.revoke] this grant later.
   final String handle;
 
-  /// Env vars to inject into the sandbox guest process. Keys never present
-  /// outside the sandbox (`GITHUB_TOKEN`, `TICKETING_API_KEY`, etc.).
+  /// Env vars to inject into the sandbox guest process (`GH_TOKEN`,
+  /// `GITHUB_TOKEN`).
   final Map<String, String> environment;
 
   /// Wall-clock time after which the credentials should be considered dead.
@@ -27,14 +25,29 @@ class ScopedCredentials {
   final List<String> notes;
 }
 
-/// Port that mints scoped, capability-gated credentials for a sandbox launch
-/// and revokes them on teardown.
+/// What a minted forge token may do.
 ///
-/// Implementations live in `lib/features/sandboxing/data/brokers/`.
+/// There is no "none": whether an agent may push, open a PR or reach the
+/// network is decided by the action policy (allow / ask / deny), not by
+/// withholding a token up front.
+enum ForgeTokenScope {
+  /// Read the repository and work with pull requests — what lands in an
+  /// agent's own environment. It cannot push: pushes go through the agent run
+  /// gateway, which consults the push rule before using a [write] token.
+  read,
+
+  /// Write the repository contents. Held server-side by whatever applies the
+  /// push rule (the agent run gateway, a rig's credential endpoint); never
+  /// placed in an agent's environment.
+  write,
+}
+
+/// Port that mints scoped credentials for a sandbox launch and revokes them on
+/// teardown.
 abstract interface class CredentialBrokerPort {
-  /// Mints credentials for one launch of [conversationId]'s sandbox given
-  /// the user's chosen [capabilities]. Returns an env map to merge into the
-  /// guest environment plus a revoke handle.
+  /// Mints a [scope]d credential for one launch of [conversationId]'s sandbox.
+  /// Returns an env map to merge into the guest environment plus a revoke
+  /// handle.
   ///
   /// [actingUserId] is the human this launch is being performed FOR — the
   /// member who dispatched the agent or opened the shell. It is what bounds the
@@ -48,7 +61,7 @@ abstract interface class CredentialBrokerPort {
   /// as before this parameter existed.
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,

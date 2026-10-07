@@ -18,6 +18,7 @@ String contextSegmentLabel(AppLocalizations l10n, ContextSegmentKind kind) =>
       ContextSegmentKind.mcpTools => l10n.contextSegmentMcpTools,
       ContextSegmentKind.deferredTools => l10n.contextSegmentDeferredTools,
       ContextSegmentKind.subagents => l10n.contextSegmentSubagents,
+      ContextSegmentKind.runner => l10n.contextSegmentRunner,
       ContextSegmentKind.memory => l10n.contextSegmentMemory,
       ContextSegmentKind.conversation => l10n.contextSegmentConversation,
     };
@@ -166,7 +167,10 @@ class ContextUsageFlyout extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '~${formatContextTokenCount(breakdown.totalTokens)} / '
+                    // A reported total is the provider's count, not an
+                    // approximation; only an estimate earns the tilde.
+                    '${breakdown.isMeasured ? '' : '~'}'
+                    '${formatContextTokenCount(breakdown.totalTokens)} / '
                     '${formatContextTokenCount(breakdown.windowTokens)} '
                     '${l10n.contextUsageTokens}',
                     style: CcFonts.code(
@@ -176,6 +180,15 @@ class ContextUsageFlyout extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                breakdown.isMeasured
+                    ? l10n.contextUsageMeasured
+                    : l10n.contextUsageEstimated,
+                style: CcTypography.caption.copyWith(
+                  color: tokens.textTertiary,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               ContextStackedBar(segments: breakdown.segments),

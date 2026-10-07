@@ -2,7 +2,7 @@
 title: Configurazione degli agenti
 description: Tutti i campi dell'entità agente e le enumerazioni che usa.
 slug: it-IT/manuale/riferimento/configurazione-agenti
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Questa pagina di riferimento elenca tutti i campi dell'entità agente, oltre alle enumerazioni e ai flag che usa. Per una procedura dettagliata di creazione o modifica di un agente nell'app, vedi [Crea e configura un agente](/it-IT/manuale/guide/crea-agente/).
@@ -26,7 +26,6 @@ Questa pagina di riferimento elenca tutti i campi dell'entità agente, oltre all
 | `effort`                | `String?`              | No           | Id del livello di ragionamento (ad es. `'low'`, `'xhigh'`), tratto dai `thinkingLevels` del modello selezionato                                                                                                          |
 | `contextSize`           | `int?`                 | No           | Dimensione massima della finestra di contesto                                                                                                                                                                            |
 | `role`                  | `AgentRole?`           | No           | Ruolo dell'agente                                                                                                                                                                                                        |
-| `capabilities`          | `AgentCapabilities?`   | No           | Valore predefinito delle capacità per agente; quando è null, al momento dell'invio si applica il valore predefinito del livello utente e una conversazione può comunque sovrascriverlo                                    |
 | `monthlyBudgetCents`    | `int`                  | No           | Limite di spesa mensile in centesimi (predefinito `0`, illimitato)                                                                                                                                                       |
 | `silenceTimeoutMinutes` | `int?`                 | No           | Override del timeout di silenzio in minuti; deve essere null o compreso tra 1 e 240 (verificato dal costruttore)                                                                                                         |
 | `maxConcurrentTasks`    | `int`                  | No           | Predefinito `1`. Cifra di capacità che il modello delle presenze riporta (i conteggi delle esecuzioni attive e in coda vengono confrontati con essa)                                                                     |
@@ -69,18 +68,9 @@ Questa pagina di riferimento elenca tutti i campi dell'entità agente, oltre all
 | `paused`   | Impostato dall'arresto forzato del budget. Mostrato nell'elenco delle presenze; l'invio accetta comunque lavoro |
 | `archived` | Ritirato e nascosto dagli elenchi delle presenze attive                                  |
 
-## Flag di AgentCapabilities
+## Permessi
 
-Risolti a ogni invio: il valore predefinito dell'agente, con fallback sul valore predefinito del livello utente quando è null, e sopra un override per conversazione. Applicati per assenza — il broker delle credenziali semplicemente non emette né inietta ciò che copre una capacità disabilitata.
-
-| Flag               | Tipo   | Predefinito | Descrizione                                                                                                |
-| ------------------ | ------ | ----------- | ---------------------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`     | Push dei commit verso il remoto; controlla l'iniezione del token GitHub insieme a `canCallGitHubApi`        |
-| `canCallGitHubApi` | `bool` | `false`     | Chiama api.github.com; controlla l'iniezione di `GH_TOKEN` e i domini di uscita GitHub                      |
-| `canCallTicketing` | `bool` | `false`     | Chiama l'API del provider di ticketing; controlla l'iniezione della chiave API del provider e i suoi domini di uscita |
-| `canAccessNetwork` | `bool` | `true`      | Uscita di rete arbitraria. Controlla anche gli strumenti `web_fetch` e `web_search` dell'harness            |
-
-`AgentCapabilities.safeDefault` corrisponde ai quattro valori predefiniti del costruttore. `legacyDefault` (tutti e quattro true) è usato solo dalla migrazione che ha riempito retroattivamente le conversazioni create prima che esistessero le capacità. Un blob memorizzato malformato o vuoto viene interpretato come `safeDefault`; la chiave legacy `canCallLinear` viene letta come `canCallTicketing`.
+Un agente non porta flag di permesso. Eseguire push, aprire e pubblicare pull request, scrivere su un tracker e l'uscita di rete sono classi di azione (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) che i [guardrail](/it-IT/manuale/concetti/guardrail/) risolvono nell'ambito dello spazio di lavoro, dell'agente o dello spazio. Il token GitHub di un'esecuzione ha sempre ambito di lettura; i push passano dal gateway delle esecuzioni degli agenti, che interroga la regola `gitPush` prima di inoltrarli.
 
 ## AgentSkills
 

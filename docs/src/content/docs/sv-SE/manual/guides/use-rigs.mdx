@@ -2,7 +2,7 @@
 title: Ge en agent en maskin att testa på
 description: Ge en agent en tillfällig webbläsare, ett skrivbord, en Android-emulator eller en iOS-simulator – med livevy och kontroller du kan ta över.
 slug: sv-SE/handbok/how-to-guider/anvand-stationer
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 En **station** är en tillfällig maskin som en agent öppnar när den faktiskt
@@ -194,9 +194,11 @@ Vad som ändras:
 - Ingenting du kör når värden. Ett `rm -rf` där inne kostar dig stationen.
 - Nätverket nekar som standard. Endast värdar på stationens tillåtelselista går
   att nå, och allt passerar en grind som upprätthåller den.
-- `git push` fungerar fortfarande. Stationen lagrar inga inloggningsuppgifter;
-  den frågar servern om en kortlivad sådan per åtgärd, och den token återkallas
-  när stationen stängs.
+- `git push` fungerar fortfarande i en terminal som du har öppnat. Stationen
+  lagrar inga inloggningsuppgifter; den frågar servern om en kortlivad sådan
+  per åtgärd, begränsad av din egen åtkomst till kodvärden, och den token
+  återkallas när stationen stängs. En station som en agent har öppnat får en
+  inloggningsuppgift som bara kan läsa, så den kan hämta men inte pusha.
 
 Vad du bör känna till:
 

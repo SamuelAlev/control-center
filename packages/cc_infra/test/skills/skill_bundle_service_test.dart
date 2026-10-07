@@ -152,6 +152,7 @@ Future<Directory> _tempWorkspace() async {
 SkillBundleService _service(
   Directory temp, {
   required Future<SourceSkillFiles> Function({
+    required String workspaceId,
     required String owner,
     required String repo,
     required String path,
@@ -161,13 +162,18 @@ SkillBundleService _service(
   SkillScanPort? scanner,
   SkillScanRepository? scanCache,
   Future<String?> Function({
+    required String workspaceId,
     required String owner,
     required String repo,
     required String path,
     String? branch,
   })?
   latestCommit,
-  Future<String?> Function({required String owner, required String repo})?
+  Future<String?> Function({
+    required String workspaceId,
+    required String owner,
+    required String repo,
+  })?
   defaultBranch,
   DomainEventBus? eventBus,
   ActionGuardService? actionGuard,
@@ -206,6 +212,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -227,6 +234,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -249,6 +257,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -267,6 +276,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -291,6 +301,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -310,6 +321,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -330,6 +342,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -348,6 +361,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -363,6 +377,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -392,6 +407,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -431,6 +447,7 @@ void main() {
           scanner: scanner,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -489,6 +506,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -521,6 +539,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -546,6 +565,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -576,6 +596,7 @@ void main() {
           temp,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -607,6 +628,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -624,6 +646,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -643,6 +666,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -661,6 +685,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -740,6 +765,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -754,15 +780,27 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
               String? ref,
             }) async => _files('', ref),
         latestCommit:
-            ({required owner, required repo, required path, branch}) async =>
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+              required path,
+              branch,
+            }) async =>
                 'newsha',
-        defaultBranch: ({required owner, required repo}) async => 'main',
+        defaultBranch:
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+            }) async => 'main',
       );
       // Pin a github skill.
       await svc.writeLock(
@@ -792,13 +830,20 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
               String? ref,
             }) async => _files('', ref),
         latestCommit:
-            ({required owner, required repo, required path, branch}) async =>
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+              required path,
+              branch,
+            }) async =>
                 'x',
       );
       await svc.writeLock(
@@ -824,13 +869,20 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
               String? ref,
             }) async => _files('', ref),
         latestCommit:
-            ({required owner, required repo, required path, branch}) async {
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+              required path,
+              branch,
+            }) async {
               calls++;
               return 'new';
             },
@@ -859,13 +911,20 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
               String? ref,
             }) async => _files('', ref),
         latestCommit:
-            ({required owner, required repo, required path, branch}) async =>
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+              required path,
+              branch,
+            }) async =>
                 'same',
       );
       await svc.writeLock(
@@ -891,13 +950,20 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
               String? ref,
             }) async => _files('', ref),
         latestCommit:
-            ({required owner, required repo, required path, branch}) async =>
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+              required path,
+              branch,
+            }) async =>
                 throw StateError('net'),
       );
       await svc.writeLock(
@@ -925,6 +991,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -942,6 +1009,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -973,6 +1041,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1007,6 +1076,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1044,6 +1114,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1063,6 +1134,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1089,6 +1161,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1112,6 +1185,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1148,6 +1222,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1166,6 +1241,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1187,6 +1263,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1226,6 +1303,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1260,6 +1338,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1308,6 +1387,7 @@ void main() {
         scanner: failingScanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1357,6 +1437,7 @@ void main() {
           scanner: scanner,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -1396,6 +1477,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1439,6 +1521,7 @@ void main() {
         temp,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1457,6 +1540,7 @@ void main() {
         scanner: _FakeScanner(),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1484,6 +1568,7 @@ void main() {
           scanner: scanner,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -1516,6 +1601,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1536,6 +1622,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1570,6 +1657,7 @@ void main() {
         scanner: _FakeScanner(verdict: SkillScanVerdict.quarantine),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1596,6 +1684,7 @@ void main() {
         scanner: _FakeScanner(verdict: SkillScanVerdict.quarantine),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1634,6 +1723,7 @@ void main() {
         scanner: scanner,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1668,6 +1758,7 @@ void main() {
           scanner: scanner,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -1727,6 +1818,7 @@ void main() {
           scanner: scanner,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -1770,6 +1862,7 @@ void main() {
         actionGuard: ActionGuardService(repository: _EmptyPolicyRepository()),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1804,6 +1897,7 @@ void main() {
         actionGuard: ActionGuardService(repository: _EmptyPolicyRepository()),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1843,6 +1937,7 @@ void main() {
         scanner: _FakeScanner(verdict: SkillScanVerdict.quarantine),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1872,6 +1967,7 @@ void main() {
         scanner: _FakeScanner(verdict: SkillScanVerdict.quarantine),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1899,6 +1995,7 @@ void main() {
         scanner: _FakeScanner(),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1944,6 +2041,7 @@ void main() {
         scanCache: _FakeScanCache(),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -1961,6 +2059,7 @@ void main() {
         scanCache: cache,
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -2004,6 +2103,7 @@ void main() {
           scanCache: cache,
           fetch:
               ({
+                required workspaceId,
                 required owner,
                 required repo,
                 required path,
@@ -2053,6 +2153,7 @@ void main() {
         scanCache: _FakeScanCache(),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -2081,6 +2182,7 @@ void main() {
         eventBus: busWith(events),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -2108,6 +2210,7 @@ void main() {
         eventBus: busWith(events),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -2135,6 +2238,7 @@ void main() {
         eventBus: busWith(events),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,
@@ -2178,6 +2282,7 @@ void main() {
         scanner: _FakeScanner(),
         fetch:
             ({
+              required workspaceId,
               required owner,
               required repo,
               required path,

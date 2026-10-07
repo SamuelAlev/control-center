@@ -13,8 +13,9 @@ see [Create and manage tickets](/manual/guides/manage-tickets/).
 **Ticketing API key** lives at **Settings → Workspace → General**, on the
 Ticketing card. It stores the key on the server against your user id. The
 server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Provider apps** card. No ticketing key is placed in an agent's sandbox:
+agents write tickets through Control Center's own tools, which ask the
+**Write to an external tracker** rule first.
 
 ## Stamp new tickets as Linear
 

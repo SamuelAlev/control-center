@@ -2,7 +2,7 @@
 title: Lebenszyklus der Agenten-Ausführung
 description: Was zwischen einer eintreffenden Nachricht und dem Schließen eines Laufprotokolls passiert, von Prompt-Aufbau und Worktrees über Identität bis zu den Grenzen eines Laufs und der ehrlichen Aufzeichnung seines Ergebnisses.
 slug: de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Was eine Ausführung ist
@@ -65,7 +65,7 @@ Pro Lauf werden zwei Identitäten aufgelöst, bevor irgendein Prozess startet.
 
 Weil die Überschreibung pro Adapter zuerst kommt, überstimmt sie stillschweigend ein Anbieterkonto, das in der App verbunden ist. Belastet ein Lauf das falsche Konto, sieh zuerst dort nach. Die Zugangsdaten der Anbieter gelten für den ganzen Host und sind über alle Arbeitsbereiche der Installation geteilt.
 
-An Fähigkeiten gebundene Tokens (GitHub, Tickets) kommen vom Broker, der nur injiziert, was die Fähigkeiten des Laufs erlauben. Siehe [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/).
+Das GitHub-Token des Laufs kommt vom Zugangsdaten-Broker: ein auf das Repo des Worktrees begrenztes Token, das nur lesen darf. Ein Push läuft durch das Gateway für Agentenläufe, das vor dem Weiterleiten die Regel **Zu einem Remote pushen** fragt, und ein Ticketing-Schlüssel wird nicht injiziert. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
 
 ## Start
 
@@ -76,9 +76,9 @@ Der Lauf startet mit seinem Worktree als Arbeitsverzeichnis und, bei Claude Code
 
 Ohne Backend läuft der Lauf **nicht** in einer Sandbox, und nichts anderes ändert sich zum Ausgleich. Das betrifft Windows immer (keine native Umhüllung; `microvm` ist ein eigener Pfad für Terminals und Rigs, der nur nach einer Prüfung freigeschaltet wird) und Linux oder WSL2 ohne `bwrap` und `socat` auf dem `PATH`. In der Startprotokollzeile nennt der Server, in welchem Zustand er ist, und `--sandbox off` schaltet bewusst ab.
 
-Zwei Lücken bleiben, auch wo die Sandbox an ist. Die prozessinternen Dateiwerkzeuge des Harness (read, write, edit, apply patch, search, find, search_files) laufen im Serverprozess, also begrenzt sie kein Profil. Ihre Grenze sind die eigene Pfadbeschränkung der Werkzeuge und die Schutzregeln. Claude Code startet mit `--dangerously-skip-permissions`, seine eigenen Datei- und Shell-Aufrufe laufen also nicht durch Control Center. Die Grenze darum ist die Betriebssystem-Sandbox.
+Zwei Lücken bleiben, auch wo die Sandbox an ist. Die prozessinternen Dateiwerkzeuge des Harness (read, write, edit, apply patch, search, find, search_files) laufen im Serverprozess, also begrenzt sie kein Profil. Ihre Grenze sind die eigene Pfadbeschränkung der Werkzeuge und die Schutzregeln. Claude Code startet mit `--dangerously-skip-permissions`, seine eigenen Dateiaufrufe laufen also nicht durch Control Center und seine Shell-Befehle nur durch einen Hook, der die Befehlszeile liest. Die Grenze darum ist die Betriebssystem-Sandbox.
 
-Die übrigen Grenzen gelten auf jedem Host, mit Sandbox und ohne: der eigene Worktree des Laufs (Copy-on-Write, wo `rift` mitgeliefert wird; `git worktree` unter Windows), an Fähigkeiten gebundene Zugangsdaten, die bei jedem Start vermittelt und beim Aufräumen widerrufen werden, die einheitlichen Aktions-Schutzregeln (fail-closed: eine `prompt`-Entscheidung ohne verbundene zuständige Person wird abgelehnt) und die Werkzeugoberfläche, die der Modus der Unterhaltung zulässt. ACP und das `bash` des Harness bereinigen die Umgebung weiterhin. Claude Code über `NoSandboxAdapter` erbt die Umgebung des Hosts.
+Die übrigen Grenzen gelten auf jedem Host, mit Sandbox und ohne: der eigene Worktree des Laufs (Copy-on-Write, wo `rift` mitgeliefert wird; `git worktree` unter Windows), ein Forge-Token, das nur lesen darf, bei jedem Start vermittelt und beim Aufräumen widerrufen, Pushes, die am Gateway für Agentenläufe die Push-Regel passieren, die einheitlichen Aktions-Schutzregeln (fail-closed: eine `prompt`-Entscheidung ohne verbundene zuständige Person wird abgelehnt) und die Werkzeugoberfläche, die der Modus der Unterhaltung zulässt. ACP und das `bash` des Harness bereinigen die Umgebung weiterhin. Claude Code über `NoSandboxAdapter` erbt die Umgebung des Hosts.
 :::
 
 ## Ereignisstrom

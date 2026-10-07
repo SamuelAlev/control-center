@@ -2,7 +2,7 @@
 title: Glossario
 description: Definizioni dei termini chiave usati in Control Center.
 slug: it-IT/manuale/riferimento/glossario
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agente', 'Un lavoratore IA con un\'identità, un ruolo, delle skill e delle capacità. Appartiene esattamente a uno spazio di lavoro. L\'attore principale del sistema.'],
+['Agente', 'Un lavoratore IA con un\'identità, un ruolo, delle skill e un adattatore. Appartiene esattamente a uno spazio di lavoro. L\'attore principale del sistema.'],
 ['Adattatore', 'L\'esecutore che esegue un turno di un agente. Ne vengono forniti due: Control Center (built-in) — l\'harness in-process che parla con i fornitori di modelli — e Claude Code tramite la CLI claude. Cursor, Codex e gli altri fornitori di modelli si collegano all\'adattatore integrato, non come esecutori separati.'],
 ['Spazio di lavoro', 'Il tenant di isolamento di primo livello. Raggruppa agenti, repository, spazi, ticket, memoria e pipeline. L\'isolamento è strutturale, non convenzionale: ogni spazio di lavoro ha il proprio file SQLite, quindi una lettura tra spazi di lavoro non compila. Ogni route dell\'app è prefissata con /workspaces/:workspaceId.'],
 ['Forge', 'Un host di codice — GitHub, GitLab o Bitbucket Cloud. Una proprietà di ogni repository, letta dal suo remote origin al momento della registrazione. Uno spazio di lavoro può contenere repository su tutte e tre.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Insieme di identificatori di skill, insensibile alle maiuscole e minuscole, che iniettano il contesto pertinente nei prompt al momento dell\'invio.'],
 ['Sorgente di skill', 'Un repository GitHub registrato per spazio di lavoro come catalogo di skill. Non attendibile per costruzione: i metadati del repository servono solo alla visualizzazione e ogni installazione supera il gate di scansione fail-closed prima che qualsiasi contenuto raggiunga il disco o un prompt.'],
 ['skills-lock.json', 'Il manifest per spazio di lavoro delle skill installate: per ognuna, il repository di origine, il percorso nel repo, il commit a cui è fissata e un hash dei contenuti aggregato. Installazioni, aggiornamenti e disinstallazioni lo tengono aggiornato; verify_skills lo verifica rispetto al disco.'],
-['AgentCapabilities', 'Quattro flag (push al repository, API GitHub, ticketing, uscita di rete) risolti a ogni invio: predefinito dell\'agente, poi predefinito dell\'utente, con un override per conversazione. Applicati per assenza, poiché una capacità disattivata significa che il token o l\'uscita di rete semplicemente non vengono mai iniettati.'],
+['Gateway delle esecuzioni degli agenti', 'Un endpoint di loopback su cc_server che applica la policy delle azioni dentro il sandbox di un agente. Ogni push GitHub di un agente viene instradato lì, verificato con la regola Eseguire il push a un remoto e inoltrato con un token di scrittura che l\'agente non possiede mai; i comandi Bash di Claude Code vengono verificati tramite un hook sullo stesso endpoint.'],
 ['Modalità', 'chat, plan, review o orchestrate. Memorizzata per spazio, quindi un agente può trovarsi in modalità diverse in spazi diversi; ogni conversazione di uno spazio la condivide. Vincola il prompt di sistema, le regole di scrittura del sandbox e la lista di autorizzazione degli strumenti MCP.'],
 ['SandboxBackend', 'microvm (una VM racchiusa — l\'unico backend con un confine a livello di kernel, applicato ai terminali interattivi), native (Seatbelt nativo del sistema operativo su macOS, bubblewrap su Linux e WSL2) o none. Sondato una volta all\'avvio; native avvolge l\'invio degli agenti quando è disponibile. Windows non ha un backend nativo e Linux richiede bwrap più socat, quindi le esecuzioni lì sono senza involucro; --sandbox off rinuncia deliberatamente.'],
 ['Rig', 'Una macchina usa e getta che un agente pilota in tempo reale: un browser o un desktop Linux racchiuso, un emulatore Android o un simulatore iOS gestito dall\'host, oppure un terminale racchiuso. Osservata dal vivo su una corsia dedicata a piena risoluzione, con la presa di controllo imposta lato server. Con ambito di conversazione, così la scheda umana e lo strumento dell\'agente si rivolgono a un\'unica macchina.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Il conteggio di token e costi (token di input, token di output, costo stimato in centesimi) per una singola esecuzione di agente.'],
 ['WakeReason', 'Perché un agente è stato inviato. Sei valori: messaggio dell\'utente, assegnazione di un ticket, reinvio di ripristino dopo un errore, ticket figlio completato, heartbeat di follow-up pianificato e passaggio di pipeline.'],
 ['SandboxPort', 'Gestisce il ciclo di vita del sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Conia credenziali con ambito limitato e vincolate dalle capacità per l\'avvio del sandbox e le revoca allo smontaggio.'],
+['CredentialBrokerPort', 'Conia credenziali con ambito limitato per l\'avvio del sandbox (di sola lettura per l\'ambiente di un agente, di scrittura solo per il percorso di push lato server) e le revoca allo smontaggio.'],
 ['GitRepoInspectorPort', 'Estrae i metadati (owner, repo, branch) dal percorso di un repository Git locale.'],
 ['EmbeddingPort', 'Produce vettori di embedding testuale a norma unitaria per la ricerca semantica.'],
 ['NotificationPort', 'Mostra notifiche desktop native rispettando il gating per categoria e route.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Entità principali
 
-**Agente**: Un lavoratore IA con un'identità, un ruolo, delle skill e delle capacità. Appartiene esattamente a uno spazio di lavoro. L'attore principale del sistema.
+**Agente**: Un lavoratore IA con un'identità, un ruolo, delle skill e un adattatore. Appartiene esattamente a uno spazio di lavoro. L'attore principale del sistema.
 
 **Adattatore**: L'esecutore che esegue un turno di un agente. Ne vengono forniti due: **Control Center (built-in)** — l'harness in-process che parla con i fornitori di modelli — e **Claude Code** tramite `claude -p`. Cursor, Codex, Anthropic, OpenAI e gli altri sono fornitori sull'adattatore integrato, non CLI separate. Vedi [Gestisci adapter e modelli](/it-IT/manuale/guide/adapter/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Il manifest per spazio di lavoro delle skill installate: per ognuna, il repository di origine, il percorso nel repo, il commit a cui è fissata e un hash dei contenuti aggregato. Installazioni, aggiornamenti e disinstallazioni lo tengono aggiornato; `verify_skills` lo verifica rispetto al disco.
 
-**AgentCapabilities**: Quattro flag (push al repository, API GitHub, ticketing, uscita di rete) risolti a ogni invio — predefinito dell'agente → predefinito dell'utente, con un override per conversazione. Applicati per assenza: una capacità disattivata significa che il token o l'uscita di rete semplicemente non vengono mai iniettati.
+**Gateway delle esecuzioni degli agenti**: Un endpoint di loopback su `cc_server` che applica la policy delle azioni dentro il sandbox di un agente. Ogni push GitHub di un agente viene instradato lì, verificato con la regola **Eseguire il push a un remoto** e inoltrato con un token di scrittura che l'agente non possiede mai; i comandi `Bash` di Claude Code vengono verificati tramite un hook sullo stesso endpoint. Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/).
 
 **Modalità**: `chat`, `plan`, `review` o `orchestrate`. Memorizzata **per spazio**, quindi un agente può trovarsi in modalità diverse in spazi diversi; ogni conversazione di uno spazio la condivide. Vincola il prompt di sistema, le regole di scrittura del sandbox e la lista di autorizzazione degli strumenti MCP. Il composer offre solo `chat`, `plan` e `orchestrate`; `chat` è etichettata «Agente».
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Gestisce il ciclo di vita del sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Conia credenziali con ambito limitato e vincolate dalle capacità per l'avvio del sandbox e le revoca allo smontaggio.
+**CredentialBrokerPort**: Conia credenziali con ambito limitato per l'avvio del sandbox — di sola lettura per l'ambiente di un agente, di scrittura solo per il percorso di push lato server — e le revoca allo smontaggio.
 
 **GitRepoInspectorPort**: Estrae i metadati (owner, repo, branch) dal percorso di un repository Git locale.
 

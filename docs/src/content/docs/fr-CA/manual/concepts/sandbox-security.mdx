@@ -2,7 +2,7 @@
 title: Bac à sable et sécurité
 description: Ce qui limite réellement un agent dans Control Center aujourd’hui, jusqu’où va le bac à sable du système d’exploitation et quelles frontières tiennent sur un hôte dépourvu de backend.
 slug: fr-CA/manuel/concepts/bac-a-sable-et-securite
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Jusqu’où le bac à sable du système d’exploitation va, et où il ne va pas]
@@ -25,8 +25,7 @@ l’esprit :
   d’actions.
 - **Claude Code est lancé avec `--dangerously-skip-permissions`**, parce qu’un
   `claude -p` non interactif bloquerait autrement indéfiniment sur sa propre
-  invite. Ses appels de fichiers et de shell ne passent donc pas par les
-  garde-fous de Control Center — le bac à sable du système d’exploitation est la
+  invite. Ses appels de fichiers ne passent donc pas par les garde-fous de Control Center, et ses commandes shell n’y passent que par un hook qui lit la ligne de commande — le bac à sable du système d’exploitation est la
   frontière autour d’eux.
   :::
 
@@ -100,9 +99,7 @@ s’exécute. Une décision `prompt` sans approbateur connecté se résout en _r
 une question que personne ne peut répondre n’est jamais un oui. Voir
 [Garde-fous](/fr-CA/manuel/concepts/garde-fous/) pour le modèle de résolution.
 
-**Des identifiants conditionnés par les capacités et un environnement assaini.**
-Les identifiants sont émis à chaque lancement à partir des indicateurs de
-capacités de la conversation et révoqués à la fin de l’exécution. ACP, le `bash`
+**Des identifiants délivrés par le courtier et un environnement assaini.** Les identifiants sont émis à chaque lancement et révoqués à la fin de l’exécution, et le jeton GitHub d’une exécution peut lire, mais pas pousser — voir « Les poussées passent par Control Center » plus bas. ACP, le `bash`
 du harnais et Claude Code sous l’enveloppe native reçoivent un environnement
 dépourvu des vecteurs d’injection de l’éditeur de liens dynamique et de
 l’interpréteur (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`,
@@ -137,39 +134,76 @@ séparément, la décision la plus restrictive l’emportant.
 Claude Code, lorsqu’il sert d’adaptateur, est le cas où le bac à sable pèse le
 plus lourd. Control Center le lance avec `--dangerously-skip-permissions`, parce
 qu’un `claude -p` non interactif bloquerait autrement indéfiniment sur sa propre
-invite d’approbation. Ses appels de lecture, d’écriture, de modification et de
-shell se produisent à l’intérieur de son propre processus et Control Center ne
-les voit jamais; les seuls appels qu’il fait et qui atteignent un point de
-contrôle sont les outils `mcp__*` que Control Center sert lui-même. Là où un
+invite d’approbation. Ses appels de lecture, d’écriture et de modification se produisent à l’intérieur de son propre processus et Control Center ne les voit jamais. Ses appels `Bash` sont envoyés, avant leur exécution, à un hook sur le serveur qui classe la ligne de commande et consulte la règle correspondante, et les outils `mcp__*` que Control Center sert passent le point de contrôle comme d’habitude. Là où un
 backend existe, ces appels invisibles se produisent quand même à l’intérieur de
 l’enveloppe du bac à sable, de sorte que le système d’exploitation est la
 frontière autour d’eux. Là où aucun n’existe, rien ne l’est. Chaque adaptateur
 l’énonce dans sa matrice d’application — voir [la matrice d’honnêteté des
 adaptateurs](/fr-CA/manuel/concepts/garde-fous/#the-adapter-honesty-matrix).
 
-## Le contrôle par capacités est une application par l’absence
+## Les poussées passent par Control Center
 
-Une conversation porte quatre indicateurs de capacités : pousser vers le dépôt,
-appeler l’API GitHub, appeler le fournisseur de tickets et accéder au réseau. Ils
-ne sont pas vérifiés quand l’agent agit. Ils sont vérifiés une seule fois, au
-lancement, par le courtier d’identifiants — et une capacité désactivée signifie
-simplement que le jeton correspondant n’est jamais placé dans l’environnement.
+Il n’existe aucun indicateur d’autorisation par agent. Le droit pour un agent de
+créer un commit, de pousser, d’ouvrir une pull request, d’écrire dans un outil
+de suivi ou d’atteindre le réseau relève des
+[garde-fous](/fr-CA/manuel/concepts/garde-fous/) — autoriser, demander d’abord ou
+refuser — et les mêmes règles s’appliquent quel que soit l’adaptateur qui
+exécute l’agent.
 
-Tel est le mécanisme, et il vaut la peine de l’énoncer clairement, parce que le
-mode de défaillance n’est pas celui qu’on attend. Désactiver « GitHub API » ne
-produit pas de message « capacité refusée ». Cela produit un `401` ordinaire dans
-l’agent, parce qu’il n’y a aucun `GH_TOKEN` à envoyer. L’agent peut très bien
-présenter cela comme un problème d’identifiants. L’application par l’absence est
-robuste — il n’y a aucune vérification à contourner — mais elle est silencieuse,
-et l’agent ne sait pas pourquoi il a échoué.
+Un push est l’action qui doit tenir même face à un agent qui cherche à
+contourner une règle : il est donc appliqué par ce que l’agent détient plutôt
+que par ce qu’il exécute. Avec une GitHub App configurée, une exécution dans un
+arbre de travail GitHub reçoit un jeton d’installation limité au dépôt, qui peut
+lire le contenu et travailler avec les pull requests mais pas pousser. La
+configuration git de l’exécution réécrit chaque URL de push GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) vers la
+**passerelle d’exécution d’agent**, un point de terminaison en boucle locale sur
+`cc_server`. La passerelle lit les refs que le push met à jour, interroge la
+règle **Pousser vers un dépôt distant** — une règle limitée à des branches,
+comme « refuser les push vers `main` », s’applique donc — et ne transmet le
+push à GitHub qu’ensuite, avec un jeton d’écriture qu’elle émet à cette fin et
+ne remet jamais à l’agent. Un push refusé apparaît dans la sortie de git
+elle-même :
 
-L’indicateur de réseau se comporte de la même façon. Lorsqu’il est désactivé, les
-outils `web_fetch` et `web_search` du harnais refusent chaque appel et la liste
-d’autorisation du proxy d’un lancement isolé est vide, de sorte que toute
-connexion sortante est refusée.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Les identifiants sont révoqués quand l’exécution se démonte, de sorte qu’une
-référence ne survit pas à l’exécution qui l’a émise.
+La passerelle ne transmet les push qu’au dépôt propre à l’arbre de travail ou à
+un dépôt GitHub lié à l’espace de travail. Les fetch vont directement à GitHub
+avec le jeton de lecture.
+
+Les autres commandes shell rencontrent une barrière plus souple. L’outil `bash`
+du harnais et, via un hook, l’outil `Bash` de Claude Code classent chaque ligne
+de commande et interrogent la règle dont elle relève : `git commit`, `merge`,
+`rebase`, `cherry-pick`, `revert` et `am` relèvent de **Créer un commit** ;
+`gh pr create` de **Ouvrir une pull request** ; `gh pr merge`, `review`,
+`comment` et `close` de **Publier une revue ou fusionner** ; `gh issue create`,
+`edit`, `comment` et `close` de **Écrire dans un outil de suivi externe** ; les
+installations de paquets de **Installer un paquet** ; `curl` et `wget` de
+**Accéder au réseau**. Cela reconnaît l’écriture habituelle d’une action, et un
+agent déterminé à en cacher une (`eval`, un fichier de script, un appel d’API
+direct) y parvient. Les push n’en dépendent pas.
+
+:::caution[Sans GitHub App, la règle de push n’est qu’indicative]
+Sans GitHub App configurée, le courtier se rabat sur un jeton d’accès
+personnel, qu’il est impossible de restreindre à la lecture seule. La règle
+tient toujours pour `git push`, puisque git envoie le push à la passerelle,
+mais du code qui utilise directement le jeton de l’environnement peut pousser
+en la contournant.
+:::
+
+Aucune clé d’API de tickets n’est placée dans un bac à sable. Les agents
+écrivent les tickets via les outils MCP de Control Center, qui interrogent
+**Écrire dans un outil de suivi externe**.
+
+La règle **Accéder au réseau** est lue une seule fois, au démarrage de
+l’exécution. Le réseau d’un bac à sable est soit activé, soit désactivé : un
+refus le désactive, tandis qu’autoriser et demander d’abord le laissent
+activé ; les outils `web_fetch` et `web_search` du harnais continuent de
+demander à chaque appel. Les identifiants sont révoqués au démontage de
+l’exécution, avec tout jeton d’écriture émis par la passerelle, si bien
+qu’aucune référence ne survit à l’exécution.
 
 ## Ce que le bac à sable ajoute et où il s’arrête
 
@@ -246,36 +280,32 @@ l’interdire.
 
 Le réseau, sous un bac à sable, est une liste d’autorisation de **domaines** par
 session, appliquée par des proxys de bouclage intraprocessus. Le trafic sortant
-est refusé par défaut : lorsque la capacité réseau est désactivée, les proxys
-démarrent quand même, mais leur liste d’autorisation est vide, de sorte que toute
-connexion sortante est refusée. Lorsqu’elle est activée, le résolveur construit
-la liste d’autorisation à partir d’une base de référence établie avec soin —
+est refusé par défaut : lorsque le réseau est désactivé, les proxys démarrent
+quand même, mais leur liste d’autorisation est vide, de sorte que toute
+connexion sortante est refusée. Lorsqu’il est activé, le résolveur construit la
+liste d’autorisation à partir d’une base de référence établie avec soin —
 fournisseurs d’API de LLM, hébergement Git, registres de paquets, catalogue de
-modèles — plus les domaines GitHub que la capacité GitHub ou de poussée de
-l’agent lui vaut, et il compare l’hôte cible de chaque connexion à cette liste.
-Les caractères génériques fonctionnent (`*.example.com` correspond aux
-sous-domaines, pas au domaine racine). Une liste distincte de refus permanents
-l’emporte sur la liste d’autorisation et couvre les points de terminaison de
-métadonnées infonuagiques et les collecteurs de télémétrie. Ce qui n’est _pas_
-configurable, c’est la liste elle-même : la spécification comporte un champ
-`egressAllowlist` pour des domaines supplémentaires et un point d’accroche de
-domaine pour les tickets, mais rien dans le chemin de lancement ne remplit ni
-l’un ni l’autre, de sorte qu’en pratique chaque exécution obtient la base de
-référence plus ses domaines dérivés des capacités, et rien de plus.
+modèles — plus les domaines de GitHub, et il compare l’hôte cible de chaque
+connexion à cette liste. Les caractères génériques fonctionnent
+(`*.example.com` correspond aux sous-domaines, pas au domaine racine). Une liste
+distincte de refus permanents l’emporte sur la liste d’autorisation et couvre
+les points de terminaison de métadonnées infonuagiques et les collecteurs de
+télémétrie. Ce qui n’est _pas_ configurable, c’est la liste elle-même : la
+spécification comporte un champ `egressAllowlist` pour des domaines
+supplémentaires, mais rien dans le chemin de lancement ne le remplit, de sorte
+qu’en pratique chaque exécution obtient la base de référence plus GitHub, et
+rien de plus.
 
 Les refus, sous macOS, sont observables : un moniteur écoute le journal système à
 la recherche des refus de Sandbox, filtre le bruit connu, déduplique les tempêtes
-de nouvelles tentatives et expose chacun d’eux comme un `SandboxViolation` qui
-nomme ce qui a été tenté et quelle capacité le débloquerait. Sous Linux, le chemin
+de nouvelles tentatives et expose chacun d’eux comme un `SandboxViolation` qui nomme ce qui a été tenté et ce qui a été bloqué. Sous Linux, le chemin
 d’enveloppement analyse stderr à la recherche de `EPERM`,
 `Operation not permitted` et `Permission denied` et émet le même type d’événement — il n’y a
 aucune écoute du journal système. Ces éléments arrivent sur le propre flux
 d’événements de l’exécution, de sorte qu’un appel système refusé apparaît dans la
 transcription plutôt que seulement dans un journal. La télémétrie n’existe que
 pendant qu’un bac à sable natif enveloppe réellement le processus — sur un hôte
-sans backend, il n’y a rien à observer. Elle est aussi sans rapport avec le
-contrôle par capacités : une violation provient d’un appel système refusé, jamais
-d’une consultation de capacité.
+sans backend, il n’y a rien à observer. Elle est aussi sans rapport avec les garde-fous : une violation provient d’un appel système refusé, jamais d’une consultation de règle.
 
 ## Les confirmations viennent des garde-fous, pas du bac à sable
 
@@ -306,5 +336,5 @@ endroit qui énonce ce qui peut être vérifié à la main.
 
 ## Guides connexes
 
-- [Configurer les politiques de bac à sable](/fr-CA/manuel/guides/politiques-de-bac-a-sable/) : indicateurs de capacités et posture du système de fichiers
+- [Configurer les politiques de bac à sable](/fr-CA/manuel/guides/politiques-de-bac-a-sable/) : règles d’action, application des poussées et posture du système de fichiers
 - [Exécuter les diagnostics d’un agent](/fr-CA/manuel/guides/diagnostiquer-agent/) : ce que couvrent les vérifications de diagnostic

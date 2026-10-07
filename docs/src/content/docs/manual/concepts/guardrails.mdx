@@ -222,8 +222,9 @@ Two entries are worth reading before you trust a configuration. The built-in
 harness declares that its in-process file tools are **not** sandboxed — the
 tool surface and this policy engine are the only filesystem boundary it has.
 Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+it is launched with `--dangerously-skip-permissions`; Control Center sees its
+`mcp__*` calls and, through a hook, its `Bash` command lines, while its own
+read, write and edit tools run unseen.
 
 The settings screen shows this matrix, because the one unforgivable failure for
 a guardrail system is claiming coverage that does not exist.

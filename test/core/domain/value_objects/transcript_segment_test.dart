@@ -150,14 +150,12 @@ void main() {
         message: 'blocked network',
         action: 'network-connect',
         target: 'example.com',
-        suggestedCapability: 'network',
         startedAt: ts,
       );
       final decoded =
           TranscriptSegment.fromJson(seg.toJson()) as ViolationSegment;
       expect(decoded.action, 'network-connect');
       expect(decoded.target, 'example.com');
-      expect(decoded.suggestedCapability, 'network');
       expect(decoded, seg);
     });
   });

@@ -2652,15 +2652,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get allow => 'Izinkan';
 
   @override
-  String get allowGitPush => 'Izinkan git push';
-
-  @override
-  String get allowGithubApi => 'Izinkan panggilan API GitHub';
-
-  @override
-  String get allowNetwork => 'Izinkan akses jaringan umum';
-
-  @override
   String get apiKeys => 'Kunci API';
 
   @override
@@ -3067,9 +3058,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get currentParticipants => 'Peserta saat ini';
 
   @override
-  String get customCapabilitiesDescription => 'Deskripsi kemampuan kustom';
-
-  @override
   String get customSystemPrompt => 'Prompt sistem kustom untuk agen ini...';
 
   @override
@@ -3085,9 +3073,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deactivate => 'Nonaktifkan';
-
-  @override
-  String get defaultCapabilities => 'Kemampuan default · ruang baru';
 
   @override
   String get defaultChat => 'Chat default';
@@ -3493,10 +3478,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get forward => 'Maju';
 
   @override
-  String get gatesGithubPatPush =>
-      'Membatasi injeksi PAT GitHub. Diperlukan agar agen dapat push.';
-
-  @override
   String get general => 'Umum';
 
   @override
@@ -3565,6 +3546,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Gangguan';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Status layanan';
@@ -4033,6 +4019,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get navSettings => 'Pengaturan';
+
+  @override
+  String get exitSettings => 'Keluar dari pengaturan';
 
   @override
   String networkBlockCount(int count) {
@@ -4556,10 +4545,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get react => 'React';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Memungkinkan agen membaca PR, issue, dan metadata repositori.';
-
-  @override
   String get readerPreferences => 'Preferensi pembaca';
 
   @override
@@ -4813,9 +4798,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Sandbox native sudah bawaan di macOS - menggunakan Apple Seatbelt (`sandbox-exec`). Tidak perlu instal.';
-
-  @override
-  String get sandboxPermissions => 'Izin sandbox';
 
   @override
   String get sandboxUnsupported =>
@@ -5403,9 +5385,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get useSandbox => 'Gunakan sandbox';
 
   @override
-  String get useWorkspaceDefault => 'Gunakan default ruang kerja';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5448,10 +5427,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Isolasi lemah — hanya batas namespace, tanpa batas kernel.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Jika nonaktif, sandbox boot tanpa rute default.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6669,14 +6644,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get pipelineRunNoRepos => 'Belum ada repository di ruang kerja ini.';
 
   @override
-  String get allowTicketingApi => 'Izinkan panggilan API ticketing';
-
-  @override
   String get ticketingApiKey => 'Kunci API ticketing';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Menyuntikkan kunci API penyedia ticketing ke sandbox.';
 
   @override
   String get ticketingProvider => 'Penyedia ticketing';
@@ -9052,28 +9020,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Komputer bisa tidur meskipun agen sedang bekerja';
-
-  @override
-  String get syncEngineSectionTitle => 'Mesin sinkronisasi';
-
-  @override
-  String get syncEngineDescription =>
-      'Tiket, pesan, dan catatan diperbarui secara langsung lewat perubahan inkremental kecil, bukan snapshot penuh. Mematikan sakelar mengembalikan penyimpanan itu ke mode snapshot penuh — muat ulang aplikasi agar perubahan berlaku.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Tiket';
-
-  @override
-  String get syncEngineMessagingTitle => 'Pesan';
-
-  @override
-  String get syncEngineNotesTitle => 'Catatan';
-
-  @override
-  String get syncEngineOnSubtitle => 'Sinkronisasi delta langsung aktif';
-
-  @override
-  String get syncEngineOffSubtitle => 'Menggunakan sinkronisasi snapshot penuh';
 
   @override
   String get spaces => 'Ruang';
@@ -12998,23 +12944,22 @@ class AppLocalizationsId extends AppLocalizations {
       'Opsional — biarkan kosong dan model judul akan menamainya otomatis';
 
   @override
-  String get conversationTitlesSectionTitle => 'Judul percakapan';
+  String get shortTaskOff => 'Nonaktif';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Pilih runner yang menamai percakapan baru di ruang kerja ini secara otomatis. Judul tetap nonaktif sampai adapter dipilih, dan berlaku untuk setiap anggota.';
+  String get shortTaskUnavailable =>
+      'Pilih model tugas singkat di Pengaturan → Adapter untuk menggunakan ini';
 
   @override
-  String get conversationTitlesModelLabel => 'Model judul';
+  String get conversationTitleGenerate => 'Buat';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Adapter';
+  String get conversationTitleNoMessages =>
+      'Kirim pesan terlebih dahulu. Judul dibuat dari pesan itu.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Nonaktif';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Nonaktif';
+  String get conversationTitleGenerateFailed =>
+      'Tidak dapat membuat judul. Coba lagi.';
 
   @override
   String get startThread => 'Mulai thread';
@@ -13179,6 +13124,16 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Percakapan';
+
+  @override
+  String get contextSegmentRunner => 'Prompt runner, alat, dan kerja giliran';
+
+  @override
+  String get contextUsageMeasured => 'Dilaporkan oleh panggilan model terakhir';
+
+  @override
+  String get contextUsageEstimated =>
+      'Perkiraan hingga sebuah run melaporkan penggunaan';
 
   @override
   String get contextExplorerTitle => 'Konteks';
@@ -13569,12 +13524,15 @@ class AppLocalizationsId extends AppLocalizations {
       'Tempat proses dan penulisan file agen benar-benar terjadi.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Otomatis memilih yang terkuat yang didukung host ini. Sematkan satu agar tidak berubah di luar kendali Anda.';
+  String get sandboxGroupAgentActions => 'Yang boleh dilakukan agen';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Lubang yang menembus batas. Masing-masing adalah hal yang masih dapat dilakukan agen terisolasi terhadap dunia luar.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Push, membuka pull request, dan mengakses jaringan masing-masing diizinkan, perlu ditanyakan, atau ditolak di izin agen.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Otomatis memilih yang terkuat yang didukung host ini. Sematkan satu agar tidak berubah di luar kendali Anda.';
 
   @override
   String get sandboxSummaryInForce => 'Berlaku';
@@ -13717,6 +13675,26 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Jalankan ini di terminal di server. Perintah ini membuka browser untuk menyelesaikan login, lalu menulis kredensial ke direktori akun ini.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Token jangka panjang';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Gunakan token jangka panjang';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'Ganti token jangka panjang';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken => 'Hapus token jangka panjang';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Login biasa harus diperbarui dan bisa kedaluwarsa dalam semalam. Token jangka panjang tetap masuk selama sekitar satu tahun. Jalankan ini di terminal, selesaikan di browser, lalu tempel token yang ditampilkannya.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Itu bukan token dari claude setup-token. Token diawali dengan sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Keluar';
@@ -14144,10 +14122,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Buka di aplikasi default';
-
-  @override
-  String get asideUnavailable =>
-      'Atur model one-shot di pengaturan ruang kerja untuk menggunakan ini';
 
   @override
   String get asideEmpty => 'Belum ada yang bisa dikerjakan';
@@ -14689,6 +14663,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get credentialGateOpenSettings => 'Buka pengaturan';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Akun Claude Code yang terpasang telah dihapus';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Pasang akun lain di pengaturan akun agen ini atau ruang kerja, atau kosongkan daftar untuk memakai akun default. Proses akan berlanjut dengan sendirinya.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Semua akun di daftar ini telah dihapus dari server. Pasang akun lain, atau kosongkan daftar.';
+
+  @override
+  String get accountPoolClear => 'Kosongkan daftar';
+
+  @override
   String get selectModel => 'Pilih model';
 
   @override
@@ -15126,6 +15115,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Cari file percakapan berdasarkan nama dan buka salah satunya di tab';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Cari file pull request berdasarkan nama dan buka salah satunya di tab';
 
   @override
   String get ideQuickOpenHint => 'Cari file berdasarkan nama';

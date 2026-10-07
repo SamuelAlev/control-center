@@ -2,7 +2,7 @@
 title: Guardraile — jedna polityka dla każdej mutującej akcji
 description: Dlaczego Control Center prowadzi każdy efekt uboczny agenta przez jeden silnik allow/prompt/deny, dlaczego taksonomia ActionClass celowo pozostaje mała i co tak naprawdę zmienia suwak autonomii.
 slug: pl-PL/podrecznik/koncepcje/guardraile
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Agenty w Control Center mogą usuwać pliki, wypychać gałęzie, publikować pull
@@ -242,9 +242,7 @@ deklaruje, że jego narzędzia plikowe działające w procesie **nie** są w
 sandboxie — powierzchnia narzędzi i ten silnik polityki to jedyna granica
 systemu plików, jaką ma. Claude Code deklaruje, że jego własne wywołania
 narzędzi **nie** dają się przechwycić, bo uruchamia się z
-`--dangerously-skip-permissions`; Control Center widzi tylko jego wywołania
-`mcp__*`, a jego własne narzędzia odczytu, zapisu, edycji i powłoki działają
-niezauważone.
+`--dangerously-skip-permissions`; Control Center widzi jego wywołania `mcp__*` oraz, przez hook, jego wiersze poleceń `Bash`, a jego własne narzędzia odczytu, zapisu i edycji działają niezauważone.
 
 Ekran ustawień pokazuje tę matrycę, bo jedyna niewybaczalna porażka systemu
 guardrailów to twierdzenie o pokryciu, które nie istnieje.

@@ -35,6 +35,7 @@ NotificationFrame? messageReceivedFrame(MessageReceived event) {
     method: 'notifications/message_received',
     params: {
       'space_id': event.spaceId,
+      if (event.conversationId != null) 'conversation_id': event.conversationId,
       'message_id': event.messageId,
       'sender_name': event.senderName,
       'content_preview': event.contentPreview,

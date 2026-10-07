@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/auth/domain/entities/api_credentials.dart';
 import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
 import 'package:cc_infra/src/network/github/github_app_client.dart';
@@ -96,7 +96,8 @@ const _installations = [
 /// Routes the two calls a scoped mint makes: list installations, then mint.
 ResponseBody Function(RequestOptions) _route(
   ResponseBody Function(RequestOptions) mint,
-) => (options) => options.path == '/app/installations'
+) =>
+    (options) => options.path == '/app/installations'
     ? _ok(_installations)
     : mint(options);
 
@@ -109,17 +110,11 @@ ResponseBody _ok(Object body, {int status = 200}) => ResponseBody.fromString(
 );
 
 void main() {
-  const ghCaps = AgentCapabilities(canCallGitHubApi: true);
-  const pushCaps = AgentCapabilities(
-    canPushToRepo: true,
-    canCallGitHubApi: true,
-  );
-
   test('no app → falls back to the raw PAT', () async {
     final broker = GitHubFineGrainedTokenBroker(_FakeCreds());
     final creds = await broker.mint(
       conversationId: 'c1',
-      capabilities: ghCaps,
+      scope: ForgeTokenScope.read,
       repoOwner: 'o',
       repoName: 'r',
     );
@@ -128,7 +123,7 @@ void main() {
   });
 
   test(
-    'with an app → mints a scoped token (write perms when pushing)',
+    'with an app → mints a scoped token (write perms for a write scope)',
     () async {
       final fake = _FakeAdapter(
         _route(
@@ -145,7 +140,7 @@ void main() {
 
       final creds = await broker.mint(
         conversationId: 'c1',
-        capabilities: pushCaps,
+        scope: ForgeTokenScope.write,
         repoOwner: 'o',
         repoName: 'r',
       );
@@ -157,40 +152,37 @@ void main() {
       final mintReq = fake.requests.last;
       expect(mintReq.path, '/app/installations/9/access_tokens');
       final perms = (mintReq.data as Map)['permissions'] as Map;
-      expect(perms['contents'], 'write'); // pushing → write
+      expect(perms['contents'], 'write');
+      // The gateway's push token only needs to push.
+      expect(perms.containsKey('pull_requests'), isFalse);
       expect((mintReq.data as Map)['repositories'], ['r']);
       expect(creds.notes.join(' '), contains('installation token'));
     },
   );
 
-  test('read-only capability mints contents:read', () async {
+  test('read scope mints contents:read + pull_requests:write', () async {
     final fake = _FakeAdapter(_route((_) => _ok({'token': 'ghs_ro'})));
-    final broker = GitHubFineGrainedTokenBroker(
-      _FakeCreds(),
-      app: _app(fake),
-    );
+    final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
     await broker.mint(
       conversationId: 'c1',
-      capabilities: ghCaps, // no push
+      scope: ForgeTokenScope.read,
       repoOwner: 'o',
       repoName: 'r',
     );
     final perms = (fake.requests.last.data as Map)['permissions'] as Map;
     expect(perms['contents'], 'read');
-    expect(perms.containsKey('pull_requests'), isFalse);
+    // Opening a PR is the policy's call, not the token's.
+    expect(perms['pull_requests'], 'write');
   });
 
   test('mint failure → falls back to the raw PAT (fail-safe)', () async {
     final fake = _FakeAdapter(
       _route((_) => _ok({'message': 'Bad creds'}, status: 401)),
     );
-    final broker = GitHubFineGrainedTokenBroker(
-      _FakeCreds(),
-      app: _app(fake),
-    );
+    final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
     final creds = await broker.mint(
       conversationId: 'c1',
-      capabilities: pushCaps,
+      scope: ForgeTokenScope.write,
       repoOwner: 'o',
       repoName: 'r',
     );
@@ -206,13 +198,10 @@ void main() {
         return _ok({'token': 'ghs_scoped'});
       }),
     );
-    final broker = GitHubFineGrainedTokenBroker(
-      _FakeCreds(),
-      app: _app(fake),
-    );
+    final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
     final creds = await broker.mint(
       conversationId: 'c1',
-      capabilities: pushCaps,
+      scope: ForgeTokenScope.write,
       repoOwner: 'o',
       repoName: 'r',
     );
@@ -241,7 +230,7 @@ void main() {
 
     final creds = await broker.mint(
       conversationId: 'c1',
-      capabilities: pushCaps,
+      scope: ForgeTokenScope.write,
       repoOwner: 'o',
       repoName: 'r',
     );
@@ -254,26 +243,43 @@ void main() {
     );
   });
 
-  test('no repo owner falls back — the installation cannot be resolved', () async {
-    final fake = _FakeAdapter(_route((_) => _ok({'token': 'ghs_x'})));
-    final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
+  test(
+    'no repo owner falls back — the installation cannot be resolved',
+    () async {
+      final fake = _FakeAdapter(_route((_) => _ok({'token': 'ghs_x'})));
+      final broker = GitHubFineGrainedTokenBroker(
+        _FakeCreds(),
+        app: _app(fake),
+      );
 
-    final creds = await broker.mint(
-      conversationId: 'c1',
-      capabilities: pushCaps,
-      repoName: 'r',
-    );
+      final creds = await broker.mint(
+        conversationId: 'c1',
+        scope: ForgeTokenScope.write,
+        repoName: 'r',
+      );
 
-    expect(creds.environment['GH_TOKEN'], 'pat_raw');
-  });
+      expect(creds.environment['GH_TOKEN'], 'pat_raw');
+    },
+  );
 
-  test('ticketing key is still passed through', () async {
+  test('the ticketing key is never placed in a sandbox', () async {
     final broker = GitHubFineGrainedTokenBroker(_FakeCreds());
     final creds = await broker.mint(
       conversationId: 'c1',
-      capabilities: const AgentCapabilities(canCallTicketing: true),
+      scope: ForgeTokenScope.read,
     );
-    expect(creds.environment['TICKETING_API_KEY'], 'tk_raw');
+    expect(creds.environment.containsKey('TICKETING_API_KEY'), isFalse);
+  });
+
+  test('a PAT fallback says the push rule is advisory', () async {
+    final broker = GitHubFineGrainedTokenBroker(_FakeCreds());
+    final creds = await broker.mint(
+      conversationId: 'c1',
+      scope: ForgeTokenScope.read,
+      repoOwner: 'o',
+      repoName: 'r',
+    );
+    expect(creds.notes.join(' '), contains('advisory'));
   });
 
   group('the server PAT is not a shared credential', () {
@@ -288,7 +294,7 @@ void main() {
       );
       final creds = await broker.mint(
         conversationId: 'c1',
-        capabilities: pushCaps,
+        scope: ForgeTokenScope.write,
         repoOwner: 'o',
         repoName: 'r',
         actingUserId: 'user-someone-else',
@@ -306,7 +312,7 @@ void main() {
       );
       final creds = await broker.mint(
         conversationId: 'c1',
-        capabilities: pushCaps,
+        scope: ForgeTokenScope.write,
         repoOwner: 'o',
         repoName: 'r',
         actingUserId: 'user-owner',
@@ -322,30 +328,32 @@ void main() {
       );
       final creds = await broker.mint(
         conversationId: 'c1',
-        capabilities: pushCaps,
+        scope: ForgeTokenScope.write,
         repoOwner: 'o',
         repoName: 'r',
       );
       expect(creds.environment['GH_TOKEN'], 'pat_raw');
     });
 
-    test('a workspace background PAT is the fallback for a member run',
-        () async {
-      final broker = GitHubFineGrainedTokenBroker(
-        _FakeCreds(),
-        serverOwnerUserId: () async => 'user-owner',
-        workspacePat: (workspaceId) async =>
-            workspaceId == 'ws-a' ? 'gho_workspace' : null,
-      );
-      final creds = await broker.mint(
-        conversationId: 'c1',
-        capabilities: pushCaps,
-        repoOwner: 'o',
-        repoName: 'r',
-        actingUserId: 'user-someone-else',
-        workspaceId: 'ws-a',
-      );
-      expect(creds.environment['GH_TOKEN'], 'gho_workspace');
-    });
+    test(
+      'a workspace background PAT is the fallback for a member run',
+      () async {
+        final broker = GitHubFineGrainedTokenBroker(
+          _FakeCreds(),
+          serverOwnerUserId: () async => 'user-owner',
+          workspacePat: (workspaceId) async =>
+              workspaceId == 'ws-a' ? 'gho_workspace' : null,
+        );
+        final creds = await broker.mint(
+          conversationId: 'c1',
+          scope: ForgeTokenScope.write,
+          repoOwner: 'o',
+          repoName: 'r',
+          actingUserId: 'user-someone-else',
+          workspaceId: 'ws-a',
+        );
+        expect(creds.environment['GH_TOKEN'], 'gho_workspace');
+      },
+    );
   });
 }

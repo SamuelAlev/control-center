@@ -2,7 +2,7 @@
 title: Linear-integráció beállítása
 description: Tároljon Linear API-kulcsot a szerveren, hogy az ügynökök hívhassák a Lineart, és válassza a Lineart az új jegyek jegykezelő szolgáltatójának.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 Illesszen be egy Linear API-kulcsot a szerveren az Ön felhasználói fiókjához
@@ -17,9 +17,9 @@ A **Jegykezelő API-kulcs** a **Beállítások → Munkaterület → Általános
 a **Jegykezelés** kártyán található. A kulcsot a szerveren az Ön
 felhasználóazonosítójához rendelve tárolja. A szerver saját kulcsa a felügyelet
 nélküli munkához a `LINEAR_API_KEY` környezeti változóból vagy a
-**Szolgáltatói alkalmazások** kártyából származik, és `TICKETING_API_KEY`
-néven csak akkor injektálódik, ha az adott ügynök rendelkezik a **Jegykezelő
-API-hívások engedélyezése** képességgel.
+**Szolgáltatói alkalmazások** kártyából származik. Az ügynök homokozójába nem
+kerül jegykezelő kulcs: az ügynökök a Control Center saját eszközein keresztül
+írnak jegyeket, amelyek előbb az **Írás külső követőbe** szabályt kérdezik meg.
 
 ## Az új jegyek megjelölése Linearként
 

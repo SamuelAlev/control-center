@@ -2,7 +2,7 @@
 title: Livssyklus for agentutsending
 description: Hva som skjer fra en melding kommer inn til en kjøringslogg lukkes — sammensetting av prompten, worktrees, identitet, hva som begrenser en kjøring, og hvordan resultatet registreres ærlig.
 slug: nb-NO/handbok/konsepter/livssyklus-agentutsending
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Hva en utsending er
@@ -65,7 +65,7 @@ To identiteter løses per kjøring, før noen prosess startes.
 
 Fordi overstyringen per adapter kommer først, slår den stille en tilbyderkonto som er koblet til i appen. Hvis en kjøring faktureres til feil konto, er den overstyringen det første stedet å se. Tilbyderlegitimasjon er global for verten — delt på tvers av alle arbeidsområder i installasjonen.
 
-Kapabilitetsstyrte tokens (GitHub, sakssystemer) kommer fra legitimasjonsmegleren, som bare injiserer det kjøringens kapabiliteter tillater. Se [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/).
+Kjøringens GitHub-token kommer fra legitimasjonsmegleren: et token som bare kan lese, begrenset til worktreens repo. En push går gjennom agentkjøringsgatewayen, som spør regelen **Push til en remote** før den sendes videre, og ingen saksnøkkel injiseres. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
 
 ## Oppstart
 
@@ -76,9 +76,9 @@ Kjøringen startes med worktreen sin som arbeidskatalog og — for Claude Code �
 
 Der det ikke finnes noen backend, er kjøringen **ikke** sandkasset, og ingenting annet endres for å kompensere. Det betyr Windows alltid (ingen innebygd omslutning — `microvm` er en egen, sondestyrt bane for terminaler og stasjoner) og Linux eller WSL2 uten `bwrap` og `socat` på `PATH`. Serveren navngir hvilken tilstand den er i på oppstartslinjen i loggen, og `--sandbox off` melder seg bevisst ut.
 
-To hull overlever sandkassen selv der den er på. Harnessets filverktøy i prosessen (read, write, edit, apply patch, search, find, search_files) kjører inne i serverprosessen, så ingen profil begrenser dem — grensen deres er verktøyenes egen baneinneslutning pluss tillatelsesreglene. Og Claude Code startes med `--dangerously-skip-permissions`, så dets egne fil- og skallkall er ikke portvoktet av Control Center; OS-sandkassen er grensen rundt dem.
+To hull overlever sandkassen selv der den er på. Harnessets filverktøy i prosessen (read, write, edit, apply patch, search, find, search_files) kjører inne i serverprosessen, så ingen profil begrenser dem — grensen deres er verktøyenes egen baneinneslutning pluss tillatelsesreglene. Og Claude Code startes med `--dangerously-skip-permissions`, så dets egne filkall er ikke portvoktet av Control Center, og skallkommandoene bare av en hook som leser kommandolinjen; OS-sandkassen er grensen rundt dem.
 
-De gjenværende grensene gjelder på alle verter, med eller uten sandkasse: kjøringens egen worktree (copy-on-write der `rift` leveres; `git worktree` på Windows), kapabilitetsstyrte legitimasjoner som formidles per oppstart og tilbakekalles ved avslutning, de samlede tillatelsesreglene for handlinger (feiler lukket — en `prompt`-beslutning uten noen tilkoblet godkjenner avslås) og verktøyflaten samtalens modus tillater. ACP og harnessets `bash` renser fortsatt miljøet; Claude Code gjennom `NoSandboxAdapter` arver vertsmiljøet.
+De gjenværende grensene gjelder på alle verter, med eller uten sandkasse: kjøringens egen worktree (copy-on-write der `rift` leveres; `git worktree` på Windows), et kodeverttoken som bare kan lese, formidlet per oppstart og tilbakekalt ved avslutning, pusher som må gjennom push-regelen i agentkjøringsgatewayen, de samlede tillatelsesreglene for handlinger (feiler lukket — en `prompt`-beslutning uten noen tilkoblet godkjenner avslås) og verktøyflaten samtalens modus tillater. ACP og harnessets `bash` renser fortsatt miljøet; Claude Code gjennom `NoSandboxAdapter` arver vertsmiljøet.
 :::
 
 ## Strømming

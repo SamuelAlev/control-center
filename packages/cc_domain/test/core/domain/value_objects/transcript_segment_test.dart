@@ -231,7 +231,6 @@ void main() {
         message: 'denied',
         action: 'fileDelete',
         target: '/secret',
-        suggestedCapability: 'write',
         startedAt: t0,
         durationMs: 3,
       );
@@ -239,7 +238,6 @@ void main() {
       expect(out['type'], 'violation');
       expect(out['action'], 'fileDelete');
       expect(out['target'], '/secret');
-      expect(out['suggestedCapability'], 'write');
       expect(out['durationMs'], 3);
       final rt = TranscriptSegment.fromJson(out) as ViolationSegment;
       expect(rt, original);
@@ -250,14 +248,12 @@ void main() {
         message: 'm',
         action: 'a',
         target: 't',
-        suggestedCapability: 'cap',
         startedAt: t0,
       );
       final b = ViolationSegment(
         message: 'm',
         action: 'a',
         target: 't',
-        suggestedCapability: 'cap',
         startedAt: t0,
       );
       expect(a, b);
@@ -268,19 +264,17 @@ void main() {
           ViolationSegment(
             message: 'm',
             action: 'a',
-            target: 't',
-            suggestedCapability: 'other',
+            target: 'other',
             startedAt: t0,
           ),
         ),
       );
     });
 
-    test('omits null action/target/suggestedCapability', () {
+    test('omits null action/target', () {
       final out = ViolationSegment(message: 'm', startedAt: t0).toJson();
       expect(out.containsKey('action'), isFalse);
       expect(out.containsKey('target'), isFalse);
-      expect(out.containsKey('suggestedCapability'), isFalse);
     });
   });
 

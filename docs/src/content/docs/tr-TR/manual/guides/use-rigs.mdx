@@ -2,7 +2,7 @@
 title: Bir ajana test için makine verme
 description: Bir ajana atılabilir bir tarayıcı, masaüstü, Android emülatörü ya da iOS Simülatörü verin — canlı izlenir ve denetimini devralabilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/rig-kullanma
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 **Rig**, bir ajanın gerçekten bir şey denemesi gerektiğinde açtığı atılabilir bir
@@ -194,8 +194,11 @@ Değişenler:
   rig'e mal olur.
 - Ağ varsayılan olarak reddeder. Yalnızca rig'in izin listesindeki host'lara
   erişilebilir ve her şey bunu uygulayan bir kapıdan geçer.
-- `git push` yine çalışır. Rig'de saklı bir kimlik bilgisi yoktur; her işlem için
-  sunucudan kısa ömürlü bir tane ister ve bu token rig kapandığında iptal edilir.
+- `git push`, sizin açtığınız bir terminalde yine çalışır. Rig'de saklı bir
+  kimlik bilgisi yoktur; her işlem için sunucudan, kendi forge erişiminizle
+  sınırlı, kısa ömürlü bir tane ister ve bu token rig kapandığında iptal edilir.
+  Bir ajanın açtığı rig salt okunur bir kimlik bilgisi alır; bu yüzden fetch
+  yapabilir ama push edemez.
 
 Bilinmesi gerekenler:
 

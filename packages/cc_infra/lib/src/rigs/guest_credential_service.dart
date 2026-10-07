@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
@@ -19,7 +18,7 @@ class _RigCredentialGrant {
     required this.workspaceId,
     required this.conversationId,
     required this.secret,
-    required this.capabilities,
+    required this.scope,
     required this.allowedHosts,
     this.repoOwner,
     this.repoName,
@@ -30,7 +29,7 @@ class _RigCredentialGrant {
   final String workspaceId;
   final String conversationId;
   final String secret;
-  final AgentCapabilities capabilities;
+  final ForgeTokenScope scope;
   final Set<String> allowedHosts;
   final String? repoOwner;
   final String? repoName;
@@ -98,7 +97,7 @@ class GuestCredentialService {
   /// because a rig cannot tell WHO inside it is asking — an agent process and a
   /// human's shell reach this endpoint identically. Binding the grant to the
   /// opener means an enclosure can never hand out more forge access than the
-  /// person who asked for it already had, whatever capability flags the spec
+  /// person who asked for it already had, whatever token scope the spec
   /// carries.
   void registerRig({
     required String rigId,
@@ -106,7 +105,7 @@ class GuestCredentialService {
     required String conversationId,
     required String secret,
     required Set<String> allowedHosts,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
@@ -116,7 +115,7 @@ class GuestCredentialService {
       workspaceId: workspaceId,
       conversationId: conversationId,
       secret: secret,
-      capabilities: capabilities,
+      scope: scope,
       allowedHosts: {for (final h in allowedHosts) h.toLowerCase()},
       repoOwner: repoOwner,
       repoName: repoName,
@@ -263,13 +262,13 @@ class GuestCredentialService {
     try {
       credentials = await _broker.mint(
         conversationId: grant.conversationId,
-        capabilities: grant.capabilities,
+        scope: grant.scope,
         repoOwner: grant.repoOwner,
         repoName: grant.repoName,
-        // The rig's opener, not the server owner. The capability flags are a
-        // ceiling; this is the actual bound, and it is enforced by the forge
-        // itself — a member who cannot push is refused a token that can, even
-        // from inside an enclosure whose spec says `canPushToRepo`.
+        // The rig's opener, not the server owner. The scope is a ceiling; this
+        // is the actual bound, and it is enforced by the forge itself — a
+        // member who cannot push is refused a token that can, even from inside
+        // an enclosure whose spec asks for a write scope.
         actingUserId: grant.actingUserId,
         workspaceId: grant.workspaceId,
       );

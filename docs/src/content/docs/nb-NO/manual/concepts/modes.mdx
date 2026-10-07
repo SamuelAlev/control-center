@@ -2,7 +2,7 @@
 title: Moduser
 description: Hvorfor det er et område, og ikke en agent, som bærer en modus; hva hver av de fire modusene garanterer; og hvor den garantien er strukturell snarere enn bare en instruks i prompten.
 slug: nb-NO/handbok/konsepter/moduser
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Hva en modus er
@@ -77,7 +77,7 @@ Oppslaget i seg selv er enkelt. Utsenderen leser `mode`-kolonnen til området; e
 
 Verktøyflaten til en modus bygges og håndheves av det **innebygde harnesset**. Det er den eneste transporten som kan gjøre et verktøy usynlig i stedet for bare nektet, portvokte hvert kall før det kjøres og observere en fullføringskontrakt.
 
-På Claude Code-transporten sendes en modus som ikke er chat, som `--permission-mode plan`. Claude respekterer det av konvensjon; dets egne verktøy for lesing, skriving, redigering og shell kjører usett. For den transporten er modusen en veiledning, ikke en grense i Control Center – se [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/).
+På Claude Code-transporten sendes en modus som ikke er chat, som `--permission-mode plan`. Claude respekterer det av konvensjon; dets egne verktøy for lesing, skriving og redigering kjører usett, og shell-kommandoene dets kontrolleres bare av en hook som leser kommandolinjen. For den transporten er modusen en veiledning, ikke en grense i Control Center – se [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/).
 
 Tillatelseslistene begrenser verktøy på skrivenivå og høyere. Lesenivået i det innebygde harnesset når fortsatt verktøy som ingen liste navngir; på Claude Code nektes et verktøy som tillatelseslisten utelater, uansett om serveren har det.
 

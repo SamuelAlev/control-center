@@ -107,37 +107,58 @@ Map<String, String> _decodeAdapterEnv(String? raw) {
   return const {};
 }
 
-/// Workspace-settings key holding a Claude Code account pool.
+/// Workspace-settings key holding the account pool for [lane], at the
+/// workspace's scope or (with [agentId]) one agent's override of it.
 ///
-/// One key per scope: the workspace's own, and one per agent that overrides it.
-/// Namespaced so it cannot collide with a real setting, and absent until the
-/// operator attaches something — which is what keeps an install that never
-/// opens the screen on the pre-pool path.
-String claudeAccountPoolKey(String? agentId) =>
-    agentId == null || agentId.isEmpty
-    ? 'claude_accounts.pool'
-    : 'claude_accounts.pool.agent.$agentId';
+/// THE one spelling of pool storage, for every lane. The two lanes that
+/// predate this keep the keys they were first written under, so existing pools
+/// read back unchanged; any lane added later lands under `account_pools.`.
+/// Null when [lane] is not one this install knows — rejecting an unknown lane
+/// rather than deriving a key from it is what stops a client writing arbitrary
+/// settings keys through the pool ops.
+String? accountPoolKey(String lane, String? agentId) {
+  if (!AccountPoolLanes.isKnown(lane)) {
+    return null;
+  }
+  final provider = AccountPoolLanes.harnessProviderOf(lane);
+  final base = lane == AccountPoolLanes.claudeCode
+      ? 'claude_accounts.pool'
+      : provider != null
+      ? 'harness_accounts.pool.$provider'
+      : 'account_pools.$lane';
+  return agentId == null || agentId.isEmpty ? base : '$base.agent.$agentId';
+}
 
-/// Workspace-settings key holding a pool's round-robin position.
-String claudeAccountCursorKey(String? agentId) =>
-    '${claudeAccountPoolKey(agentId)}.cursor';
-
-/// Reads the most specific pool that applies: the agent's, else the
-/// workspace's, else unconfigured.
+/// The pool that applies to one dispatch on [lane], read most-specific first:
+/// the agent's own, else the workspace's, else unconfigured.
+///
+/// The returned cursor key is where THAT pool's round-robin position lives — the agent's
+/// when the agent's pool answered, so two agents rotating the same accounts
+/// keep independent positions.
 ///
 /// An agent pool with no accounts in it is treated as "not set" rather than as
 /// "attach nothing" — an empty list is what an editor leaves behind when the
 /// operator removes the last row, and reading that as a deliberate opt-out
-/// would silently stop every run for that agent.
-Future<AccountPool> _readClaudeAccountPool(
-  WorkspaceSettingsRepository settings,
-  String workspaceId,
-  String? agentId,
-) async {
-  for (final key in [
-    if (agentId != null && agentId.isNotEmpty) claudeAccountPoolKey(agentId),
-    claudeAccountPoolKey(null),
+/// would silently stop every run for that agent. A corrupt pool falls through
+/// to the next scope rather than stopping the dispatch.
+Future<({AccountPool pool, String? cursorKey, int cursor})> readAccountPool(
+  WorkspaceSettingsRepository settings, {
+  required String? workspaceId,
+  required String? agentId,
+  required String lane,
+}) async {
+  const unset = (pool: AccountPool(), cursorKey: null, cursor: 0);
+  if (workspaceId == null || workspaceId.isEmpty) {
+    return unset;
+  }
+  for (final scopeAgent in [
+    if (agentId != null && agentId.isNotEmpty) agentId,
+    null,
   ]) {
+    final key = accountPoolKey(lane, scopeAgent);
+    if (key == null) {
+      return unset;
+    }
     final raw = await settings.get(workspaceId, key);
     if (raw == null || raw.isEmpty) {
       continue;
@@ -147,64 +168,72 @@ Future<AccountPool> _readClaudeAccountPool(
       if (decoded is Map<String, dynamic>) {
         final pool = AccountPool.fromJson(decoded);
         if (!pool.isEmpty) {
-          return pool;
+          final cursorKey = '$key.cursor';
+          final cursor =
+              int.tryParse(await settings.get(workspaceId, cursorKey) ?? '') ??
+              0;
+          return (pool: pool, cursorKey: cursorKey, cursor: cursor);
         }
       }
     } on Object {
-      // A corrupt pool falls through to the next scope rather than stopping
-      // the dispatch.
+      // Fall through to the next scope.
     }
   }
-  return const AccountPool();
+  return unset;
 }
 
-/// The lane an account pool belongs to.
+/// The pools in one workspace's [settings] that name accounts of [lane]
+/// outside [existing], rewritten without them — the settings to write back
+/// after a credential of that lane is removed from the server.
 ///
-/// One string so a single pair of RPC ops serves both, because the editing
-/// surface is identical: an ordered list plus a strategy. `claude-code` names
-/// the CLI adapter's account directories; `harness:<providerId>` names one
-/// harness provider's stored credentials.
-const String claudeAccountLane = 'claude-code';
-
-/// The workspace-settings key a [lane] + [agentId] pool is stored under, or
-/// null when the lane is not one we recognize.
-///
-/// Rejecting an unknown lane rather than deriving a key from it is what stops a
-/// client writing arbitrary settings keys through this op.
-String? accountPoolKeyForLane(String lane, String? agentId) {
-  if (lane == claudeAccountLane) {
-    return claudeAccountPoolKey(agentId);
+/// A pool that would be left empty is not in the result; see
+/// [AccountPool.retainOnly] for why it keeps its dangling ids. Cursor keys
+/// share the prefix and are skipped: a round-robin cursor is taken modulo the
+/// pool's length, so a shorter pool needs no rewrite of it.
+Map<String, String> prunedAccountPools(
+  Map<String, String> settings, {
+  required String lane,
+  required Set<String> existing,
+}) {
+  final workspaceKey = accountPoolKey(lane, null);
+  if (workspaceKey == null) {
+    return const {};
   }
-  const prefix = 'harness:';
-  if (lane.startsWith(prefix) && lane.length > prefix.length) {
-    return harnessPoolKey(lane.substring(prefix.length), agentId);
+  final agentPrefix = '$workspaceKey.agent.';
+  final out = <String, String>{};
+  for (final MapEntry(:key, :value) in settings.entries) {
+    final isPool =
+        key == workspaceKey ||
+        (key.startsWith(agentPrefix) && !key.endsWith('.cursor'));
+    if (!isPool) {
+      continue;
+    }
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! Map<String, dynamic>) {
+        continue;
+      }
+      final pruned = AccountPool.fromJson(decoded).retainOnly(existing);
+      if (pruned != null) {
+        out[key] = jsonEncode(pruned.toJson());
+      }
+    } on FormatException {
+      // A corrupt pool is already ignored by dispatch; leave it for the editor.
+    }
   }
-  return null;
+  return out;
 }
 
-/// Workspace-settings key holding a harness provider's account pool.
+/// Orders a harness provider's [credentialIds] for one dispatch, applying the
+/// workspace's (or the agent's) pool, its strategy, and any cooling-off keys.
 ///
-/// Per provider, because "which keys may this workspace spend" is a different
-/// question for OpenAI than for Kimi — and per agent on top of that, so a
-/// research agent can be pinned to the cheap key while the rest of the
-/// workspace rotates.
-String harnessPoolKey(String providerId, String? agentId) =>
-    agentId == null || agentId.isEmpty
-    ? 'harness_accounts.pool.$providerId'
-    : 'harness_accounts.pool.$providerId.agent.$agentId';
-
-/// Workspace-settings key holding a harness pool's round-robin position.
-String harnessCursorKey(String providerId, String? agentId) =>
-    '${harnessPoolKey(providerId, agentId)}.cursor';
-
-/// Orders [credentialIds] for one dispatch, applying the workspace's (or the
-/// agent's) pool, its strategy, and any cooling-off keys.
-///
-/// Returns null when nothing is configured, so the caller keeps the store's own
-/// order — the behaviour every install had before pools existed. The
+/// Pool reading, selection and the removed-accounts refusal are the SAME code
+/// the Claude Code lane runs ([readAccountPool], [AccountSelector]); what is
+/// harness-specific is only what it does with the answer. A null order means
+/// nothing is configured, so the caller keeps the store's own order. The
 /// round-robin cursor is advanced and persisted here, BEFORE the run, so two
 /// dispatches racing still lead with different credentials.
-Future<List<String>?> resolveHarnessRotationOrder({
+Future<AccountPoolOrder> resolveHarnessRotationOrder({
   required WorkspaceSettingsRepository settings,
   required CredentialCooldownStore cooldowns,
   required String? workspaceId,
@@ -212,83 +241,58 @@ Future<List<String>?> resolveHarnessRotationOrder({
   required String providerId,
   required List<String> credentialIds,
 }) async {
-  if (workspaceId == null || credentialIds.length < 2) {
-    return null;
-  }
-  AccountPool pool = const AccountPool();
-  String? usedKey;
-  for (final key in [
-    if (agentId != null && agentId.isNotEmpty)
-      harnessPoolKey(providerId, agentId),
-    harnessPoolKey(providerId, null),
-  ]) {
-    final raw = await settings.get(workspaceId, key);
-    if (raw == null || raw.isEmpty) {
-      continue;
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) {
-        final candidate = AccountPool.fromJson(decoded);
-        if (!candidate.isEmpty) {
-          pool = candidate;
-          usedKey = key;
-          break;
-        }
-      }
-    } on Object {
-      // A corrupt pool falls through to the next scope rather than stopping
-      // the dispatch.
-    }
-  }
-  if (pool.isEmpty || usedKey == null) {
-    return null;
+  final read = await readAccountPool(
+    settings,
+    workspaceId: workspaceId,
+    agentId: agentId,
+    lane: AccountPoolLanes.harness(providerId),
+  );
+  if (read.pool.isEmpty) {
+    return (order: null, refusal: null);
   }
 
   final cooling = await cooldowns.activeFor(providerId);
-  final availability = {
-    for (final id in credentialIds)
-      id: AccountAvailability(
-        id: id,
-        signedIn: true,
-        spent: cooling.containsKey(id),
-        availableAt: cooling[id],
-      ),
-  };
-  final cursorKey = harnessCursorKey(
-    providerId,
-    usedKey.contains('.agent.') ? agentId : null,
-  );
-  final cursor =
-      int.tryParse(await settings.get(workspaceId, cursorKey) ?? '') ?? 0;
   final choice = AccountSelector.select(
-    pool: pool,
-    availability: availability,
-    cursor: cursor,
+    pool: read.pool,
+    availability: {
+      for (final id in credentialIds)
+        id: AccountAvailability(
+          id: id,
+          signedIn: true,
+          spent: cooling.containsKey(id),
+          availableAt: cooling[id],
+        ),
+    },
+    cursor: read.cursor,
   );
 
   switch (choice) {
     case AccountPoolUnset():
-      // Every id in the pool names a credential that no longer exists.
-      return null;
-    case AccountsAllSpent():
+      return (order: null, refusal: null);
+    case AccountsRemoved(:final accountIds):
+      // Refused, exactly as the Claude lane refuses: the pool exists to keep
+      // this scope off the keys it does not name.
+      return (
+        order: null,
+        refusal: (
+          reason: RunCredentialReason.accountsRemoved,
+          accountIds: accountIds,
+          earliestReset: null,
+        ),
+      );
+    case AccountsAllSpent(:final accountIds):
       // Unlike the Claude lane there is no refusal here, and that asymmetry is
       // deliberate: `FallbackProvider` retries a capacity error on the SAME
       // target after backoff, so handing it the pool anyway lets a window that
       // reopens mid-turn still serve the run. Refusing would be strictly worse.
-      return [
-        for (final id in pool.accountIds)
-          if (availability.containsKey(id)) id,
-      ];
-    case AccountChosen(:final accountId, cursor: final next):
-      if (next != cursor) {
+      return (order: accountIds, refusal: null);
+    case AccountChosen(cursor: final next):
+      final cursorKey = read.cursorKey;
+      if (next != read.cursor && cursorKey != null && workspaceId != null) {
         await settings.set(workspaceId, cursorKey, '$next');
       }
-      return [
-        accountId,
-        for (final id in pool.accountIds)
-          if (id != accountId && availability.containsKey(id)) id,
-      ];
+      // Cooling keys go last rather than nowhere, for the same backoff reason.
+      return (order: [...choice.order, ...choice.standby], refusal: null);
   }
 }
 

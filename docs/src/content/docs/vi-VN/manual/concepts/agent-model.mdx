@@ -2,12 +2,12 @@
 title: Mô hình agent
 description: Agent thực ra là gì trong Control Center, những trường nào của nó làm thay đổi hành vi và cách adapter mà nó chạy trên đó quyết định những gì có thể được thi hành.
 slug: vi-VN/so-tay/khai-niem/mo-hinh-agent
-sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
+sourceHash: b9dd02acc931a2ee8cd9caf59e2906d2163f1afc
 ---
 
 ## Agent là gì?
 
-Agent là một tác nhân có tên, với một persona, một tập kỹ năng, một adapter để chạy trên đó và một tập quyền hạn. Agent là những chủ thể theo đúng nghĩa mà con người là vậy: chúng viết tin nhắn, sở hữu phiếu, để lại bản rà soát và xuất hiện trên cùng một danh sách hiện diện. Chúng chính là những thứ thực sự làm ra công việc.
+Agent là một tác nhân có tên, với một persona, một tập kỹ năng và một adapter để chạy trên đó. Agent là những chủ thể theo đúng nghĩa mà con người là vậy: chúng viết tin nhắn, sở hữu phiếu, để lại bản rà soát và xuất hiện trên cùng một danh sách hiện diện. Chúng chính là những thứ thực sự làm ra công việc.
 
 Mỗi agent thuộc về đúng một không gian làm việc. Đây là một bất biến cứng — `agent.workspaceId` là non-null, chính không gian làm việc của agent quyết định tệp cơ sở dữ liệu mà các hàng của nó nằm trong đó, và việc tạo một agent không thuộc không gian làm việc nào sẽ bị từ chối.
 
@@ -26,7 +26,6 @@ Agent cũng là một thư mục. Định nghĩa của nó nằm tại `agents/<
 | `modelId`               | Mô hình nào trong adapter đó                                                           |
 | `effort`                | Mức suy luận, lấy từ bộ từ vựng của chính mô hình được chọn                            |
 | `contextSize`           | Ghi đè cửa sổ ngữ cảnh                                                                 |
-| `capabilities`          | Các cờ về thông tin đăng nhập và lưu lượng mạng ra, được kiểm tra lúc khởi chạy         |
 | `silenceTimeoutMinutes` | Ghi đè theo từng agent (1–240) cho cơ chế canh hết hạn im lặng                          |
 | `reportsTo`             | Id agent cha — chuỗi báo cáo mà sơ đồ tổ chức vẽ ra                                     |
 
@@ -53,16 +52,11 @@ Kỹ năng của kho mã được nạp cho **mọi** adapter, không chỉ harn
 
 ## Quyền hạn
 
-Quyền hạn quyết định thứ mà một lượt chạy được _trao_, chứ không phải thứ mà hệ thống tệp cho phép nó chạm vào. Bộ môi giới thông tin đăng nhập kiểm tra chúng lúc khởi chạy: nếu một quyền hạn bị tắt thì token tương ứng đơn giản là không được chèn vào.
+Agent không mang cờ quyền hạn riêng. Việc nó có được tạo commit, push, mở pull request, ghi vào tracker hay truy cập mạng hay không do [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) quyết định — cho phép, hỏi trước hoặc từ chối, ở phạm vi không gian làm việc, agent hoặc space — và cùng các quy tắc đó áp dụng bất kể adapter nào chạy nó.
 
-- **Đẩy lên kho mã** — quyết định việc chèn token GitHub dùng cho `git push`.
-- **GitHub API** — quyết định việc chèn `GH_TOKEN` và lưu lượng mạng ra tới api.github.com.
-- **Phiếu** — quyết định khóa API của nhà cung cấp phiếu và lưu lượng mạng ra tới các tên miền của nó.
-- **Lưu lượng mạng ra** — các yêu cầu gửi ra ngoài tùy ý.
+Thứ mà một lượt chạy được _trao_ không thay đổi theo các quy tắc đó. Một lượt chạy trong worktree GitHub luôn nhận token GitHub chỉ đọc, và một lần push được hỏi đúng lúc nó diễn ra: cấu hình git của agent gửi mọi lần push lên GitHub qua Control Center, nơi áp dụng quy tắc **Push lên remote** trước khi chuyển tiếp.
 
-Một lượt chạy phân giải chúng từ chính hàng của agent. Khi agent không có quyền hạn nào thì một mặc định cố định theo hướng thận trọng sẽ được áp dụng: ba cờ thông tin đăng nhập tắt, lưu lượng mạng ra bật. Nút bật/tắt “Quyền sandbox” trong biểu mẫu agent chọn giữa phương án dự phòng đó và một bộ tùy chỉnh được lưu trên agent.
-
-Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết nửa còn lại của câu chuyện, bao gồm những gì được và không được thi hành ở mức hệ thống tệp.
+Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết cơ chế này hoạt động thế nào, bao gồm những gì được và không được thi hành ở mức hệ thống tệp.
 
 ## Adapter quyết định những gì có thể được thi hành
 
@@ -71,7 +65,7 @@ Trường có hệ quả lớn nhất trên một agent là adapter của nó, b
 | Phương thức vận chuyển | Adapter                   | Những gì Control Center thi hành                                                                                                                                                                                                                                          |
 | ---------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Harness tích hợp       | Control Center (built-in) | Mọi thứ. Bề mặt công cụ được _dựng_ từ chế độ, nên một công cụ không được phép sẽ vô hình chứ không chỉ đơn thuần bị từ chối; mọi lệnh gọi đều đi qua cổng phê duyệt và các rào chắn thao tác; hợp đồng hoàn thành có thể thúc rồi đánh dấu thất bại một lượt chạy kết thúc mà không có sản phẩm bàn giao |
-| Claude CLI             | Claude Code               | Chỉ những công cụ `mcp__*` mà nó được phục vụ. Các công cụ đọc, ghi, sửa và shell của chính Claude nằm trong tiến trình của nó và chạy mà không ai thấy — và nó được khởi chạy với `--dangerously-skip-permissions`, vì nếu không thì `claude -p` không tương tác sẽ chặn đứng mãi mãi ở prompt của chính nó |
+| Claude CLI             | Claude Code               | Những công cụ `mcp__*` mà nó được phục vụ, cùng các lệnh `Bash` của nó, được một hook gửi tới chính sách hành động trước khi chạy. Các công cụ đọc, ghi và sửa của chính Claude nằm trong tiến trình của nó và chạy mà không ai thấy — và nó được khởi chạy với `--dangerously-skip-permissions`, vì nếu không thì `claude -p` không tương tác sẽ chặn đứng mãi mãi ở prompt của chính nó |
 
 Cụ thể, **chỉ harness tích hợp mới hỗ trợ subagent, điều hướng giữa lượt chạy, tạm dừng và tiếp tục (và do đó cả tiếp quản) cùng việc thực thi chế độ theo cấu trúc.** Claude Code không có bất kỳ thứ nào trong số đó.
 

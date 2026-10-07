@@ -237,7 +237,19 @@ class _ClaudeFix extends ConsumerWidget {
             ),
           const SizedBox(height: AppSpacing.sm),
         ],
-        if (block.reason != RunCredentialReason.planSpent) ...[
+        // Signing in cannot fix a pool of removed accounts, and the sign-in
+        // page is not where the pool is edited, so this one gets its own hint
+        // and no settings button.
+        if (block.reason == RunCredentialReason.accountsRemoved)
+          Text(
+            l10n.credentialGateAccountsRemovedHint,
+            style: TextStyle(
+              fontSize: 12,
+              color: t.textSecondary,
+              decoration: TextDecoration.none,
+            ),
+          )
+        else if (block.reason != RunCredentialReason.planSpent) ...[
           Text(
             l10n.credentialGateClaudeSignInHint,
             style: TextStyle(

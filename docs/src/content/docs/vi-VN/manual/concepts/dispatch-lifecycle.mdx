@@ -2,7 +2,7 @@
 title: Vòng đời điều phối agent
 description: Điều gì diễn ra giữa lúc một tin nhắn đến và lúc một log lượt chạy khép lại — việc lắp ghép prompt, worktree, danh tính, điều gì giới hạn một lượt chạy và cách ghi lại kết quả của nó một cách trung thực.
 slug: vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## Một lần điều phối là gì
@@ -65,7 +65,7 @@ Hai danh tính được xác định cho mỗi lượt chạy, trước khi bấ
 
 Vì ghi đè theo từng adapter đứng đầu, nó âm thầm thắng một tài khoản nhà cung cấp đã kết nối trong ứng dụng. Nếu một lượt chạy đang tính phí vào sai tài khoản, ghi đè đó là nơi đầu tiên cần xem. Thông tin xác thực của nhà cung cấp là toàn cục theo máy chủ — dùng chung cho mọi không gian làm việc trong bản cài đặt.
 
-Các token được gác theo năng lực (GitHub, ticketing) đến từ broker thông tin xác thực, nơi chỉ tiêm những gì năng lực của lượt chạy cho phép. Xem [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
+Token GitHub của lượt chạy đến từ broker thông tin xác thực: một token chỉ đọc, giới hạn theo kho mã của worktree. Một lần push đi qua cổng lượt chạy agent, nơi hỏi quy tắc **Push lên remote** trước khi chuyển tiếp, và không có khóa ticketing nào được tiêm vào. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
 
 ## Khởi chạy
 
@@ -76,9 +76,9 @@ Lượt chạy được khởi tạo với worktree của nó làm thư mục l�
 
 Ở nơi không có backend, lượt chạy **không** được sandbox và không có gì khác thay đổi để bù đắp. Điều đó nghĩa là Windows luôn như vậy (không có lớp bọc native — `microvm` là một đường riêng, chỉ mở khi qua bước dò, dành cho terminal và rig) và Linux hay WSL2 không có `bwrap` và `socat` trên `PATH`. Máy chủ nêu rõ mình đang ở trạng thái nào trên dòng log khởi động, và `--sandbox off` là cách chủ động từ chối.
 
-Hai lỗ hổng vẫn tồn tại dù sandbox đang bật. Các công cụ tệp trong tiến trình của harness (read, write, edit, apply patch, search, find, search_files) chạy bên trong tiến trình máy chủ, nên không hồ sơ nào ràng buộc chúng — giới hạn của chúng là sự giam đường dẫn của chính công cụ cộng với rào chắn. Và Claude Code được khởi chạy với `--dangerously-skip-permissions`, nên các lời gọi tệp và shell của chính nó không bị Control Center gác; sandbox của hệ điều hành là ranh giới bao quanh chúng.
+Hai lỗ hổng vẫn tồn tại dù sandbox đang bật. Các công cụ tệp trong tiến trình của harness (read, write, edit, apply patch, search, find, search_files) chạy bên trong tiến trình máy chủ, nên không hồ sơ nào ràng buộc chúng — giới hạn của chúng là sự giam đường dẫn của chính công cụ cộng với rào chắn. Và Claude Code được khởi chạy với `--dangerously-skip-permissions`, nên các lời gọi tệp của chính nó không bị Control Center gác, còn các lệnh shell chỉ bị một hook đọc dòng lệnh kiểm tra; sandbox của hệ điều hành là ranh giới bao quanh chúng.
 
-Những giới hạn còn lại vẫn đúng trên mọi máy chủ, dù có sandbox hay không: worktree của chính lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), thông tin xác thực được gác theo năng lực, cấp qua broker mỗi lần khởi chạy rồi thu hồi khi dọn dẹp, rào chắn hành động thống nhất (đóng khi lỗi — một quyết định `prompt` không có người phê duyệt kết nối sẽ bị từ chối) và bề mặt công cụ mà chế độ của hội thoại cho phép. ACP và `bash` của harness vẫn làm sạch môi trường; Claude Code qua `NoSandboxAdapter` thừa hưởng môi trường của máy chủ.
+Những giới hạn còn lại vẫn đúng trên mọi máy chủ, dù có sandbox hay không: worktree của chính lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), một token forge chỉ đọc, cấp qua broker mỗi lần khởi chạy rồi thu hồi khi dọn dẹp, các lần push phải vượt qua quy tắc push tại cổng lượt chạy agent, rào chắn hành động thống nhất (đóng khi lỗi — một quyết định `prompt` không có người phê duyệt kết nối sẽ bị từ chối) và bề mặt công cụ mà chế độ của hội thoại cho phép. ACP và `bash` của harness vẫn làm sạch môi trường; Claude Code qua `NoSandboxAdapter` thừa hưởng môi trường của máy chủ.
 :::
 
 ## Truyền phát

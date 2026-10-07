@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
@@ -16,11 +15,9 @@ import 'package:test/test.dart';
 /// closed writer is a safe no-op.
 void main() {
   late Directory dir;
-  late AgentCapabilities caps;
 
   setUp(() {
     dir = Directory.systemTemp.createTempSync('run_log_coal_');
-    caps = const AgentCapabilities();
   });
   tearDown(() => dir.deleteSync(recursive: true));
 
@@ -45,7 +42,6 @@ void main() {
         ticketId: 't1',
         cliName: 'claude',
         modelId: 'm1',
-        capabilities: caps,
       );
       await w.close();
       expect(w.logPath, endsWith('.ndjson'));
@@ -58,7 +54,7 @@ void main() {
       expect(start['cliName'], 'claude');
       expect(start['modelId'], 'm1');
       expect(start['runId'], contains('a1'));
-      expect(start['capabilities'], isA<Map>());
+      expect(start.containsKey('capabilities'), isFalse);
     });
 
     test('logPath is absolute under <agentDir>/runs', () async {
@@ -67,7 +63,6 @@ void main() {
         agentDirHostPath: dir.path,
         agentId: 'agent',
         cliName: 'test',
-        capabilities: caps,
       );
       await w.close();
       expect(p.isAbsolute(w.logPath!), isTrue);
@@ -80,11 +75,7 @@ void main() {
       'flushes immediately and writes an event record with metadata',
       () async {
         final w = RunLogWriter();
-        await w.open(
-          agentDirHostPath: dir.path,
-          cliName: 't',
-          capabilities: caps,
-        );
+        await w.open(agentDirHostPath: dir.path, cliName: 't');
         w.logEvent(
           ToolCallEvent(
             toolName: 'bash',
@@ -108,11 +99,7 @@ void main() {
 
     test('a usage event carries token metadata', () async {
       final w = RunLogWriter();
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       w.logEvent(
         UsageEvent(
           usage: const RunUsage(
@@ -139,11 +126,7 @@ void main() {
 
     test('a debug event has no metadata key', () async {
       final w = RunLogWriter();
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       w.logEvent(DebugEvent(content: 'launching claude'));
       await w.close();
 
@@ -162,11 +145,7 @@ void main() {
           logCoalesceWindow: const Duration(minutes: 1),
           logCoalesceMaxChars: 10000,
         );
-        await w.open(
-          agentDirHostPath: dir.path,
-          cliName: 't',
-          capabilities: caps,
-        );
+        await w.open(agentDirHostPath: dir.path, cliName: 't');
         w.logEvent(TextEvent(content: 'Hello'));
         w.logEvent(TextEvent(content: ', '));
         w.logEvent(TextEvent(content: 'world'));
@@ -187,11 +166,7 @@ void main() {
         logCoalesceWindow: const Duration(minutes: 1),
         logCoalesceMaxChars: 10000,
       );
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       w.logEvent(TextEvent(content: 't1'));
       // thinking is coalesced too but a DIFFERENT type → flush text first.
       w.logEvent(ThinkingEvent(content: 'th1'));
@@ -213,11 +188,7 @@ void main() {
         logCoalesceWindow: const Duration(minutes: 1),
         logCoalesceMaxChars: 10, // tiny cap
       );
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       w.logEvent(TextEvent(content: '0123456789')); // 10 chars, fills buffer
       // Next event would overflow → flush the first buffer before buffering.
       w.logEvent(TextEvent(content: 'overflow'));
@@ -240,11 +211,7 @@ void main() {
 
     test('flushBuffer with nothing buffered is a no-op', () async {
       final w = RunLogWriter();
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       w.flushBuffer();
       await w.close();
       final recs = await records(w);
@@ -256,11 +223,7 @@ void main() {
   group('RunLogWriter.close', () {
     test('writes the end record with exit code', () async {
       final w = RunLogWriter();
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       await w.close(exitCode: 0);
       final end = (await records(w)).firstWhere((r) => r['type'] == 'end');
       expect(end['exitCode'], 0);
@@ -278,11 +241,7 @@ void main() {
         logCoalesceWindow: const Duration(minutes: 1),
         logCoalesceMaxChars: 10000,
       );
-      await w.open(
-        agentDirHostPath: dir.path,
-        cliName: 't',
-        capabilities: caps,
-      );
+      await w.open(agentDirHostPath: dir.path, cliName: 't');
       w.logEvent(TextEvent(content: 'buffered-on-close'));
       // Don't call flushBuffer explicitly — close must flush it.
       await w.close();

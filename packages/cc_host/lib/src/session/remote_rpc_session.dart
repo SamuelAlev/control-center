@@ -635,9 +635,6 @@ class RemoteRpcSession {
       // not implemented — each emission is a full snapshot.
       caps['subscriptions'] = {
         'snapshot': watchQueries != null,
-        // Delta mode (PRD 16 §6) rides the `sync.watch` query; a host without
-        // it (bare test catalogs) honestly advertises snapshot-only.
-        'delta': watchQueries?.lookup('sync.watch') != null,
       };
     }
     result['capabilities'] = caps;

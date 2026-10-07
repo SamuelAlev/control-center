@@ -117,6 +117,48 @@ void main() {
       },
     );
   });
+
+  group('context reading', () {
+    test('the newest reported reading is persisted on the turn', () async {
+      await emit(
+        ContextWindowEvent(contextTokens: 90000, windowTokens: 1000000),
+      );
+      await emit(
+        ContextWindowEvent(
+          contextTokens: 120000,
+          windowTokens: 1000000,
+          compactions: 1,
+        ),
+      );
+      await emit(TextEvent(content: 'Done.'));
+      await emit(DoneEvent());
+      await finish();
+
+      expect(repo.lastMetadata?['context'], {
+        'tokens': 120000,
+        'window': 1000000,
+        'compactions': 1,
+      });
+    });
+
+    test('a reading is not spend: it never reaches the run cost', () async {
+      await emit(ContextWindowEvent(contextTokens: 500000));
+      await emit(DoneEvent());
+      await finish();
+
+      final turn = repo.lastMetadata?['turn'] as Map<String, dynamic>?;
+      expect(turn?['totalTokens'], 0);
+      expect(repo.lastMetadata?['context'], {'tokens': 500000});
+    });
+
+    test('a turn that never reported carries no context key', () async {
+      await emit(TextEvent(content: 'Done.'));
+      await emit(DoneEvent());
+      await finish();
+
+      expect(repo.lastMetadata?.containsKey('context'), isFalse);
+    });
+  });
 }
 
 class FakeMessagingRepository implements MessagingRepository {

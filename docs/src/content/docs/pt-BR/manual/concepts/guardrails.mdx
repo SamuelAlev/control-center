@@ -2,7 +2,7 @@
 title: Barreiras — uma política única para toda ação que altera o estado
 description: Por que o Control Center encaminha todo efeito colateral de agente por um único motor de permitir, perguntar ou negar, por que a taxonomia de ActionClass é mantida pequena de propósito e o que o dial de autonomia realmente muda.
 slug: pt-BR/manual/conceitos/barreiras
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Os agentes no Control Center podem excluir arquivos, fazer push de branches,
@@ -245,9 +245,7 @@ harness integrado declara que suas ferramentas de arquivo executadas no próprio
 processo **não** são isoladas em sandbox — a superfície de ferramentas e este
 motor de políticas são a única fronteira de sistema de arquivos que ele tem. O
 Claude Code declara que suas próprias chamadas de ferramentas **não** são
-interceptáveis, porque ele é iniciado com `--dangerously-skip-permissions`; o
-Control Center vê apenas suas chamadas `mcp__*`, e suas próprias ferramentas de
-leitura, escrita, edição e shell são executadas sem serem vistas.
+interceptáveis, porque ele é iniciado com `--dangerously-skip-permissions`; o Control Center vê suas chamadas `mcp__*` e, por meio de um hook, suas linhas de comando `Bash`, enquanto suas próprias ferramentas de leitura, escrita e edição são executadas sem serem vistas.
 
 A tela de configurações mostra essa matriz, porque a única falha imperdoável de
 um sistema de barreiras é alegar uma cobertura que não existe.

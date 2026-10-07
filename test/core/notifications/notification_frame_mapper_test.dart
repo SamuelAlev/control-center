@@ -124,6 +124,37 @@ void main() {
       expect(mention!.category, NotificationCategory.newMessage);
     });
 
+    test('message_received deep-links to the conversation it was posted in, '
+        "not the space's standing one", () {
+      const reply = {
+        'space_id': 'sp-1',
+        'conversation_id': 'conv-2',
+        'message_id': 'm-1',
+        'sender_name': 'Bot',
+        'content_preview': 'done',
+        'workspace_id': 'ws-1',
+        'is_agent_message': true,
+      };
+
+      final n = mapNotificationFrame(
+        'notifications/message_received',
+        reply,
+        l10n: l10n,
+      );
+      final uri = Uri.parse(n!.route);
+      expect(uri.path, '/workspaces/ws-1/spaces/sp-1');
+      expect(uri.queryParameters['tab'], 'chat:conv-2');
+      expect(uri.queryParameters['m'], 'm-1');
+
+      // An older server sends no conversation: the space alone, as before.
+      final legacy = mapNotificationFrame(
+        'notifications/message_received',
+        {...reply}..remove('conversation_id'),
+        l10n: l10n,
+      );
+      expect(Uri.parse(legacy!.route).queryParameters, isNot(contains('tab')));
+    });
+
     test('review_stale deep-links to the PR and stays out of the way', () {
       // Centre-only on purpose: a banner is for something time-critical AND
       // directly actionable, and re-reviewing is a choice you make when you

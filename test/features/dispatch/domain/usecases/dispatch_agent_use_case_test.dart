@@ -630,8 +630,37 @@ void main() {
         spaceId: 'ch-1',
       );
 
-      // contextSize * 2 = 100000, clamped to maxConversationChars (50000)
+      // A quarter of a 50k-token window is ~50k chars, at the 50000 cap.
       expect(capturedBudget, 50000);
+    });
+
+    test('a small token window shrinks the history budget', () async {
+      final agent = _testAgent(contextSize: 8000);
+      agentRepo.addAgent(agent);
+
+      int? capturedBudget;
+      conversationUseCase.onExecute =
+          ({
+            required String spaceId,
+            required String selfAgentId,
+            required String selfAgentName,
+            required String taskDescription,
+            required int characterBudget,
+          }) async {
+            capturedBudget = characterBudget;
+            return '';
+          };
+
+      final useCase = createUseCase(conversation: conversationUseCase);
+      await useCase.execute(
+        workspaceId: _ws,
+        agentId: agent.id,
+        prompt: 'test',
+        spaceId: 'ch-1',
+      );
+
+      // 8000 tokens ≈ 32k chars; a quarter of that is 8000 chars.
+      expect(capturedBudget, 8000);
     });
 
     test('character budget uses default when contextSize is null', () async {

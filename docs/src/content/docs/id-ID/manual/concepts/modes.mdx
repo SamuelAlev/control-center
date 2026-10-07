@@ -2,7 +2,7 @@
 title: Mode
 description: Mengapa sebuah space, bukan agen, yang membawa sebuah mode; apa yang dijamin oleh masing-masing dari keempat mode; dan di mana jaminan itu bersifat struktural alih-alih sekadar berupa prompt.
 slug: id-ID/panduan-pengguna/konsep/mode
-sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
+sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
 ---
 
 ## Apa itu mode
@@ -188,8 +188,7 @@ sekadar ditolak, menggerbangi setiap panggilan sebelum berjalan, dan mengamati
 kontrak penyelesaian.
 
 Pada transport Claude Code, mode non-chat diteruskan sebagai
-`--permission-mode plan`. Claude mematuhinya secara konvensi; alat baca, tulis,
-edit, dan shell miliknya sendiri berjalan tanpa terlihat. Untuk transport itu,
+`--permission-mode plan`. Claude mematuhinya secara konvensi; alat baca, tulis, dan edit miliknya sendiri berjalan tanpa terlihat, dan perintah shell-nya hanya diperiksa oleh hook yang membaca baris perintah. Untuk transport itu,
 mode hanyalah panduan, bukan batas Control Center — lihat
 [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/).
 

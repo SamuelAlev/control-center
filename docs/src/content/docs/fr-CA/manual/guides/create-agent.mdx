@@ -2,7 +2,7 @@
 title: Créer et configurer un agent
 description: Ajoutez un agent à un espace de travail, attribuez-lui un adaptateur, un modèle, des skills et des permissions, puis confirmez qu’il s’exécute.
 slug: fr-CA/manuel/guides/creer-agent
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Ce guide explique comment ajouter un agent à un espace de travail et le configurer jusqu’à ce qu’il puisse réellement s’exécuter.
@@ -66,21 +66,29 @@ Vous ne choisissez pas ici les skills propres à un dépôt. Un dépôt qui en f
 - **Taille de la fenêtre de contexte** — préremplie à partir de la fenêtre de contexte du modèle chaque fois que vous changez de modèle, avec des puces en un clic pour la valeur par défaut du modèle, 200k, 500k et 1M. Une valeur que vous saisissez après avoir choisi le modèle l’emporte jusqu’au prochain changement de modèle.
 - **Délai de silence (minutes)** — interrompt une exécution après ce délai sans sortie. Laissez le champ vide pour utiliser la valeur par défaut propre au mode.
 
-## Accorder des permissions
+## Accorder des autorisations
 
-**Permissions du sandbox** démarre sur « Utiliser la valeur par défaut de l’espace de travail ». Activez le commutateur pour les définir pour cet agent, puis basculez :
+Un agent n’a aucun interrupteur d’autorisation qui lui soit propre. Ce qu’il
+peut pousser, ouvrir, fusionner ou atteindre est défini par les règles d’action
+sous **Paramètres → Espace de travail → Autorisations des agents**, où une
+règle peut être limitée à cet agent. Par défaut, un push, une pull request, une
+revue ou une fusion et une écriture dans un outil de suivi vous demandent
+chacun d’abord votre accord, et l’accès réseau est autorisé.
 
-- **Autoriser git push** — injecte le jeton GitHub dont l’agent a besoin pour pousser
-- **Autoriser les appels API GitHub** — permet à l’agent de lire les PR, les issues et les métadonnées du dépôt
-- **Autoriser les appels API de tickets** — injecte la clé du fournisseur de tickets
-- **Autoriser l’accès réseau général** — active aussi les outils `web_fetch` et `web_search` du harnais intégré
+Le jeton GitHub de l’agent est toujours en lecture seule. Un push passe par
+Control Center, qui interroge la règle **Pousser vers un dépôt distant** avant
+de le transmettre. Voir
+[Configurer les politiques de bac à sable](/fr-CA/manuel/guides/politiques-de-bac-a-sable/) pour
+savoir comment chaque règle atteint une exécution.
 
-Chaque commutateur est vérifié par le courtier d’identifiants au lancement de l’exécution : une capacité désactivée signifie simplement que le jeton correspondant n’est jamais injecté dans l’environnement de l’exécution.
-
-:::caution[La valeur par défaut de l’espace de travail correspond à l’ensemble conservateur du serveur]
-Un agent laissé sur « Utiliser la valeur par défaut de l’espace de travail » s’exécute avec git push, l’API GitHub et les tickets tous **désactivés** et le réseau **activé**. Les valeurs par défaut des capacités affichées sous Paramètres → Serveur → Diagnostics et confidentialité sont une préférence côté client. Si vous voulez qu’un agent pousse ou ouvre des PR, activez le commutateur et accordez les capacités explicitement.
-
-Ces capacités contrôlent l’accès aux identifiants et aux outils du harnais, ce qui constitue une couche distincte du bac à sable du système d’exploitation. `cc_server` enveloppe les exécutions d’agent dans le bac à sable de l’hôte lorsqu’il en existe un — Windows n’a aucun backend natif, et Linux et WSL2 ont besoin de `bwrap` et de `socat`. Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) pour l’ensemble des frontières.
+:::note[Les règles et le bac à sable de l’OS sont des couches distinctes]
+Les règles décident de ce qu’un agent peut faire ; le bac à sable de l’OS borne
+l’endroit où ses processus peuvent lire, écrire et se connecter. `cc_server`
+enveloppe les exécutions d’agents dans le bac à sable de l’hôte lorsqu’il en
+existe un — Windows n’a aucun backend natif, et Linux et WSL2 ont besoin de
+`bwrap` et `socat`. Voir [Bac à sable et
+sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) pour l’ensemble complet des
+frontières.
 :::
 
 ## Vérifier qu’il s’exécute

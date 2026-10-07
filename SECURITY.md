@@ -40,6 +40,7 @@ Server credential lanes under `packages/cc_server_core/lib/src/identity/`:
 - Without a caller: app identity → server owner's credential → environment.
 - Human-driven forge writes use `tokenForActor(forge,userId)`: the person's credential first, then the no-caller chain only if they have not connected the forge. `actsAsSelf` reports the result. Thread `ctx.userId` through per-actor factories (`forgeDioFactoryForActor`, `forgeRegistryForActor`, `prLifecycleRepositoryForActor`, `ReviewPublisherService.githubPrClientFor`). Include acting user in `prRepoCache` keys so cached authenticated clients cannot misattribute another person's writes.
 - MCP, polling, webhooks and automatic agent review publication pass no user and use background identity.
+- Agent sandboxes hold only a `ForgeTokenScope.read` forge token (GitHub App installation: contents read, pull requests write), never a member's own token, a write token or a ticketing API key. `actingUserId` withholds the server PAT from a run acting for a non-owner member who has not connected GitHub. A `write` token is minted only by the [agent run gateway](#agent-run-gateway) or a human-opened terminal rig and never enters an agent's environment. Without a GitHub App the fallback PAT cannot be narrowed: `git push` still meets the push rule, but code using the token directly does not — say so, never present it as enforced.
 
 GitHub sign-in is server-run device flow (`ProviderOAuthService`, `oauth.begin`), with no callback URL and no required client secret. A secret is needed to refresh expiring tokens. Linear uses `/oauth/<provider>/callback` with single-use, TTL-bounded state bound server-side to `(user,provider)`. PAT entry remains available; host `gh` credentials are not an authentication method.
 
@@ -53,9 +54,21 @@ SSO, owner identity and other mutable settings belong in Settings. `CC_SERVER_*`
 
 `ActionClass` is a closed effect taxonomy. Every mutating tool declares its classes; the ratchet rejects undeclared tools. Policy precedence is `space > agent > workspace > mode preset > built-in default`; within a scope, longest-prefix then most-restrictive wins. `prompt` without a connected approver denies. Per-space autonomy profiles use this same store; delegation enforces depth, cycles, budget and autonomy ceilings server-side.
 
+Agents carry no permission flags; push, PR, tracker and network permission are action rules. Shell command lines (harness `bash`, Claude Code's PreToolUse hook) are classified by `ShellActionClassifier` — a soft gate a hidden command (`eval`, a script, a raw API call) evades. Pushes are the hard gate: enforced by credential possession at the gateway, so `git push` is not classified and is not on the harness approve-command list (one question per push).
+
 `SkillBundleService` scans between fetch and write. No skill bytes or frontmatter enter disk/prompt without a `pass`/`warn`/`quarantine` verdict. Mandatory static rules and capability manifests execute nothing; LLM review is additive. Trust tiers express provenance, never bypass scanning. **Bytes scanned = bytes written = bytes hash-locked.** Repo skills use the same gate; context symlinks resolve only into explicitly permitted roots, never by recursively following repo-directory links.
 
 External MCP servers and guest-extracted content are untrusted. Strip ANSI/control characters and cap external tool descriptions/results; external tools default to the cautious approval tier. `wrapUntrustedRigContent` labels guest data as data, not instructions. Framing is not enforcement: approval, filesystem/network limits and server authorization remain necessary. Deferred harness schemas never widen the admitted tool surface or bypass guards.
+
+### Agent run gateway
+
+`AgentRunGateway` serves `/agent/git/…` (push proxy) and `/agent/hooks/pre-tool-use` (Claude Code hook) on the MCP listener.
+
+- Loopback only: any non-loopback peer gets `403`, whatever listener the routes are mounted on.
+- Each run is authenticated by a 32-byte random per-run secret sent as `X-CC-Agent-Run` (git `http.<gateway>.extraHeader`, hook header from `CC_AGENT_RUN_TOKEN`); unknown secrets get `401`. The secret only lets a process *ask*: every answer comes from the action policy.
+- Scope (workspace, space, agent, mode, acting user, own repo) comes from the `AgentRunGrant` registered at dispatch, never from the request, so one run cannot ask with another's identity. Pushes are forwarded only to the worktree's own repo or a GitHub repo linked to the workspace; read-only modes deny them.
+- Only pushes are proxied (`git-receive-pack`); the ref-update preamble and hook bodies are capped at 1 MiB. The write token is minted per lease, used server-side to forward, never returned to the agent, and revoked when the lease closes at teardown.
+- HTTP hooks fail **open** (timeout or error lets the call proceed). The hook timeout is 60 minutes because "ask first" waits on a human; the gateway denies at 55 minutes so an unanswered approval is a deny, not a timeout. Pushes never depend on the hook.
 
 ### Sandboxes and rigs
 
@@ -64,7 +77,7 @@ External MCP servers and guest-extracted content are untrusted. Strip ANSI/contr
 - Restricted smolvm argv uses `--outbound-localhost-only`, one `--allow-host` per admitted host, and broker credentials via `--secret-file`, not persisted environment values. Docker Hub image-maintenance hosts join the same gate.
 - Only an install-owner-confirmed restart sets `RigSpec.unrestrictedNetwork`. QEMU omits `restrict=on`, smolvm uses bare `--net`, proxy policy widens too, and the UI retains a warning. Pin both restricted/unrestricted argv paths in tests.
 - Android/iOS are host-managed with host networking; do not advertise them as enclosed or offer an unenforceable egress switch. Developer commands remain device/simulator argv, never a host shell.
-- Guests receive only per-VM broker secrets for short-lived, scoped, per-operation tokens: allowlisted, rate-limited and revoked at close. No durable provider credential enters an enclosure.
+- Guests receive only per-VM broker secrets for short-lived, scoped, per-operation tokens: allowlisted, rate-limited and revoked at close. No durable provider credential enters an enclosure. `RigSpec.forgeTokenScope` is fixed at open: a human-opened terminal rig gets `write` (bounded by that member's forge access); an agent-opened rig gets `read`, because a guest credential helper cannot tell a push from a fetch.
 - `RigService.act` blocks agent mutations during human control. Input is attributed and sequenced transactionally. Guest capture is unprivileged; QEMU input is injected via the hypervisor. Clipboard crossing requires per-user/per-direction permission before reading/transferring.
 - `enclosureControl` is denied in read-only modes. `SandboxBackend.microvm` is probe-gated and cannot downgrade to a host shell. Bound lifetimes/resources, recover only owned devices, and tear down owned machines at shutdown. Boot artifacts are checksum/digest-pinned; control sockets are private and reject symlinked namespaces. See [enclosure operational constraints](ARCH.md#enclosures).
 

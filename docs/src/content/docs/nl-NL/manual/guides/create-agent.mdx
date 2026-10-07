@@ -2,7 +2,7 @@
 title: Een agent maken en configureren
 description: Voeg een agent toe aan een werkruimte, geef hem een adapter, model, skills en machtigingen en controleer dat hij draait.
 slug: nl-NL/handleiding/gidsen/agent-maken
-sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
+sourceHash: 8824fa252a35cc42d12841f81b65157fd513a449
 ---
 
 Deze gids laat je zien hoe je een agent aan een werkruimte toevoegt en hem configureert tot hij echt kan draaien.
@@ -68,19 +68,12 @@ De eigen skills van een repo kies je hier niet. Een repo die ze meelevert (in `.
 
 ## Machtigingen verlenen
 
-**Sandbox-machtigingen** begint op “Werkruimtestandaard gebruiken”. Zet de schakelaar aan om ze voor deze agent in te stellen en schakel daarna de volgende mogelijkheden in of uit:
+Een agent heeft geen eigen machtigingsschakelaars. Wat hij mag pushen, openen, mergen of bereiken, leggen de actieregels vast onder **Instellingen → Werkruimte → Agentmachtigingen**, waar je een regel tot deze agent kunt beperken. Standaard vragen een push, een pull request, een review of merge en een schrijfactie naar een tracker het jou elk eerst, en is netwerktoegang toegestaan.
 
-- **git push toestaan** — injecteert het GitHub-token dat de agent nodig heeft om te pushen
-- **GitHub API-aanroepen toestaan** — laat de agent PR's, issues en repo-metadata lezen
-- **Ticketing-API-aanroepen toestaan** — injecteert de sleutel van de ticketingprovider
-- **Algemene netwerktoegang toestaan** — schakelt ook de tools `web_fetch` en `web_search` van de ingebouwde harness in
+Het GitHub-token van de agent heeft altijd alleen leesrechten. Een push loopt via Control Center, dat de regel **Naar een remote pushen** raadpleegt voordat het hem doorstuurt. Zie [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/) voor hoe elke regel een run bereikt.
 
-Elke schakelaar wordt bij de start van de run gecontroleerd door de inloggegevensbroker: een mogelijkheid die uit staat, betekent simpelweg dat het bijbehorende token nooit in de omgeving van de run wordt gezet.
-
-:::caution[Werkruimtestandaard betekent de conservatieve set van de server]
-Een agent die op “Werkruimtestandaard gebruiken” blijft staan, draait met git push, GitHub API en ticketing allemaal **uit** en netwerk **aan**. De standaardmogelijkheden onder Instellingen → Server → Diagnose en privacy zijn een voorkeur aan de clientkant. Wil je dat een agent pusht of PR's opent, zet dan de schakelaar aan en verleen de mogelijkheden expliciet.
-
-Deze mogelijkheden regelen de toegang tot inloggegevens en harness-tools, een aparte laag naast de OS-sandbox. `cc_server` wikkelt agentruns in de sandbox van de host waar die bestaat — Windows heeft geen native backend, en Linux en WSL2 hebben `bwrap` en `socat` nodig. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor alle grenzen.
+:::note[Regels en de OS-sandbox zijn aparte lagen]
+De regels bepalen wat een agent mag doen; de OS-sandbox begrenst waar zijn processen kunnen lezen, schrijven en verbinden. `cc_server` wikkelt agentruns in de sandbox van de host waar die bestaat — Windows heeft geen native backend, en Linux en WSL2 hebben `bwrap` en `socat` nodig. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor alle grenzen.
 :::
 
 ## Controleren of hij draait

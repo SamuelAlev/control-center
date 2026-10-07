@@ -3,7 +3,7 @@ title: "Architektúra"
 description: "Hogyan épül fel a Control Center: vékonykliens-szervermodell, funkcióközpontú Clean Architecture, valamint portok és adapterek."
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/fogalmak/architektura
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## Áttekintés
@@ -58,7 +58,7 @@ A `packages/cc_domain/lib/core/domain/` azokat az entitásokat és tárolókat t
 - Alapentitások: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - Identitás és többszereplős mód: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - Memóriaentitások: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Megosztott értékobjektumok: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Megosztott értékobjektumok: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Megosztott portok: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Domain-szolgáltatások: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + eseménytípusok (munkaterület/ügynök, PR/átnézés, üzenetküldés, jegykezelés, pipeline, orchestráció, memória, naptár/megbeszélések, identitás és tagság, megfigyelhetőség)

@@ -31,7 +31,7 @@ void main() {
     messaging = _FakeMessaging();
     reviewSpaces = _FakeReviewSpaces();
     service = ReviewPublisherService(
-      githubPrClientFor: (_) => github,
+      githubPrClientFor: (_, {required workspaceId, required owner}) => github,
       messaging: messaging,
       reviewSpaces: reviewSpaces,
     );

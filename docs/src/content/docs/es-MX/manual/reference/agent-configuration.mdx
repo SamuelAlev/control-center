@@ -2,7 +2,7 @@
 title: Configuración de agentes
 description: Todos los campos de la entidad de agente y las enumeraciones que usa.
 slug: es-MX/manual/referencia/configuracion-de-agentes
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Esta referencia enumera todos los campos de la entidad de agente, además de las enumeraciones y los indicadores que usa. Para ver un recorrido paso a paso de cómo crear o editar un agente en la aplicación, consulta [Crear y configurar un agente](/es-MX/manual/guias/crear-agente/).
@@ -26,7 +26,6 @@ Esta referencia enumera todos los campos de la entidad de agente, además de las
 | `effort`                | `String?`              | No            | Id del nivel de razonamiento (p. ej. `'low'`, `'xhigh'`), tomado de los `thinkingLevels` del modelo seleccionado                                                                                    |
 | `contextSize`           | `int?`                 | No            | Tamaño máximo de la ventana de contexto                                                                                                                                                            |
 | `role`                  | `AgentRole?`           | No            | Rol del agente                                                                                                                                                                                     |
-| `capabilities`          | `AgentCapabilities?`   | No            | Valor predeterminado de capacidades por agente; cuando es nulo, en el despacho se aplica el predeterminado a nivel de usuario y una conversación aún puede anularlo                                |
 | `monthlyBudgetCents`    | `int`                  | No            | Tope de gasto mensual en centavos (predeterminado `0`, ilimitado)                                                                                                                                  |
 | `silenceTimeoutMinutes` | `int?`                 | No            | Anulación del vigilante de silencio en minutos; debe ser nulo o estar entre 1 y 240 (validado en el constructor)                                                                                   |
 | `maxConcurrentTasks`    | `int`                  | No            | Predeterminado `1`. Cifra de capacidad que informa el modelo de presencia (los recuentos de ejecuciones en curso y en cola se comparan con ella)                                                   |
@@ -68,18 +67,9 @@ predeterminado de `monthlyBudgetCents` de `0` significa ilimitado. Escribe un te
 | `paused`   | Lo establece la parada forzosa del presupuesto. Se muestra en la lista de presencia; el despacho aún acepta trabajo |
 | `archived` | Retirado y oculto de las listas de presencia activas                                            |
 
-## Indicadores de AgentCapabilities
+## Permisos
 
-Se resuelven en cada despacho: el valor predeterminado del agente, con recurso al predeterminado a nivel de usuario cuando es nulo, y una anulación por conversación por encima. Se aplican por ausencia: el intermediario de credenciales simplemente no emite ni inyecta lo que cubre una capacidad desactivada.
-
-| Indicador          | Tipo   | Predeterminado | Descripción                                                                                        |
-| ------------------ | ------ | -------------- | -------------------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false`        | Hace push de commits al remoto; controla la inyección del token de GitHub junto con `canCallGitHubApi` |
-| `canCallGitHubApi` | `bool` | `false`        | Llama a api.github.com; controla la inyección de `GH_TOKEN` y los dominios de salida de GitHub       |
-| `canCallTicketing` | `bool` | `false`        | Llama a la API del proveedor de tickets; controla la inyección de la clave de API del proveedor y sus dominios de salida |
-| `canAccessNetwork` | `bool` | `true`         | Salida de red arbitraria. También controla las herramientas `web_fetch` y `web_search` del arnés    |
-
-`AgentCapabilities.safeDefault` son los cuatro valores predeterminados del constructor. `legacyDefault` (los cuatro en verdadero) solo lo usa la migración que rellenó retroactivamente las conversaciones creadas antes de que existieran las capacidades. Un blob almacenado mal formado o vacío se interpreta como `safeDefault`; la clave heredada `canCallLinear` se lee como `canCallTicketing`.
+Un agente no lleva indicadores de permisos. Hacer push, abrir y publicar pull requests, escribir en un rastreador y la salida a la red son clases de acción (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`) que las [barandillas](/es-MX/manual/conceptos/barandillas/) resuelven en el ámbito del espacio de trabajo, del agente o del espacio. El token de GitHub de una ejecución tiene siempre alcance de lectura; los push pasan por la pasarela de ejecuciones de agentes, que pregunta a la regla `gitPush` antes de reenviarlos.
 
 ## AgentSkills
 

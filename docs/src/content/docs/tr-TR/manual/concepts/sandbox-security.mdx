@@ -2,7 +2,7 @@
 title: Sandbox ve güvenlik
 description: Bugün Control Center'da bir ajanı gerçekte neyin kısıtladığı, işletim sistemi sandbox'ının ne kadar eriştiği ve arka ucu olmayan bir ana makinede hangi sınırların geçerli kaldığı.
 slug: tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[İşletim sistemi sandbox'ının eriştiği ve erişmediği yerler]
@@ -22,8 +22,7 @@ Sandbox'tan sağ çıkan iki boşluk vardır ve bunları akılda tutmakta fayda 
   araçların kendi içindeki yol hapsi ve buna eklenen eylem korumalarıdır.
 - **Claude Code `--dangerously-skip-permissions` ile başlatılır**, çünkü
   etkileşimsiz bir `claude -p` aksi hâlde kendi isteminde sonsuza dek
-  bloklanır. Dolayısıyla dosya ve kabuk çağrıları Control Center'ın
-  korumalarının kapısından geçmez — etraflarındaki sınır işletim sistemi
+  bloklanır. Dolayısıyla dosya çağrıları Control Center'ın korumalarının kapısından geçmez, kabuk komutlarını ise yalnızca komut satırını okuyan bir hook denetler — etraflarındaki sınır işletim sistemi
   sandbox'ıdır.
   :::
 
@@ -89,9 +88,7 @@ _reddedildi_ olarak çözülür — kimsenin yanıtlayamadığı bir soru asla e
 değildir. Çözümleme modeli için
 [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/) sayfasına bakın.
 
-**Yetenekle kapılanan kimlik bilgileri ve arındırılmış bir ortam.** Kimlik
-bilgileri, konuşmanın yetenek bayraklarından her başlatmada üretilir ve
-çalıştırma bittiğinde iptal edilir. ACP, harness `bash` ve yerel sarmalama
+**Broker'dan gelen kimlik bilgileri ve arındırılmış bir ortam.** Kimlik bilgileri her başlatmada üretilir ve çalıştırma bittiğinde iptal edilir; bir çalıştırmanın elindeki GitHub belirteci okuyabilir ama push edemez — aşağıdaki "Push'lar Control Center'dan geçer" bölümüne bakın. ACP, harness `bash` ve yerel sarmalama
 altındaki Claude Code, süreç başlamadan önce dinamik bağlayıcı ve yorumlayıcı
 enjeksiyon vektörlerinden (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
 `NODE_OPTIONS`, `GIT_SSH_COMMAND` ve benzerlerinden) arındırılmış bir ortam
@@ -122,36 +119,72 @@ kısıtlayıcı karar kazanır.
 Bir adaptör olarak kullanıldığında Claude Code, sandbox'ın en çok ağırlık
 taşıdığı durumdur. Control Center onu `--dangerously-skip-permissions` ile
 başlatır, çünkü etkileşimsiz bir `claude -p` aksi hâlde kendi onay isteminde
-sonsuza dek bloklanır. Okuma, yazma, düzenleme ve kabuk çağrıları kendi süreci
-içinde gerçekleşir ve Control Center onları asla görmez; bir kapıya ulaşan tek
-çağrıları, Control Center'ın kendisinin sunduğu `mcp__*` araçlarıdır. Bir arka
+sonsuza dek bloklanır. Okuma, yazma ve düzenleme çağrıları kendi süreci içinde gerçekleşir ve Control Center onları asla görmez. `Bash` çağrıları ise çalışmadan önce sunucudaki bir hook'a gönderilir; hook komut satırını sınıflandırır ve ilgili kurala sorar. Control Center'ın sunduğu `mcp__*` araçları da her zamanki gibi kapıdan geçer. Bir arka
 uç varsa bu görünmeyen çağrılar yine de sandbox sarmalamasının içinde
 gerçekleşir, dolayısıyla etraflarındaki sınırı işletim sistemi oluşturur.
 Yoksa hiçbir şey oluşturmaz. Her adaptör bunu kendi uygulama matrisinde belirtir
 — bkz. [adaptör dürüstlük
 matrisi](/tr-TR/kilavuz/kavramlar/korumalar/#the-adapter-honesty-matrix).
 
-## Yetenek kapılaması yoklukla uygulamadır
+## Push'lar Control Center'dan geçer
 
-Bir konuşma dört yetenek bayrağı taşır: depoya push, GitHub API'sini çağırma,
-biletleme sağlayıcısını çağırma ve ağa erişim. Bunlar ajan işlem yaptığında
-denetlenmez. Bir kez, başlatma sırasında, kimlik bilgisi broker'ı tarafından
-denetlenir — kapalı bir yetenek, eşleşen token'ın ortama hiç konmaması anlamına
-gelir.
+Ajan başına izin bayrağı yoktur. Bir ajanın commit oluşturup oluşturamayacağına,
+push edip edemeyeceğine, pull request açıp açamayacağına, bir takip sistemine
+yazıp yazamayacağına ya da ağa erişip erişemeyeceğine
+[korumalar](/tr-TR/kilavuz/kavramlar/korumalar/) karar verir — izin ver, önce sor ya da
+reddet — ve ajanı hangi adaptör çalıştırırsa çalıştırsın aynı kurallar
+geçerlidir.
 
-Mekanizmanın tamamı budur ve bunu açıkça söylemekte fayda var, çünkü arıza
-biçimi insanların beklediği gibi değildir. "GitHub API"yi kapatmak bir "yetenek
-reddedildi" iletisi üretmez. Ajanın içinde sıradan bir `401` üretir, çünkü
-gönderilecek bir `GH_TOKEN` yoktur. Ajan bunu pekâlâ bir kimlik bilgisi sorunu
-olarak anlatabilir. Yoklukla uygulama sağlamdır — atlanacak bir denetim yoktur —
-ama sessizdir ve ajan neden başarısız olduğunu bilmez.
+Push, bir kuralı aşmaya çalışan bir ajana karşı bile ayakta kalması gereken
+eylemdir; bu yüzden ajanın ne çalıştırdığıyla değil, elinde ne tuttuğuyla
+uygulanır. Bir GitHub App yapılandırıldığında, bir GitHub çalışma ağacındaki
+çalıştırma depo kapsamlı bir kurulum token'ı alır; bu token içerik okuyabilir
+ve pull request'lerle çalışabilir ama push edemez. Çalıştırmanın git
+yapılandırması her GitHub push URL'sini (`https://github.com/`,
+`git@github.com:`, `ssh://git@github.com/`) **ajan çalıştırma ağ geçidine**,
+yani `cc_server` üzerindeki bir loopback uç noktasına yeniden yazar. Ağ geçidi
+push'un hangi ref'leri güncellediğini okur, **Uzak depoya push et** kuralına
+sorar — dolayısıyla "`main`'e push'u reddet" gibi dallarla sınırlı bir kural da
+uygulanır — ve ancak ondan sonra push'u, bu amaçla ürettiği ve ajana asla
+vermediği bir yazma token'ıyla GitHub'a iletir. Reddedilen bir push git'in
+kendi çıktısında görünür:
 
-Ağ bayrağı da aynı şekilde davranır. Kapalıyken harness'ın `web_fetch` ve
-`web_search` araçları her çağrıyı reddeder ve sandbox'lı bir başlatmanın proxy
-izin listesi boştur, dolayısıyla her giden bağlantı reddedilir.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Çalıştırma yıkıldığında kimlik bilgileri iptal edilir, böylece bir tutamaç onu
-üreten çalıştırmadan daha uzun yaşamaz.
+Ağ geçidi push'ları yalnızca çalışma ağacının kendi deposuna veya çalışma
+alanına bağlı bir GitHub deposuna iletir. Fetch'ler okuma token'ıyla doğrudan
+GitHub'a gider.
+
+Diğer kabuk komutları daha yumuşak bir kapıyla karşılaşır. Harness'ın `bash`
+aracı ve bir hook aracılığıyla Claude Code'un `Bash` aracı her komut satırını
+sınıflandırır ve ait olduğu kurala sorar: `git commit`, `merge`, `rebase`,
+`cherry-pick`, `revert` ve `am` **Commit oluştur**; `gh pr create`
+**Pull request aç**; `gh pr merge`, `review`, `comment` ve `close`
+**İnceleme yayınla veya birleştir**; `gh issue create`, `edit`, `comment` ve
+`close` **Harici takip sistemine yaz**; paket kurulumları **Paket kur**;
+`curl` ve `wget` ise **Ağa eriş** kuralına girer. Bu, bir eylemin alışılmış
+yazımını tanır; bir eylemi gizlemeye kararlı bir ajan (`eval`, bir betik
+dosyası, doğrudan bir API çağrısı) bunu başarabilir. Push'lar buna bağlı
+değildir.
+
+:::caution[GitHub App olmadan push kuralı yalnızca tavsiye niteliğindedir]
+GitHub App yapılandırılmadığında broker, salt okunura daraltılamayan bir
+kişisel erişim token'ına geri düşer. Kural `git push` için yine geçerlidir,
+çünkü git push'u ağ geçidine gönderir; ama ortamdaki token'ı doğrudan kullanan
+kod onu atlayarak push edebilir.
+:::
+
+Sandbox'a hiçbir biletleme API anahtarı konmaz. Ajanlar biletleri, **Harici
+takip sistemine yaz** kuralına soran Control Center MCP araçlarıyla yazar.
+
+**Ağa eriş** kuralı, çalıştırma başlarken bir kez okunur. Bir sandbox'ın ağı ya
+açıktır ya kapalıdır; bu yüzden reddet onu kapatır, izin ver ve önce sor ise
+açık bırakır; harness'ın `web_fetch` ve `web_search` araçları her çağrıda
+sormaya devam eder. Çalıştırma yıkıldığında kimlik bilgileri, ağ geçidinin
+ürettiği tüm yazma token'larıyla birlikte iptal edilir; böylece bir tutamaç
+çalıştırmadan daha uzun yaşamaz.
 
 ## Sandbox neyi ekler ve nerede durur
 
@@ -219,31 +252,27 @@ erişilen bir kopya, profil onu yasaklıyor görünürken yazılabilir olurdu.
 
 Bir sandbox altında ağ, süreç içi loopback proxy'leri tarafından uygulanan oturum
 başına bir **alan adı** izin listesidir. Çıkış varsayılan olarak reddedilir: ağ
-yeteneği kapalıyken proxy'ler yine başlar ama izin listeleri boştur, dolayısıyla
-her giden bağlantı reddedilir. Açıkken çözümleyici izin listesini özenle
-seçilmiş bir temelden — LLM API sağlayıcıları, git barındırma, paket kayıt
-defterleri, model kataloğu — artı bir ajanın GitHub veya push yeteneğinin ona
-kazandırdığı GitHub alan adlarından kurar ve her bağlantının hedef ana
+kapalıyken proxy'ler yine başlar ama izin listeleri boştur, dolayısıyla her
+giden bağlantı reddedilir. Açıkken çözümleyici izin listesini özenle seçilmiş
+bir temelden — LLM API sağlayıcıları, git barındırma, paket kayıt defterleri,
+model kataloğu — artı GitHub alan adlarından kurar ve her bağlantının hedef ana
 makinesini bununla eşleştirir. Joker karakterler çalışır (`*.example.com` alt
 alan adlarıyla eşleşir, kök alanla değil). Ayrı ve her zaman reddedilen bir
 liste, izin listesini yener ve bulut meta veri uç noktaları ile telemetri
 hedeflerini kapsar. _Yapılandırılamayan_ şey listenin kendisidir: belirtim, ek
-alan adları için bir `egressAllowlist` alanı ve bir biletleme alan adı kancası
-taşır, ama gönderim yolunda hiçbir şey ikisini de doldurmaz; dolayısıyla
-pratikte her çalıştırma temeli artı yeteneğinden türeyen alan adlarını alır,
-fazlasını değil.
+alan adları için bir `egressAllowlist` alanı taşır, ama gönderim yolunda hiçbir
+şey onu doldurmaz; dolayısıyla pratikte her çalıştırma temeli artı GitHub'ı
+alır, fazlasını değil.
 
 macOS'ta retler gözlemlenebilir: bir monitör, Sandbox retleri için sistem
 günlüğünü dinler, bilinen gürültüyü süzer, yeniden deneme fırtınalarını
-tekilleştirir ve her birini, neyin denendiğini ve hangi yeteneğin bunu açacağını
-adlandıran bir `SandboxViolation` olarak ortaya çıkarır. Linux'ta sarmalama
+tekilleştirir ve her birini, neyin denendiğini ve neyin engellendiğini adlandıran bir `SandboxViolation` olarak ortaya çıkarır. Linux'ta sarmalama
 yolu, `EPERM`, `Operation not permitted` ve `Permission denied` için stderr'i
 ayrıştırır ve aynı olay türünü yayar — sistem günlüğü dinleyicisi yoktur. Bunlar
 çalıştırmanın kendi olay akışına varır, böylece reddedilen bir sistem çağrısı
 yalnızca bir günlükte değil, dökümde de görünür. Telemetri yalnızca yerel bir
 sandbox süreci gerçekten sararken vardır — arka ucu olmayan bir ana makinede
-gözlemlenecek bir şey yoktur. Ayrıca yetenek kapılamasıyla ilgisizdir: bir
-ihlal, bir yetenek sorgusundan değil, reddedilen bir sistem çağrısından gelir.
+gözlemlenecek bir şey yoktur. Ayrıca korumalarla ilgisizdir: bir ihlal, bir kural sorgusundan değil, reddedilen bir sistem çağrısından gelir.
 
 ## Onaylar sandbox'tan değil, korumalardan gelir
 
@@ -273,5 +302,5 @@ denetlenebileceğini belirten tek yerdir.
 
 ## İlgili kılavuzlar
 
-- [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/): yetenek bayrakları ve dosya sistemi duruşu
+- [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/): eylem kuralları, push uygulaması ve dosya sistemi duruşu
 - [Bir ajanı tanılamak](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/): tanılama denetimlerinin neleri kapsadığı

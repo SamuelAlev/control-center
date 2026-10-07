@@ -2,7 +2,7 @@
 title: Ügynök diagnosztizálása
 description: Járja körbe a futtatási naplót, az adapterpróbát, a szerver állapotát és a gazdagép diagnosztikáját, amikor egy ügynök nem produkál futtatásokat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Ez az útmutató bemutatja, hogyan derítheti ki, miért nem készít futtatásokat egy ügynök.
@@ -60,19 +60,18 @@ Két dolog, amit érdemes tudni, amikor egy változás „tesztekben működik, 
 
 A **Beállítások → Szerver → Diagnosztika és adatvédelem** (`/settings/server/diagnostics`) a gazdagépszintű oldal. A következőket tartalmazza:
 
-- **Homokozó** — a főkapcsoló, a felismert háttérrendszer, egy telepítési tipp és az alapértelmezett képességkapcsolók. Csak a felismert háttérrendszer származik a szerverről; lásd az alábbi figyelmeztetést. Nincs visszaállítási vezérlő.
+- **Homokozó** — a főkapcsoló, a felismert háttérrendszer és egy telepítési tipp. Csak a felismert háttérrendszer származik a szerverről; lásd az alábbi figyelmeztetést. Nincs visszaállítási vezérlő.
 - **Szemantikus keresés** — az eszközön futó beágyazómodell életciklusa: telepítve, letöltés folyamatban százalékos értékkel, nincs telepítve vagy telepítési hiba. Amíg nincs telepítve, a memória- és a kódkeresés csak kulcsszavas marad.
 - **Rendszer viselkedése** — tartsa ébren a számítógépet, amíg az ügynökök futnak.
-- **Szinkronmotor** — tárolónkénti vészkapcsolók a jegyekhez, az üzenetküldéshez és a jegyzetekhez. Ezek vészkijáratok vissza a teljes pillanatképű feliratkozásokhoz; egy változás csak az új feliratkozásokat érinti, ezért csak újratöltés után érvényesül teljesen.
 - **Naplózási szint** — emelje meg, mielőtt egy hibát reprodukál.
 - **Adatvédelem** — hogy a nyers diff-tartalom továbbítható-e az ügynök modelljének, és hogy elküldésre kerülnek-e a hibajelentések.
 
 :::caution[Ez a szakasz a gazdagépről jelent, a vezérlői pedig kliensoldaliak]
-Az észlelés és a kikényszerítés mára megegyezik: ahol az észlelő natív háttérrendszert jelent, az adott gazdagépen az ügynökfuttatások valóban abba vannak csomagolva. De ebben a szakaszban az észlelő az egyetlen élő dolog. A főkapcsoló, a háttérrendszer-választó és az alapértelmezett képességkapcsolók az eszközén tárolt beállítások, és a szerver egyiket sem olvassa — a szerver saját kapcsolója a `--sandbox` (`on` az alapértelmezett, `off` a kikapcsoláshoz), és minden „Munkaterület alapértelmezettje” beállításon hagyott ügynöknél a szerver az óvatos alapértelmezésére esik vissza: nincs git push, nincs GitHub API, nincs jegykezelési kulcs, a hálózat bekapcsolva.
+Az észlelés és a kikényszerítés mára megegyezik: ahol az észlelő natív háttérrendszert jelent, az adott gazdagépen az ügynökfuttatások valóban abba vannak csomagolva. De ebben a szakaszban az észlelő az egyetlen élő dolog. A főkapcsoló és a háttérrendszer-választó az eszközén tárolt beállítások, és a szerver egyiket sem olvassa — a szerver saját kapcsolója a `--sandbox` (`on` az alapértelmezett, `off` a kikapcsoláshoz).
 
 Tehát az itteni figyelmeztetést érdemes komolyan venni, de általában nem ez az oka annak, hogy egy ügynök meghibásodik. Ha meg akarja erősíteni, milyen állapotban van a szerver, olvassa el az indítási naplóját: kiírja, hogy `agent sandbox ON` a háttérrendszer-megjegyzéssel, `no OS-native agent sandbox on this host` egy telepítési tippel, vagy `agent sandbox DISABLED by --sandbox off`. A `GET /healthz` nem tartalmaz homokozómezőt.
 
-Ahol nincs háttérrendszer — Windows esetén mindig, Linuxon vagy WSL2-ben `bwrap` és `socat` nélkül —, a futtatások **nincsenek** homokozóba zárva, és amit korlátoz, az a beszélgetés saját munkapéldánya, a képességek, amelyek szabályozzák, milyen hitelesítő adatok készülnek bele, a műveleti korlátok, a környezet tisztítása és a mód által engedett eszközfelszín.
+Ahol nincs háttérrendszer — Windows esetén mindig, Linuxon vagy WSL2-ben `bwrap` és `socat` nélkül —, a futtatások **nincsenek** homokozóba zárva, és amit korlátoz, az a beszélgetés saját munkapéldánya, a csak olvasásra jogosult kódhosting-token és a push-átjáró, a műveleti korlátok, a környezet tisztítása és a mód által engedett eszközfelszín.
 :::
 
 ## Gyakori hibák
@@ -83,7 +82,7 @@ Telepítse a CLI-t **a szerver gazdagépére**, majd kattintson a **Frissítés*
 
 ### Az ügynök nem tud pusholni vagy pull requestet nyitni
 
-A képességei jelentik a kaput. Nyissa meg a **Beállítások → Munkaterület → Ügynökök** → az ügynök → **Homokozó-jogosultságok** elemet, kapcsolja be a kapcsolót, és engedélyezze a **git push engedélyezése** és a **GitHub API-hívások engedélyezése** lehetőséget. Ha a kapcsolót „Munkaterület alapértelmezettje” állásban hagyja, az ügynök egyiket sem kapja meg.
+Nézze meg, mit írt ki a git vagy az ügynök. A `Control Center policy: …` azt jelenti, hogy egy műveleti szabály elutasította, vagy egy jóváhagyás megválaszolatlan maradt: ellenőrizze a **Küldés távoli tárolóra** és a **Pull request megnyitása** szabályt a **Beállítások → Munkaterület → Ügynökjogosultságok** alatt. Ha a git azt írja, hogy a Control Centernek nincs pusholásra képes GitHub-hitelesítő adata, telepítse a GitHub Appot az adott repóra, vagy csatlakoztassa a GitHubot.
 
 ### A szemantikus keresés nem ad hasznos találatot
 

@@ -2656,15 +2656,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get allow => 'Benarkan';
 
   @override
-  String get allowGitPush => 'Benarkan git push';
-
-  @override
-  String get allowGithubApi => 'Benarkan panggilan API GitHub';
-
-  @override
-  String get allowNetwork => 'Benarkan akses rangkaian am';
-
-  @override
   String get apiKeys => 'Kunci API';
 
   @override
@@ -3071,9 +3062,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get currentParticipants => 'Peserta semasa';
 
   @override
-  String get customCapabilitiesDescription => 'Perihalan keupayaan tersuai';
-
-  @override
   String get customSystemPrompt => 'Prompt sistem tersuai untuk ejen ini...';
 
   @override
@@ -3089,9 +3077,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deactivate => 'Nyahaktifkan';
-
-  @override
-  String get defaultCapabilities => 'Keupayaan lalai · ruang baharu';
 
   @override
   String get defaultChat => 'Sembang lalai';
@@ -3497,10 +3482,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get forward => 'Maju';
 
   @override
-  String get gatesGithubPatPush =>
-      'Mengawal suntikan PAT GitHub. Diperlukan supaya ejen boleh push.';
-
-  @override
   String get general => 'Umum';
 
   @override
@@ -3567,6 +3548,11 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get serviceStatusOutage => 'Gangguan';
+
+  @override
+  String serviceStatusOverflowCount(int count) {
+    return '$count+';
+  }
 
   @override
   String get serviceStatusTitle => 'Status perkhidmatan';
@@ -4034,6 +4020,9 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get navSettings => 'Tetapan';
+
+  @override
+  String get exitSettings => 'Keluar dari tetapan';
 
   @override
   String networkBlockCount(int count) {
@@ -4553,10 +4542,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get react => 'Tindak balas';
 
   @override
-  String get readPrsIssuesMetadata =>
-      'Membolehkan ejen membaca PR, isu dan metadata repo.';
-
-  @override
   String get readerPreferences => 'Keutamaan pembaca';
 
   @override
@@ -4810,9 +4795,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get sandboxMacosBuiltIn =>
       'Kotak pasir natif terbina pada macOS - menggunakan Apple Seatbelt (`sandbox-exec`). Tiada pemasangan diperlukan.';
-
-  @override
-  String get sandboxPermissions => 'Kebenaran kotak pasir';
 
   @override
   String get sandboxUnsupported =>
@@ -5400,9 +5382,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get useSandbox => 'Gunakan kotak pasir';
 
   @override
-  String get useWorkspaceDefault => 'Gunakan lalai ruang kerja';
-
-  @override
   String get userAgent => 'User-Agent';
 
   @override
@@ -5445,10 +5424,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get weakIsolationDescription =>
       'Pengasingan lemah - sempadan ruang nama sahaja, tiada sempadan kernel.';
-
-  @override
-  String get whenOffNoDefaultRoute =>
-      'Apabila dimatikan, kotak pasir but tanpa laluan lalai.';
 
   @override
   String get whenOffServerStaysStopped =>
@@ -6670,14 +6645,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Belum ada repositori dalam ruang kerja ini.';
 
   @override
-  String get allowTicketingApi => 'Benarkan panggilan API tiket';
-
-  @override
   String get ticketingApiKey => 'Kunci API tiket';
-
-  @override
-  String get ticketingApiKeySubtitle =>
-      'Menyuntik kunci API penyedia tiket ke dalam kotak pasir.';
 
   @override
   String get ticketingProvider => 'Penyedia tiket';
@@ -9055,28 +9023,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get keepAwakeOffSubtitle =>
       'Komputer mungkin tidur walaupun ejen sedang bekerja';
-
-  @override
-  String get syncEngineSectionTitle => 'Enjin segerak';
-
-  @override
-  String get syncEngineDescription =>
-      'Tiket, pemesejan dan nota dikemas kini secara langsung melalui perubahan tambahan kecil dan bukan snapshot penuh. Mematikan togol menjatuhkan stor itu kembali ke modus snapshot penuh — muat semula apl supaya perubahan berkuat kuasa.';
-
-  @override
-  String get syncEngineTicketsTitle => 'Tiket';
-
-  @override
-  String get syncEngineMessagingTitle => 'Pemesejan';
-
-  @override
-  String get syncEngineNotesTitle => 'Nota';
-
-  @override
-  String get syncEngineOnSubtitle => 'Segerak delta langsung aktif';
-
-  @override
-  String get syncEngineOffSubtitle => 'Menggunakan segerak snapshot penuh';
 
   @override
   String get spaces => 'Ruang';
@@ -13001,23 +12947,22 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pilihan — biarkan kosong dan model tajuk menamakannya secara automatik';
 
   @override
-  String get conversationTitlesSectionTitle => 'Tajuk perbualan';
+  String get shortTaskOff => 'Mati';
 
   @override
-  String get conversationTitlesSectionCaption =>
-      'Pilih pelari yang menamakan perbualan baharu dalam ruang kerja ini secara automatik. Tajuk kekal dimatikan sehingga penyesuai dipilih, dan digunakan pada setiap ahli.';
+  String get shortTaskUnavailable =>
+      'Pilih model tugasan pendek dalam Tetapan → Penyesuai untuk menggunakan ini';
 
   @override
-  String get conversationTitlesModelLabel => 'Model tajuk';
+  String get conversationTitleGenerate => 'Jana';
 
   @override
-  String get conversationTitlesAdapterLabel => 'Penyesuai';
+  String get conversationTitleNoMessages =>
+      'Hantar mesej dahulu. Tajuk dijana daripadanya.';
 
   @override
-  String get conversationTitlesAdapterHint => 'Mati';
-
-  @override
-  String get conversationTitlesAdapterOff => 'Mati';
+  String get conversationTitleGenerateFailed =>
+      'Tidak dapat menjana tajuk. Cuba lagi.';
 
   @override
   String get startThread => 'Mula benang';
@@ -13181,6 +13126,16 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get contextSegmentConversation => 'Perbualan';
+
+  @override
+  String get contextSegmentRunner => 'Prompt pelari, alatan dan kerja giliran';
+
+  @override
+  String get contextUsageMeasured => 'Dilaporkan oleh panggilan model terakhir';
+
+  @override
+  String get contextUsageEstimated =>
+      'Anggaran sehingga larian melaporkan penggunaan';
 
   @override
   String get contextExplorerTitle => 'Konteks';
@@ -13572,12 +13527,15 @@ class AppLocalizationsMs extends AppLocalizations {
       'Di mana proses ejen dan tulisan fail sebenarnya berlaku.';
 
   @override
-  String get sandboxBackendFieldDescription =>
-      'Auto memilih yang paling kuat yang hos ini sokong. Pinkan satu supaya ia tidak berubah di bawah anda.';
+  String get sandboxGroupAgentActions => 'Perkara yang boleh dilakukan ejen';
 
   @override
-  String get sandboxCapabilitiesDescription =>
-      'Lubang yang ditumbuk melalui sempadan. Setiap satu ialah sesuatu yang ejen terasing masih boleh lakukan kepada dunia luar.';
+  String get sandboxGroupAgentActionsDescription =>
+      'Sama ada push, membuka pull request dan mengakses rangkaian dibenarkan, perlu ditanya dahulu atau ditolak ditetapkan dalam kebenaran ejen.';
+
+  @override
+  String get sandboxBackendFieldDescription =>
+      'Auto memilih yang paling kuat yang hos ini sokong. Pinkan satu supaya ia tidak berubah di bawah anda.';
 
   @override
   String get sandboxSummaryInForce => 'Berkuat kuasa';
@@ -13720,6 +13678,27 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Jalankan ini dalam terminal pada pelayan. Ia membuka penyemak imbas untuk menyelesaikan log masuk, dan menulis kelayakan ke dalam direktori akaun ini.';
+
+  @override
+  String get claudeAccountLongLivedToken => 'Token jangka panjang';
+
+  @override
+  String get claudeAccountUseLongLivedToken => 'Guna token jangka panjang';
+
+  @override
+  String get claudeAccountReplaceLongLivedToken => 'Ganti token jangka panjang';
+
+  @override
+  String get claudeAccountRemoveLongLivedToken =>
+      'Alih keluar token jangka panjang';
+
+  @override
+  String get claudeAccountLongLivedTokenHint =>
+      'Log masuk biasa perlu diperbaharui dan boleh tamat tempoh semalaman. Token jangka panjang kekal log masuk selama kira-kira setahun. Jalankan ini dalam terminal, selesaikan dalam pelayar, kemudian tampal token yang dicetaknya.';
+
+  @override
+  String get claudeAccountLongLivedTokenInvalid =>
+      'Itu bukan token daripada claude setup-token. Ia bermula dengan sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Telah log keluar';
@@ -14148,10 +14127,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get attachmentOpenExternally => 'Buka dalam apl lalai';
-
-  @override
-  String get asideUnavailable =>
-      'Tetapkan model sekali guna dalam tetapan ruang kerja untuk menggunakan ini';
 
   @override
   String get asideEmpty => 'Belum ada apa untuk dikerjakan';
@@ -14694,6 +14669,21 @@ class AppLocalizationsMs extends AppLocalizations {
   String get credentialGateOpenSettings => 'Buka tetapan';
 
   @override
+  String get credentialGateAccountsRemovedTitle =>
+      'Akaun Claude Code yang dilampirkan telah dialih keluar';
+
+  @override
+  String get credentialGateAccountsRemovedHint =>
+      'Lampirkan akaun lain dalam tetapan akaun ejen ini atau ruang kerja, atau kosongkan senarai untuk menggunakan akaun lalai. Larian akan bersambung dengan sendirinya.';
+
+  @override
+  String get accountPoolAllRemoved =>
+      'Semua akaun dalam senarai ini telah dialih keluar daripada pelayan. Lampirkan akaun lain, atau kosongkan senarai.';
+
+  @override
+  String get accountPoolClear => 'Kosongkan senarai';
+
+  @override
   String get selectModel => 'Pilih model';
 
   @override
@@ -15130,6 +15120,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get ideQuickOpenDescription =>
       'Cari fail perbualan mengikut nama dan buka satu dalam tab';
+
+  @override
+  String get prQuickOpenDescription =>
+      'Cari fail pull request mengikut nama dan buka satu dalam tab';
 
   @override
   String get ideQuickOpenHint => 'Cari fail mengikut nama';

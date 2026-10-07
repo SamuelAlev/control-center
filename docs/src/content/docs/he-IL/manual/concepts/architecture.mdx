@@ -3,7 +3,7 @@ title: ארכיטקטורה
 description: כיצד Control Center בנוי במודל של לקוח דק מעל שרת, בארכיטקטורה נקייה מבוססת תכונות וביציאות ומתאמים.
 dateModified: 2026-09-19
 slug: he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## סקירה כללית
@@ -58,7 +58,7 @@ feature_name/
 - ישויות ליבה: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
 - זהות ורב־משתמשים: `User`, `Principal` (חתום `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
 - ישויות זיכרון: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- אובייקטי ערך משותפים: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- אובייקטי ערך משותפים: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - יציאות משותפות: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - שירותי תחום: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
 - `DomainEventBus` + סוגי אירועים (סביבת עבודה/סוכן, PR/סקירה, הודעות, כרטוס, פייפליין, תזמור, זיכרון, לוח שנה/פגישות, זהות וחברות, נצפות)

@@ -3,7 +3,6 @@ library;
 
 import 'dart:async';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/harness/harness_command_runner.dart';
@@ -15,7 +14,7 @@ void main() {
     () async {
       final runner = SandboxedHarnessCommandRunner(
         mode: Mode.chat,
-        capabilities: const AgentCapabilities(),
+        networkEnabled: false,
       );
       final source = CancellationTokenSource();
       final sw = Stopwatch()..start();

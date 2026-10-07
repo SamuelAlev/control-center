@@ -2,7 +2,7 @@
 title: Gestionar claves API
 description: Dónde vive cada credencial —tu cuenta de usuario en el servidor, el propio servidor o una CLI externa— y cómo configurarla, rotarla y eliminarla.
 slug: es-ES/manual/guias/claves-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Esta guía muestra dónde se guarda cada credencial que usa Control Center y cómo
@@ -82,9 +82,10 @@ que autenticarse.
 Tu clave se guarda en el servidor asociada a tu id de usuario, igual que la del
 host de código. El servidor conserva aparte su propia clave de Linear
 (**Aplicaciones de proveedor**), que es la que usa la sincronización de tickets
-cuando no lo pidió ninguna persona. La clave que recibe un agente solo se
-inyecta cuando el agente tiene la capacidad **Permitir llamadas a la API de
-tickets**. Consulta
+cuando no lo pidió ninguna persona. En el entorno aislado de un agente no se
+inyecta ninguna clave de tickets; los agentes escriben tickets con las
+herramientas de Control Center, que preguntan a la regla **Escribir en un
+rastreador externo**. Consulta
 [Configurar la integración con Linear](/es-ES/manual/guias/integracion-linear/).
 
 ## Rotar o revocar

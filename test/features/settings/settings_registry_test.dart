@@ -108,7 +108,6 @@ void main() {
         'calendar.accounts',
         'chat_bridges.my-account-link',
         'chat_bridges.workspace-setup',
-        'messaging.conversation-titles',
       });
       expect(
         {for (final s in registry.sections) s.id: s.slot},
@@ -119,7 +118,6 @@ void main() {
           'calendar.accounts': SettingsSlot.workspaceProfile,
           'chat_bridges.my-account-link': SettingsSlot.workspaceProfile,
           'chat_bridges.workspace-setup': SettingsSlot.workspaceGeneral,
-          'messaging.conversation-titles': SettingsSlot.workspaceGeneral,
         },
       );
     });

@@ -77,7 +77,6 @@ void main() {
       const violation = SandboxViolation(
         action: 'network-outbound',
         target: 'example.com',
-        suggestedCapability: 'canNetwork',
         raw: 'deny network-outbound example.com',
       );
       const a = SandboxEvent(
@@ -98,18 +97,15 @@ void main() {
       const v = SandboxViolation(
         action: 'file-write',
         target: '/tmp/log',
-        suggestedCapability: 'canWriteTemp',
         raw: 'deny file-write /tmp/log',
       );
       expect(v.action, 'file-write');
       expect(v.target, '/tmp/log');
-      expect(v.suggestedCapability, 'canWriteTemp');
       expect(v.raw, 'deny file-write /tmp/log');
     });
 
     test('construction with only required fields', () {
       const v = SandboxViolation(action: 'exec', target: '/bin/sh');
-      expect(v.suggestedCapability, isNull);
       expect(v.raw, isNull);
     });
 
@@ -117,13 +113,11 @@ void main() {
       const a = SandboxViolation(
         action: 'file-read',
         target: '/etc/hosts',
-        suggestedCapability: 'canReadEtc',
         raw: 'deny file-read /etc/hosts',
       );
       const b = SandboxViolation(
         action: 'file-read',
         target: '/etc/hosts',
-        suggestedCapability: 'canReadEtc',
         raw: 'deny file-read /etc/hosts',
       );
       expect(a, equals(b));
@@ -141,20 +135,6 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
-    test('inequality with different suggestedCapability', () {
-      const a = SandboxViolation(
-        action: 'net',
-        target: 'x',
-        suggestedCapability: 'a',
-      );
-      const b = SandboxViolation(
-        action: 'net',
-        target: 'x',
-        suggestedCapability: 'b',
-      );
-      expect(a, isNot(equals(b)));
-    });
-
     test('inequality with different raw', () {
       const a = SandboxViolation(action: 'net', target: 'x', raw: 'line1');
       const b = SandboxViolation(action: 'net', target: 'x', raw: 'line2');
@@ -165,13 +145,11 @@ void main() {
       const a = SandboxViolation(
         action: 'exec',
         target: '/bin/sh',
-        suggestedCapability: 'canExec',
         raw: 'deny exec /bin/sh',
       );
       const b = SandboxViolation(
         action: 'exec',
         target: '/bin/sh',
-        suggestedCapability: 'canExec',
         raw: 'deny exec /bin/sh',
       );
       expect(a.hashCode, equals(b.hashCode));

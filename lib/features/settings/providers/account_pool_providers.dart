@@ -46,6 +46,38 @@ final accountPoolProvider = FutureProvider.autoDispose
           .get(scope.lane, agentId: scope.agentId),
     );
 
+/// Whether [scope]'s pool is configured but every account on it is gone from
+/// [existingIds]. False while the pool is still loading.
+///
+/// Surfaces that hide the editor below two accounts check this first: the
+/// Claude lane refuses to dispatch on such a pool, so it must stay fixable.
+bool watchPoolNamesOnlyRemoved(
+  WidgetRef ref,
+  AccountPoolScope scope,
+  Iterable<String> existingIds,
+) =>
+    ref
+        .watch(accountPoolProvider(scope))
+        .value
+        ?.pool
+        .namesOnlyRemoved(existingIds.toSet()) ??
+    false;
+
+/// Whether [scope]'s editor has anything to show: a choice between two or
+/// more credentials, or a pool naming only removed ones that must stay fixable.
+///
+/// THE visibility rule for every pool editor, on every lane and scope — the
+/// editor applies it to itself and a surface listing editors (the agent tab)
+/// asks the same question to decide whether it has anything to list.
+bool watchAccountPoolEditorVisible(
+  WidgetRef ref,
+  AccountPoolScope scope,
+  List<String> existingIds,
+) =>
+    existingIds.length > 1 ||
+    (existingIds.isNotEmpty &&
+        watchPoolNamesOnlyRemoved(ref, scope, existingIds));
+
 /// Writes a scope's pool and refreshes the read.
 ///
 /// A null [pool] clears it, which is how an agent goes back to inheriting the

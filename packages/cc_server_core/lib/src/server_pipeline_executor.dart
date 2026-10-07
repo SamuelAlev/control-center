@@ -76,7 +76,8 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   // clone a repo per run now address instead.
   required IsolatedRepoRepository isolatedRepoRepository,
   required AgentDispatchPort agentDispatchPort,
-  required GitHubPrClient githubPrClient,
+  required GitHubPrClient Function(String workspaceId, String owner)
+  githubPrClientFor,
   required OrchestrationRepository orchestrationRepository,
   required TicketWorkflowService ticketWorkflow,
   required CodeIndexer codeIndexer,
@@ -148,7 +149,7 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   );
   registerPrReviewBodies(
     registry,
-    githubPrClient: githubPrClient,
+    githubPrClientFor: githubPrClientFor,
     finalizeReview: finalizeReview,
   );
   // The `messaging.createSpace` entry node every agent-bearing template opens

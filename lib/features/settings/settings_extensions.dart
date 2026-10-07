@@ -65,7 +65,7 @@ class SettingsBody {
   /// `kSettingsNav`, so a typo is a failing test rather than a blank page.
   final String navItemId;
 
-  /// Builds the destination's content, below the sub-sidebar.
+  /// Builds the destination's content, beside the settings sidebar.
   final WidgetBuilder builder;
 }
 

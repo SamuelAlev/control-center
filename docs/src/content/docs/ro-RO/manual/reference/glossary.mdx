@@ -2,7 +2,7 @@
 title: Glosar
 description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'Un lucrător IA cu identitate, rol, skill-uri și capabilități. Aparține exact unui singur spațiu de lucru. Actorul principal al sistemului.'],
+['Agent', 'Un lucrător IA cu identitate, rol, skill-uri și un adaptor. Aparține exact unui singur spațiu de lucru. Actorul principal al sistemului.'],
 ['Adaptor', 'Runner-ul care execută un tur de agent. Două sunt livrate: Control Center (built-in) — harness-ul în proces care vorbește cu furnizorii de modele — și Claude Code prin CLI-ul claude. Cursor, Codex și ceilalți furnizori de modele se atașează la adaptorul integrat, nu ca runneri separați.'],
 ['Spațiu de lucru', 'Chiriașul de izolare de nivel superior. Grupează agenți, repo-uri, spații, tichete, memorie și pipeline-uri. Izolarea este structurală, nu convențională: fiecare spațiu de lucru are propriul fișier SQLite, așa că o citire între spații de lucru nu se compilează. Fiecare rută din aplicație este prefixată cu /workspaces/:workspaceId.'],
 ['Forge', 'Un host de cod — GitHub, GitLab sau Bitbucket Cloud. O proprietate a fiecărui repo, citită din remote-ul origin la înregistrare. Un spațiu de lucru poate găzdui repo-uri pe toate cele trei.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Set de identificatori de skill-uri, insensibil la majuscule, care injectează contextul relevant în prompturi în momentul trimiterii.'],
 ['Sursă de skill-uri', 'Un depozit GitHub înregistrat per spațiu de lucru ca catalog de skill-uri. Considerat nefiabil prin construcție: metadatele depozitului sunt doar pentru afișare, iar fiecare instalare trece poarta de scanare cu refuz implicit înainte ca vreun conținut să ajungă pe disc sau într-un prompt.'],
 ['skills-lock.json', 'Manifestul per spațiu de lucru al skill-urilor instalate: pentru fiecare, depozitul sursă, calea în depozit, commit-ul la care este fixat și un hash de conținut cumulat. Instalările, actualizările și dezinstalările îl țin la curent; verify_skills îl verifică față de disc.'],
-['AgentCapabilities', 'Patru indicatori (push către repo, API GitHub, tichete, egress de rețea) rezolvați per trimitere: implicitul agentului, apoi implicitul utilizatorului, cu o suprascriere per conversație. Aplicate prin absență, fiindcă o capabilitate dezactivată înseamnă că tokenul sau egress-ul pur și simplu nu este injectat niciodată.'],
+['Gateway-ul rulărilor de agenți', 'Un punct final de loopback pe cc_server care aplică politica de acțiuni în interiorul sandbox-ului unui agent. Fiecare push GitHub făcut de un agent este redirecționat către el, verificat cu regula Push către un remote și transmis cu un token de scriere pe care agentul nu îl deține niciodată; comenzile Bash ale Claude Code sunt verificate printr-un hook pe același punct final.'],
 ['Mode', 'chat, plan, review sau orchestrate. Stocat per spațiu, așa că un agent poate fi în moduri diferite în spații diferite; fiecare conversație dintr-un spațiu îl partajează. Controlează promptul de sistem, regulile de scriere ale sandbox-ului și lista de instrumente MCP permise.'],
 ['SandboxBackend', 'microvm (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), native (Seatbelt nativ pe macOS, bubblewrap pe Linux și WSL2) sau none. Detectat o singură dată la pornire; native înfășoară trimiterea agenților când este disponibil. Windows nu are backend nativ, iar Linux are nevoie de bwrap plus socat, așa că rulările de acolo rămân neînfășurate; --sandbox off renunță deliberat.'],
 ['Stație', 'O mașină de unică folosință pe care un agent o conduce în timp real: un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și instrumentul agentului vizează o singură mașină.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.'],
 ['WakeReason', 'Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.'],
 ['SandboxPort', 'Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).'],
-['CredentialBrokerPort', 'Emite credențiale limitate și condiționate de capabilități pentru lansarea sandbox-ului și le revocă la demolarea lui.'],
+['CredentialBrokerPort', 'Emite credențiale limitate pentru lansarea sandbox-ului (doar pentru citire în mediul unui agent, cu scriere doar pentru calea de push de pe server) și le revocă la demolarea lui.'],
 ['GitRepoInspectorPort', 'Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.'],
 ['EmbeddingPort', 'Produce vectori de embedding de text cu normă unitară pentru căutarea semantică.'],
 ['NotificationPort', 'Afișează notificări native de desktop, respectând filtrarea pe categorii și rute.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Entități principale
 
-**Agent**: Un lucrător IA cu identitate, rol, skill-uri și capabilități. Aparține exact unui singur spațiu de lucru. Actorul principal al sistemului.
+**Agent**: Un lucrător IA cu identitate, rol, skill-uri și un adaptor. Aparține exact unui singur spațiu de lucru. Actorul principal al sistemului.
 
 **Adaptor**: Runner-ul care execută un tur de agent. Două sunt livrate: **Control Center (built-in)** — harness-ul în proces care vorbește cu furnizorii de modele — și **Claude Code** prin `claude -p`. Cursor, Codex, Anthropic, OpenAI și restul sunt furnizori pe adaptorul integrat, nu CLI-uri separate. Vezi [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifestul per spațiu de lucru al skill-urilor instalate: pentru fiecare, depozitul sursă, calea în depozit, commit-ul la care este fixat și un hash de conținut cumulat. Instalările, actualizările și dezinstalările îl țin la curent; `verify_skills` îl verifică față de disc.
 
-**AgentCapabilities**: Patru indicatori (push către repo, API GitHub, tichete, egress de rețea) rezolvați per trimitere — implicitul agentului → implicitul utilizatorului, cu o suprascriere per conversație. Aplicate prin absență: o capabilitate dezactivată înseamnă că tokenul sau egress-ul pur și simplu nu este injectat niciodată.
+**Gateway-ul rulărilor de agenți**: Un punct final de loopback pe `cc_server` care aplică politica de acțiuni în interiorul sandbox-ului unui agent. Fiecare push GitHub făcut de un agent este redirecționat către el, verificat cu regula **Push către un remote** și transmis cu un token de scriere pe care agentul nu îl deține niciodată; comenzile `Bash` ale Claude Code sunt verificate printr-un hook pe același punct final. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
 
 **Mode**: `chat`, `plan`, `review` sau `orchestrate`. Stocat **per spațiu**, așa că un agent poate fi în moduri diferite în spații diferite; fiecare conversație dintr-un spațiu îl partajează. Controlează promptul de sistem, regulile de scriere ale sandbox-ului și lista de instrumente MCP permise. Compozitorul oferă doar `chat`, `plan` și `orchestrate`; `chat` este etichetat „Agent”.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).
 
-**CredentialBrokerPort**: Emite credențiale limitate și condiționate de capabilități pentru lansarea sandbox-ului și le revocă la demolarea lui.
+**CredentialBrokerPort**: Emite credențiale limitate pentru lansarea sandbox-ului — doar pentru citire în mediul unui agent, cu scriere doar pentru calea de push de pe server — și le revocă la demolarea lui.
 
 **GitRepoInspectorPort**: Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.
 

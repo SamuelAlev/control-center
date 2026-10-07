@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/context/conversation_summarizer.dart';
+import 'package:cc_domain/features/dispatch/domain/context/conversation_token_estimator.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_harness/context.dart';
@@ -270,6 +271,88 @@ void main() {
       selfAgentName: 'a',
     );
     expect(outcome.prunedTokens, greaterThan(0));
+  });
+
+  test('pruning re-stamps transcriptChars from the rewritten segments', () async {
+    final fat = _turn('a0', 'ok', 1, fat: 'Z' * 200000);
+    final messages = <Message>[
+      _user('u0', 'go', 0),
+      fat.copyWith(
+        metadata: {
+          ...?fat.metadata,
+          'transcriptChars': transcriptCharCount(fat.transcript),
+        },
+      ),
+      _user('u1', 'more', 2),
+      _turn('a1', 'sure', 3),
+      _user('u2', 'again', 4),
+      _turn('a2', 'yes', 5),
+    ];
+    final repo = _FakeRepo(messages);
+    final service = ConversationCompactionService(
+      repo: repo,
+      summarizer: const StructuralConversationSummarizer(),
+      config: const CompactionConfig(keepTurns: 2, buffer: 500),
+      now: () => DateTime.utc(2026, 1, 2),
+    );
+    await service.maintain(
+      workspaceId: ws,
+      spaceId: 'c',
+      contextWindowTokens: 20000,
+      selfAgentName: 'a',
+    );
+
+    final pruned = (await repo.getMessageById(ws, 'a0'))!;
+    final stamped = pruned.metadata!['transcriptChars'] as int;
+    expect(stamped, transcriptCharCount(pruned.transcript));
+    expect(stamped, lessThan(200000));
+  });
+
+  test('heals a stale transcriptChars left by an earlier prune', () async {
+    final prunedTool = ToolSegment(
+      toolName: 'bash',
+      toolCallId: 't',
+      outputs: '[pruned]',
+      startedAt: DateTime.utc(2026),
+      durationMs: 1,
+      prunedAt: DateTime.utc(2026, 1, 2),
+    );
+    final segments = <TranscriptSegment>[
+      prunedTool,
+      TextSegment(text: 'ok', startedAt: DateTime.utc(2026)),
+    ];
+    final repo = _FakeRepo([
+      _user('u0', 'go', 0),
+      Message(
+        id: 'a0',
+        spaceId: 'c',
+        conversationId: 'c',
+        senderId: 'agent',
+        senderType: SenderType.agent,
+        content: 'ok',
+        messageType: MessageType.agentTurn,
+        // The count from before the prune: 470k chars that are gone.
+        metadata: {
+          'segments': encodeTranscript(segments),
+          'transcriptChars': 470000,
+        },
+        createdAt: DateTime.utc(2026, 1, 1, 0, 0, 1),
+      ),
+    ]);
+    final service = ConversationCompactionService(
+      repo: repo,
+      summarizer: const StructuralConversationSummarizer(),
+    );
+    final outcome = await service.maintain(
+      workspaceId: ws,
+      spaceId: 'c',
+      contextWindowTokens: 200000,
+      selfAgentName: 'a',
+    );
+
+    expect(outcome.didSomething, isFalse);
+    final healed = (await repo.getMessageById(ws, 'a0'))!;
+    expect(healed.metadata!['transcriptChars'], transcriptCharCount(segments));
   });
 
   test(

@@ -1,17 +1,19 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_detection_result.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/sandboxing_sections.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 // ignore: implementation_imports
 import 'package:riverpod/src/framework.dart' show Override;
@@ -46,15 +48,11 @@ Future<List<Override>> _baseOverrides({
   bool enabled = true,
   SandboxBackend? pinned,
   SandboxDetectionResult? detection,
-  AgentCapabilities? caps,
   bool includeDetection = true,
 }) async {
   final prefsValues = <String, Object>{'sandbox_enabled': enabled};
   if (pinned != null) {
     prefsValues['sandbox_backend'] = pinned.name;
-  }
-  if (caps != null) {
-    prefsValues['sandbox_default_capabilities'] = caps.toJsonString();
   }
   final sp = AppPreferences.inMemory(prefsValues);
 
@@ -101,7 +99,8 @@ void main() {
 
     // One card, two groups: the five-card split ("Master toggle", "Backend",
     // "Requirements", "Default capabilities", "Maintenance") was one subject
-    // wearing five boxes.
+    // wearing five boxes. The second group is now a pointer to agent
+    // permissions, the only place what an agent may do is decided.
     testWidgets('renders one card with its groups when detection succeeds', (
       tester,
     ) async {
@@ -113,10 +112,8 @@ void main() {
       expect(find.text('Isolation'), findsOneWidget);
       expect(find.text('Backend'), findsOneWidget);
       expect(find.text('Requirements'), findsOneWidget);
-      expect(
-        find.text('Default capabilities \u00b7 new spaces'),
-        findsOneWidget,
-      );
+      expect(find.text('What agents may do'), findsOneWidget);
+      expect(find.text('Default capabilities \u00b7 new spaces'), findsNothing);
     });
 
     testWidgets('shows progress indicator while detection is pending', (
@@ -203,19 +200,79 @@ void main() {
       expect(find.text('Not available'), findsOneWidget);
     });
 
-    testWidgets('renders capability toggle labels and icons', (tester) async {
+    // The sandbox no longer carries a second permission system: push, pull
+    // requests and network access are decided by the action policy alone.
+    testWidgets('points to agent permissions instead of capability toggles', (
+      tester,
+    ) async {
       final overrides = await _baseOverrides();
       await _pumpScreen(tester, overrides: overrides);
 
-      expect(find.text('Allow git push'), findsOneWidget);
-      expect(find.text('Allow GitHub API calls'), findsOneWidget);
-      expect(find.text('Allow ticketing API calls'), findsOneWidget);
-      expect(find.text('Allow general network access'), findsOneWidget);
+      expect(
+        find.text(
+          'Pushing, opening a pull request and accessing the network are '
+          'each allowed, asked about or denied in agent permissions.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(CcButton, 'Agent permissions'),
+        findsOneWidget,
+      );
+      expect(find.text('Allow git push'), findsNothing);
+      expect(find.text('Allow GitHub API calls'), findsNothing);
+      expect(find.text('Allow ticketing API calls'), findsNothing);
+      expect(find.text('Allow general network access'), findsNothing);
+    });
 
-      expect(find.byIcon(AppIcons.gitBranch), findsOneWidget);
-      expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
-      expect(find.byIcon(AppIcons.listTodo), findsOneWidget);
-      expect(find.byIcon(AppIcons.globe), findsOneWidget);
+    testWidgets('the pointer opens agent permissions for this workspace', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 3500);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      final overrides = await _baseOverrides();
+      final router = GoRouter(
+        initialLocation: settingsSandboxRoute('ws-1'),
+        routes: [
+          GoRoute(
+            path: '/workspaces/:workspaceId/settings/server/sandbox',
+            builder: (context, state) => const Scaffold(
+              body: SingleChildScrollView(child: SandboxingSections()),
+            ),
+          ),
+          GoRoute(
+            path: '/workspaces/:workspaceId/settings/workspace/permissions',
+            builder: (context, state) => const Text('permissions page'),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: overrides,
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final button = find.widgetWithText(CcButton, 'Agent permissions');
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, settingsGuardrailsRoute('ws-1'));
+      expect(find.text('permissions page'), findsOneWidget);
     });
 
     // "Reset all sandboxes" was removed, not restyled: it raised a success
@@ -287,71 +344,13 @@ void main() {
       expect(masterSwitch.value, isFalse);
     });
 
-    testWidgets('capability switches reflect all-on state', (tester) async {
-      const caps = AgentCapabilities(
-        canPushToRepo: true,
-        canCallGitHubApi: true,
-        canCallTicketing: true,
-        canAccessNetwork: true,
-      );
-      final overrides = await _baseOverrides(caps: caps);
-      await _pumpScreen(tester, overrides: overrides);
-
-      final switches = find.byType(CcSwitch).evaluate().toList();
-      expect(switches.length, 5);
-      expect((switches[1].widget as CcSwitch).value, isTrue);
-      expect((switches[2].widget as CcSwitch).value, isTrue);
-      expect((switches[3].widget as CcSwitch).value, isTrue);
-      expect((switches[4].widget as CcSwitch).value, isTrue);
-    });
-
-    testWidgets('capability switches reflect mixed on/off state', (
-      tester,
-    ) async {
-      const caps = AgentCapabilities(
-        canPushToRepo: false,
-        canCallGitHubApi: false,
-        canCallTicketing: true,
-        canAccessNetwork: true,
-      );
-      final overrides = await _baseOverrides(caps: caps);
-      await _pumpScreen(tester, overrides: overrides);
-
-      final switches = find.byType(CcSwitch).evaluate().toList();
-      expect(switches.length, 5);
-      expect((switches[1].widget as CcSwitch).value, isFalse);
-      expect((switches[2].widget as CcSwitch).value, isFalse);
-      expect((switches[3].widget as CcSwitch).value, isTrue);
-      expect((switches[4].widget as CcSwitch).value, isTrue);
-    });
-
-    testWidgets('capability onChanged is null when sandboxing disabled', (
-      tester,
-    ) async {
-      final overrides = await _baseOverrides(
-        enabled: false,
-        caps: const AgentCapabilities(),
-      );
-      await _pumpScreen(tester, overrides: overrides);
-
-      final switches = find.byType(CcSwitch).evaluate().toList();
-      expect(switches.length, 5);
-      for (var i = 1; i <= 4; i++) {
-        expect((switches[i].widget as CcSwitch).onChanged, isNull);
-      }
-    });
-
-    testWidgets('capability onChanged is non-null when sandboxing enabled', (
+    testWidgets('the master toggle is the only switch on the card', (
       tester,
     ) async {
       final overrides = await _baseOverrides();
       await _pumpScreen(tester, overrides: overrides);
 
-      final switches = find.byType(CcSwitch).evaluate().toList();
-      expect(switches.length, 5);
-      for (var i = 1; i <= 4; i++) {
-        expect((switches[i].widget as CcSwitch).onChanged, isNotNull);
-      }
+      expect(find.byType(CcSwitch), findsOneWidget);
     });
   });
 }

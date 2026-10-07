@@ -108,23 +108,6 @@ Future<void> main() async {
   check('workspace_meta names its workspace', meta.workspaceId == 'ws-alpha');
   check('workspace_meta carries the install id', meta.installId.isNotEmpty);
 
-  // Sync triggers fire per database and the sequences are independent.
-  await alpha.messagingDao.insertSpace(
-    const SpacesTableCompanion(
-      id: Value('c-alpha'),
-      name: Value('general'),
-      workspaceId: Value('ws-alpha'),
-    ),
-  );
-  check(
-    'alpha allocated a sync seq',
-    await alpha.syncDao.currentSeq('ws-alpha') > 0,
-  );
-  check(
-    "beta's sync seq is untouched",
-    await beta.syncDao.currentSeq('ws-beta') == 0,
-  );
-
   // Fan-out reaches every registered workspace.
   final perWorkspace = await CrossWorkspaceQueries(
     workspaces,

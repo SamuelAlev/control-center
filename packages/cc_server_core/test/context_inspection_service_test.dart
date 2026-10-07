@@ -8,6 +8,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
+import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
@@ -31,8 +32,14 @@ void main() {
   const spaceId = 'space-1';
   const agentId = 'agent-1';
 
-  Agent buildAgent({int? contextSize = 100000}) => Agent(
+  Agent buildAgent({
+    int? contextSize = 100000,
+    String? adapterId,
+    String? modelId,
+  }) => Agent(
     id: agentId,
+    adapterId: adapterId,
+    modelId: modelId,
     name: 'Ada',
     title: 'Engineer',
     agentMdPath: '/tmp/ada.md',
@@ -44,13 +51,18 @@ void main() {
     createdAt: DateTime(2026),
   );
 
-  ContextInspectionService buildService() => ContextInspectionService(
+  ContextInspectionService buildService({
+    BuildConversationContextUseCase? history,
+    int? Function(String qualifiedModel)? modelWindowOf,
+  }) => ContextInspectionService(
     agentRepository: agents,
     messagingRepository: spaces,
     modeResolver: _FakeModeResolver(),
     filesystem: filesystem,
     mcpRegistry: mcpRegistry,
     fileSearch: _FakeFileSearch(),
+    conversationContextUseCase: history,
+    modelWindowOf: modelWindowOf,
   );
 
   setUp(() async {
@@ -171,6 +183,148 @@ void main() {
       );
     },
   );
+
+  group('window', () {
+    test('the harness runs the model window, capped by the setting', () async {
+      agents.seed(
+        buildAgent(contextSize: 100000, modelId: 'anthropic/claude-x'),
+      );
+      final inspection = await buildService(
+        modelWindowOf: (q) => q == 'anthropic/claude-x' ? 200000 : null,
+      ).inspect(workspaceId: workspaceId, spaceId: spaceId, agentId: agentId);
+      expect(inspection.runner, ContextRunner.harness);
+      expect(inspection.windowTokens, 100000);
+    });
+
+    test('a setting above the model window cannot widen it', () async {
+      agents.seed(
+        buildAgent(contextSize: 1000000, modelId: 'anthropic/claude-x'),
+      );
+      final inspection = await buildService(
+        modelWindowOf: (_) => 200000,
+      ).inspect(workspaceId: workspaceId, spaceId: spaceId, agentId: agentId);
+      expect(inspection.windowTokens, 200000);
+    });
+
+    test('the setting is tokens, never re-read as characters', () async {
+      agents.seed(buildAgent(contextSize: 1000000, modelId: 'local/big'));
+      final inspection = await buildService(
+        modelWindowOf: (_) => 2000000,
+      ).inspect(workspaceId: workspaceId, spaceId: spaceId, agentId: agentId);
+      // 1,000,000 / 3.8 was the 263k this used to report.
+      expect(inspection.windowTokens, 1000000);
+    });
+
+    test('an unknown model falls back to the harness default', () async {
+      agents.seed(buildAgent(contextSize: null));
+      final inspection = await buildService().inspect(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentId: agentId,
+      );
+      expect(inspection.windowTokens, 128000);
+    });
+  });
+
+  group('Claude Code agent', () {
+    setUp(() {
+      agents.seed(
+        buildAgent(
+          contextSize: 1000000,
+          adapterId: 'claude-code',
+          modelId: 'opus',
+        ),
+      );
+    });
+
+    test('the window is the setting as given, not second-guessed', () async {
+      // `opus` runs at 200k; a 1M setting on it is the operator's call, and
+      // the model id is never rewritten to `opus[1m]` behind their back.
+      final inspection = await buildService().inspect(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentId: agentId,
+      );
+      expect(inspection.runner, ContextRunner.claudeCode);
+      expect(inspection.windowTokens, 1000000);
+    });
+
+    test('with no setting the window is the model id\'s', () async {
+      agents.seed(
+        buildAgent(
+          contextSize: null,
+          adapterId: 'claude-code',
+          modelId: 'opus[1m]',
+        ),
+      );
+      final inspection = await buildService().inspect(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentId: agentId,
+      );
+      expect(inspection.windowTokens, 1000000);
+
+      agents.seed(
+        buildAgent(contextSize: null, adapterId: 'claude-code', modelId: 'opus'),
+      );
+      final standard = await buildService().inspect(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentId: agentId,
+      );
+      expect(standard.windowTokens, 200000);
+    });
+
+    test(
+      'only what the run receives is listed, plus the runner remainder',
+      () async {
+        final inspection = await buildService(
+          history: _FakeHistory(spaces, '## Conversation History\n\nhi'),
+        ).inspect(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          agentId: agentId,
+          includeContent: true,
+        );
+        final kinds = [for (final s in inspection.segments) s.kind];
+        // None of the harness surface reaches `claude -p`.
+        expect(kinds, isNot(contains(ContextSegmentKind.toolDefinitions)));
+        expect(kinds, isNot(contains(ContextSegmentKind.deferredTools)));
+        expect(kinds, isNot(contains(ContextSegmentKind.subagents)));
+        final rules = inspection.segmentFor(ContextSegmentKind.rules)!;
+        expect(rules.parts.map((p) => p.title), isNot(contains('AGENTS.md')));
+        // The `<context>` prompt sections still do.
+        expect(
+          rules.parts.map((p) => p.title),
+          containsAll(['Agent instructions', 'Persona']),
+        );
+        // The history block, not the stored conversation.
+        final conversation = inspection.segmentFor(
+          ContextSegmentKind.conversation,
+        )!;
+        expect(conversation.parts.single.content, contains('hi'));
+        // Claude Code's own part, sized client-side from the reading.
+        final runner = inspection.segmentFor(ContextSegmentKind.runner)!;
+        expect(runner.tokens, 0);
+        expect(runner.parts.single.content, contains('Claude Code'));
+      },
+    );
+  });
+
+  test('the runner survives the wire round-trip', () async {
+    agents.seed(buildAgent(adapterId: 'claude-code', modelId: 'opus'));
+    final inspection = await buildService().inspect(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      agentId: agentId,
+    );
+    final back = ContextInspection.fromJson(inspection.toJson());
+    expect(back.runner, ContextRunner.claudeCode);
+    expect(
+      back.segmentFor(ContextSegmentKind.runner)?.parts.single.title,
+      'Claude Code',
+    );
+  });
 
   test('summary mode carries sizes but no content', () async {
     final inspection = await buildService().inspect(
@@ -432,4 +586,23 @@ class _FakeMcpTool extends McpTool {
   @override
   Future<CallResult> run(Map<String, dynamic> arguments) async =>
       CallResult.error('not implemented in tests');
+}
+
+/// The history block a Claude Code dispatch would inline, fixed.
+class _FakeHistory extends BuildConversationContextUseCase {
+  _FakeHistory(MessagingRepository repo, this._block)
+    : super(messagingRepository: repo);
+
+  final String _block;
+
+  @override
+  Future<String> execute({
+    required String workspaceId,
+    required String spaceId,
+    required String selfAgentId,
+    required String selfAgentName,
+    required String taskDescription,
+    required int characterBudget,
+    String? conversationId,
+  }) async => _block;
 }

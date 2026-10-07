@@ -905,18 +905,6 @@ class $AgentsTableTable extends AgentsTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _sandboxCapabilitiesJsonMeta =
-      const VerificationMeta('sandboxCapabilitiesJson');
-  @override
-  late final GeneratedColumn<String> sandboxCapabilitiesJson =
-      GeneratedColumn<String>(
-        'sandbox_capabilities_json',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: const Constant(''),
-      );
   static const VerificationMeta _commandPolicyJsonMeta = const VerificationMeta(
     'commandPolicyJson',
   );
@@ -1045,7 +1033,6 @@ class $AgentsTableTable extends AgentsTable
     strictMode,
     effort,
     contextSize,
-    sandboxCapabilitiesJson,
     commandPolicyJson,
     role,
     monthlyBudgetCents,
@@ -1171,15 +1158,6 @@ class $AgentsTableTable extends AgentsTable
         contextSize.isAcceptableOrUnknown(
           data['context_size']!,
           _contextSizeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('sandbox_capabilities_json')) {
-      context.handle(
-        _sandboxCapabilitiesJsonMeta,
-        sandboxCapabilitiesJson.isAcceptableOrUnknown(
-          data['sandbox_capabilities_json']!,
-          _sandboxCapabilitiesJsonMeta,
         ),
       );
     }
@@ -1329,10 +1307,6 @@ class $AgentsTableTable extends AgentsTable
         DriftSqlType.int,
         data['${effectivePrefix}context_size'],
       ),
-      sandboxCapabilitiesJson: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sandbox_capabilities_json'],
-      )!,
       commandPolicyJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}command_policy_json'],
@@ -1426,10 +1400,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
   /// Context window size in tokens.
   final int? contextSize;
 
-  /// JSON-encoded sandbox `AgentCapabilities` snapshot for this agent.
-  /// Empty string falls back to the user-level default at dispatch time.
-  final String sandboxCapabilitiesJson;
-
   /// JSON-encoded per-agent command policy delta (deny/allow/prompt lists
   /// merged over the profile default). Empty string falls back to the
   /// mode-based default at dispatch time.
@@ -1481,7 +1451,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
     required this.strictMode,
     this.effort,
     this.contextSize,
-    required this.sandboxCapabilitiesJson,
     required this.commandPolicyJson,
     this.role,
     required this.monthlyBudgetCents,
@@ -1524,9 +1493,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
     if (!nullToAbsent || contextSize != null) {
       map['context_size'] = Variable<int>(contextSize);
     }
-    map['sandbox_capabilities_json'] = Variable<String>(
-      sandboxCapabilitiesJson,
-    );
     map['command_policy_json'] = Variable<String>(commandPolicyJson);
     if (!nullToAbsent || role != null) {
       map['role'] = Variable<String>(role);
@@ -1578,7 +1544,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
       contextSize: contextSize == null && nullToAbsent
           ? const Value.absent()
           : Value(contextSize),
-      sandboxCapabilitiesJson: Value(sandboxCapabilitiesJson),
       commandPolicyJson: Value(commandPolicyJson),
       role: role == null && nullToAbsent ? const Value.absent() : Value(role),
       monthlyBudgetCents: Value(monthlyBudgetCents),
@@ -1618,9 +1583,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
       strictMode: serializer.fromJson<bool>(json['strictMode']),
       effort: serializer.fromJson<String?>(json['effort']),
       contextSize: serializer.fromJson<int?>(json['contextSize']),
-      sandboxCapabilitiesJson: serializer.fromJson<String>(
-        json['sandboxCapabilitiesJson'],
-      ),
       commandPolicyJson: serializer.fromJson<String>(json['commandPolicyJson']),
       role: serializer.fromJson<String?>(json['role']),
       monthlyBudgetCents: serializer.fromJson<int>(json['monthlyBudgetCents']),
@@ -1653,9 +1615,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
       'strictMode': serializer.toJson<bool>(strictMode),
       'effort': serializer.toJson<String?>(effort),
       'contextSize': serializer.toJson<int?>(contextSize),
-      'sandboxCapabilitiesJson': serializer.toJson<String>(
-        sandboxCapabilitiesJson,
-      ),
       'commandPolicyJson': serializer.toJson<String>(commandPolicyJson),
       'role': serializer.toJson<String?>(role),
       'monthlyBudgetCents': serializer.toJson<int>(monthlyBudgetCents),
@@ -1684,7 +1643,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
     bool? strictMode,
     Value<String?> effort = const Value.absent(),
     Value<int?> contextSize = const Value.absent(),
-    String? sandboxCapabilitiesJson,
     String? commandPolicyJson,
     Value<String?> role = const Value.absent(),
     int? monthlyBudgetCents,
@@ -1710,8 +1668,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
     strictMode: strictMode ?? this.strictMode,
     effort: effort.present ? effort.value : this.effort,
     contextSize: contextSize.present ? contextSize.value : this.contextSize,
-    sandboxCapabilitiesJson:
-        sandboxCapabilitiesJson ?? this.sandboxCapabilitiesJson,
     commandPolicyJson: commandPolicyJson ?? this.commandPolicyJson,
     role: role.present ? role.value : this.role,
     monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,
@@ -1755,9 +1711,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
       contextSize: data.contextSize.present
           ? data.contextSize.value
           : this.contextSize,
-      sandboxCapabilitiesJson: data.sandboxCapabilitiesJson.present
-          ? data.sandboxCapabilitiesJson.value
-          : this.sandboxCapabilitiesJson,
       commandPolicyJson: data.commandPolicyJson.present
           ? data.commandPolicyJson.value
           : this.commandPolicyJson,
@@ -1804,7 +1757,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
           ..write('strictMode: $strictMode, ')
           ..write('effort: $effort, ')
           ..write('contextSize: $contextSize, ')
-          ..write('sandboxCapabilitiesJson: $sandboxCapabilitiesJson, ')
           ..write('commandPolicyJson: $commandPolicyJson, ')
           ..write('role: $role, ')
           ..write('monthlyBudgetCents: $monthlyBudgetCents, ')
@@ -1835,7 +1787,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
     strictMode,
     effort,
     contextSize,
-    sandboxCapabilitiesJson,
     commandPolicyJson,
     role,
     monthlyBudgetCents,
@@ -1865,7 +1816,6 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
           other.strictMode == this.strictMode &&
           other.effort == this.effort &&
           other.contextSize == this.contextSize &&
-          other.sandboxCapabilitiesJson == this.sandboxCapabilitiesJson &&
           other.commandPolicyJson == this.commandPolicyJson &&
           other.role == this.role &&
           other.monthlyBudgetCents == this.monthlyBudgetCents &&
@@ -1893,7 +1843,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
   final Value<bool> strictMode;
   final Value<String?> effort;
   final Value<int?> contextSize;
-  final Value<String> sandboxCapabilitiesJson;
   final Value<String> commandPolicyJson;
   final Value<String?> role;
   final Value<int> monthlyBudgetCents;
@@ -1920,7 +1869,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
     this.strictMode = const Value.absent(),
     this.effort = const Value.absent(),
     this.contextSize = const Value.absent(),
-    this.sandboxCapabilitiesJson = const Value.absent(),
     this.commandPolicyJson = const Value.absent(),
     this.role = const Value.absent(),
     this.monthlyBudgetCents = const Value.absent(),
@@ -1948,7 +1896,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
     this.strictMode = const Value.absent(),
     this.effort = const Value.absent(),
     this.contextSize = const Value.absent(),
-    this.sandboxCapabilitiesJson = const Value.absent(),
     this.commandPolicyJson = const Value.absent(),
     this.role = const Value.absent(),
     this.monthlyBudgetCents = const Value.absent(),
@@ -1981,7 +1928,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
     Expression<bool>? strictMode,
     Expression<String>? effort,
     Expression<int>? contextSize,
-    Expression<String>? sandboxCapabilitiesJson,
     Expression<String>? commandPolicyJson,
     Expression<String>? role,
     Expression<int>? monthlyBudgetCents,
@@ -2009,8 +1955,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
       if (strictMode != null) 'strict_mode': strictMode,
       if (effort != null) 'effort': effort,
       if (contextSize != null) 'context_size': contextSize,
-      if (sandboxCapabilitiesJson != null)
-        'sandbox_capabilities_json': sandboxCapabilitiesJson,
       if (commandPolicyJson != null) 'command_policy_json': commandPolicyJson,
       if (role != null) 'role': role,
       if (monthlyBudgetCents != null)
@@ -2043,7 +1987,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
     Value<bool>? strictMode,
     Value<String?>? effort,
     Value<int?>? contextSize,
-    Value<String>? sandboxCapabilitiesJson,
     Value<String>? commandPolicyJson,
     Value<String?>? role,
     Value<int>? monthlyBudgetCents,
@@ -2071,8 +2014,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
       strictMode: strictMode ?? this.strictMode,
       effort: effort ?? this.effort,
       contextSize: contextSize ?? this.contextSize,
-      sandboxCapabilitiesJson:
-          sandboxCapabilitiesJson ?? this.sandboxCapabilitiesJson,
       commandPolicyJson: commandPolicyJson ?? this.commandPolicyJson,
       role: role ?? this.role,
       monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,
@@ -2133,11 +2074,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
     if (contextSize.present) {
       map['context_size'] = Variable<int>(contextSize.value);
     }
-    if (sandboxCapabilitiesJson.present) {
-      map['sandbox_capabilities_json'] = Variable<String>(
-        sandboxCapabilitiesJson.value,
-      );
-    }
     if (commandPolicyJson.present) {
       map['command_policy_json'] = Variable<String>(commandPolicyJson.value);
     }
@@ -2193,7 +2129,6 @@ class AgentsTableCompanion extends UpdateCompanion<AgentsTableData> {
           ..write('strictMode: $strictMode, ')
           ..write('effort: $effort, ')
           ..write('contextSize: $contextSize, ')
-          ..write('sandboxCapabilitiesJson: $sandboxCapabilitiesJson, ')
           ..write('commandPolicyJson: $commandPolicyJson, ')
           ..write('role: $role, ')
           ..write('monthlyBudgetCents: $monthlyBudgetCents, ')
@@ -10682,6 +10617,27 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _contextTokensMeta = const VerificationMeta(
+    'contextTokens',
+  );
+  @override
+  late final GeneratedColumn<int> contextTokens = GeneratedColumn<int>(
+    'context_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contextWindowTokensMeta =
+      const VerificationMeta('contextWindowTokens');
+  @override
+  late final GeneratedColumn<int> contextWindowTokens = GeneratedColumn<int>(
+    'context_window_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _parentMessageIdMeta = const VerificationMeta(
     'parentMessageId',
   );
@@ -10770,6 +10726,8 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     metadata,
     listMetadata,
     transcriptChars,
+    contextTokens,
+    contextWindowTokens,
     parentMessageId,
     compacted,
     reverted,
@@ -10879,6 +10837,24 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
         ),
       );
     }
+    if (data.containsKey('context_tokens')) {
+      context.handle(
+        _contextTokensMeta,
+        contextTokens.isAcceptableOrUnknown(
+          data['context_tokens']!,
+          _contextTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('context_window_tokens')) {
+      context.handle(
+        _contextWindowTokensMeta,
+        contextWindowTokens.isAcceptableOrUnknown(
+          data['context_window_tokens']!,
+          _contextWindowTokensMeta,
+        ),
+      );
+    }
     if (data.containsKey('parent_message_id')) {
       context.handle(
         _parentMessageIdMeta,
@@ -10974,6 +10950,14 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
         DriftSqlType.int,
         data['${effectivePrefix}transcript_chars'],
       )!,
+      contextTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}context_tokens'],
+      ),
+      contextWindowTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}context_window_tokens'],
+      ),
       parentMessageId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}parent_message_id'],
@@ -11058,6 +11042,18 @@ class ConversationMessagesTableData extends DataClass
   /// every flush.
   final int transcriptChars;
 
+  /// `metadata['context']['tokens']`: how full the model's window was on the
+  /// turn's latest call, as the provider reported it. Null on everything that
+  /// is not an agent turn, and on turns whose runner never reported one.
+  ///
+  /// A column for the same reason as [transcriptChars]: the meter re-reads it
+  /// on every streaming flush, which must not parse the turn's metadata JSON.
+  final int? contextTokens;
+
+  /// `metadata['context']['window']`: the window [contextTokens] was measured
+  /// against, when the runner knew it.
+  final int? contextWindowTokens;
+
   /// The message this one continues from, or null for the first in a branch.
   ///
   /// **This is what makes the conversation a TREE rather than a list, and it is
@@ -11103,6 +11099,8 @@ class ConversationMessagesTableData extends DataClass
     this.metadata,
     this.listMetadata,
     required this.transcriptChars,
+    this.contextTokens,
+    this.contextWindowTokens,
     this.parentMessageId,
     required this.compacted,
     required this.reverted,
@@ -11128,6 +11126,12 @@ class ConversationMessagesTableData extends DataClass
       map['list_metadata'] = Variable<String>(listMetadata);
     }
     map['transcript_chars'] = Variable<int>(transcriptChars);
+    if (!nullToAbsent || contextTokens != null) {
+      map['context_tokens'] = Variable<int>(contextTokens);
+    }
+    if (!nullToAbsent || contextWindowTokens != null) {
+      map['context_window_tokens'] = Variable<int>(contextWindowTokens);
+    }
     if (!nullToAbsent || parentMessageId != null) {
       map['parent_message_id'] = Variable<String>(parentMessageId);
     }
@@ -11160,6 +11164,12 @@ class ConversationMessagesTableData extends DataClass
           ? const Value.absent()
           : Value(listMetadata),
       transcriptChars: Value(transcriptChars),
+      contextTokens: contextTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contextTokens),
+      contextWindowTokens: contextWindowTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contextWindowTokens),
       parentMessageId: parentMessageId == null && nullToAbsent
           ? const Value.absent()
           : Value(parentMessageId),
@@ -11192,6 +11202,10 @@ class ConversationMessagesTableData extends DataClass
       metadata: serializer.fromJson<String?>(json['metadata']),
       listMetadata: serializer.fromJson<String?>(json['listMetadata']),
       transcriptChars: serializer.fromJson<int>(json['transcriptChars']),
+      contextTokens: serializer.fromJson<int?>(json['contextTokens']),
+      contextWindowTokens: serializer.fromJson<int?>(
+        json['contextWindowTokens'],
+      ),
       parentMessageId: serializer.fromJson<String?>(json['parentMessageId']),
       compacted: serializer.fromJson<bool>(json['compacted']),
       reverted: serializer.fromJson<bool>(json['reverted']),
@@ -11215,6 +11229,8 @@ class ConversationMessagesTableData extends DataClass
       'metadata': serializer.toJson<String?>(metadata),
       'listMetadata': serializer.toJson<String?>(listMetadata),
       'transcriptChars': serializer.toJson<int>(transcriptChars),
+      'contextTokens': serializer.toJson<int?>(contextTokens),
+      'contextWindowTokens': serializer.toJson<int?>(contextWindowTokens),
       'parentMessageId': serializer.toJson<String?>(parentMessageId),
       'compacted': serializer.toJson<bool>(compacted),
       'reverted': serializer.toJson<bool>(reverted),
@@ -11236,6 +11252,8 @@ class ConversationMessagesTableData extends DataClass
     Value<String?> metadata = const Value.absent(),
     Value<String?> listMetadata = const Value.absent(),
     int? transcriptChars,
+    Value<int?> contextTokens = const Value.absent(),
+    Value<int?> contextWindowTokens = const Value.absent(),
     Value<String?> parentMessageId = const Value.absent(),
     bool? compacted,
     bool? reverted,
@@ -11254,6 +11272,12 @@ class ConversationMessagesTableData extends DataClass
     metadata: metadata.present ? metadata.value : this.metadata,
     listMetadata: listMetadata.present ? listMetadata.value : this.listMetadata,
     transcriptChars: transcriptChars ?? this.transcriptChars,
+    contextTokens: contextTokens.present
+        ? contextTokens.value
+        : this.contextTokens,
+    contextWindowTokens: contextWindowTokens.present
+        ? contextWindowTokens.value
+        : this.contextWindowTokens,
     parentMessageId: parentMessageId.present
         ? parentMessageId.value
         : this.parentMessageId,
@@ -11290,6 +11314,12 @@ class ConversationMessagesTableData extends DataClass
       transcriptChars: data.transcriptChars.present
           ? data.transcriptChars.value
           : this.transcriptChars,
+      contextTokens: data.contextTokens.present
+          ? data.contextTokens.value
+          : this.contextTokens,
+      contextWindowTokens: data.contextWindowTokens.present
+          ? data.contextWindowTokens.value
+          : this.contextWindowTokens,
       parentMessageId: data.parentMessageId.present
           ? data.parentMessageId.value
           : this.parentMessageId,
@@ -11317,6 +11347,8 @@ class ConversationMessagesTableData extends DataClass
           ..write('metadata: $metadata, ')
           ..write('listMetadata: $listMetadata, ')
           ..write('transcriptChars: $transcriptChars, ')
+          ..write('contextTokens: $contextTokens, ')
+          ..write('contextWindowTokens: $contextWindowTokens, ')
           ..write('parentMessageId: $parentMessageId, ')
           ..write('compacted: $compacted, ')
           ..write('reverted: $reverted, ')
@@ -11340,6 +11372,8 @@ class ConversationMessagesTableData extends DataClass
     metadata,
     listMetadata,
     transcriptChars,
+    contextTokens,
+    contextWindowTokens,
     parentMessageId,
     compacted,
     reverted,
@@ -11362,6 +11396,8 @@ class ConversationMessagesTableData extends DataClass
           other.metadata == this.metadata &&
           other.listMetadata == this.listMetadata &&
           other.transcriptChars == this.transcriptChars &&
+          other.contextTokens == this.contextTokens &&
+          other.contextWindowTokens == this.contextWindowTokens &&
           other.parentMessageId == this.parentMessageId &&
           other.compacted == this.compacted &&
           other.reverted == this.reverted &&
@@ -11383,6 +11419,8 @@ class ConversationMessagesTableCompanion
   final Value<String?> metadata;
   final Value<String?> listMetadata;
   final Value<int> transcriptChars;
+  final Value<int?> contextTokens;
+  final Value<int?> contextWindowTokens;
   final Value<String?> parentMessageId;
   final Value<bool> compacted;
   final Value<bool> reverted;
@@ -11402,6 +11440,8 @@ class ConversationMessagesTableCompanion
     this.metadata = const Value.absent(),
     this.listMetadata = const Value.absent(),
     this.transcriptChars = const Value.absent(),
+    this.contextTokens = const Value.absent(),
+    this.contextWindowTokens = const Value.absent(),
     this.parentMessageId = const Value.absent(),
     this.compacted = const Value.absent(),
     this.reverted = const Value.absent(),
@@ -11422,6 +11462,8 @@ class ConversationMessagesTableCompanion
     this.metadata = const Value.absent(),
     this.listMetadata = const Value.absent(),
     this.transcriptChars = const Value.absent(),
+    this.contextTokens = const Value.absent(),
+    this.contextWindowTokens = const Value.absent(),
     this.parentMessageId = const Value.absent(),
     this.compacted = const Value.absent(),
     this.reverted = const Value.absent(),
@@ -11447,6 +11489,8 @@ class ConversationMessagesTableCompanion
     Expression<String>? metadata,
     Expression<String>? listMetadata,
     Expression<int>? transcriptChars,
+    Expression<int>? contextTokens,
+    Expression<int>? contextWindowTokens,
     Expression<String>? parentMessageId,
     Expression<bool>? compacted,
     Expression<bool>? reverted,
@@ -11467,6 +11511,9 @@ class ConversationMessagesTableCompanion
       if (metadata != null) 'metadata': metadata,
       if (listMetadata != null) 'list_metadata': listMetadata,
       if (transcriptChars != null) 'transcript_chars': transcriptChars,
+      if (contextTokens != null) 'context_tokens': contextTokens,
+      if (contextWindowTokens != null)
+        'context_window_tokens': contextWindowTokens,
       if (parentMessageId != null) 'parent_message_id': parentMessageId,
       if (compacted != null) 'compacted': compacted,
       if (reverted != null) 'reverted': reverted,
@@ -11489,6 +11536,8 @@ class ConversationMessagesTableCompanion
     Value<String?>? metadata,
     Value<String?>? listMetadata,
     Value<int>? transcriptChars,
+    Value<int?>? contextTokens,
+    Value<int?>? contextWindowTokens,
     Value<String?>? parentMessageId,
     Value<bool>? compacted,
     Value<bool>? reverted,
@@ -11509,6 +11558,8 @@ class ConversationMessagesTableCompanion
       metadata: metadata ?? this.metadata,
       listMetadata: listMetadata ?? this.listMetadata,
       transcriptChars: transcriptChars ?? this.transcriptChars,
+      contextTokens: contextTokens ?? this.contextTokens,
+      contextWindowTokens: contextWindowTokens ?? this.contextWindowTokens,
       parentMessageId: parentMessageId ?? this.parentMessageId,
       compacted: compacted ?? this.compacted,
       reverted: reverted ?? this.reverted,
@@ -11555,6 +11606,12 @@ class ConversationMessagesTableCompanion
     if (transcriptChars.present) {
       map['transcript_chars'] = Variable<int>(transcriptChars.value);
     }
+    if (contextTokens.present) {
+      map['context_tokens'] = Variable<int>(contextTokens.value);
+    }
+    if (contextWindowTokens.present) {
+      map['context_window_tokens'] = Variable<int>(contextWindowTokens.value);
+    }
     if (parentMessageId.present) {
       map['parent_message_id'] = Variable<String>(parentMessageId.value);
     }
@@ -11593,6 +11650,8 @@ class ConversationMessagesTableCompanion
           ..write('metadata: $metadata, ')
           ..write('listMetadata: $listMetadata, ')
           ..write('transcriptChars: $transcriptChars, ')
+          ..write('contextTokens: $contextTokens, ')
+          ..write('contextWindowTokens: $contextWindowTokens, ')
           ..write('parentMessageId: $parentMessageId, ')
           ..write('compacted: $compacted, ')
           ..write('reverted: $reverted, ')
@@ -12151,755 +12210,6 @@ class MessageReactionsTableCompanion
           ..write('principalType: $principalType, ')
           ..write('emoji: $emoji, ')
           ..write('createdAt: $createdAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $SyncSequencesTableTable extends SyncSequencesTable
-    with TableInfo<$SyncSequencesTableTable, SyncSequencesTableData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $SyncSequencesTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
-    'workspaceId',
-  );
-  @override
-  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
-    'workspace_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nextSeqMeta = const VerificationMeta(
-    'nextSeq',
-  );
-  @override
-  late final GeneratedColumn<int> nextSeq = GeneratedColumn<int>(
-    'next_seq',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(1),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [workspaceId, nextSeq];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'sync_sequences';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<SyncSequencesTableData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('workspace_id')) {
-      context.handle(
-        _workspaceIdMeta,
-        workspaceId.isAcceptableOrUnknown(
-          data['workspace_id']!,
-          _workspaceIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_workspaceIdMeta);
-    }
-    if (data.containsKey('next_seq')) {
-      context.handle(
-        _nextSeqMeta,
-        nextSeq.isAcceptableOrUnknown(data['next_seq']!, _nextSeqMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {workspaceId};
-  @override
-  SyncSequencesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SyncSequencesTableData(
-      workspaceId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}workspace_id'],
-      )!,
-      nextSeq: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}next_seq'],
-      )!,
-    );
-  }
-
-  @override
-  $SyncSequencesTableTable createAlias(String alias) {
-    return $SyncSequencesTableTable(attachedDatabase, alias);
-  }
-}
-
-class SyncSequencesTableData extends DataClass
-    implements Insertable<SyncSequencesTableData> {
-  /// Workspace id.
-  final String workspaceId;
-
-  /// The next sequence number to allocate.
-  final int nextSeq;
-  const SyncSequencesTableData({
-    required this.workspaceId,
-    required this.nextSeq,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['workspace_id'] = Variable<String>(workspaceId);
-    map['next_seq'] = Variable<int>(nextSeq);
-    return map;
-  }
-
-  SyncSequencesTableCompanion toCompanion(bool nullToAbsent) {
-    return SyncSequencesTableCompanion(
-      workspaceId: Value(workspaceId),
-      nextSeq: Value(nextSeq),
-    );
-  }
-
-  factory SyncSequencesTableData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SyncSequencesTableData(
-      workspaceId: serializer.fromJson<String>(json['workspaceId']),
-      nextSeq: serializer.fromJson<int>(json['nextSeq']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'workspaceId': serializer.toJson<String>(workspaceId),
-      'nextSeq': serializer.toJson<int>(nextSeq),
-    };
-  }
-
-  SyncSequencesTableData copyWith({String? workspaceId, int? nextSeq}) =>
-      SyncSequencesTableData(
-        workspaceId: workspaceId ?? this.workspaceId,
-        nextSeq: nextSeq ?? this.nextSeq,
-      );
-  SyncSequencesTableData copyWithCompanion(SyncSequencesTableCompanion data) {
-    return SyncSequencesTableData(
-      workspaceId: data.workspaceId.present
-          ? data.workspaceId.value
-          : this.workspaceId,
-      nextSeq: data.nextSeq.present ? data.nextSeq.value : this.nextSeq,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncSequencesTableData(')
-          ..write('workspaceId: $workspaceId, ')
-          ..write('nextSeq: $nextSeq')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(workspaceId, nextSeq);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is SyncSequencesTableData &&
-          other.workspaceId == this.workspaceId &&
-          other.nextSeq == this.nextSeq);
-}
-
-class SyncSequencesTableCompanion
-    extends UpdateCompanion<SyncSequencesTableData> {
-  final Value<String> workspaceId;
-  final Value<int> nextSeq;
-  final Value<int> rowid;
-  const SyncSequencesTableCompanion({
-    this.workspaceId = const Value.absent(),
-    this.nextSeq = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  SyncSequencesTableCompanion.insert({
-    required String workspaceId,
-    this.nextSeq = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : workspaceId = Value(workspaceId);
-  static Insertable<SyncSequencesTableData> custom({
-    Expression<String>? workspaceId,
-    Expression<int>? nextSeq,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (workspaceId != null) 'workspace_id': workspaceId,
-      if (nextSeq != null) 'next_seq': nextSeq,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  SyncSequencesTableCompanion copyWith({
-    Value<String>? workspaceId,
-    Value<int>? nextSeq,
-    Value<int>? rowid,
-  }) {
-    return SyncSequencesTableCompanion(
-      workspaceId: workspaceId ?? this.workspaceId,
-      nextSeq: nextSeq ?? this.nextSeq,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (workspaceId.present) {
-      map['workspace_id'] = Variable<String>(workspaceId.value);
-    }
-    if (nextSeq.present) {
-      map['next_seq'] = Variable<int>(nextSeq.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncSequencesTableCompanion(')
-          ..write('workspaceId: $workspaceId, ')
-          ..write('nextSeq: $nextSeq, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $SyncChangesTableTable extends SyncChangesTable
-    with TableInfo<$SyncChangesTableTable, SyncChangesTableData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $SyncChangesTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
-    'workspaceId',
-  );
-  @override
-  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
-    'workspace_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
-  @override
-  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
-    'seq',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _storeMeta = const VerificationMeta('store');
-  @override
-  late final GeneratedColumn<String> store = GeneratedColumn<String>(
-    'store',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _tblMeta = const VerificationMeta('tbl');
-  @override
-  late final GeneratedColumn<String> tbl = GeneratedColumn<String>(
-    'tbl',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _pkMeta = const VerificationMeta('pk');
-  @override
-  late final GeneratedColumn<String> pk = GeneratedColumn<String>(
-    'pk',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _opMeta = const VerificationMeta('op');
-  @override
-  late final GeneratedColumn<String> op = GeneratedColumn<String>(
-    'op',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _ctxMeta = const VerificationMeta('ctx');
-  @override
-  late final GeneratedColumn<String> ctx = GeneratedColumn<String>(
-    'ctx',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _createdAtMsMeta = const VerificationMeta(
-    'createdAtMs',
-  );
-  @override
-  late final GeneratedColumn<int> createdAtMs = GeneratedColumn<int>(
-    'created_at_ms',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    workspaceId,
-    seq,
-    store,
-    tbl,
-    pk,
-    op,
-    ctx,
-    createdAtMs,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'sync_changes';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<SyncChangesTableData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('workspace_id')) {
-      context.handle(
-        _workspaceIdMeta,
-        workspaceId.isAcceptableOrUnknown(
-          data['workspace_id']!,
-          _workspaceIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_workspaceIdMeta);
-    }
-    if (data.containsKey('seq')) {
-      context.handle(
-        _seqMeta,
-        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_seqMeta);
-    }
-    if (data.containsKey('store')) {
-      context.handle(
-        _storeMeta,
-        store.isAcceptableOrUnknown(data['store']!, _storeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_storeMeta);
-    }
-    if (data.containsKey('tbl')) {
-      context.handle(
-        _tblMeta,
-        tbl.isAcceptableOrUnknown(data['tbl']!, _tblMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_tblMeta);
-    }
-    if (data.containsKey('pk')) {
-      context.handle(_pkMeta, pk.isAcceptableOrUnknown(data['pk']!, _pkMeta));
-    } else if (isInserting) {
-      context.missing(_pkMeta);
-    }
-    if (data.containsKey('op')) {
-      context.handle(_opMeta, op.isAcceptableOrUnknown(data['op']!, _opMeta));
-    } else if (isInserting) {
-      context.missing(_opMeta);
-    }
-    if (data.containsKey('ctx')) {
-      context.handle(
-        _ctxMeta,
-        ctx.isAcceptableOrUnknown(data['ctx']!, _ctxMeta),
-      );
-    }
-    if (data.containsKey('created_at_ms')) {
-      context.handle(
-        _createdAtMsMeta,
-        createdAtMs.isAcceptableOrUnknown(
-          data['created_at_ms']!,
-          _createdAtMsMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMsMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {workspaceId, seq};
-  @override
-  SyncChangesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SyncChangesTableData(
-      workspaceId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}workspace_id'],
-      )!,
-      seq: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}seq'],
-      )!,
-      store: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}store'],
-      )!,
-      tbl: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}tbl'],
-      )!,
-      pk: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}pk'],
-      )!,
-      op: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}op'],
-      )!,
-      ctx: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}ctx'],
-      ),
-      createdAtMs: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}created_at_ms'],
-      )!,
-    );
-  }
-
-  @override
-  $SyncChangesTableTable createAlias(String alias) {
-    return $SyncChangesTableTable(attachedDatabase, alias);
-  }
-}
-
-class SyncChangesTableData extends DataClass
-    implements Insertable<SyncChangesTableData> {
-  /// Workspace id.
-  final String workspaceId;
-
-  /// The per-workspace monotonic sequence (from [SyncSequencesTable]).
-  final int seq;
-
-  /// The client-facing store this change belongs to (`messaging` | `tickets`
-  /// | `notes`).
-  final String store;
-
-  /// The concrete table (`spaces`, `conversation_messages`, …).
-  final String tbl;
-
-  /// The changed row's primary key.
-  final String pk;
-
-  /// `upsert` | `delete`.
-  final String op;
-
-  /// Context id for child tables (the owning space id for
-  /// `conversation_messages` / `space_participants`), so clients can scope
-  /// removals and refreshes without a lookup. Null for root tables.
-  final String? ctx;
-
-  /// Server receipt time (epoch ms) — diagnostics/retention only, never
-  /// ordering (the seq is the order).
-  final int createdAtMs;
-  const SyncChangesTableData({
-    required this.workspaceId,
-    required this.seq,
-    required this.store,
-    required this.tbl,
-    required this.pk,
-    required this.op,
-    this.ctx,
-    required this.createdAtMs,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['workspace_id'] = Variable<String>(workspaceId);
-    map['seq'] = Variable<int>(seq);
-    map['store'] = Variable<String>(store);
-    map['tbl'] = Variable<String>(tbl);
-    map['pk'] = Variable<String>(pk);
-    map['op'] = Variable<String>(op);
-    if (!nullToAbsent || ctx != null) {
-      map['ctx'] = Variable<String>(ctx);
-    }
-    map['created_at_ms'] = Variable<int>(createdAtMs);
-    return map;
-  }
-
-  SyncChangesTableCompanion toCompanion(bool nullToAbsent) {
-    return SyncChangesTableCompanion(
-      workspaceId: Value(workspaceId),
-      seq: Value(seq),
-      store: Value(store),
-      tbl: Value(tbl),
-      pk: Value(pk),
-      op: Value(op),
-      ctx: ctx == null && nullToAbsent ? const Value.absent() : Value(ctx),
-      createdAtMs: Value(createdAtMs),
-    );
-  }
-
-  factory SyncChangesTableData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SyncChangesTableData(
-      workspaceId: serializer.fromJson<String>(json['workspaceId']),
-      seq: serializer.fromJson<int>(json['seq']),
-      store: serializer.fromJson<String>(json['store']),
-      tbl: serializer.fromJson<String>(json['tbl']),
-      pk: serializer.fromJson<String>(json['pk']),
-      op: serializer.fromJson<String>(json['op']),
-      ctx: serializer.fromJson<String?>(json['ctx']),
-      createdAtMs: serializer.fromJson<int>(json['createdAtMs']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'workspaceId': serializer.toJson<String>(workspaceId),
-      'seq': serializer.toJson<int>(seq),
-      'store': serializer.toJson<String>(store),
-      'tbl': serializer.toJson<String>(tbl),
-      'pk': serializer.toJson<String>(pk),
-      'op': serializer.toJson<String>(op),
-      'ctx': serializer.toJson<String?>(ctx),
-      'createdAtMs': serializer.toJson<int>(createdAtMs),
-    };
-  }
-
-  SyncChangesTableData copyWith({
-    String? workspaceId,
-    int? seq,
-    String? store,
-    String? tbl,
-    String? pk,
-    String? op,
-    Value<String?> ctx = const Value.absent(),
-    int? createdAtMs,
-  }) => SyncChangesTableData(
-    workspaceId: workspaceId ?? this.workspaceId,
-    seq: seq ?? this.seq,
-    store: store ?? this.store,
-    tbl: tbl ?? this.tbl,
-    pk: pk ?? this.pk,
-    op: op ?? this.op,
-    ctx: ctx.present ? ctx.value : this.ctx,
-    createdAtMs: createdAtMs ?? this.createdAtMs,
-  );
-  SyncChangesTableData copyWithCompanion(SyncChangesTableCompanion data) {
-    return SyncChangesTableData(
-      workspaceId: data.workspaceId.present
-          ? data.workspaceId.value
-          : this.workspaceId,
-      seq: data.seq.present ? data.seq.value : this.seq,
-      store: data.store.present ? data.store.value : this.store,
-      tbl: data.tbl.present ? data.tbl.value : this.tbl,
-      pk: data.pk.present ? data.pk.value : this.pk,
-      op: data.op.present ? data.op.value : this.op,
-      ctx: data.ctx.present ? data.ctx.value : this.ctx,
-      createdAtMs: data.createdAtMs.present
-          ? data.createdAtMs.value
-          : this.createdAtMs,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncChangesTableData(')
-          ..write('workspaceId: $workspaceId, ')
-          ..write('seq: $seq, ')
-          ..write('store: $store, ')
-          ..write('tbl: $tbl, ')
-          ..write('pk: $pk, ')
-          ..write('op: $op, ')
-          ..write('ctx: $ctx, ')
-          ..write('createdAtMs: $createdAtMs')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(workspaceId, seq, store, tbl, pk, op, ctx, createdAtMs);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is SyncChangesTableData &&
-          other.workspaceId == this.workspaceId &&
-          other.seq == this.seq &&
-          other.store == this.store &&
-          other.tbl == this.tbl &&
-          other.pk == this.pk &&
-          other.op == this.op &&
-          other.ctx == this.ctx &&
-          other.createdAtMs == this.createdAtMs);
-}
-
-class SyncChangesTableCompanion extends UpdateCompanion<SyncChangesTableData> {
-  final Value<String> workspaceId;
-  final Value<int> seq;
-  final Value<String> store;
-  final Value<String> tbl;
-  final Value<String> pk;
-  final Value<String> op;
-  final Value<String?> ctx;
-  final Value<int> createdAtMs;
-  final Value<int> rowid;
-  const SyncChangesTableCompanion({
-    this.workspaceId = const Value.absent(),
-    this.seq = const Value.absent(),
-    this.store = const Value.absent(),
-    this.tbl = const Value.absent(),
-    this.pk = const Value.absent(),
-    this.op = const Value.absent(),
-    this.ctx = const Value.absent(),
-    this.createdAtMs = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  SyncChangesTableCompanion.insert({
-    required String workspaceId,
-    required int seq,
-    required String store,
-    required String tbl,
-    required String pk,
-    required String op,
-    this.ctx = const Value.absent(),
-    required int createdAtMs,
-    this.rowid = const Value.absent(),
-  }) : workspaceId = Value(workspaceId),
-       seq = Value(seq),
-       store = Value(store),
-       tbl = Value(tbl),
-       pk = Value(pk),
-       op = Value(op),
-       createdAtMs = Value(createdAtMs);
-  static Insertable<SyncChangesTableData> custom({
-    Expression<String>? workspaceId,
-    Expression<int>? seq,
-    Expression<String>? store,
-    Expression<String>? tbl,
-    Expression<String>? pk,
-    Expression<String>? op,
-    Expression<String>? ctx,
-    Expression<int>? createdAtMs,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (workspaceId != null) 'workspace_id': workspaceId,
-      if (seq != null) 'seq': seq,
-      if (store != null) 'store': store,
-      if (tbl != null) 'tbl': tbl,
-      if (pk != null) 'pk': pk,
-      if (op != null) 'op': op,
-      if (ctx != null) 'ctx': ctx,
-      if (createdAtMs != null) 'created_at_ms': createdAtMs,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  SyncChangesTableCompanion copyWith({
-    Value<String>? workspaceId,
-    Value<int>? seq,
-    Value<String>? store,
-    Value<String>? tbl,
-    Value<String>? pk,
-    Value<String>? op,
-    Value<String?>? ctx,
-    Value<int>? createdAtMs,
-    Value<int>? rowid,
-  }) {
-    return SyncChangesTableCompanion(
-      workspaceId: workspaceId ?? this.workspaceId,
-      seq: seq ?? this.seq,
-      store: store ?? this.store,
-      tbl: tbl ?? this.tbl,
-      pk: pk ?? this.pk,
-      op: op ?? this.op,
-      ctx: ctx ?? this.ctx,
-      createdAtMs: createdAtMs ?? this.createdAtMs,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (workspaceId.present) {
-      map['workspace_id'] = Variable<String>(workspaceId.value);
-    }
-    if (seq.present) {
-      map['seq'] = Variable<int>(seq.value);
-    }
-    if (store.present) {
-      map['store'] = Variable<String>(store.value);
-    }
-    if (tbl.present) {
-      map['tbl'] = Variable<String>(tbl.value);
-    }
-    if (pk.present) {
-      map['pk'] = Variable<String>(pk.value);
-    }
-    if (op.present) {
-      map['op'] = Variable<String>(op.value);
-    }
-    if (ctx.present) {
-      map['ctx'] = Variable<String>(ctx.value);
-    }
-    if (createdAtMs.present) {
-      map['created_at_ms'] = Variable<int>(createdAtMs.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncChangesTableCompanion(')
-          ..write('workspaceId: $workspaceId, ')
-          ..write('seq: $seq, ')
-          ..write('store: $store, ')
-          ..write('tbl: $tbl, ')
-          ..write('pk: $pk, ')
-          ..write('op: $op, ')
-          ..write('ctx: $ctx, ')
-          ..write('createdAtMs: $createdAtMs, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -76743,11 +76053,6 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
       $ConversationMessagesTableTable(this);
   late final $MessageReactionsTableTable messageReactionsTable =
       $MessageReactionsTableTable(this);
-  late final $SyncSequencesTableTable syncSequencesTable =
-      $SyncSequencesTableTable(this);
-  late final $SyncChangesTableTable syncChangesTable = $SyncChangesTableTable(
-    this,
-  );
   late final $ReviewSpacesTableTable reviewSpacesTable =
       $ReviewSpacesTableTable(this);
   late final $ActivityLogTableTable activityLogTable = $ActivityLogTableTable(
@@ -77014,10 +76319,6 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxMessageReactionsMessage = Index(
     'idx_message_reactions_message',
     'CREATE INDEX idx_message_reactions_message ON message_reactions (message_id)',
-  );
-  late final Index idxSyncChangesWsSeq = Index(
-    'idx_sync_changes_ws_seq',
-    'CREATE INDEX idx_sync_changes_ws_seq ON sync_changes (workspace_id, seq)',
   );
   late final Index idxConversationMessagesMessageType = Index(
     'idx_conversation_messages_messageType',
@@ -77851,7 +77152,6 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final ReviewStudioDao reviewStudioDao = ReviewStudioDao(
     this as WorkspaceDatabase,
   );
-  late final SyncDao syncDao = SyncDao(this as WorkspaceDatabase);
   late final SpaceExtrasDao spaceExtrasDao = SpaceExtrasDao(
     this as WorkspaceDatabase,
   );
@@ -77953,8 +77253,6 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     spaceAutonomyTable,
     conversationMessagesTable,
     messageReactionsTable,
-    syncSequencesTable,
-    syncChangesTable,
     reviewSpacesTable,
     activityLogTable,
     budgetPolicyTable,
@@ -78070,7 +77368,6 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxSpaceAutonomyWorkspaceId,
     idxMessageReactionsWorkspaceId,
     idxMessageReactionsMessage,
-    idxSyncChangesWsSeq,
     idxConversationMessagesMessageType,
     idxConversationMessagesSpaceId,
     idxConversationMessagesConversationId,
@@ -79379,7 +78676,6 @@ typedef $$AgentsTableTableCreateCompanionBuilder =
       Value<bool> strictMode,
       Value<String?> effort,
       Value<int?> contextSize,
-      Value<String> sandboxCapabilitiesJson,
       Value<String> commandPolicyJson,
       Value<String?> role,
       Value<int> monthlyBudgetCents,
@@ -79408,7 +78704,6 @@ typedef $$AgentsTableTableUpdateCompanionBuilder =
       Value<bool> strictMode,
       Value<String?> effort,
       Value<int?> contextSize,
-      Value<String> sandboxCapabilitiesJson,
       Value<String> commandPolicyJson,
       Value<String?> role,
       Value<int> monthlyBudgetCents,
@@ -79615,11 +78910,6 @@ class $$AgentsTableTableFilterComposer
 
   ColumnFilters<int> get contextSize => $composableBuilder(
     column: $table.contextSize,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get sandboxCapabilitiesJson => $composableBuilder(
-    column: $table.sandboxCapabilitiesJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -79873,11 +79163,6 @@ class $$AgentsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get sandboxCapabilitiesJson => $composableBuilder(
-    column: $table.sandboxCapabilitiesJson,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get commandPolicyJson => $composableBuilder(
     column: $table.commandPolicyJson,
     builder: (column) => ColumnOrderings(column),
@@ -80007,11 +79292,6 @@ class $$AgentsTableTableAnnotationComposer
 
   GeneratedColumn<int> get contextSize => $composableBuilder(
     column: $table.contextSize,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get sandboxCapabilitiesJson => $composableBuilder(
-    column: $table.sandboxCapabilitiesJson,
     builder: (column) => column,
   );
 
@@ -80239,7 +79519,6 @@ class $$AgentsTableTableTableManager
                 Value<bool> strictMode = const Value.absent(),
                 Value<String?> effort = const Value.absent(),
                 Value<int?> contextSize = const Value.absent(),
-                Value<String> sandboxCapabilitiesJson = const Value.absent(),
                 Value<String> commandPolicyJson = const Value.absent(),
                 Value<String?> role = const Value.absent(),
                 Value<int> monthlyBudgetCents = const Value.absent(),
@@ -80266,7 +79545,6 @@ class $$AgentsTableTableTableManager
                 strictMode: strictMode,
                 effort: effort,
                 contextSize: contextSize,
-                sandboxCapabilitiesJson: sandboxCapabilitiesJson,
                 commandPolicyJson: commandPolicyJson,
                 role: role,
                 monthlyBudgetCents: monthlyBudgetCents,
@@ -80295,7 +79573,6 @@ class $$AgentsTableTableTableManager
                 Value<bool> strictMode = const Value.absent(),
                 Value<String?> effort = const Value.absent(),
                 Value<int?> contextSize = const Value.absent(),
-                Value<String> sandboxCapabilitiesJson = const Value.absent(),
                 Value<String> commandPolicyJson = const Value.absent(),
                 Value<String?> role = const Value.absent(),
                 Value<int> monthlyBudgetCents = const Value.absent(),
@@ -80322,7 +79599,6 @@ class $$AgentsTableTableTableManager
                 strictMode: strictMode,
                 effort: effort,
                 contextSize: contextSize,
-                sandboxCapabilitiesJson: sandboxCapabilitiesJson,
                 commandPolicyJson: commandPolicyJson,
                 role: role,
                 monthlyBudgetCents: monthlyBudgetCents,
@@ -85504,6 +84780,8 @@ typedef $$ConversationMessagesTableTableCreateCompanionBuilder =
       Value<String?> metadata,
       Value<String?> listMetadata,
       Value<int> transcriptChars,
+      Value<int?> contextTokens,
+      Value<int?> contextWindowTokens,
       Value<String?> parentMessageId,
       Value<bool> compacted,
       Value<bool> reverted,
@@ -85525,6 +84803,8 @@ typedef $$ConversationMessagesTableTableUpdateCompanionBuilder =
       Value<String?> metadata,
       Value<String?> listMetadata,
       Value<int> transcriptChars,
+      Value<int?> contextTokens,
+      Value<int?> contextWindowTokens,
       Value<String?> parentMessageId,
       Value<bool> compacted,
       Value<bool> reverted,
@@ -85634,6 +84914,16 @@ class $$ConversationMessagesTableTableFilterComposer
 
   ColumnFilters<int> get transcriptChars => $composableBuilder(
     column: $table.transcriptChars,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get contextTokens => $composableBuilder(
+    column: $table.contextTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get contextWindowTokens => $composableBuilder(
+    column: $table.contextWindowTokens,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -85758,6 +85048,16 @@ class $$ConversationMessagesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get contextTokens => $composableBuilder(
+    column: $table.contextTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get contextWindowTokens => $composableBuilder(
+    column: $table.contextWindowTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get parentMessageId => $composableBuilder(
     column: $table.parentMessageId,
     builder: (column) => ColumnOrderings(column),
@@ -85840,6 +85140,16 @@ class $$ConversationMessagesTableTableAnnotationComposer
 
   GeneratedColumn<int> get transcriptChars => $composableBuilder(
     column: $table.transcriptChars,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get contextTokens => $composableBuilder(
+    column: $table.contextTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get contextWindowTokens => $composableBuilder(
+    column: $table.contextWindowTokens,
     builder: (column) => column,
   );
 
@@ -85945,6 +85255,8 @@ class $$ConversationMessagesTableTableTableManager
                 Value<String?> metadata = const Value.absent(),
                 Value<String?> listMetadata = const Value.absent(),
                 Value<int> transcriptChars = const Value.absent(),
+                Value<int?> contextTokens = const Value.absent(),
+                Value<int?> contextWindowTokens = const Value.absent(),
                 Value<String?> parentMessageId = const Value.absent(),
                 Value<bool> compacted = const Value.absent(),
                 Value<bool> reverted = const Value.absent(),
@@ -85964,6 +85276,8 @@ class $$ConversationMessagesTableTableTableManager
                 metadata: metadata,
                 listMetadata: listMetadata,
                 transcriptChars: transcriptChars,
+                contextTokens: contextTokens,
+                contextWindowTokens: contextWindowTokens,
                 parentMessageId: parentMessageId,
                 compacted: compacted,
                 reverted: reverted,
@@ -85985,6 +85299,8 @@ class $$ConversationMessagesTableTableTableManager
                 Value<String?> metadata = const Value.absent(),
                 Value<String?> listMetadata = const Value.absent(),
                 Value<int> transcriptChars = const Value.absent(),
+                Value<int?> contextTokens = const Value.absent(),
+                Value<int?> contextWindowTokens = const Value.absent(),
                 Value<String?> parentMessageId = const Value.absent(),
                 Value<bool> compacted = const Value.absent(),
                 Value<bool> reverted = const Value.absent(),
@@ -86004,6 +85320,8 @@ class $$ConversationMessagesTableTableTableManager
                 metadata: metadata,
                 listMetadata: listMetadata,
                 transcriptChars: transcriptChars,
+                contextTokens: contextTokens,
+                contextWindowTokens: contextWindowTokens,
                 parentMessageId: parentMessageId,
                 compacted: compacted,
                 reverted: reverted,
@@ -86481,435 +85799,6 @@ typedef $$MessageReactionsTableTableProcessedTableManager =
       (MessageReactionsTableData, $$MessageReactionsTableTableReferences),
       MessageReactionsTableData,
       PrefetchHooks Function({bool messageId})
-    >;
-typedef $$SyncSequencesTableTableCreateCompanionBuilder =
-    SyncSequencesTableCompanion Function({
-      required String workspaceId,
-      Value<int> nextSeq,
-      Value<int> rowid,
-    });
-typedef $$SyncSequencesTableTableUpdateCompanionBuilder =
-    SyncSequencesTableCompanion Function({
-      Value<String> workspaceId,
-      Value<int> nextSeq,
-      Value<int> rowid,
-    });
-
-class $$SyncSequencesTableTableFilterComposer
-    extends Composer<_$WorkspaceDatabase, $SyncSequencesTableTable> {
-  $$SyncSequencesTableTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get nextSeq => $composableBuilder(
-    column: $table.nextSeq,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$SyncSequencesTableTableOrderingComposer
-    extends Composer<_$WorkspaceDatabase, $SyncSequencesTableTable> {
-  $$SyncSequencesTableTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get nextSeq => $composableBuilder(
-    column: $table.nextSeq,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$SyncSequencesTableTableAnnotationComposer
-    extends Composer<_$WorkspaceDatabase, $SyncSequencesTableTable> {
-  $$SyncSequencesTableTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get nextSeq =>
-      $composableBuilder(column: $table.nextSeq, builder: (column) => column);
-}
-
-class $$SyncSequencesTableTableTableManager
-    extends
-        RootTableManager<
-          _$WorkspaceDatabase,
-          $SyncSequencesTableTable,
-          SyncSequencesTableData,
-          $$SyncSequencesTableTableFilterComposer,
-          $$SyncSequencesTableTableOrderingComposer,
-          $$SyncSequencesTableTableAnnotationComposer,
-          $$SyncSequencesTableTableCreateCompanionBuilder,
-          $$SyncSequencesTableTableUpdateCompanionBuilder,
-          (
-            SyncSequencesTableData,
-            BaseReferences<
-              _$WorkspaceDatabase,
-              $SyncSequencesTableTable,
-              SyncSequencesTableData
-            >,
-          ),
-          SyncSequencesTableData,
-          PrefetchHooks Function()
-        > {
-  $$SyncSequencesTableTableTableManager(
-    _$WorkspaceDatabase db,
-    $SyncSequencesTableTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$SyncSequencesTableTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$SyncSequencesTableTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$SyncSequencesTableTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> workspaceId = const Value.absent(),
-                Value<int> nextSeq = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SyncSequencesTableCompanion(
-                workspaceId: workspaceId,
-                nextSeq: nextSeq,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String workspaceId,
-                Value<int> nextSeq = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SyncSequencesTableCompanion.insert(
-                workspaceId: workspaceId,
-                nextSeq: nextSeq,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$SyncSequencesTableTableProcessedTableManager =
-    ProcessedTableManager<
-      _$WorkspaceDatabase,
-      $SyncSequencesTableTable,
-      SyncSequencesTableData,
-      $$SyncSequencesTableTableFilterComposer,
-      $$SyncSequencesTableTableOrderingComposer,
-      $$SyncSequencesTableTableAnnotationComposer,
-      $$SyncSequencesTableTableCreateCompanionBuilder,
-      $$SyncSequencesTableTableUpdateCompanionBuilder,
-      (
-        SyncSequencesTableData,
-        BaseReferences<
-          _$WorkspaceDatabase,
-          $SyncSequencesTableTable,
-          SyncSequencesTableData
-        >,
-      ),
-      SyncSequencesTableData,
-      PrefetchHooks Function()
-    >;
-typedef $$SyncChangesTableTableCreateCompanionBuilder =
-    SyncChangesTableCompanion Function({
-      required String workspaceId,
-      required int seq,
-      required String store,
-      required String tbl,
-      required String pk,
-      required String op,
-      Value<String?> ctx,
-      required int createdAtMs,
-      Value<int> rowid,
-    });
-typedef $$SyncChangesTableTableUpdateCompanionBuilder =
-    SyncChangesTableCompanion Function({
-      Value<String> workspaceId,
-      Value<int> seq,
-      Value<String> store,
-      Value<String> tbl,
-      Value<String> pk,
-      Value<String> op,
-      Value<String?> ctx,
-      Value<int> createdAtMs,
-      Value<int> rowid,
-    });
-
-class $$SyncChangesTableTableFilterComposer
-    extends Composer<_$WorkspaceDatabase, $SyncChangesTableTable> {
-  $$SyncChangesTableTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get seq => $composableBuilder(
-    column: $table.seq,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get store => $composableBuilder(
-    column: $table.store,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get tbl => $composableBuilder(
-    column: $table.tbl,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get pk => $composableBuilder(
-    column: $table.pk,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get op => $composableBuilder(
-    column: $table.op,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get ctx => $composableBuilder(
-    column: $table.ctx,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get createdAtMs => $composableBuilder(
-    column: $table.createdAtMs,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$SyncChangesTableTableOrderingComposer
-    extends Composer<_$WorkspaceDatabase, $SyncChangesTableTable> {
-  $$SyncChangesTableTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get seq => $composableBuilder(
-    column: $table.seq,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get store => $composableBuilder(
-    column: $table.store,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get tbl => $composableBuilder(
-    column: $table.tbl,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get pk => $composableBuilder(
-    column: $table.pk,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get op => $composableBuilder(
-    column: $table.op,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get ctx => $composableBuilder(
-    column: $table.ctx,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get createdAtMs => $composableBuilder(
-    column: $table.createdAtMs,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$SyncChangesTableTableAnnotationComposer
-    extends Composer<_$WorkspaceDatabase, $SyncChangesTableTable> {
-  $$SyncChangesTableTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get seq =>
-      $composableBuilder(column: $table.seq, builder: (column) => column);
-
-  GeneratedColumn<String> get store =>
-      $composableBuilder(column: $table.store, builder: (column) => column);
-
-  GeneratedColumn<String> get tbl =>
-      $composableBuilder(column: $table.tbl, builder: (column) => column);
-
-  GeneratedColumn<String> get pk =>
-      $composableBuilder(column: $table.pk, builder: (column) => column);
-
-  GeneratedColumn<String> get op =>
-      $composableBuilder(column: $table.op, builder: (column) => column);
-
-  GeneratedColumn<String> get ctx =>
-      $composableBuilder(column: $table.ctx, builder: (column) => column);
-
-  GeneratedColumn<int> get createdAtMs => $composableBuilder(
-    column: $table.createdAtMs,
-    builder: (column) => column,
-  );
-}
-
-class $$SyncChangesTableTableTableManager
-    extends
-        RootTableManager<
-          _$WorkspaceDatabase,
-          $SyncChangesTableTable,
-          SyncChangesTableData,
-          $$SyncChangesTableTableFilterComposer,
-          $$SyncChangesTableTableOrderingComposer,
-          $$SyncChangesTableTableAnnotationComposer,
-          $$SyncChangesTableTableCreateCompanionBuilder,
-          $$SyncChangesTableTableUpdateCompanionBuilder,
-          (
-            SyncChangesTableData,
-            BaseReferences<
-              _$WorkspaceDatabase,
-              $SyncChangesTableTable,
-              SyncChangesTableData
-            >,
-          ),
-          SyncChangesTableData,
-          PrefetchHooks Function()
-        > {
-  $$SyncChangesTableTableTableManager(
-    _$WorkspaceDatabase db,
-    $SyncChangesTableTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$SyncChangesTableTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$SyncChangesTableTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$SyncChangesTableTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> workspaceId = const Value.absent(),
-                Value<int> seq = const Value.absent(),
-                Value<String> store = const Value.absent(),
-                Value<String> tbl = const Value.absent(),
-                Value<String> pk = const Value.absent(),
-                Value<String> op = const Value.absent(),
-                Value<String?> ctx = const Value.absent(),
-                Value<int> createdAtMs = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SyncChangesTableCompanion(
-                workspaceId: workspaceId,
-                seq: seq,
-                store: store,
-                tbl: tbl,
-                pk: pk,
-                op: op,
-                ctx: ctx,
-                createdAtMs: createdAtMs,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String workspaceId,
-                required int seq,
-                required String store,
-                required String tbl,
-                required String pk,
-                required String op,
-                Value<String?> ctx = const Value.absent(),
-                required int createdAtMs,
-                Value<int> rowid = const Value.absent(),
-              }) => SyncChangesTableCompanion.insert(
-                workspaceId: workspaceId,
-                seq: seq,
-                store: store,
-                tbl: tbl,
-                pk: pk,
-                op: op,
-                ctx: ctx,
-                createdAtMs: createdAtMs,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$SyncChangesTableTableProcessedTableManager =
-    ProcessedTableManager<
-      _$WorkspaceDatabase,
-      $SyncChangesTableTable,
-      SyncChangesTableData,
-      $$SyncChangesTableTableFilterComposer,
-      $$SyncChangesTableTableOrderingComposer,
-      $$SyncChangesTableTableAnnotationComposer,
-      $$SyncChangesTableTableCreateCompanionBuilder,
-      $$SyncChangesTableTableUpdateCompanionBuilder,
-      (
-        SyncChangesTableData,
-        BaseReferences<
-          _$WorkspaceDatabase,
-          $SyncChangesTableTable,
-          SyncChangesTableData
-        >,
-      ),
-      SyncChangesTableData,
-      PrefetchHooks Function()
     >;
 typedef $$ReviewSpacesTableTableCreateCompanionBuilder =
     ReviewSpacesTableCompanion Function({
@@ -122991,10 +121880,6 @@ class $WorkspaceDatabaseManager {
       );
   $$MessageReactionsTableTableTableManager get messageReactionsTable =>
       $$MessageReactionsTableTableTableManager(_db, _db.messageReactionsTable);
-  $$SyncSequencesTableTableTableManager get syncSequencesTable =>
-      $$SyncSequencesTableTableTableManager(_db, _db.syncSequencesTable);
-  $$SyncChangesTableTableTableManager get syncChangesTable =>
-      $$SyncChangesTableTableTableManager(_db, _db.syncChangesTable);
   $$ReviewSpacesTableTableTableManager get reviewSpacesTable =>
       $$ReviewSpacesTableTableTableManager(_db, _db.reviewSpacesTable);
   $$ActivityLogTableTableTableManager get activityLogTable =>

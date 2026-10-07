@@ -4650,24 +4650,6 @@ abstract class AppLocalizations {
   /// **'Allow'**
   String get allow;
 
-  /// Allow git push
-  ///
-  /// In en, this message translates to:
-  /// **'Allow git push'**
-  String get allowGitPush;
-
-  /// Allow GitHub API calls
-  ///
-  /// In en, this message translates to:
-  /// **'Allow GitHub API calls'**
-  String get allowGithubApi;
-
-  /// Allow general network access
-  ///
-  /// In en, this message translates to:
-  /// **'Allow general network access'**
-  String get allowNetwork;
-
   /// API Keys
   ///
   /// In en, this message translates to:
@@ -5388,12 +5370,6 @@ abstract class AppLocalizations {
   /// **'Current participants'**
   String get currentParticipants;
 
-  /// Locale string for customCapabilitiesDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Custom capabilities description'**
-  String get customCapabilitiesDescription;
-
   /// No description provided for @customSystemPrompt.
   ///
   /// In en, this message translates to:
@@ -5411,12 +5387,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deactivate'**
   String get deactivate;
-
-  /// Default capabilities · new spaces
-  ///
-  /// In en, this message translates to:
-  /// **'Default capabilities · new spaces'**
-  String get defaultCapabilities;
 
   /// Default chat
   ///
@@ -6096,12 +6066,6 @@ abstract class AppLocalizations {
   /// **'Forward'**
   String get forward;
 
-  /// No description provided for @gatesGithubPatPush.
-  ///
-  /// In en, this message translates to:
-  /// **'Gates GitHub PAT injection. Required for the agent to push.'**
-  String get gatesGithubPatPush;
-
   /// No description provided for @general.
   ///
   /// In en, this message translates to:
@@ -6221,6 +6185,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outage'**
   String get serviceStatusOutage;
+
+  /// Last circle of the overlapping service-logo stack on the sidebar service status entry, counting the faulty services whose logos did not fit (e.g. "3+")
+  ///
+  /// In en, this message translates to:
+  /// **'{count}+'**
+  String serviceStatusOverflowCount(int count);
 
   /// Title of the service status flyout (GitHub, Claude, Codex, Kimi)
   ///
@@ -7008,6 +6978,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get navSettings;
+
+  /// Sidebar row that leaves the settings navigation and returns to the page settings was opened from
+  ///
+  /// In en, this message translates to:
+  /// **'Exit settings'**
+  String get exitSettings;
 
   /// Locale string for networkBlockCount
   ///
@@ -7879,12 +7855,6 @@ abstract class AppLocalizations {
   /// **'React'**
   String get react;
 
-  /// No description provided for @readPrsIssuesMetadata.
-  ///
-  /// In en, this message translates to:
-  /// **'Lets the agent read PRs, issues and repo metadata.'**
-  String get readPrsIssuesMetadata;
-
   /// Reader preferences
   ///
   /// In en, this message translates to:
@@ -8310,12 +8280,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required.'**
   String get sandboxMacosBuiltIn;
-
-  /// Locale string for sandboxPermissions
-  ///
-  /// In en, this message translates to:
-  /// **'Sandbox permissions'**
-  String get sandboxPermissions;
 
   /// Native sandbox is not supported on this platform yet. Falls back to No isolation.
   ///
@@ -9355,12 +9319,6 @@ abstract class AppLocalizations {
   /// **'Use sandbox'**
   String get useSandbox;
 
-  /// Locale string for useWorkspaceDefault
-  ///
-  /// In en, this message translates to:
-  /// **'Use workspace default'**
-  String get useWorkspaceDefault;
-
   /// User-Agent
   ///
   /// In en, this message translates to:
@@ -9432,12 +9390,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weak isolation - namespace boundary only, no kernel boundary.'**
   String get weakIsolationDescription;
-
-  /// No description provided for @whenOffNoDefaultRoute.
-  ///
-  /// In en, this message translates to:
-  /// **'When off, the sandbox boots without a default route.'**
-  String get whenOffNoDefaultRoute;
 
   /// No description provided for @whenOffServerStaysStopped.
   ///
@@ -11515,23 +11467,11 @@ abstract class AppLocalizations {
   /// **'No repositories in this workspace yet.'**
   String get pipelineRunNoRepos;
 
-  /// No description provided for @allowTicketingApi.
-  ///
-  /// In en, this message translates to:
-  /// **'Allow ticketing API calls'**
-  String get allowTicketingApi;
-
   /// No description provided for @ticketingApiKey.
   ///
   /// In en, this message translates to:
   /// **'Ticketing API key'**
   String get ticketingApiKey;
-
-  /// No description provided for @ticketingApiKeySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Injects the ticketing provider API key into the sandbox.'**
-  String get ticketingApiKeySubtitle;
 
   /// No description provided for @ticketingProvider.
   ///
@@ -15544,48 +15484,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The computer may sleep even while an agent is working'**
   String get keepAwakeOffSubtitle;
-
-  /// No description provided for @syncEngineSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync engine'**
-  String get syncEngineSectionTitle;
-
-  /// No description provided for @syncEngineDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Tickets, messaging and notes update live via small incremental changes instead of full snapshots. Turning a toggle off falls that store back to full-snapshot mode — reload the app for the change to take effect.'**
-  String get syncEngineDescription;
-
-  /// No description provided for @syncEngineTicketsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tickets'**
-  String get syncEngineTicketsTitle;
-
-  /// No description provided for @syncEngineMessagingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Messaging'**
-  String get syncEngineMessagingTitle;
-
-  /// No description provided for @syncEngineNotesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes'**
-  String get syncEngineNotesTitle;
-
-  /// No description provided for @syncEngineOnSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Live delta sync is active'**
-  String get syncEngineOnSubtitle;
-
-  /// No description provided for @syncEngineOffSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Using full-snapshot sync'**
-  String get syncEngineOffSubtitle;
 
   /// No description provided for @spaces.
   ///
@@ -22114,41 +22012,35 @@ abstract class AppLocalizations {
   /// **'Optional — leave empty and the title model names it automatically'**
   String get conversationTitleOptionalHint;
 
-  /// No description provided for @conversationTitlesSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation titles'**
-  String get conversationTitlesSectionTitle;
-
-  /// No description provided for @conversationTitlesSectionCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick the runner that names new conversations in this workspace automatically. Titles stay off until an adapter is chosen, and apply to every member.'**
-  String get conversationTitlesSectionCaption;
-
-  /// No description provided for @conversationTitlesModelLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Title model'**
-  String get conversationTitlesModelLabel;
-
-  /// No description provided for @conversationTitlesAdapterLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Adapter'**
-  String get conversationTitlesAdapterLabel;
-
-  /// No description provided for @conversationTitlesAdapterHint.
+  /// No description provided for @shortTaskOff.
   ///
   /// In en, this message translates to:
   /// **'Off'**
-  String get conversationTitlesAdapterHint;
+  String get shortTaskOff;
 
-  /// No description provided for @conversationTitlesAdapterOff.
+  /// Shown when a feature needing the workspace short-task runner (side questions, title generation) runs with none configured; names the settings page to fix it
   ///
   /// In en, this message translates to:
-  /// **'Off'**
-  String get conversationTitlesAdapterOff;
+  /// **'Pick a short-task model in Settings → Adapters to use this'**
+  String get shortTaskUnavailable;
+
+  /// Button in the rename-conversation dialog that asks the short-task model to propose a title
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get conversationTitleGenerate;
+
+  /// Rename-conversation dialog: generation needs a human message to name the conversation from
+  ///
+  /// In en, this message translates to:
+  /// **'Send a message first. The title is generated from it.'**
+  String get conversationTitleNoMessages;
+
+  /// Rename-conversation dialog: the short-task model failed or returned nothing usable
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t generate a title. Try again.'**
+  String get conversationTitleGenerateFailed;
 
   /// No description provided for @startThread.
   ///
@@ -22419,6 +22311,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conversation'**
   String get contextSegmentConversation;
+
+  /// Context breakdown category: what an external runner such as Claude Code adds on its own (its system prompt, built-in tools, MCP schemas and the turn's tool calls)
+  ///
+  /// In en, this message translates to:
+  /// **'Runner prompt, tools and turn work'**
+  String get contextSegmentRunner;
+
+  /// Caption under the context usage total when the number is the provider-reported size of the model's most recent call
+  ///
+  /// In en, this message translates to:
+  /// **'Reported by the model\'s last call'**
+  String get contextUsageMeasured;
+
+  /// Caption under the context usage total when the number is an estimate because no run has reported its usage yet
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated until a run reports usage'**
+  String get contextUsageEstimated;
 
   /// Title of the context explorer tab and dialog
   ///
@@ -23104,17 +23014,23 @@ abstract class AppLocalizations {
   /// **'Where an agent\'s processes and file writes actually happen.'**
   String get sandboxGroupIsolationDescription;
 
+  /// Settings → Sandboxing: heading of the group that points to agent permissions for what an agent may do.
+  ///
+  /// In en, this message translates to:
+  /// **'What agents may do'**
+  String get sandboxGroupAgentActions;
+
+  /// Settings → Sandboxing: says push, pull requests and network access are decided by the allow/ask/deny action policy, not the sandbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushing, opening a pull request and accessing the network are each allowed, asked about or denied in agent permissions.'**
+  String get sandboxGroupAgentActionsDescription;
+
   /// No description provided for @sandboxBackendFieldDescription.
   ///
   /// In en, this message translates to:
   /// **'Auto picks the strongest one this host supports. Pin one to stop it changing under you.'**
   String get sandboxBackendFieldDescription;
-
-  /// No description provided for @sandboxCapabilitiesDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'The holes punched through the boundary. Each one is something an isolated agent can still do to the outside world.'**
-  String get sandboxCapabilitiesDescription;
 
   /// No description provided for @sandboxSummaryInForce.
   ///
@@ -23343,6 +23259,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run this in a terminal on the server. It opens a browser to finish the login, and writes the credential into this account\'s directory.'**
   String get claudeAccountSignInHint;
+
+  /// No description provided for @claudeAccountLongLivedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-lived token'**
+  String get claudeAccountLongLivedToken;
+
+  /// No description provided for @claudeAccountUseLongLivedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a long-lived token'**
+  String get claudeAccountUseLongLivedToken;
+
+  /// No description provided for @claudeAccountReplaceLongLivedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace long-lived token'**
+  String get claudeAccountReplaceLongLivedToken;
+
+  /// No description provided for @claudeAccountRemoveLongLivedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove long-lived token'**
+  String get claudeAccountRemoveLongLivedToken;
+
+  /// No description provided for @claudeAccountLongLivedTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A regular sign-in has to be renewed and can expire overnight. A long-lived token stays signed in for about a year. Run this in a terminal, finish in the browser, then paste the token it prints.'**
+  String get claudeAccountLongLivedTokenHint;
+
+  /// No description provided for @claudeAccountLongLivedTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t a token from claude setup-token. It starts with sk-ant-oat01-.'**
+  String get claudeAccountLongLivedTokenInvalid;
 
   /// No description provided for @claudeAccountSignedOut.
   ///
@@ -24027,12 +23979,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open in default app'**
   String get attachmentOpenExternally;
-
-  /// Toast when /handoff, /btw or /omfg has no configured runner.
-  ///
-  /// In en, this message translates to:
-  /// **'Set a one-shot model in workspace settings to use this'**
-  String get asideUnavailable;
 
   /// Toast when a side-channel command runs on an empty conversation.
   ///
@@ -24898,6 +24844,30 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get credentialGateOpenSettings;
 
+  /// Credential-gate dialog title when every Claude Code account on the agent or workspace list was removed from the server
+  ///
+  /// In en, this message translates to:
+  /// **'The attached Claude Code accounts were removed'**
+  String get credentialGateAccountsRemovedTitle;
+
+  /// Credential-gate dialog hint explaining how to fix a list of removed Claude Code accounts
+  ///
+  /// In en, this message translates to:
+  /// **'Attach another account in this agent\'s or the workspace\'s account settings, or clear the list to use the default. The run picks it up on its own.'**
+  String get credentialGateAccountsRemovedHint;
+
+  /// Account rotation editor notice when every account on the list was removed from the server
+  ///
+  /// In en, this message translates to:
+  /// **'Every account on this list has been removed from the server. Attach another one, or clear the list.'**
+  String get accountPoolAllRemoved;
+
+  /// Button that clears an account rotation list
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the list'**
+  String get accountPoolClear;
+
   /// Title of the model browser dialog and hint of the model picker field
   ///
   /// In en, this message translates to:
@@ -25617,6 +25587,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search the conversation\'s files by name and open one in a tab'**
   String get ideQuickOpenDescription;
+
+  /// Keyboard shortcut description for the pull request page's quick open file picker (⌘P / Ctrl+P).
+  ///
+  /// In en, this message translates to:
+  /// **'Search the pull request\'s files by name and open one in a tab'**
+  String get prQuickOpenDescription;
 
   /// Placeholder in the quick open picker's search field.
   ///

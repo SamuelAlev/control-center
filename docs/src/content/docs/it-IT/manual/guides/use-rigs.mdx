@@ -2,7 +2,7 @@
 title: Assegna a un agente una macchina su cui testare
 description: Assegna a un agente un browser, un desktop, un emulatore Android o un simulatore iOS usa e getta — osservati dal vivo, con controlli che puoi riprendere in mano.
 slug: it-IT/manuale/guide/usa-rig
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Un **rig** è una macchina usa e getta che un agente apre quando deve davvero
@@ -199,9 +199,11 @@ Cosa cambia:
 - La rete è negata per impostazione predefinita. Solo gli host presenti
   nell'allowlist del rig sono raggiungibili, e tutto passa attraverso un varco
   che la applica.
-- `git push` funziona comunque. Il rig non conserva alcuna credenziale; chiede al
-  server un token di breve durata per singola operazione, e quel token viene
-  revocato alla chiusura del rig.
+- `git push` funziona comunque in un terminale che hai aperto tu. Il rig non
+  conserva alcuna credenziale; chiede al server un token di breve durata per
+  singola operazione, limitato al tuo accesso al forge, e quel token viene
+  revocato alla chiusura del rig. Un rig aperto da un agente riceve una
+  credenziale di sola lettura, quindi può eseguire fetch ma non push.
 
 Cosa sapere:
 

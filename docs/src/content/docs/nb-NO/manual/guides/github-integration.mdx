@@ -2,7 +2,7 @@
 title: Sett opp GitHub-integrasjon
 description: Logg inn på GitHub slik at PR-flaten, repo-registreringen og agentkjøringer fungerer.
 slug: nb-NO/handbok/slik-gjor-du/github-integrasjon
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Denne veiledningen dekker de GitHub-spesifikke delene av oppsettet. GitHub er én
@@ -77,7 +77,7 @@ servereierens påloggingsinformasjon, og til slutt miljøet.
 | Check-kjøringer           | GitHub Checks-API-et                                                                                           |
 | Publisering av gjennomgang | Et trinn som krever en brukerhandling, og som legger gjennomgangen din ut på PR-en                            |
 | Repo-registrering         | En checkout godtas hvis `origin`-remoteen peker på github.com — eller på gitlab.com / bitbucket.org             |
-| GitHub-tilgang for agenter | Brokeren for påloggingsinformasjon injiserer tokenet som `GH_TOKEN` / `GITHUB_TOKEN`, styrt av agentens kapabiliteter |
+| GitHub-tilgang for agenter | Brokeren for påloggingsinformasjon injiserer et token som bare kan lese, som `GH_TOKEN` / `GITHUB_TOKEN`; pusher går gjennom Control Center |
 | Varsler                   | En serverside poll av GitHub-varselinnboksen din utløser «Nevnt i pull request» og «Gjennomgang forespurt»     |
 | Brukerprofiler            | Profilkort ved hover og filtrering av PR-er per forfatter                                                      |
 
@@ -97,9 +97,10 @@ Klikk på merket for å åpne et panel med tilstanden til hver leverandør og en
 
 ## Slik handler agenter på GitHub
 
-- En agent får et GitHub-token bare hvis den har **Tillat GitHub API-kall** eller
-  **Tillat git push**. Se
-  [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/)
+- En agent som jobber i en GitHub-worktree, får alltid et GitHub-token som bare
+  kan lese. En push går gjennom Control Center, som spør regelen **Push til en
+  remote** og deretter sender den videre med et skrivetoken agenten aldri har.
+  Se [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/)
 - Commits en agent lager, angis **som agenten** — visningsnavnet pluss
   ` (agent)`, på en syntetisk adresse knyttet til agentens id — aldri som et
   menneske. Personen som ba om det, krediteres med en `Co-Authored-By`-trailer
@@ -107,11 +108,12 @@ Klikk på merket for å åpne et panel med tilstanden til hver leverandør og en
   installasjonstokener med omtrent én times varighet per oppstart, i stedet for å
   overlate et bredt token. Installasjonen løses fra **eieren** av repoet i
   kjøringen, slik at én app installert på flere kontoer avgrenses riktig til den
-  kontoen kjøringen berører. Uten en app mottar agentene miljøtokenet
-- En kjøring som er bedt om av et medlem som har logget inn, handler under **det
-  medlemmets** GitHub-identitet — påloggingsinformasjonen deres flettes inn etter
-  brokerens miljø, slik at en commit eller kommentar en agent lager for dem, kan
-  tilskrives dem
+  kontoen kjøringen berører. Uten en app mottar agentene miljøtokenet, som ikke
+  kan begrenses til bare lesing: push-regelen binder da `git push`, men ikke
+  kode som bruker tokenet direkte
+- Tokenet er alltid brokerens, aldri det egne tokenet til medlemmet som ba om
+  kjøringen. Serverens token holdes tilbake fra en kjøring som handler for et
+  medlem som ikke er eieren og ikke har koblet til GitHub
 
 ## Feilsøking
 

@@ -2,7 +2,7 @@
 title: Sandlåda och säkerhet
 description: Vad som faktiskt begränsar en agent i Control Center i dag, hur långt OS-sandlådan når och vilka gränser som håller på en värd som saknar backend.
 slug: sv-SE/handbok/koncept/sandlada-och-sakerhet
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Var OS-sandlådan når och inte når]
@@ -21,8 +21,7 @@ Två luckor överlever sandlådan och är värda att hålla i minnet:
   verktygen själva plus åtgärdsräckena.
 - **Claude Code startas med `--dangerously-skip-permissions`**, eftersom en
   icke-interaktiv `claude -p` annars skulle blockera för evigt på sin egen
-  prompt. Dess fil- och skalanrop grindas därför inte av Control Centers
-  räcken — OS-sandlådan är gränsen runt dem.
+  prompt. Dess filanrop grindas därför inte av Control Centers räcken, och dess skalkommandon bara av en hook som läser kommandoraden — OS-sandlådan är gränsen runt dem.
   :::
 
 ## Varför isolering spelar roll här
@@ -86,9 +85,7 @@ fråga eller neka innan anropet körs. En `prompt` utan ansluten godkännare lö
 till _nekat_ — en fråga som ingen kan svara på är aldrig ett ja. Se
 [Räcken](/sv-SE/handbok/koncept/racken/) för lösningsmodellen.
 
-**Förmågsstyrda inloggningsuppgifter och en sanerad miljö.** Inloggningsuppgifter
-präglas per start utifrån samtalets förmågeflaggor och återkallas när körningen
-avslutas. ACP, harnessens `bash` och Claude Code under den inbyggda inlindningen
+**Mäklade inloggningsuppgifter och en sanerad miljö.** Inloggningsuppgifter präglas per start och återkallas när körningen avslutas, och en körnings GitHub-token kan läsa men inte pusha — se "Pushar går genom Control Center" nedan. ACP, harnessens `bash` och Claude Code under den inbyggda inlindningen
 får en miljö rensad från dynamiska länkarens och tolkens injektionsvektorer
 (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` och
 deras släktingar) innan processen startar. Claude Code via `NoSandboxAdapter`
@@ -117,35 +114,68 @@ delkommando utvärderas separat, där det mest restriktiva beslutet vinner.
 Claude Code, när det används som adapter, är fallet där sandlådan väger tyngst.
 Control Center startar det med `--dangerously-skip-permissions`, eftersom en
 icke-interaktiv `claude -p` annars skulle blockera för evigt på sin egen
-godkännandeprompt. Dess läs-, skriv-, redigerings- och skalanrop sker inuti dess
-egen process och Control Center ser dem aldrig; de enda anrop den gör som når en
-grind är de `mcp__*`-verktyg som Control Center självt serverar. Där en backend
+godkännandeprompt. Dess läs-, skriv- och redigeringsanrop sker inuti dess egen process och Control Center ser dem aldrig. Dess `Bash`-anrop skickas, innan de körs, till en hook på servern som klassificerar kommandoraden och frågar den matchande regeln, och de `mcp__*`-verktyg som Control Center serverar passerar grinden som vanligt. Där en backend
 finns sker de osedda anropen fortfarande inuti sandlådeinlindningen, så OS:et är
 gränsen runt dem. Där ingen finns är ingenting det. Varje adapter anger detta i
 sin verkställighetsmatris — se [adapternas ärlighetsmatris](/sv-SE/handbok/koncept/racken/#the-adapter-honesty-matrix).
 
-## Förmågsstyrning är verkställighet genom frånvaro
+## Pushar går genom Control Center
 
-Ett samtal bär fyra förmågeflaggor: pusha till repot, anropa GitHub-API:et,
-anropa ärendehanteringsleverantören och komma åt nätverket. De kontrolleras inte
-när agenten agerar. De kontrolleras en gång, vid start, av mäklaren för
-inloggningsuppgifter — och en förmåga som är av betyder att den matchande token
-helt enkelt aldrig läggs i miljön.
+Det finns inga behörighetsflaggor per agent. Om en agent får skapa en commit,
+pusha, öppna en pull request, skriva till ett ärendesystem eller nå nätverket
+avgörs av [räckena](/sv-SE/handbok/koncept/racken/) — tillåt, fråga först eller neka
+— och samma regler gäller oavsett vilken adapter som kör agenten.
 
-Det är hela mekanismen, och den är värd att säga rakt ut eftersom felsättet inte
-är vad folk förväntar sig. Att stänga av "GitHub API" ger inget "behörighet
-nekad"-meddelande. Det ger en vanlig `401` inuti agenten, eftersom det inte finns
-någon `GH_TOKEN` att skicka. Agenten kan mycket väl beskriva det som ett problem
-med inloggningsuppgifterna. Verkställighet genom frånvaro är robust — det finns
-ingen kontroll att kringgå — men den är tyst, och agenten vet inte varför det
-misslyckades.
+En push är den åtgärd som måste hålla även mot en agent som försöker kringgå en
+regel, så den framtvingas genom vad agenten har, inte genom vad den kör. Med en
+GitHub-app konfigurerad får en körning i en GitHub-worktree en repo-avgränsad
+installationstoken som kan läsa innehåll och arbeta med pull requests men inte
+pusha. Körningens git-konfiguration skriver om varje push-URL till GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) till
+**agentkörningsgatewayen**, en loopback-slutpunkt på `cc_server`. Gatewayen
+läser vilka refs pushen uppdaterar, frågar regeln **Pusha till en remote** — så
+en regel som är begränsad till grenar, till exempel "neka push till `main`",
+gäller — och skickar först därefter pushen vidare till GitHub med en skrivtoken
+som den präglar för ändamålet och aldrig lämnar till agenten. En nekad push syns
+i gits egen utdata:
 
-Nätverksflaggan beter sig på samma sätt. Med den av vägrar harnessens
-`web_fetch`- och `web_search`-verktyg varje anrop, och en sandlådad starts
-proxy-allowlist är tom, så varje utgående anslutning nekas.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Inloggningsuppgifterna återkallas när körningen rivs ner, så ett handtag överlever
-inte körningen som präglade det.
+Gatewayen skickar bara vidare pushar till worktreens eget repo eller till ett
+GitHub-repo som är länkat till arbetsytan. Fetch går direkt till GitHub med
+lästoken.
+
+Andra skalkommandon möter en mjukare grind. Harnessens `bash`-verktyg och, via
+en hook, Claude Codes `Bash`-verktyg klassificerar varje kommandorad och frågar
+den regel den hör till: `git commit`, `merge`, `rebase`, `cherry-pick`,
+`revert` och `am` är **Skapa en commit**; `gh pr create` är **Öppna en pull
+request**; `gh pr merge`, `review`, `comment` och `close` är **Publicera en
+granskning eller sammanslagning**; `gh issue create`, `edit`, `comment` och
+`close` är **Skriv till ett externt ärendesystem**; paketinstallationer är
+**Installera ett paket**; `curl` och `wget` är **Använd nätverket**. Det känner
+igen det vanliga sättet att skriva en åtgärd, och en agent som är fast besluten
+att dölja en (`eval`, en skriptfil, ett direkt API-anrop) kan göra det. Pushar
+är inte beroende av det.
+
+:::caution[Utan GitHub-app är pushregeln bara rådgivande]
+Utan en konfigurerad GitHub-app faller mäklaren tillbaka på en personlig
+åtkomsttoken, som inte kan begränsas till enbart läsning. Regeln gäller
+fortfarande för `git push`, eftersom git skickar pushen till gatewayen, men kod
+som använder token i miljön direkt kan pusha förbi den.
+:::
+
+Ingen API-nyckel för ärenden läggs i en sandlåda. Agenter skriver ärenden via
+Control Centers MCP-verktyg, som frågar **Skriv till ett externt
+ärendesystem**.
+
+Regeln **Använd nätverket** läses en gång, när körningen startar. En sandlådas
+nätverk är antingen på eller av, så neka stänger av det medan tillåt och fråga
+först lämnar det på; harnessens verktyg `web_fetch` och `web_search` frågar
+fortfarande vid varje anrop. Inloggningsuppgifterna återkallas när körningen
+rivs ner, tillsammans med varje skrivtoken som gatewayen har präglat, så ett
+handtag överlever inte körningen.
 
 ## Vad sandlådan tillför och var den slutar
 
@@ -211,29 +241,25 @@ nåddes via endera skulle ha varit skrivbar medan profilen såg ut att förbjuda
 
 Nätverket, under en sandlåda, är en **domän**-allowlist per session som framtvingas
 av loopback-proxyer i processen. Utgående trafik nekas som standard: med
-nätverksförmågan av startar proxyna fortfarande men deras allowlist är tom, så
-varje utgående anslutning nekas. Med den på bygger uppslagaren allowlisten från en
+nätverket av startar proxyna fortfarande men deras allowlist är tom, så varje
+utgående anslutning nekas. Med det på bygger uppslagaren allowlisten från en
 kurerad baslinje — LLM-API-leverantörer, git-hostning, paketregister,
-modellkatalogen — plus de GitHub-domäner som agentens GitHub- eller pushförmåga ger
-den, och matchar varje anslutnings målvärd mot den. Jokertecken fungerar
-(`*.example.com` matchar underdomäner, inte toppdomänen). En separat
-alltid-nekad-lista vinner över allowlisten och täcker molnmetadatanslutningar och
-telemetrimottagare. Det som _inte_ är konfigurerbart är listan själv:
-specifikationen bär ett `egressAllowlist`-fält för extra domäner och en krok för
-ärendedomäner, men inget i dispatchvägen fyller något av dem, så i praktiken får
-varje körning baslinjen plus sina förmågsstyrda domäner och inget mer.
+modellkatalogen — plus GitHubs domäner, och matchar varje anslutnings målvärd
+mot den. Jokertecken fungerar (`*.example.com` matchar underdomäner, inte
+toppdomänen). En separat alltid-nekad-lista vinner över allowlisten och täcker
+molnmetadatanslutningar och telemetrimottagare. Det som _inte_ är konfigurerbart
+är listan själv: specifikationen bär ett `egressAllowlist`-fält för extra
+domäner, men inget i dispatchvägen fyller det, så i praktiken får varje körning
+baslinjen plus GitHub och inget mer.
 
 Nekanden, på macOS, är observerbara: en monitor avlyssnar systemloggen efter
 Sandbox-nekanden, filtrerar bort känt brus, deduplicerar retry-stormar och lyfter
-fram var och en som en `SandboxViolation` med namn på vad som försöktes och vilken
-förmåga som skulle låsa upp den. På Linux tolkar inlindningsvägen stderr efter
+fram var och en som en `SandboxViolation` med namn på vad som försöktes och vad som blockerades. På Linux tolkar inlindningsvägen stderr efter
 `EPERM`, `Operation not permitted` och `Permission denied` och sänder ut samma
 händelsetyp — det finns ingen systemloggavlyssning. De anländer på körningens egen
 händelseström, så ett nekat systemanrop syns i transkriptet i stället för bara i
 en logg. Telemetrin finns bara medan en inbyggd sandlåda faktiskt lindar in
-processen — på en värd utan backend finns inget att observera. Den är inte heller
-kopplad till förmågsstyrningen: en överträdelse kommer från ett nekat
-systemanrop, aldrig från en förmågsuppslagning.
+processen — på en värd utan backend finns inget att observera. Den är inte heller kopplad till räckena: en överträdelse kommer från ett nekat systemanrop, aldrig från en regeluppslagning.
 
 ## Bekräftelser kommer från räckena, inte sandlådan
 
@@ -263,5 +289,5 @@ som anger vad som kan kontrolleras för hand.
 
 ## Relaterade guider
 
-- [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/): förmågeflaggor och filsystemshållning
+- [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/): åtgärdsregler, pushverkställighet och filsystemshållning
 - [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/): vad diagnoskontrollerna täcker

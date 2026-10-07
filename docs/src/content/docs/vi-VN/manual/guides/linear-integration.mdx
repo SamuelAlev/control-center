@@ -2,7 +2,7 @@
 title: Thiết lập tích hợp Linear
 description: Lưu khóa API Linear trên máy chủ để agent có thể gọi Linear, và chọn Linear làm nhà cung cấp phiếu cho các phiếu mới.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear
-sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
+sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
 ---
 
 Dán khóa API Linear lên máy chủ gắn với người dùng của bạn, giống như cách bạn kết
@@ -15,8 +15,9 @@ ngoài nào — xem [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-
 **Khóa API phiếu** nằm tại **Cài đặt → Không gian làm việc → Chung**, trên thẻ
 **Phiếu**. Nó lưu khóa trên máy chủ gắn với id người dùng của bạn. Khóa riêng của
 máy chủ dành cho công việc chạy khi không có người trực đến từ `LINEAR_API_KEY`
-hoặc thẻ **Ứng dụng nhà cung cấp** và chỉ được chèn dưới dạng `TICKETING_API_KEY`
-khi agent đó có khả năng **Cho phép gọi API phiếu**.
+hoặc thẻ **Ứng dụng nhà cung cấp**. Không có khóa phiếu nào được đặt vào sandbox
+của agent: agent ghi phiếu qua các công cụ của chính Control Center, vốn hỏi quy
+tắc **Ghi vào tracker bên ngoài** trước.
 
 ## Gắn dấu Linear cho phiếu mới
 

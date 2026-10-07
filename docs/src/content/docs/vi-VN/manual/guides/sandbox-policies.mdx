@@ -1,18 +1,20 @@
 ---
 title: Cấu hình chính sách sandbox
-description: Điều gì ràng buộc một lượt chạy agent, làm sao biết sandbox hệ điều hành có đang bọc nó hay không và máy chủ thực sự đọc những cài đặt khả năng nào.
+description: Điều gì ràng buộc một lượt chạy agent, làm sao biết sandbox hệ điều hành có đang bọc nó hay không và các quy tắc hành động quyết định agent được push hay truy cập những gì ra sao.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Việc một lượt chạy agent có được sandbox hay không được quyết định trên máy chủ,
-lúc khởi động (`--sandbox`). Nút gạt **Bật sandboxing**, hộp chọn **Backend** và
-các nút gạt **Khả năng mặc định · không gian mới** trong **Cài đặt → Máy chủ →
-Chẩn đoán & quyền riêng tư** là những tùy chọn lưu trên thiết bị của bạn. Phần dò
-host của thẻ **Sandbox** cho biết máy chủ có thể bọc được những gì.
+lúc khởi động (`--sandbox`). Nút gạt **Bật sandboxing** và hộp chọn **Backend**
+trong **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư** là những tùy chọn lưu
+trên thiết bị của bạn. Phần dò host của thẻ **Sandbox** cho biết máy chủ có thể
+bọc được những gì.
 
 Có hai điều khiển tác động tới một lượt chạy và hướng dẫn này bao quát cả hai:
-**Quyền sandbox** theo từng agent ở bên dưới và cờ `--sandbox` của chính máy chủ.
+các quy tắc hành động trong **Cài đặt → Không gian làm việc → Quyền của agent**,
+vốn quyết định agent được push, mở hay truy cập những gì, và cờ `--sandbox` của
+chính máy chủ.
 
 ## Điều gì ràng buộc một lượt chạy agent
 
@@ -23,7 +25,7 @@ Sáu thứ ràng buộc một agent. Thứ nhất là sandbox hệ điều hành
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sandbox hệ điều hành           | Seatbelt trên macOS, bubblewrap trên Linux và WSL2. Bọc CLI Claude Code, các adapter ACP và công cụ `bash` của harness. **Không có trên Windows và trên Linux thiếu `bwrap` và `socat`** |
 | Cây làm việc riêng của nó         | Mỗi cuộc hội thoại nhận một bản checkout copy-on-write. Bản checkout gốc được đưa vào lượt chạy như một đường dẫn từ chối ghi và chính sandbox là thứ thực thi điều đó                                            |
-| Thông tin xác thực qua broker     | Broker thông tin xác thực tạo mới một môi trường theo từng lượt chạy từ các khả năng của agent rồi thu hồi nó khi lượt chạy kết thúc. Không có khả năng thì không có token trong môi trường                                            |
+| Thông tin xác thực qua broker     | Broker thông tin xác thực tạo mới một môi trường theo từng lượt chạy rồi thu hồi nó khi lượt chạy kết thúc. Token GitHub trong đó có thể đọc nhưng không thể push: một lần push đi qua Control Center, nơi hỏi quy tắc push trước |
 | Rào chắn hành động        | Mọi công cụ thay đổi trạng thái đều khai báo các lớp hiệu ứng của nó và bộ gác phân giải chúng trước khi lệnh gọi chạy. Một `prompt` không có người phê duyệt nào kết nối sẽ bị từ chối                                                 |
 | Làm sạch môi trường | ACP và công cụ `bash` của harness nhận một môi trường đã lọc. Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ                                                                  |
 | Bề mặt công cụ của chế độ  | Chế độ chỉ đọc loại bỏ hẳn các công cụ thay đổi cây làm việc và ghim động từ đầu ra của chính chế độ để nó vẫn có thể bàn giao                                                                         |
@@ -33,9 +35,7 @@ Ba thứ vẫn yếu hơn vẻ ngoài của chúng:
 - Chỉ **harness tích hợp** mới thực thi cổng công cụ, các hợp đồng hoàn thành và
   những quy tắc cấu trúc của chế độ. Adapter Claude Code thì không. Riêng Claude
   Code được khởi chạy với `--dangerously-skip-permissions`, bởi một `claude -p`
-  phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt của chính nó — nên các
-  lệnh gọi read, write, edit và bash của Claude không được Control Center nhìn
-  thấy cũng không bị đặt cổng. Ở nơi sandbox bật, nó chính là ranh giới bao quanh
+  phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt của chính nó — nên các lệnh gọi read, write và edit của Claude không được Control Center nhìn thấy cũng không bị đặt cổng, còn các lệnh bash của nó chỉ được một hook đọc dòng lệnh kiểm tra. Ở nơi sandbox bật, nó chính là ranh giới bao quanh
   những lệnh gọi đó.
 - Các công cụ tệp in-process của harness (read, write, edit, apply patch, search,
   find, search_files) chạy bên trong tiến trình máy chủ, nên không profile
@@ -47,43 +47,61 @@ Ba thứ vẫn yếu hơn vẻ ngoài của chúng:
   lệnh; Claude Code kế thừa môi trường của máy chủ qua `NoSandboxAdapter`. Máy
   chủ nói rõ điều đó trong log khởi động. Hãy kiểm tra máy của bạn ở bên dưới.
 
-## Đặt khả năng cho một agent
+## Quyết định agent được push những gì
 
-Đây là điều khiển khả năng duy nhất mà máy chủ đọc. Nó theo từng agent và quyết
-định thứ mà broker thông tin xác thực đưa vào môi trường của agent đó.
+Không có nút gạt theo từng agent cho git push, GitHub, phiếu hay mạng. Mỗi thứ
+là một quy tắc hành động:
 
-1. Vào **Cài đặt → Không gian làm việc → Agent**
-2. Chọn agent trong danh sách
-3. Trên tab **Cài đặt**, cuộn tới **Quyền sandbox**
-4. Bật nút gạt — chú thích của hàng đổi từ **Dùng mặc định không gian làm việc**
-5. Đặt bốn nút gạt:
+| Quy tắc                               | Mặc định tích hợp | Bao gồm những gì                                                            |
+| ------------------------------------- | ----------------- | --------------------------------------------------------------------------- |
+| **Push lên remote**                   | Hỏi trước         | Mọi `git push` lên GitHub, bất kể adapter nào                               |
+| **Mở một pull request**               | Hỏi trước         | `gh pr create` và các công cụ pull request                                  |
+| **Xuất bản review hoặc merge**        | Hỏi trước         | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`               |
+| **Ghi vào tracker bên ngoài**         | Hỏi trước         | Việc ghi phiếu qua các công cụ của Control Center và `gh issue`             |
+| **Truy cập mạng**                     | Cho phép          | Sandbox có mạng hay không, và các công cụ web của harness                   |
 
-| Nút gạt                           | Nó kiểm soát điều gì                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Cho phép git push**               | Khi tắt, lượt chạy nhận `GIT_ASKPASS=/usr/bin/false` và `GIT_TERMINAL_PROMPT=0`, nên một lần push không thể hỏi thông tin xác thực                                                                                                                   |
-| **Cho phép gọi GitHub API**       | Cùng với **Cho phép git push**, quyết định việc broker có chèn token GitHub dưới dạng `GH_TOKEN` / `GITHUB_TOKEN` hay không                                                                                                                               |
-| **Cho phép gọi API phiếu**    | Quyết định việc broker có chèn `TICKETING_API_KEY` hay không                                                                                                                                                                                             |
-| **Cho phép truy cập mạng chung** | Ở nơi sandbox bật, đây là một cổng egress thực sự: khi tắt, danh sách cho phép của lượt chạy rỗng và mọi yêu cầu ra ngoài đều bị từ chối tại proxy. Ở nơi không có backend, nó được ghi nhận trên lượt chạy nhưng không chặn được gì mà một tiến trình được spawn làm |
+1. Vào **Cài đặt → Không gian làm việc → Quyền của agent**
+2. Chọn phạm vi — **Không gian làm việc**, **Agent** hoặc **Space** — rồi trên
+   hàng của quy tắc, chọn **Cho phép**, **Hỏi trước** hoặc **Từ chối**
 
-6. Lưu
+Các quy tắc push giới hạn theo nhánh, như một quy tắc từ chối push lên `main`,
+cũng được áp dụng: xem [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/).
 
-Điểm kiểm tra: mở lại agent và nút gạt vẫn bật cùng các tùy chọn của bạn — một bộ
-khả năng đã lưu sẽ đi vòng qua máy chủ và một agent không có bộ nào sẽ quay về
-mặc định thận trọng (push tắt, GitHub API tắt, phiếu tắt, mạng bật).
+Điểm kiểm tra: yêu cầu agent push một nhánh. Với **Hỏi trước** bạn nhận được một
+yêu cầu phê duyệt nêu kho mã và các ref; với **Từ chối**, git in ra
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Hai cách điều này phản tác dụng]
-Chú thích ghi **Dùng mặc định không gian làm việc**, nhưng không có cài đặt khả
-năng nào ở cấp không gian làm việc mà máy chủ đọc. Một agent có nút gạt tắt sẽ
-nhận mặc định thận trọng tích hợp.
+Mỗi quy tắc tác động tới lượt chạy thế nào:
 
-Ngoài ra, thông tin xác thực GitHub của lượt chạy luôn chỉ thuộc về broker — một
-token cài đặt GitHub App giới hạn theo kho mã, hoặc phương án dự phòng PAT từ môi
-trường — chứ không bao giờ là token đã lưu của chính thành viên yêu cầu.
-`actingUserId` được truyền để broker có thể *giữ lại* PAT của máy chủ khỏi một
-thành viên không phải chủ sở hữu và chưa kết nối GitHub; nó không gộp một token
-cá nhân đè lên một khả năng đang tắt. Đừng coi **Cho phép gọi GitHub API** là một
-ranh giới egress cứng trên một máy chủ không có sandbox hệ điều hành: một tiến
-trình được spawn vẫn có thể ra mạng.
+- **Push** được thực thi bằng thứ lượt chạy nắm giữ. Token GitHub của nó là một
+  token cài đặt GitHub App chỉ đọc, có thể đọc nội dung và làm việc với pull
+  request. Cấu hình git của nó gửi mọi lần push lên GitHub tới một cổng loopback
+  trên `cc_server`, nơi hỏi quy tắc và chỉ khi đó mới chuyển tiếp lần push bằng
+  một token ghi mà agent không bao giờ thấy. Cổng chỉ chuyển tiếp tới kho mã của
+  chính worktree hoặc tới một kho mã GitHub được liên kết với không gian làm
+  việc. Điều này đúng với mọi adapter.
+- **Pull request và issue từ shell** được nhận ra qua dòng lệnh, trong công cụ
+  `bash` của harness và, qua một hook, trong công cụ `Bash` của Claude Code. Một
+  agent che giấu lệnh (một script, `eval`, một lời gọi API trực tiếp) sẽ lọt qua
+  bước kiểm tra này, nhưng không lọt qua cổng push.
+- **Khóa phiếu** không bao giờ được đặt vào sandbox. Agent ghi phiếu qua các
+  công cụ MCP của Control Center, vốn hỏi quy tắc.
+- **Mạng** được phân giải một lần, khi lượt chạy bắt đầu. **Từ chối** tắt mạng
+  của sandbox; **Cho phép** và **Hỏi trước** giữ nó bật, và với **Hỏi trước**
+  các công cụ `web_fetch` và `web_search` của harness vẫn hỏi ở mỗi lệnh gọi.
+  Khi mạng bật, GitHub luôn nằm trong danh sách cho phép egress.
+
+:::caution[Không có GitHub App, quy tắc push chỉ mang tính khuyến nghị]
+Khi chưa cấu hình GitHub App, lượt chạy nhận personal access token dự phòng, thứ
+không thể thu hẹp thành chỉ đọc. `git push` vẫn đi qua cổng và quy tắc, nhưng mã
+dùng trực tiếp token có thể push vòng qua nó. Hãy cấu hình GitHub App để quy tắc
+có hiệu lực ràng buộc.
+
+Thông tin xác thực GitHub của lượt chạy luôn chỉ thuộc về broker — một token cài
+đặt GitHub App giới hạn theo kho mã, hoặc PAT dự phòng — chứ không bao giờ là
+token đã lưu của chính thành viên yêu cầu. PAT của máy chủ bị giữ lại khỏi một
+lượt chạy hành động thay một thành viên không phải chủ sở hữu và chưa kết nối
+GitHub.
 :::
 
 ## Kiểm tra xem các lượt chạy agent của bạn có được sandbox không
@@ -156,9 +174,13 @@ duyệt nào kết nối, nó đóng khi lỗi và hành động bị từ chố
 
 ### Một agent không thể push mà tôi chưa từng từ chối
 
-Hãy kiểm tra **Quyền sandbox** của agent. Một agent không có bộ khả năng tùy chỉnh
-sẽ nhận mặc định thận trọng, trong đó **Cho phép git push** bị tắt — nên broker
-không chèn token GitHub nào và git không có cách nào xác thực.
+Hãy đọc những gì git in ra. `Control Center policy: …` nghĩa là một quy tắc đã
+từ chối lần push hoặc một **Hỏi trước** không được trả lời.
+`… is not linked to this workspace` nghĩa là lần push nhắm tới một kho mã không
+phải của chính worktree và cũng không được liên kết với không gian làm việc.
+`Control Center has no GitHub credential that can push …` nghĩa là GitHub App
+chưa được cài trên kho mã đó và không có thông tin xác thực dự phòng nào push
+được: hãy cài App lên kho mã đó hoặc kết nối GitHub.
 
 ### Thẻ Sandbox báo không có sandbox gốc
 

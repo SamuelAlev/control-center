@@ -2,7 +2,7 @@
 title: Siapkan integrasi GitHub
 description: Masuk ke GitHub agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-github
-sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
+sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
 ---
 
 Panduan ini membahas bagian-bagian penyiapan yang khusus untuk GitHub. GitHub
@@ -80,7 +80,7 @@ server, lalu kredensial pemilik server, lalu environment.
 | Hasil pemeriksaan     | API Checks GitHub                                                                                             |
 | Publikasi tinjauan    | Langkah dengan gerbang pengguna yang memposting tinjauan Anda ke PR                                           |
 | Pendaftaran repo      | Sebuah checkout diterima jika remote `origin`-nya menunjuk ke github.com — atau ke gitlab.com / bitbucket.org |
-| Akses GitHub agen     | Broker kredensial menyuntikkan token sebagai `GH_TOKEN` / `GITHUB_TOKEN`, dibatasi oleh kemampuan agen       |
+| Akses GitHub agen     | Broker kredensial menyuntikkan token hanya-baca sebagai `GH_TOKEN` / `GITHUB_TOKEN`; push melewati Control Center |
 | Ping notifikasi       | Polling di sisi server atas kotak masuk notifikasi GitHub Anda memunculkan "Disebutkan di pull request" dan "Tinjauan diminta" |
 | Profil pengguna       | Kartu hover profil dan pemfilteran PR per penulis                                                             |
 
@@ -99,8 +99,9 @@ segarkan. Statusnya diperbarui sendiri setiap dua menit.
 
 ## Pahami cara agen bertindak di GitHub
 
-- Agen mendapatkan token GitHub hanya jika agen tersebut punya **Izinkan panggilan API GitHub** atau
-  **Izinkan git push**. Lihat
+- Agen yang bekerja di worktree GitHub selalu mendapat token GitHub hanya-baca.
+  Push melewati Control Center, yang menanyakan aturan **Push ke remote** lalu
+  meneruskannya dengan token tulis yang tidak pernah dipegang agen. Lihat
   [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
 - Commit yang dibuat agen ditulis **atas nama agen** — nama tampilan ditambah
   ` (agent)`, pada alamat sintetis yang dikunci berdasarkan id agen — tidak
@@ -111,11 +112,12 @@ segarkan. Statusnya diperbarui sendiri setiap dua menit.
   peluncuran, alih-alih menyerahkan token yang luas. Instalasinya ditentukan
   dari **owner** repo run tersebut, sehingga satu app yang terpasang di
   beberapa akun tercakup dengan benar ke akun mana pun yang disentuh run itu.
-  Tanpa app, agen menerima token dari environment
-- Run yang diminta oleh anggota yang sudah masuk akan bertindak dengan identitas
-  GitHub **anggota tersebut** — kredensialnya digabungkan setelah environment
-  milik broker, sehingga commit atau komentar yang dibuat agen untuknya dapat
-  diatribusikan kepadanya
+  Tanpa app, agen menerima token dari environment, yang tidak dapat dipersempit
+  menjadi hanya-baca: aturan push lalu mengikat `git push`, tetapi tidak kode
+  yang memakai token secara langsung
+- Token selalu milik broker, tidak pernah milik anggota yang meminta. Token
+  server ditahan dari run yang bertindak untuk anggota yang bukan pemilik dan
+  belum menghubungkan GitHub
 
 ## Pemecahan masalah
 

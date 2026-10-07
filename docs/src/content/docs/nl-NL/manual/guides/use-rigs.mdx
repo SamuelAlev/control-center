@@ -2,7 +2,7 @@
 title: Een agent een testmachine geven
 description: Geef een agent een wegwerp-browser, -desktop, -Android-emulator of -iOS-simulator — live te volgen, met bediening die je kunt overnemen.
 slug: nl-NL/handleiding/gidsen/rigs-gebruiken
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 Een **rig** is een wegwerpmachine die een agent opent wanneer hij iets echt
@@ -199,9 +199,11 @@ Wat er verandert:
 - Niets wat je uitvoert bereikt de host. Een `rm -rf` daarbinnen kost je de rig.
 - Het netwerk weigert standaard. Alleen hosts op de allowlist van de rig zijn
   bereikbaar, en alles gaat door een hek dat die lijst handhaaft.
-- `git push` werkt nog steeds. De rig heeft geen opgeslagen inloggegevens; hij
-  vraagt de server per handeling om een kortlevende set, en dat token wordt
-  ingetrokken zodra de rig sluit.
+- `git push` werkt nog steeds in een terminal die jij hebt geopend. De rig heeft
+  geen opgeslagen inloggegevens; hij vraagt de server per handeling om een
+  kortlevende set, begrensd door je eigen forge-toegang, en dat token wordt
+  ingetrokken zodra de rig sluit. Een rig die een agent heeft geopend, krijgt
+  inloggegevens met alleen leesrechten: hij kan fetchen, maar niet pushen.
 
 Wat je moet weten:
 

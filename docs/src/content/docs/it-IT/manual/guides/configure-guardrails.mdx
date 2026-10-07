@@ -2,7 +2,7 @@
 title: Configura i guardrail
 description: Imposta regole Consenti, Chiedi prima e Nega per le azioni degli agenti, provale con la sonda «E se?» e regola l'autonomia per spazio.
 slug: it-IT/manuale/guide/configura-guardrail
-sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
+sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
 ---
 
 Questa guida mostra come configurare i guardrail: le regole che stabiliscono se
@@ -135,12 +135,14 @@ versione in-app di questo concetto: per ogni classe di effetto indica se ciascun
 esecutore la intercetta al cancello della policy, la lascia alla sandbox o non
 riesce a intercettarla affatto.
 
-- **L'adattatore Claude Code** non è controllato per le proprie chiamate agli
-  strumenti. Claude Code viene avviato con `--dangerously-skip-permissions`,
-  quindi le sue chiamate di lettura, scrittura, modifica e bash non passano mai
-  dal controllo. Ciò che è controllato per quell'adattatore è la superficie degli
-  strumenti MCP su cui richiama e il comando della shell che Control Center
-  genera per avviarlo.
+- **L'adattatore Claude Code** è controllato solo in parte per le proprie
+  chiamate agli strumenti. Claude Code viene avviato con
+  `--dangerously-skip-permissions`, quindi le sue chiamate di lettura, scrittura
+  e modifica non passano mai dal controllo. I suoi comandi bash lo raggiungono
+  tramite un hook che classifica la riga di comando, e i suoi push passano dal
+  gateway dei push come quelli di qualsiasi agente. Sono controllati anche la
+  superficie degli strumenti MCP su cui richiama e il comando della shell che
+  Control Center genera per avviarlo.
 - **Il verbo di output di una modalità** (`submit_plan`, `propose_orchestration`)
   è fissato e non può mai essere negato — altrimenti una modalità sarebbe
   strutturalmente incapace di produrre il suo unico risultato.

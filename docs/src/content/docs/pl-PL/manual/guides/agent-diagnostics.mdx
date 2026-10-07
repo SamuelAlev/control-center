@@ -2,7 +2,7 @@
 title: Diagnozuj agenta
 description: Przejdź przez dziennik uruchomień, sondę adaptera, status serwera i diagnostykę hosta, gdy agent przestaje tworzyć uruchomienia.
 slug: pl-PL/podrecznik/poradniki/diagnostyka-agenta
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Ten poradnik pokazuje, jak ustalić, dlaczego agent nie tworzy uruchomień.
@@ -60,19 +60,18 @@ Dwie rzeczy warte poznania, gdy zmiana „działa w testach, ale nie w aplikacji
 
 **Ustawienia → Serwer → Diagnostyka i prywatność** (`/settings/server/diagnostics`) to strona na poziomie hosta. Zawiera:
 
-- **Piaskownica** — przełącznik główny, wykryty backend, wskazówkę instalacyjną i domyślne przełączniki możliwości. Tylko wykryty backend pochodzi z serwera; zobacz uwagę poniżej. Nie ma kontrolki resetowania.
+- **Piaskownica** — przełącznik główny, wykryty backend i wskazówkę instalacyjną. Tylko wykryty backend pochodzi z serwera; zobacz uwagę poniżej. Nie ma kontrolki resetowania.
 - **Wyszukiwanie semantyczne** — cykl życia modelu osadzania działającego na urządzeniu: zainstalowany, pobierany z procentem postępu, niezainstalowany albo błąd instalacji. Dopóki nie zostanie zainstalowany, pamięć i wyszukiwanie kodu działają wyłącznie na słowach kluczowych.
 - **Zachowanie systemu** — nie usypiaj komputera, gdy działają agenci.
-- **Silnik synchronizacji** — przełączniki wyłączające dla poszczególnych magazynów: zgłoszeń, wiadomości i notatek. To awaryjne wyjścia powrotne do subskrypcji pełnych migawek; zmiana dotyczy tylko nowych subskrypcji, więc w pełni działa po przeładowaniu.
 - **Poziom logów** — podnieś go przed odtworzeniem awarii.
 - **Prywatność** — czy surowa treść diffów może być przekazywana do modelu agenta i czy wysyłane są raporty o awariach.
 
 :::caution[Ta sekcja dotyczy hosta, a jej kontrolki są po stronie klienta]
-Wykrywanie i egzekwowanie są teraz spójne: tam, gdzie detektor zgłasza natywny backend, uruchomienia agentów na tym hoście naprawdę są nim objęte. Ale detektor to jedyna „żywa” rzecz w tej sekcji. Przełącznik główny, wybór backendu i domyślne przełączniki możliwości to preferencje zapisane na Twoim urządzeniu i serwer nie odczytuje żadnej z nich — własnym przełącznikiem serwera jest `--sandbox` (`on` domyślnie, `off` aby zrezygnować) i w przypadku każdego agenta pozostawionego na „Użyj domyślnych ustawień obszaru roboczego” serwer cofa się do swojego konserwatywnego ustawienia domyślnego: bez git push, bez GitHub API, bez klucza do zgłoszeń, sieć włączona.
+Wykrywanie i egzekwowanie są teraz spójne: tam, gdzie detektor zgłasza natywny backend, uruchomienia agentów na tym hoście naprawdę są nim objęte. Ale detektor to jedyna „żywa” rzecz w tej sekcji. Przełącznik główny i wybór backendu to preferencje zapisane na Twoim urządzeniu i serwer nie odczytuje żadnej z nich — własnym przełącznikiem serwera jest `--sandbox` (`on` domyślnie, `off` aby zrezygnować).
 
 Ostrzeżenie w tym miejscu warto więc wziąć pod uwagę, ale zwykle nie jest ono przyczyną awarii agenta. Aby potwierdzić, w jakim stanie jest serwer, przeczytaj jego dziennik startowy: wypisuje on `agent sandbox ON` z uwagą o backendzie, `no OS-native agent sandbox on this host` ze wskazówką instalacyjną albo `agent sandbox DISABLED by --sandbox off`. `GET /healthz` nie zawiera pola dotyczącego piaskownicy.
 
-Tam, gdzie nie ma backendu — zawsze w Windows, a w Linuksie lub WSL2 bez `bwrap` i `socat` — uruchomienia **nie** są objęte piaskownicą, a ograniczają je: własny checkout rozmowy, możliwości sterujące tym, które poświadczenia są do niego wytwarzane, guardraile akcji, sanityzacja środowiska oraz powierzchnia narzędzi dozwolona przez dany tryb.
+Tam, gdzie nie ma backendu — zawsze w Windows, a w Linuksie lub WSL2 bez `bwrap` i `socat` — uruchomienia **nie** są objęte piaskownicą, a ograniczają je: własny checkout rozmowy, token hosta kodu tylko do odczytu i brama push, guardraile akcji, sanityzacja środowiska oraz powierzchnia narzędzi dozwolona przez dany tryb.
 :::
 
 ## Częste awarie
@@ -83,7 +82,7 @@ Zainstaluj CLI **na hoście serwera**, a następnie naciśnij **Odśwież** na s
 
 ### Agent nie może wypchnąć zmian ani otworzyć pull requesta
 
-Bramką są jego możliwości. Otwórz **Ustawienia → Obszar roboczy → Agenci** → danego agenta → **Uprawnienia piaskownicy**, włącz przełącznik i włącz **Zezwól na git push** oraz **Zezwól na wywołania GitHub API**. Pozostawienie przełącznika na „Użyj domyślnych ustawień obszaru roboczego” nie daje agentowi żadnej z nich.
+Przeczytaj, co wypisał git lub agent. `Control Center policy: …` oznacza, że reguła akcji tego odmówiła albo prośba o zatwierdzenie została bez odpowiedzi: sprawdź **Push do zdalnego repozytorium** i **Otwarcie pull requesta** w **Ustawienia → Obszar roboczy → Uprawnienia agentów**. Jeśli git mówi, że Control Center nie ma poświadczenia GitHub, które może wykonać push, zainstaluj GitHub App w tym repozytorium albo połącz GitHuba.
 
 ### Wyszukiwanie semantyczne nie zwraca nic użytecznego
 

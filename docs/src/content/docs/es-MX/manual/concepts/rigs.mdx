@@ -2,7 +2,7 @@
 title: "Rigs y recintos"
 description: "Por qué los agentes reciben máquinas desechables en lugar de tu computadora: las fronteras de aislamiento, los canales de visualización, las credenciales, los puertos y el ciclo de vida."
 slug: es-MX/manual/conceptos/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Un **rig** es una máquina desechable que un agente dirige en tiempo real: un
@@ -172,13 +172,20 @@ cuánto contenido había, nunca lo que decía.
 
 ## Las credenciales nunca viven en el huésped
 
-`git push` funciona desde un terminal con recinto, y aun así el huésped no
+`git push` funciona desde un terminal con recinto que abriste tú, y aun así el huésped no
 almacena ningún token de host de código. Guarda un único secreto por VM cuyo
 único poder es *pedir* al bróker de credenciales del host —a través de un túnel
 que el host controla— un token de corta duración y limitado al repositorio, por
 operación, con límite de frecuencia, acotado por la misma lista de hosts
 permitidos que la salida y revocado en el momento en que se cierra el rig. Una
 máquina hecha para ser desechada no debe contener nada que valga la pena robar.
+
+Lo que puede hacer ese token se fija al abrir el rig. Un rig de terminal que
+abre una persona recibe un token de escritura, acotado por el acceso propio de
+ese miembro al host de código. Un rig que abrió un agente recibe uno de solo
+lectura: un asistente de credenciales de git no distingue un push de un fetch,
+así que la regla de push no se puede consultar en cada push dentro de un
+huésped, como hace la pasarela de ejecuciones de agentes en el host.
 
 ## El worktree de un rig es un satélite
 

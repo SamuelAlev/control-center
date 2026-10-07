@@ -2,7 +2,7 @@
 title: Gestionează cheile API
 description: Unde se află fiecare credențial — contul tău de utilizator de pe server, serverul însuși sau un CLI extern — și cum să îl setezi, să îl rotești și să îl elimini.
 slug: ro-RO/manual/ghiduri-practice/chei-api
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Acest ghid îți arată unde este stocat fiecare credențial folosit de Control Center
@@ -80,9 +80,10 @@ să se autentifice.
 
 Cheia ta este stocată pe server, asociată id-ului tău de utilizator, la fel ca cea
 de host de cod. Serverul își păstrează separat propria cheie Linear (**Aplicații
-provider**), pe care rulează sincronizarea tichetelor când nu a cerut niciun om. O
-cheie pe care o primește un agent este injectată doar când agentul are capacitatea
-**Permite apeluri ticketing API**. Vezi
+provider**), pe care rulează sincronizarea tichetelor când nu a cerut niciun om.
+Nicio cheie de ticketing nu este injectată în sandbox-ul unui agent; agenții
+scriu tichete prin instrumentele Control Center, care întreabă regula **Scrie
+într-un tracker extern**. Vezi
 [Configurează integrarea Linear](/ro-RO/manual/ghiduri-practice/integrare-linear/).
 
 ## Rotește sau revocă

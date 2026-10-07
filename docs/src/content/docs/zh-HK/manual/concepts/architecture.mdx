@@ -3,7 +3,7 @@ title: 架構
 description: Control Center 如何以精簡用戶端的伺服器模型、功能優先的整潔架構，以及埠與配接器組成。
 dateModified: 2026-09-19
 slug: zh-HK/手冊/概念/架構
-sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
+sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 ---
 
 ## 概覽
@@ -58,7 +58,7 @@ feature_name/
 - 核心實體：`Agent`、`AgentRunLog`、`Workspace`、`Repo`、`ReviewSpaceAssociation`
 - 身分與多人協作：`User`、`Principal`（sealed `UserPrincipal` | `AgentPrincipal`）、`WorkspaceMember`、`WorkspaceRole`
 - 記憶實體：`MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
-- 共用值物件：`AgentCapabilities`、`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
+- 共用值物件：`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
 - 共用埠：`SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
 - 領域服務：`MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
 - `DomainEventBus` + 事件類型（工作區／代理、PR／審查、訊息、工單、管線、編排、記憶、日曆／會議、身分與成員資格、可觀測性）

@@ -137,16 +137,22 @@ jobs:
         with:
           persist-credentials: false
 
-      # Real bwrap + socat; the image ships neither. The apt hosts above are for this.
-      - name: Install sandbox tooling (bwrap + socat)
-        run: |
-          sudo apt-get -o Acquire::Retries=3 update
-          sudo apt-get -o Acquire::Retries=3 install -y bubblewrap socat
+      # Real bwrap + socat (the image ships neither) plus the GTK headers the
+      # native-asset build needs. The apt hosts above are for this. Background:
+      # the SDK download and pub get need none of it.
+      - name: Install system packages (bwrap + socat + GTK)
+        id: system-packages
+        background: true
+        uses: $/.github/actions/linux-desktop-deps
+        with:
+          extra-packages: bubblewrap socat
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
-        with:
-          linux-desktop-deps: "true"
+
+      # `dart run tool/...` builds native assets.
+      - name: Wait for system packages
+        wait: [system-packages]
 
       - name: Select shard
         env:
@@ -200,18 +206,25 @@ jobs:
         with:
           persist-credentials: false
 
-      # Real bwrap + socat. Ubuntu 24.04's AppArmor blocks the user namespaces
-      # bwrap needs; a failed sysctl shows up as a spawn error, not a skip.
-      - name: Install sandbox tooling (bwrap + socat)
-        run: |
-          sudo apt-get -o Acquire::Retries=3 update
-          sudo apt-get -o Acquire::Retries=3 install -y bubblewrap socat
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      # Real bwrap + socat plus the GTK headers the native-asset build needs.
+      # Background: the SDK download and pub get need none of it.
+      - name: Install system packages (bwrap + socat + GTK)
+        id: system-packages
+        background: true
+        uses: $/.github/actions/linux-desktop-deps
+        with:
+          extra-packages: bubblewrap socat
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
-        with:
-          linux-desktop-deps: "true"
+
+      - name: Wait for system packages
+        wait: [system-packages]
+
+      # Ubuntu 24.04's AppArmor blocks the user namespaces bwrap needs; a
+      # failed sysctl shows up as a spawn error, not a skip.
+      - name: Allow unprivileged user namespaces (bwrap)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
       - name: Test ${{ matrix.runner }} packages
         shell: bash
@@ -341,11 +354,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Flutter
-        uses: $/.github/actions/setup-flutter
-        with:
-          linux-desktop-deps: "true"
-
       - name: Restore natives cache
         id: natives-cache
         uses: $/.github/actions/natives-cache
@@ -384,12 +392,26 @@ jobs:
             echo "build=true"  >> "$GITHUB_OUTPUT"
           fi
 
+      # GTK headers for the native-asset build, plus ninja when natives build
+      # here (one apt transaction: a second concurrent apt-get fails on the
+      # dpkg lock). Background: the SDK download and pub get need neither.
+      - name: Install system packages (GTK + AEC build tools)
+        id: system-packages
+        background: true
+        uses: $/.github/actions/linux-desktop-deps
+        with:
+          extra-packages: ${{ steps.gate.outputs.build == 'true' && 'ninja-build' || '' }}
+
+      - name: Set up Flutter
+        uses: $/.github/actions/setup-flutter
+
+      - name: Wait for system packages
+        wait: [system-packages]
+
       # webrtc-audio-processing needs meson >= 0.63; 22.04's apt has 0.61.
-      - name: Install AEC build tools (meson/ninja)
+      - name: Install AEC build tools (meson)
         if: steps.gate.outputs.build == 'true'
         run: |
-          sudo apt-get -o Acquire::Retries=3 update
-          sudo apt-get -o Acquire::Retries=3 install -y ninja-build pkg-config
           python3 -m pip install --user meson
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 

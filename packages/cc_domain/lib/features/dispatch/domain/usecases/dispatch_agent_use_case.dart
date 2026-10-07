@@ -11,6 +11,20 @@ import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_c
 import 'package:cc_domain/features/dispatch/domain/usecases/build_memory_context_use_case.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 
+/// The most history, in characters, a dispatch inlines into the prompt.
+const int maxConversationContextChars = 50000;
+
+/// The history block's character budget for an agent whose window is
+/// [contextTokens] tokens (null: unset).
+///
+/// Capped at [maxConversationContextChars] so dispatch stays small and prompt
+/// prefixes stay stable — older history is fetched on demand. A small window
+/// shrinks it further: history never takes more than a quarter of the window,
+/// at ~4 characters per token, which is the window's own token count.
+int conversationCharacterBudget(int? contextTokens) => contextTokens == null
+    ? maxConversationContextChars
+    : contextTokens.clamp(0, maxConversationContextChars);
+
 /// The fully-resolved result of preparing an agent dispatch, containing
 /// the effective prompt, conversation target, resolved adapter and mode.
 class PreparedDispatch {
@@ -187,17 +201,10 @@ class DispatchAgentUseCase {
       _log('Conversation context: skipped');
     } else {
       try {
-        // Cap the eager verbatim window so dispatch stays small/fast and prompt
-        // prefixes stay stable. Older history is retrieved on-demand via the
-        // get_messages MCP tool and the use case still surfaces
-        // semantically-relevant older messages. Without a cap this was up to
-        // ~2 MB (contextSize * 2, default 1 MB).
-        const maxConversationChars = 50000;
-        final contextSize = agent?.contextSize ?? 1000000;
-        final characterBudget = (contextSize * 2).clamp(
-          0,
-          maxConversationChars,
-        );
+        // Older history is retrieved on demand via the get_messages MCP tool,
+        // and the use case still surfaces semantically-relevant older
+        // messages. The context inspection sizes the same block.
+        final characterBudget = conversationCharacterBudget(agent?.contextSize);
         conversationContext = await _conversationContextUseCase.execute(
           workspaceId: workspaceId,
           spaceId: spaceId,

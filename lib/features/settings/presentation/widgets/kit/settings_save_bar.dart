@@ -139,14 +139,18 @@ class SettingsSaveBar extends StatelessWidget {
       ),
     );
 
+    // Save raises its own "Saved" toast; keep the stack off the bar so a
+    // second save, or Discard, is never under one.
     if (reducedMotion) {
-      return bar;
+      return CcToastObstruction(child: bar);
     }
-    return AnimatedSize(
-      duration: CcMotion.fast,
-      curve: CcMotion.standard,
-      alignment: Alignment.topCenter,
-      child: bar,
+    return CcToastObstruction(
+      child: AnimatedSize(
+        duration: CcMotion.fast,
+        curve: CcMotion.standard,
+        alignment: Alignment.topCenter,
+        child: bar,
+      ),
     );
   }
 }

@@ -2,7 +2,7 @@
 title: Sandbox y seguridad
 description: Qué limita realmente a un agente en Control Center hoy, hasta dónde llega el sandbox del sistema operativo y qué fronteras se mantienen en un host que no tiene backend.
 slug: es-MX/manual/conceptos/sandbox-y-seguridad
-sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
+sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
 ---
 
 :::note[Dónde llega el sandbox del sistema operativo y dónde no]
@@ -23,8 +23,7 @@ Hay dos huecos que sobreviven al sandbox y conviene tener presentes:
   barandillas de acciones.
 - **Claude Code se lanza con `--dangerously-skip-permissions`**, porque un
   `claude -p` no interactivo se bloquearía para siempre en su propia solicitud de
-  aprobación. Por eso sus llamadas de archivos y de shell no pasan por las
-  barandillas de Control Center: el sandbox del sistema operativo es la frontera
+  aprobación. Por eso sus llamadas de archivos no pasan por las barandillas de Control Center, y sus comandos de shell solo por un hook que lee la línea de comandos: el sandbox del sistema operativo es la frontera
   que las rodea.
   :::
 
@@ -96,9 +95,7 @@ puede responder nunca es un sí. Consulta
 [Barandillas](/es-MX/manual/conceptos/barandillas/) para ver el modelo de
 resolución.
 
-**Credenciales con control por capacidades y un entorno saneado.** Las
-credenciales se emiten en cada lanzamiento a partir de los indicadores de
-capacidad de la conversación y se revocan cuando termina la ejecución. ACP, el
+**Credenciales del broker y un entorno saneado.** Las credenciales se emiten en cada lanzamiento y se revocan cuando termina la ejecución, y el token de GitHub que tiene una ejecución puede leer pero no hacer push; consulta «Los push pasan por Control Center» más abajo. ACP, el
 `bash` del arnés y Claude Code bajo el wrapper nativo reciben un entorno al que se
 le quitaron los vectores de inyección del enlazador dinámico y del intérprete
 (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` y
@@ -130,38 +127,72 @@ restrictiva.
 Claude Code, cuando se usa como adaptador, es el caso en el que el sandbox carga
 con el mayor peso. Control Center lo lanza con `--dangerously-skip-permissions`,
 porque un `claude -p` no interactivo se bloquearía para siempre en su propia
-solicitud de aprobación. Sus llamadas de lectura, escritura, edición y shell
-ocurren dentro de su propio proceso y Control Center nunca las ve; las únicas
-llamadas que hace y que llegan a un control son las herramientas `mcp__*` que
-sirve el propio Control Center. Donde existe un backend, esas llamadas invisibles
+solicitud de aprobación. Sus llamadas de lectura, escritura y edición ocurren dentro de su propio proceso y Control Center nunca las ve. Sus llamadas a `Bash` se envían, antes de ejecutarse, a un hook del servidor que clasifica la línea de comandos y pregunta a la regla correspondiente, y las herramientas `mcp__*` que sirve Control Center pasan por el control como siempre. Donde existe un backend, esas llamadas invisibles
 siguen ocurriendo dentro del wrapper del sandbox, así que el sistema operativo es
 la frontera que las rodea. Donde no existe, no hay ninguna. Cada adaptador lo
 declara en su matriz de aplicación; consulta [la matriz de honestidad de los
 adaptadores](/es-MX/manual/conceptos/barandillas/#the-adapter-honesty-matrix).
 
-## El control por capacidades es aplicación por ausencia
+## Los push pasan por Control Center
 
-Una conversación lleva cuatro indicadores de capacidad: hacer push al
-repositorio, llamar a la API de GitHub, llamar al proveedor de tickets y acceder a
-la red. No se comprueban cuando el agente actúa. Se comprueban una sola vez, al
-lanzar, mediante el broker de credenciales, y una capacidad desactivada significa
-sencillamente que el token correspondiente nunca se coloca en el entorno.
+No hay indicadores de permisos por agente. Si un agente puede crear un commit,
+hacer push, abrir una pull request, escribir en un rastreador o llegar a la red
+lo deciden las [barandillas](/es-MX/manual/conceptos/barandillas/) —permitir, preguntar
+primero o denegar—, y las mismas reglas se aplican sea cual sea el adaptador
+que ejecute al agente.
 
-Ese es todo el mecanismo y vale la pena decirlo con claridad, porque el modo de
-fallo no es el que la gente espera. Desactivar «API de GitHub» no genera un
-mensaje de «capacidad denegada». Genera un `401` común dentro del agente, porque
-no hay ningún `GH_TOKEN` que enviar. Es muy posible que el agente lo interprete
-como un problema de credenciales. La aplicación por ausencia es robusta —no hay
-ninguna comprobación que eludir—, pero es silenciosa y el agente no sabe por qué
-falló.
+Un push es la acción que tiene que aguantar incluso frente a un agente que
+intenta esquivar una regla, así que se aplica por lo que el agente tiene y no
+por lo que ejecuta. Con una GitHub App configurada, una ejecución en un worktree
+de GitHub recibe un token de instalación con alcance de repositorio que puede
+leer contenido y trabajar con pull requests, pero no hacer push. La
+configuración de git de la ejecución reescribe cada URL de push de GitHub
+(`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) hacia la
+**pasarela de ejecuciones de agentes**, un endpoint de loopback en `cc_server`.
+La pasarela lee qué refs actualiza el push, pregunta a la regla **Enviar a un
+remoto** —así que se aplica una regla limitada a ramas, como «denegar los push
+a `main`»— y solo entonces reenvía el push a GitHub con un token de escritura
+que acuña para ese fin y que nunca entrega al agente. Un push rechazado aparece
+en la propia salida de git:
 
-El indicador de red se comporta igual. Con él desactivado, las herramientas
-`web_fetch` y `web_search` del arnés rechazan todas las llamadas y la lista de
-permitidos del proxy de un lanzamiento con sandbox está vacía, así que se rechaza
-toda conexión saliente.
+```text
+ ! [remote rejected] main -> main (Control Center policy: …)
+```
 
-Las credenciales se revocan cuando la ejecución se desmonta, así que un
-identificador no sobrevive a la ejecución que lo emitió.
+La pasarela solo reenvía push al repositorio propio del worktree o a un
+repositorio de GitHub vinculado al espacio de trabajo. Los fetch van
+directamente a GitHub con el token de lectura.
+
+Los demás comandos de shell encuentran una puerta más blanda. La herramienta
+`bash` del arnés y, mediante un hook, la herramienta `Bash` de Claude Code
+clasifican cada línea de comandos y preguntan a la regla que le corresponde:
+`git commit`, `merge`, `rebase`, `cherry-pick`, `revert` y `am` son **Crear un
+commit**; `gh pr create` es **Abrir una pull request**; `gh pr merge`,
+`review`, `comment` y `close` son **Publicar una revisión o fusionar**;
+`gh issue create`, `edit`, `comment` y `close` son **Escribir en un rastreador
+externo**; las instalaciones de paquetes son **Instalar un paquete**; `curl` y
+`wget` son **Acceder a la red**. Esto reconoce la forma habitual de escribir una
+acción, y un agente decidido a ocultarla (`eval`, un archivo de script, una
+llamada directa a la API) puede hacerlo. Los push no dependen de ello.
+
+:::caution[Sin GitHub App, la regla de push es solo orientativa]
+Si no hay ninguna GitHub App configurada, el broker recurre a un token de
+acceso personal, que no se puede restringir a solo lectura. La regla se sigue
+cumpliendo para `git push`, porque git envía el push a la pasarela, pero el
+código que use directamente el token del entorno puede hacer push saltándosela.
+:::
+
+En un sandbox no se coloca ninguna clave de API de tickets. Los agentes
+escriben tickets con las herramientas MCP de Control Center, que preguntan a
+**Escribir en un rastreador externo**.
+
+La regla **Acceder a la red** se lee una sola vez, cuando arranca la ejecución.
+La red de un sandbox está activada o desactivada, así que denegar la
+desactiva, mientras que permitir y preguntar primero la dejan activada; las
+herramientas `web_fetch` y `web_search` del arnés siguen preguntando en cada
+llamada. Las credenciales se revocan cuando la ejecución se desmonta, junto con
+cualquier token de escritura que haya acuñado la pasarela, así que un
+identificador no sobrevive a la ejecución.
 
 ## Qué añade el sandbox y dónde se detiene
 
@@ -231,35 +262,32 @@ caso habitual y no el exótico —`/tmp` en realidad es `/private/tmp`,
 que se llegara por cualquiera de las dos vías habría sido escribible mientras el
 perfil parecía prohibirlo.
 
-La red, bajo un sandbox, es una lista de permitidos de **dominios** por sesión que
-aplican los proxies de loopback en proceso. La salida es de denegación
-predeterminada: con la capacidad de red desactivada, los proxies siguen
-arrancando, pero su lista de permitidos está vacía, así que se rechaza toda
-conexión saliente. Con ella activada, el resolutor construye la lista de permitidos
-a partir de una línea base curada —proveedores de API de LLM, alojamiento de git,
-registros de paquetes, el catálogo de modelos— más los dominios de GitHub que le
-otorga la capacidad de GitHub o de push del agente, y compara el host de destino
-de cada conexión con esa lista. Los comodines funcionan (`*.example.com` coincide
-con subdominios, no con el dominio raíz). Una lista aparte de siempre denegados
-prevalece sobre la lista de permitidos y cubre los endpoints de metadatos de la
-nube y los sumideros de telemetría. Lo que _no_ es configurable es la propia
-lista: la especificación incluye un campo `egressAllowlist` para dominios
-adicionales y un punto de enganche de dominio de tickets, pero nada en la ruta de
-despacho llena ninguno de los dos, así que en la práctica cada ejecución recibe la
-línea base más sus dominios derivados de capacidades, y nada más.
+La red, bajo un sandbox, es una lista de permitidos de **dominios** por
+sesión que aplican los proxies de loopback en proceso. La salida es de denegación
+predeterminada: con la red desactivada, los proxies siguen arrancando, pero su
+lista de permitidos está vacía, así que se rechaza toda conexión saliente. Con
+ella activada, el resolutor construye la lista de permitidos a partir de una
+línea base curada —proveedores de API de LLM, alojamiento de git, registros de
+paquetes, el catálogo de modelos— más los dominios de GitHub, y compara el host
+de destino de cada conexión con esa lista. Los comodines funcionan
+(`*.example.com` coincide con subdominios, no con el dominio raíz). Una lista
+aparte de siempre denegados prevalece sobre la lista de permitidos y cubre los
+endpoints de metadatos de la nube y los sumideros de telemetría. Lo que _no_ es
+configurable es la propia lista: la especificación incluye un campo
+`egressAllowlist` para dominios adicionales, pero nada en la ruta de despacho
+lo rellena, así que en la práctica cada ejecución recibe la línea base más
+GitHub, y nada más.
 
 En macOS, las denegaciones son observables: un monitor intercepta el registro del
 sistema en busca de denegaciones de Sandbox, filtra el ruido conocido, deduplica
-las tormentas de reintentos y expone cada una como un `SandboxViolation` que
-indica qué se intentó y qué capacidad lo desbloquearía. En Linux, la ruta del
+las tormentas de reintentos y expone cada una como un `SandboxViolation` que indica qué se intentó y qué se bloqueó. En Linux, la ruta del
 envoltorio analiza stderr en busca de `EPERM`, `Operation not permitted` y
 `Permission denied`, y emite el mismo tipo de evento: no hay interceptación del
 registro del sistema. Todos ellos llegan al flujo de eventos de la propia
 ejecución, así que una llamada al sistema denegada aparece en la transcripción y
 no solo en un registro. La telemetría solo existe mientras un sandbox nativo está
 envolviendo realmente el proceso; en un host sin backend no hay nada que observar.
-Tampoco tiene relación con el control por capacidades: una violación proviene de
-una llamada al sistema denegada, nunca de una consulta de capacidad.
+Tampoco tiene relación con las barandillas: una violación proviene de una llamada al sistema denegada, nunca de una consulta de regla.
 
 ## Las confirmaciones vienen de las barandillas, no del sandbox
 
@@ -289,5 +317,5 @@ sitio donde se indica qué se puede comprobar a mano.
 
 ## Guías relacionadas
 
-- [Configurar políticas de sandbox](/es-MX/manual/guias/politicas-de-sandbox/): indicadores de capacidad y postura del sistema de archivos
+- [Configurar políticas de sandbox](/es-MX/manual/guias/politicas-de-sandbox/): reglas de acciones, aplicación de los push y postura del sistema de archivos
 - [Diagnosticar un agente](/es-MX/manual/guias/diagnosticar-agente/): qué cubren las comprobaciones de diagnóstico

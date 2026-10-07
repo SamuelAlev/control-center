@@ -1,18 +1,20 @@
 ---
 title: Nastavte politiky sandboxu
-description: Co omezuje běh agenta, jak poznáš, jestli ho obaluje sandbox operačního systému, a která nastavení schopností server opravdu čte.
+description: Co omezuje běh agenta, jak poznáš, jestli ho obaluje sandbox operačního systému, a jak pravidla akcí rozhodují, co agent smí pushnout nebo kam dosáhnout.
 slug: cs-CZ/prirucka/navody/politiky-sandboxu
-sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
+sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
 ---
 
 Jestli běh agenta běží v sandboxu, rozhoduje se na serveru při startu
-(`--sandbox`). Přepínač **Zapnout sandboxing**, výběr **Backend** a
-přepínače **Výchozí schopnosti · nové prostory** v **Nastavení → Server →
-Diagnostika a soukromí** jsou preference uložené na tvém zařízení. Detekce
-hostitele na kartě **Sandboxing** hlásí, co umí obalit hostitel serveru.
+(`--sandbox`). Přepínač **Zapnout sandboxing** a výběr **Backend** v
+**Nastavení → Server → Diagnostika a soukromí** jsou preference uložené na tvém
+zařízení. Detekce hostitele na kartě **Sandboxing** hlásí, co umí obalit
+hostitel serveru.
 
-K běhu sahají dva ovládací prvky a tenhle návod pokrývá oba: **Oprávnění
-sandboxu** u agenta níže a vlastní příznak `--sandbox` serveru.
+K běhu sahají dva ovládací prvky a tenhle návod pokrývá oba: pravidla akcí v
+**Nastavení → Pracovní prostor → Oprávnění agentů**, která rozhodují, co agent
+smí pushnout, otevřít nebo kam dosáhnout, a vlastní příznak `--sandbox`
+serveru.
 
 ## Co omezuje běh agenta
 
@@ -23,7 +25,7 @@ podmíněná — zbylých pět drží na každém hostiteli.
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sandbox operačního systému | Seatbelt na macOS, bubblewrap na Linuxu a na WSL2. Obalí CLI Claude Code, adaptéry ACP a nástroj `bash` harnessu. **Chybí na Windows a na Linuxu bez `bwrap` a `socat`** |
 | Vlastní worktree         | Každá konverzace dostane copy-on-write checkout. Původní checkout se do běhu vloží jako cesta se zákazem zápisu a vynucuje to sandbox                                              |
-| Pověření od brokera      | Broker přihlašovacích údajů vystaví prostředí pro daný běh ze schopností agenta a při úklidu ho odebere. Žádná schopnost, žádný token v prostředí                                  |
+| Pověření od brokera      | Broker přihlašovacích údajů vystaví prostředí pro daný běh a při úklidu ho odebere. Token GitHub v něm umí číst, ale ne pushovat: push jde přes Control Center, které se nejdřív zeptá pravidla pro push |
 | Guardraily akcí          | Každý mutující nástroj deklaruje své třídy efektů a strážce je vyhodnotí, než se volání spustí. `prompt` bez připojeného schvalovatele se odmítne                                 |
 | Očištění prostředí       | ACP a nástroj `bash` harnessu dostanou filtrované prostředí. Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele                                                         |
 | Plocha nástrojů režimu   | Režim jen pro čtení sundá nástroje, které mění worktree, a připne vlastní výstupní sloveso režimu, aby pořád uměl doručit                                                         |
@@ -34,8 +36,7 @@ Tři věci jsou slabší, než vypadají:
   strukturální pravidla režimu. Adaptér Claude Code ne. Claude
   Code se navíc spouští s `--dangerously-skip-permissions`, protože
   neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu —
-  takže vlastní volání Claude na čtení, zápis, úpravy a bash Control Center
-  ani nevidí, ani nehlídá. Kde je sandbox zapnutý, je hranicí kolem nich.
+  takže vlastní volání Claude na čtení, zápis a úpravy Control Center ani nevidí, ani nehlídá a jeho příkazy bash kontroluje jen hook, který čte příkazový řádek. Kde je sandbox zapnutý, je hranicí kolem nich.
 - Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search,
   find, search_files) běží uvnitř procesu serveru, takže je neomezuje žádný profil sandboxu.
   Sandboxovaným runnerem příkazů projde jen nástroj `bash`. Ty nástroje
@@ -45,44 +46,61 @@ Tři věci jsou slabší, než vypadají:
   příkazů; Claude Code dědí prostředí hostitele přes `NoSandboxAdapter`.
   Server to řekne ve startovacím logu. Svůj si zkontroluj níže.
 
-## Nastav schopnosti agenta
+## Rozhodni, co agent smí pushnout
 
-Tohle je jediný ovládací prvek schopností, který server čte. Je na agenta a
-rozhoduje, co broker přihlašovacích údajů vloží do prostředí toho agenta.
+Pro git push, GitHub, ticketing ani síť neexistuje přepínač u agenta. Každé z
+nich je pravidlo akce:
 
-1. Jdi do **Nastavení → Pracovní prostor → Agenti**
-2. V soupisce vyber agenta
-3. Na kartě **Nastavení** sjeď k **Oprávnění sandboxu**
-4. Zapni přepínač — popisek řádku se změní z **Použít výchozí pracovního prostoru**
-5. Nastav čtyři přepínače:
+| Pravidlo                              | Vestavěný výchozí | Co pokrývá                                                                   |
+| ------------------------------------- | ----------------- | ---------------------------------------------------------------------------- |
+| **Odeslat na remote**                 | Nejdřív se zeptat | Každý `git push` na GitHub, bez ohledu na adaptér                            |
+| **Otevřít pull request**              | Nejdřív se zeptat | `gh pr create` a nástroje pro pull requesty                                  |
+| **Zveřejnit kontrolu nebo sloučení**  | Nejdřív se zeptat | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                |
+| **Zápis do externího trackeru**       | Nejdřív se zeptat | Zápisy ticketů přes nástroje Control Center a `gh issue`                     |
+| **Přístup k síti**                    | Povolit           | Jestli má sandbox vůbec síť, a webové nástroje harnessu                      |
 
-| Přepínač                         | Co hlídá                                                                                                                                                                                                                                |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Povolit git push**             | Když je vypnutý, běh dostane `GIT_ASKPASS=/usr/bin/false` a `GIT_TERMINAL_PROMPT=0`, takže push si nemůže vyžádat přihlašovací údaj                                                                                                     |
-| **Povolit volání GitHub API**    | Spolu s **Povolit git push** rozhoduje, jestli broker vloží token GitHub jako `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Povolit volání ticketing API** | Rozhoduje, jestli broker vloží `TICKETING_API_KEY`                                                                                                                                                                                      |
-| **Povolit obecný přístup k síti** | Kde je sandbox zapnutý, je to skutečná brána odchozího provozu: když je vypnutý, seznam povolených běhu je prázdný a každé odchozí spojení proxy odmítne. Kde backend není, zapíše se to na běh, ale nezablokuje nic, co udělá spuštěný proces |
+1. Jdi do **Nastavení → Pracovní prostor → Oprávnění agentů**
+2. Vyber rozsah — **Pracovní prostor**, **Agent** nebo **Prostor** — a na řádku
+   pravidla vyber **Povolit**, **Nejdřív se zeptat** nebo **Zakázat**
 
-6. Ulož
+Platí i pravidla pro push omezená na větve, třeba takové, které zakazuje push
+na `main`: viz [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/).
 
-Kontrolní bod: otevři agenta znovu a přepínač je pořád zapnutý s tvými
-volbami — uložená sada schopností se přes server vrátí a agent, který žádnou
-nemá, spadne na konzervativní výchozí stav (push vypnutý, GitHub API vypnuté,
-ticketing vypnutý, síť zapnutá).
+Kontrolní bod: požádej agenta, aby pushnul větev. U **Nejdřív se zeptat**
+dostaneš žádost o schválení s repozitářem a refy; u **Zakázat** git vypíše
+`! [remote rejected] <ref> (Control Center policy: …)`.
 
-:::caution[Dvě pasti]
-Popisek říká **Použít výchozí pracovního prostoru**, ale žádné nastavení
-schopností na úrovni pracovního prostoru server nečte. Agent s vypnutým
-přepínačem dostane vestavěný konzervativní výchozí stav.
+Jak se jednotlivá pravidla dostanou k běhu:
 
-Zvlášť: přihlašovací údaj GitHubu u běhu je vždycky jen ten od brokera —
-token instalace GitHub App vázaný na repozitář, nebo záložní PAT z prostředí —
-nikdy vlastní uložený token člena, který o běh požádal. `actingUserId` se
-předává, aby broker mohl *odepřít* PAT serveru členovi, který není vlastník a
-nemá připojený GitHub; nesloží osobní token přes schopnost, která je vypnutá.
-**Povolit volání GitHub API** neber jako tvrdou hranici odchozího provozu
-na hostiteli bez sandboxu operačního systému: spuštěný proces se k síti pořád
-dostane.
+- **Push** se vynucuje tím, co běh drží. Jeho token GitHub je instalační token
+  GitHub App jen pro čtení, který umí číst obsah a pracovat s pull requesty.
+  Jeho konfigurace gitu posílá každý push na GitHub na loopback bránu na
+  `cc_server`, která se zeptá pravidla a teprve pak push předá se zapisovacím
+  tokenem, který agent nikdy neuvidí. Brána předává jen do vlastního
+  repozitáře worktree nebo do repozitáře na GitHubu propojeného s pracovním
+  prostorem. Platí to pro každý adaptér.
+- **Pull requesty a issues ze shellu** se poznají podle příkazového řádku, v
+  nástroji `bash` harnessu a přes hook v nástroji `Bash` v Claude Code. Agent,
+  který příkaz schová (skript, `eval`, přímé volání API), touhle kontrolou
+  projde, ale bránou pro push ne.
+- **Klíče ticketingu** se do sandboxu nikdy nevkládají. Agenti zapisují tickety
+  přes nástroje MCP v Control Center, které se ptají pravidla.
+- **Síť** se vyhodnotí jednou, při startu běhu. **Zakázat** síť sandboxu vypne;
+  **Povolit** a **Nejdřív se zeptat** ji nechají zapnutou a u **Nejdřív se
+  zeptat** se nástroje harnessu `web_fetch` a `web_search` pořád ptají při
+  každém volání. Dokud je síť zapnutá, je GitHub vždycky na seznamu povoleného
+  odchozího provozu.
+
+:::caution[Bez GitHub App je pravidlo pro push jen doporučení]
+Bez nakonfigurované GitHub App dostane běh záložní osobní přístupový token,
+který nejde omezit jen na čtení. `git push` pořád jde přes bránu a pravidlo,
+ale kód, který token použije přímo, může pushnout mimo ně. Nakonfiguruj GitHub
+App, aby pravidlo bylo závazné.
+
+Přihlašovací údaj GitHubu u běhu je vždycky jen ten od brokera — token
+instalace GitHub App vázaný na repozitář, nebo záložní PAT — nikdy vlastní
+uložený token člena, který o běh požádal. PAT serveru se odepře běhu, který
+jedná za člena, jenž není vlastník a nemá připojený GitHub.
 :::
 
 ## Zkontroluj, jestli jsou běhy agenta v sandboxu
@@ -155,9 +173,13 @@ vyhodnocení je v
 
 ### Agent nemůže pushnout a já jsem to nezakázal
 
-Zkontroluj **Oprávnění sandboxu** agenta. Agent bez vlastní sady schopností
-dostane konzervativní výchozí stav, ve kterém je **Povolit git push** vypnutý —
-broker tedy nevloží token GitHub a git se nemá čím ověřit.
+Přečti si, co git vypsal. `Control Center policy: …` znamená, že push zamítlo
+pravidlo nebo že **Nejdřív se zeptat** zůstalo bez odpovědi.
+`… is not linked to this workspace` znamená, že push míří do repozitáře, který
+není repozitářem worktree ani není propojený s pracovním prostorem.
+`Control Center has no GitHub credential that can push …` znamená, že GitHub
+App na tom repozitáři není nainstalovaná a žádný záložní údaj pushnout nemohl:
+nainstaluj aplikaci na ten repozitář nebo připoj GitHub.
 
 ### Karta Sandboxing nehlásí nativní sandbox
 

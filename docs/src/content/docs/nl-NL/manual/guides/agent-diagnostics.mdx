@@ -2,7 +2,7 @@
 title: Een agent diagnosticeren
 description: Loop het runlog, de adapterdetectie, de serverstatus en de hostdiagnose door wanneer een agent geen runs meer produceert.
 slug: nl-NL/handleiding/gidsen/agent-diagnosticeren
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Deze gids laat zien hoe je erachter komt waarom een agent geen runs produceert.
@@ -105,8 +105,7 @@ de app":
 **Instellingen → Server → Diagnose en privacy** (`/settings/server/diagnostics`)
 is de pagina op hostniveau. Die bevat:
 
-- **Sandboxing** — de hoofdschakelaar, de gedetecteerde backend, een
-  installatiehint en de schakelaars voor standaardmogelijkheden. Alleen de
+- **Sandboxing** — de hoofdschakelaar, de gedetecteerde backend en een installatiehint. Alleen de
   gedetecteerde backend komt van de server; zie de waarschuwing hieronder. Er is
   geen resetknop.
 - **Semantisch zoeken** — de levenscyclus van het embeddingmodel op het apparaat:
@@ -114,10 +113,6 @@ is de pagina op hostniveau. Die bevat:
   een installatiefout. Tot het is geïnstalleerd, blijven geheugen en codezoeken
   alleen op trefwoorden.
 - **Systeemgedrag** — houd de computer wakker terwijl agenten draaien.
-- **Synchronisatie-engine** — noodschakelaars per store voor tickets, berichten en
-  notities. Dit zijn noodluiken terug naar abonnementen op volledige snapshots;
-  een wijziging geldt alleen voor nieuwe abonnementen, dus hij wordt pas volledig
-  van kracht na het herladen van de app.
 - **Logniveau** — verhoog het voordat je een fout reproduceert.
 - **Privacy** — of ruwe diffinhoud naar het model van de agent mag worden
   doorgestuurd en of crashrapporten worden verzonden.
@@ -125,13 +120,7 @@ is de pagina op hostniveau. Die bevat:
 :::caution[Deze sectie rapporteert de host; de bedieningselementen zijn client-side]
 Detectie en handhaving komen nu overeen: waar de detector een native backend
 rapporteert, zijn agentruns op die host er echt in omhuld. Maar de detector is het
-enige live onderdeel in deze sectie. De hoofdschakelaar, de backendkiezer en de
-schakelaars voor standaardmogelijkheden zijn voorkeuren die op jouw apparaat zijn
-opgeslagen, en de server leest ze geen van alle — de eigen schakelaar van de
-server is `--sandbox` (`on` standaard, `off` om af te zien van sandboxing) en
-voor elke agent die op "Werkruimtestandaard gebruiken" blijft staan, valt de
-server terug op zijn conservatieve standaard: geen git push, geen GitHub-API, geen
-ticketing-sleutel, netwerk aan.
+enige live onderdeel in deze sectie. De hoofdschakelaar en de backendkiezer zijn voorkeuren die op jouw apparaat zijn opgeslagen, en de server leest ze geen van beide — de eigen schakelaar van de server is `--sandbox` (`on` standaard, `off` om af te zien van sandboxing).
 
 Een waarschuwing hier is dus het waard om er iets mee te doen, maar het is
 meestal niet de reden waarom een agent faalt. Lees het opstartlog om te
@@ -142,7 +131,7 @@ bevat geen sandboxveld.
 
 Waar geen backend is — altijd Windows, Linux of WSL2 zonder `bwrap` en `socat` —
 worden runs **niet** gesandboxed, en wat ze begrenst is de eigen checkout van het
-gesprek, de mogelijkheden die bepalen welke inloggegevens erin terechtkomen, de
+gesprek, het forge-token met alleen leesrechten en de push-gateway, de
 actiebeveiligingen, het saneren van de omgeving en het tooloppervlak dat de modus
 van het gesprek toestaat.
 :::
@@ -157,10 +146,12 @@ nodig heeft, en verbind een provider op dezelfde pagina.
 
 ### De agent kan niet pushen en geen pull request openen
 
-Zijn mogelijkheden zijn de poort. Open **Instellingen → Werkruimte → Agenten** →
-de agent → **Sandbox-machtigingen**, zet de schakelaar aan en schakel **git push
-toestaan** en **GitHub API-aanroepen toestaan** in. Als de schakelaar op
-"Werkruimtestandaard gebruiken" blijft staan, krijgt de agent ze geen van alle.
+Lees wat git of de agent heeft getoond. `Control Center policy: …` betekent dat
+een actieregel het heeft geweigerd of dat een goedkeuring onbeantwoord bleef:
+controleer **Naar een remote pushen** en **Een pull request openen** onder
+**Instellingen → Werkruimte → Agentmachtigingen**. Zegt git dat Control Center
+geen GitHub-inloggegevens heeft die kunnen pushen, installeer dan de GitHub App
+op die repo of koppel GitHub.
 
 ### Semantisch zoeken levert niets bruikbaars op
 

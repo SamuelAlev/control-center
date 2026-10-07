@@ -15,7 +15,6 @@ ReasoningEffort? _raiseEffort(
 
 extension _DispatchSessionHarness on DispatchSession {
   Future<void> _runHarness({
-    required AgentCapabilities caps,
     required ScopedCredentials scoped,
     required String wsId,
   }) async {
@@ -64,22 +63,37 @@ extension _DispatchSessionHarness on DispatchSession {
       }
     }
 
-    final LlmProviderPort provider;
-    try {
-      provider = await _buildHarnessProvider(
-        factory: factory,
-        primaryProviderId: providerId,
-        primaryModel: parsed.model,
-        primaryCredential: credential,
-        extraSpecs: modelSpecs.length > 1 ? modelSpecs.sublist(1) : const [],
-      );
-    } on Object catch (e) {
-      addEvent(ErrorEvent(content: '[harness] $e', source: 'harness'));
-      unawaited(_closeRunLog(exitCode: 127));
-      addEvent(DoneEvent());
-      _completeRun();
-      return;
+    LlmProviderPort? built;
+    while (built == null) {
+      try {
+        built = await _buildHarnessProvider(
+          factory: factory,
+          primaryProviderId: providerId,
+          primaryModel: parsed.model,
+          primaryCredential: credential,
+          extraSpecs: modelSpecs.length > 1 ? modelSpecs.sublist(1) : const [],
+        );
+      } on _AccountPoolRefused catch (e) {
+        // The same hold the Claude Code lane applies to the same verdict: the
+        // operator edits the pool, the gate sees the refusal lift, and the
+        // provider is assembled again from the new pool.
+        if (await _gateOnHarnessPool(e)) {
+          continue;
+        }
+        addEvent(ErrorEvent(content: e.toString(), source: 'harness'));
+        unawaited(_closeRunLog(exitCode: 126));
+        addEvent(DoneEvent());
+        _completeRun();
+        return;
+      } on Object catch (e) {
+        addEvent(ErrorEvent(content: '[harness] $e', source: 'harness'));
+        unawaited(_closeRunLog(exitCode: 127));
+        addEvent(DoneEvent());
+        _completeRun();
+        return;
+      }
     }
+    final provider = built;
 
     // 1b. Slash commands: /plan, /goal, /loop change how the run behaves;
     //     /skill:<name> (or /skill:<repo>:<name>) injects that skill's
@@ -273,11 +287,15 @@ extension _DispatchSessionHarness on DispatchSession {
       ..._gitIdentityEnv,
       ...scoped.environment,
     };
+    // `bash` pushes through the gateway exactly like a CLI adapter's shell.
+    final lease = _gatewayLease;
+    if (lease != null) {
+      harnessToolEnv.addAll(lease.environment(harnessToolEnv));
+    }
 
     // 2. Assemble tools.
     final registry = _buildHarnessRegistry(
       mode: effectiveMode,
-      caps: caps,
       env: harnessToolEnv,
     );
 
@@ -291,7 +309,6 @@ extension _DispatchSessionHarness on DispatchSession {
             depth: 1,
             parentType: null,
             parentRunId: runLogId,
-            baseCaps: caps,
             env: harnessToolEnv,
             parentProvider: provider,
             parentProviderId: providerId,
@@ -326,7 +343,6 @@ extension _DispatchSessionHarness on DispatchSession {
             depth: 1,
             parentType: null,
             parentRunId: runLogId,
-            baseCaps: caps,
             env: harnessToolEnv,
             parentProvider: provider,
             parentProviderId: providerId,
@@ -446,6 +462,15 @@ extension _DispatchSessionHarness on DispatchSession {
         credential?.generation ?? const ProviderGenerationDefaults();
     final sessionCostCapCents = costCapCents ?? defaultRunCostCapCents;
     var runCostCents = 0;
+    // The model's window, capped by the agent's own setting: a context size
+    // is an override down, never a promise the model cannot keep.
+    final modelWindow = modelInfo?.limits.context ?? 128000;
+    final override = contextWindowTokens;
+    final window = override != null && override > 0 && override < modelWindow
+        ? override
+        : modelWindow;
+    // Summarizing compactions in this run, reported with each reading.
+    var compactions = 0;
     final config = AgentLoopConfig(
       systemPrompt: systemPrompt,
       model: parsed.model,
@@ -479,7 +504,7 @@ extension _DispatchSessionHarness on DispatchSession {
       advisorEveryTurns: runConfig.advisorEveryTurns,
       hooks: hooks,
       steering: _steering,
-      contextWindow: modelInfo?.limits.context ?? 128000,
+      contextWindow: window,
       compactor: SnapcompactCompactor(
         fallback: DefaultHarnessCompactor(
           summarizer: LlmHarnessSummarizer(provider),
@@ -556,6 +581,19 @@ extension _DispatchSessionHarness on DispatchSession {
               ),
             );
           case LoopUsage(:final usage):
+            // Occupancy of THIS call: what the model read (cached or not)
+            // plus what it wrote, which the next call carries forward.
+            addEvent(
+              ContextWindowEvent(
+                contextTokens:
+                    usage.inputTokens +
+                    usage.cacheReadTokens +
+                    usage.cacheWriteTokens +
+                    usage.outputTokens,
+                windowTokens: window,
+                compactions: compactions,
+              ),
+            );
             final servedProvider = provider is FallbackProvider
                 ? provider.lastServedProviderId
                 : providerId;
@@ -604,6 +642,9 @@ extension _DispatchSessionHarness on DispatchSession {
             :final tokensBefore,
             :final tokensAfter,
           ):
+            if (summarized) {
+              compactions++;
+            }
             addEvent(
               DebugEvent(
                 content:

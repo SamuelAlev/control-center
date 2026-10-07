@@ -470,12 +470,21 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
                     await ref
                         .read(defaultChatModelProvider.notifier)
                         .set(modelId);
-                    await ref
-                        .read(shortTaskAdapterProvider.notifier)
-                        .set(adapterId);
-                    await ref
-                        .read(shortTaskModelProvider.notifier)
-                        .set(modelId);
+                    // The short-task runner is workspace state (titles every
+                    // member reads), written through the admin-gated lane. An
+                    // invited member is refused there; that must not block
+                    // finishing onboarding.
+                    try {
+                      await ref
+                          .read(shortTaskAdapterProvider.notifier)
+                          .set(adapterId);
+                      await ref
+                          .read(shortTaskModelProvider.notifier)
+                          .set(modelId);
+                    } catch (_) {
+                      // Non-critical — the workspace admin picks it in
+                      // Settings → Adapters.
+                    }
                     // Back-patch every agent seeded before the adapter prefs
                     // existed (onboarding step 2 creates the workspace, which
                     // seeds the CEO *and* the four specialists; the adapter is

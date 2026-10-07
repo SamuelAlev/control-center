@@ -2,7 +2,7 @@
 title: Thuật ngữ
 description: Định nghĩa các thuật ngữ then chốt được dùng xuyên suốt Control Center.
 slug: vi-VN/so-tay/tham-chieu/thuat-ngu
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'Một nhân viên AI có danh tính, vai trò, kỹ năng và năng lực. Thuộc đúng một không gian làm việc. Tác nhân chính trong hệ thống.'],
+['Agent', 'Một nhân viên AI có danh tính, vai trò, kỹ năng và một adapter. Thuộc đúng một không gian làm việc. Tác nhân chính trong hệ thống.'],
 ['Adapter', 'Bộ chạy thực thi một lượt của agent. Có hai loại được cung cấp sẵn: Control Center (tích hợp sẵn) — harness chạy trong tiến trình, nói chuyện với các nhà cung cấp mô hình — và Claude Code qua CLI claude. Cursor, Codex và các nhà cung cấp mô hình khác gắn vào adapter tích hợp sẵn, chứ không phải những bộ chạy riêng.'],
 ['Không gian làm việc', 'Đơn vị thuê cô lập ở cấp cao nhất. Nhóm các agent, kho mã, space, phiếu, bộ nhớ và quy trình. Cô lập mang tính cấu trúc, không phải quy ước: mỗi không gian làm việc có tệp SQLite riêng, nên một phép đọc xuyên không gian làm việc sẽ không biên dịch được. Mọi tuyến trong ứng dụng đều được thêm tiền tố /workspaces/:workspaceId.'],
 ['Máy chủ mã', 'Một dịch vụ lưu trữ mã — GitHub, GitLab hoặc Bitbucket Cloud. Một thuộc tính của mỗi kho mã, được đọc từ remote origin lúc đăng ký. Một không gian làm việc có thể chứa kho mã trên cả ba.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Tập hợp không phân biệt chữ hoa chữ thường các mã định danh kỹ năng, giúp tiêm ngữ cảnh liên quan vào prompt lúc điều phối.'],
 ['Nguồn kỹ năng', 'Một kho mã GitHub được đăng ký theo từng không gian làm việc làm danh mục kỹ năng. Không đáng tin theo cấu trúc: siêu dữ liệu của kho mã chỉ để hiển thị và mọi lần cài đặt đều đi qua cổng quét fail-closed trước khi có nội dung nào chạm tới đĩa hay prompt.'],
 ['skills-lock.json', 'Manifest theo từng không gian làm việc về các kỹ năng đã cài: với mỗi kỹ năng là kho mã nguồn, đường dẫn trong kho, commit được ghim và một hash nội dung tổng hợp. Các thao tác cài, cập nhật và gỡ cài đặt giữ nó luôn mới; verify_skills đối chiếu nó với đĩa.'],
-['AgentCapabilities', 'Bốn cờ (đẩy lên kho mã, GitHub API, phiếu công việc, thoát mạng) được phân giải theo từng lần điều phối: mặc định của agent, rồi mặc định của người dùng, với phần ghi đè theo từng cuộc hội thoại. Được thực thi bằng sự vắng mặt, vì một năng lực bị tắt nghĩa là token hoặc đường thoát mạng đơn giản không bao giờ được tiêm.'],
+['Cổng lượt chạy agent', 'Một endpoint loopback trên cc_server áp dụng chính sách hành động bên trong sandbox của agent. Mọi lần push lên GitHub mà agent thực hiện đều được định tuyến tới đó, được kiểm tra theo quy tắc Push lên remote và được chuyển tiếp bằng một token ghi mà agent không bao giờ nắm giữ; các lệnh Bash của Claude Code được kiểm tra qua một hook trên cùng endpoint đó.'],
 ['Chế độ', 'chat, plan, review hoặc orchestrate. Được lưu theo từng space, nên một agent có thể ở các chế độ khác nhau trong các space khác nhau; mọi cuộc hội thoại trong một space đều dùng chung chế độ đó. Chi phối prompt hệ thống, các quy tắc ghi của sandbox và danh sách công cụ MCP được phép.'],
 ['SandboxBackend', 'microvm (một VM khép kín — backend duy nhất có ranh giới kernel, được áp dụng cho terminal tương tác), native (Seatbelt gốc của hệ điều hành trên macOS, bubblewrap trên Linux và WSL2) hoặc none. Được dò một lần lúc khởi động; native bọc lấy việc điều phối agent khi có sẵn. Windows không có backend native và Linux cần bwrap cùng socat, nên các lượt chạy ở đó không được bọc; --sandbox off là cách chủ động từ chối.'],
 ['Rig', 'Một cỗ máy dùng một lần do agent điều khiển trong thời gian thực: một trình duyệt hoặc desktop Linux khép kín, một trình giả lập Android hoặc Simulator iOS do máy chủ quản lý, hoặc một terminal khép kín. Được xem trực tiếp qua làn riêng ở độ phân giải đầy đủ, với việc giành quyền điều khiển được thực thi phía máy chủ. Có phạm vi theo một cuộc hội thoại để tab của người và công cụ của agent cùng nhắm tới một cỗ máy.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo cent) cho một lượt chạy agent.'],
 ['WakeReason', 'Lý do một agent được điều phối. Sáu giá trị: tin nhắn người dùng, giao phiếu, điều phối lại để phục hồi sau lỗi, phiếu con hoàn tất, nhịp theo dõi đã lên lịch và bước quy trình.'],
 ['SandboxPort', 'Quản lý vòng đời sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Cấp thông tin xác thực có phạm vi giới hạn và bị chi phối bởi năng lực cho việc khởi chạy sandbox, rồi thu hồi chúng khi dỡ bỏ.'],
+['CredentialBrokerPort', 'Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox (chỉ đọc cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ), rồi thu hồi chúng khi dỡ bỏ.'],
 ['GitRepoInspectorPort', 'Trích xuất siêu dữ liệu (chủ sở hữu, kho mã, nhánh) từ một đường dẫn kho mã Git cục bộ.'],
 ['EmbeddingPort', 'Tạo các vector embedding văn bản chuẩn hóa đơn vị cho tìm kiếm ngữ nghĩa.'],
 ['NotificationPort', 'Hiển thị thông báo desktop gốc, tôn trọng việc chi phối theo danh mục/tuyến.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Thực thể cốt lõi
 
-**Agent**: Một nhân viên AI có danh tính, vai trò, kỹ năng và năng lực. Thuộc đúng một không gian làm việc. Tác nhân chính trong hệ thống.
+**Agent**: Một nhân viên AI có danh tính, vai trò, kỹ năng và một adapter. Thuộc đúng một không gian làm việc. Tác nhân chính trong hệ thống.
 
 **Adapter**: Bộ chạy thực thi một lượt của agent. Có hai loại được cung cấp sẵn: **Control Center (tích hợp sẵn)** — harness trong tiến trình nói chuyện với các nhà cung cấp mô hình — và **Claude Code** qua `claude -p`. Cursor, Codex, Anthropic, OpenAI và những cái còn lại là các nhà cung cấp trên adapter tích hợp sẵn, không phải những CLI riêng. Xem [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: Manifest theo từng không gian làm việc về các kỹ năng đã cài: với mỗi kỹ năng là kho mã nguồn, đường dẫn trong kho, commit được ghim và một hash nội dung tổng hợp. Các thao tác cài, cập nhật và gỡ cài đặt giữ nó luôn mới; `verify_skills` đối chiếu nó với đĩa.
 
-**AgentCapabilities**: Bốn cờ (đẩy lên kho mã, GitHub API, phiếu công việc, thoát mạng) được phân giải theo từng lần điều phối — mặc định của agent → mặc định của người dùng, với phần ghi đè theo từng cuộc hội thoại. Được thực thi bằng sự vắng mặt: một năng lực bị tắt nghĩa là token hoặc đường thoát mạng đơn giản không bao giờ được tiêm.
+**Cổng lượt chạy agent**: Một endpoint loopback trên `cc_server` áp dụng chính sách hành động bên trong sandbox của agent. Mọi lần push lên GitHub mà agent thực hiện đều được định tuyến tới đó, được kiểm tra theo quy tắc **Push lên remote** và được chuyển tiếp bằng một token ghi mà agent không bao giờ nắm giữ; các lệnh `Bash` của Claude Code được kiểm tra qua một hook trên cùng endpoint đó. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
 
 **Chế độ**: `chat`, `plan`, `review` hoặc `orchestrate`. Được lưu **theo từng space**, nên một agent có thể ở các chế độ khác nhau trong các space khác nhau; mọi cuộc hội thoại trong một space đều dùng chung chế độ đó. Chi phối prompt hệ thống, các quy tắc ghi của sandbox và danh sách công cụ MCP được phép. Khung soạn tin chỉ đưa ra `chat`, `plan` và `orchestrate`; `chat` được gắn nhãn “Agent”.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Quản lý vòng đời sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Cấp thông tin xác thực có phạm vi giới hạn và bị chi phối bởi năng lực cho việc khởi chạy sandbox, rồi thu hồi chúng khi dỡ bỏ.
+**CredentialBrokerPort**: Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox — chỉ đọc cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ — rồi thu hồi chúng khi dỡ bỏ.
 
 **GitRepoInspectorPort**: Trích xuất siêu dữ liệu (chủ sở hữu, kho mã, nhánh) từ một đường dẫn kho mã Git cục bộ.
 

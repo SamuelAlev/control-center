@@ -2,7 +2,7 @@
 title: 代理派發生命週期
 description: 從訊息送達到執行記錄關閉之間發生的事——提示詞組裝、worktree、身分、甚麼為一次執行設下界限，以及它的結果如何被誠實地記錄下來。
 slug: zh-HK/手冊/概念/派發生命週期
-sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
+sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 ---
 
 ## 甚麼是派發
@@ -65,7 +65,7 @@ sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 
 由於每個配接器的覆寫排在最先，它會無聲地壓過在應用程式中連接的供應商帳戶。如果某次執行記帳到錯誤的帳戶，那個覆寫就是第一個該看的地方。供應商憑證是主機全域的——在整個安裝上的每一個工作區之間共用。
 
-受能力限制的權杖（GitHub、工單系統）來自憑證仲介，它只會注入該次執行能力所允許的內容。參見[代理模型](/zh-HK/手冊/概念/代理模型/)。
+這次執行的 GitHub 權杖來自憑證仲介：一個限定於 worktree 程式庫的唯讀權杖。推送會經過代理執行閘道，閘道在轉送前會詢問**推送到遠端**規則，而且不會注入任何工單金鑰。參見[沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/)。
 
 ## 啟動
 
@@ -76,9 +76,9 @@ sourceHash: 4e22634909ee74d5eb83bb69c95bac8c1b8cf495
 
 沒有後端的地方，執行**不會**被沙箱化，也不會用其他東西補償。也就是說 Windows 永遠如此（沒有原生包裝——`microvm` 是給終端與測試機的另一條、受探測閘控的路徑），以及在 `PATH` 上沒有 `bwrap` 與 `socat` 的 Linux 或 WSL2。伺服器會在自己的啟動記錄行上說明它處於哪種狀態，而 `--sandbox off` 則刻意選擇不使用。
 
-即使沙箱開啟，仍有兩個缺口。運行器的行程內檔案工具（read、write、edit、apply patch、search、find、search_files）在伺服器行程內執行，因此沒有任何設定檔能約束它們——它們的界限是這些工具自身的路徑限制，加上護欄。而 Claude Code 以 `--dangerously-skip-permissions` 啟動，因此它自己的檔案與 shell 呼叫不受 Control Center 閘控；作業系統沙箱才是它們周圍的邊界。
+即使沙箱開啟，仍有兩個缺口。運行器的行程內檔案工具（read、write、edit、apply patch、search、find、search_files）在伺服器行程內執行，因此沒有任何設定檔能約束它們——它們的界限是這些工具自身的路徑限制，加上護欄。而 Claude Code 以 `--dangerously-skip-permissions` 啟動，因此它自己的檔案呼叫不受 Control Center 閘控，shell 命令也只經過一個讀取命令列的鉤子；作業系統沙箱才是它們周圍的邊界。
 
-其餘的界限在每一部主機上都成立，不論有沒有沙箱：執行自己的 worktree（有隨附 `rift` 的地方用寫入時複製；Windows 上用 `git worktree`）、按能力開放並在每次啟動時經仲介、於拆除時撤銷的憑證、統一的動作護欄（失效即拒——未連接核准者時，`prompt` 決定會被拒絕），以及對話模式所允許的工具集。ACP 與運行器的 `bash` 仍會淨化環境；經 `NoSandboxAdapter` 的 Claude Code 則繼承主機環境。
+其餘的界限在每一部主機上都成立，不論有沒有沙箱：執行自己的 worktree（有隨附 `rift` 的地方用寫入時複製；Windows 上用 `git worktree`）、每次啟動時經仲介、於拆除時撤銷的唯讀程式碼託管權杖、必須在代理執行閘道通過推送規則的推送、統一的動作護欄（失效即拒——未連接核准者時，`prompt` 決定會被拒絕），以及對話模式所允許的工具集。ACP 與運行器的 `bash` 仍會淨化環境；經 `NoSandboxAdapter` 的 Claude Code 則繼承主機環境。
 :::
 
 ## 串流

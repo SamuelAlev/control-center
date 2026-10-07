@@ -2,13 +2,13 @@
 title: Sandlådebackends
 description: Sandlådebackendarna, var de tillämpas och varje värdeobjekt som sandlådans körtid använder.
 slug: sv-SE/handbok/referens/sandladebackends
-sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
+sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 ---
 
 :::caution[Om en körning är sandlådad beror på värden]
 `cc_server` sonderar värden en gång vid start och lindar in agentdispatchen i den inbyggda backenden när sonderingen rapporterar att en sådan finns och `--sandbox` inte är `off`. Båda dispatchskarvarna lindas in: Claude Code-CLI:n via sandlådeporten, och ACP plus den inbyggda harnessens `bash`-verktyg via sandlådehanteraren.
 
-Där sonderingen inte rapporterar någon backend — **alltid Windows** och Linux eller WSL2 utan `bwrap` och `socat` — är agentkörningarna **inte sandlådade**. ACP och harnessens `bash`-verktyg startar fortfarande med sanerad miljö; Claude Code går via `NoSandboxAdapter` och ärver värdmiljön. De återstående gränserna är körningens egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows), förmågsstyrda inloggningsuppgifter som förmedlas per start och återkallas vid nedrivning, kommandopolicyen per läge, de enhetliga [åtgärdsräckena](/sv-SE/handbok/koncept/racken/) (fail-closed), miljösaneringen på ACP- och harnessens `bash`-vägar, och den verktygsyta som läget tillåter.
+Där sonderingen inte rapporterar någon backend — **alltid Windows** och Linux eller WSL2 utan `bwrap` och `socat` — är agentkörningarna **inte sandlådade**. ACP och harnessens `bash`-verktyg startar fortfarande med sanerad miljö; Claude Code går via `NoSandboxAdapter` och ärver värdmiljön. De återstående gränserna är körningens egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows), en kodvärdstoken som bara kan läsa, förmedlad per start och återkallad vid nedrivning, pushar som måste passera pushregeln i agentkörningsgatewayen, kommandopolicyen per läge, de enhetliga [åtgärdsräckena](/sv-SE/handbok/koncept/racken/) (fail-closed), miljösaneringen på ACP- och harnessens `bash`-vägar, och den verktygsyta som läget tillåter.
 
 Harnessens filverktyg i processen (read, write, edit, apply patch, search, find, search_files) ligger utanför sandlådan på varje värd: de körs i serverprocessen, så bara `bash` lindas in.
 :::
@@ -98,7 +98,7 @@ Ingen sandlåda. Processen körs direkt på värden med värdens filsystem, nät
 
 Terminalen sandlådas på sina egna villkor, inte av dispatchsonderingen. `TerminalSessionService`:s `defaultBackend` är `none` och `cc_server` åsidosätter den inte, så en terminalsession kör värdskalet om inte klienten uttryckligen begär `native` — skrivbordets terminalpanel gör det inte.
 
-När `native` begärs lindas skalet in via `SandboxManager` under en fast terminalprofil: `$HOME` och sessionens arbetskatalog är skrivbara, nätverket är öppet och `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` och `~/Library/Keychains` är läsnekade. Förmågsstyrning gäller inte — det hör till dispatch. Om inlindningen inte stöds misslyckas sessionen i stället för att visa en inbyggd märkning på en PTY med värdskalet.
+När `native` begärs lindas skalet in via `SandboxManager` under en fast terminalprofil: `$HOME` och sessionens arbetskatalog är skrivbara, nätverket är öppet och `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` och `~/Library/Keychains` är läsnekade. Kodvärdstoken som bara kan läsa och pushgatewayen gäller inte — de hör till dispatch. Om inlindningen inte stöds misslyckas sessionen i stället för att visa en inbyggd märkning på en PTY med värdskalet.
 
 ## Utgående nätverkstrafik
 
@@ -107,9 +107,9 @@ När en sandlåda startas framtvingas utgående nätverksåtkomst av proxyservra
 - Sandlådans körtid kör en HTTP/HTTPS-proxy och en SOCKS5-proxy på `127.0.0.1` inuti `cc_server`-processen, **ett par per begränsad session** (`http_proxy.dart`, `socks_proxy.dart`). Samtidiga körningar delar inte ett par.
 - Sandlådade processer får proxyvariabler i miljön (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP-proxyn, `ALL_PROXY` → SOCKS-proxyn; `GIT_SSH_COMMAND` dirigerar git-over-SSH genom SOCKS-proxyn). På Linux är nätverksnamnrymden osharead, så proxyservrarna är enda vägen ut; på macOS delar sandlådan värdens loopback och talar med dem direkt.
 - Varje anslutnings målvärd matchas mot sessionens domän-allowlist; allt annat nekas. Två jokerteckenformer, var och en med exakt en `*`: ett inledande `*.example.com` matchar vilken underdomän som helst (inklusive `a.b.example.com`) men inte toppdomänen själv; ett jokertecken i mitten, `bedrock.*.amazonaws.com`, matchar exakt en etikett (`bedrock.us-east-1.amazonaws.com`, inte `bedrock.evil.attacker.amazonaws.com`).
-- Allowlisten löses per session utifrån den kurerade baslinjen (`kBaselineAllowedDomains`: LLM-leverantörer, Git-hostning, paketregister), plus GitHub-domäner när agenten har GitHub- eller pushförmåga, plus `SandboxSpec.egressAllowlist`. Uppslagaren accepterar också ärendehanteringsleverantörers domäner när agenten kan anropa ärendehantering, men dispatchvägen skickar aldrig med den listan (eller extra poster i `egressAllowlist`), så i praktiken får varje körning baslinjen plus de GitHub-domäner dess förmågor ger den.
+- Allowlisten löses per session utifrån den kurerade baslinjen (`kBaselineAllowedDomains`: LLM-leverantörer, Git-hostning, paketregister), plus GitHub-domänerna (`kGithubDomains`), plus `SandboxSpec.egressAllowlist`. Dispatchvägen skickar aldrig med extra poster i `egressAllowlist`, så i praktiken får varje körning baslinjen plus GitHub.
 - En fast nekalista (`kBaselineDeniedDomains`: molnmetadatanslutningar, telemetrimottagare) har företräde framför alla tillåtanden.
-- `networkEnabled: false` (eller en agent utan nätverksförmågan) startar fortfarande sessionsproxyservrarna, men allowlisten är tom så varje utgående anslutning nekas.
+- `networkEnabled: false` startar fortfarande sessionsproxyservrarna, men allowlisten är tom så varje utgående anslutning nekas. Dispatch sätter värdet när körningen startar utifrån regeln **Använd nätverket**: neka stänger av nätverket, tillåt och fråga först lämnar det på.
 
 ## SandboxSpec
 
@@ -121,11 +121,10 @@ Specifikationen som skickas till `SandboxPort.launch`:
 | `workspaceId`     | `String`                                    | Id för den ägande arbetsytan                                                                                                                |
 | `agentId`         | `String?`                                   | Agent som för närvarande är bunden till sandlådan, om någon                                                                                 |
 | `bindMounts`      | `List<SandboxBindMount>`                    | Monteringar värd→gäst; sandlådan ser bara de värdsökvägar som listas här                                                                    |
-| `networkEnabled`  | `bool` (standard `true`)                    | Kombineras med agentens nätverksförmåga. När den är av startar sessionsproxyservrarna fortfarande, men allowlisten är tom så varje utgående anslutning nekas |
-| `egressAllowlist` | `List<String>` (standard `[]`)              | Extra tillåtna utgående domäner; jokertecken stöds (`*.example.com`, plus en mittform med en etikett). Dispatch fyller aldrig i detta, så en inlindad körning får den kurerade baslinjen plus de GitHub-domäner dess förmågor ger den |
+| `networkEnabled`  | `bool` (standard `true`)                    | Sätts vid dispatch utifrån regeln för utgående nätverkstrafik (av bara när den löses upp till neka). När den är av startar sessionsproxyservrarna fortfarande, men allowlisten är tom så varje utgående anslutning nekas |
+| `egressAllowlist` | `List<String>` (standard `[]`)              | Extra tillåtna utgående domäner; jokertecken stöds (`*.example.com`, plus en mittform med en etikett). Dispatch fyller aldrig i detta, så en inlindad körning får den kurerade baslinjen plus GitHub-domänerna |
 | `guestWorkdir`    | `String?`                                   | Standardarbetskatalog inuti sandlådan; enskilda `exec`-anrop kan åsidosätta den                                                             |
 | `mode`            | `Mode` (standard `chat`)                    | Skär ut filsystemets skrivregler: `chat` håller bind-monteringar skrivbara; `review`, `plan` och `orchestrate` är skrivskyddade             |
-| `capabilities`    | `AgentCapabilities` (standard `safeDefault`) | Härleder beslutet om nätverk av/på och GitHub-domäner för utgående trafik. Ärendedomäner är ett uppslagningsargument som dispatchvägen aldrig skickar med |
 | `protectedPaths`  | `List<String>` (standard `[]`)              | Värdsökvägar som aldrig får vara skrivbara inuti sandlådan, i något läge                                                                     |
 | `runnerStateDirs` | `List<String>` (standard `[]`)              | Värdkataloger där köraren håller sitt eget tillstånd, skrivbara i varje läge (en Control Center-hanterad `CLAUDE_CONFIG_DIR` är den nuvarande) |
 | `execGrantRoots`  | `List<String>` (standard `[]`)              | Operatörsgodkända katalogträd som öppnar exec-blocket för skrivbara kataloger igen på macOS. Linux ignorerar dem — bwrap har inget `$HOME`-exec-block att öppna igen |
@@ -183,7 +182,6 @@ Returneras av `SandboxPort.launch`:
 | --------------------- | --------- | --------------------------------------------------------------------------- |
 | `action`              | `String`  | Verbet som nekades (t.ex. `file-read*`, `network-outbound`)                 |
 | `target`              | `String`  | Sökväg eller värd som var mål för den nekade åtgärden                       |
-| `suggestedCapability` | `String?` | Den förmågeflagga som skulle tillåta den här åtgärden (t.ex. `canCallGitHubApi`) |
 | `raw`                 | `String?` | Rå loggrada, användbar vid felsökning                                       |
 
 ## Se även

@@ -127,7 +127,7 @@ void main() {
     Future<List<String>> Function()? files,
     PrMergeRefs? refs = (title: 'T', baseRef: 'main', headRef: 'feat'),
   }) => PrMergeConflictService(
-    refs: (_, _, _) async => refs,
+    refs: (_, _, _, _) async => refs,
     conflictFiles:
         ({
           required workspaceId,

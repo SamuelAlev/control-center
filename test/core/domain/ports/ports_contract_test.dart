@@ -23,7 +23,6 @@ import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/ports/system_audio_capture_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
@@ -259,7 +258,7 @@ void main() {
         handle: 'h',
         environment: {
           'GITHUB_TOKEN': 't1',
-          'TICKETING_API_KEY': 't2',
+          'GH_HOST': 'github.com',
           'CUSTOM_VAR': 'v3',
         },
       );
@@ -740,7 +739,7 @@ void main() {
       final port = _TestCredentialBrokerPort();
       final creds = await port.mint(
         conversationId: 'conv-1',
-        capabilities: _testCapabilities(),
+        scope: ForgeTokenScope.read,
       );
       expect(creds, isA<ScopedCredentials>());
       await port.revoke(creds.handle);
@@ -1099,7 +1098,7 @@ class _TestCredentialBrokerPort implements CredentialBrokerPort {
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
-    required AgentCapabilities capabilities,
+    required ForgeTokenScope scope,
     String? repoOwner,
     String? repoName,
     String? actingUserId,
@@ -1149,7 +1148,3 @@ Repo _testRepo() => Repo(
   createdAt: DateTime(2026, 1, 1),
   updatedAt: DateTime(2026, 1, 1),
 );
-
-/// Helper: create minimal AgentCapabilities for testing.
-AgentCapabilities _testCapabilities() =>
-    const AgentCapabilities(canPushToRepo: false, canCallTicketing: false);

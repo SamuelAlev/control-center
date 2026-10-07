@@ -2,7 +2,7 @@
 title: 가드레일 — 모든 변경 작업을 위한 단일 정책
 description: Control Center가 에이전트의 모든 부작용을 단일 허용/먼저 묻기/거부 엔진으로 처리하는 이유, ActionClass 분류 체계가 의도적으로 작게 유지되는 방식, 그리고 자율성 다이얼이 실제로 바꾸는 것.
 slug: ko-KR/매뉴얼/개념/가드레일
-sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
+sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
 ---
 
 Control Center의 에이전트는 파일을 삭제하고, 브랜치를 푸시하고, 풀
@@ -228,8 +228,7 @@ UI 문구일 뿐이며, `autonomy.setForSpace`는 그 밖의 값은 거부합니
 내 파일 도구가 샌드박스되지 **않는다**고 선언합니다 — 도구 표면과 이 정책
 엔진이 그것이 가진 유일한 파일 시스템 경계입니다. Claude Code는 자체 도구
 호출을 가로챌 수 **없다**고 선언합니다. `--dangerously-skip-permissions`로
-실행되기 때문입니다. Control Center는 그 `mcp__*` 호출만 보며, 자체 읽기,
-쓰기, 편집, 셸 도구는 보이지 않게 실행됩니다.
+실행되기 때문입니다. Control Center는 그 `mcp__*` 호출과, 훅을 통한 `Bash` 명령줄을 보며, 자체 읽기, 쓰기, 편집 도구는 보이지 않게 실행됩니다.
 
 설정 화면이 이 매트릭스를 보여 주는 이유는, 가드레일 시스템에서 용서할 수
 없는 단 하나의 실패가 존재하지 않는 커버리지를 주장하는 것이기 때문입니다.

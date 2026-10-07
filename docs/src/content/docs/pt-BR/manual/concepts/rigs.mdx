@@ -2,7 +2,7 @@
 title: Rigs e recintos
 description: Por que os agentes recebem máquinas descartáveis em vez do seu computador — os limites de isolamento, as faixas de exibição, as credenciais, as portas e o ciclo de vida.
 slug: pt-BR/manual/conceitos/rigs
-sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
+sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
 ---
 
 Um **rig** é uma máquina descartável que um agente opera em tempo real — um
@@ -167,13 +167,20 @@ conteúdo havia — nunca o que ele dizia.
 
 ## As credenciais nunca moram no convidado
 
-O `git push` funciona a partir de um terminal isolado, mas o convidado não
+O `git push` funciona a partir de um terminal isolado que você abriu, mas o convidado não
 armazena nenhum token de forge. Ele guarda um segredo por VM cujo único poder é
 *pedir* ao broker de credenciais do host — por um túnel que o host controla — um
 token de curta duração, com escopo de repositório, por operação, com limite de
 taxa, limitado pela mesma lista de hosts permitidos da saída, e revogado no
 momento em que o rig fecha. Uma máquina feita para ser descartada não pode
 conter nada que valha a pena roubar.
+
+O que esse token pode fazer é fixado quando o rig abre. Um rig de terminal
+aberto por uma pessoa recebe um token de escrita, limitado pelo acesso ao forge
+desse membro. Um rig aberto por um agente recebe um somente leitura: um
+credential helper do git não distingue um push de um fetch, então a regra de
+push não pode ser consultada a cada push dentro de um convidado, como o gateway
+de execuções de agentes faz no host.
 
 ## A worktree em um rig é um satélite
 

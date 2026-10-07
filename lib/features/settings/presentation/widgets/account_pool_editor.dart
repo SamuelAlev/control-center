@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/settings/presentation/widgets/account_pool_removed_notice.dart';
 import 'package:control_center/features/settings/presentation/widgets/account_pool_row.dart';
 import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -48,6 +49,7 @@ class AccountPoolEditor extends ConsumerWidget {
     required this.scope,
     required this.candidates,
     this.emptyHint,
+    this.title,
     super.key,
   });
 
@@ -60,22 +62,69 @@ class AccountPoolEditor extends ConsumerWidget {
   /// Shown instead of the controls when there is nothing to attach.
   final String? emptyHint;
 
+  /// A heading drawn above the editor, and only when the editor itself draws
+  /// something — so a surface listing several lanes never shows a heading
+  /// over an empty slot.
+  final String? title;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final ids = [for (final c in candidates) c.id];
+    final heading = title;
+    if (heading == null || !watchAccountPoolEditorVisible(ref, scope, ids)) {
+      return _body(context, ref);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(bottom: AppSpacing.sm),
+          child: Text(
+            heading,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: t.fgPrimary,
+            ),
+          ),
+        ),
+        _body(context, ref),
+      ],
+    );
+  }
+
+  Widget _body(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
 
+    final view = ref.watch(accountPoolProvider(scope));
+    final resolved = view.value;
+    // A configured pool whose every account was removed. Dispatch refuses on
+    // it rather than falling back, on every lane, so it has to stay fixable
+    // even when too few accounts are left to show the full editor.
+    final allRemoved =
+        resolved?.pool.namesOnlyRemoved({for (final c in candidates) c.id}) ??
+        false;
+    final removedNotice = allRemoved
+        ? AccountPoolRemovedNotice(
+            onClear: () => saveAccountPool(ref, scope, null),
+          )
+        : null;
+
     // Fewer than two credentials means there is nothing to choose between, so
-    // the whole control is absent rather than disabled.
+    // the whole control is absent rather than disabled — the rule
+    // [watchAccountPoolEditorVisible] states for every surface.
     if (candidates.length < 2) {
+      if (removedNotice != null) {
+        return removedNotice;
+      }
       final hint = emptyHint;
       return hint == null
           ? const SizedBox.shrink()
           : Text(hint, style: TextStyle(fontSize: 12, color: t.fgSecondary));
     }
 
-    final view = ref.watch(accountPoolProvider(scope));
-    final resolved = view.value;
     if (resolved == null) {
       // A failed read is a failed read, never a spinner. Riverpod retries a
       // failing provider by itself and each retry re-enters the loading state,
@@ -123,6 +172,10 @@ class AccountPoolEditor extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (removedNotice != null) ...[
+          removedNotice,
+          const SizedBox(height: AppSpacing.md),
+        ],
         Row(
           children: [
             Text(

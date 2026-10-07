@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/auth/domain/entities/api_credentials.dart';
 import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
 import 'package:cc_infra/src/sandboxing/env_credential_broker.dart';
@@ -10,9 +10,9 @@ import 'package:test/test.dart';
 /// Covers both env-backed credential pieces:
 ///  - [EnvCredentialsRepository] — a read-only repo sourcing GitHub/ticketing
 ///    keys from an injected environment map; all mutators throw.
-///  - [EnvCredentialBroker] — maps capabilities → env vars injected into the
-///    sandbox (GH_TOKEN + GITHUB_TOKEN, TICKETING_API_KEY) and produces notes
-///    for the UI.
+///  - [EnvCredentialBroker] — hands the environment's GitHub token to the
+///    sandbox (GH_TOKEN + GITHUB_TOKEN) whatever the scope, with a note for
+///    the UI.
 void main() {
   group('EnvCredentialsRepository.loadCredentials', () {
     test('prefers GITHUB_TOKEN over GH_TOKEN', () async {
@@ -101,68 +101,24 @@ void main() {
   });
 
   group('EnvCredentialBroker.mint', () {
-    test('injects GH_TOKEN + GITHUB_TOKEN for canCallGitHubApi', () async {
-      final broker = EnvCredentialBroker(
-        _FakeCreds(const ApiCredentials(githubToken: 'ghp_x')),
+    for (final scope in ForgeTokenScope.values) {
+      test(
+        'injects GH_TOKEN + GITHUB_TOKEN for a ${scope.name} scope',
+        () async {
+          final broker = EnvCredentialBroker(
+            _FakeCreds(const ApiCredentials(githubToken: 'ghp_x')),
+          );
+          final sc = await broker.mint(conversationId: 'c1', scope: scope);
+          expect(sc.environment['GH_TOKEN'], 'ghp_x');
+          expect(sc.environment['GITHUB_TOKEN'], 'ghp_x');
+          // One server-wide token cannot be narrowed — the note says so.
+          expect(sc.notes.single, contains('fine-grained tokens'));
+          expect(sc.handle, startsWith('c1-'));
+        },
       );
-      final sc = await broker.mint(
-        conversationId: 'c1',
-        capabilities: const AgentCapabilities(canCallGitHubApi: true),
-      );
-      expect(sc.environment['GH_TOKEN'], 'ghp_x');
-      expect(sc.environment['GITHUB_TOKEN'], 'ghp_x');
-      // canCallGitHubApi alone (no push) does not surface the fine-grained note.
-      expect(sc.notes, isEmpty);
-      expect(sc.handle, startsWith('c1-'));
-    });
+    }
 
-    test('surfaces the fine-grained note when canPushToRepo', () async {
-      final broker = EnvCredentialBroker(
-        _FakeCreds(const ApiCredentials(githubToken: 'ghp_x')),
-      );
-      final sc = await broker.mint(
-        conversationId: 'c1',
-        capabilities: const AgentCapabilities(canPushToRepo: true),
-      );
-      expect(sc.environment['GH_TOKEN'], 'ghp_x');
-      expect(sc.notes.single, contains('fine-grained tokens'));
-    });
-
-    test('injects TICKETING_API_KEY + note for canCallTicketing', () async {
-      final broker = EnvCredentialBroker(
-        _FakeCreds(const ApiCredentials(ticketingApiKey: 'tk')),
-      );
-      final sc = await broker.mint(
-        conversationId: 'c1',
-        capabilities: const AgentCapabilities(canCallTicketing: true),
-      );
-      expect(sc.environment['TICKETING_API_KEY'], 'tk');
-      expect(sc.notes.single, contains('ticketing provider API key'));
-    });
-
-    test('GitHub capability with NO token injects nothing', () async {
-      final broker = EnvCredentialBroker(_FakeCreds(const ApiCredentials()));
-      final sc = await broker.mint(
-        conversationId: 'c1',
-        capabilities: const AgentCapabilities(
-          canCallGitHubApi: true,
-          canPushToRepo: true,
-        ),
-      );
-      expect(sc.environment, isEmpty);
-      expect(sc.notes, isEmpty);
-    });
-
-    test('ticketing capability with NO key injects nothing', () async {
-      final broker = EnvCredentialBroker(_FakeCreds(const ApiCredentials()));
-      final sc = await broker.mint(
-        conversationId: 'c1',
-        capabilities: const AgentCapabilities(canCallTicketing: true),
-      );
-      expect(sc.environment, isEmpty);
-    });
-
-    test('no capabilities → empty environment', () async {
+    test('never injects the ticketing API key', () async {
       final broker = EnvCredentialBroker(
         _FakeCreds(
           const ApiCredentials(githubToken: 'g', ticketingApiKey: 't'),
@@ -170,7 +126,16 @@ void main() {
       );
       final sc = await broker.mint(
         conversationId: 'c1',
-        capabilities: const AgentCapabilities(),
+        scope: ForgeTokenScope.read,
+      );
+      expect(sc.environment.containsKey('TICKETING_API_KEY'), isFalse);
+    });
+
+    test('NO token injects nothing', () async {
+      final broker = EnvCredentialBroker(_FakeCreds(const ApiCredentials()));
+      final sc = await broker.mint(
+        conversationId: 'c1',
+        scope: ForgeTokenScope.write,
       );
       expect(sc.environment, isEmpty);
       expect(sc.notes, isEmpty);
@@ -180,13 +145,13 @@ void main() {
       final broker = EnvCredentialBroker(_FakeCreds(const ApiCredentials()));
       final a = await broker.mint(
         conversationId: 'c',
-        capabilities: const AgentCapabilities(),
+        scope: ForgeTokenScope.read,
       );
       // Same conversation, but ms + counter differ — wait a tick to be safe.
       await Future<void>.delayed(const Duration(milliseconds: 5));
       final b = await broker.mint(
         conversationId: 'c',
-        capabilities: const AgentCapabilities(),
+        scope: ForgeTokenScope.read,
       );
       expect(a.handle, isNot(b.handle));
     });
@@ -202,7 +167,7 @@ void main() {
       final broker = EnvCredentialBroker(_FakeCreds(const ApiCredentials()));
       final sc = await broker.mint(
         conversationId: 'c',
-        capabilities: const AgentCapabilities(),
+        scope: ForgeTokenScope.read,
       );
       await expectLater(broker.revoke(sc.handle), completes);
     });

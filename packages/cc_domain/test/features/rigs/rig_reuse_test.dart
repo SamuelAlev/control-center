@@ -1,4 +1,4 @@
-import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
@@ -151,30 +151,39 @@ void main() {
   });
 
   group('credentials', () {
-    test('a rig grants nothing by default', () {
-      // An enclosure does not get push rights because it exists. The broker
-      // has nothing to mint under safeDefault and says so.
+    test('a rig reads by default', () {
+      // An enclosure does not get push rights because it exists.
       final spec = RigSpec(surface: RigSurface.computer);
-      expect(spec.capabilities.canPushToRepo, isFalse);
-      expect(spec.capabilities.canCallGitHubApi, isFalse);
+      expect(spec.forgeTokenScope, ForgeTokenScope.read);
     });
 
-    test('capabilities survive a JSON round trip', () {
+    test('the scope survives a JSON round trip', () {
       // The spec is stored whole and rehydrated before the broker is asked,
       // so losing this silently turns every in-VM `git push` into a 404.
       final spec = RigSpec.exec(
         conversationId: 'c1',
-        capabilities: const AgentCapabilities(
-          canPushToRepo: true,
-          canCallGitHubApi: true,
-        ),
+        forgeTokenScope: ForgeTokenScope.write,
         repoOwner: 'acme',
         repoName: 'widgets',
       );
       final restored = RigSpec.fromJson(spec.toJson());
-      expect(restored.capabilities.canPushToRepo, isTrue);
+      expect(restored.forgeTokenScope, ForgeTokenScope.write);
       expect(restored.repoOwner, 'acme');
       expect(restored.repoName, 'widgets');
+    });
+
+    test('a spec stored with the old capability flags keeps push', () {
+      final json = RigSpec.exec(conversationId: 'c1').toJson()
+        ..remove('forgeTokenScope')
+        ..['capabilities'] = '{"canPushToRepo":true,"canCallGitHubApi":true}';
+      expect(RigSpec.fromJson(json).forgeTokenScope, ForgeTokenScope.write);
+    });
+
+    test('a spec stored without push in the old flags reads', () {
+      final json = RigSpec.exec(conversationId: 'c1').toJson()
+        ..remove('forgeTokenScope')
+        ..['capabilities'] = '{"canPushToRepo":false}';
+      expect(RigSpec.fromJson(json).forgeTokenScope, ForgeTokenScope.read);
     });
   });
 }

@@ -1,6 +1,4 @@
 import 'package:cc_data/src/repositories/remote_ticket_repository.dart';
-import 'package:cc_data/src/sync/row_entity_cache.dart';
-import 'package:cc_data/src/sync/synced_store.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
@@ -21,17 +19,11 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// write/collaborator mutations are intentionally not exposed to a remote
 /// client (the host owns them) and throw [UnsupportedError].
 class RpcTicketRepository implements TicketRepository {
-  /// Creates an [RpcTicketRepository] over [client]. When [_sync] is supplied
-  /// and its `tickets` kill-switch is on, [watchForWorkspace] (and the
-  /// `watchByStatus`/`watchByAssignee`/`forAgent`/`childrenOf` methods that
-  /// delegate to it) adopt the deterministic sync engine (PRD 16 §6) instead
-  /// of re-querying the legacy full-snapshot `tickets.watchForWorkspace`
-  /// subscription on every change.
-  RpcTicketRepository(RemoteRpcClient client, {this._sync})
+  /// Creates an [RpcTicketRepository] over [client].
+  RpcTicketRepository(RemoteRpcClient client)
     : _remote = RemoteTicketRepository(client);
 
   final RemoteTicketRepository _remote;
-  final ClientSyncEngine? _sync;
 
   /// Rebuilds a [Ticket] from its wire DTO. The DTO is lossless (see
   /// `ticketToWire`): enum fields are encoded as `.name`; a missing required
@@ -119,61 +111,14 @@ class RpcTicketRepository implements TicketRepository {
       _ticketOriginKindByName[name] ?? TicketOriginKind.manual;
 
   @override
-  Stream<List<Ticket>> watchForWorkspace(String workspaceId) {
-    final store = _sync?.storeFor('tickets', workspaceId);
-    if (store == null) {
-      // Kill-switch OFF (or the store demoted itself) — the legacy path.
+  Stream<List<Ticket>> watchForWorkspace(String workspaceId) =>
       // [workspaceId] is threaded into the subscription (not left to the
       // client's ambient active-workspace injection, which flips on a switch
       // independently of the workspace being asked about) so this stream is
       // always the workspace the caller named.
-      return _remote
+      _remote
           .watch(workspaceId: workspaceId)
           .map((dtos) => dtos.map(_fromDto).toList());
-    }
-    return _watchAdopted(store, workspaceId);
-  }
-
-  /// Seeds [store]'s `tickets` table from the FIRST emission of the legacy
-  /// snapshot watch (`.first` subscribes then auto-cancels once it resolves,
-  /// so the legacy subscription doesn't stay open), then follows the store's
-  /// own delta-fed rows — sorted to match the server's
-  /// `tickets.watchForWorkspace` ordering (newest-`updatedAt`-first; see
-  /// `TicketDao.watchForWorkspace`).
-  Stream<List<Ticket>> _watchAdopted(
-    SyncedStore store,
-    String workspaceId,
-  ) async* {
-    // Seed ONCE per (store, workspace). The mirror is shared, so a second
-    // subscriber (`myAssignedTickets`, or a `ticketByIdProvider` per open
-    // detail pane) arriving later would otherwise pull the whole table again
-    // to rebuild state the store already holds and keeps current.
-    if (!store.isSeeded('tickets')) {
-      final seedDtos = await _remote.watch(workspaceId: workspaceId).first;
-      store.seed(
-        'tickets',
-        seedDtos.map((d) => d.toJson()).toList(),
-        (row) => row['ticket_id'] as String,
-      );
-    }
-    // Per-subscription entity memo: an unchanged row comes back as the SAME
-    // Map instance, so its Ticket is reused instead of re-decoded. Without
-    // it, one field change on one ticket rebuilt every ticket in the
-    // workspace (seven `DateTime.parse` apiece) on the UI isolate.
-    final cache = RowEntityCache<Ticket>();
-    yield* store
-        .watchRows('tickets')
-        .map((rows) => _rowsToSortedTickets(rows, cache));
-  }
-
-  static List<Ticket> _rowsToSortedTickets(
-    List<Map<String, dynamic>> rows,
-    RowEntityCache<Ticket> cache,
-  ) =>
-      cache
-          .map(rows, (row) => _fromDto(TicketDto.fromJson(row)))
-          .toList(growable: false)
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
   @override
   Stream<List<Ticket>> watchByStatus(String workspaceId, TicketStatus status) =>

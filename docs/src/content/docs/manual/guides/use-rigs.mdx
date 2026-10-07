@@ -184,9 +184,10 @@ What changes:
 - Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
 - The network is deny-by-default. Only hosts on the rig's allowlist are
   reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- `git push` still works in a terminal you opened. The rig has no stored
+  credential; it asks the server for a short-lived one per operation, bounded
+  by your own forge access, and that token is revoked when the rig closes. A
+  rig an agent opened gets a read-only credential, so it can fetch but not push.
 
 What to know:
 

@@ -2,7 +2,7 @@
 title: Spravujte API klíče
 description: Kde který přihlašovací údaj leží, u tvého účtu na serveru, u serveru samotného nebo u externího CLI, a jak ho nastavit, obměnit a odebrat.
 slug: cs-CZ/prirucka/navody/api-klice
-sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
+sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
 ---
 
 Tenhle návod ukazuje, kde leží každý přihlašovací údaj, který Control Center
@@ -75,8 +75,9 @@ poloviny jednoho rozhodnutí: ve které službě tickety žijí a jaký přihla�
 
 Tvůj klíč leží na serveru u tvého id uživatele, stejně jako ten k forge. Server
 si vlastní klíč Linear drží zvlášť (**Aplikace poskytovatelů**). Na něm běží
-synchronizace ticketů, když o ni nikdo nepožádal. Klíč, který agent dostane, se
-vloží jen tehdy, když má schopnost **Povolit volání ticketing API**. Viz
+synchronizace ticketů, když o ni nikdo nepožádal. Do sandboxu agenta se žádný
+klíč ticketingu nevkládá; agenti zapisují tickety přes nástroje Control Center,
+které se ptají pravidla **Zápis do externího trackeru**. Viz
 [Nastavte integraci Linear](/cs-CZ/prirucka/navody/integrace-linear/).
 
 ## Obměň nebo odvolej

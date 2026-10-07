@@ -2,7 +2,7 @@
 title: Ügynökkonfiguráció
 description: Az ügynökentitás összes mezője és a hozzá tartozó enumok.
 slug: hu-HU/kezikonyv/referencia/ugynokkonfiguracio
-sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
+sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
 ---
 
 Ez a referencia felsorolja az ügynökentitás összes mezőjét, valamint a használt enumokat és jelzőket. Az ügynök alkalmazásbeli létrehozásának vagy szerkesztésének lépésről lépésre haladó bemutatását lásd: [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/).
@@ -26,7 +26,6 @@ Ez a referencia felsorolja az ügynökentitás összes mezőjét, valamint a has
 | `effort`                | `String?`              | Nem      | Gondolkodási szint azonosítója (pl. `'low'`, `'xhigh'`), a kiválasztott modell `thinkingLevels` értékéből véve                                                                                      |
 | `contextSize`           | `int?`                 | Nem      | A kontextusablak maximális mérete                                                                                                                                                                   |
 | `role`                  | `AgentRole?`           | Nem      | Az ügynök szerepköre                                                                                                                                                                                |
-| `capabilities`          | `AgentCapabilities?`   | Nem      | Ügynökönkénti képesség-alapértelmezés; ha null, indításkor a felhasználói szintű alapértelmezés érvényes, és egy beszélgetés továbbra is felülírhatja                                                |
 | `monthlyBudgetCents`    | `int`                  | Nem      | Havi költési plafon centben (alapértelmezés `0`, korlátlan)                                                                                                                                         |
 | `silenceTimeoutMinutes` | `int?`                 | Nem      | A csend-időtúllépés felülírása percben; nullnak kell lennie, vagy 1–240 közé kell esnie (konstruktorban érvényesítve)                                                                                |
 | `maxConcurrentTasks`    | `int`                  | Nem      | Alapértelmezés: `1`. A jelenléti modell által jelentett kapacitásérték (a futó és a várakozó futtatások számát ehhez hasonlítja)                                                                     |
@@ -69,18 +68,9 @@ A `name` és a `title` egyaránt nem lehet üres (konstruktorban érvényesítve
 | `paused`   | A költségkeret kemény leállása állítja be. A jelenléti névsoron jelenik meg; az indítás továbbra is elfogad munkát |
 | `archived` | Visszavonva és elrejtve az aktív névsorokból                                              |
 
-## Az AgentCapabilities jelzői
+## Jogosultságok
 
-Indításonként oldódnak fel: az ügynök alapértelmezése, amely null esetén a felhasználói szintű alapértelmezésre esik vissza, és erre épül a beszélgetésenkénti felülírás. Érvényesítésük a hiányon alapul — a hitelesítőadat-közvetítő egyszerűen nem állít ki és nem injektál semmit, amit egy kikapcsolt képesség lefed.
-
-| Jelző              | Típus  | Alapérték | Leírás                                                                                     |
-| ------------------ | ------ | --------- | ------------------------------------------------------------------------------------------ |
-| `canPushToRepo`    | `bool` | `false`   | Commitok pusholása a távoli repóba; a `canCallGitHubApi` mellett a GitHub-token injektálását kapuzza |
-| `canCallGitHubApi` | `bool` | `false`   | Az api.github.com hívása; a `GH_TOKEN` injektálását és a GitHub kimenőforgalmi domainjeit kapuzza |
-| `canCallTicketing` | `bool` | `false`   | A jegykezelő szolgáltató API-jának hívása; a szolgáltató API-kulcsának injektálását és annak kimenőforgalmi domainjeit kapuzza |
-| `canAccessNetwork` | `bool` | `true`    | Tetszőleges kimenő forgalom. A harness `web_fetch` és `web_search` eszközét is kapuzza      |
-
-Az `AgentCapabilities.safeDefault` mind a négy konstruktor-alapértelmezést jelenti. A `legacyDefault` (mind a négy igaz) kizárólag azt a migrációt szolgálja, amely feltöltötte a képességek létezése előtt létrehozott beszélgetéseket. Egy hibás vagy üres tárolt blob a `safeDefault` értékre oldódik fel; a `canCallLinear` örökölt kulcs a `canCallTicketing` értékként olvasódik.
+Az ügynöknek nincsenek jogosultságjelzői. A push, a pull requestek megnyitása és közzététele, a követőbe írás és a hálózati kimenő forgalom műveletosztályok (`gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`), amelyeket a [korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) munkaterület, ügynök vagy tér hatókörében oldanak fel. A futás GitHub-tokenje mindig csak olvasási hatókörű; a pushok az ügynökfuttatási átjárón mennek át, amely a továbbítás előtt megkérdezi a `gitPush` szabályt.
 
 ## AgentSkills
 

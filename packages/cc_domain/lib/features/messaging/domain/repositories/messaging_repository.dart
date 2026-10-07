@@ -93,8 +93,8 @@ abstract class MessagingRepository {
   /// Returns a single message by id within [workspaceId], or null.
   Future<Message?> getMessageById(String workspaceId, String messageId);
 
-  /// One space by id within [workspaceId], or null. Host-side loader for the
-  /// sync delta feed; remote adapters may not support it.
+  /// One space by id within [workspaceId], or null. Host-side; remote
+  /// adapters may not support it.
   Future<Space?> getSpaceById(String workspaceId, String spaceId);
 
   /// Creates a space in [workspaceId] with zero or more agents. The optional

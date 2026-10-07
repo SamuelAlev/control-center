@@ -2,7 +2,7 @@
 title: Dejte agentovi stroj na testování
 description: Dej agentovi jednorázový prohlížeč, plochu, emulátor Androidu nebo simulátor iOS — sleduješ ho živě a řízení můžeš převzít.
 slug: cs-CZ/prirucka/navody/pouziti-stanic
-sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
+sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
 ---
 
 **Stanice** je jednorázový stroj, který agent otevře, když má něco opravdu
@@ -185,9 +185,11 @@ Co se změní:
 - Nic, co spustíš, se na hostitele nedostane. `rm -rf` uvnitř tě stojí stanici.
 - Síť má výchozí odmítnutí. Dosažitelní jsou jen hostitelé ze seznamu
   povolených té stanice a všechno jde přes bránu, která seznam vynucuje.
-- `git push` pořád funguje. Stanice nemá uložený přihlašovací údaj. Na každou
-  operaci si od serveru vyžádá krátkodobý a ten token se při zavření stanice
-  zruší.
+- `git push` pořád funguje v terminálu, který sis otevřel. Stanice nemá uložený
+  přihlašovací údaj. Na každou operaci si od serveru vyžádá krátkodobý,
+  ohraničený tvým vlastním přístupem k forge, a ten token se při zavření
+  stanice zruší. Stanice, kterou otevřel agent, dostane přihlašovací údaj jen
+  pro čtení, takže umí fetch, ale ne push.
 
 Co je dobré vědět:
 

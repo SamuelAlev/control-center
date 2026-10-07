@@ -74,7 +74,7 @@ environment.
 | Check runs          | The GitHub Checks API                                                                                          |
 | Review publishing   | A user-gated step that posts your review to the PR                                                             |
 | Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
+| Agent GitHub access | The credential broker injects a read-only token as `GH_TOKEN` / `GITHUB_TOKEN`; pushes go through Control Center |
 | Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
 | User profiles       | Profile hover cards and per-author PR filtering                                                                |
 
@@ -93,8 +93,9 @@ The statuses refresh on their own every two minutes.
 
 ## Know how agents act on GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
+- An agent working in a GitHub worktree always gets a read-only GitHub token.
+  A push goes through Control Center, which asks the **Push to a remote** rule
+  and then forwards it on a write token the agent never holds. See
   [Configure sandbox policies](/manual/guides/sandbox-policies/)
 - Commits an agent makes are authored **as the agent** — the display name plus
   ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
@@ -103,11 +104,12 @@ The statuses refresh on their own every two minutes.
   roughly one-hour installation tokens per launch instead of handing over a
   broad token. The installation is resolved from the run's repo **owner**, so
   one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+  run touches. Without an app, agents receive the environment token, which
+  cannot be narrowed to read-only: the push rule then binds `git push` but not
+  code that uses the token directly
+- The token is always the broker's, never the requesting member's own. The
+  server's token is withheld from a run acting for a member who is not the
+  owner and has not connected GitHub
 
 ## Troubleshooting
 

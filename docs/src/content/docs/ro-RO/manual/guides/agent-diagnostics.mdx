@@ -2,7 +2,7 @@
 title: Diagnostichează un agent
 description: Parcurge jurnalul de rulare, verificarea adaptorului, starea serverului și diagnosticările gazdei atunci când un agent nu mai produce rulări.
 slug: ro-RO/manual/ghiduri-practice/diagnosticare-agent
-sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
+sourceHash: c242be554fc1aa70c558047a876704dc927b8960
 ---
 
 Acest ghid îți arată cum să afli de ce un agent nu produce rulări.
@@ -60,19 +60,18 @@ Două lucruri care merită știute când o modificare „merge în teste, dar nu
 
 **Setări → Server → Diagnosticări și confidențialitate** (`/settings/server/diagnostics`) este pagina la nivel de gazdă. Conține:
 
-- **Sandboxing** — comutatorul principal, backendul detectat, un indiciu de instalare și comutatoarele de capabilități implicite. Doar backendul detectat vine de la server; vezi atenționarea de mai jos. Nu există niciun control de resetare.
+- **Sandboxing** — comutatorul principal, backendul detectat și un indiciu de instalare. Doar backendul detectat vine de la server; vezi atenționarea de mai jos. Nu există niciun control de resetare.
 - **Căutare semantică** — ciclul de viață al modelului de embedding de pe dispozitiv: instalat, în curs de descărcare cu un procent, neinstalat sau o eroare de instalare. Până când este instalat, memoria și căutarea în cod rămân doar pe cuvinte-cheie.
 - **Comportament sistem** — menține computerul treaz cât timp rulează agenții.
-- **Motor de sincronizare** — comutatoare de oprire forțată pe depozit pentru tichete, mesagerie și note. Sunt ieșiri de siguranță de urgență înapoi la abonamentele cu instantaneu complet; o modificare afectează doar abonamentele noi, așa că își face pe deplin efectul după o reîncărcare.
 - **Nivel jurnal** — ridică-l înainte de a reproduce o defecțiune.
 - **Confidențialitate** — dacă conținutul brut al diff-urilor poate fi transmis modelului agentului și dacă se trimit rapoarte de eroare.
 
 :::caution[Această secțiune raportează gazda, iar controalele ei sunt pe client]
-Detectarea și aplicarea sunt acum în acord: acolo unde detectorul raportează un backend nativ, rulările agenților de pe acea gazdă sunt într-adevăr înfășurate în el. Dar detectorul este singurul lucru activ din această secțiune. Comutatorul principal, selectorul de backend și comutatoarele de capabilități implicite sunt preferințe stocate pe dispozitivul tău, iar serverul nu citește niciuna dintre ele — comutatorul propriu al serverului este `--sandbox` (`on` implicit, `off` pentru a renunța), iar pentru orice agent lăsat pe „Folosește implicitul spațiului de lucru” serverul revine la implicitul său conservator: fără git push, fără API GitHub, fără cheie de tichete, rețeaua activată.
+Detectarea și aplicarea sunt acum în acord: acolo unde detectorul raportează un backend nativ, rulările agenților de pe acea gazdă sunt într-adevăr înfășurate în el. Dar detectorul este singurul lucru activ din această secțiune. Comutatorul principal și selectorul de backend sunt preferințe stocate pe dispozitivul tău, iar serverul nu citește niciuna dintre ele — comutatorul propriu al serverului este `--sandbox` (`on` implicit, `off` pentru a renunța).
 
 Deci un avertisment de aici merită tratat, dar de obicei nu este motivul pentru care eșuează un agent. Ca să confirmi în ce stare este serverul, citește jurnalul lui de pornire: afișează `agent sandbox ON` cu nota despre backend, `no OS-native agent sandbox on this host` cu un indiciu de instalare sau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` nu conține niciun câmp de sandbox.
 
-Acolo unde nu există backend — pe Windows întotdeauna, pe Linux sau WSL2 fără `bwrap` și `socat` — rulările **nu** sunt izolate, iar ce le limitează este checkout-ul propriu al conversației, capabilitățile care decid ce date de autentificare sunt emise în el, guardrail-urile de acțiune, sanitizarea mediului și suprafața de instrumente pe care o permite modul său.
+Acolo unde nu există backend — pe Windows întotdeauna, pe Linux sau WSL2 fără `bwrap` și `socat` — rulările **nu** sunt izolate, iar ce le limitează este checkout-ul propriu al conversației, tokenul de forge doar pentru citire și gateway-ul de push, guardrail-urile de acțiune, sanitizarea mediului și suprafața de instrumente pe care o permite modul său.
 :::
 
 ## Eșecuri frecvente
@@ -83,7 +82,7 @@ Instalează CLI-ul **pe gazda serverului**, apoi dă clic pe **Reîmprospăteaz�
 
 ### Agentul nu poate face push și nu poate deschide un pull request
 
-Capabilitățile sale sunt poarta. Deschide **Setări → Spațiu de lucru → Agenți** → agentul → **Permisiuni sandbox**, activează comutatorul și bifează **Permite git push** și **Permite apeluri GitHub API**. Dacă lași comutatorul pe „Folosește implicitul spațiului de lucru”, agentul nu primește niciuna dintre ele.
+Citește ce au afișat git sau agentul. `Control Center policy: …` înseamnă că o regulă de acțiune a refuzat sau că o aprobare a rămas fără răspuns: verifică **Push către un remote** și **Deschide un pull request** în **Setări → Spațiu de lucru → Permisiuni agent**. Dacă git spune că Control Center nu are nicio credențială GitHub care poate face push, instalează GitHub App pe acel depozit sau conectează GitHub.
 
 ### Căutarea semantică nu returnează nimic util
 

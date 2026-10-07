@@ -2,7 +2,7 @@
 title: Szójegyzék
 description: A Control Centerben használt kulcsfontosságú kifejezések meghatározásai.
 slug: hu-HU/kezikonyv/referencia/szojegyzek
-sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
+sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -12,7 +12,7 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'Egy MI-munkavállaló identitással, szereppel, készségekkel és képességekkel. Pontosan egy munkaterülethez tartozik. A rendszer elsődleges szereplője.'],
+['Agent', 'Egy MI-munkavállaló identitással, szereppel, készségekkel és egy adapterrel. Pontosan egy munkaterülethez tartozik. A rendszer elsődleges szereplője.'],
 ['Adapter', 'Az a futtató, amely végrehajtja az ügynök egy körét. Kettő érkezik: a Control Center (built-in) — a folyamaton belüli harness, amely a modellszolgáltatókkal beszél — és a Claude Code a claude CLI-n keresztül. A Cursor, a Codex és a többi modellszolgáltató a beépített adapterhez csatlakozik, nem külön futtatóként.'],
 ['Munkaterület', 'A legfelső szintű elszigetelési bérlő. Ügynököket, repókat, tereket, jegyeket, memóriát és pipeline-okat csoportosít. Az elszigetelés strukturális, nem konvenció kérdése: minden munkaterületnek saját SQLite-fájlja van, ezért a munkaterületek közötti olvasás nem fordul le. Minden alkalmazáson belüli útvonal a /workspaces/:workspaceId előtagot viseli.'],
 ['Kódhoszt', 'Egy kódhoszt — GitHub, GitLab vagy Bitbucket Cloud. Minden repó tulajdonsága, amelyet regisztráláskor az origin remote-jából olvasunk ki. Egy munkaterület mindhárom szolgáltatáson tarthat repókat.'],
@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['AgentSkills', 'Kis-nagybetűre érzéketlen készségazonosítók halmaza, amelyek indításkor releváns kontextust injektálnak a promptokba.'],
 ['Készségforrás', 'Egy munkaterületenként készségkatalógusként regisztrált GitHub-repó. Konstrukciójánál fogva nem megbízható: a repó metaadatai csak megjelenítésre szolgálnak, és minden telepítés áthalad a hiba esetén elzáró vizsgálati kapun, mielőtt bármilyen tartalom eljutna a lemezre vagy egy promptba.'],
 ['skills-lock.json', 'A telepített készségek munkaterületenkénti jegyzéke: mindegyiknél a forrásrepó, a repón belüli útvonal, a commit, amelyhez rögzítve van, és egy összesített tartalomhash. A telepítések, a frissítések és az eltávolítások naprakészen tartják; a verify_skills ellenőrzi a lemezen lévő állapottal szemben.'],
-['AgentCapabilities', 'Négy jelző (push a repóba, GitHub API, jegykezelés, hálózati kimenő forgalom), indításonként feloldva: ügynök-alapértelmezés, majd felhasználói alapértelmezés, beszélgetésenkénti felülírással. Hiány által érvényesül, mivel egy letiltott képesség azt jelenti, hogy a token vagy a kimenő forgalom egyszerűen soha nem injektálódik.'],
+['Ügynökfuttatási átjáró', 'Loopback végpont a cc_server-en, amely az ügynök homokozóján belül alkalmazza a műveleti szabályzatot. Az ügynök minden GitHub-pushát ide irányítja, ellenőrzi a Küldés távoli tárolóra szabály alapján, és egy olyan írási tokennel továbbítja, amely soha nincs az ügynök birtokában; a Claude Code Bash parancsait egy hook ellenőrzi ugyanezen a végponton.'],
 ['Mode', 'chat, plan, review vagy orchestrate. Térénként tárolódik, így egy ügynök különböző tereken különböző módban lehet; egy tér minden beszélgetése ugyanazt osztja. Kapuzza a rendszerpromptot, a homokozó írási szabályait és az MCP-eszközök engedélyezési listáját.'],
 ['SandboxBackend', 'microvm (egy elzárt VM — az egyetlen háttérrendszer kernelhatárral, az interaktív terminálokra alkalmazva), native (operációs rendszer natív Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n) vagy none. Indításkor egyszer vizsgáljuk; a native behúzza az ügynökindítást, ahol elérhető. A Windowsnak nincs natív háttérrendszere, a Linuxnak pedig bwrap és socat kell, így az ottani futások beburkolás nélkül maradnak; a --sandbox off szándékosan lemond róla.'],
 ['Rig', 'Egy eldobható gép, amelyet egy ügynök valós időben vezet: elzárt böngésző vagy Linux asztal, gazdagép által kezelt Android-emulátor vagy iOS-szimulátor, vagy elzárt terminál. Élőben figyelhető a saját teljes felbontású sávján, a szerveroldalon kikényszerített átvétellel. Egy beszélgetéshez kötött, így az emberi fül és az ügynök eszköze egy gépet címez meg.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség centre) egyetlen ügynökfutásra.'],
 ['WakeReason', 'Miért indult el egy ügynök. Hat érték: felhasználói üzenet, jegy-hozzárendelés, helyreállítási újraindítás hiba után, gyermekjegy befejeződött, ütemezett utánkövető szívverés és pipeline-lépés.'],
 ['SandboxPort', 'A homokozó életciklusát kezeli (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Hatáskörrel ellátott, képességhez kötött hitelesítő adatokat bocsát ki a homokozó indításához, és visszavonja őket a lebontáskor.'],
+['CredentialBrokerPort', 'Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához (csak olvasásra az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára), és visszavonja őket a lebontáskor.'],
 ['GitRepoInspectorPort', 'Metaadatokat (owner, repo, branch) nyer ki egy helyi Git-repó útvonalából.'],
 ['EmbeddingPort', 'Egységnormájú szövegbeágyazási vektorokat állít elő szemantikus kereséshez.'],
 ['NotificationPort', 'Natív asztali értesítéseket jelenít meg, tiszteletben tartva a kategória/útvonal szerinti kapuzást.'],
@@ -107,7 +107,7 @@ export const glossaryTerms = [
 
 ## Alapentitások
 
-**Ügynök**: Egy MI-munkavállaló identitással, szereppel, készségekkel és képességekkel. Pontosan egy munkaterülethez tartozik. A rendszer elsődleges szereplője.
+**Ügynök**: Egy MI-munkavállaló identitással, szereppel, készségekkel és egy adapterrel. Pontosan egy munkaterülethez tartozik. A rendszer elsődleges szereplője.
 
 **Adapter**: Az a futtató, amely végrehajtja az ügynök egy körét. Kettő érkezik: a **Control Center (built-in)** — a folyamaton belüli harness, amely a modellszolgáltatókkal beszél — és a **Claude Code** a `claude -p` paranccsal. A Cursor, a Codex, az Anthropic, az OpenAI és a többi szolgáltató a beépített adapteren, nem külön CLI. Lásd: [Adapterek és modellek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/).
 
@@ -139,7 +139,7 @@ export const glossaryTerms = [
 
 **skills-lock.json**: A telepített készségek munkaterületenkénti jegyzéke: mindegyiknél a forrásrepó, a repón belüli útvonal, a commit, amelyhez rögzítve van, és egy összesített tartalomhash. A telepítések, a frissítések és az eltávolítások naprakészen tartják; a `verify_skills` ellenőrzi a lemezen lévő állapottal szemben.
 
-**AgentCapabilities**: Négy jelző (push a repóba, GitHub API, jegykezelés, hálózati kimenő forgalom), indításonként feloldva — ügynök-alapértelmezés → felhasználói alapértelmezés, beszélgetésenkénti felülírással. Hiány által érvényesül: egy letiltott képesség azt jelenti, hogy a token vagy a kimenő forgalom egyszerűen soha nem injektálódik.
+**Ügynökfuttatási átjáró**: Loopback végpont a `cc_server`-en, amely az ügynök homokozóján belül alkalmazza a műveleti szabályzatot. Az ügynök minden GitHub-pushát ide irányítja, ellenőrzi a **Küldés távoli tárolóra** szabály alapján, és egy olyan írási tokennel továbbítja, amely soha nincs az ügynök birtokában; a Claude Code `Bash` parancsait egy hook ellenőrzi ugyanezen a végponton. Lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalt.
 
 **Mode**: `chat`, `plan`, `review` vagy `orchestrate`. **Térénként** tárolódik, így egy ügynök különböző tereken különböző módban lehet; egy tér minden beszélgetése ugyanazt osztja. Kapuzza a rendszerpromptot, a homokozó írási szabályait és az MCP-eszközök engedélyezési listáját. A szerkesztő csak a `chat`, a `plan` és az `orchestrate` módot kínálja; a `chat` címkéje „Agent”.
 
@@ -157,7 +157,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: A homokozó életciklusát kezeli (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Hatáskörrel ellátott, képességhez kötött hitelesítő adatokat bocsát ki a homokozó indításához, és visszavonja őket a lebontáskor.
+**CredentialBrokerPort**: Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához — csak olvasásra az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára —, és visszavonja őket a lebontáskor.
 
 **GitRepoInspectorPort**: Metaadatokat (owner, repo, branch) nyer ki egy helyi Git-repó útvonalából.
 

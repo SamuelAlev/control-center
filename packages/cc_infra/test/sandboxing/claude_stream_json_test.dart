@@ -619,4 +619,98 @@ void main() {
     expect(results.single.id, 'toolu_01Ru');
     expect(results.single.outputs, 'hi');
   });
+
+  group('context occupancy', () {
+    List<ClaudeCallUsage> readings(
+      List<Map<String, dynamic>> events, {
+      List<int?>? compactions,
+    }) {
+      final out = <ClaudeCallUsage>[];
+      final p = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(
+          onCallUsage: out.add,
+          onCompactBoundary: compactions?.add,
+        ),
+      );
+      events.forEach(p.process);
+      return out;
+    }
+
+    Map<String, dynamic> start(Map<String, dynamic> usage, {String? parent}) =>
+        {
+          'type': 'stream_event',
+          'parent_tool_use_id': parent,
+          'event': {
+            'type': 'message_start',
+            'message': {'usage': usage},
+          },
+        };
+
+    Map<String, dynamic> delta(int output, {String? parent}) => {
+      'type': 'stream_event',
+      'parent_tool_use_id': parent,
+      'event': {
+        'type': 'message_delta',
+        'usage': {'output_tokens': output},
+      },
+    };
+
+    test('a call reads uncached + cache read + cache write input', () {
+      final out = readings([
+        start({
+          'input_tokens': 12,
+          'cache_read_input_tokens': 150000,
+          'cache_creation_input_tokens': 3000,
+          'output_tokens': 1,
+        }),
+      ]);
+      expect(out.single.promptTokens, 153012);
+      expect(out.single.contextTokens, 153013);
+    });
+
+    test('message_delta adds the call output to the same prompt', () {
+      final out = readings([
+        start({'input_tokens': 10, 'cache_read_input_tokens': 90}),
+        delta(40),
+      ]);
+      expect(out.last.promptTokens, 100);
+      expect(out.last.contextTokens, 140);
+    });
+
+    test('the newest call replaces the previous one, not adds to it', () {
+      final out = readings([
+        start({'input_tokens': 100}),
+        delta(10),
+        start({'input_tokens': 5, 'cache_read_input_tokens': 110}),
+      ]);
+      expect(out.last.contextTokens, 115);
+    });
+
+    test('subagent calls run in their own window and are skipped', () {
+      final out = readings([
+        start({'input_tokens': 100}),
+        start({'input_tokens': 9000}, parent: 'toolu_task'),
+        delta(500, parent: 'toolu_task'),
+      ]);
+      expect(out, hasLength(1));
+      expect(out.single.contextTokens, 100);
+    });
+
+    test('a delta with no call in flight reports nothing', () {
+      expect(readings([delta(40)]), isEmpty);
+    });
+
+    test('compact_boundary is surfaced with its pre-compaction size', () {
+      final compactions = <int?>[];
+      readings([
+        {
+          'type': 'system',
+          'subtype': 'compact_boundary',
+          'compact_metadata': {'trigger': 'auto', 'pre_tokens': 187000},
+        },
+        {'type': 'system', 'subtype': 'compact_boundary'},
+      ], compactions: compactions);
+      expect(compactions, [187000, null]);
+    });
+  });
 }
