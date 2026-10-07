@@ -18,6 +18,12 @@
 # Windows checkout disagree with every other host.
 *.scm   text eol=lf
 
+# Dependency patches (patches/*.patch) are byte-exact diffs that patchwork
+# `git apply --check`s against the LF sources in the pub cache. A CRLF checkout
+# turns every context line into a mismatch ("patch does not apply" on the
+# Windows runners), so never convert them.
+*.patch -text
+
 # Windows-native scripts keep CRLF.
 *.bat   text eol=crlf
 *.cmd   text eol=crlf

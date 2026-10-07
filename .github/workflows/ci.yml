@@ -145,6 +145,8 @@ jobs:
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
+        with:
+          linux-desktop-deps: "true"
 
       - name: Select shard
         env:
@@ -208,6 +210,8 @@ jobs:
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
+        with:
+          linux-desktop-deps: "true"
 
       - name: Test ${{ matrix.runner }} packages
         shell: bash
@@ -339,6 +343,8 @@ jobs:
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
+        with:
+          linux-desktop-deps: "true"
 
       - name: Restore natives cache
         id: natives-cache

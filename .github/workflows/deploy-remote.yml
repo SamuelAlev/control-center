@@ -34,6 +34,11 @@ jobs:
         with:
           egress-policy: block
           allowed-endpoints: >
+            *.archive.ubuntu.com:80
+            archive.ubuntu.com:443
+            esm.ubuntu.com:443
+            security.ubuntu.com:443
+            security.ubuntu.com:80
             github.com:443
             pub.dev:443
             storage.googleapis.com:443
@@ -49,6 +54,9 @@ jobs:
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
+        with:
+          # cnativeapi's build hook (tool/ scripts and root tests build native assets).
+          linux-desktop-deps: "true"
 
       - name: Stamp build identity
         run: |
