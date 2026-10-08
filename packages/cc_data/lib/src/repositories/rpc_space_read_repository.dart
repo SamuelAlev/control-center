@@ -26,8 +26,13 @@ class RpcSpaceReadRepository implements SpaceReadRepository {
   Future<void> markSpaceRead(
     String workspaceId,
     String spaceId,
-    String userId,
-  ) => _remote.markSpaceRead(workspaceId, spaceId);
+    String userId, {
+    String? conversationId,
+  }) => _remote.markSpaceRead(
+    workspaceId,
+    spaceId,
+    conversationId: conversationId,
+  );
 
   @override
   Stream<DateTime?> watchUserLastReadAt(

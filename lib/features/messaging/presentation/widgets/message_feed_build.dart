@@ -57,9 +57,13 @@ extension _BuildMethods on _SpaceMessageFeedState {
           _didInitialLanding = true;
           _lastNewestId = messages.last.id;
           _lastNewestAt = messages.last.createdAt;
+          // Opening the conversation lands on its newest message, which reads
+          // it: the stamp clears its notifications from the bell. The divider
+          // keeps the snapshot taken above, so it still marks what was new.
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               _landOnLiveEdge();
+              _stampCursor();
             }
           });
         }

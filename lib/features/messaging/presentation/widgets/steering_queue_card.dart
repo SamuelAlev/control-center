@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/file_reference.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -105,9 +106,24 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
                     onSubmitted: (_) => _commitEdit(),
                     hintText: l10n.editSteeringCard,
                   )
-                : Text(
-                    widget.card.content,
-                    style: TextStyle(fontSize: 13, color: ds.textSecondary),
+                : Row(
+                    children: [
+                      if (widget.card.attachments.isNotEmpty) ...[
+                        Icon(AppIcons.image, size: 14, color: ds.textTertiary),
+                        const SizedBox(width: AppSpacing.xs),
+                      ],
+                      Expanded(
+                        child: Text(
+                          _displayText(widget.card),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ds.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -142,5 +158,15 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
         ],
       ),
     );
+  }
+
+  /// The card's text as it reads: attachment references by name, and the
+  /// names alone for a card that is only attachments.
+  static String _displayText(Message card) {
+    final text = expandFileRefs(card.content, (name) => name).trim();
+    if (text.isNotEmpty) {
+      return text;
+    }
+    return [for (final a in card.attachments) a.name].join(', ');
   }
 }

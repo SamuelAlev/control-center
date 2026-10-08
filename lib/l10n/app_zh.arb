@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "问题 {index} / {count}",
   "agentQuestionSkip": "跳过",
   "agentQuestionSkippedLabel": "已跳过",
+  "agentQuestionTimedOutLabel": "已超时",
+  "agentQuestionTimeLeft": "剩余回答时间",
   "agentQuestionFreeformOptionHint": "用你自己的话描述…",
   "reviewRequested": "已请求评审",
   "connectGitHubHint": "登录 GitHub，或在「设置 → 工作区 → 个人资料与身份 → 代码托管」中添加令牌",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "已将 {path} 标记为未查看",
   "prLineChangesSemantics": "新增行数：{additions}，删除行数：{deletions}",
   "closeTabNamed": "关闭{tab}",
-  "threadCommentCount": "{count, plural, other{{count} 条评论}}"
+  "threadCommentCount": "{count, plural, other{{count} 条评论}}",
+  "notificationAgentAwaitingInput": "智能体在等你",
+  "notifyAgentAwaitingInput": "当智能体需要你的批准、回答或可用的凭据时",
+  "notificationAgentNeedsApproval": "{agent} 需要你的批准",
+  "notificationAgentNeedsApprovalUnnamed": "有智能体需要你的批准",
+  "notificationAgentAskedQuestion": "{agent} 有一个问题",
+  "notificationAgentAskedQuestionUnnamed": "有智能体提出了问题",
+  "notificationAgentBlockedOnCredential": "{agent} 因凭据问题被阻塞",
+  "notificationAgentBlockedOnCredentialUnnamed": "有智能体因凭据问题被阻塞"
 }

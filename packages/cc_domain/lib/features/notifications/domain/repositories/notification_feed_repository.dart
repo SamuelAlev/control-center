@@ -62,4 +62,19 @@ abstract interface class NotificationFeedRepository {
   /// Hides ONE item from [userId]'s list, and marks it read in the same write
   /// — a deleted row must not keep the bell badged.
   Future<void> dismissItem(String workspaceId, String userId, String itemId);
+
+  /// Marks read, for [userId], the message notifications from
+  /// [conversationId] in [spaceId] — reading a conversation acknowledges what
+  /// the bell said about it. An explicit "mark as unread" survives. The stamp
+  /// is the server clock.
+  ///
+  /// Host-side only: the host calls it while stamping the space read cursor
+  /// (`space_read.markSpaceRead` with a `conversation_id`), so there is no op
+  /// of its own for a client to reach.
+  Future<void> markConversationMessagesRead(
+    String workspaceId,
+    String userId, {
+    required String spaceId,
+    required String conversationId,
+  });
 }

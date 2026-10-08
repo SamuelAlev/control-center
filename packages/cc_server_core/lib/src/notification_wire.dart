@@ -5,6 +5,7 @@
 // rendered, so the client-side frame mapper treats both the same.
 library;
 
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
@@ -365,3 +366,19 @@ NotificationFrame? rigClosedFrame(RigClosedEvent event) {
     },
   );
 }
+
+/// An agent stopped and is waiting on a human: an approval, a question or a
+/// credential. The client names the agent and says which, and links to the
+/// space where the wait can be answered.
+NotificationFrame agentAwaitingInputFrame(AgentAwaitingInput event) => (
+  method: 'notifications/agent_awaiting_input',
+  params: {
+    'workspace_id': event.workspaceId,
+    'kind': event.kind.wire,
+    'summary': event.summary,
+    if (event.spaceId != null) 'space_id': event.spaceId,
+    if (event.conversationId != null) 'conversation_id': event.conversationId,
+    if (event.agentId != null) 'agent_id': event.agentId,
+    if (event.agentName != null) 'agent_name': event.agentName,
+  },
+);

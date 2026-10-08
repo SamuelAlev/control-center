@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Kérdés: {index} / {count}",
   "agentQuestionSkip": "Kihagyás",
   "agentQuestionSkippedLabel": "Kihagyva",
+  "agentQuestionTimedOutLabel": "Lejárt az idő",
+  "agentQuestionTimeLeft": "Válaszadásra hátralévő idő",
   "agentQuestionFreeformOptionHint": "Írja le saját szavaival…",
   "reviewRequested": "Átnézést kértek",
   "connectGitHubHint": "Jelentkezzen be a GitHubra, vagy adjon hozzá tokent: Beállítások → Munkaterület → Profil és identitás → Kódtárhely",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} nem megtekintettként megjelölve",
   "prLineChangesSemantics": "Hozzáadott sorok: {additions}, eltávolított sorok: {deletions}",
   "closeTabNamed": "{tab} bezárása",
-  "threadCommentCount": "{count, plural, other{{count} megjegyzés}}"
+  "threadCommentCount": "{count, plural, other{{count} megjegyzés}}",
+  "notificationAgentAwaitingInput": "Egy ügynök Önre vár",
+  "notifyAgentAwaitingInput": "Ha egy ügynöknek az Ön jóváhagyására, válaszára vagy működő hitelesítő adatokra van szüksége",
+  "notificationAgentNeedsApproval": "{agent} az Ön jóváhagyására vár",
+  "notificationAgentNeedsApprovalUnnamed": "Egy ügynök az Ön jóváhagyására vár",
+  "notificationAgentAskedQuestion": "{agent} kérdést tett fel",
+  "notificationAgentAskedQuestionUnnamed": "Egy ügynök kérdést tett fel",
+  "notificationAgentBlockedOnCredential": "{agent} hitelesítő adatok miatt elakadt",
+  "notificationAgentBlockedOnCredentialUnnamed": "Egy ügynök hitelesítő adatok miatt elakadt"
 }

@@ -3834,6 +3834,8 @@
   "agentQuestionProgress": "Question {index} sur {count}",
   "agentQuestionSkip": "Ignorer",
   "agentQuestionSkippedLabel": "Ignorée",
+  "agentQuestionTimedOutLabel": "Délai expiré",
+  "agentQuestionTimeLeft": "Temps restant pour répondre",
   "agentQuestionFreeformOptionHint": "Décrivez-le avec vos mots…",
   "reviewRequested": "Révision demandée",
   "connectGitHubHint": "Connectez-vous à GitHub ou ajoutez un jeton dans Paramètres → Espace de travail → Profil et identité → Hébergement de code",
@@ -8000,5 +8002,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} marqué comme non vu",
   "prLineChangesSemantics": "Lignes ajoutées : {additions}, lignes supprimées : {deletions}",
   "closeTabNamed": "Fermer {tab}",
-  "threadCommentCount": "{count, plural, =1{1 commentaire} other{{count} commentaires}}"
+  "threadCommentCount": "{count, plural, =1{1 commentaire} other{{count} commentaires}}",
+  "notificationAgentAwaitingInput": "Un agent vous attend",
+  "notifyAgentAwaitingInput": "Lorsqu'un agent a besoin de votre approbation, d'une réponse ou d'identifiants valides",
+  "notificationAgentNeedsApproval": "{agent} a besoin de votre approbation",
+  "notificationAgentNeedsApprovalUnnamed": "Un agent a besoin de votre approbation",
+  "notificationAgentAskedQuestion": "{agent} a une question",
+  "notificationAgentAskedQuestionUnnamed": "Un agent a une question",
+  "notificationAgentBlockedOnCredential": "{agent} est bloqué par des identifiants",
+  "notificationAgentBlockedOnCredentialUnnamed": "Un agent est bloqué par des identifiants"
 }

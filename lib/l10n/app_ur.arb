@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "سوال {index} از {count}",
   "agentQuestionSkip": "چھوڑیں",
   "agentQuestionSkippedLabel": "چھوڑ دیا گیا",
+  "agentQuestionTimedOutLabel": "وقت ختم ہو گیا",
+  "agentQuestionTimeLeft": "جواب دینے کے لیے باقی وقت",
   "agentQuestionFreeformOptionHint": "اپنے الفاظ میں بیان کریں…",
   "reviewRequested": "ریویو کی درخواست",
   "connectGitHubHint": "GitHub میں سائن اِن کریں یا ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں ٹوکن شامل کریں",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} نہ دیکھا ہوا کے طور پر نشان زد",
   "prLineChangesSemantics": "شامل کی گئی لائنیں: {additions}، ہٹائی گئی لائنیں: {deletions}",
   "closeTabNamed": "{tab} بند کریں",
-  "threadCommentCount": "{count, plural, =1{1 تبصرہ} other{{count} تبصرے}}"
+  "threadCommentCount": "{count, plural, =1{1 تبصرہ} other{{count} تبصرے}}",
+  "notificationAgentAwaitingInput": "ایجنٹ آپ کا منتظر ہے",
+  "notifyAgentAwaitingInput": "جب ایجنٹ کو آپ کی منظوری، جواب یا درست اسناد درکار ہوں",
+  "notificationAgentNeedsApproval": "{agent} کو آپ کی منظوری درکار ہے",
+  "notificationAgentNeedsApprovalUnnamed": "ایجنٹ کو آپ کی منظوری درکار ہے",
+  "notificationAgentAskedQuestion": "{agent} کا ایک سوال ہے",
+  "notificationAgentAskedQuestionUnnamed": "ایجنٹ کا ایک سوال ہے",
+  "notificationAgentBlockedOnCredential": "{agent} اسناد کی وجہ سے رکا ہوا ہے",
+  "notificationAgentBlockedOnCredentialUnnamed": "ایجنٹ اسناد کی وجہ سے رکا ہوا ہے"
 }

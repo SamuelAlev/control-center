@@ -1,8 +1,8 @@
 ---
 title: 領域事件
-description: 全部 53 個領域事件的完整目錄、它們的載荷，以及消費這些事件的伺服器端訂閱方。
+description: 全部 54 個領域事件的完整目錄、它們的載荷，以及消費這些事件的伺服器端訂閱方。
 slug: zh-HK/手冊/參考/領域事件
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## 事件匯流排
@@ -17,7 +17,7 @@ JSON-RPC 訊框轉發出去，並依工作區成員關係逐一篩選每個訂�
 
 | 指標                                                        | 數量                                        |
 | ----------------------------------------------------------- | ------------------------------------------- |
-| 具體事件類別                                                | 53                                          |
+| 具體事件類別                                                | 54                                          |
 | 來源檔案（`packages/cc_domain/lib/core/domain/events/`）    | 14（另有 `domain_event_bus.dart`）          |
 | 從不直接發佈的抽象基底                                      | 1（`TaskLifecycleEvent`，一個 sealed 階層） |
 
@@ -29,6 +29,7 @@ JSON-RPC 訊框轉發出去，並依工作區成員關係逐一篩選每個訂�
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 建立工作區時                                            |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 代理完成一次執行（成功或失敗）                          |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 代理開始等待人手處理：一項核准、一個 `ask_user` 問題，或一次因憑證而被擱置的執行（`kind` 為 `approval`、`question` 或 `credential`） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 註冊程式庫時；會觸發背景程式碼索引                      |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 安裝或更新技能時，並附帶其供應鏈掃描判定        |
 
@@ -199,8 +200,8 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent`——以淺白用語在驅動代理的操控通道上注入一則提示    |
 | `StaleReviewWatcher`                | `PrHeadChanged`——僅當被取代的提交存在已完成的審查時，才發佈 `ReviewBecameStale`                     |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted`——對外的 PR 對話回覆                                                             |
-| `NotificationFeedRecorder`          | 下列二十一個通知類別事件                                                                            |
-| `RemoteEventForwarder`              | 上述二十一個，加上 `TicketReassigned` 及每個 `TaskLifecycleEvent`。三個成員關係事件只會使其按工作區的成員關係快取失效；它們不會以訊框轉發 |
+| `NotificationFeedRecorder`          | 下列二十二個通知類別事件                                                                            |
+| `RemoteEventForwarder`              | 上述二十二個，加上 `TicketReassigned` 及每個 `TaskLifecycleEvent`。三個成員關係事件只會使其按工作區的成員關係快取失效；它們不會以訊框轉發 |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`——移除該使用者已掛載的工作區訂閱；Socket 保持開啟                           |
 
 `TicketAssigned` 既是稽核與通知訊號，也是管線觸發器。指派給代理會記錄擁有權，但
@@ -218,13 +219,14 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 `RpcNotificationMapper` → `mapNotificationFrame` 會把訊框轉成
 `AppNotification`。
 
-通知類別恰好有**十六個**。有幾個事件會對應到多於一種傳輸方法，因為訊框承載的
+通知類別恰好有**十七個**。有幾個事件會對應到多於一種傳輸方法，因為訊框承載的
 是變化方向（失敗還是已恢復），而類別承載的是問題本身（「CI 現在怎麼了？」）。
 
 | 類別                   | 來源事件                  | 傳輸方法                                                                 |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`（提及你）                                    |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`，未提及你）                |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                          |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                    |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                             |
@@ -248,6 +250,10 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 測試機的接管訊框不會回送給取得控制權的那個人；釋放則不經過篩選（事件不會記錄
 是誰放手）；而且只有 `backendFailure` 關閉會產生 `rig_closed` 訊框——其他原因
 不是被請求的，就是已由回收訊框涵蓋。
+
+`AgentAwaitingInput` 由 `AgentAwaitingInputPublisher` 發佈：它會監察核准登記及
+憑證封鎖登記中的新項目，並由 `AgentQuestionService` 告知每個 `ask_user` 問題。
+一次等待就是一個事件；等待結束時不會發佈任何事件。
 
 五個自己提交的 PR 類別都攜帶 `forUserId`，因此它們會送達作者，而不是工作區內的
 每個人。

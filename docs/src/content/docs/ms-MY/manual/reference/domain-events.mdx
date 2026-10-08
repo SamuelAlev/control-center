@@ -1,8 +1,8 @@
 ---
 title: Acara domain
-description: Katalog lengkap 53 acara domain, muatannya dan pelanggan di pihak pelayan yang menggunakannya.
+description: Katalog lengkap 54 acara domain, muatannya dan pelanggan di pihak pelayan yang menggunakannya.
 slug: ms-MY/manual-pengguna/rujukan/acara-domain
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Bas acara
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Ukuran                                                     | Bilangan                                    |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Kelas acara konkrit                                         | 53                                          |
+| Kelas acara konkrit                                         | 54                                          |
 | Fail sumber (`packages/cc_domain/lib/core/domain/events/`)  | 14 (serta `domain_event_bus.dart`)          |
 | Asas abstrak yang tidak pernah diterbitkan secara langsung  | 1 (`TaskLifecycleEvent`, satu hierarki tertutup) |
 
@@ -25,6 +25,7 @@ Setiap acara dalam katalog di bawah berada dalam direktori yang sama itu; tiada 
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Ruang kerja dicipta                                     |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Ejen menamatkan satu larian (berjaya atau gagal)        |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Ejen mula menunggu manusia: kelulusan, soalan `ask_user` atau larian yang tertahan pada kelayakan (`kind` ialah `approval`, `question` atau `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Repo didaftarkan; mencetuskan pengindeksan kod latar belakang |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Kemahiran dipasang atau dikemas kini, sambil membawa keputusan imbasan rantaian bekalan |
 
@@ -183,8 +184,8 @@ Setiap pelanggan di bawah dibina dalam `runCcServer` (atau perkhidmatan yang dib
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — menyuntik notis dalam bahasa mudah ke lorong pemanduan ejen pemandunya |
 | `StaleReviewWatcher`                | `PrHeadChanged` — menerbitkan `ReviewBecameStale` hanya apabila wujud semakan selesai bagi commit yang digantikan |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — balasan perbualan PR keluar                                                    |
-| `NotificationFeedRecorder`          | Kedua puluh satu acara kelas pemberitahuan di bawah                                                  |
-| `RemoteEventForwarder`              | Kedua puluh satu itu serta `TicketReassigned` dan setiap `TaskLifecycleEvent`. Tiga acara keahlian itu hanya membatalkan kesahihan cache keahlian bagi setiap ruang kerjanya; ia tidak dimajukan sebagai bingkai |
+| `NotificationFeedRecorder`          | Kedua puluh dua acara kelas pemberitahuan di bawah                                                  |
+| `RemoteEventForwarder`              | Kedua puluh dua itu serta `TicketReassigned` dan setiap `TaskLifecycleEvent`. Tiga acara keahlian itu hanya membatalkan kesahihan cache keahlian bagi setiap ruang kerjanya; ia tidak dimajukan sebagai bingkai |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — menggugurkan langganan ruang kerja yang dilampirkan oleh pengguna itu; soket kekal terbuka |
 
 `TicketAssigned` ialah isyarat audit dan pemberitahuan serta pencetus pipeline. Penugasan kepada ejen merekodkan pemilikan dan tidak memulakan sebarang larian — tiada penghantar tiket. Penugasan kepada pasukan (`assignedTeamId` ditetapkan) ialah pengecualiannya: `TeamRoutingService` menghantar ketua pasukan.
@@ -195,12 +196,13 @@ Setiap pelanggan di bawah dibina dalam `runCcServer` (atau perkhidmatan yang dib
 
 Di pelayan, `NotificationFeedRecorder` dan `RemoteEventForwarder` menukar acara ini menjadi bingkai wayar `notifications/*` (`notification_wire.dart`). Di klien, `RpcNotificationMapper` → `mapNotificationFrame` menukar bingkai menjadi `AppNotification`.
 
-Terdapat tepat **enam belas** kategori pemberitahuan. Beberapa acara memetakan kepada lebih daripada satu kaedah wayar, kerana bingkai membawa tepi itu (gagal berbanding pulih) manakala kategori membawa soalan ("apa yang sedang CI lakukan?").
+Terdapat tepat **tujuh belas** kategori pemberitahuan. Beberapa acara memetakan kepada lebih daripada satu kaedah wayar, kerana bingkai membawa tepi itu (gagal berbanding pulih) manakala kategori membawa soalan ("apa yang sedang CI lakukan?").
 
 | Kategori               | Acara sumber              | Kaedah wayar                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (menyebut anda)                       |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, tidak menyebut anda) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -226,6 +228,12 @@ mengambil alihnya, pelepasan tidak ditapis (acara tidak merekod siapa yang
 melepaskannya), dan hanya penutupan `backendFailure` menghasilkan bingkai
 `rig_closed` — sebab-sebab lain sama ada diminta atau sudah diliputi oleh
 bingkai penuaian.
+
+`AgentAwaitingInput` diterbitkan oleh `AgentAwaitingInputPublisher`, yang
+memerhati daftar kelulusan dan daftar sekatan kelayakan untuk entri baharu, dan
+dimaklumkan tentang setiap soalan `ask_user` oleh `AgentQuestionService`. Satu
+penantian ialah satu acara; tiada apa-apa diterbitkan apabila penantian
+berakhir.
 
 Kelima-lima kategori PR yang ditulis sendiri membawa `forUserId`, jadi ia sampai kepada penulis dan bukan kepada semua orang dalam ruang kerja.
 

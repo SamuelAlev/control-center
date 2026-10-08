@@ -7022,6 +7022,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Dilangkau';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Masa tamat';
+
+  @override
+  String get agentQuestionTimeLeft => 'Masa yang tinggal untuk menjawab';
+
+  @override
   String get agentQuestionFreeformOptionHint =>
       'Terangkan dengan kata-kata anda…';
 
@@ -15270,4 +15276,37 @@ class AppLocalizationsMs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Ejen menunggu anda';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Apabila ejen memerlukan kelulusan, jawapan atau kelayakan yang berfungsi daripada anda';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent memerlukan kelulusan anda';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Ejen memerlukan kelulusan anda';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent ada soalan';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Ejen ada soalan';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent tersekat kerana kelayakan';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Ejen tersekat kerana kelayakan';
 }

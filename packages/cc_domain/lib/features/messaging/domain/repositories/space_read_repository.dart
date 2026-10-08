@@ -15,7 +15,17 @@ abstract class SpaceReadRepository {
   /// [workspaceId] is required and names the workspace the caller validated
   /// [spaceId] against; the space id resolves only inside it, so a cursor
   /// in another workspace can never be stamped.
-  Future<void> markSpaceRead(String workspaceId, String spaceId, String userId);
+  ///
+  /// [conversationId] names the conversation the user actually read. The
+  /// cursor itself stays per space; the host uses it to mark that
+  /// conversation's message notifications read too. Without it (merely
+  /// selecting a space) the bell is left alone.
+  Future<void> markSpaceRead(
+    String workspaceId,
+    String spaceId,
+    String userId, {
+    String? conversationId,
+  });
 
   /// Watches [userId]'s read cursor for [spaceId] within [workspaceId] (null
   /// when the space has never been opened by that user).

@@ -183,6 +183,10 @@ class CcServer {
   /// reclaimed. Disposed with the other long-lived listeners.
   RigEventListener? _rigEventListener;
   NotificationFeedRecorder? _notificationFeedRecorder;
+
+  /// Raises "an agent is waiting on you" from pending approvals, parked runs
+  /// and questions. Disposed with the feed recorder it feeds.
+  AgentAwaitingInputPublisher? _agentAwaitingInput;
   AgentPresenceSynthesizer? _agentPresenceSynthesizer;
 
   /// Keeps every checkout's code-graph partition current (initial index on
@@ -336,6 +340,7 @@ class CcServer {
       await _checkerListener?.stop();
       _worktreeGcListener?.dispose();
       await _rigEventListener?.dispose();
+      await _agentAwaitingInput?.dispose();
       await _notificationFeedRecorder?.dispose();
       await _codeGraphWatch?.dispose();
       // Native watchers over every workspace's skills dir: arming is O(1) but

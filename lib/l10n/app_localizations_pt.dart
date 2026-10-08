@@ -7054,6 +7054,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Pulada';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Tempo esgotado';
+
+  @override
+  String get agentQuestionTimeLeft => 'Tempo restante para responder';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Descreva com suas palavras…';
 
   @override
@@ -15331,6 +15337,40 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Um agente está esperando você';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Quando um agente precisa da sua aprovação, de uma resposta ou de uma credencial válida';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent precisa da sua aprovação';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Um agente precisa da sua aprovação';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent tem uma pergunta';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Um agente tem uma pergunta';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent está bloqueado por uma credencial';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Um agente está bloqueado por uma credencial';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_persistence/database/tables/notification_feed_table.dart';
 import 'package:cc_persistence/database/tables/notification_item_states_table.dart';
 import 'package:cc_persistence/database/tables/notification_read_marks_table.dart';
@@ -24,6 +26,9 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// How many feed rows a workspace retains; older rows are pruned on insert.
   static const int retainedRows = 200;
+
+  /// The feed method a space message is recorded under.
+  static const String messageReceivedMethod = 'notifications/message_received';
 
   /// Watches the newest [limit] feed items, most-recent-first.
   Stream<List<NotificationFeedTableData>> watchRecent(
@@ -163,6 +168,80 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
           NotificationItemStatesTableCompanion(readAt: Value(readAt)),
     ),
   );
+
+  /// Marks read, for [userId], every `notifications/message_received` item
+  /// from [conversationId] in [spaceId] recorded at or before [readAt] — the
+  /// bell catching up with a conversation the user just read.
+  ///
+  /// An item whose frame carries no `conversation_id` predates the
+  /// space/conversation split and is matched on [spaceId] alone. Items the
+  /// read watermark already covers are skipped, and an existing per-item row
+  /// is never touched: it is either read already, dismissed, or an explicit
+  /// "mark as unread" that reading the conversation must not overrule.
+  Future<void> markConversationMessagesRead(
+    String workspaceId,
+    String userId, {
+    required String spaceId,
+    required String conversationId,
+    required DateTime readAt,
+  }) => transaction(() async {
+    final mark =
+        await (select(notificationReadMarksTable)..where(
+              (t) =>
+                  t.workspaceId.equals(workspaceId) & t.userId.equals(userId),
+            ))
+            .getSingleOrNull();
+    final lastSeenAt = mark?.lastSeenAt;
+    final query = select(notificationFeedTable)
+      ..where(
+        (t) =>
+            t.workspaceId.equals(workspaceId) &
+            t.method.equals(messageReceivedMethod) &
+            t.createdAt.isSmallerOrEqualValue(readAt),
+      );
+    if (lastSeenAt != null) {
+      query.where((t) => t.createdAt.isBiggerThanValue(lastSeenAt));
+    }
+    // The feed is capped at [retainedRows], so matching the JSON params here
+    // is cheaper than teaching SQL the frame shape.
+    final itemIds = [
+      for (final row in await query.get())
+        if (_isFromConversation(row.paramsJson, spaceId, conversationId))
+          row.id,
+    ];
+    if (itemIds.isEmpty) {
+      return;
+    }
+    await batch((b) {
+      b.insertAll(notificationItemStatesTable, [
+        for (final itemId in itemIds)
+          NotificationItemStatesTableCompanion.insert(
+            workspaceId: workspaceId,
+            userId: userId,
+            itemId: itemId,
+            readAt: Value(readAt),
+          ),
+      ], mode: InsertMode.insertOrIgnore);
+    });
+  });
+
+  static bool _isFromConversation(
+    String paramsJson,
+    String spaceId,
+    String conversationId,
+  ) {
+    final Object? params;
+    try {
+      params = jsonDecode(paramsJson);
+    } on FormatException {
+      return false;
+    }
+    if (params is! Map || params['space_id'] != spaceId) {
+      return false;
+    }
+    final itemConversation = params['conversation_id'];
+    return itemConversation == null || itemConversation == conversationId;
+  }
 
   /// Hides a single feed item for a user, stamping it read at the same time —
   /// deleting a notification you never opened must not leave the bell badged

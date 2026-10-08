@@ -149,13 +149,13 @@ class AgentActivityHeader extends ConsumerWidget {
       return own ?? agentId;
     }
     // A subagent reads as "Subagent of <parent>": resolve the parent through the
-    // conversation's own run set rather than a second query.
+    // space's own run set rather than a second query.
     final parentId = run?.parentRunId;
     final parent = parentId == null
         ? null
         : ref
               .watch(
-                runInConversationProvider((
+                runInSpaceProvider((
                   workspaceId: workspaceId,
                   spaceId: spaceId,
                   runId: parentId,

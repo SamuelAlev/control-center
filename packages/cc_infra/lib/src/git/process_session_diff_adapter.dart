@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/session_diff_port.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_domain/features/pr_review/domain/services/scm_path_order.dart';
 import 'package:cc_infra/src/git/git_diff_z_parser.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
 
@@ -14,6 +15,10 @@ import 'package:cc_infra/src/git/working_tree_capture.dart';
 /// sliced per-file by `extractAllFilePatches`. When `headRef` is omitted the
 /// base ref is diffed against the live working tree, which is what "review what
 /// this session changed before I commit" wants.
+///
+/// Every list comes back in VS Code's Source Control order ([compareScmPaths]),
+/// with untracked files mixed in rather than appended, so the panel and the
+/// review pane list the same files in the same order.
 class ProcessSessionDiffAdapter implements SessionDiffPort {
   /// Creates a [ProcessSessionDiffAdapter].
   const ProcessSessionDiffAdapter();
@@ -65,10 +70,10 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
       ...range,
     ], worktreePath);
     if (full.exitCode != 0) {
-      return files;
+      return _scmOrdered(files);
     }
     final patches = extractAllFilePatches(full.stdout);
-    return [
+    return _scmOrdered([
       for (final f in files)
         PrFile(
           filename: f.filename,
@@ -78,7 +83,7 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
           patch: patches[f.filename] ?? '',
           previousFilename: f.previousFilename,
         ),
-    ];
+    ]);
   }
 
   @override
@@ -100,7 +105,10 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     ]);
     final unstagedTracked = await _filesForDiff(worktreePath, const []);
     final untracked = await _untrackedFiles(worktreePath);
-    return (staged: staged, unstaged: [...unstagedTracked, ...untracked]);
+    return (
+      staged: _scmOrdered(staged),
+      unstaged: _scmOrdered([...unstagedTracked, ...untracked]),
+    );
   }
 
   /// Runs the name-status / numstat / full-diff triple for the given `git diff`
@@ -201,6 +209,9 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     }
     return out;
   }
+
+  List<PrFile> _scmOrdered(List<PrFile> files) =>
+      [...files]..sort((a, b) => compareScmPaths(a.filename, b.filename));
 
   Future<bool> _isWorktree(String path) async {
     if (!Directory(path).existsSync()) {

@@ -247,9 +247,18 @@ abstract class McpTool {
       ToolDef(name: name, description: description, inputSchema: inputSchema);
 
   /// Call.
-  Future<CallResult> call(Map<String, dynamic> arguments) async {
+  ///
+  /// [abandoned] completes when the caller stops waiting for the result: it
+  /// cancelled the request or dropped the connection. Null when the transport
+  /// cannot tell.
+  Future<CallResult> call(
+    Map<String, dynamic> arguments, {
+    Future<void>? abandoned,
+  }) async {
     try {
-      return await run(arguments);
+      return abandoned == null
+          ? await run(arguments)
+          : await runUntilAbandoned(arguments, abandoned);
     } catch (e) {
       return CallResult.error('$e');
     }
@@ -257,6 +266,16 @@ abstract class McpTool {
 
   /// Run.
   Future<CallResult> run(Map<String, dynamic> arguments);
+
+  /// Runs knowing when the caller stops waiting.
+  ///
+  /// Most tools finish long before any client gives up and ignore the signal.
+  /// A tool that blocks on a human (`ask_user`) overrides this so the state
+  /// it opened for the caller closes when nobody is left to read the result.
+  Future<CallResult> runUntilAbandoned(
+    Map<String, dynamic> arguments,
+    Future<void> abandoned,
+  ) => run(arguments);
 }
 
 /// Lightweight, transport-agnostic confirmation payload returned by

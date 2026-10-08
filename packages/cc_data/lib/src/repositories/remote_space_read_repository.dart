@@ -18,12 +18,18 @@ class RemoteSpaceReadRepository {
 
   final RemoteRpcClient _client;
 
-  /// Marks the user's read cursor for [spaceId] within [workspaceId] as now.
-  Future<void> markSpaceRead(String workspaceId, String spaceId) =>
-      _client.call('space_read.markSpaceRead', {
-        'workspace_id': workspaceId,
-        'space_id': spaceId,
-      });
+  /// Marks the user's read cursor for [spaceId] within [workspaceId] as now,
+  /// and — when [conversationId] is given — that conversation's message
+  /// notifications read.
+  Future<void> markSpaceRead(
+    String workspaceId,
+    String spaceId, {
+    String? conversationId,
+  }) => _client.call('space_read.markSpaceRead', {
+    'workspace_id': workspaceId,
+    'space_id': spaceId,
+    'conversation_id': ?conversationId,
+  });
 
   /// Live read cursor for the user participant of [spaceId] within
   /// [workspaceId] — a fresh snapshot ([SpaceReadDto]) on every change.

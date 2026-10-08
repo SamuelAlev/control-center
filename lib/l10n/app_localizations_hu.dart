@@ -7046,6 +7046,12 @@ class AppLocalizationsHu extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Kihagyva';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Lejárt az idő';
+
+  @override
+  String get agentQuestionTimeLeft => 'Válaszadásra hátralévő idő';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Írja le saját szavaival…';
 
   @override
@@ -15313,4 +15319,38 @@ class AppLocalizationsHu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Egy ügynök Önre vár';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Ha egy ügynöknek az Ön jóváhagyására, válaszára vagy működő hitelesítő adatokra van szüksége';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent az Ön jóváhagyására vár';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Egy ügynök az Ön jóváhagyására vár';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent kérdést tett fel';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Egy ügynök kérdést tett fel';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent hitelesítő adatok miatt elakadt';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Egy ügynök hitelesítő adatok miatt elakadt';
 }

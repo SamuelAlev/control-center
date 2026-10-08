@@ -7068,6 +7068,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Übersprungen';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Zeit abgelaufen';
+
+  @override
+  String get agentQuestionTimeLeft => 'Verbleibende Zeit zum Antworten';
+
+  @override
   String get agentQuestionFreeformOptionHint =>
       'In eigenen Worten beschreiben…';
 
@@ -15349,4 +15355,38 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agent wartet auf dich';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Wenn ein Agent deine Freigabe, eine Antwort oder funktionierende Zugangsdaten braucht';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent braucht deine Freigabe';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Ein Agent braucht deine Freigabe';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent hat eine Frage';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Ein Agent hat eine Frage';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent hängt an Zugangsdaten fest';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Ein Agent hängt an Zugangsdaten fest';
 }

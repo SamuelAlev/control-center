@@ -1,8 +1,8 @@
 ---
 title: Domain events
-description: Complete catalogue of the 53 domain events, their payloads and the server-side subscribers that consume them.
+description: Complete catalogue of the 54 domain events, their payloads and the server-side subscribers that consume them.
 slug: en-GB/manual/reference/domain-events
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Event bus
@@ -13,7 +13,7 @@ The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publisher
 
 | Measure                                                     | Count                                       |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
+| Concrete event classes                                      | 54                                          |
 | Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
 | Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
 
@@ -25,6 +25,7 @@ Every event in the catalogue below lives in that one directory; there are no dom
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | An agent starts waiting on a human: an approval, an `ask_user` question or a run parked on a credential (`kind` is `approval`, `question` or `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
 
@@ -183,8 +184,8 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
 | `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
+| `NotificationFeedRecorder`          | The twenty-two notification-class events below                                                        |
+| `RemoteEventForwarder`              | Those twenty-two plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
 
 `TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
@@ -195,12 +196,13 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 
 On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+There are exactly **seventeen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
 
 | Category               | Source event              | Wire method                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (mentions you)                        |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, no mention of you) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,11 @@ The rig take-over frame is not delivered back to whoever took the wheel, a
 release is unfiltered (the event does not record who let go), and only a
 `backendFailure` close produces a `rig_closed` frame — the other reasons are
 either requested or already covered by the reap frame.
+
+`AgentAwaitingInput` is published by `AgentAwaitingInputPublisher`, which
+watches the approvals and credential-block registries for new entries and is
+told about each `ask_user` question by `AgentQuestionService`. One wait is one
+event; nothing is published when the wait ends.
 
 The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
 

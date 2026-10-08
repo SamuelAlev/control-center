@@ -6950,6 +6950,12 @@ class AppLocalizationsTh extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'ข้ามแล้ว';
 
   @override
+  String get agentQuestionTimedOutLabel => 'หมดเวลา';
+
+  @override
+  String get agentQuestionTimeLeft => 'เวลาที่เหลือในการตอบ';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'อธิบายด้วยคำของคุณเอง…';
 
   @override
@@ -15107,4 +15113,37 @@ class AppLocalizationsTh extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'เอเจนต์กำลังรอคุณ';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'เมื่อเอเจนต์ต้องการการอนุมัติ คำตอบ หรือข้อมูลรับรองที่ใช้งานได้จากคุณ';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent ต้องการการอนุมัติจากคุณ';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'เอเจนต์ต้องการการอนุมัติจากคุณ';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent มีคำถาม';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'เอเจนต์มีคำถาม';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent ติดขัดเพราะข้อมูลรับรอง';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'เอเจนต์ติดขัดเพราะข้อมูลรับรอง';
 }

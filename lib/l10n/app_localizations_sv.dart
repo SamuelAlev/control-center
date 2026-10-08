@@ -7020,6 +7020,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Överhoppad';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Tiden gick ut';
+
+  @override
+  String get agentQuestionTimeLeft => 'Återstående tid att svara';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Beskriv med egna ord…';
 
   @override
@@ -15264,4 +15270,37 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'En agent väntar på dig';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'När en agent behöver ditt godkännande, ett svar eller fungerande inloggningsuppgifter';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent behöver ditt godkännande';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'En agent behöver ditt godkännande';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent har en fråga';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'En agent har en fråga';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent är blockerad av inloggningsuppgifter';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'En agent är blockerad av inloggningsuppgifter';
 }

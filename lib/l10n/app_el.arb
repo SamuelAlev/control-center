@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Ερώτηση {index} από {count}",
   "agentQuestionSkip": "Παράλειψη",
   "agentQuestionSkippedLabel": "Παραλείφθηκε",
+  "agentQuestionTimedOutLabel": "Έληξε ο χρόνος",
+  "agentQuestionTimeLeft": "Χρόνος που απομένει για απάντηση",
   "agentQuestionFreeformOptionHint": "Περιγράψτε με δικά σας λόγια…",
   "reviewRequested": "Ζητήθηκε ανασκόπηση",
   "connectGitHubHint": "Συνδεθείτε στο GitHub ή προσθέστε token στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "Το {path} σημάνθηκε ως μη προβεβλημένο",
   "prLineChangesSemantics": "Γραμμές που προστέθηκαν: {additions}, γραμμές που αφαιρέθηκαν: {deletions}",
   "closeTabNamed": "Κλείσιμο {tab}",
-  "threadCommentCount": "{count, plural, =1{1 σχόλιο} other{{count} σχόλια}}"
+  "threadCommentCount": "{count, plural, =1{1 σχόλιο} other{{count} σχόλια}}",
+  "notificationAgentAwaitingInput": "Ένας πράκτορας σας περιμένει",
+  "notifyAgentAwaitingInput": "Όταν ένας πράκτορας χρειάζεται την έγκρισή σας, μια απάντηση ή έγκυρα διαπιστευτήρια",
+  "notificationAgentNeedsApproval": "{agent}: χρειάζεται την έγκρισή σας",
+  "notificationAgentNeedsApprovalUnnamed": "Ένας πράκτορας χρειάζεται την έγκρισή σας",
+  "notificationAgentAskedQuestion": "{agent}: έχει μια ερώτηση",
+  "notificationAgentAskedQuestionUnnamed": "Ένας πράκτορας έχει μια ερώτηση",
+  "notificationAgentBlockedOnCredential": "{agent}: μπλοκαρισμένος λόγω διαπιστευτηρίων",
+  "notificationAgentBlockedOnCredentialUnnamed": "Ένας πράκτορας είναι μπλοκαρισμένος λόγω διαπιστευτηρίων"
 }

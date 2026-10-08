@@ -20,13 +20,15 @@ class DaoSpaceReadRepository implements SpaceReadRepository {
 
   // The cursor row is keyed by (spaceId, userId) within the workspace's own
   // database file, so a foreign space id resolves to nothing rather than to
-  // another workspace's cursor.
+  // another workspace's cursor. [conversationId] only matters to the
+  // notification acknowledgement the host op performs alongside this.
   @override
   Future<void> markSpaceRead(
     String workspaceId,
     String spaceId,
-    String userId,
-  ) => _dao(workspaceId).markSpaceRead(spaceId, userId);
+    String userId, {
+    String? conversationId,
+  }) => _dao(workspaceId).markSpaceRead(spaceId, userId);
 
   @override
   Stream<DateTime?> watchUserLastReadAt(

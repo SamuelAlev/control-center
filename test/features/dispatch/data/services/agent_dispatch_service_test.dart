@@ -262,6 +262,7 @@ class _FakeRepoProvisioner implements RepoWorkspaceProvisionerPort {
   _FakeRepoProvisioner(this.cannedDir);
   final String cannedDir;
   bool ensureCalled = false;
+  String? lastConversationId;
 
   @override
   Future<String> ensureSpaceWorkspace({
@@ -269,6 +270,7 @@ class _FakeRepoProvisioner implements RepoWorkspaceProvisionerPort {
     required String spaceId,
     required String agentSlug,
     required String fallbackDir,
+    String? conversationId,
     String? agentConfigDir,
     String? ticketId,
     String? ticketKey,
@@ -284,6 +286,7 @@ class _FakeRepoProvisioner implements RepoWorkspaceProvisionerPort {
     CancellationToken? cancel,
   }) async {
     ensureCalled = true;
+    lastConversationId = conversationId;
     return cannedDir;
   }
 
@@ -1096,6 +1099,29 @@ void main() {
         );
 
         expect(provisioner.ensureCalled, isTrue);
+      },
+    );
+
+    // The overlay holds the run's `.mcp.json` (stamped with its conversation)
+    // and the repo-skill projection. Keyed by space alone, a second
+    // conversation's run waited on the path lock until the first one finished.
+    test(
+      'dispatch keys the overlay by conversation',
+      timeout: const Timeout.factor(2),
+      () async {
+        final provisioner = _FakeRepoProvisioner('/provisioned/work');
+        final service = createService(repoProvisioner: provisioner);
+
+        await service.dispatch(
+          agentId: 'agent-1',
+          prompt: 'do work',
+          workingDirectory: '/fallback/work',
+          workspaceId: 'ws-1',
+          spaceId: 'ch-1',
+          conversationId: 'conv-2',
+        );
+
+        expect(provisioner.lastConversationId, 'conv-2');
       },
     );
 

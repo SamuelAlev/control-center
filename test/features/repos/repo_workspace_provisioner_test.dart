@@ -1383,6 +1383,61 @@ void main() {
       },
     );
 
+    // The overlay carries per-run state (`.mcp.json` stamped with the
+    // conversation, the repo-skill projection in AGENTS.md and
+    // `.claude/skills`). One overlay per agent made two conversations rewrite
+    // each other's files, so dispatch queued them on the path lock instead.
+    test(
+      'one agent in two conversations gets two overlays over the same repos',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'provisioner_test_two_conversations_',
+        );
+        try {
+          final fs = FakeFilesystemPort()..baseDir = tempDir.path;
+          final p = _build(
+            registry: _FakeRegistry(),
+            isolation: _FakeIsolation(),
+            repos: [_makeRepo()],
+            filesystem: fs,
+          );
+
+          final cwdA = await p.ensureSpaceWorkspace(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+            conversationId: 'conv-a',
+            fallbackDir: '/fallback',
+          );
+          final cwdB = await p.ensureSpaceWorkspace(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+            conversationId: 'conv-b',
+            fallbackDir: '/fallback',
+          );
+
+          final agents = '${tempDir.path}/w-1/spaces/ch/agents';
+          expect(cwdA, '$agents/dev--conv-a');
+          expect(cwdB, '$agents/dev--conv-b');
+          // Same depth as the bare-slug overlay, so `../../repos` still
+          // resolves to the space's one shared worktree directory.
+          expect(
+            Directory(path.join(cwdA, 'repos')).resolveSymbolicLinksSync(),
+            Directory(
+              '${tempDir.path}/w-1/spaces/ch/repos',
+            ).resolveSymbolicLinksSync(),
+          );
+          expect(
+            await Link(path.join(cwdA, 'repos')).target(),
+            await Link(path.join(cwdB, 'repos')).target(),
+          );
+        } finally {
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
     test('overlay build is idempotent across re-dispatches', () async {
       final tempDir = Directory.systemTemp.createTempSync(
         'provisioner_test_idempotent_',

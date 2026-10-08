@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Вопрос {index} из {count}",
   "agentQuestionSkip": "Пропустить",
   "agentQuestionSkippedLabel": "Пропущено",
+  "agentQuestionTimedOutLabel": "Время истекло",
+  "agentQuestionTimeLeft": "Оставшееся время на ответ",
   "agentQuestionFreeformOptionHint": "Опишите своими словами…",
   "reviewRequested": "Запрошено ревью",
   "connectGitHubHint": "Войдите в GitHub или добавьте токен в Настройки → Рабочее пространство → Профиль и идентичность → Хостинг кода",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} отмечен как непросмотренный",
   "prLineChangesSemantics": "Добавлено строк: {additions}, удалено строк: {deletions}",
   "closeTabNamed": "Закрыть {tab}",
-  "threadCommentCount": "{count, plural, one{{count} комментарий} few{{count} комментария} many{{count} комментариев} other{{count} комментария}}"
+  "threadCommentCount": "{count, plural, one{{count} комментарий} few{{count} комментария} many{{count} комментариев} other{{count} комментария}}",
+  "notificationAgentAwaitingInput": "Агент ждёт вас",
+  "notifyAgentAwaitingInput": "Когда агенту нужно ваше одобрение, ответ или рабочие учётные данные",
+  "notificationAgentNeedsApproval": "{agent} ждёт вашего одобрения",
+  "notificationAgentNeedsApprovalUnnamed": "Агент ждёт вашего одобрения",
+  "notificationAgentAskedQuestion": "У {agent} есть вопрос",
+  "notificationAgentAskedQuestionUnnamed": "У агента есть вопрос",
+  "notificationAgentBlockedOnCredential": "{agent} остановлен из-за учётных данных",
+  "notificationAgentBlockedOnCredentialUnnamed": "Агент остановлен из-за учётных данных"
 }

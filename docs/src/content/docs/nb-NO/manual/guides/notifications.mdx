@@ -2,7 +2,7 @@
 title: Konfigurer varsler
 description: Slå kategorier av eller på, angi Quiet hours og en lyd, og få oversikt over hvilke varsler som når deg hvor.
 slug: nb-NO/handbok/slik-gjor-du/varsler
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Denne veiledningen viser hvordan du konfigurerer varsler og hva hver innstilling
@@ -24,11 +24,12 @@ Telefonklienten har ingen varselflate i det hele tatt.
 
 1. Gå til **Innstillinger → Deg → Varslinger**
 2. La **Slå på varslinger** stå på
-3. Slå av eller på kategoriene du vil ha. Det finnes nøyaktig seksten:
+3. Slå av eller på kategoriene du vil ha. Det finnes nøyaktig sytten:
 
 | Kategori                                | Utløses når                                                                              |
 | --------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Agent ferdig                            | En agent svarte i en kjøring du startet, eller kjøringen mislyktes                       |
+| En agent venter på deg                  | En agent trenger godkjenningen din, har stilt deg et spørsmål eller står fast på påloggingsinformasjon |
 | PR publisert                            | En agent publiserte en PR                                                                |
 | PR sammenslått                          | En PR ble slått sammen                                                                   |
 | Nye meldinger                           | Noen nevnte deg i et område                                                              |
@@ -47,6 +48,12 @@ Telefonklienten har ingen varselflate i det hele tatt.
 
 Alt utenfor denne listen kan det verken varsles om eller filtreres på — det
 finnes ingen «alt annet»-kategori.
+
+**En agent venter på deg** utløses én gang per venting, når ventingen starter:
+en ventende godkjenning (inkludert sandkasse-tillatelser og verktøygodkjenninger
+i Claude Code), et `ask_user`-spørsmål eller en kjøring som holdes tilbake fordi
+påloggingsinformasjonen dens ikke kan betjene den. Varselet åpner området der du
+svarer, og forblir stille mens du allerede ser på det området.
 
 Disse innstillingene følger brukeren din på tvers av enheter, så en telefon og en
 bærbar maskin holder følge. Volumet er det bevisste unntaket og holdes per enhet.

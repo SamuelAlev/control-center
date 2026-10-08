@@ -6993,6 +6993,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Skipped';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Timed out';
+
+  @override
+  String get agentQuestionTimeLeft => 'Time left to answer';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Describe in your own words…';
 
   @override
@@ -15206,6 +15212,39 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agent waiting on you';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'When an agent needs your approval, an answer or a working credential';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent needs your approval';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'An agent needs your approval';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent has a question';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'An agent has a question';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent is blocked on a credential';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'An agent is blocked on a credential';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

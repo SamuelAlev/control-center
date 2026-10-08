@@ -143,6 +143,61 @@ void main() {
       expect(service.isPending('m-4'), isFalse);
     });
 
+    test('reports each posted question so the operator can be told', () async {
+      final asked = <AgentQuestionRequest>[];
+      service = AgentQuestionService(
+        messaging,
+        timeout: const Duration(milliseconds: 10),
+        onAsked: asked.add,
+      );
+      messaging.nextMessageId = 'm-reported';
+      await service.ask(request());
+      expect(asked.single.question, 'Pick one');
+
+      // Nothing is posted without a space, so nothing is reported either.
+      await service.ask(request(spaceId: ''));
+      expect(asked, hasLength(1));
+    });
+
+    test('closes the form when the asker stops waiting', () async {
+      messaging.nextMessageId = 'm-abandoned';
+      final abandoned = Completer<void>();
+      final future = service.ask(request(), abandoned: abandoned.future);
+      await Future<void>.delayed(Duration.zero);
+      expect(service.isPending('m-abandoned'), isTrue);
+
+      abandoned.complete();
+
+      expect(await future, isNull);
+      expect(service.isPending('m-abandoned'), isFalse);
+      final closed = messaging.updatedMessages.single.metadata!;
+      expect(closed[kQuestionAnsweredKey], isTrue);
+      expect(closed[kQuestionExpiredKey], isTrue);
+      // An answer arriving after the close does not reopen the wait.
+      expect(service.resolveFromMetadata('m-abandoned', closed), isFalse);
+    });
+
+    test(
+      'an answer before the asker gives up is not closed as expired',
+      () async {
+        messaging.nextMessageId = 'm-answered';
+        final abandoned = Completer<void>();
+        final future = service.ask(request(), abandoned: abandoned.future);
+        await Future<void>.delayed(Duration.zero);
+        await service.submitAnswer(
+          ws,
+          questionMessage('m-answered'),
+          const AgentQuestionAnswer(selectedLabels: ['A']),
+        );
+        expect((await future)?.selectedLabels, ['A']);
+
+        abandoned.complete();
+        await Future<void>.delayed(Duration.zero);
+        final update = messaging.updatedMessages.single.metadata!;
+        expect(update[kQuestionExpiredKey], isNull);
+      },
+    );
+
     test('Duration.zero waits indefinitely (no timeout)', () async {
       service = AgentQuestionService(messaging, timeout: Duration.zero);
       messaging.nextMessageId = 'm-5';

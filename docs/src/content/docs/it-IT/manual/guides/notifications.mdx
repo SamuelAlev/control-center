@@ -2,7 +2,7 @@
 title: Configura le notifiche
 description: Attiva o disattiva le categorie, imposta un orario di silenzio e un suono e scopri quali notifiche ti arrivano e dove.
 slug: it-IT/manuale/guide/notifiche
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Questa guida ti mostra come configurare le notifiche e che cosa controlla
@@ -25,11 +25,12 @@ notifica.
 
 1. Vai su **Impostazioni → Tu → Notifiche**
 2. Lascia attiva **Abilita notifiche**
-3. Attiva o disattiva le categorie che vuoi. Ce ne sono esattamente sedici:
+3. Attiva o disattiva le categorie che vuoi. Ce ne sono esattamente diciassette:
 
 | Categoria                      | Si attiva quando                                                                     |
 | ------------------------------ | ------------------------------------------------------------------------------------ |
 | Agente completato              | Un agente ha risposto in un'esecuzione avviata da te, oppure l'esecuzione non è riuscita |
+| Un agente ti aspetta           | Un agente ha bisogno della tua approvazione, ti ha fatto una domanda o è fermo su una credenziale |
 | PR pubblicata                  | Un agente ha pubblicato una PR                                                       |
 | PR unita                       | Una PR è stata unita                                                                 |
 | Nuovi messaggi                 | Qualcuno ti ha menzionato in uno spazio                                              |
@@ -48,6 +49,13 @@ notifica.
 
 Tutto ciò che è fuori da questa lista non può essere notificato né filtrato — non
 esiste una categoria «tutto il resto».
+
+**Un agente ti aspetta** si attiva una sola volta per ogni attesa, quando questa
+inizia: un'approvazione in sospeso (comprese le concessioni di esecuzione nel
+sandbox e le approvazioni degli strumenti di Claude Code), una domanda
+`ask_user` o un'esecuzione bloccata perché la sua credenziale non può servirla.
+Apre lo spazio in cui rispondi e resta in silenzio mentre stai già guardando
+quello spazio.
 
 Queste preferenze seguono il tuo utente su tutti i dispositivi, così telefono e
 portatile restano allineati. Il volume è l'eccezione voluta e resta per

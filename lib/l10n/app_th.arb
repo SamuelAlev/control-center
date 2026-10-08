@@ -4107,6 +4107,8 @@
   "agentQuestionProgress": "คำถาม {index} จาก {count}",
   "agentQuestionSkip": "ข้าม",
   "agentQuestionSkippedLabel": "ข้ามแล้ว",
+  "agentQuestionTimedOutLabel": "หมดเวลา",
+  "agentQuestionTimeLeft": "เวลาที่เหลือในการตอบ",
   "agentQuestionFreeformOptionHint": "อธิบายด้วยคำของคุณเอง…",
   "reviewRequested": "ขอรีวิวแล้ว",
   "connectGitHubHint": "ลงชื่อเข้าใช้ GitHub หรือเพิ่มโทเค็นที่ การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด",
@@ -9240,5 +9242,13 @@
   "diffFileMarkedNotViewedAnnouncement": "ทำเครื่องหมาย {path} ว่ายังไม่ได้ดู",
   "prLineChangesSemantics": "บรรทัดที่เพิ่ม: {additions}, บรรทัดที่ลบ: {deletions}",
   "closeTabNamed": "ปิด {tab}",
-  "threadCommentCount": "{count, plural, other{{count} ความคิดเห็น}}"
+  "threadCommentCount": "{count, plural, other{{count} ความคิดเห็น}}",
+  "notificationAgentAwaitingInput": "เอเจนต์กำลังรอคุณ",
+  "notifyAgentAwaitingInput": "เมื่อเอเจนต์ต้องการการอนุมัติ คำตอบ หรือข้อมูลรับรองที่ใช้งานได้จากคุณ",
+  "notificationAgentNeedsApproval": "{agent} ต้องการการอนุมัติจากคุณ",
+  "notificationAgentNeedsApprovalUnnamed": "เอเจนต์ต้องการการอนุมัติจากคุณ",
+  "notificationAgentAskedQuestion": "{agent} มีคำถาม",
+  "notificationAgentAskedQuestionUnnamed": "เอเจนต์มีคำถาม",
+  "notificationAgentBlockedOnCredential": "{agent} ติดขัดเพราะข้อมูลรับรอง",
+  "notificationAgentBlockedOnCredentialUnnamed": "เอเจนต์ติดขัดเพราะข้อมูลรับรอง"
 }

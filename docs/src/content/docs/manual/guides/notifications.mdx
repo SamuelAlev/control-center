@@ -21,11 +21,12 @@ The phone client has no notification surface at all.
 
 1. Go to **Settings → You → Notifications**
 2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+3. Toggle the categories you want. There are exactly seventeen:
 
 | Category                  | Fires when                                                                 |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agent finished            | An agent replied in a run you started, or the run failed                   |
+| Agent waiting on you      | An agent needs your approval, asked you a question, or is parked on a credential |
 | PR published              | An agent published a PR                                                    |
 | PR merged                 | A PR was merged                                                            |
 | New messages              | Someone mentioned you in a space                                           |
@@ -44,6 +45,12 @@ The phone client has no notification surface at all.
 
 Anything outside this list cannot be notified or filtered — there is no
 "everything else" category.
+
+**Agent waiting on you** fires once per wait, when it starts: a pending
+approval (including sandbox exec grants and Claude Code tool approvals), an
+`ask_user` question, or a run held because its credential cannot serve it. It
+opens the space where you answer, and stays quiet while you are already looking
+at that space.
 
 These preferences follow your user across devices, so a phone and a laptop stay
 in step. Volume is the deliberate exception and stays per device.

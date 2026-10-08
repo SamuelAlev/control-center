@@ -146,4 +146,17 @@ class RpcNotificationFeedRepository implements NotificationFeedRepository {
     'workspace_id': workspaceId,
     'item_id': itemId,
   });
+
+  // Reached through `space_read.markSpaceRead`'s `conversation_id` instead:
+  // reading a conversation is what acknowledges it.
+  @override
+  Future<void> markConversationMessagesRead(
+    String workspaceId,
+    String userId, {
+    required String spaceId,
+    required String conversationId,
+  }) => throw UnsupportedError(
+    'conversation acknowledgement is host-side only; '
+    'use SpaceReadRepository.markSpaceRead with a conversationId',
+  );
 }

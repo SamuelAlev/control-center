@@ -6864,6 +6864,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentQuestionSkippedLabel => '건너뜀';
 
   @override
+  String get agentQuestionTimedOutLabel => '시간 초과';
+
+  @override
+  String get agentQuestionTimeLeft => '답변 남은 시간';
+
+  @override
   String get agentQuestionFreeformOptionHint => '직접 설명해 주세요…';
 
   @override
@@ -14917,4 +14923,35 @@ class AppLocalizationsKo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => '에이전트가 기다리는 중';
+
+  @override
+  String get notifyAgentAwaitingInput => '에이전트에게 승인, 답변 또는 유효한 자격 증명이 필요할 때';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent에게 승인이 필요합니다';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed => '에이전트에게 승인이 필요합니다';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent에게 질문이 있습니다';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => '에이전트에게 질문이 있습니다';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent이(가) 자격 증명 문제로 멈췄습니다';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      '에이전트가 자격 증명 문제로 멈췄습니다';
 }

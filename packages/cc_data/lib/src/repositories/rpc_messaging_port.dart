@@ -279,11 +279,13 @@ class RpcMessagingPort implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String content,
+    List<Map<String, dynamic>> attachments = const [],
   }) => _dispatch.enqueueSteering(
     workspaceId: workspaceId,
     spaceId: spaceId,
     conversationId: conversationId,
     content: content,
+    attachments: attachments,
   );
 
   @override

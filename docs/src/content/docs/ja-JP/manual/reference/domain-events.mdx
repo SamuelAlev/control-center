@@ -1,8 +1,8 @@
 ---
 title: ドメインイベント
-description: 53 個のドメインイベント、そのペイロード、およびそれらを消費するサーバー側のサブスクライバーの完全なカタログです。
+description: 54 個のドメインイベント、そのペイロード、およびそれらを消費するサーバー側のサブスクライバーの完全なカタログです。
 slug: ja-JP/マニュアル/リファレンス/ドメインイベント
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## イベントバス
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | 項目                                                        | 数                                          |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| 具象イベントクラス                                          | 53                                          |
+| 具象イベントクラス                                          | 54                                          |
 | ソースファイル（`packages/cc_domain/lib/core/domain/events/`） | 14（および `domain_event_bus.dart`）        |
 | 直接発行されない抽象基底                                    | 1（`TaskLifecycleEvent`、sealed 階層）      |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | ワークスペースが作成されたとき                          |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | エージェントが実行を終了したとき（成功または失敗）      |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | エージェントが人間の対応待ちを開始したとき。承認、`ask_user` の質問、または認証情報で停止した実行（`kind` は `approval`、`question`、`credential` のいずれか） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | リポジトリが登録されたとき。バックグラウンドのコードインデックス作成をトリガーします |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | スキルがインストールまたは更新されたとき。サプライチェーンスキャンの判定を伴います |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent`。駆動しているエージェントのステアリングレーンに平易な言葉の通知を注入します |
 | `StaleReviewWatcher`                | `PrHeadChanged`。置き換えられたコミットに対する完了済みレビューが存在する場合にのみ `ReviewBecameStale` を発行します |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted`。外向きの PR 会話の返信                                                         |
-| `NotificationFeedRecorder`          | 以下の 21 個の通知クラスのイベント                                                                   |
-| `RemoteEventForwarder`              | その 21 個に加えて `TicketReassigned` とすべての `TaskLifecycleEvent`。3 つのメンバーシップイベントは、ワークスペースごとのメンバーシップキャッシュを無効化するだけで、フレームとして転送されません |
+| `NotificationFeedRecorder`          | 以下の 22 個の通知クラスのイベント                                                                   |
+| `RemoteEventForwarder`              | その 22 個に加えて `TicketReassigned` とすべての `TaskLifecycleEvent`。3 つのメンバーシップイベントは、ワークスペースごとのメンバーシップキャッシュを無効化するだけで、フレームとして転送されません |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`。そのユーザーがアタッチしたワークスペース購読を削除します。ソケットは開いたままです |
 
 `TicketAssigned` は監査と通知のシグナルであり、パイプライントリガーでもあります。エージェントへの割り当ては所有権を記録するだけで、実行は開始しません。チケットディスパッチャーは存在しません。チームへの割り当て（`assignedTeamId` が設定されている場合）は例外で、`TeamRoutingService` がチームリーダーをディスパッチします。
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 サーバーでは、`NotificationFeedRecorder` と `RemoteEventForwarder` がこれらのイベントを `notifications/*` ワイヤフレーム（`notification_wire.dart`）に変換します。クライアントでは、`RpcNotificationMapper` → `mapNotificationFrame` がフレームを `AppNotification` に変換します。
 
-通知カテゴリはちょうど **16** 個あります。いくつかのイベントは複数のワイヤメソッドにマッピングされます。フレームがエッジ（失敗か復旧か）を運び、カテゴリが問い（「CI は何をしているか」）を運ぶからです。
+通知カテゴリはちょうど **17** 個あります。いくつかのイベントは複数のワイヤメソッドにマッピングされます。フレームがエッジ（失敗か復旧か）を運び、カテゴリが問い（「CI は何をしているか」）を運ぶからです。
 
 | カテゴリ               | ソースイベント            | ワイヤメソッド                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`（あなたへのメンション）                          |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`、あなたへのメンションなし）     |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 リグのテイクオーバーのフレームは、ハンドルを握った本人には返送されません。解放はフィルタリングされず（イベントは誰が手放したかを記録しません）、`backendFailure` によるクローズだけが `rig_closed` フレームを生成します。それ以外の理由は、要求されたものであるか、回収のフレームですでにカバーされています。
+
+`AgentAwaitingInput` は `AgentAwaitingInputPublisher` が発行します。このパブリッシャーは承認と認証情報ブロックのレジストリを監視して新しいエントリを検出し、`ask_user` の各質問については `AgentQuestionService` から通知を受けます。1 回の待機が 1 つのイベントです。待機が終わったときには何も発行されません。
 
 5 つの自作 PR カテゴリは `forUserId` を保持するため、ワークスペースの全員ではなく作成者に届きます。
 

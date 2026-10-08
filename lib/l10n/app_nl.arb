@@ -3840,6 +3840,8 @@
   "agentQuestionProgress": "Vraag {index} van {count}",
   "agentQuestionSkip": "Overslaan",
   "agentQuestionSkippedLabel": "Overgeslagen",
+  "agentQuestionTimedOutLabel": "Tijd verstreken",
+  "agentQuestionTimeLeft": "Resterende tijd om te antwoorden",
   "agentQuestionFreeformOptionHint": "Beschrijf het in je eigen woorden…",
   "reviewRequested": "Review aangevraagd",
   "connectGitHubHint": "Log in bij GitHub of voeg een token toe in Instellingen → Werkruimte → Profiel en identiteit → Codehosting",
@@ -8006,5 +8008,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} gemarkeerd als niet bekeken",
   "prLineChangesSemantics": "Toegevoegde regels: {additions}, verwijderde regels: {deletions}",
   "closeTabNamed": "{tab} sluiten",
-  "threadCommentCount": "{count, plural, =1{1 opmerking} other{{count} opmerkingen}}"
+  "threadCommentCount": "{count, plural, =1{1 opmerking} other{{count} opmerkingen}}",
+  "notificationAgentAwaitingInput": "Agent wacht op je",
+  "notifyAgentAwaitingInput": "Wanneer een agent je goedkeuring, een antwoord of werkende inloggegevens nodig heeft",
+  "notificationAgentNeedsApproval": "{agent} heeft je goedkeuring nodig",
+  "notificationAgentNeedsApprovalUnnamed": "Een agent heeft je goedkeuring nodig",
+  "notificationAgentAskedQuestion": "{agent} heeft een vraag",
+  "notificationAgentAskedQuestionUnnamed": "Een agent heeft een vraag",
+  "notificationAgentBlockedOnCredential": "{agent} zit vast op inloggegevens",
+  "notificationAgentBlockedOnCredentialUnnamed": "Een agent zit vast op inloggegevens"
 }

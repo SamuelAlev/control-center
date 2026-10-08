@@ -1,8 +1,8 @@
 ---
 title: Доменні події
-description: Повний каталог 53 доменних подій, їхніх корисних навантажень і серверних підписників, які їх споживають.
+description: Повний каталог 54 доменних подій, їхніх корисних навантажень і серверних підписників, які їх споживають.
 slug: uk-UA/керівництво/довідка/доменні-події
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Шина подій
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Показник                                                     | Кількість                                    |
 | ------------------------------------------------------------- | --------------------------------------------- |
-| Конкретні класи подій                                         | 53                                          |
+| Конкретні класи подій                                         | 54                                          |
 | Файли джерел (`packages/cc_domain/lib/core/domain/events/`)   | 14 (плюс `domain_event_bus.dart`)           |
 | Абстрактні бази, які ніколи не публікуються безпосередньо      | 1 (`TaskLifecycleEvent`, ієрархія `sealed`) |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Робочий простір створено                                |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Агент завершує запуск (успішно або з помилкою)          |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Агент починає чекати на людину: схвалення, відповідь на запитання `ask_user` або облікові дані для зупиненого запуску (`kind` — `approval`, `question` або `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Репозиторій зареєстровано; запускає фонову індексацію коду |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Навичку встановлено або оновлено; подія несе вердикт сканування її ланцюга постачання |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — додає повідомлення простою мовою у смугу коригування агента, що керує |
 | `StaleReviewWatcher`                | `PrHeadChanged` — публікує `ReviewBecameStale`, лише коли для заміненого коміту існує завершена перевірка |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — вихідні відповіді в розмові PR                                                 |
-| `NotificationFeedRecorder`          | Двадцять один клас подій сповіщень нижче                                                            |
-| `RemoteEventForwarder`              | Ті самі двадцять один плюс `TicketReassigned` і кожен `TaskLifecycleEvent`. Три події членства лише анулюють його кеш членства для кожного робочого простору; вони не пересилаються як фрейми |
+| `NotificationFeedRecorder`          | Двадцять два класи подій сповіщень нижче                                                            |
+| `RemoteEventForwarder`              | Ті самі двадцять два плюс `TicketReassigned` і кожен `TaskLifecycleEvent`. Три події членства лише анулюють його кеш членства для кожного робочого простору; вони не пересилаються як фрейми |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — відкидає підписки на робочі простори, прикріплені до цього користувача; сокет залишається відкритим |
 
 `TicketAssigned` — це сигнал аудиту й сповіщень та тригер конвеєра. Призначення агенту фіксує відповідальність і не запускає жодного виконання — диспетчера тікетів не існує. Виняток — призначення команді (заданий `assignedTeamId`): `TeamRoutingService` запускає лідера команди.
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 На сервері `NotificationFeedRecorder` і `RemoteEventForwarder` перетворюють ці події на дротові фрейми `notifications/*` (`notification_wire.dart`). На клієнті `RpcNotificationMapper` → `mapNotificationFrame` перетворює фрейм на `AppNotification`.
 
-Існує рівно **шістнадцять** категорій сповіщень. Кілька подій відображаються на більш ніж один дротовий метод, бо фрейм несе перехід (невдача чи відновлення), а категорія несе питання («що робить CI?»).
+Існує рівно **сімнадцять** категорій сповіщень. Кілька подій відображаються на більш ніж один дротовий метод, бо фрейм несе перехід (невдача чи відновлення), а категорія несе питання («що робить CI?»).
 
 | Категорія              | Вихідна подія             | Дротовий метод                                                         |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (згадує вас)                          |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, без згадки вас)  |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 Фрейм перехоплення керування rig не доставляється назад тому, хто взяв кермо; повернення не фільтрується (подія не фіксує, хто відпустив), і лише закриття з `backendFailure` породжує фрейм `rig_closed` — інші причини або запитані, або вже покриті фреймом збирання.
+
+`AgentAwaitingInput` публікує `AgentAwaitingInputPublisher`: він стежить за новими записами в реєстрах схвалень і блокувань через облікові дані, а про кожне запитання `ask_user` йому повідомляє `AgentQuestionService`. Одне очікування — одна подія; коли очікування завершується, нічого не публікується.
 
 П’ять категорій авторських PR несуть `forUserId`, тож доходять до автора, а не до всіх у робочому просторі.
 

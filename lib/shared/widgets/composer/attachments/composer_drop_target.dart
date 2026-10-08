@@ -9,6 +9,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/local_media.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_media.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
+import 'package:flutter/gestures.dart' show HitTestResult;
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_clipboard/super_clipboard.dart'
@@ -151,18 +152,43 @@ class _ComposerDropTargetState extends State<ComposerDropTarget> {
   /// view id sends -1, and the check is skipped rather than failing closed —
   /// no drop at all is worse than a rare false positive on a window that has no
   /// composer in it.
+  ///
+  /// The bounds check alone is not enough: every conversation tab keeps its
+  /// composer laid out behind an `IndexedStack`, at the same place on screen,
+  /// so a drop on the visible one matched all of them and the screenshot
+  /// turned up in every open conversation's draft. A hit test through the view
+  /// answers "is this composer what the pointer is actually on" — hidden tabs
+  /// and anything covered by a dialog never make the path.
   bool _containsHostPoint(int viewId, Offset position) {
     if (!mounted) {
       return false;
     }
-    if (viewId >= 0 && View.of(context).viewId != viewId) {
+    final ownViewId = View.of(context).viewId;
+    if (viewId >= 0 && ownViewId != viewId) {
       return false;
     }
     final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) {
+    if (box == null || !box.attached || !box.hasSize) {
       return false;
     }
-    return box.paintBounds.contains(box.globalToLocal(position));
+    if (!box.paintBounds.contains(box.globalToLocal(position))) {
+      return false;
+    }
+    final result = HitTestResult();
+    WidgetsBinding.instance.hitTestInView(result, position, ownViewId);
+    return result.path.any((entry) {
+      final target = entry.target;
+      for (
+        RenderObject? node = target is RenderObject ? target : null;
+        node != null;
+        node = node.parent
+      ) {
+        if (identical(node, box)) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   // Plugin lane (everything else).

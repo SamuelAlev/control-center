@@ -526,20 +526,23 @@ void main() {
         expect(seen, isEmpty);
       });
 
-      test('missing individual fields read as zero, not as a dropped event', () {
-        final seen = <ClaudeUsage>[];
-        final p = build(onUsage: seen.add);
-        p.process({
-          'type': 'result',
-          'usage': {'output_tokens': 12},
-        });
-        final usage = seen.single;
-        expect(usage.outputTokens, 12);
-        expect(usage.inputTokens, 0);
-        expect(usage.cacheReadTokens, 0);
-        expect(usage.costUsd, 0.0);
-        expect(usage.durationMs, isNull);
-      });
+      test(
+        'missing individual fields read as zero, not as a dropped event',
+        () {
+          final seen = <ClaudeUsage>[];
+          final p = build(onUsage: seen.add);
+          p.process({
+            'type': 'result',
+            'usage': {'output_tokens': 12},
+          });
+          final usage = seen.single;
+          expect(usage.outputTokens, 12);
+          expect(usage.inputTokens, 0);
+          expect(usage.cacheReadTokens, 0);
+          expect(usage.costUsd, 0.0);
+          expect(usage.durationMs, isNull);
+        },
+      );
 
       test('non-result events never report usage', () {
         final seen = <ClaudeUsage>[];
@@ -711,6 +714,167 @@ void main() {
         {'type': 'system', 'subtype': 'compact_boundary'},
       ], compactions: compactions);
       expect(compactions, [187000, null]);
+    });
+  });
+
+  /// The line shapes `claude -p` 2.1 emits for one `Agent` call, recorded from
+  /// a real run: whole subagent messages tagged with `parent_tool_use_id`, and
+  /// the final answer only as the spawn call's result on the parent's lane.
+  group('subagents', () {
+    const spawn = 'toolu_spawn';
+
+    Map<String, dynamic> sub(String type, List<Map<String, dynamic>> blocks) =>
+        {
+          'type': type,
+          'parent_tool_use_id': spawn,
+          'message': {'role': type, 'content': blocks},
+        };
+
+    ({
+      ClaudeStreamJsonParser parser,
+      List<ClaudeSubagentEvent> events,
+      List<String> text,
+      List<ClaudeToolUse> calls,
+      List<ClaudeToolResult> results,
+    })
+    harness() {
+      final events = <ClaudeSubagentEvent>[];
+      final text = <String>[];
+      final calls = <ClaudeToolUse>[];
+      final results = <ClaudeToolResult>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(
+          onText: text.add,
+          onToolCall: calls.add,
+          onToolResult: results.add,
+          onSubagent: events.add,
+        ),
+      );
+      return (
+        parser: parser,
+        events: events,
+        text: text,
+        calls: calls,
+        results: results,
+      );
+    }
+
+    test('task_started opens the subagent with its description', () {
+      final h = harness();
+      h.parser.process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'task_id': 'a1',
+        'tool_use_id': spawn,
+        'description': 'Run ls and report files',
+        'subagent_type': 'general-purpose',
+      });
+      final started = h.events.single as ClaudeSubagentStarted;
+      expect(started.spawnToolUseId, spawn);
+      expect(started.description, 'Run ls and report files');
+      expect(started.subagentType, 'general-purpose');
+    });
+
+    test('a background shell task is not a subagent', () {
+      final h = harness();
+      h.parser.process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'tool_use_id': 'toolu_bash',
+        'description': 'npm run dev',
+      });
+      expect(h.events, isEmpty);
+    });
+
+    test('its work routes apart from the parent turn', () {
+      final h = harness();
+      openTool(h.parser, spawn, name: 'Agent');
+      h.calls.clear();
+
+      h.parser
+        ..process(
+          sub('user', [
+            {'type': 'text', 'text': 'Run ls and report back.'},
+          ]),
+        )
+        ..process(
+          sub('assistant', [
+            {'type': 'thinking', 'thinking': 'list it'},
+            {
+              'type': 'tool_use',
+              'id': 'toolu_inner',
+              'name': 'Bash',
+              'input': {'command': 'ls'},
+            },
+          ]),
+        )
+        ..process(
+          sub('user', [
+            {
+              'type': 'tool_result',
+              'tool_use_id': 'toolu_inner',
+              'content': 'a.txt',
+            },
+          ]),
+        )
+        ..process(
+          sub('assistant', [
+            {'type': 'text', 'text': 'One file: a.txt'},
+          ]),
+        );
+
+      expect(h.text, isEmpty);
+      expect(h.calls, isEmpty);
+      expect(h.results, isEmpty);
+      expect(h.events.map((e) => e.runtimeType), [
+        ClaudeSubagentThinking,
+        ClaudeSubagentToolCall,
+        ClaudeSubagentToolResult,
+        ClaudeSubagentText,
+      ]);
+      final call = (h.events[1] as ClaudeSubagentToolCall).call;
+      expect(call.name, 'Bash');
+      expect(call.input, {'command': 'ls'});
+      expect((h.events[2] as ClaudeSubagentToolResult).result.outputs, 'a.txt');
+      expect(h.events.every((e) => e.spawnToolUseId == spawn), isTrue);
+
+      // The spawn call itself still closes on the parent's lane.
+      h.parser.process(
+        userResult([
+          {
+            'type': 'tool_result',
+            'tool_use_id': spawn,
+            'content': [
+              {'type': 'text', 'text': 'One file: a.txt'},
+            ],
+          },
+        ]),
+      );
+      expect(h.results.single.id, spawn);
+    });
+
+    test('partial deltas tagged to a subagent never reach the parent', () {
+      final h = harness();
+      h.parser
+        ..process({
+          'type': 'stream_event',
+          'parent_tool_use_id': spawn,
+          'event': {
+            'type': 'content_block_start',
+            'index': 0,
+            'content_block': {'type': 'text'},
+          },
+        })
+        ..process({
+          'type': 'stream_event',
+          'parent_tool_use_id': spawn,
+          'event': {
+            'type': 'content_block_delta',
+            'index': 0,
+            'delta': {'type': 'text_delta', 'text': 'inner'},
+          },
+        });
+      expect(h.text, isEmpty);
     });
   });
 }

@@ -48,6 +48,7 @@ import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
+import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
@@ -404,6 +405,17 @@ class DispatchSession implements SteeringSessionView {
   /// Tool name per in-flight `tool_use` id: a `tool_result` block names only
   /// the id it answers, and a result with no tool name renders as `tool`.
   final Map<String, String> _claudeToolNames = {};
+
+  /// Child runs for the subagents the active `claude -p` process spawned.
+  ClaudeSubagentRuns? _claudeSubagents;
+
+  /// Closes any Claude subagent still open: its parent process is gone, so
+  /// its spawn call will never return.
+  Future<void> _closeClaudeSubagents() async {
+    final subagents = _claudeSubagents;
+    _claudeSubagents = null;
+    await subagents?.closeAll();
+  }
 
   /// Timestamp of the most recent output from the agent.
   DateTime? lastOutputAt;
@@ -1647,6 +1659,7 @@ class DispatchSession implements SteeringSessionView {
   Future<void> stop() async {
     _cancelSilenceWatchdog();
     _claudeParser = null;
+    unawaited(_closeClaudeSubagents());
     await _teardownAcp();
     await _releaseRunCredentials();
     _closeController();
@@ -1661,6 +1674,7 @@ class DispatchSession implements SteeringSessionView {
     // share this token) before tearing the session down.
     _cancelSource.cancel('terminated');
     _claudeParser = null;
+    unawaited(_closeClaudeSubagents());
     await _teardownAcp();
     addEvent(
       DebugEvent(

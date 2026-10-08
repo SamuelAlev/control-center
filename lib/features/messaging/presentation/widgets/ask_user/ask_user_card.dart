@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_free_text_row.dart';
@@ -37,6 +39,11 @@ const _numpads = <LogicalKeyboardKey>[
 /// Single-select submits on the option (hover replaces the trailing index with
 /// an arrow). Multi-select toggles and waits for Continue. This is the visual
 /// contract for both `ask_user` and in-conversation permission prompts.
+///
+/// The card is only ever a live form: once a question is resolved its caller
+/// swaps it for an `AskUserSummary`. When the asker stops waiting at
+/// [expiresAt], a bar along the top edge drains over [timeout] and
+/// [onExpired] fires as it empties.
 class AskUserCard extends StatefulWidget {
   /// Creates an [AskUserCard].
   const AskUserCard({
@@ -51,9 +58,12 @@ class AskUserCard extends StatefulWidget {
     this.questionCount,
     this.caption,
     this.extraBody,
-    this.answered,
     this.submitting = false,
     this.onSubmit,
+    this.expiresAt,
+    this.timeout,
+    this.onExpired,
+    this.now = DateTime.now,
   });
 
   /// The question, as one sentence.
@@ -86,14 +96,23 @@ class AskUserCard extends StatefulWidget {
   /// Extra content between the question and the options (a command block).
   final Widget? extraBody;
 
-  /// When non-null the card is a read-only result.
-  final AgentQuestionAnswer? answered;
-
   /// In-flight submit (disables the form).
   final bool submitting;
 
-  /// Called with the chosen answer or a skip. Null on a read-only card.
+  /// Called with the chosen answer or a skip.
   final ValueChanged<AgentQuestionAnswer>? onSubmit;
+
+  /// When the asker stops waiting. Null hides the countdown.
+  final DateTime? expiresAt;
+
+  /// The full wait ending at [expiresAt]; the countdown's 100% mark.
+  final Duration? timeout;
+
+  /// Called once when [expiresAt] passes while the card is mounted.
+  final VoidCallback? onExpired;
+
+  /// The countdown's clock. Tests pass one they can advance.
+  final DateTime Function() now;
 
   @override
   State<AskUserCard> createState() => _AskUserCardState();
@@ -105,7 +124,9 @@ class _AskUserCardState extends State<AskUserCard> {
   final FocusNode _textFocus = FocusNode();
   final FocusNode _cardFocus = FocusNode();
 
-  bool get _interactive => widget.answered == null && !widget.submitting;
+  Timer? _countdown;
+
+  bool get _interactive => !widget.submitting;
 
   bool get _freeTextAsOption =>
       widget.allowFreeText && widget.options.isNotEmpty;
@@ -130,40 +151,52 @@ class _AskUserCardState extends State<AskUserCard> {
   @override
   void initState() {
     super.initState();
-    _hydrateAnswer(widget.answered);
     _freeText.addListener(_rebuild);
     _textFocus.addListener(_rebuild);
+    _syncCountdown();
   }
 
   @override
   void didUpdateWidget(AskUserCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.answered == null && widget.answered != null) {
-      _hydrateAnswer(widget.answered);
+    if (oldWidget.expiresAt != widget.expiresAt) {
+      _syncCountdown();
     }
   }
 
-  void _hydrateAnswer(AgentQuestionAnswer? answered) {
-    if (answered == null) {
+  /// Whole seconds are plenty: the bar eases between ticks, and a long wait
+  /// moves well under a pixel per second.
+  void _syncCountdown() {
+    _countdown?.cancel();
+    _countdown = null;
+    if (widget.expiresAt == null) {
       return;
     }
-    _selected
-      ..clear()
-      ..addAll(_indicesFor(answered));
-    final text = answered.freeText;
-    if (text != null && text.isNotEmpty && _freeText.text != text) {
-      _freeText.text = text;
-    }
+    _countdown = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
-  Iterable<int> _indicesFor(AgentQuestionAnswer answered) sync* {
-    for (var i = 0; i < widget.options.length; i++) {
-      final option = widget.options[i];
-      if (answered.selectedLabels.contains(option.label) ||
-          answered.selectedLabels.contains(option.effectiveValue)) {
-        yield i;
-      }
+  void _tick() {
+    final expiresAt = widget.expiresAt;
+    if (!mounted || expiresAt == null) {
+      return;
     }
+    if (!widget.now().isBefore(expiresAt)) {
+      _countdown?.cancel();
+      _countdown = null;
+      widget.onExpired?.call();
+    }
+    setState(() {});
+  }
+
+  /// Share of the wait still left, or null when there is no countdown.
+  double? get _remainingFraction {
+    final expiresAt = widget.expiresAt;
+    final total = widget.timeout;
+    if (expiresAt == null || total == null || total <= Duration.zero) {
+      return null;
+    }
+    final left = expiresAt.difference(widget.now());
+    return (left.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0);
   }
 
   void _rebuild() {
@@ -174,6 +207,7 @@ class _AskUserCardState extends State<AskUserCard> {
 
   @override
   void dispose() {
+    _countdown?.cancel();
     _freeText.removeListener(_rebuild);
     _textFocus.removeListener(_rebuild);
     _freeText.dispose();
@@ -277,7 +311,7 @@ class _AskUserCardState extends State<AskUserCard> {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    final answered = widget.answered;
+    final remaining = _remainingFraction;
 
     return CallbackShortcuts(
       bindings: _bindings,
@@ -289,85 +323,98 @@ class _AskUserCardState extends State<AskUserCard> {
             color: t.bgPrimary,
             border: Border.all(color: t.borderPrimary),
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _caption(l10n, answered),
-                  style: CcTypography.caption.copyWith(color: t.textTertiary),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (remaining != null)
+                _CountdownBar(
+                  remaining: remaining,
+                  color: t.accent,
+                  semanticLabel: l10n.agentQuestionTimeLeft,
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  widget.question,
-                  style: CcTypography.title.copyWith(color: t.textPrimary),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.md,
                 ),
-                if ((widget.contextText ?? '').isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    widget.contextText!,
-                    style: CcTypography.body.copyWith(color: t.textSecondary),
-                  ),
-                ],
-                if (widget.extraBody != null) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  widget.extraBody!,
-                ],
-                const SizedBox(height: AppSpacing.md),
-                ..._optionRows(),
-                if (_freeTextAsOption)
-                  AskUserFreeTextRow(
-                    key: const ValueKey('ask-user-free-text'),
-                    index: widget.options.length + 1,
-                    controller: _freeText,
-                    focusNode: _textFocus,
-                    hintText: l10n.agentQuestionFreeformOptionHint,
-                    enabled: _interactive,
-                    hasText: _typed.isNotEmpty,
-                    showSubmitArrow: !widget.multiSelect,
-                    onChanged: (_) => _rebuild(),
-                    onSubmit: _submitFreeText,
-                  )
-                else if (_freeTextStandalone) ...[
-                  CcTextField(
-                    key: const ValueKey('ask-user-free-text'),
-                    controller: _freeText,
-                    focusNode: _textFocus,
-                    enabled: _interactive,
-                    autofocus: _interactive,
-                    hintText: l10n.agentQuestionFreeformHint,
-                    textStyle: CcTypography.body.copyWith(color: t.textPrimary),
-                    onChanged: (_) => _rebuild(),
-                    onSubmitted: _interactive && _typed.isNotEmpty
-                        ? (_) => _submitContinue()
-                        : null,
-                  ),
-                ],
-                if (_showFooter(answered)) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  _footer(t, l10n),
-                ],
-              ],
-            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _caption(l10n),
+                      style: CcTypography.caption.copyWith(
+                        color: t.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      widget.question,
+                      style: CcTypography.title.copyWith(color: t.textPrimary),
+                    ),
+                    if ((widget.contextText ?? '').isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        widget.contextText!,
+                        style: CcTypography.body.copyWith(
+                          color: t.textSecondary,
+                        ),
+                      ),
+                    ],
+                    if (widget.extraBody != null) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      widget.extraBody!,
+                    ],
+                    const SizedBox(height: AppSpacing.md),
+                    ..._optionRows(),
+                    if (_freeTextAsOption)
+                      AskUserFreeTextRow(
+                        key: const ValueKey('ask-user-free-text'),
+                        index: widget.options.length + 1,
+                        controller: _freeText,
+                        focusNode: _textFocus,
+                        hintText: l10n.agentQuestionFreeformOptionHint,
+                        enabled: _interactive,
+                        hasText: _typed.isNotEmpty,
+                        showSubmitArrow: !widget.multiSelect,
+                        onChanged: (_) => _rebuild(),
+                        onSubmit: _submitFreeText,
+                      )
+                    else if (_freeTextStandalone) ...[
+                      CcTextField(
+                        key: const ValueKey('ask-user-free-text'),
+                        controller: _freeText,
+                        focusNode: _textFocus,
+                        enabled: _interactive,
+                        autofocus: _interactive,
+                        hintText: l10n.agentQuestionFreeformHint,
+                        textStyle: CcTypography.body.copyWith(
+                          color: t.textPrimary,
+                        ),
+                        onChanged: (_) => _rebuild(),
+                        onSubmitted: _interactive && _typed.isNotEmpty
+                            ? (_) => _submitContinue()
+                            : null,
+                      ),
+                    ],
+                    if (_showFooter) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      _footer(t, l10n),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  String _caption(AppLocalizations l10n, AgentQuestionAnswer? answered) {
-    if (answered != null) {
-      return answered.skipped
-          ? l10n.agentQuestionSkippedLabel
-          : l10n.agentQuestionAnsweredLabel;
-    }
+  String _caption(AppLocalizations l10n) {
     if (widget.caption != null) {
       return widget.caption!;
     }
@@ -395,12 +442,7 @@ class _AskUserCardState extends State<AskUserCard> {
     ];
   }
 
-  bool _showFooter(AgentQuestionAnswer? answered) {
-    if (answered != null) {
-      return false;
-    }
-    return widget.allowSkip || _needsContinue;
-  }
+  bool get _showFooter => widget.allowSkip || _needsContinue;
 
   Widget _footer(DesignSystemTokens t, AppLocalizations l10n) {
     return Row(
@@ -451,6 +493,38 @@ class _AskUserCardState extends State<AskUserCard> {
             child: Text(l10n.continueLabel),
           ),
       ],
+    );
+  }
+}
+
+/// Thin bar along the card's top edge showing how much of the asker's wait is
+/// left. It eases between the card's one-second ticks so it drains smoothly.
+class _CountdownBar extends StatelessWidget {
+  const _CountdownBar({
+    required this.remaining,
+    required this.color,
+    required this.semanticLabel,
+  });
+
+  final double remaining;
+  final Color color;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: remaining),
+      duration: CcMotion.reduced(context)
+          ? Duration.zero
+          : const Duration(seconds: 1),
+      builder: (context, value, _) => CcProgressBar(
+        key: const ValueKey('ask-user-countdown'),
+        value: value,
+        height: 2,
+        color: color,
+        trackColor: const Color(0x00000000),
+        semanticLabel: semanticLabel,
+      ),
     );
   }
 }

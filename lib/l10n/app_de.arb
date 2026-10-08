@@ -3834,6 +3834,8 @@
   "agentQuestionProgress": "Frage {index} von {count}",
   "agentQuestionSkip": "Überspringen",
   "agentQuestionSkippedLabel": "Übersprungen",
+  "agentQuestionTimedOutLabel": "Zeit abgelaufen",
+  "agentQuestionTimeLeft": "Verbleibende Zeit zum Antworten",
   "agentQuestionFreeformOptionHint": "In eigenen Worten beschreiben…",
   "reviewRequested": "Review angefragt",
   "connectGitHubHint": "Melde dich bei GitHub an oder füge ein Token unter Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting hinzu",
@@ -7998,5 +8000,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} als nicht angesehen markiert",
   "prLineChangesSemantics": "Hinzugefügte Zeilen: {additions}, entfernte Zeilen: {deletions}",
   "closeTabNamed": "{tab} schließen",
-  "threadCommentCount": "{count, plural, =1{1 Kommentar} other{{count} Kommentare}}"
+  "threadCommentCount": "{count, plural, =1{1 Kommentar} other{{count} Kommentare}}",
+  "notificationAgentAwaitingInput": "Agent wartet auf dich",
+  "notifyAgentAwaitingInput": "Wenn ein Agent deine Freigabe, eine Antwort oder funktionierende Zugangsdaten braucht",
+  "notificationAgentNeedsApproval": "{agent} braucht deine Freigabe",
+  "notificationAgentNeedsApprovalUnnamed": "Ein Agent braucht deine Freigabe",
+  "notificationAgentAskedQuestion": "{agent} hat eine Frage",
+  "notificationAgentAskedQuestionUnnamed": "Ein Agent hat eine Frage",
+  "notificationAgentBlockedOnCredential": "{agent} hängt an Zugangsdaten fest",
+  "notificationAgentBlockedOnCredentialUnnamed": "Ein Agent hängt an Zugangsdaten fest"
 }

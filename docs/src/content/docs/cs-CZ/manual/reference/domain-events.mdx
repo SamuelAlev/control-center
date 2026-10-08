@@ -1,8 +1,8 @@
 ---
 title: Doménové události
-description: Úplný katalog 53 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
+description: Úplný katalog 54 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
 slug: cs-CZ/prirucka/referencni-prirucka/domenove-udalosti
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Sběrnice událostí
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Míra                                                        | Počet                                       |
 | ----------------------------------------------------------- | ------------------------------------------- |
-| Konkrétní třídy událostí                                    | 53                                          |
+| Konkrétní třídy událostí                                    | 54                                          |
 | Zdrojové soubory (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)       |
 | Abstraktní báze, které se nikdy nepublikují přímo           | 1 (`TaskLifecycleEvent`, sealed hierarchie) |
 
@@ -25,6 +25,7 @@ Každá událost v katalogu níže žije v tom jednom adresáři. Jinde se domé
 | ------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Vytvoří se pracovní prostor                                |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent dokončí běh (úspěch i selhání)                       |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Agent začne čekat na člověka: na schválení, na odpověď na otázku `ask_user`, nebo na přihlašovací údaje, kvůli kterým stojí běh (`kind` je `approval`, `question` nebo `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Zaregistruje se repozitář a spustí se indexace kódu na pozadí |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Nainstaluje se nebo aktualizuje skill a nese verdikt skenu dodavatelského řetězce |
 
@@ -183,8 +184,8 @@ Každý odběratel níže se konstruuje uvnitř `runCcServer` (nebo ve službě,
 | `RigEventListener`                   | `RigControlChanged`, `RigReaped`, `RigClosedEvent`. Vloží srozumitelnou zprávu do kanálu usměrnění řídícího agenta |
 | `StaleReviewWatcher`                 | `PrHeadChanged`. Publikuje `ReviewBecameStale` jen tehdy, když pro nahrazený commit existuje hotová kontrola |
 | `GitHubPrConversationBridge`         | `AgentRunCompleted`. Odchozí odpovědi v konverzaci PR                                                       |
-| `NotificationFeedRecorder`           | Jednadvacet událostí třídy oznámení níže                                                                    |
-| `RemoteEventForwarder`               | Těch jednadvacet plus `TicketReassigned` a každá `TaskLifecycleEvent`. Tři události členství jen zneplatní jeho cache členství po pracovních prostorech. Jako rámce se nepřeposílají |
+| `NotificationFeedRecorder`           | Dvaadvacet událostí třídy oznámení níže                                                                     |
+| `RemoteEventForwarder`               | Těch dvaadvacet plus `TicketReassigned` a každá `TaskLifecycleEvent`. Tři události členství jen zneplatní jeho cache členství po pracovních prostorech. Jako rámce se nepřeposílají |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`. Zahodí připojené odběry pracovního prostoru toho uživatele. Soket zůstane otevřený |
 
 `TicketAssigned` je signál auditu i oznámení a zároveň spouštěč pipeline. Přiřazení agentovi zapíše vlastnictví a nespustí běh. Dispečer ticketů neexistuje. Výjimka je přiřazení týmu (nastavené `assignedTeamId`): `TeamRoutingService` odešle vedoucího týmu.
@@ -195,12 +196,13 @@ Každý odběratel níže se konstruuje uvnitř `runCcServer` (nebo ve službě,
 
 Na serveru z těchto událostí `NotificationFeedRecorder` a `RemoteEventForwarder` udělají rámce na drátě `notifications/*` (`notification_wire.dart`). Na klientovi z rámce `RpcNotificationMapper` → `mapNotificationFrame` udělá `AppNotification`.
 
-Kategorií oznámení je přesně **šestnáct**. Několik událostí se mapuje na víc než jednu metodu na drátě, protože rámec nese hranu (selhání, nebo zotavení) a kategorie nese otázku („co dělá CI?“).
+Kategorií oznámení je přesně **sedmnáct**. Několik událostí se mapuje na víc než jednu metodu na drátě, protože rámec nese hranu (selhání, nebo zotavení) a kategorie nese otázku („co dělá CI?“).
 
 | Kategorie              | Zdrojová událost          | Metoda na drátě                                                            |
 | ---------------------- | ------------------------- | -------------------------------------------------------------------------- |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (zmiňuje tě)                              |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, bez tvé zmínky)      |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                       |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                            |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                      |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                               |
@@ -222,6 +224,8 @@ Kategorií oznámení je přesně **šestnáct**. Několik událostí se mapuje 
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                                 |
 
 Rámec převzetí stanice se nevrací tomu, kdo řízení převzal. Uvolnění se nefiltruje (událost nezaznamenává, kdo pustil) a jen zavření `backendFailure` vyrobí rámec `rig_closed`. Ostatní důvody jsou buď vyžádané, nebo je už pokrývá rámec reap.
+
+`AgentAwaitingInput` publikuje `AgentAwaitingInputPublisher`. Sleduje nové záznamy v registrech schválení a blokací přihlašovacích údajů a o každé otázce `ask_user` mu dá vědět `AgentQuestionService`. Jedno čekání je jedna událost. Když čekání skončí, nepublikuje se nic.
 
 Pět kategorií vlastních PR nese `forUserId`, takže dorazí k autorovi, ne ke všem v pracovním prostoru.
 

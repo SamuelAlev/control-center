@@ -2,7 +2,7 @@
 title: Értesítések konfigurálása
 description: Kapcsolja be vagy ki a kategóriákat, állítson be csendes órákat és hangot, és tudja meg, mely értesítések érkeznek meg Önhöz és hol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Ez az útmutató bemutatja, hogyan konfigurálhatja az értesítéseket, és mit
@@ -24,11 +24,12 @@ telefonos kliensnek egyáltalán nincs értesítési felülete.
 
 1. Nyissa meg a **Beállítások → Ön → Értesítések** pontot
 2. Hagyja bekapcsolva az **Értesítések engedélyezése** lehetőséget
-3. Kapcsolja be a kívánt kategóriákat. Pontosan tizenhat van belőlük:
+3. Kapcsolja be a kívánt kategóriákat. Pontosan tizenhét van belőlük:
 
 | Kategória                     | Mikor jelez                                                                |
 | ----------------------------- | -------------------------------------------------------------------------- |
 | Ügynök befejezte          | Egy ügynök válaszolt egy Ön által indított futásban, vagy a futás meghiúsult |
+| Egy ügynök Önre vár       | Egy ügynöknek az Ön jóváhagyására van szüksége, kérdést tett fel Önnek, vagy egy hitelesítő adat miatt áll |
 | PR közzétéve              | Egy ügynök közzétett egy PR-t                                              |
 | PR összefésülve           | Egy PR-t összefésültek                                                     |
 | Új üzenetek               | Valaki megemlítette Önt egy térben                                         |
@@ -47,6 +48,13 @@ telefonos kliensnek egyáltalán nincs értesítési felülete.
 
 Az ezen a listán kívül eső eseményekről nem lehet értesítést kapni vagy azokat
 szűrni — nincs „minden más” kategória.
+
+Az **Egy ügynök Önre vár** kategória várakozásonként egyszer jelez, amikor a
+várakozás elkezdődik: függőben lévő jóváhagyásnál (beleértve a homokozó
+exec-engedélyeit és a Claude Code eszközjóváhagyásait), egy `ask_user`
+kérdésnél, vagy ha egy futás azért áll, mert a hitelesítő adata nem tudja
+kiszolgálni. Azt a teret nyitja meg, ahol válaszolhat, és csendben marad, amíg
+Ön éppen azt a teret nézi.
 
 Ezek a beállítások a felhasználóval együtt vándorolnak az eszközök között, így a
 telefon és a laptop szinkronban marad. A hangerő szándékos kivétel, és

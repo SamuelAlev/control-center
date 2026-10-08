@@ -24,7 +24,10 @@ class _MockTool extends McpTool {
   };
 
   @override
-  Future<CallResult> call(Map<String, dynamic> arguments) async {
+  Future<CallResult> call(
+    Map<String, dynamic> arguments, {
+    Future<void>? abandoned,
+  }) async {
     return CallResult.success('mock result');
   }
 

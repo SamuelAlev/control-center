@@ -1899,6 +1899,11 @@ void main() {
     // The cursor lives in the named workspace's database file, so the mutation
     // carries it too — not just the read subscription below.
     expect(host.sentReadCursors.single['workspace_id'], 'w1');
+    // Selecting a space names no conversation, so the host leaves the bell
+    // alone; reading one names it, and the host clears its notifications.
+    expect(host.sentReadCursors.single.containsKey('conversation_id'), isFalse);
+    await repo.markSpaceRead('w1', 'c1', 'user-1', conversationId: 'conv-1');
+    expect(host.sentReadCursors.last['conversation_id'], 'conv-1');
 
     final cursor = await repo.watchUserLastReadAt('w1', 'c1', 'user-1').first;
     expect(cursor, DateTime.parse('2026-01-03T00:00:00.000Z'));

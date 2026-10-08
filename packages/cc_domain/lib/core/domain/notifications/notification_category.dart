@@ -5,6 +5,13 @@ enum NotificationCategory {
   /// An agent finished a run in a workspace.
   agentRunCompleted,
 
+  /// An agent stopped and is waiting on the user: an action needs approval,
+  /// it asked a question, or its credential cannot serve the run. One
+  /// category for all three because the operator question is the same — "is
+  /// something stuck on me?" — and muting one kind of wait while keeping the
+  /// others leaves runs silently parked.
+  agentAwaitingInput,
+
   /// A pull request was published by an agent.
   pullRequestPublished,
 
@@ -113,7 +120,8 @@ extension NotificationCategoryGrouping on NotificationCategory {
   /// here until it is placed, which is what stops one from silently never
   /// appearing in Settings.
   NotificationCategoryGroup get group => switch (this) {
-    NotificationCategory.agentRunCompleted => NotificationCategoryGroup.agents,
+    NotificationCategory.agentRunCompleted ||
+    NotificationCategory.agentAwaitingInput => NotificationCategoryGroup.agents,
     NotificationCategory.pullRequestPublished ||
     NotificationCategory.prMerged ||
     NotificationCategory.prMentioned ||

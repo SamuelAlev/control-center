@@ -188,5 +188,24 @@ void main() {
       expect(grouped.staged, isEmpty);
       expect(grouped.unstaged, isEmpty);
     });
+
+    test('mixes untracked files into VS Code path order', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      Directory(p.join(repo.path, 'src')).createSync();
+      File(p.join(repo.path, 'src', 'z.txt')).writeAsStringSync('z\n');
+      await _git(['add', '-A'], repo.path);
+      await _git(['commit', '-q', '-m', 'src'], repo.path);
+      File(p.join(repo.path, 'tracked.txt')).writeAsStringSync('edited\n');
+      File(p.join(repo.path, 'src', 'z.txt')).writeAsStringSync('edited\n');
+      File(p.join(repo.path, 'src', 'a.txt')).writeAsStringSync('new\n');
+      File(p.join(repo.path, 'Added.txt')).writeAsStringSync('new\n');
+
+      final grouped = await adapter.groupedChanges(repo.path);
+      final changed = await adapter.changedFiles(repo.path, 'HEAD');
+
+      const expected = ['Added.txt', 'tracked.txt', 'src/a.txt', 'src/z.txt'];
+      expect(grouped.unstaged.map((f) => f.filename), expected);
+      expect(changed.map((f) => f.filename), expected);
+    });
   });
 }

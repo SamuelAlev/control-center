@@ -6866,6 +6866,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'スキップ済み';
 
   @override
+  String get agentQuestionTimedOutLabel => '時間切れ';
+
+  @override
+  String get agentQuestionTimeLeft => '回答までの残り時間';
+
+  @override
   String get agentQuestionFreeformOptionHint => '自分の言葉で書いてください…';
 
   @override
@@ -14923,4 +14929,35 @@ class AppLocalizationsJa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'エージェントが待機中';
+
+  @override
+  String get notifyAgentAwaitingInput => 'エージェントが承認・回答・有効な認証情報を必要としたとき';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent が承認を求めています';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed => 'エージェントが承認を求めています';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent から質問があります';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'エージェントから質問があります';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent が認証情報の問題で停止しています';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'エージェントが認証情報の問題で停止しています';
 }

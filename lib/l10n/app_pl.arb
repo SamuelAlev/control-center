@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Pytanie {index} z {count}",
   "agentQuestionSkip": "Pomiń",
   "agentQuestionSkippedLabel": "Pominięto",
+  "agentQuestionTimedOutLabel": "Upłynął limit czasu",
+  "agentQuestionTimeLeft": "Pozostały czas na odpowiedź",
   "agentQuestionFreeformOptionHint": "Opisz własnymi słowami…",
   "reviewRequested": "Poproszono o recenzję",
   "connectGitHubHint": "Zaloguj się do GitHub lub dodaj token w Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} oznaczono jako nieprzejrzany",
   "prLineChangesSemantics": "Dodane wiersze: {additions}, usunięte wiersze: {deletions}",
   "closeTabNamed": "Zamknij {tab}",
-  "threadCommentCount": "{count, plural, one{{count} komentarz} few{{count} komentarze} many{{count} komentarzy} other{{count} komentarza}}"
+  "threadCommentCount": "{count, plural, one{{count} komentarz} few{{count} komentarze} many{{count} komentarzy} other{{count} komentarza}}",
+  "notificationAgentAwaitingInput": "Agent czeka na Ciebie",
+  "notifyAgentAwaitingInput": "Gdy agent potrzebuje Twojej zgody, odpowiedzi lub działających danych logowania",
+  "notificationAgentNeedsApproval": "{agent} potrzebuje Twojej zgody",
+  "notificationAgentNeedsApprovalUnnamed": "Agent potrzebuje Twojej zgody",
+  "notificationAgentAskedQuestion": "{agent} ma pytanie",
+  "notificationAgentAskedQuestionUnnamed": "Agent ma pytanie",
+  "notificationAgentBlockedOnCredential": "{agent} jest zablokowany przez dane logowania",
+  "notificationAgentBlockedOnCredentialUnnamed": "Agent jest zablokowany przez dane logowania"
 }

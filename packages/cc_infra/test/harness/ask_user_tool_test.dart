@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/harness/ask_user_tool.dart';
 import 'package:test/test.dart';
@@ -10,10 +11,15 @@ class _RecordingPort implements AgentQuestionPort {
   _RecordingPort(this._answer);
   final AgentQuestionAnswer? _answer;
   AgentQuestionRequest? seen;
+  Future<void>? seenAbandoned;
 
   @override
-  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request) async {
+  Future<AgentQuestionAnswer?> ask(
+    AgentQuestionRequest request, {
+    Future<void>? abandoned,
+  }) async {
     seen = request;
+    seenAbandoned = abandoned;
     return _answer;
   }
 }
@@ -87,17 +93,17 @@ void main() {
 
     test('an unanswerable question is refused before it is posted', () async {
       final port = _RecordingPort(const AgentQuestionAnswer());
-      final result = await _tool(port).execute({
-        'question': 'Which?',
-        'allow_free_text': false,
-      }, _ctx);
+      final result = await _tool(
+        port,
+      ).execute({'question': 'Which?', 'allow_free_text': false}, _ctx);
 
       expect(result.isError, isTrue);
       expect(result.content, contains('allow_free_text'));
       expect(
         port.seen,
         isNull,
-        reason: 'nothing should reach the user for a question they cannot '
+        reason:
+            'nothing should reach the user for a question they cannot '
             'answer',
       );
     });
@@ -130,14 +136,17 @@ void main() {
       expect(result.content, contains('empty answer'));
     });
 
-    test('a skipped question tells the agent to proceed, not to re-ask', () async {
-      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
-      final result = await _tool(port).execute({'question': 'Which?'}, _ctx);
+    test(
+      'a skipped question tells the agent to proceed, not to re-ask',
+      () async {
+        final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+        final result = await _tool(port).execute({'question': 'Which?'}, _ctx);
 
-      expect(result.isError, isFalse);
-      expect(result.content, contains('skipped'));
-      expect(result.content, contains('Do not ask again'));
-    });
+        expect(result.isError, isFalse);
+        expect(result.content, contains('skipped'));
+        expect(result.content, contains('Do not ask again'));
+      },
+    );
 
     test('options are capped so one call cannot flood the form', () async {
       final port = _RecordingPort(
@@ -150,7 +159,9 @@ void main() {
         maxOptions: 3,
       ).execute({
         'question': 'Which?',
-        'options': [for (var i = 0; i < 20; i++) {'label': 'o$i'},],
+        'options': [
+          for (var i = 0; i < 20; i++) {'label': 'o$i'},
+        ],
       }, _ctx);
 
       expect(port.seen!.options.length, 3);
@@ -171,6 +182,21 @@ void main() {
       }, _ctx);
 
       expect(port.seen!.options.map((o) => o.label), ['real']);
+    });
+
+    test('a stopped run closes the question it was waiting on', () async {
+      final port = _RecordingPort(null);
+      final source = CancellationTokenSource();
+      await _tool(
+        port,
+      ).execute({'question': 'Which?'}, _ctx.withCancel(source.token));
+
+      expect(port.seenAbandoned, isNotNull);
+      var fired = false;
+      unawaited(port.seenAbandoned!.then((_) => fired = true));
+      source.cancel();
+      await Future<void>.delayed(Duration.zero);
+      expect(fired, isTrue);
     });
 
     test('never joins a parallel batch', () {

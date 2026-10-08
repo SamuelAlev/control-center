@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Spørsmål {index} av {count}",
   "agentQuestionSkip": "Hopp over",
   "agentQuestionSkippedLabel": "Hoppet over",
+  "agentQuestionTimedOutLabel": "Tidsavbrudd",
+  "agentQuestionTimeLeft": "Gjenstående tid til å svare",
   "agentQuestionFreeformOptionHint": "Beskriv med egne ord…",
   "reviewRequested": "Gjennomgang forespurt",
   "connectGitHubHint": "Logg inn på GitHub eller legg til et token i Innstillinger → Arbeidsområde → Profil og identitet → Kodevert",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} merket som ikke sett",
   "prLineChangesSemantics": "Linjer lagt til: {additions}, linjer fjernet: {deletions}",
   "closeTabNamed": "Lukk {tab}",
-  "threadCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}"
+  "threadCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
+  "notificationAgentAwaitingInput": "En agent venter på deg",
+  "notifyAgentAwaitingInput": "Når en agent trenger godkjenningen din, et svar eller gyldig påloggingsinformasjon",
+  "notificationAgentNeedsApproval": "{agent} trenger godkjenningen din",
+  "notificationAgentNeedsApprovalUnnamed": "En agent trenger godkjenningen din",
+  "notificationAgentAskedQuestion": "{agent} har et spørsmål",
+  "notificationAgentAskedQuestionUnnamed": "En agent har et spørsmål",
+  "notificationAgentBlockedOnCredential": "{agent} er blokkert av påloggingsinformasjon",
+  "notificationAgentBlockedOnCredentialUnnamed": "En agent er blokkert av påloggingsinformasjon"
 }

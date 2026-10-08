@@ -6985,6 +6985,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'چھوڑ دیا گیا';
 
   @override
+  String get agentQuestionTimedOutLabel => 'وقت ختم ہو گیا';
+
+  @override
+  String get agentQuestionTimeLeft => 'جواب دینے کے لیے باقی وقت';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'اپنے الفاظ میں بیان کریں…';
 
   @override
@@ -15194,4 +15200,37 @@ class AppLocalizationsUr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'ایجنٹ آپ کا منتظر ہے';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'جب ایجنٹ کو آپ کی منظوری، جواب یا درست اسناد درکار ہوں';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent کو آپ کی منظوری درکار ہے';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'ایجنٹ کو آپ کی منظوری درکار ہے';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent کا ایک سوال ہے';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'ایجنٹ کا ایک سوال ہے';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent اسناد کی وجہ سے رکا ہوا ہے';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'ایجنٹ اسناد کی وجہ سے رکا ہوا ہے';
 }

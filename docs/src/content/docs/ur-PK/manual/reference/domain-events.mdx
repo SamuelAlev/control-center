@@ -1,8 +1,8 @@
 ---
 title: ڈومین ایونٹس
-description: تمام 53 ڈومین ایونٹس، اُن کے پیلوڈز اور اُنہیں استعمال کرنے والے سرور سائیڈ سبسکرائبرز کی مکمل کیٹلاگ۔
+description: تمام 54 ڈومین ایونٹس، اُن کے پیلوڈز اور اُنہیں استعمال کرنے والے سرور سائیڈ سبسکرائبرز کی مکمل کیٹلاگ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## ایونٹ بس
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | پیمانہ                                                     | تعداد                                       |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| ٹھوس ایونٹ کلاسز                                            | 53                                          |
+| ٹھوس ایونٹ کلاسز                                            | 54                                          |
 | سورس فائلیں (`packages/cc_domain/lib/core/domain/events/`)  | 14 (نیز `domain_event_bus.dart`)            |
 | ایبسٹریکٹ بیسز جو کبھی براہِ راست شائع نہیں ہوتے            | 1 (`TaskLifecycleEvent`، ایک سیلڈ درجہ بندی) |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | ورک اسپیس بنتا ہے                                        |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | ایجنٹ ایک رن مکمل کرتا ہے (کامیابی یا ناکامی)             |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | کوئی ایجنٹ کسی انسان کا انتظار شروع کرتا ہے: کوئی منظوری، کوئی `ask_user` سوال یا اسناد کی وجہ سے رکا ہوا رن (`kind` کی قدر `approval`، `question` یا `credential` ہوتی ہے) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | ایک ریپو رجسٹر ہوتا ہے؛ پس منظر میں کوڈ انڈیکسنگ شروع کرتا ہے |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | کوئی مہارت انسٹال یا تازہ ہوتی ہے اور اپنا سپلائی چین اسکین فیصلہ ساتھ لاتی ہے |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — چلانے والے ایجنٹ کے اسٹیئرنگ لین پر ایک سادہ زبان میں نوٹس داخل کرتا ہے |
 | `StaleReviewWatcher`                | `PrHeadChanged` — `ReviewBecameStale` صرف اُس وقت شائع کرتا ہے جب بے دخل کیے گئے کمٹ کے لیے کوئی مکمل شدہ ریویو موجود ہو |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — باہر جانے والے PR گفتگو کے جوابات                                              |
-| `NotificationFeedRecorder`          | نیچے دیے گئے اکیس اطلاع کلاس ایونٹس                                                                   |
-| `RemoteEventForwarder`              | وہی اکیس نیز `TicketReassigned` اور ہر `TaskLifecycleEvent`۔ تینوں رکنیت ایونٹس صرف اُس کا فی ورک اسپیس رکنیت کیشے باطل کرتے ہیں؛ وہ فریمز کے طور پر آگے نہیں بھیجے جاتے |
+| `NotificationFeedRecorder`          | نیچے دیے گئے بائیس اطلاع کلاس ایونٹس                                                                   |
+| `RemoteEventForwarder`              | وہی بائیس نیز `TicketReassigned` اور ہر `TaskLifecycleEvent`۔ تینوں رکنیت ایونٹس صرف اُس کا فی ورک اسپیس رکنیت کیشے باطل کرتے ہیں؛ وہ فریمز کے طور پر آگے نہیں بھیجے جاتے |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — اُس صارف کی منسلک ورک اسپیس سبسکرپشنز گرا دیتا ہے؛ ساکٹ کھلا رہتا ہے      |
 
 `TicketAssigned` ایک آڈٹ اور اطلاع کا سگنل اور ایک پائپ لائن ٹرگر ہے۔ کسی ایجنٹ کو تفویض ملکیت ریکارڈ کرتی ہے اور کوئی رن شروع نہیں کرتی — کوئی ٹکٹ ڈسپیچر نہیں ہے۔ کسی ٹیم کو تفویض (`assignedTeamId` سیٹ) استثناء ہے: `TeamRoutingService` ٹیم لیڈر کو ڈسپیچ کرتی ہے۔
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 سرور پر `NotificationFeedRecorder` اور `RemoteEventForwarder` اِن ایونٹس کو `notifications/*` وائر فریمز (`notification_wire.dart`) میں بدلتے ہیں۔ کلائنٹ پر `RpcNotificationMapper` → `mapNotificationFrame` ایک فریم کو `AppNotification` میں بدلتا ہے۔
 
-ٹھیک **سولہ** اطلاع کی اقسام ہیں۔ کئی ایونٹس ایک سے زیادہ وائر میتھڈ پر میپ ہوتے ہیں، کیونکہ فریم کنارہ لے کر چلتا ہے (ناکام بمقابلہ بحال) جبکہ قسم سوال لے کر چلتی ہے ("CI کیا کر رہا ہے؟")۔
+ٹھیک **سترہ** اطلاع کی اقسام ہیں۔ کئی ایونٹس ایک سے زیادہ وائر میتھڈ پر میپ ہوتے ہیں، کیونکہ فریم کنارہ لے کر چلتا ہے (ناکام بمقابلہ بحال) جبکہ قسم سوال لے کر چلتی ہے ("CI کیا کر رہا ہے؟")۔
 
 | قسم                   | ماخذ ایونٹ                | وائر میتھڈ                                                              |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (آپ کا ذکر کرتا ہے)                   |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`، آپ کا ذکر نہیں)  |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 بغیر فلٹر ہوتا ہے (ایونٹ یہ ریکارڈ نہیں کرتا کہ کس نے چھوڑا)، اور صرف
 `backendFailure` بندش ہی `rig_closed` فریم پیدا کرتی ہے — باقی وجوہات یا تو
 درخواست کی گئی ہوتی ہیں یا ریپ فریم پہلے ہی اُنہیں ڈھانپ چکا ہوتا ہے۔
+
+`AgentAwaitingInput` کو `AgentAwaitingInputPublisher` شائع کرتا ہے، جو منظوریوں اور اسناد کی رکاوٹوں کی رجسٹریوں میں نئے اندراجات پر نظر رکھتا ہے، اور ہر `ask_user` سوال کی خبر اُسے `AgentQuestionService` دیتا ہے۔ ایک انتظار ایک ایونٹ ہے؛ انتظار ختم ہونے پر کچھ شائع نہیں ہوتا۔
 
 خود لکھے PR کی پانچ اقسام `forUserId` ساتھ رکھتی ہیں، اس لیے وہ ورک اسپیس میں سب کے بجائے مصنف تک پہنچتی ہیں۔
 

@@ -2,7 +2,7 @@
 title: Konfigurera aviseringar
 description: Slå på eller av kategorier, ställ in tysta timmar och ett ljud och få veta vilka aviseringar som når dig var.
 slug: sv-SE/handbok/how-to-guider/aviseringar
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Den här guiden visar hur du konfigurerar aviseringar och vad varje inställning
@@ -24,11 +24,12 @@ Telefonklienten har ingen aviseringsyta alls.
 
 1. Gå till **Inställningar → Du → Aviseringar**
 2. Låt **Aktivera aviseringar** vara på
-3. Slå på eller av de kategorier du vill ha. Det finns exakt sexton:
+3. Slå på eller av de kategorier du vill ha. Det finns exakt sjutton:
 
 | Kategori                       | Utlöses när                                                                       |
 | ------------------------------ | --------------------------------------------------------------------------------- |
 | Agenten är klar                | En agent svarade i en körning du startade, eller så misslyckades körningen        |
+| En agent väntar på dig         | En agent behöver ditt godkännande, har ställt en fråga till dig eller står still i väntan på inloggningsuppgifter |
 | PR publicerad                  | En agent publicerade en PR                                                        |
 | PR sammanslagen                | En PR slogs samman                                                                |
 | Nya meddelanden                | Någon nämnde dig i en yta                                                         |
@@ -47,6 +48,12 @@ Telefonklienten har ingen aviseringsyta alls.
 
 Allt utanför den här listan går varken att avisera om eller filtrera — det finns
 ingen kategori för ”allt annat”.
+
+**En agent väntar på dig** utlöses en gång per väntan, när den börjar: ett
+väntande godkännande (inklusive exekveringsbeviljanden i sandlådan och
+verktygsgodkännanden i Claude Code), en `ask_user`-fråga eller en körning som
+hålls kvar eftersom dess inloggningsuppgifter inte kan betjäna den. Aviseringen
+öppnar ytan där du svarar och håller tyst medan du redan tittar på den ytan.
 
 Dessa inställningar följer din användare mellan enheter, så en telefon och en
 bärbar dator håller sig i takt. Volymen är det medvetna undantaget och hålls per

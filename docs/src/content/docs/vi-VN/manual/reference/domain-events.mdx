@@ -1,8 +1,8 @@
 ---
 title: Sự kiện miền
-description: Danh mục đầy đủ của 53 sự kiện miền, dữ liệu tải của chúng và những bên đăng ký phía máy chủ tiêu thụ chúng.
+description: Danh mục đầy đủ của 54 sự kiện miền, dữ liệu tải của chúng và những bên đăng ký phía máy chủ tiêu thụ chúng.
 slug: vi-VN/so-tay/tham-chieu/su-kien-mien
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Bus sự kiện
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Chỉ số                                                     | Số lượng                                     |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Các lớp sự kiện cụ thể                                      | 53                                          |
+| Các lớp sự kiện cụ thể                                      | 54                                          |
 | Các tệp nguồn (`packages/cc_domain/lib/core/domain/events/`) | 14 (cộng `domain_event_bus.dart`)           |
 | Các lớp cơ sở trừu tượng không bao giờ được phát trực tiếp   | 1 (`TaskLifecycleEvent`, một hệ thống phân cấp sealed) |
 
@@ -25,6 +25,7 @@ Mọi sự kiện trong danh mục dưới đây đều nằm trong một thư m
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Không gian làm việc được tạo                             |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent kết thúc một lượt chạy (thành công hay thất bại)   |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Một agent bắt đầu chờ con người: một yêu cầu phê duyệt, một câu hỏi `ask_user` hoặc một lượt chạy bị giữ lại vì thông tin xác thực (`kind` là `approval`, `question` hoặc `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Một kho mã được đăng ký; kích hoạt việc lập chỉ mục mã chạy nền |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Một skill được cài đặt hoặc cập nhật, kèm theo kết luận quét chuỗi cung ứng của nó |
 
@@ -183,8 +184,8 @@ Mọi bên đăng ký dưới đây đều được khởi tạo bên trong `run
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — đưa một thông báo bằng ngôn ngữ đời thường vào làn điều hướng của agent đang điều khiển |
 | `StaleReviewWatcher`                | `PrHeadChanged` — chỉ phát `ReviewBecameStale` khi đã có một đánh giá hoàn tất cho commit bị thay thế |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — các câu trả lời hội thoại PR gửi ra ngoài                                      |
-| `NotificationFeedRecorder`          | Hai mươi mốt sự kiện thuộc lớp thông báo ở dưới                                                      |
-| `RemoteEventForwarder`              | Hai mươi mốt sự kiện đó cùng `TicketReassigned` và mọi `TaskLifecycleEvent`. Ba sự kiện tư cách thành viên chỉ vô hiệu hóa bộ nhớ đệm tư cách thành viên theo từng không gian làm việc của nó; chúng không được chuyển tiếp dưới dạng khung |
+| `NotificationFeedRecorder`          | Hai mươi hai sự kiện thuộc lớp thông báo ở dưới                                                      |
+| `RemoteEventForwarder`              | Hai mươi hai sự kiện đó cùng `TicketReassigned` và mọi `TaskLifecycleEvent`. Ba sự kiện tư cách thành viên chỉ vô hiệu hóa bộ nhớ đệm tư cách thành viên theo từng không gian làm việc của nó; chúng không được chuyển tiếp dưới dạng khung |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — loại bỏ các đăng ký không gian làm việc mà người dùng đó đã gắn vào; socket vẫn mở |
 
 `TicketAssigned` là một tín hiệu kiểm toán và thông báo, đồng thời là một trình kích hoạt quy trình. Việc gán cho một agent ghi lại quyền sở hữu và không khởi chạy lượt chạy nào — không có bộ điều phối phiếu. Việc gán cho một nhóm (khi `assignedTeamId` được đặt) là ngoại lệ: `TeamRoutingService` điều phối trưởng nhóm.
@@ -195,12 +196,13 @@ Mọi bên đăng ký dưới đây đều được khởi tạo bên trong `run
 
 Trên máy chủ, `NotificationFeedRecorder` và `RemoteEventForwarder` biến những sự kiện này thành các khung truyền `notifications/*` (`notification_wire.dart`). Trên máy khách, `RpcNotificationMapper` → `mapNotificationFrame` biến một khung thành một `AppNotification`.
 
-Có đúng **mười sáu** danh mục thông báo. Một số sự kiện ánh xạ tới nhiều hơn một phương thức truyền, vì khung mang theo diễn biến (thất bại so với phục hồi) còn danh mục mang theo câu hỏi ("CI đang làm gì?").
+Có đúng **mười bảy** danh mục thông báo. Một số sự kiện ánh xạ tới nhiều hơn một phương thức truyền, vì khung mang theo diễn biến (thất bại so với phục hồi) còn danh mục mang theo câu hỏi ("CI đang làm gì?").
 
 | Danh mục               | Sự kiện nguồn             | Phương thức truyền                                                     |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (nhắc đến bạn)                        |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, không nhắc đến bạn) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,8 @@ Khung tiếp quản rig không được gửi trả lại cho người đã nắ
 nhả thì không được lọc (sự kiện không ghi lại ai đã nhả), và chỉ một lần đóng với
 `backendFailure` mới tạo ra khung `rig_closed` — những lý do khác hoặc là do được
 yêu cầu, hoặc đã được khung thu hồi bao phủ.
+
+`AgentAwaitingInput` do `AgentAwaitingInputPublisher` phát ra. Thành phần này theo dõi các mục mới trong sổ đăng ký phê duyệt và sổ đăng ký chặn do thông tin xác thực, đồng thời được `AgentQuestionService` báo về từng câu hỏi `ask_user`. Mỗi lần chờ là một sự kiện; không có gì được phát khi việc chờ kết thúc.
 
 Năm danh mục dành cho PR do mình tạo đều mang `forUserId`, nên chúng đến với tác giả thay vì mọi người trong không gian làm việc.
 

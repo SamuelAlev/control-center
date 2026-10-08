@@ -7012,6 +7012,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Atlandı';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Süre doldu';
+
+  @override
+  String get agentQuestionTimeLeft => 'Yanıtlamak için kalan süre';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Kendi sözlerinizle anlatın…';
 
   @override
@@ -15250,4 +15256,37 @@ class AppLocalizationsTr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Bir ajan sizi bekliyor';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Bir ajanın onayınıza, yanıtınıza veya çalışan bir kimlik bilgisine ihtiyacı olduğunda';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent onayınızı bekliyor';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Bir ajan onayınızı bekliyor';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent bir soru sordu';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Bir ajan bir soru sordu';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent kimlik bilgisi nedeniyle durdu';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Bir ajan kimlik bilgisi nedeniyle durdu';
 }

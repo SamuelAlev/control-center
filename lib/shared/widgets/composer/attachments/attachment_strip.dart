@@ -9,6 +9,12 @@ import 'package:control_center/shared/widgets/attachments/local_media.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_media.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/file_reference.dart';
+import 'package:flutter/gestures.dart'
+    show
+        GestureBinding,
+        PointerDeviceKind,
+        PointerScrollEvent,
+        PointerSignalEvent;
 import 'package:flutter/widgets.dart';
 
 /// Height of one attachment card, and of the strip that holds them.
@@ -24,7 +30,12 @@ const double kAttachmentStripHeight = 60;
 /// A card is the same reference as the `@[file:…]` token in the prompt, seen
 /// from the other side: both open the preview, and removing either removes
 /// both.
-class AttachmentStrip extends StatelessWidget {
+///
+/// Overflowing cards scroll: a mouse can drag the row (desktop scrollables
+/// ignore mouse drags by default) and a vertical wheel scrolls it sideways, so
+/// the fourth attachment is reachable without a trackpad. The edges fade while
+/// cards remain beyond them.
+class AttachmentStrip extends StatefulWidget {
   /// Creates a new [AttachmentStrip].
   const AttachmentStrip({
     super.key,
@@ -44,21 +55,77 @@ class AttachmentStrip extends StatelessWidget {
   final void Function(ComposerAttachment)? onOpen;
 
   @override
+  State<AttachmentStrip> createState() => _AttachmentStripState();
+}
+
+class _AttachmentStripState extends State<AttachmentStrip> {
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Turns a plain vertical wheel into a sideways scroll. Horizontal and
+  /// shift-wheel signals already reach the list's own [Scrollable], which
+  /// claims them first; this only sees the vertical ones it ignores. Claimed
+  /// through the resolver so the composer's text field does not scroll too.
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent ||
+        event.scrollDelta.dx != 0 ||
+        event.scrollDelta.dy == 0 ||
+        !_controller.hasClients) {
+      return;
+    }
+    final position = _controller.position;
+    if (position.maxScrollExtent <= position.minScrollExtent) {
+      return;
+    }
+    GestureBinding.instance.pointerSignalResolver.register(event, (event) {
+      final delta = (event as PointerScrollEvent).scrollDelta.dy;
+      final target = (position.pixels + delta).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if (target != position.pixels) {
+        position.jumpTo(target);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final attachments = widget.attachments;
     if (attachments.isEmpty) {
       return const SizedBox.shrink();
     }
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final onOpen = widget.onOpen;
     return SizedBox(
       height: kAttachmentStripHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: attachments.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (context, i) => _AttachmentCard(
-          attachment: attachments[i],
-          onRemove: () => onRemove(attachments[i]),
-          onOpen: onOpen == null ? null : () => onOpen!(attachments[i]),
+      child: Listener(
+        onPointerSignal: _onPointerSignal,
+        child: CcScrollArea(
+          axis: Axis.horizontal,
+          fadeColor: t.bgPrimary,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(dragDevices: PointerDeviceKind.values.toSet()),
+            child: ListView.separated(
+              controller: _controller,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              itemCount: attachments.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (context, i) => _AttachmentCard(
+                attachment: attachments[i],
+                onRemove: () => widget.onRemove(attachments[i]),
+                onOpen: onOpen == null ? null : () => onOpen(attachments[i]),
+              ),
+            ),
+          ),
         ),
       ),
     );

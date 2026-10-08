@@ -24,6 +24,7 @@ class _FakeDispatcher extends McpToolDispatcher {
   Future<Map<String, dynamic>> handleScopedRequest(
     JsonRpcRequest request, {
     McpCallScope? scope,
+    Future<void>? abandoned,
   }) async {
     if (onHandleRequest != null) {
       return onHandleRequest!(request);

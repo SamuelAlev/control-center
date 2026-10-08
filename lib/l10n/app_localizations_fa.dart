@@ -6986,6 +6986,12 @@ class AppLocalizationsFa extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'رد شد';
 
   @override
+  String get agentQuestionTimedOutLabel => 'مهلت تمام شد';
+
+  @override
+  String get agentQuestionTimeLeft => 'زمان باقی‌مانده برای پاسخ';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'با کلمات خودتان توضیح دهید…';
 
   @override
@@ -15193,4 +15199,37 @@ class AppLocalizationsFa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'عاملی منتظر شماست';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'وقتی عاملی به تأیید، پاسخ یا اعتبارنامهٔ معتبر شما نیاز دارد';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent به تأیید شما نیاز دارد';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'عاملی به تأیید شما نیاز دارد';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent سؤالی دارد';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'عاملی سؤالی دارد';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent به‌خاطر اعتبارنامه متوقف شده است';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'عاملی به‌خاطر اعتبارنامه متوقف شده است';
 }

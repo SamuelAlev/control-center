@@ -1,8 +1,8 @@
 ---
 title: Domain-Ereignisse
-description: Vollständiger Katalog der 53 Domain-Ereignisse, ihrer Payloads und der serverseitigen Abonnenten, die sie entgegennehmen.
+description: Vollständiger Katalog der 54 Domain-Ereignisse, ihrer Payloads und der serverseitigen Abonnenten, die sie entgegennehmen.
 slug: de-DE/handbuch/referenz/domain-ereignisse
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Ereignisbus
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Kennzahl                                                    | Anzahl                                      |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Konkrete Ereignisklassen                                    | 53                                          |
+| Konkrete Ereignisklassen                                    | 54                                          |
 | Quelldateien (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
 | Abstrakte Basen, die nie direkt veröffentlicht werden       | 1 (`TaskLifecycleEvent`, eine sealed Hierarchie) |
 
@@ -25,6 +25,7 @@ Jedes Ereignis im Katalog unten lebt in genau diesem Verzeichnis; nirgendwo sons
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Ein Arbeitsbereich wird angelegt                        |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Ein Agent beendet einen Lauf (Erfolg oder Fehler)       |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Ein Agent beginnt, auf einen Menschen zu warten: auf eine Freigabe, auf eine Antwort auf eine `ask_user`-Frage oder mit einem Lauf, der an Zugangsdaten festhängt (`kind` ist `approval`, `question` oder `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Ein Repo wird registriert; stößt die Code-Indizierung im Hintergrund an |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Ein Skill wird installiert oder aktualisiert und trägt das Urteil seines Supply-Chain-Scans |
 
@@ -183,8 +184,8 @@ Jeder Abonnent unten wird in `runCcServer` erzeugt (oder in einem Dienst, den di
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent`. Schleust einen Hinweis in Klartext in den Steuerkanal des antreibenden Agenten |
 | `StaleReviewWatcher`                | `PrHeadChanged`. Veröffentlicht `ReviewBecameStale` nur, wenn für den ersetzten Commit ein abgeschlossenes Review existiert |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted`. Ausgehende Antworten der PR-Unterhaltung                                        |
-| `NotificationFeedRecorder`          | Die 21 Ereignisse der Benachrichtigungsklasse unten                                                  |
-| `RemoteEventForwarder`              | Diese 21 plus `TicketReassigned` und jedes `TaskLifecycleEvent`. Die drei Mitgliedschaftsereignisse machen nur seinen Mitgliedschafts-Cache je Arbeitsbereich ungültig; als Frames werden sie nicht weitergeleitet |
+| `NotificationFeedRecorder`          | Die 22 Ereignisse der Benachrichtigungsklasse unten                                                  |
+| `RemoteEventForwarder`              | Diese 22 plus `TicketReassigned` und jedes `TaskLifecycleEvent`. Die drei Mitgliedschaftsereignisse machen nur seinen Mitgliedschafts-Cache je Arbeitsbereich ungültig; als Frames werden sie nicht weitergeleitet |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`. Verwirft die angehängten Arbeitsbereichsabonnements dieses Benutzers; der Socket bleibt offen |
 
 `TicketAssigned` ist ein Signal für Audit und Benachrichtigung und ein Pipeline-Trigger. Die Zuweisung an einen Agenten vermerkt die Zuständigkeit und startet keinen Lauf. Einen Ticket-Dispatcher gibt es nicht. Die Ausnahme ist die Zuweisung an ein Team (gesetztes `assignedTeamId`): `TeamRoutingService` startet die Teamleitung.
@@ -195,12 +196,13 @@ Jeder Abonnent unten wird in `runCcServer` erzeugt (oder in einem Dienst, den di
 
 Auf dem Server machen `NotificationFeedRecorder` und `RemoteEventForwarder` aus diesen Ereignissen Wire-Frames `notifications/*` (`notification_wire.dart`). Auf dem Client macht `RpcNotificationMapper` → `mapNotificationFrame` aus einem Frame eine `AppNotification`.
 
-Es gibt genau **sechzehn** Benachrichtigungskategorien. Mehrere Ereignisse bilden auf mehr als eine Wire-Methode ab, weil der Frame die Kante trägt (fehlgeschlagen gegenüber erholt) und die Kategorie die Frage („was macht die CI?“).
+Es gibt genau **siebzehn** Benachrichtigungskategorien. Mehrere Ereignisse bilden auf mehr als eine Wire-Methode ab, weil der Frame die Kante trägt (fehlgeschlagen gegenüber erholt) und die Kategorie die Frage („was macht die CI?“).
 
 | Kategorie              | Quellereignis             | Wire-Methode                                                           |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (erwähnt dich)                        |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, ohne Erwähnung von dir) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -226,6 +228,11 @@ Der Frame zur Rig-Übernahme geht nicht an die Person zurück, die das Steuer
 wer losgelassen hat), und nur ein Schließen mit `backendFailure` erzeugt einen
 Frame `rig_closed`. Die anderen Gründe sind angefordert oder schon vom Frame
 zum Zurückholen abgedeckt.
+
+`AgentAwaitingInput` wird von `AgentAwaitingInputPublisher` veröffentlicht. Er
+beobachtet die Register für Freigaben und für blockierte Zugangsdaten auf neue
+Einträge, und `AgentQuestionService` meldet ihm jede `ask_user`-Frage. Eine
+Wartezeit ergibt ein Ereignis; wenn sie endet, wird nichts veröffentlicht.
 
 Die fünf Kategorien zur Beobachtung eigener PRs tragen `forUserId` und erreichen damit den Autor, nicht jeden im Arbeitsbereich.
 

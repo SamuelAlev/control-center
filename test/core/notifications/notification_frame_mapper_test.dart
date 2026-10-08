@@ -333,6 +333,59 @@ void main() {
       expect(n!.category, NotificationCategory.rigStatusChanged);
       expect(n.workspaceId, 'ws-1');
     });
+
+    group('agent_awaiting_input', () {
+      AppNotification? map(Map<String, dynamic> extra) => mapNotificationFrame(
+        'notifications/agent_awaiting_input',
+        {'workspace_id': 'ws-1', 'summary': 'Push to main', ...extra},
+        l10n: l10n,
+      );
+
+      test('names the agent and the kind of wait', () {
+        expect(
+          map({'kind': 'approval', 'agent_name': 'Ada'})!.title,
+          l10n.notificationAgentNeedsApproval('Ada'),
+        );
+        expect(
+          map({'kind': 'question', 'agent_name': 'Ada'})!.title,
+          l10n.notificationAgentAskedQuestion('Ada'),
+        );
+        expect(
+          map({'kind': 'credential', 'agent_name': 'Ada'})!.title,
+          l10n.notificationAgentBlockedOnCredential('Ada'),
+        );
+      });
+
+      test('reads without a name, and an unknown kind still notifies', () {
+        expect(
+          map({'kind': 'question'})!.title,
+          l10n.notificationAgentAskedQuestionUnnamed,
+        );
+        expect(
+          map({'kind': 'somethingNew'})!.title,
+          l10n.notificationAgentNeedsApprovalUnnamed,
+        );
+      });
+
+      test('opens the waiting space and stays quiet while it is open', () {
+        final n = map({
+          'kind': 'question',
+          'space_id': 'space-1',
+          'conversation_id': 'conv-1',
+        })!;
+        expect(n.category, NotificationCategory.agentAwaitingInput);
+        expect(n.body, 'Push to main');
+        expect(n.spaceId, 'space-1');
+        expect(n.route, contains('space-1'));
+        expect(n.workspaceId, 'ws-1');
+      });
+
+      test('falls back to the workspace when no space is known', () {
+        final n = map({'kind': 'approval'})!;
+        expect(n.spaceId, isNull);
+        expect(n.route, contains('ws-1'));
+      });
+    });
   });
 
   // ==========================================================================

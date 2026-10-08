@@ -1,8 +1,8 @@
 ---
 title: أحداث النطاق
-description: الفهرس الكامل لأحداث النطاق وعددها 53، وحمولاتها، والمشتركون على جانب الخادم الذين يستهلكونها.
+description: الفهرس الكامل لأحداث النطاق وعددها 54، وحمولاتها، والمشتركون على جانب الخادم الذين يستهلكونها.
 slug: ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## ناقل الأحداث
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | المقياس | العدد |
 | --- | --- |
-| أصناف الأحداث الملموسة | 53 |
+| أصناف الأحداث الملموسة | 54 |
 | ملفات المصدر (`packages/cc_domain/lib/core/domain/events/`) | 14 (إضافة إلى `domain_event_bus.dart`) |
 | القواعد المجرّدة التي لا تُنشَر مباشرة | 1 (`TaskLifecycleEvent`، تسلسل هرمي مختوم) |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | --- | --- | --- |
 | `WorkspaceCreated` | `workspaceId` | تُنشأ مساحة العمل |
 | `AgentRunCompleted` | `agentId`، `runId?`، `workspaceId?`، `conversationId?` | ينهي الوكيل تشغيلًا (نجاحًا أو فشلًا) |
+| `AgentAwaitingInput` | `workspaceId`، `kind`، `summary`، `spaceId?`، `conversationId?`، `agentId?`، `agentName?` | يبدأ وكيل انتظار إنسان: موافقة، أو سؤال `ask_user`، أو تشغيل متوقّف بسبب بيانات اعتماد (قيمة `kind` هي `approval` أو `question` أو `credential`) |
 | `RepoAdded` | `repoId`، `path`، `workspaceId` | يُسجَّل مستودع، ويُطلَق فهرسة الشفرة في الخلفية |
 | `SkillUpdated` | `workspaceId`، `slug`، `origin`، `computedHash`، `scanVerdict?` | تُثبَّت مهارة أو تُحدَّث، حاملة حكم فحص سلسلة التوريد |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener` | `RigControlChanged`، `RigReaped`، `RigClosedEvent`. يحقن إشعارًا بلغة واضحة في مسار توجيه الوكيل الدافع |
 | `StaleReviewWatcher` | `PrHeadChanged`. ينشر `ReviewBecameStale` فقط حين توجد مراجعة منتهية للإيداع المستبدَل |
 | `GitHubPrConversationBridge` | `AgentRunCompleted`. ردود صادرة في محادثة طلب السحب |
-| `NotificationFeedRecorder` | أحداث صنف الإشعارات الواحد والعشرون أدناه |
-| `RemoteEventForwarder` | تلك الواحد والعشرون إضافة إلى `TicketReassigned` وكل `TaskLifecycleEvent`. أحداث العضوية الثلاثة تُبطل فقط ذاكرة عضويته المؤقتة لكل مساحة عمل، ولا تُمرَّر كإطارات |
+| `NotificationFeedRecorder` | أحداث صنف الإشعارات الاثنان والعشرون أدناه |
+| `RemoteEventForwarder` | تلك الاثنان والعشرون إضافة إلى `TicketReassigned` وكل `TaskLifecycleEvent`. أحداث العضوية الثلاثة تُبطل فقط ذاكرة عضويته المؤقتة لكل مساحة عمل، ولا تُمرَّر كإطارات |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`. يُسقط اشتراكات مساحات العمل المرتبطة بذلك المستخدم، ويبقى المقبس مفتوحًا |
 
 `TicketAssigned` إشارة تدقيق وإشعار، ومشغّل لخط أنابيب. الإسناد إلى وكيل يسجّل الملكية ولا يبدأ تشغيلًا، فلا يوجد موزّع تذاكر. الإسناد إلى فريق (عند تعيين `assignedTeamId`) هو الاستثناء: يرسل `TeamRoutingService` قائد الفريق.
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 على الخادم يحوّل `NotificationFeedRecorder` و`RemoteEventForwarder` هذه الأحداث إلى إطارات سلك من النمط `notifications/*` (`notification_wire.dart`). على العميل يحوّل `RpcNotificationMapper` ثم `mapNotificationFrame` الإطار إلى `AppNotification`.
 
-هناك **ست عشرة** فئة إشعار بالضبط. تُقابَل عدة أحداث بأكثر من أسلوب سلك، لأن الإطار يحمل الحافة (الفشل مقابل التعافي) بينما تحمل الفئة السؤال («ماذا يفعل CI؟»).
+هناك **سبع عشرة** فئة إشعار بالضبط. تُقابَل عدة أحداث بأكثر من أسلوب سلك، لأن الإطار يحمل الحافة (الفشل مقابل التعافي) بينما تحمل الفئة السؤال («ماذا يفعل CI؟»).
 
 | الفئة | حدث المصدر | أسلوب السلك |
 | --- | --- | --- |
 | `newMessage` | `MessageReceived` | `notifications/message_received` (يشير إليك) |
 | `agentRunCompleted` | `MessageReceived` | `notifications/message_received` (`is_agent_message`، دون إشارة إليك) |
+| `agentAwaitingInput` | `AgentAwaitingInput` | `notifications/agent_awaiting_input` |
 | `ticketAssigned` | `TicketAssigned` | `notifications/ticket_assigned` |
 | `ticketStatusChanged` | `TicketStatusChanged` | `notifications/ticket_status_changed` |
 | `pullRequestPublished` | `PullRequestPublished` | `notifications/pr_published` |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged` | `RigClosedEvent` | `notifications/rig_closed` |
 
 لا يُعاد إطار تولّي المنصة إلى من أخذ التحكم، ويُمرَّر التحرير بلا تصفية (لا يسجّل الحدث من أفلت التحكم)، ولا ينتج إطار `rig_closed` إلا إغلاق بسبب `backendFailure`. الأسباب الأخرى إما مطلوبة، أو يغطيها إطار الاسترداد أصلًا.
+
+ينشر `AgentAwaitingInputPublisher` الحدث `AgentAwaitingInput`، فهو يراقب سجلَّي الموافقات وحظر بيانات الاعتماد بحثًا عن إدخالات جديدة، ويُبلغه `AgentQuestionService` بكل سؤال `ask_user`. الانتظار الواحد حدث واحد، ولا يُنشَر شيء عند انتهاء الانتظار.
 
 تحمل فئات طلب السحب المؤلَّف الخمس `forUserId`، فتصل إلى المؤلف لا إلى كل من في مساحة العمل.
 

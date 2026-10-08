@@ -1,8 +1,8 @@
 ---
 title: رویدادهای دامنه
-description: فهرست کامل ۵۳ رویداد دامنه، بار داده‌هایشان و مشترکان سمت سرور که آن‌ها را مصرف می‌کنند.
+description: فهرست کامل ۵۴ رویداد دامنه، بار داده‌هایشان و مشترکان سمت سرور که آن‌ها را مصرف می‌کنند.
 slug: fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## گذرگاه رویداد
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | سنجه                                                                    | شمار                                        |
 | ----------------------------------------------------------------------- | ------------------------------------------- |
-| کلاس‌های رویداد مشخص                                                    | ۵۳                                          |
+| کلاس‌های رویداد مشخص                                                    | ۵۴                                          |
 | فایل‌های منبع (`packages/cc_domain/lib/core/domain/events/`)             | ۱۴ (به‌علاوهٔ `domain_event_bus.dart`)         |
 | بنیادهای انتزاعی که هرگز مستقیماً منتشر نمی‌شوند                          | ۱ (`TaskLifecycleEvent`، یک سلسله‌مراتب مهروموم‌شده) |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | فضای کاری ساخته می‌شود                                  |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | عامل یک اجرا را تمام می‌کند (موفق یا ناموفق)             |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | عاملی شروع به انتظار برای یک انسان می‌کند: یک تأیید، یک پرسش `ask_user` یا اجرایی که به‌خاطر اعتبارنامه متوقف مانده (`kind` یکی از `approval`، `question` یا `credential` است) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | مخزنی ثبت می‌شود؛ ایندکس‌کردن کد در پس‌زمینه را راه می‌اندازد |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | مهارتی نصب یا به‌روزرسانی می‌شود، همراه با حکم اسکن زنجیرهٔ تأمین آن |
 
@@ -183,8 +184,8 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — اطلاعیه‌ای به زبان ساده روی خط هدایت عامل گرداننده تزریق می‌کند |
 | `StaleReviewWatcher`                | `PrHeadChanged` — تنها زمانی `ReviewBecameStale` را منتشر می‌کند که بازبینی‌ای تمام‌شده برای کامیت جایگزین‌شده وجود داشته باشد |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — پاسخ‌های بیرون‌روی گفتگوی PR                                                    |
-| `NotificationFeedRecorder`          | بیست‌ویک رویداد کلاس اعلان در زیر                                                                     |
-| `RemoteEventForwarder`              | همان بیست‌ویک رویداد به‌علاوهٔ `TicketReassigned` و هر `TaskLifecycleEvent`. سه رویداد عضویت تنها کش عضویت به‌ازای هر فضای کاری آن را باطل می‌کنند؛ به‌صورت فریم بازپخش نمی‌شوند |
+| `NotificationFeedRecorder`          | بیست‌ودو رویداد کلاس اعلان در زیر                                                                     |
+| `RemoteEventForwarder`              | همان بیست‌ودو رویداد به‌علاوهٔ `TicketReassigned` و هر `TaskLifecycleEvent`. سه رویداد عضویت تنها کش عضویت به‌ازای هر فضای کاری آن را باطل می‌کنند؛ به‌صورت فریم بازپخش نمی‌شوند |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — اشتراک‌های فضای کاری متصل آن کاربر را می‌اندازد؛ سوکت باز می‌ماند          |
 
 `TicketAssigned` هم‌زمان یک نشانهٔ حسابرسی و اعلان و یک تریگر پایپ‌لاین است. تخصیص به یک عامل مالکیت را ثبت می‌کند و هیچ اجرایی شروع نمی‌کند — هیچ اعزام‌کنندهٔ تیکتی وجود ندارد. تخصیص به یک تیم (با مقدارگرفتن `assignedTeamId`) استثناست: `TeamRoutingService` رهبر تیم را اعزام می‌کند.
@@ -195,12 +196,13 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 
 روی سرور، `NotificationFeedRecorder` و `RemoteEventForwarder` این رویدادها را به فریم‌های شبکه‌ای `notifications/*` تبدیل می‌کنند (`notification_wire.dart`). روی کلاینت، `RpcNotificationMapper` → `mapNotificationFrame` یک فریم را به یک `AppNotification` تبدیل می‌کند.
 
-دقیقاً **شانزده** دستهٔ اعلان وجود دارد. چند رویداد به بیش از یک متد شبکه‌ای نگاشت می‌شوند، چون فریم لبه را حمل می‌کند (ناموفق در برابر بهبودیافته) و دسته پرسش را («CI چه می‌کند؟»).
+دقیقاً **هفده** دستهٔ اعلان وجود دارد. چند رویداد به بیش از یک متد شبکه‌ای نگاشت می‌شوند، چون فریم لبه را حمل می‌کند (ناموفق در برابر بهبودیافته) و دسته پرسش را («CI چه می‌کند؟»).
 
 | دسته                   | رویداد مبدأ               | متد شبکه‌ای                                                             |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (شما را منشن می‌کند)                  |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`، بدون منشن شما)   |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,11 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 بی‌فیلتر است (رویداد ثبت نمی‌کند که چه کسی رها کرده)، و تنها بسته‌شدنی با
 `backendFailure` یک فریم `rig_closed` تولید می‌کند — دلیل‌های دیگر یا درخواستی‌اند
 یا از پیش با فریم بازپس‌گیری پوشش داده شده‌اند.
+
+`AgentAwaitingInput` را `AgentAwaitingInputPublisher` منتشر می‌کند. این ناشر
+رجیستری‌های تأییدها و اعتبارنامه‌های مسدودشده را برای ورودی‌های تازه زیر نظر
+دارد و `AgentQuestionService` هر پرسش `ask_user` را به آن خبر می‌دهد. هر انتظار
+یک رویداد است؛ وقتی انتظار تمام می‌شود، چیزی منتشر نمی‌شود.
 
 پنج دستهٔ PRهای تألیف‌شده `forUserId` را با خود دارند، پس به نویسنده می‌رسند نه به همهٔ اعضای فضای کاری.
 

@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
@@ -96,6 +97,28 @@ void main() {
     await _pump();
 
     expect(await repository.watchFeed('ws-1').first, isEmpty);
+  });
+
+  test('records an agent waiting on the operator', () async {
+    bus.publish(
+      AgentAwaitingInput(
+        workspaceId: 'ws-1',
+        kind: AgentInputKind.question,
+        summary: 'Which database?',
+        spaceId: 'space-1',
+        agentId: 'agent-1',
+        agentName: 'Ada',
+        occurredAt: DateTime(2026, 10, 8),
+      ),
+    );
+    await _pump();
+
+    final item = (await repository.watchFeed('ws-1').first).single;
+    expect(item.method, 'notifications/agent_awaiting_input');
+    expect(item.params['kind'], 'question');
+    expect(item.params['summary'], 'Which database?');
+    expect(item.params['space_id'], 'space-1');
+    expect(item.params['agent_name'], 'Ada');
   });
 
   group('PR / code-review lanes', () {

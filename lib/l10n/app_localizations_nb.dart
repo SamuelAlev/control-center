@@ -7015,6 +7015,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Hoppet over';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Tidsavbrudd';
+
+  @override
+  String get agentQuestionTimeLeft => 'Gjenstående tid til å svare';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Beskriv med egne ord…';
 
   @override
@@ -15255,4 +15261,38 @@ class AppLocalizationsNb extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'En agent venter på deg';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Når en agent trenger godkjenningen din, et svar eller gyldig påloggingsinformasjon';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent trenger godkjenningen din';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'En agent trenger godkjenningen din';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent har et spørsmål';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'En agent har et spørsmål';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent er blokkert av påloggingsinformasjon';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'En agent er blokkert av påloggingsinformasjon';
 }

@@ -42,10 +42,7 @@ class _ScriptedRunLogRepo implements AgentRunLogRepository {
   int subscriptions = 0;
 
   @override
-  Stream<List<AgentRunLog>> watchByConversation(
-    String workspaceId,
-    String conversationId,
-  ) {
+  Stream<List<AgentRunLog>> watchBySpace(String workspaceId, String spaceId) {
     subscriptions++;
     return _controller.stream;
   }
@@ -116,21 +113,21 @@ void main() {
     return c.read(runTranscriptProvider(runKey)).value ?? const [];
   }
 
-  group('runInConversationProvider', () {
+  group('runInSpaceProvider', () {
     test('selects the run by id out of the conversation stream', () async {
       final ctl = StreamController<List<AgentRunLog>>();
       addTearDown(ctl.close);
       final c = container(repo: _ScriptedRunLogRepo(ctl));
       const key = (workspaceId: 'ws-1', spaceId: 'c-1', runId: 'run-1');
-      final sub = c.listen(runInConversationProvider(key), (_, _) {});
+      final sub = c.listen(runInSpaceProvider(key), (_, _) {});
       addTearDown(sub.close);
 
       ctl.add([_run(id: 'run-0'), _run(id: 'run-1', costCents: 5)]);
       await Future<void>.delayed(Duration.zero);
 
-      expect(c.read(runInConversationProvider(key)).value?.id, 'run-1');
+      expect(c.read(runInSpaceProvider(key)).value?.id, 'run-1');
       expect(
-        c.read(runInConversationProvider(key)).value?.cost.estimatedCostCents,
+        c.read(runInSpaceProvider(key)).value?.cost.estimatedCostCents,
         5,
       );
     });
@@ -140,24 +137,24 @@ void main() {
       addTearDown(ctl.close);
       final c = container(repo: _ScriptedRunLogRepo(ctl));
       const key = (workspaceId: 'ws-1', spaceId: 'c-1', runId: 'run-1');
-      final sub = c.listen(runInConversationProvider(key), (_, _) {});
+      final sub = c.listen(runInSpaceProvider(key), (_, _) {});
       addTearDown(sub.close);
 
       ctl.add([_run(id: 'run-1', status: RunStatus.running)]);
       await Future<void>.delayed(Duration.zero);
       expect(
-        c.read(runInConversationProvider(key)).value?.status,
+        c.read(runInSpaceProvider(key)).value?.status,
         RunStatus.running,
       );
 
       ctl.add([_run(id: 'run-1', costCents: 12)]);
       await Future<void>.delayed(Duration.zero);
       expect(
-        c.read(runInConversationProvider(key)).value?.status,
+        c.read(runInSpaceProvider(key)).value?.status,
         RunStatus.completed,
       );
       expect(
-        c.read(runInConversationProvider(key)).value?.cost.estimatedCostCents,
+        c.read(runInSpaceProvider(key)).value?.cost.estimatedCostCents,
         12,
       );
     });
@@ -169,13 +166,13 @@ void main() {
         addTearDown(ctl.close);
         final c = container(repo: _ScriptedRunLogRepo(ctl));
         const key = (workspaceId: 'ws-1', spaceId: 'c-1', runId: 'gone');
-        final sub = c.listen(runInConversationProvider(key), (_, _) {});
+        final sub = c.listen(runInSpaceProvider(key), (_, _) {});
         addTearDown(sub.close);
 
         ctl.add([_run(id: 'run-1')]);
         await Future<void>.delayed(Duration.zero);
 
-        final state = c.read(runInConversationProvider(key));
+        final state = c.read(runInSpaceProvider(key));
         expect(state.hasValue, isTrue);
         expect(state.value, isNull);
       },

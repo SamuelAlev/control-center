@@ -7071,6 +7071,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Saltata';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Tempo scaduto';
+
+  @override
+  String get agentQuestionTimeLeft => 'Tempo rimanente per rispondere';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Descrivi con parole tue…';
 
   @override
@@ -15349,4 +15355,38 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Un agente ti aspetta';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Quando un agente ha bisogno della tua approvazione, di una risposta o di credenziali valide';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent ha bisogno della tua approvazione';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Un agente ha bisogno della tua approvazione';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent ha una domanda';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Un agente ha una domanda';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent è bloccato dalle credenziali';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Un agente è bloccato dalle credenziali';
 }

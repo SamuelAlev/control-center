@@ -7,35 +7,33 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/conversation_run_tree_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Identifies one run inside the conversation it belongs to.
+/// Identifies one run inside the space it belongs to.
 ///
 /// A record, so it works as a provider-family key by value.
-typedef RunInConversationKey = ({
-  String workspaceId,
-  String spaceId,
-  String runId,
-});
+typedef RunInSpaceKey = ({String workspaceId, String spaceId, String runId});
 
 /// Identifies one run for a run-scoped server read.
 typedef RunKey = ({String workspaceId, String runId});
 
-/// One run's log row, derived from the conversation's live run-log stream.
+/// One run's log row, derived from the space's live run-log stream — the one
+/// the AGENTS tree already holds open.
 ///
 /// Status, liveness, cost and token updates therefore land with no second
 /// subscription — and with no unscoped `getById`, which would not be a workspace
-/// boundary.
+/// boundary. The space stream, not a conversation's: the caller knows the space,
+/// and a space id is never a conversation id.
 ///
-/// Stays [AsyncLoading] until the conversation's stream produces its first value,
-/// then resolves to null when the run is not (or no longer) in the conversation's
+/// Stays [AsyncLoading] until the space's stream produces its first value,
+/// then resolves to null when the run is not (or no longer) in the space's
 /// set — which is how a surface renders "this run is no longer available" without
 /// confusing it with "still loading".
-final runInConversationProvider = Provider.autoDispose
-    .family<AsyncValue<AgentRunLog?>, RunInConversationKey>((ref, key) {
+final runInSpaceProvider = Provider.autoDispose
+    .family<AsyncValue<AgentRunLog?>, RunInSpaceKey>((ref, key) {
       return ref
           .watch(
-            conversationRunLogsProvider((
+            spaceRunLogsProvider((
               workspaceId: key.workspaceId,
-              conversationId: key.spaceId,
+              spaceId: key.spaceId,
             )),
           )
           .whenData(
@@ -145,12 +143,12 @@ final runToolCountProvider = Provider.autoDispose.family<int, RunKey>((
 /// activity. Matched on the recorded [AgentRunLog.spawnToolCallId] rather than by
 /// label and time, which would mis-link concurrent `task` calls.
 final runIdForSpawnToolCallProvider = Provider.autoDispose
-    .family<String?, RunInConversationKey>((ref, key) {
+    .family<String?, RunInSpaceKey>((ref, key) {
       final logs = ref
           .watch(
-            conversationRunLogsProvider((
+            spaceRunLogsProvider((
               workspaceId: key.workspaceId,
-              conversationId: key.spaceId,
+              spaceId: key.spaceId,
             )),
           )
           .asData

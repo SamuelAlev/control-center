@@ -1,8 +1,8 @@
 ---
 title: 领域事件
-description: 全部 53 个领域事件的完整目录、它们的载荷，以及消费这些事件的服务端订阅方。
+description: 全部 54 个领域事件的完整目录、它们的载荷，以及消费这些事件的服务端订阅方。
 slug: zh-CN/手册/参考/领域事件
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## 事件总线
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | 指标                                              | 数量                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| 具体事件类                                      | 53                                          |
+| 具体事件类                                      | 54                                          |
 | 源文件（`packages/cc_domain/lib/core/domain/events/`） | 14（外加 `domain_event_bus.dart`）           |
 | 从不直接发布的抽象基类            | 1（`TaskLifecycleEvent`，一个密封层级） |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 创建工作区                                    |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 智能体完成一次运行（无论成功还是失败）               |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 智能体开始等待人工处理：一项批准、一个 `ask_user` 问题，或一次因凭据而挂起的运行（`kind` 为 `approval`、`question` 或 `credential`） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 注册了一个仓库；会触发后台代码索引 |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 安装或更新了一个技能，并携带其供应链扫描结论 |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent`——向驱动中的智能体的引导通道注入一条通俗的提示 |
 | `StaleReviewWatcher`                | `PrHeadChanged`——仅当被替换的提交上存在已完成的审查时才发布 `ReviewBecameStale` |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted`——外发的 PR 对话回复                                               |
-| `NotificationFeedRecorder`          | 下文二十一个通知类事件                                                        |
-| `RemoteEventForwarder`              | 那二十一个，外加 `TicketReassigned` 和每个 `TaskLifecycleEvent`。三个成员关系事件只会使其按工作区划分的成员关系缓存失效；它们不会作为帧被转发 |
+| `NotificationFeedRecorder`          | 下文二十二个通知类事件                                                        |
+| `RemoteEventForwarder`              | 那二十二个，外加 `TicketReassigned` 和每个 `TaskLifecycleEvent`。三个成员关系事件只会使其按工作区划分的成员关系缓存失效；它们不会作为帧被转发 |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`——丢弃该用户已挂载的工作区订阅；套接字保持打开 |
 
 `TicketAssigned` 既是审计与通知信号，也是流水线触发器。分配给智能体会记录归属，但不会启动任何运行——不存在工单派发器。分配给团队（设置了 `assignedTeamId`）是例外：`TeamRoutingService` 会派发团队负责人。
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 在服务器上，`NotificationFeedRecorder` 和 `RemoteEventForwarder` 把这些事件转成 `notifications/*` 传输帧（`notification_wire.dart`）。在客户端，`RpcNotificationMapper` → `mapNotificationFrame` 把帧转成 `AppNotification`。
 
-通知类别恰好有 **十六** 个。若干事件会映射到多个传输方法，因为帧承载的是边沿（失败还是恢复），而类别承载的是问题（“CI 正在做什么？”）。
+通知类别恰好有 **十七** 个。若干事件会映射到多个传输方法，因为帧承载的是边沿（失败还是恢复），而类别承载的是问题（“CI 正在做什么？”）。
 
 | 类别               | 源事件              | 传输方法                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`（提及你）                                  |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`，未提及你）              |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 机台接管帧不会回送给接过操控权的那个人，释放则不加过滤（事件不记录是谁放手的），而且只有 `backendFailure` 关闭会产生 `rig_closed` 帧——其他原因要么是被请求的，要么已由回收帧涵盖。
+
+`AgentAwaitingInput` 由 `AgentAwaitingInputPublisher` 发布：它监视批准注册表和凭据阻塞注册表中的新条目，并由 `AgentQuestionService` 告知每个 `ask_user` 问题。一次等待对应一个事件；等待结束时不发布任何事件。
 
 五个自己创作的 PR 类别携带 `forUserId`，因此它们到达作者本人，而不是工作区里的所有人。
 

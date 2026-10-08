@@ -500,6 +500,7 @@ class _CategoryIcon extends StatelessWidget {
 
 IconData _iconFor(NotificationCategory category) => switch (category) {
   NotificationCategory.agentRunCompleted => AppIcons.bot,
+  NotificationCategory.agentAwaitingInput => AppIcons.messageCircleQuestion,
   NotificationCategory.pullRequestPublished => AppIcons.gitPullRequest,
   NotificationCategory.prMerged => AppIcons.gitMerge,
   NotificationCategory.newMessage => AppIcons.messageSquare,
@@ -530,6 +531,7 @@ Color _colorFor(NotificationCategory category, DesignSystemTokens t) =>
       NotificationCategory.agentRunCompleted ||
       NotificationCategory.ticketStatusChanged ||
       NotificationCategory.prReviewDecision => t.fgSuccessPrimary,
+      NotificationCategory.agentAwaitingInput ||
       NotificationCategory.calendarAuthExpired ||
       NotificationCategory.prChecksStatus => t.fgErrorPrimary,
       NotificationCategory.meetingStartsSoon ||

@@ -128,7 +128,7 @@ class _AgentActivityPaneState extends ConsumerState<AgentActivityPane> {
     }
 
     final runAsync = ref.watch(
-      runInConversationProvider((
+      runInSpaceProvider((
         workspaceId: widget.workspaceId,
         spaceId: widget.spaceId,
         runId: widget.runId,

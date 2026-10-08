@@ -1,8 +1,8 @@
 ---
 title: Domainesemények
-description: Az 53 domainesemény teljes katalógusa, a payloadjaik és az őket fogyasztó szerveroldali előfizetők.
+description: Az 54 domainesemény teljes katalógusa, a payloadjaik és az őket fogyasztó szerveroldali előfizetők.
 slug: hu-HU/kezikonyv/referencia/domainesemenyek
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Eseménybusz
@@ -13,7 +13,7 @@ A `DomainEventBus` egy folyamaton belüli, szórásos publish/subscribe busz. A 
 
 | Mérőszám | Darabszám |
 | --- | --- |
-| Konkrét eseményosztályok | 53 |
+| Konkrét eseményosztályok | 54 |
 | Forrásfájlok (`packages/cc_domain/lib/core/domain/events/`) | 14 (plusz `domain_event_bus.dart`) |
 | Absztrakt alaposztályok, amelyeket soha nem teszünk közzé közvetlenül | 1 (`TaskLifecycleEvent`, lezárt hierarchia) |
 
@@ -25,6 +25,7 @@ Az alábbi katalógus minden eseménye ebben az egy könyvtárban él; máshol n
 | --- | --- | --- |
 | `WorkspaceCreated` | `workspaceId` | Létrejön a munkaterület |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Az ügynök befejez egy futást (sikeresen vagy sikertelenül) |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Egy ügynök elkezd egy emberre várni: jóváhagyásra, egy `ask_user` kérdés megválaszolására, vagy egy futás egy hitelesítő adat miatt áll (a `kind` értéke `approval`, `question` vagy `credential`) |
 | `RepoAdded` | `repoId`, `path`, `workspaceId` | Regisztrálnak egy repót; elindítja a háttérbeli kódindexelést |
 | `SkillUpdated` | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Telepítenek vagy frissítenek egy készséget, hordozva az ellátásilánc-vizsgálat ítéletét |
 
@@ -183,8 +184,8 @@ Az alábbi előfizetők mindegyike a `runCcServer` belsejében jön létre (vagy
 | `RigEventListener` | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — közérthető értesítést injektál a vezérlő ügynök irányítási sávjára |
 | `StaleReviewWatcher` | `PrHeadChanged` — csak akkor tesz közzé `ReviewBecameStale` eseményt, ha létezik befejezett átnézés a lecserélt commitra |
 | `GitHubPrConversationBridge` | `AgentRunCompleted` — kimenő PR-beszélgetés-válaszok |
-| `NotificationFeedRecorder` | Az alábbi huszonegy értesítési osztályba tartozó eseményt |
-| `RemoteEventForwarder` | Ugyanezt a huszonegyet, valamint a `TicketReassigned` eseményt és minden `TaskLifecycleEvent` eseményt. A három tagsági esemény csak érvényteleníti a munkaterületenkénti tagsági gyorsítótárát; keretként nem kerülnek továbbításra |
+| `NotificationFeedRecorder` | Az alábbi huszonkét értesítési osztályba tartozó eseményt |
+| `RemoteEventForwarder` | Ugyanezt a huszonkettőt, valamint a `TicketReassigned` eseményt és minden `TaskLifecycleEvent` eseményt. A három tagsági esemény csak érvényteleníti a munkaterületenkénti tagsági gyorsítótárát; keretként nem kerülnek továbbításra |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — eldobja az adott felhasználó csatolt munkaterület-előfizetéseit; a socket nyitva marad |
 
 A `TicketAssigned` audit- és értesítési jelzés, valamint pipeline-eseményindító. Az ügynökhöz rendelés tulajdonjogot rögzít, és nem indít futtatást — nincs jegy-diszpécser. A csapathoz rendelés (beállított `assignedTeamId`) a kivétel: a `TeamRoutingService` elindítja a csapatvezetőt.
@@ -195,12 +196,13 @@ A `TicketRemoteSyncHandler` deklarálva van, de éles kódban soha nem példány
 
 A szerveren a `NotificationFeedRecorder` és a `RemoteEventForwarder` alakítja ezeket az eseményeket `notifications/*` wire-frame-ekké (`notification_wire.dart`). A kliensen az `RpcNotificationMapper` → `mapNotificationFrame` alakít egy keretet `AppNotification` értékké.
 
-Pontosan **tizenhat** értesítési kategória van. Több esemény egynél több wire-metódusra képeződik le, mert a keret az élt hordozza (meghiúsult vagy helyreállt), míg a kategória a kérdést („mit tesz a CI?”).
+Pontosan **tizenhét** értesítési kategória van. Több esemény egynél több wire-metódusra képeződik le, mert a keret az élt hordozza (meghiúsult vagy helyreállt), míg a kategória a kérdést („mit tesz a CI?”).
 
 | Kategória | Forrásesemény | Wire-metódus |
 | --- | --- | --- |
 | `newMessage` | `MessageReceived` | `notifications/message_received` (Önt említi) |
 | `agentRunCompleted` | `MessageReceived`   | `notifications/message_received` (`is_agent_message`, Önt nem említi) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned` | `TicketAssigned` | `notifications/ticket_assigned` |
 | `ticketStatusChanged` | `TicketStatusChanged` | `notifications/ticket_status_changed` |
 | `pullRequestPublished` | `PullRequestPublished` | `notifications/pr_published` |
@@ -222,6 +224,8 @@ Pontosan **tizenhat** értesítési kategória van. Több esemény egynél több
 | `rigStatusChanged` | `RigClosedEvent` | `notifications/rig_closed` |
 
 Az állomás átvételéről szóló keretet nem kézbesítjük vissza annak, aki átvette a kormányt, az elengedés szűretlen (az esemény nem rögzíti, ki engedte el), és csak egy `backendFailure` lezárás állít elő `rig_closed` keretet — a többi ok vagy kért, vagy már lefedi a begyűjtési keret.
+
+Az `AgentAwaitingInput` eseményt az `AgentAwaitingInputPublisher` teszi közzé, amely új bejegyzéseket keresve figyeli a jóváhagyások és a hitelesítőadat-blokkolások nyilvántartásait, az egyes `ask_user` kérdésekről pedig az `AgentQuestionService` értesíti. Egy várakozás egy esemény; amikor a várakozás véget ér, semmi sem kerül közzétételre.
 
 Az öt saját PR-höz tartozó kategória hordozza a `forUserId` értéket, így azok a szerzőhöz jutnak el, nem a munkaterület minden tagjához.
 

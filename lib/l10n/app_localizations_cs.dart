@@ -7083,6 +7083,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Přeskočeno';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Čas vypršel';
+
+  @override
+  String get agentQuestionTimeLeft => 'Zbývající čas na odpověď';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Popište to vlastními slovy…';
 
   @override
@@ -15423,4 +15429,37 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agent na vás čeká';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Když agent potřebuje vaše schválení, odpověď nebo funkční přihlašovací údaje';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent potřebuje vaše schválení';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Agent potřebuje vaše schválení';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent má otázku';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Agent má otázku';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent je zablokován kvůli přihlašovacím údajům';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Agent je zablokován kvůli přihlašovacím údajům';
 }

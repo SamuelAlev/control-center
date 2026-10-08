@@ -676,7 +676,7 @@ class MessagingService implements MessagingPort {
     // `attachments/` dir and the token is replaced IN PLACE by that file's
     // path, which is the only form every adapter — CLI or built-in harness —
     // can open. A name with nothing behind it is left exactly as typed.
-    final promptText = await _withAttachmentPaths(
+    final promptText = await withAttachmentPaths(
       workspaceId: workspaceId,
       spaceId: spaceId,
       text: stripped,
@@ -741,13 +741,14 @@ class MessagingService implements MessagingPort {
   }
 
   /// [text] with every `@[file:<name>]` reference replaced by the path the
-  /// named attachment was materialized to.
+  /// named attachment was materialized to. Public for the steering queue,
+  /// whose cards reach a live run as text.
   ///
   /// Returns [text] untouched when nothing is attached, when no resolver is
   /// wired, or when the resolver fails — a run that answers about a picture it
   /// cannot open is a worse outcome than one that never starts, but only
   /// slightly, and a thrown exception here would take the whole turn.
-  Future<String> _withAttachmentPaths({
+  Future<String> withAttachmentPaths({
     required String workspaceId,
     required String spaceId,
     required String text,
@@ -1352,6 +1353,7 @@ class MessagingService implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String content,
+    List<Map<String, dynamic>> attachments = const [],
   }) async {
     final result = await steeringQueueService?.enqueue(
       workspaceId: workspaceId,
@@ -1359,6 +1361,7 @@ class MessagingService implements MessagingPort {
       conversationId: conversationId,
       content: content,
       senderUserId: await _authorUserId(null),
+      attachments: attachments,
     );
     return result == null
         ? null

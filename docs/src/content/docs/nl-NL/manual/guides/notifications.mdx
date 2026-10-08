@@ -2,7 +2,7 @@
 title: Meldingen configureren
 description: Zet categorieën aan of uit, stel Quiet hours en een geluid in en zie welke meldingen je waar bereiken.
 slug: nl-NL/handleiding/gidsen/meldingen
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Deze gids laat je zien hoe je meldingen configureert en wat elke instelling
@@ -24,11 +24,12 @@ server lezen. De telefoonclient heeft helemaal geen meldingsoppervlak.
 
 1. Ga naar **Instellingen → Jij → Meldingen**
 2. Laat **Meldingen inschakelen** aan staan
-3. Zet de categorieën aan die je wilt. Het zijn er precies zestien:
+3. Zet de categorieën aan die je wilt. Het zijn er precies zeventien:
 
 | Categorie                  | Wordt geactiveerd wanneer                                                   |
 | -------------------------- | --------------------------------------------------------------------------- |
 | Agent voltooid             | Een agent heeft geantwoord in een run die jij hebt gestart, of de run is mislukt |
+| Agent wacht op je          | Een agent heeft je goedkeuring nodig, heeft je een vraag gesteld of staat stil op inloggegevens |
 | PR gepubliceerd            | Een agent heeft een PR gepubliceerd                                         |
 | PR samengevoegd            | Een PR is samengevoegd                                                      |
 | Nieuwe berichten           | Iemand heeft je in een ruimte vermeld                                       |
@@ -47,6 +48,13 @@ server lezen. De telefoonclient heeft helemaal geen meldingsoppervlak.
 
 Alles buiten deze lijst kan niet worden gemeld of gefilterd — er is geen
 categorie "al het andere".
+
+**Agent wacht op je** wordt één keer per wachtmoment geactiveerd, op het moment
+dat het wachten begint: een openstaande goedkeuring (inclusief
+sandbox-uitvoeringsrechten en goedkeuringen van tools in Claude Code), een
+`ask_user`-vraag of een run die wordt vastgehouden omdat de inloggegevens ervan
+hem niet kunnen bedienen. De melding opent de ruimte waar je antwoordt en blijft
+stil zolang je al naar die ruimte kijkt.
 
 Deze voorkeuren volgen je gebruiker naar elk apparaat, dus een telefoon en een
 laptop blijven gelijk lopen. Het volume is de bewuste uitzondering en blijft per

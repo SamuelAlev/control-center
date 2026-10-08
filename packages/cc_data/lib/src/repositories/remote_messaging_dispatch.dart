@@ -94,7 +94,10 @@ class RemoteMessagingDispatch {
 
   /// The effective repo selection of [spaceId] in [workspaceId]: null → all
   /// workspace repos, an EMPTY list → explicitly none.
-  Future<List<String>?> getSpaceRepos(String workspaceId, String spaceId) async {
+  Future<List<String>?> getSpaceRepos(
+    String workspaceId,
+    String spaceId,
+  ) async {
     final data = await _client.call('messaging.getSpaceRepos', {
       'workspace_id': workspaceId,
       'space_id': spaceId,
@@ -293,12 +296,14 @@ class RemoteMessagingDispatch {
     required String spaceId,
     required String conversationId,
     required String content,
+    List<Map<String, dynamic>> attachments = const [],
   }) async {
     final result = await _client.call('steering.enqueue', {
       'workspace_id': workspaceId,
       'space_id': spaceId,
       'conversation_id': conversationId,
       'message': content,
+      if (attachments.isNotEmpty) 'metadata': {'attachments': attachments},
     });
     final messageId = result['message_id'] as String?;
     if (messageId == null) {

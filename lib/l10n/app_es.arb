@@ -3834,6 +3834,8 @@
   "agentQuestionProgress": "Pregunta {index} de {count}",
   "agentQuestionSkip": "Omitir",
   "agentQuestionSkippedLabel": "Omitida",
+  "agentQuestionTimedOutLabel": "Tiempo agotado",
+  "agentQuestionTimeLeft": "Tiempo restante para responder",
   "agentQuestionFreeformOptionHint": "Descríbelo con tus palabras…",
   "reviewRequested": "Revisión solicitada",
   "connectGitHubHint": "Inicia sesión en GitHub o añade un token en Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código",
@@ -8000,5 +8002,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} marcado como no visto",
   "prLineChangesSemantics": "Líneas añadidas: {additions}, líneas eliminadas: {deletions}",
   "closeTabNamed": "Cerrar {tab}",
-  "threadCommentCount": "{count, plural, =1{1 comentario} other{{count} comentarios}}"
+  "threadCommentCount": "{count, plural, =1{1 comentario} other{{count} comentarios}}",
+  "notificationAgentAwaitingInput": "Un agente te espera",
+  "notifyAgentAwaitingInput": "Cuando un agente necesita tu aprobación, una respuesta o una credencial válida",
+  "notificationAgentNeedsApproval": "{agent} necesita tu aprobación",
+  "notificationAgentNeedsApprovalUnnamed": "Un agente necesita tu aprobación",
+  "notificationAgentAskedQuestion": "{agent} tiene una pregunta",
+  "notificationAgentAskedQuestionUnnamed": "Un agente tiene una pregunta",
+  "notificationAgentBlockedOnCredential": "{agent} está bloqueado por una credencial",
+  "notificationAgentBlockedOnCredentialUnnamed": "Un agente está bloqueado por una credencial"
 }

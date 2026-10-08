@@ -7,6 +7,10 @@ import 'package:flutter/widgets.dart';
 /// the slot sits inside the 44px row minimum (8 + 28 + 8).
 const _trailingExtent = 28.0;
 
+/// Minimum height of every row in an `AskUserCard`, the free-text row
+/// included, so the list reads as one even rhythm.
+const kAskUserRowMinHeight = 44.0;
+
 /// One numbered choice in an `AskUserCard`: label + optional description,
 /// with a trailing index that becomes a submit arrow on hover for
 /// single-select.
@@ -64,7 +68,7 @@ class AskUserOptionRow extends StatelessWidget {
           curve: CcMotion.standard,
           color: highlighted ? t.hoverStrong : const Color(0x00000000),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
+            constraints: const BoxConstraints(minHeight: kAskUserRowMinHeight),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,

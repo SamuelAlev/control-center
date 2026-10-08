@@ -286,6 +286,10 @@ class AgentDispatchService {
       // it), and a conversation id can no longer stand in for it — a run with
       // no space simply falls back to the agent's own directory.
       spaceId: spaceId,
+      // The conversation keys the overlay, though: it holds the run's
+      // `.mcp.json` and repo-skill projection, so each conversation gets its
+      // own and two of them run the same agent side by side.
+      conversationId: conversationId,
       ticketId: ticketId,
       agentSlug: agentSlug,
       agentConfigDir: workingDirectory,
@@ -330,7 +334,9 @@ class AgentDispatchService {
     // the path lock serializes same-path dispatches and surfaces the wait as a
     // `waiting_local_directory` task state. Released when the run's event stream
     // ends. No-op (acquires instantly) when the feature is off or the path is
-    // free — the common case, since worktrees are per-conversation isolated.
+    // free. The overlay is per agent AND conversation, so this only queues a
+    // second run of one agent in one conversation; other conversations in the
+    // space run alongside it.
     PathLockHandle? pathLockHandle;
     final pathLock = _pathLock;
     if (pathLock != null) {
@@ -672,12 +678,14 @@ class AgentDispatchService {
   /// [fallback] (the agent dir) when no provisioner is wired / there is no
   /// space+workspace context.
   ///
-  /// [agentSlug] keys the overlay (`agents/<slug>/`); [agentConfigDir] is the
+  /// [agentSlug] and [conversationId] key the overlay
+  /// (`agents/<agentOverlayDirName>/`); [agentConfigDir] is the
   /// agent's global dir — the symlink-target source for the overlay's AGENTS.md
   /// + `.agents`.
   Future<String> _resolveWorkingDirectory({
     required String workspaceId,
     required String? spaceId,
+    required String? conversationId,
     required String? ticketId,
     required String agentSlug,
     String? agentConfigDir,
@@ -695,6 +703,7 @@ class AgentDispatchService {
       spaceId: spaceId,
       agentSlug: agentSlug,
       fallbackDir: fallback,
+      conversationId: conversationId,
       agentConfigDir: agentConfigDir,
       ticketId: ticketId,
     );

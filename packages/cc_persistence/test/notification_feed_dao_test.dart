@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
@@ -182,6 +184,106 @@ void main() {
 
       // The state rows are per user and unbounded otherwise: without this the
       // table grows forever holding opinions about rows nobody can see.
+      expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
+    });
+  });
+
+  group('markConversationMessagesRead', () {
+    NotificationFeedTableCompanion message(
+      String id,
+      DateTime createdAt, {
+      String spaceId = 'space-1',
+      String? conversationId = 'conv-1',
+      String method = NotificationFeedDao.messageReceivedMethod,
+    }) => NotificationFeedTableCompanion.insert(
+      id: id,
+      workspaceId: 'ws-1',
+      method: method,
+      paramsJson: jsonEncode({
+        'workspace_id': 'ws-1',
+        'space_id': spaceId,
+        'conversation_id': ?conversationId,
+      }),
+      createdAt: Value(createdAt),
+    );
+
+    final base = DateTime(2026, 8, 16, 12);
+
+    Future<Set<String>> readIds(String userId) async => {
+      for (final s in await dao.watchItemStates('ws-1', userId).first)
+        if (s.readAt != null) s.itemId,
+    };
+
+    test(
+      'marks only that conversation, plus legacy space-only frames',
+      () async {
+        await dao.insertAndPrune(message('mine', base));
+        await dao.insertAndPrune(message('legacy', base, conversationId: null));
+        await dao.insertAndPrune(
+          message('sibling', base, conversationId: 'conv-2'),
+        );
+        await dao.insertAndPrune(
+          message('elsewhere', base, spaceId: 'space-2'),
+        );
+        await dao.insertAndPrune(
+          message('pr', base, method: 'notifications/pr_merged'),
+        );
+
+        await dao.markConversationMessagesRead(
+          'ws-1',
+          'user-1',
+          spaceId: 'space-1',
+          conversationId: 'conv-1',
+          readAt: base.add(const Duration(minutes: 1)),
+        );
+
+        expect(await readIds('user-1'), {'mine', 'legacy'});
+        expect(await readIds('user-2'), isEmpty, reason: 'states are per user');
+      },
+    );
+
+    test('leaves messages that arrived after the read alone', () async {
+      await dao.insertAndPrune(message('later', base));
+
+      await dao.markConversationMessagesRead(
+        'ws-1',
+        'user-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
+        readAt: base.subtract(const Duration(seconds: 1)),
+      );
+
+      expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
+    });
+
+    test('keeps an explicit "mark as unread"', () async {
+      await dao.insertAndPrune(message('m1', base));
+      await dao.setItemRead('ws-1', 'user-1', 'm1', null);
+
+      await dao.markConversationMessagesRead(
+        'ws-1',
+        'user-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
+        readAt: base.add(const Duration(minutes: 1)),
+      );
+
+      final states = await dao.watchItemStates('ws-1', 'user-1').first;
+      expect(states.single.readAt, isNull);
+    });
+
+    test('adds no rows for items the watermark already covers', () async {
+      await dao.insertAndPrune(message('m1', base));
+      await dao.markAllRead('ws-1', 'user-1', base);
+
+      await dao.markConversationMessagesRead(
+        'ws-1',
+        'user-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
+        readAt: base.add(const Duration(minutes: 1)),
+      );
+
       expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
     });
   });

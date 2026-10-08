@@ -7083,6 +7083,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Omisă';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Timpul a expirat';
+
+  @override
+  String get agentQuestionTimeLeft => 'Timp rămas pentru răspuns';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Descrie în cuvintele tale…';
 
   @override
@@ -15418,4 +15424,38 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Un agent te așteaptă';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Când un agent are nevoie de aprobarea ta, de un răspuns sau de credențiale valide';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent are nevoie de aprobarea ta';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Un agent are nevoie de aprobarea ta';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent are o întrebare';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Un agent are o întrebare';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent este blocat de credențiale';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Un agent este blocat de credențiale';
 }

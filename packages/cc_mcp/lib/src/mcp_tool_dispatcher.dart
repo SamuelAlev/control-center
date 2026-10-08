@@ -94,9 +94,14 @@ class McpToolDispatcher implements RpcDispatcher {
   /// are workspace-forced / identity-filled exactly like the built-in
   /// harness's `McpToolBridge`. Callers without a scope (RPC transport, MCP
   /// Inspector) pass none and arguments flow through verbatim.
+  ///
+  /// [abandoned] completes when the caller stops waiting for a `tools/call`
+  /// result (it cancelled the request or hung up); the tool sees it through
+  /// [McpTool.runUntilAbandoned].
   Future<Map<String, dynamic>> handleScopedRequest(
     JsonRpcRequest request, {
     McpCallScope? scope,
+    Future<void>? abandoned,
   }) async {
     switch (request.method) {
       case 'initialize':
@@ -106,7 +111,7 @@ class McpToolDispatcher implements RpcDispatcher {
       case 'tools/list':
         return _handleToolsList(request);
       case 'tools/call':
-        return _handleToolsCall(request, scope);
+        return _handleToolsCall(request, scope, abandoned);
       case 'resources/list':
         return _handleResourcesList(request);
       case 'resources/read':
@@ -300,6 +305,7 @@ class McpToolDispatcher implements RpcDispatcher {
   Future<Map<String, dynamic>> _handleToolsCall(
     JsonRpcRequest request,
     McpCallScope? scope,
+    Future<void>? abandoned,
   ) async {
     final toolName = request.params['name'] as String?;
     if (toolName == null || toolName.isEmpty) {
@@ -511,7 +517,7 @@ class McpToolDispatcher implements RpcDispatcher {
     try {
       CcMcpLog.i('MCP', '→ $toolName ${_formatArgs(arguments)}');
       final sw = Stopwatch()..start();
-      final result = await tool.call(arguments);
+      final result = await tool.call(arguments, abandoned: abandoned);
       sw.stop();
       final summary = result.isError
           ? 'ERROR ${result.content.firstOrNull?.text ?? ''}'

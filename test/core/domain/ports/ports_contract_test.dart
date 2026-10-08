@@ -990,6 +990,7 @@ class _TestRepoWorkspaceProvisionerPort
     required String spaceId,
     required String agentSlug,
     required String fallbackDir,
+    String? conversationId,
     String? agentConfigDir,
     String? ticketId,
     String? ticketKey,
@@ -1116,8 +1117,10 @@ class _TestConfirmationPort implements ConfirmationPort {
 
 class _TestAgentQuestionPort implements AgentQuestionPort {
   @override
-  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request) async =>
-      const AgentQuestionAnswer(selectedLabels: ['Yes']);
+  Future<AgentQuestionAnswer?> ask(
+    AgentQuestionRequest request, {
+    Future<void>? abandoned,
+  }) async => const AgentQuestionAnswer(selectedLabels: ['Yes']);
 }
 
 class _TestSystemAudioCapturePort implements SystemAudioCapturePort {

@@ -181,5 +181,8 @@ void main() {
 
 class _SilentQuestions implements AgentQuestionPort {
   @override
-  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request) async => null;
+  Future<AgentQuestionAnswer?> ask(
+    AgentQuestionRequest request, {
+    Future<void>? abandoned,
+  }) async => null;
 }

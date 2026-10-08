@@ -1,5 +1,8 @@
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
+import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_option_row.dart';
+import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_summary.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -106,24 +109,121 @@ void main() {
     expect(got?.freeText, 'Acme');
   });
 
-  testWidgets('an answered card is read-only', (tester) async {
-    var calls = 0;
+  testWidgets('a countdown drains and reports expiry once', (tester) async {
+    var expired = 0;
+    var now = DateTime(2026, 10, 8, 12);
+    final expiresAt = now.add(const Duration(seconds: 2));
+    Future<void> advance() async {
+      now = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+    }
+
     await tester.pumpWidget(
       testWrap(
         AskUserCard(
           question: 'How will you use this?',
           options: const [AgentQuestionOption(label: 'Designer')],
-          answered: const AgentQuestionAnswer(selectedLabels: ['Designer']),
-          onSubmit: (_) => calls++,
+          expiresAt: expiresAt,
+          timeout: const Duration(seconds: 4),
+          onSubmit: (_) {},
+          onExpired: () => expired++,
+          now: () => now,
         ),
       ),
     );
 
-    expect(find.text('Answered'), findsOneWidget);
-    expect(find.text('Skip'), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('ask-user-option-0')));
-    await tester.pump();
-    expect(calls, 0);
+    double fill() => tester
+        .widget<CcProgressBar>(find.byKey(const ValueKey('ask-user-countdown')))
+        .value!;
+    expect(fill(), closeTo(0.5, 0.05));
+
+    await advance();
+    await tester.pump(const Duration(seconds: 1));
+    expect(fill(), closeTo(0.25, 0.05));
+    expect(expired, 0);
+
+    await advance();
+    await advance();
+    expect(expired, 1);
+  });
+
+  testWidgets('no deadline, no countdown', (tester) async {
+    await tester.pumpWidget(
+      testWrap(
+        AskUserCard(
+          question: 'How will you use this?',
+          options: const [AgentQuestionOption(label: 'Designer')],
+          onSubmit: (_) {},
+        ),
+      ),
+    );
+    expect(find.byKey(const ValueKey('ask-user-countdown')), findsNothing);
+  });
+
+  testWidgets('the free-text row is as tall as an option row', (tester) async {
+    await tester.pumpWidget(
+      testWrap(
+        AskUserCard(
+          question: 'Who should take it?',
+          options: const [AgentQuestionOption(label: 'You decide')],
+          allowFreeText: true,
+          onSubmit: (_) {},
+        ),
+      ),
+    );
+    final option = tester.getSize(
+      find.byKey(const ValueKey('ask-user-option-0')),
+    );
+    final freeText = tester.getSize(
+      find.byKey(const ValueKey('ask-user-free-text')),
+    );
+    expect(freeText.height, greaterThanOrEqualTo(kAskUserRowMinHeight));
+    expect(freeText.height, option.height);
+  });
+
+  group('AskUserSummary', () {
+    const options = [
+      AgentQuestionOption(label: 'Designer', value: 'designer'),
+      AgentQuestionOption(label: 'Engineer'),
+    ];
+
+    testWidgets('shows the question, the choice label and the note', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testWrap(
+          const AskUserSummary(
+            question: 'How will you use this?',
+            options: options,
+            answer: AgentQuestionAnswer(
+              selectedLabels: ['designer'],
+              freeText: 'mostly flows',
+            ),
+          ),
+        ),
+      );
+      expect(find.text('How will you use this?'), findsOneWidget);
+      expect(find.text('Designer'), findsOneWidget);
+      expect(find.text('mostly flows'), findsOneWidget);
+    });
+
+    testWidgets('a skip and a timeout say so', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          const Column(
+            children: [
+              AskUserSummary(
+                question: 'Skipped one',
+                answer: AgentQuestionAnswer(skipped: true),
+              ),
+              AskUserSummary(question: 'Timed-out one', expired: true),
+            ],
+          ),
+        ),
+      );
+      expect(find.text('Skipped'), findsOneWidget);
+      expect(find.text('Timed out'), findsOneWidget);
+    });
   });
 
   testWidgets('digit keys pick a numbered option', (tester) async {

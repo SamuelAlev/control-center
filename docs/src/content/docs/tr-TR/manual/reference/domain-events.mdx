@@ -1,8 +1,8 @@
 ---
 title: Alan olayları
-description: 53 alan olayının, yüklerinin ve bunları tüketen sunucu tarafı abonelerin eksiksiz kataloğu.
+description: 54 alan olayının, yüklerinin ve bunları tüketen sunucu tarafı abonelerin eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/alan-olaylari
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Olay veri yolu
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Ölçüt                                                          | Sayı                                          |
 | -------------------------------------------------------------- | --------------------------------------------- |
-| Somut olay sınıfları                                           | 53                                            |
+| Somut olay sınıfları                                           | 54                                            |
 | Kaynak dosyalar (`packages/cc_domain/lib/core/domain/events/`) | 14 (artı `domain_event_bus.dart`)             |
 | Doğrudan hiç yayımlanmayan soyut temel sınıflar                | 1 (`TaskLifecycleEvent`, kapalı bir hiyerarşi) |
 
@@ -25,6 +25,7 @@ Aşağıdaki katalogdaki her olay bu tek dizinde yaşar; başka hiçbir yerde bi
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Çalışma alanı oluşturulur                               |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Ajan bir çalıştırmayı bitirir (başarılı ya da başarısız) |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Bir ajan bir insanı beklemeye başlar: bir onay, bir `ask_user` sorusu ya da kimlik bilgisi yüzünden bekletilen bir çalıştırma (`kind` değeri `approval`, `question` veya `credential` olur) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Bir depo kaydedilir; arka planda kod dizinlemeyi tetikler |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Bir beceri kurulur veya güncellenir; tedarik zinciri tarama kararını taşır |
 
@@ -183,8 +184,8 @@ Aşağıdaki her abone, `runCcServer` içinde (ya da onun oluşturduğu bir hizm
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — sürücü ajanın yönlendirme şeridine sade dille bir bildirim enjekte eder |
 | `StaleReviewWatcher`                | `PrHeadChanged` — `ReviewBecameStale`'i yalnızca değiştirilen commit için tamamlanmış bir inceleme varsa yayımlar |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — giden PR konuşması yanıtları                                                     |
-| `NotificationFeedRecorder`          | Aşağıdaki yirmi bir bildirim sınıfı olayı                                                              |
-| `RemoteEventForwarder`              | Bu yirmi bir olay artı `TicketReassigned` ve her `TaskLifecycleEvent`'i. Üç üyelik olayı yalnızca çalışma alanı başına üyelik önbelleğini geçersiz kılar; çerçeve olarak iletilmezler |
+| `NotificationFeedRecorder`          | Aşağıdaki yirmi iki bildirim sınıfı olayı                                                              |
+| `RemoteEventForwarder`              | Bu yirmi iki olay artı `TicketReassigned` ve her `TaskLifecycleEvent`'i. Üç üyelik olayı yalnızca çalışma alanı başına üyelik önbelleğini geçersiz kılar; çerçeve olarak iletilmezler |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — o kullanıcının bağlı çalışma alanı aboneliklerini düşürür; soket açık kalır |
 
 `TicketAssigned` bir denetim ve bildirim sinyali ile bir pipeline tetikleyicisidir. Bir ajana atama sahipliği kaydeder ve hiçbir çalıştırma başlatmaz — bilet dağıtıcısı yoktur. Bir ekibe atama (`assignedTeamId` ayarlı) istisnadır: `TeamRoutingService` ekip liderini gönderir.
@@ -195,12 +196,13 @@ Aşağıdaki her abone, `runCcServer` içinde (ya da onun oluşturduğu bir hizm
 
 Sunucuda `NotificationFeedRecorder` ve `RemoteEventForwarder` bu olayları `notifications/*` iletişim çerçevelerine dönüştürür (`notification_wire.dart`). İstemcide `RpcNotificationMapper` → `mapNotificationFrame` bir çerçeveyi `AppNotification`'a dönüştürür.
 
-Tam olarak **on altı** bildirim kategorisi vardır. Birkaç olay birden fazla iletişim yöntemine eşlenir; çünkü çerçeve geçişi (başarısız mı, yoksa kurtarıldı mı) taşırken kategori soruyu ("CI ne yapıyor?") taşır.
+Tam olarak **on yedi** bildirim kategorisi vardır. Birkaç olay birden fazla iletişim yöntemine eşlenir; çünkü çerçeve geçişi (başarısız mı, yoksa kurtarıldı mı) taşırken kategori soruyu ("CI ne yapıyor?") taşır.
 
 | Kategori               | Kaynak olay               | İletişim yöntemi                                                        |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (sizden bahseder)                      |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, sizden bahsetmez) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                         |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                   |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                            |
@@ -222,6 +224,8 @@ Tam olarak **on altı** bildirim kategorisi vardır. Birkaç olay birden fazla i
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                              |
 
 Rig devralma çerçevesi, direksiyona geçen kişiye geri teslim edilmez; bırakma süzülmez (olay kimin bıraktığını kaydetmez) ve yalnızca `backendFailure` ile kapanma bir `rig_closed` çerçevesi üretir — diğer nedenler ya istenmiştir ya da toplama çerçevesi tarafından zaten kapsanır.
+
+`AgentAwaitingInput`'u, onay ve kimlik bilgisi engeli kayıtlarındaki yeni girdileri izleyen ve her `ask_user` sorusundan `AgentQuestionService` tarafından haberdar edilen `AgentAwaitingInputPublisher` yayımlar. Bir bekleme bir olaydır; bekleme sona erdiğinde hiçbir şey yayımlanmaz.
 
 Beş yazarlık PR kategorisi `forUserId` taşır; böylece çalışma alanındaki herkese değil, yazara ulaşır.
 

@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Pertanyaan {index} dari {count}",
   "agentQuestionSkip": "Lewati",
   "agentQuestionSkippedLabel": "Dilewati",
+  "agentQuestionTimedOutLabel": "Waktu habis",
+  "agentQuestionTimeLeft": "Sisa waktu untuk menjawab",
   "agentQuestionFreeformOptionHint": "Jelaskan dengan kata-kata Anda…",
   "reviewRequested": "Tinjauan diminta",
   "connectGitHubHint": "Masuk ke GitHub atau tambahkan token di Settings → Ruang kerja → Profile & identity → Code hosting",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} ditandai belum dilihat",
   "prLineChangesSemantics": "Baris ditambahkan: {additions}, baris dihapus: {deletions}",
   "closeTabNamed": "Tutup {tab}",
-  "threadCommentCount": "{count, plural, other{{count} komentar}}"
+  "threadCommentCount": "{count, plural, other{{count} komentar}}",
+  "notificationAgentAwaitingInput": "Agen menunggu Anda",
+  "notifyAgentAwaitingInput": "Saat agen memerlukan persetujuan, jawaban, atau kredensial yang berfungsi dari Anda",
+  "notificationAgentNeedsApproval": "{agent} memerlukan persetujuan Anda",
+  "notificationAgentNeedsApprovalUnnamed": "Agen memerlukan persetujuan Anda",
+  "notificationAgentAskedQuestion": "{agent} punya pertanyaan",
+  "notificationAgentAskedQuestionUnnamed": "Agen punya pertanyaan",
+  "notificationAgentBlockedOnCredential": "{agent} terhambat oleh kredensial",
+  "notificationAgentBlockedOnCredentialUnnamed": "Agen terhambat oleh kredensial"
 }

@@ -260,6 +260,7 @@ class _CategoryRow extends ConsumerWidget {
 
   IconData get _icon => switch (category) {
     NotificationCategory.agentRunCompleted => AppIcons.bot,
+    NotificationCategory.agentAwaitingInput => AppIcons.messageCircleQuestion,
     NotificationCategory.pullRequestPublished => AppIcons.gitPullRequest,
     NotificationCategory.prMerged => AppIcons.gitMerge,
     NotificationCategory.newMessage => AppIcons.messageSquare,
@@ -281,6 +282,8 @@ class _CategoryRow extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return switch (category) {
       NotificationCategory.agentRunCompleted => l10n.notificationAgentFinished,
+      NotificationCategory.agentAwaitingInput =>
+        l10n.notificationAgentAwaitingInput,
       NotificationCategory.pullRequestPublished => l10n.notificationPrPublished,
       NotificationCategory.prMerged => l10n.notificationPrMerged,
       NotificationCategory.newMessage => l10n.notificationNewMessages,
@@ -310,6 +313,7 @@ class _CategoryRow extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return switch (category) {
       NotificationCategory.agentRunCompleted => l10n.notifyAgentRunCompleted,
+      NotificationCategory.agentAwaitingInput => l10n.notifyAgentAwaitingInput,
       NotificationCategory.pullRequestPublished => l10n.notifyPrPublished,
       NotificationCategory.prMerged => l10n.notifyPrMerged,
       NotificationCategory.newMessage => l10n.notifyNewMessages,

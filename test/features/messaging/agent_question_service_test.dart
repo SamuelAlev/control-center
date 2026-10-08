@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
@@ -192,6 +194,61 @@ void main() {
         ),
       );
       expect(answer, isNull);
+    });
+
+    test('stamps the deadline on the form and closes it on timeout', () async {
+      final repo = _FakeMessagingRepo();
+      final service = AgentQuestionService(
+        repo,
+        timeout: const Duration(milliseconds: 30),
+      );
+      final before = DateTime.now().toUtc();
+      final answer = await service.ask(
+        const AgentQuestionRequest(
+          workspaceId: _workspaceId,
+          spaceId: 'chan-3',
+          question: 'unanswered',
+          options: [AgentQuestionOption(label: 'X')],
+        ),
+      );
+      expect(answer, isNull);
+
+      final posted = repo.sent.single;
+      expect(posted.questionTimeout, const Duration(milliseconds: 30));
+      final expiresAt = posted.questionExpiresAt!;
+      expect(expiresAt.isBefore(before), isFalse);
+
+      // Closed as resolved, so the open-question count drops it and the form
+      // collapses, while the stored question survives for the summary.
+      final closed = repo.updates[posted.id]!;
+      expect(closed['answered'], true);
+      expect(closed['expired'], true);
+      expect(closed['question'], 'unanswered');
+      expect(closed.containsKey('answer'), isFalse);
+      expect(service.resolveFromMetadata(posted.id, closed), isFalse);
+    });
+
+    test('an indefinite wait carries no deadline', () async {
+      final repo = _FakeMessagingRepo();
+      final service = AgentQuestionService(repo, timeout: Duration.zero);
+      unawaited(
+        service.ask(
+          const AgentQuestionRequest(
+            workspaceId: _workspaceId,
+            spaceId: 'chan-4',
+            question: 'whenever',
+            allowFreeText: true,
+          ),
+        ),
+      );
+      final posted = await _awaitPosted(repo, service);
+      expect(posted.questionExpiresAt, isNull);
+      expect(posted.questionTimeout, isNull);
+      await service.submitAnswer(
+        _workspaceId,
+        posted,
+        const AgentQuestionAnswer(freeText: 'now'),
+      );
     });
 
     test('submitAnswer for an unknown message id is a safe no-op', () async {

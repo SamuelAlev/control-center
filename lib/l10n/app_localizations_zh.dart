@@ -6784,6 +6784,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentQuestionSkippedLabel => '已跳过';
 
   @override
+  String get agentQuestionTimedOutLabel => '已超时';
+
+  @override
+  String get agentQuestionTimeLeft => '剩余回答时间';
+
+  @override
   String get agentQuestionFreeformOptionHint => '用你自己的话描述…';
 
   @override
@@ -14744,6 +14750,36 @@ class AppLocalizationsZh extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => '智能体在等你';
+
+  @override
+  String get notifyAgentAwaitingInput => '当智能体需要你的批准、回答或可用的凭据时';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent 需要你的批准';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed => '有智能体需要你的批准';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent 有一个问题';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => '有智能体提出了问题';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent 因凭据问题被阻塞';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed => '有智能体因凭据问题被阻塞';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21685,6 +21721,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get agentQuestionSkippedLabel => '已略過';
+
+  @override
+  String get agentQuestionTimedOutLabel => '已逾時';
+
+  @override
+  String get agentQuestionTimeLeft => '剩餘回答時間';
 
   @override
   String get agentQuestionFreeformOptionHint => '用你自己的話描述…';
@@ -29652,4 +29694,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => '代理正在等你';
+
+  @override
+  String get notifyAgentAwaitingInput => '當代理需要你的核准、回答或可用的憑證時';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent 需要你的核准';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed => '有代理需要你的核准';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent 有一個問題';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => '有代理提出了問題';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent 因憑證問題而受阻';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed => '有代理因憑證問題而受阻';
 }

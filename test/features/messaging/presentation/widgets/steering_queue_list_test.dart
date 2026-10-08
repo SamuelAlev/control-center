@@ -306,4 +306,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(port.edits, [('a', 'new text')]);
   });
+
+  testWidgets('a card with attachments reads by name, never as raw tokens', (
+    tester,
+  ) async {
+    Message withShot(String id, String content) => Message(
+      id: id,
+      spaceId: _kSpaceId,
+      conversationId: _kConversationId,
+      senderId: 'user-1',
+      senderType: SenderType.user,
+      content: content,
+      messageType: MessageType.steering,
+      metadata: const {
+        'steerState': 'queued',
+        'steerOrder': 0,
+        'attachments': [
+          {
+            'id': 'a1',
+            'path': 'blob:sha256:x',
+            'name': 'shot.png',
+            'kind': 'image',
+          },
+        ],
+      },
+      createdAt: DateTime.utc(2026, 8, 29),
+    );
+
+    await _pump(
+      tester,
+      windowMessages: [
+        withShot('a', 'too big: @[file:shot.png]'),
+        withShot('b', ''),
+      ],
+    );
+
+    expect(find.text('too big: shot.png'), findsOneWidget);
+    expect(find.text('shot.png'), findsOneWidget);
+    expect(find.textContaining('@[file:'), findsNothing);
+    expect(find.byIcon(AppIcons.image), findsNWidgets(2));
+  });
 }

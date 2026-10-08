@@ -102,7 +102,22 @@ class AskUserTool extends McpTool {
   };
 
   @override
-  Future<CallResult> run(Map<String, dynamic> arguments) async {
+  Future<CallResult> run(Map<String, dynamic> arguments) =>
+      _ask(arguments, null);
+
+  /// The MCP client giving up (its own request timeout, or the run being
+  /// stopped) closes the form, so it does not wait out the server timeout
+  /// offering an answer the agent will never read.
+  @override
+  Future<CallResult> runUntilAbandoned(
+    Map<String, dynamic> arguments,
+    Future<void> abandoned,
+  ) => _ask(arguments, abandoned);
+
+  Future<CallResult> _ask(
+    Map<String, dynamic> arguments,
+    Future<void>? abandoned,
+  ) async {
     final (workspaceId, workspaceErr) = McpTool.requireString(
       arguments,
       'workspace_id',
@@ -135,6 +150,7 @@ class AskUserTool extends McpTool {
             ? rawAgent
             : null,
       ),
+      abandoned: abandoned,
     );
 
     final outcome = AskUserOutcome.fromAnswer(answer);

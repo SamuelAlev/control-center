@@ -2,7 +2,7 @@
 title: Cấu hình thông báo
 description: Bật hoặc tắt các danh mục, đặt giờ yên tĩnh cùng âm thanh và biết thông báo nào đến với bạn ở đâu.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Hướng dẫn này chỉ cho bạn cách cấu hình thông báo và mỗi tùy chọn thực sự kiểm
@@ -24,11 +24,12 @@ thông báo từ máy chủ. Máy khách điện thoại không có bề mặt t
 
 1. Mở **Cài đặt → Bạn → Thông báo**
 2. Giữ **Bật thông báo** ở trạng thái bật
-3. Bật tắt các danh mục bạn muốn. Có đúng mười sáu danh mục:
+3. Bật tắt các danh mục bạn muốn. Có đúng mười bảy danh mục:
 
 | Danh mục                  | Kích hoạt khi                                                              |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agent đã hoàn tất         | Một agent đã trả lời trong lần chạy do bạn khởi động, hoặc lần chạy thất bại |
+| Agent đang chờ bạn        | Một agent cần bạn phê duyệt, đã đặt câu hỏi cho bạn, hoặc đang bị giữ lại vì thông tin xác thực |
 | PR đã được công bố        | Một agent công bố một PR                                                   |
 | PR đã được merge          | Một PR đã được merge                                                       |
 | Tin nhắn mới              | Ai đó nhắc đến bạn trong một space                                         |
@@ -47,6 +48,12 @@ thông báo từ máy chủ. Máy khách điện thoại không có bề mặt t
 
 Bất cứ thứ gì nằm ngoài danh sách này đều không thể được thông báo hay lọc —
 không có danh mục "mọi thứ còn lại".
+
+**Agent đang chờ bạn** kích hoạt một lần cho mỗi lần chờ, ngay khi việc chờ bắt
+đầu: một yêu cầu phê duyệt đang chờ (bao gồm quyền cấp exec sandbox và phê duyệt
+công cụ của Claude Code), một câu hỏi `ask_user`, hoặc một lần chạy bị giữ lại vì
+thông tin xác thực của nó không dùng được cho lần chạy đó. Thông báo mở space nơi
+bạn trả lời, và không hiện ra khi bạn đang xem chính space đó.
 
 Các tùy chọn này đi theo người dùng của bạn trên mọi thiết bị, nên điện thoại và
 laptop luôn đồng bộ. Âm lượng là ngoại lệ có chủ đích và giữ riêng theo từng

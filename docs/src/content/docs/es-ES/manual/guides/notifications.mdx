@@ -2,7 +2,7 @@
 title: Configurar notificaciones
 description: Activa o desactiva categorías, define el horario de silencio y un sonido, y averigua qué notificaciones te llegan y dónde.
 slug: es-ES/manual/guias/notificaciones
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Esta guía te muestra cómo configurar las notificaciones y qué controla de verdad
@@ -25,11 +25,12 @@ notificaciones.
 
 1. Ve a **Ajustes → Tú → Notificaciones**
 2. Deja **Activar notificaciones** activado
-3. Activa o desactiva las categorías que quieras. Hay exactamente dieciséis:
+3. Activa o desactiva las categorías que quieras. Hay exactamente diecisiete:
 
 | Categoría                 | Se activa cuando                                                              |
 | ------------------------- | ----------------------------------------------------------------------------- |
 | Agente finalizado         | Un agente respondió en una ejecución que iniciaste, o la ejecución falló      |
+| Un agente te espera       | Un agente necesita tu aprobación, te hizo una pregunta o está detenido por una credencial |
 | PR publicada              | Un agente publicó una PR                                                      |
 | PR fusionada              | Se fusionó una PR                                                             |
 | Nuevos mensajes           | Alguien te mencionó en un espacio                                             |
@@ -48,6 +49,12 @@ notificaciones.
 
 Nada que quede fuera de esta lista puede notificarse ni filtrarse: no existe una
 categoría de «todo lo demás».
+
+**Un agente te espera** se activa una vez por espera, cuando esta empieza: una
+aprobación pendiente (incluidos los permisos de ejecución del entorno aislado y las
+aprobaciones de herramientas de Claude Code), una pregunta `ask_user` o una
+ejecución retenida porque su credencial no puede atenderla. Abre el espacio
+donde respondes y no avisa mientras ya estás viendo ese espacio.
 
 Estas preferencias siguen a tu usuario de un dispositivo a otro, así que el
 móvil y el portátil van a la par. El volumen es la excepción deliberada y se

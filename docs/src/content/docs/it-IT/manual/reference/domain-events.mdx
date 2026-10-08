@@ -1,8 +1,8 @@
 ---
 title: Eventi di dominio
-description: Catalogo completo dei 53 eventi di dominio, dei loro payload e dei sottoscrittori lato server che li consumano.
+description: Catalogo completo dei 54 eventi di dominio, dei loro payload e dei sottoscrittori lato server che li consumano.
 slug: it-IT/manuale/riferimento/eventi-di-dominio
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Bus di eventi
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Misura | Conteggio |
 | --- | --- |
-| Classi di evento concrete | 53 |
+| Classi di evento concrete | 54 |
 | File sorgente (`packages/cc_domain/lib/core/domain/events/`) | 14 (più `domain_event_bus.dart`) |
 | Basi astratte mai pubblicate direttamente | 1 (`TaskLifecycleEvent`, una gerarchia sealed) |
 
@@ -25,6 +25,7 @@ Ogni evento del catalogo seguente vive in quella sola directory; non ci sono eve
 | --- | --- | --- |
 | `WorkspaceCreated` | `workspaceId` | Lo spazio di lavoro viene creato |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | L'agente termina un'esecuzione (con o senza successo) |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | L'agente inizia ad aspettare una persona: un'approvazione, una domanda `ask_user` o un'esecuzione ferma su una credenziale (`kind` vale `approval`, `question` o `credential`) |
 | `RepoAdded` | `repoId`, `path`, `workspaceId` | Un repo viene registrato; avvia l'indicizzazione del codice in background |
 | `SkillUpdated` | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Una skill viene installata o aggiornata, con il suo esito di scansione della supply chain |
 
@@ -183,8 +184,8 @@ Ogni sottoscrittore seguente viene costruito all'interno di `runCcServer` (o di 
 | `RigEventListener` | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — inietta un avviso in linguaggio semplice sulla corsia di guida dell'agente che guida |
 | `StaleReviewWatcher` | `PrHeadChanged` — pubblica `ReviewBecameStale` solo quando esiste una revisione conclusa per il commit sostituito |
 | `GitHubPrConversationBridge` | `AgentRunCompleted` — risposte in uscita nelle conversazioni delle PR |
-| `NotificationFeedRecorder` | I ventuno eventi della classe delle notifiche qui sotto |
-| `RemoteEventForwarder` | Quei ventuno più `TicketReassigned` e ogni `TaskLifecycleEvent`. I tre eventi di appartenenza invalidano soltanto la sua cache di appartenenza per spazio di lavoro; non vengono inoltrati come frame |
+| `NotificationFeedRecorder` | I ventidue eventi della classe delle notifiche qui sotto |
+| `RemoteEventForwarder` | Quei ventidue più `TicketReassigned` e ogni `TaskLifecycleEvent`. I tre eventi di appartenenza invalidano soltanto la sua cache di appartenenza per spazio di lavoro; non vengono inoltrati come frame |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — elimina le sottoscrizioni agli spazi di lavoro collegate a quell'utente; il socket resta aperto |
 
 `TicketAssigned` è un segnale di audit e di notifica e un trigger di pipeline. L'assegnazione a un agente registra la proprietà e non avvia alcuna esecuzione — non esiste alcun dispatcher dei ticket. L'assegnazione a un team (`assignedTeamId` impostato) è l'eccezione: `TeamRoutingService` invia il leader del team.
@@ -195,12 +196,13 @@ Ogni sottoscrittore seguente viene costruito all'interno di `runCcServer` (o di 
 
 Sul server, `NotificationFeedRecorder` e `RemoteEventForwarder` trasformano questi eventi in frame `notifications/*` (`notification_wire.dart`). Sul client, `RpcNotificationMapper` → `mapNotificationFrame` trasforma un frame in una `AppNotification`.
 
-Ci sono esattamente **sedici** categorie di notifica. Diversi eventi corrispondono a più di un metodo di rete, perché il frame porta il cambiamento (fallito o ripristinato) mentre la categoria porta la domanda («che cosa sta facendo la CI?»).
+Ci sono esattamente **diciassette** categorie di notifica. Diversi eventi corrispondono a più di un metodo di rete, perché il frame porta il cambiamento (fallito o ripristinato) mentre la categoria porta la domanda («che cosa sta facendo la CI?»).
 
 | Categoria | Evento di origine | Metodo di rete |
 | --- | --- | --- |
 | `newMessage` | `MessageReceived` | `notifications/message_received` (ti menziona) |
 | `agentRunCompleted` | `MessageReceived`   | `notifications/message_received` (`is_agent_message`, senza menzionarti) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned` | `TicketAssigned` | `notifications/ticket_assigned` |
 | `ticketStatusChanged` | `TicketStatusChanged` | `notifications/ticket_status_changed` |
 | `pullRequestPublished` | `PullRequestPublished` | `notifications/pr_published` |
@@ -222,6 +224,8 @@ Ci sono esattamente **sedici** categorie di notifica. Diversi eventi corrispondo
 | `rigStatusChanged` | `RigClosedEvent` | `notifications/rig_closed` |
 
 Il frame di presa in carico di un rig non viene recapitato a chi ha preso il volante, un rilascio non è filtrato (l'evento non registra chi ha mollato) e solo una chiusura con `backendFailure` produce un frame `rig_closed` — gli altri motivi sono richiesti oppure già coperti dal frame di recupero.
+
+`AgentAwaitingInput` viene pubblicato da `AgentAwaitingInputPublisher`, che osserva i registri delle approvazioni e dei blocchi delle credenziali in cerca di nuove voci e riceve da `AgentQuestionService` la notifica di ogni domanda `ask_user`. Un'attesa corrisponde a un evento; quando l'attesa finisce non viene pubblicato nulla.
 
 Le cinque categorie delle PR proprie portano `forUserId`, quindi raggiungono l'autore invece di tutti nello spazio di lavoro.
 

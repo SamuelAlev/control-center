@@ -2,7 +2,7 @@
 title: Nastavte oznámení
 description: Zapni nebo vypni kategorie, nastav tiché hodiny a zvuk a zjisti, která oznámení k tobě dorazí a kam.
 slug: cs-CZ/prirucka/navody/oznameni
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Tenhle návod ukazuje, jak nastavit oznámení a co které nastavení opravdu
@@ -24,11 +24,12 @@ Telefonní klient nemá plochu oznámení vůbec.
 
 1. Jdi do **Nastavení → Vy → Oznámení**
 2. Nech **Zapnout oznámení** zapnuté
-3. Přepni kategorie, které chceš. Je jich přesně šestnáct:
+3. Přepni kategorie, které chceš. Je jich přesně sedmnáct:
 
 | Kategorie                          | Kdy se spustí                                                                      |
 | ---------------------------------- | ---------------------------------------------------------------------------------- |
 | Agent dokončil                     | Agent odpověděl v běhu, který jsi spustil, nebo běh selhal                        |
+| Agent na vás čeká                  | Agent potřebuje tvoje schválení, položil ti otázku, nebo stojí kvůli přihlašovacím údajům |
 | PR zveřejněn                       | Agent zveřejnil PR                                                                |
 | PR sloučen                         | PR byl sloučen                                                                    |
 | Nové zprávy                        | Někdo tě zmínil v prostoru                                                        |
@@ -47,6 +48,12 @@ Telefonní klient nemá plochu oznámení vůbec.
 
 Co v tomhle seznamu není, oznámit ani filtrovat nejde. Kategorie „všechno
 ostatní“ neexistuje.
+
+**Agent na vás čeká** se spustí jednou za každé čekání, hned když začne:
+čekající schválení (včetně povolení ke spuštění příkazů v sandboxu a schválení
+nástrojů Claude Code), otázka `ask_user`, nebo běh pozastavený proto, že ho jeho
+přihlašovací údaje nedokážou obsloužit. Otevře prostor, kde odpovíš, a mlčí,
+když se na ten prostor už díváš.
 
 Tahle nastavení cestují s tvým uživatelem mezi zařízeními, takže telefon a
 notebook zůstanou ve shodě. Hlasitost je schválně výjimka a zůstává u každého

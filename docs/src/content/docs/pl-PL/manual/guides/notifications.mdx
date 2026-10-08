@@ -2,7 +2,7 @@
 title: Skonfiguruj powiadomienia
 description: Włączaj i wyłączaj kategorie, ustaw godziny ciszy i dźwięk oraz wiedz, które powiadomienia docierają do Ciebie i gdzie.
 slug: pl-PL/podrecznik/poradniki/powiadomienia
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Ten poradnik pokazuje, jak skonfigurować powiadomienia i czym naprawdę steruje
@@ -24,11 +24,12 @@ jego historia nadal działają, bo czytają kanał z serwera. Klient mobilny nie
 
 1. Przejdź do **Ustawienia → Ty → Powiadomienia**
 2. Zostaw **Włącz powiadomienia** włączone
-3. Przełącz kategorie, których chcesz. Jest ich dokładnie szesnaście:
+3. Przełącz kategorie, których chcesz. Jest ich dokładnie siedemnaście:
 
 | Kategoria                 | Wyzwalane, gdy                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agent ukończył pracę      | Agent odpowiedział w uruchomieniu, które rozpocząłeś, albo uruchomienie się nie powiodło |
+| Agent czeka na Ciebie     | Agent potrzebuje Twojej zgody, zadał Ci pytanie albo utknął na danych logowania |
 | Opublikowano PR           | Agent opublikował PR                                                       |
 | Scalono PR                | PR został scalony                                                          |
 | Nowe wiadomości           | Ktoś wspomniał o Tobie w przestrzeni                                       |
@@ -47,6 +48,13 @@ jego historia nadal działają, bo czytają kanał z serwera. Klient mobilny nie
 
 Wszystko poza tą listą nie może być zgłaszane ani filtrowane — nie ma kategorii
 „wszystko inne”.
+
+**Agent czeka na Ciebie** jest wyzwalane raz na każde oczekiwanie, w chwili gdy
+się ono zaczyna: przy oczekującej zgodzie (także na uprawnienia wykonywania w
+sandboxie i na użycie narzędzi w Claude Code), przy pytaniu `ask_user` albo gdy
+uruchomienie jest wstrzymane, bo jego dane logowania nie mogą go obsłużyć.
+Powiadomienie otwiera przestrzeń, w której odpowiadasz, i milczy, gdy już na nią
+patrzysz.
 
 Te preferencje podążają za Twoim użytkownikiem na wszystkie urządzenia, więc
 telefon i laptop pozostają zgodne. Głośność to celowy wyjątek i pozostaje

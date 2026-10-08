@@ -2,7 +2,7 @@
 title: Benachrichtigungen konfigurieren
 description: Schalte Kategorien ein oder aus, lege Quiet hours und einen Ton fest und erkenne, welche Benachrichtigungen dich wo erreichen.
 slug: de-DE/handbuch/anleitungen/benachrichtigungen
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Diese Anleitung zeigt, wie du Benachrichtigungen konfigurierst und was jede
@@ -26,11 +26,12 @@ Benachrichtigungsfläche.
 
 1. Gehe zu **Einstellungen → Du → Benachrichtigungen**
 2. Lass **Benachrichtigungen aktivieren** eingeschaltet
-3. Schalte die Kategorien um, die du willst. Es sind genau sechzehn:
+3. Schalte die Kategorien um, die du willst. Es sind genau siebzehn:
 
 | Kategorie               | Auslöser                                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------------------- |
 | Agent abgeschlossen     | Ein Agent hat in einem Lauf geantwortet, den du gestartet hast, oder der Lauf ist fehlgeschlagen |
+| Agent wartet auf dich   | Ein Agent braucht deine Freigabe, hat dir eine Frage gestellt oder hängt an Zugangsdaten fest |
 | PR veröffentlicht       | Ein Agent hat einen PR veröffentlicht                                                       |
 | PR zusammengeführt      | Ein PR wurde zusammengeführt                                                                |
 | Neue Nachrichten        | Jemand hat dich in einem Bereich erwähnt                                                   |
@@ -49,6 +50,13 @@ Benachrichtigungsfläche.
 
 Alles außerhalb dieser Liste wird weder gemeldet noch gefiltert. Eine Kategorie
 „alles andere“ gibt es nicht.
+
+**Agent wartet auf dich** meldet sich einmal pro Wartezeit, und zwar wenn sie
+beginnt: bei einer ausstehenden Freigabe (auch Ausführungsfreigaben der Sandbox
+und Tool-Freigaben von Claude Code), bei einer `ask_user`-Frage oder bei einem
+Lauf, der angehalten ist, weil seine Zugangsdaten ihn nicht bedienen können. Die
+Benachrichtigung öffnet den Bereich, in dem du antwortest, und bleibt still,
+solange du dir diesen Bereich schon ansiehst.
 
 Diese Einstellungen folgen deinem Benutzer auf jedes Gerät, deshalb bleiben
 Smartphone und Laptop auf demselben Stand. Die Lautstärke ist die bewusste

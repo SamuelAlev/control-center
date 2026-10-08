@@ -179,6 +179,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     required String spaceId,
     required String agentSlug,
     required String fallbackDir,
+    String? conversationId,
     String? agentConfigDir,
     String? ticketId,
     String? ticketKey,
@@ -292,12 +293,13 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       }
 
       // Build the per-agent overlay cwd (AGENTS.md + .agents + repos symlinks)
-      // and return it. Two agents in the same space get distinct overlays
-      // that share `repos/`. The derived `.mcp.json` is NOT created here —
-      // cc_server writes it into the cwd at dispatch time.
+      // and return it. Two agents in the same space — or one agent in two of
+      // its conversations — get distinct overlays that share `repos/`. The
+      // derived `.mcp.json` is NOT created here — cc_server writes it into the
+      // cwd at dispatch time.
       return await _ensureAgentOverlay(
         spaceRoot: spaceRoot,
-        agentSlug: agentSlug,
+        overlayName: agentOverlayDirName(agentSlug, conversationId),
         agentConfigDir: agentConfigDir,
       );
     } on CancelledException {
@@ -321,22 +323,22 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   }
 
   /// Builds (idempotently, type-aware) the per-agent overlay at
-  /// `<spaceRoot>/agents/<agentSlug>/` and returns its path as the cwd. Creates
+  /// `<spaceRoot>/agents/<overlayName>/` and returns its path as the cwd. Creates
   /// three symlinks: `AGENTS.md` + `.agents` → the agent's global config dir
   /// (when known) and `repos → ../../repos` (the space's shared worktrees,
   /// resolved via the shared rw sandbox mount).
   Future<String> _ensureAgentOverlay({
     required String spaceRoot,
-    required String agentSlug,
+    required String overlayName,
     String? agentConfigDir,
   }) async {
-    final overlayDir = Directory(p.join(spaceRoot, 'agents', agentSlug));
+    final overlayDir = Directory(p.join(spaceRoot, 'agents', overlayName));
     if (!overlayDir.existsSync()) {
       await overlayDir.create(recursive: true);
     }
 
     // Shared repos live at <spaceRoot>/repos; the cwd is nested two levels
-    // under it (<spaceRoot>/agents/<slug>), so the link is `../../repos`.
+    // under it (<spaceRoot>/agents/<overlay>), so the link is `../../repos`.
     await _ensureSymlink(p.join(overlayDir.path, 'repos'), '../../repos');
 
     if (agentConfigDir != null && agentConfigDir.isNotEmpty) {

@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba quais notificações chegam até você e onde.
 slug: pt-BR/manual/guias/notificacoes
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Este guia mostra como configurar as notificações e o que cada ajuste realmente
@@ -25,11 +25,12 @@ notificação.
 
 1. Acesse **Configurações → Você → Notificações**
 2. Deixe **Ativar notificações** ligado
-3. Alterne as categorias que você quiser. São exatamente dezesseis:
+3. Alterne as categorias que você quiser. São exatamente dezessete:
 
 | Categoria                 | Dispara quando                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agente finalizado         | Um agente respondeu em uma execução que você iniciou, ou a execução falhou |
+| Um agente está esperando você | Um agente precisa da sua aprovação, fez uma pergunta a você ou está parado em uma credencial |
 | PR publicada              | Um agente publicou uma PR                                                  |
 | PR mesclada               | Uma PR foi mesclada                                                        |
 | Novas mensagens           | Alguém mencionou você em um espaço                                         |
@@ -48,6 +49,13 @@ notificação.
 
 Nada fora desta lista pode ser notificado nem filtrado — não existe uma
 categoria “todo o resto”.
+
+**Um agente está esperando você** dispara uma vez por espera, quando ela começa:
+uma aprovação pendente (incluindo concessões de execução no sandbox e aprovações
+de ferramentas do Claude Code), uma pergunta `ask_user` ou uma execução retida
+porque a credencial dela não consegue atendê-la. A notificação abre o espaço
+onde você responde e fica em silêncio enquanto você já está olhando para esse
+espaço.
 
 Essas preferências seguem o seu usuário entre dispositivos, então um celular e
 um notebook ficam em sincronia. O volume é a exceção deliberada e permanece por

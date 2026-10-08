@@ -7064,6 +7064,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Omitida';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Tiempo agotado';
+
+  @override
+  String get agentQuestionTimeLeft => 'Tiempo restante para responder';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Descríbelo con tus palabras…';
 
   @override
@@ -15349,6 +15355,40 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Un agente te espera';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Cuando un agente necesita tu aprobación, una respuesta o una credencial válida';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent necesita tu aprobación';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Un agente necesita tu aprobación';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent tiene una pregunta';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Un agente tiene una pregunta';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent está bloqueado por una credencial';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Un agente está bloqueado por una credencial';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

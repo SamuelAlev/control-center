@@ -2,7 +2,7 @@
 title: Configurează notificările
 description: Activează sau dezactivează categorii, setează orele de liniște și un sunet și află ce notificări te ajung și unde.
 slug: ro-RO/manual/ghiduri-practice/notificari
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Acest ghid arată cum să configurezi notificările și ce controlează de fapt
@@ -25,11 +25,12 @@ suprafață de notificări.
 
 1. Mergi la **Setări → Tu → Notificări**
 2. Lasă **Activează notificările** activat
-3. Comută categoriile dorite. Sunt exact șaisprezece:
+3. Comută categoriile dorite. Sunt exact șaptesprezece:
 
 | Categorie                        | Se declanșează când                                                                  |
 | -------------------------------- | ------------------------------------------------------------------------------------ |
 | Agentul a terminat               | Un agent a răspuns într-o rulare pornită de tine sau rularea a eșuat                 |
+| Un agent te așteaptă             | Un agent are nevoie de aprobarea ta, ți-a pus o întrebare sau este blocat din cauza credențialelor |
 | PR publicat                      | Un agent a publicat un PR                                                            |
 | PR fuzionat                      | Un PR a fost fuzionat                                                                |
 | Mesaje noi                       | Cineva te-a menționat într-un spațiu                                                 |
@@ -48,6 +49,12 @@ suprafață de notificări.
 
 Orice în afara acestei liste nu poate fi notificat sau filtrat — nu există o
 categorie „toate celelalte”.
+
+**Un agent te așteaptă** se declanșează o singură dată pentru fiecare așteptare,
+când aceasta începe: o aprobare în așteptare (inclusiv acordările de execuție în
+sandbox și aprobările de instrumente Claude Code), o întrebare `ask_user` sau o
+rulare oprită pentru că credențialele ei nu o pot deservi. Notificarea deschide
+spațiul în care răspunzi și nu apare cât timp te uiți deja la acel spațiu.
 
 Aceste preferințe te însoțesc pe toate dispozitivele, așa că telefonul și
 laptopul rămân în pas. Volumul este excepția deliberată și rămâne per dispozitiv.

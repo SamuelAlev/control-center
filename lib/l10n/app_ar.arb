@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "السؤال {index} من {count}",
   "agentQuestionSkip": "تخطي",
   "agentQuestionSkippedLabel": "تم التخطي",
+  "agentQuestionTimedOutLabel": "انتهت المهلة",
+  "agentQuestionTimeLeft": "الوقت المتبقي للإجابة",
   "agentQuestionFreeformOptionHint": "صِف الأمر بكلماتك…",
   "reviewRequested": "طُلبت مراجعة",
   "connectGitHubHint": "سجّل الدخول إلى GitHub أو أضف رمز وصول في الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "تم وضع علامة على {path} كغير معروض",
   "prLineChangesSemantics": "الأسطر المضافة: {additions}، الأسطر المحذوفة: {deletions}",
   "closeTabNamed": "إغلاق {tab}",
-  "threadCommentCount": "{count, plural, zero{لا تعليقات} one{تعليق واحد} two{تعليقان} few{{count} تعليقات} many{{count} تعليقًا} other{{count} تعليق}}"
+  "threadCommentCount": "{count, plural, zero{لا تعليقات} one{تعليق واحد} two{تعليقان} few{{count} تعليقات} many{{count} تعليقًا} other{{count} تعليق}}",
+  "notificationAgentAwaitingInput": "وكيل بانتظارك",
+  "notifyAgentAwaitingInput": "عندما يحتاج وكيل إلى موافقتك أو إجابتك أو بيانات اعتماد صالحة",
+  "notificationAgentNeedsApproval": "{agent} يحتاج إلى موافقتك",
+  "notificationAgentNeedsApprovalUnnamed": "وكيل يحتاج إلى موافقتك",
+  "notificationAgentAskedQuestion": "لدى {agent} سؤال",
+  "notificationAgentAskedQuestionUnnamed": "لدى وكيل سؤال",
+  "notificationAgentBlockedOnCredential": "{agent} متوقف بسبب بيانات الاعتماد",
+  "notificationAgentBlockedOnCredentialUnnamed": "وكيل متوقف بسبب بيانات الاعتماد"
 }

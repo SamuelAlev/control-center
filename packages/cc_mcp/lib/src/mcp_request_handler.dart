@@ -21,10 +21,15 @@ import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 /// `tools/list_changed` fan-out and every request hits the same auth posture.
 class McpRequestHandler {
   /// Creates a handler over [dispatcher] with the given auth [config].
+  ///
+  /// [streamAfter] and [streamHeartbeat] tune streamed `tools/call` replies;
+  /// see [defaultStreamAfter].
   McpRequestHandler({
     required McpConfig config,
     required this.dispatcher,
     this.agentRoutes,
+    this.streamAfter = defaultStreamAfter,
+    this.streamHeartbeat = defaultStreamHeartbeat,
   }) : _activeConfig = config;
 
   /// Dispatcher that routes incoming JSON-RPC tool requests.
@@ -49,6 +54,45 @@ class McpRequestHandler {
   /// Cap on a `POST /mcp` body. JSON-RPC tool calls are small; anything larger
   /// is abusive, and `utf8.decodeStream` would otherwise buffer all of it.
   static const int _maxPostBodyBytes = 4 * 1024 * 1024;
+
+  /// How long a `tools/call` may run before its reply becomes an SSE stream
+  /// ([defaultStreamAfter] unless a test shortens it).
+  final Duration streamAfter;
+
+  /// Keep-alive cadence on a streamed `tools/call` reply. Also how quickly a
+  /// write notices a peer that vanished without closing its socket.
+  final Duration streamHeartbeat;
+
+  /// How long a `tools/call` may run before its reply becomes an SSE stream.
+  ///
+  /// Claude Code abandons a plain-JSON reply after 60 seconds ("The operation
+  /// timed out.") without sending `notifications/cancelled`, while a reply
+  /// whose headers are out and whose stream carries keep-alives is awaited
+  /// for as long as the tool takes (verified against Claude Code 2.1.291). A
+  /// tool that blocks on a human — `ask_user`, an approval — easily outlasts
+  /// that, so the slow ones stream. Quick calls keep the plain JSON reply.
+  static const Duration defaultStreamAfter = Duration(seconds: 5);
+
+  /// Default for [streamHeartbeat].
+  static const Duration defaultStreamHeartbeat = Duration(seconds: 15);
+
+  /// Waits for a streamed reply's final bytes to leave before the socket is
+  /// torn down regardless.
+  static const Duration _streamFlushTimeout = Duration(seconds: 10);
+
+  /// In-flight `tools/call` requests, keyed by [_callKey], completed when the
+  /// caller stops waiting (`notifications/cancelled` or a closed stream).
+  final Map<String, Completer<void>> _inFlightCalls = {};
+
+  /// Request headers that identify one caller when it sends no
+  /// `Mcp-Session-Id`: dispatch writes them per run into the agent's MCP
+  /// config.
+  static const List<String> _callerHeaders = [
+    'X-CC-Workspace-Id',
+    'X-CC-Agent-Id',
+    'X-CC-Conversation-Id',
+    'X-CC-Space-Id',
+  ];
 
   /// Whether a bearer token is configured. The host's non-loopback guard
   /// reads this to fail closed: a tokenless MCP surface must never answer
@@ -368,23 +412,24 @@ class McpRequestHandler {
           '${rpcRequest.method == 'tools/call' ? ' ${rpcRequest.params['name']}' : ''}';
       CcMcpLog.i('MCP-HTTP', '→ $label');
 
+      if (rpcRequest.method == 'notifications/cancelled') {
+        _cancelCall(request, rpcRequest.params['requestId']);
+        request.response.statusCode = HttpStatus.accepted;
+        await request.response.close();
+        return;
+      }
+
+      final scope = _scopeFromHeaders(request);
+      if (rpcRequest.method == 'tools/call' && rpcRequest.id != null) {
+        await _handleToolsCall(request, rpcRequest, scope, label, sw);
+        return;
+      }
+
       final result = await dispatcher.handleScopedRequest(
         rpcRequest,
-        scope: _scopeFromHeaders(request),
+        scope: scope,
       );
-
-      request.response.headers.contentType = ContentType(
-        'application',
-        'json',
-        charset: 'utf-8',
-      );
-      if (result.isNotEmpty) {
-        request.response.add(utf8.encode(jsonEncode(result)));
-      } else {
-        request.response.statusCode = HttpStatus.accepted;
-      }
-      await request.response.close();
-      CcMcpLog.d('MCP-HTTP', '← $label ${sw.elapsedMilliseconds}ms');
+      await _writeJson(request, result, label, sw);
     } on FormatException catch (e) {
       CcMcpLog.e('MCP-HTTP', '✗ $label parse error: $e', e);
       request.response
@@ -438,6 +483,245 @@ class McpRequestHandler {
         // Connection closed, nothing to do
       }
     }
+  }
+
+  Future<void> _writeJson(
+    HttpRequest request,
+    Map<String, dynamic> result,
+    String label,
+    Stopwatch sw,
+  ) async {
+    request.response.headers.contentType = ContentType(
+      'application',
+      'json',
+      charset: 'utf-8',
+    );
+    if (result.isNotEmpty) {
+      request.response.add(utf8.encode(jsonEncode(result)));
+    } else {
+      request.response.statusCode = HttpStatus.accepted;
+    }
+    await request.response.close();
+    CcMcpLog.d('MCP-HTTP', '← $label ${sw.elapsedMilliseconds}ms');
+  }
+
+  /// Runs a `tools/call`, telling the tool when its caller stops waiting.
+  ///
+  /// A call that settles within [streamAfter] answers with plain JSON. A
+  /// slower one, from a client that accepts `text/event-stream`, switches to
+  /// a streamed reply (see [defaultStreamAfter] for why).
+  Future<void> _handleToolsCall(
+    HttpRequest request,
+    JsonRpcRequest rpcRequest,
+    McpCallScope? scope,
+    String label,
+    Stopwatch sw,
+  ) async {
+    final abandoned = Completer<void>();
+    final key = _callKey(request, rpcRequest.id);
+    _inFlightCalls[key] = abandoned;
+    try {
+      var settled = false;
+      final pending = dispatcher
+          .handleScopedRequest(
+            rpcRequest,
+            scope: scope,
+            abandoned: abandoned.future,
+          )
+          .whenComplete(() => settled = true);
+
+      if (_acceptsEventStream(request)) {
+        final streamAt = Completer<void>();
+        final timer = Timer(streamAfter, streamAt.complete);
+        await Future.any<void>([
+          pending.then((_) {}, onError: (Object _) {}),
+          streamAt.future,
+        ]);
+        timer.cancel();
+        if (!settled) {
+          await _streamToolsCall(
+            request,
+            rpcRequest,
+            pending,
+            abandoned,
+            label,
+            sw,
+          );
+          return;
+        }
+      }
+      await _writeJson(request, await pending, label, sw);
+    } finally {
+      if (identical(_inFlightCalls[key], abandoned)) {
+        _inFlightCalls.remove(key);
+      }
+    }
+  }
+
+  /// Streams the reply to a slow `tools/call` as SSE: keep-alives (progress
+  /// notifications when the caller sent a `progressToken`) until the tool
+  /// finishes, then the JSON-RPC response as one `message` event.
+  ///
+  /// The socket is detached from dart:io's response because an open
+  /// `HttpResponse` never reports a peer that hung up: `done` stays pending
+  /// and a flush after the hang-up never completes. On the raw socket the
+  /// peer's close ends the read side, which is the moment the caller stopped
+  /// waiting. The body is delimited by closing the connection.
+  Future<void> _streamToolsCall(
+    HttpRequest request,
+    JsonRpcRequest rpcRequest,
+    Future<Map<String, dynamic>> pending,
+    Completer<void> abandoned,
+    String label,
+    Stopwatch sw,
+  ) async {
+    // Detached below; the socket it hands over is destroyed once the reply
+    // is out.
+    // ignore: close_sinks
+    final response = request.response
+      ..statusCode = HttpStatus.ok
+      ..persistentConnection = false;
+    response.headers
+      ..contentType = ContentType('text', 'event-stream', charset: 'utf-8')
+      ..chunkedTransferEncoding = false
+      ..set('Cache-Control', 'no-cache');
+    final socket = await response.detachSocket();
+    CcMcpLog.i(
+      'MCP-HTTP',
+      '⇢ $label streaming after ${sw.elapsedMilliseconds}ms',
+    );
+
+    var open = true;
+    var finished = false;
+    void hangUp() {
+      if (!open) {
+        return;
+      }
+      open = false;
+      if (!finished) {
+        CcMcpLog.w(
+          'MCP-HTTP',
+          '✗ $label caller hung up after ${sw.elapsedMilliseconds}ms',
+        );
+        if (!abandoned.isCompleted) {
+          abandoned.complete();
+        }
+      }
+    }
+
+    void send(String chunk) {
+      if (!open) {
+        return;
+      }
+      try {
+        socket.add(utf8.encode(chunk));
+      } catch (_) {
+        hangUp();
+      }
+    }
+
+    socket.listen(
+      (_) {},
+      onDone: hangUp,
+      onError: (Object _) => hangUp(),
+      cancelOnError: true,
+    );
+    unawaited(socket.done.then((_) {}, onError: (Object _) => hangUp()));
+
+    final meta = rpcRequest.params['_meta'];
+    final progressToken = meta is Map ? meta['progressToken'] : null;
+    var progress = 0;
+    final heartbeat = Timer.periodic(streamHeartbeat, (_) {
+      if (progressToken == null) {
+        send(': keep-alive\n\n');
+        return;
+      }
+      progress++;
+      send(
+        _sseMessage({
+          'jsonrpc': '2.0',
+          'method': 'notifications/progress',
+          'params': {
+            'progressToken': progressToken,
+            'progress': progress,
+            'message': 'Still running',
+          },
+        }),
+      );
+    });
+
+    Map<String, dynamic> result;
+    try {
+      result = await pending;
+    } catch (e, st) {
+      final diagnosticId = _diagnosticId();
+      CcMcpLog.e(
+        'MCP-HTTP',
+        '✗ $label internal error [$diagnosticId]: $e',
+        e,
+        st,
+      );
+      result = {
+        'jsonrpc': '2.0',
+        'id': rpcRequest.id,
+        'error': {
+          'code': -32603,
+          'message': 'Internal error (ref: $diagnosticId)',
+        },
+      };
+    } finally {
+      finished = true;
+      heartbeat.cancel();
+    }
+
+    if (open) {
+      send(_sseMessage(result));
+      CcMcpLog.d('MCP-HTTP', '← $label ${sw.elapsedMilliseconds}ms (stream)');
+    }
+    try {
+      await socket.flush().timeout(_streamFlushTimeout);
+    } catch (_) {
+      // The peer is gone or not reading; nothing left to deliver.
+    }
+    socket.destroy();
+  }
+
+  static String _sseMessage(Map<String, dynamic> payload) =>
+      'event: message\ndata: ${jsonEncode(payload)}\n\n';
+
+  /// Whether the client takes a streamed reply. The Streamable HTTP transport
+  /// requires clients to accept both `application/json` and
+  /// `text/event-stream`; one that does not gets plain JSON however long the
+  /// call runs.
+  static bool _acceptsEventStream(HttpRequest request) =>
+      (request.headers[HttpHeaders.acceptHeader] ?? const <String>[]).any(
+        (value) => value.toLowerCase().contains('text/event-stream'),
+      );
+
+  /// Completes the in-flight call a `notifications/cancelled` names.
+  void _cancelCall(HttpRequest request, Object? requestId) {
+    if (requestId == null) {
+      return;
+    }
+    final abandoned = _inFlightCalls.remove(_callKey(request, requestId));
+    if (abandoned != null && !abandoned.isCompleted) {
+      CcMcpLog.i('MCP-HTTP', 'rpc#$requestId cancelled by the caller');
+      abandoned.complete();
+    }
+  }
+
+  /// Identifies a JSON-RPC request within its caller. Request ids are unique
+  /// per client, not per server: every agent counts from zero. The MCP session
+  /// id names the client when it sends one; otherwise the identity headers
+  /// dispatch writes per run stand in for it.
+  static String _callKey(HttpRequest request, Object? id) {
+    final session = request.headers.value('Mcp-Session-Id');
+    final caller =
+        session ??
+        [
+          for (final name in _callerHeaders) request.headers.value(name) ?? '',
+        ].join('|');
+    return '$caller#${jsonEncode(id)}';
   }
 
   /// Builds the trusted identity scope from the `X-CC-*` headers dispatch

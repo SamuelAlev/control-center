@@ -1,8 +1,8 @@
 ---
 title: אירועי תחום
-description: קטלוג מלא של 53 אירועי התחום, המטענים שלהם והמנויים בצד השרת שצורכים אותם.
+description: קטלוג מלא של 54 אירועי התחום, המטענים שלהם והמנויים בצד השרת שצורכים אותם.
 slug: he-IL/מדריך-למשתמש/עזר/אירועי-תחום
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## אפיק אירועים
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | מדד                                                     | מספר                                       |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| מחלקות אירועים קונקרטיות                                      | 53                                          |
+| מחלקות אירועים קונקרטיות                                      | 54                                          |
 | קובצי מקור (`packages/cc_domain/lib/core/domain/events/`) | 14 (בתוספת `domain_event_bus.dart`)           |
 | בסיסים מופשטים שלעולם אינם מפורסמים ישירות            | 1 (`TaskLifecycleEvent`, היררכיה חתומה)           |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | סביבת עבודה נוצרת                                    |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | הסוכן מסיים הרצה (הצלחה או כשל)               |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | סוכן מתחיל להמתין לאדם: אישור, שאלת `ask_user` או הרצה שתקועה על פרטי גישה (`kind` הוא `approval`, `question` או `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | מאגר נרשם; מפעיל אינדוקס קוד ברקע |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | מיומנות מותקנת או מתעדכנת, ונושאת את תוצאת סריקת שרשרת האספקה שלה |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — מזריק הודעה בשפה פשוטה לערוץ ההכוונה של הסוכן המניע |
 | `StaleReviewWatcher`                | `PrHeadChanged` — מפרסם `ReviewBecameStale` רק כשקיימת סקירה שהסתיימה עבור הקומיט שהוחלף |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — תשובות יוצאות בשיחת PR                                               |
-| `NotificationFeedRecorder`          | עשרים ואחד אירועי מחלקת ההתראות שלהלן                                                        |
-| `RemoteEventForwarder`              | אותם עשרים ואחד ועוד `TicketReassigned` וכל `TaskLifecycleEvent`. שלושת אירועי החברות רק מבטלים את מטמון החברות שלו לכל סביבת עבודה; הם אינם מועברים כמסגרות |
+| `NotificationFeedRecorder`          | עשרים ושניים אירועי מחלקת ההתראות שלהלן                                                        |
+| `RemoteEventForwarder`              | אותם עשרים ושניים ועוד `TicketReassigned` וכל `TaskLifecycleEvent`. שלושת אירועי החברות רק מבטלים את מטמון החברות שלו לכל סביבת עבודה; הם אינם מועברים כמסגרות |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — מפיל את המינויים של אותו משתמש לסביבות העבודה שאליהן הוא מחובר; השקע נשאר פתוח |
 
 `TicketAssigned` הוא אות ביקורת והתראה וטריגר לפייפליין. הקצאה לסוכן רושמת בעלות ואינה מתחילה הרצה — אין משגר כרטיסים. הקצאה לצוות (`assignedTeamId` מוגדר) היא החריג: `TeamRoutingService` שולח את מוביל הצוות.
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 בשרת, `NotificationFeedRecorder` ו-`RemoteEventForwarder` הופכים את האירועים האלה למסגרות תעבורה `notifications/*` (`notification_wire.dart`). בלקוח, `RpcNotificationMapper` → `mapNotificationFrame` הופך מסגרת ל-`AppNotification`.
 
-יש בדיוק **שש עשרה** קטגוריות התראה. כמה אירועים ממופים ליותר משיטת תעבורה אחת, משום שהמסגרת נושאת את המעבר (נכשל לעומת התאושש) ואילו הקטגוריה נושאת את השאלה ("מה עושה ה-CI?").
+יש בדיוק **שבע עשרה** קטגוריות התראה. כמה אירועים ממופים ליותר משיטת תעבורה אחת, משום שהמסגרת נושאת את המעבר (נכשל לעומת התאושש) ואילו הקטגוריה נושאת את השאלה ("מה עושה ה-CI?").
 
 | קטגוריה               | אירוע מקור              | שיטת תעבורה                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (מזכיר אתכם)                          |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, בלי אזכור שלכם)  |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 מסגרת ההשתלטות של תחנה אינה נמסרת חזרה למי שהשתלט, השחרור אינו מסונן (האירוע אינו מתעד מי עזב), ורק סגירה מסוג `backendFailure` מפיקה מסגרת `rig_closed` — שאר הסיבות התבקשו או שכבר מכוסות במסגרת הפינוי.
+
+את `AgentAwaitingInput` מפרסם `AgentAwaitingInputPublisher`, שעוקב אחר רשומות חדשות במרשמי האישורים וחסימות פרטי הגישה, ו-`AgentQuestionService` מעדכן אותו על כל שאלת `ask_user`. המתנה אחת היא אירוע אחד; כשההמתנה מסתיימת, לא מתפרסם דבר.
 
 חמש הקטגוריות של בקשות משיכה שיצרתם נושאות `forUserId`, ולכן הן מגיעות למחבר ולא לכולם בסביבת העבודה.
 

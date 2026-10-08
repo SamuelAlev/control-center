@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_server_core/src/notification_wire.dart';
 import 'package:test/test.dart';
@@ -26,6 +27,25 @@ void main() {
     test('omits conversation_id when the publisher had none', () {
       final frame = messageReceivedFrame(agentReply());
       expect(frame!.params, isNot(contains('conversation_id')));
+    });
+  });
+
+  group('agentAwaitingInputFrame', () {
+    test('omits what the wait did not know', () {
+      final frame = agentAwaitingInputFrame(
+        AgentAwaitingInput(
+          workspaceId: 'ws-1',
+          kind: AgentInputKind.approval,
+          summary: 'Push to main',
+          occurredAt: DateTime(2026),
+        ),
+      );
+      expect(frame.method, 'notifications/agent_awaiting_input');
+      expect(frame.params, {
+        'workspace_id': 'ws-1',
+        'kind': 'approval',
+        'summary': 'Push to main',
+      });
     });
   });
 }

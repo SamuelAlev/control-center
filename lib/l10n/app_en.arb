@@ -6439,6 +6439,8 @@
   },
   "agentQuestionSkip": "Skip",
   "agentQuestionSkippedLabel": "Skipped",
+  "agentQuestionTimedOutLabel": "Timed out",
+  "agentQuestionTimeLeft": "Time left to answer",
   "agentQuestionFreeformOptionHint": "Describe in your own words…",
   "reviewRequested": "Review requested",
   "connectGitHubHint": "Sign in to GitHub or add a token in Settings → Workspace → Profile & identity → Code hosting",
@@ -13851,5 +13853,16 @@
   "closeTabNamed": "Close {tab}",
   "@closeTabNamed": {"description": "Accessible name of a workbench tab's close button.", "placeholders": {"tab": {"type": "String"}}},
   "threadCommentCount": "{count, plural, =1{1 comment} other{{count} comments}}",
-  "@threadCommentCount": {"description": "Number of comments in a code review conversation, shown in its header.", "placeholders": {"count": {"type": "int"}}}
+  "@threadCommentCount": {"description": "Number of comments in a code review conversation, shown in its header.", "placeholders": {"count": {"type": "int"}}},
+  "notificationAgentAwaitingInput": "Agent waiting on you",
+  "notifyAgentAwaitingInput": "When an agent needs your approval, an answer or a working credential",
+  "notificationAgentNeedsApproval": "{agent} needs your approval",
+  "@notificationAgentNeedsApproval": {"placeholders": {"agent": {"type": "String"}}},
+  "notificationAgentNeedsApprovalUnnamed": "An agent needs your approval",
+  "notificationAgentAskedQuestion": "{agent} has a question",
+  "@notificationAgentAskedQuestion": {"placeholders": {"agent": {"type": "String"}}},
+  "notificationAgentAskedQuestionUnnamed": "An agent has a question",
+  "notificationAgentBlockedOnCredential": "{agent} is blocked on a credential",
+  "@notificationAgentBlockedOnCredential": {"placeholders": {"agent": {"type": "String"}}},
+  "notificationAgentBlockedOnCredentialUnnamed": "An agent is blocked on a credential"
 }

@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Fråga {index} av {count}",
   "agentQuestionSkip": "Hoppa över",
   "agentQuestionSkippedLabel": "Överhoppad",
+  "agentQuestionTimedOutLabel": "Tiden gick ut",
+  "agentQuestionTimeLeft": "Återstående tid att svara",
   "agentQuestionFreeformOptionHint": "Beskriv med egna ord…",
   "reviewRequested": "Granskning begärd",
   "connectGitHubHint": "Logga in på GitHub eller lägg till en token i Inställningar → Arbetsyta → Profil och identitet → Kodvärd",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} markerad som inte granskad",
   "prLineChangesSemantics": "Tillagda rader: {additions}, borttagna rader: {deletions}",
   "closeTabNamed": "Stäng {tab}",
-  "threadCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}"
+  "threadCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
+  "notificationAgentAwaitingInput": "En agent väntar på dig",
+  "notifyAgentAwaitingInput": "När en agent behöver ditt godkännande, ett svar eller fungerande inloggningsuppgifter",
+  "notificationAgentNeedsApproval": "{agent} behöver ditt godkännande",
+  "notificationAgentNeedsApprovalUnnamed": "En agent behöver ditt godkännande",
+  "notificationAgentAskedQuestion": "{agent} har en fråga",
+  "notificationAgentAskedQuestionUnnamed": "En agent har en fråga",
+  "notificationAgentBlockedOnCredential": "{agent} är blockerad av inloggningsuppgifter",
+  "notificationAgentBlockedOnCredentialUnnamed": "En agent är blockerad av inloggningsuppgifter"
 }

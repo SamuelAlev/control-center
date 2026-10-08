@@ -42,7 +42,7 @@ class SpaceMessageSendNotifier extends Notifier<void> {
     if (content.isEmpty && images.isEmpty) {
       return;
     }
-    final stored = await _storeAttachments(workspaceId, attachments);
+    final stored = await storeAttachments(workspaceId, attachments);
     await ref
         .read(messagingServiceProvider)
         .sendAndDispatch(
@@ -56,7 +56,9 @@ class SpaceMessageSendNotifier extends Notifier<void> {
         );
   }
 
-  /// Uploads every attachment to the host and records what came back.
+  /// Uploads every attachment to the host and records what came back, as the
+  /// `metadata['attachments']` entries a message (or a queued steering card)
+  /// carries.
   /// routinely not the same machine — a paired laptop, a phone, a VPS behind the relay — so a
   /// host path is meaningless on the far side.
   /// The message row keeps the reference and never the bytes: an inline base64 screenshot
@@ -64,7 +66,7 @@ class SpaceMessageSendNotifier extends Notifier<void> {
   /// content no search can match.
   /// A file too large to carry (past [_maxUploadBytes], which the store would refuse anyway)
   /// is still RECORDED, by path.
-  Future<List<Map<String, dynamic>>> _storeAttachments(
+  Future<List<Map<String, dynamic>>> storeAttachments(
     String workspaceId,
     List<ComposerAttachment> attachments,
   ) async {

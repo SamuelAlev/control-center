@@ -10,6 +10,20 @@ const String kQuestionAnsweredKey = 'answered';
 /// Message metadata key holding the serialized [AgentQuestionAnswer].
 const String kQuestionAnswerKey = 'answer';
 
+/// Message metadata key marking a question that closed without an answer
+/// (the asking agent stopped waiting: it timed out, gave up or was stopped).
+/// Set together with [kQuestionAnsweredKey] so every "is this still open"
+/// reader treats it as resolved.
+const String kQuestionExpiredKey = 'expired';
+
+/// Message metadata key holding the UTC ISO-8601 instant the asking agent
+/// stops waiting. Absent when the service waits indefinitely.
+const String kQuestionExpiresAtKey = 'expiresAt';
+
+/// Message metadata key holding the full wait, in milliseconds, so a client
+/// can draw how much of it is left.
+const String kQuestionTimeoutMsKey = 'timeoutMs';
+
 /// In-process implementation of [AgentQuestionPort].
 ///
 /// When an agent asks a question, this posts an inline `user_question` message
@@ -23,24 +37,48 @@ const String kQuestionAnswerKey = 'answer';
 class AgentQuestionService implements AgentQuestionPort {
   /// Creates an [AgentQuestionService]. [_timeout] bounds how long the asking
   /// agent waits for an answer (`Duration.zero` waits indefinitely).
+  /// [_onAsked] runs once each question is posted, so the host can tell the
+  /// operator an agent is waiting on them.
   AgentQuestionService(
     this._messaging, {
     this._timeout = const Duration(hours: 1),
+    this._onAsked,
   });
 
   final MessagingRepository _messaging;
   final Duration _timeout;
+  final void Function(AgentQuestionRequest request)? _onAsked;
 
   /// Pending questions keyed by the question message id.
   final Map<String, Completer<AgentQuestionAnswer?>> _pending = {};
 
   @override
-  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request) async {
+  Future<AgentQuestionAnswer?> ask(
+    AgentQuestionRequest request, {
+    Future<void>? abandoned,
+  }) async {
     if (request.spaceId.isEmpty) {
       // Without a conversation there is nowhere to render the form.
       return null;
     }
 
+    final waitsForever = _timeout == Duration.zero;
+    final metadata = <String, dynamic>{
+      'question': request.question,
+      if (request.context != null) 'context': request.context,
+      'options': request.options.map((o) => o.toJson()).toList(),
+      'allowFreeText': request.allowFreeText,
+      'multiSelect': request.multiSelect,
+      if (request.askedByName != null) 'askedByName': request.askedByName,
+      kQuestionAnsweredKey: false,
+      if (!waitsForever) ...{
+        kQuestionExpiresAtKey: DateTime.now()
+            .toUtc()
+            .add(_timeout)
+            .toIso8601String(),
+        kQuestionTimeoutMsKey: _timeout.inMilliseconds,
+      },
+    };
     final messageId = await _messaging.sendMessage(
       workspaceId: request.workspaceId,
       spaceId: request.spaceId,
@@ -48,26 +86,65 @@ class AgentQuestionService implements AgentQuestionPort {
       senderId: request.askedByAgentId ?? 'agent',
       senderType: 'agent',
       messageType: 'user_question',
-      metadata: {
-        'question': request.question,
-        if (request.context != null) 'context': request.context,
-        'options': request.options.map((o) => o.toJson()).toList(),
-        'allowFreeText': request.allowFreeText,
-        'multiSelect': request.multiSelect,
-        if (request.askedByName != null) 'askedByName': request.askedByName,
-        kQuestionAnsweredKey: false,
-      },
+      metadata: metadata,
     );
 
     final completer = Completer<AgentQuestionAnswer?>();
     _pending[messageId] = completer;
+    _onAsked?.call(request);
+    var closedUnanswered = false;
+    // The asker can stop waiting long before the timeout: its MCP client gave
+    // up on the call, or the run was stopped. An answer given after that
+    // reaches nobody, so the form closes exactly as it does on timeout.
+    void giveUp() {
+      if (!completer.isCompleted) {
+        closedUnanswered = true;
+        completer.complete(null);
+      }
+    }
+
+    unawaited(
+      abandoned?.then((_) => giveUp(), onError: (Object _) => giveUp()),
+    );
     try {
-      if (_timeout == Duration.zero) {
+      if (waitsForever) {
         return await completer.future;
       }
-      return await completer.future.timeout(_timeout, onTimeout: () => null);
+      return await completer.future.timeout(
+        _timeout,
+        onTimeout: () {
+          closedUnanswered = true;
+          return null;
+        },
+      );
     } finally {
       _pending.remove(messageId);
+      if (closedUnanswered) {
+        await _markExpired(request.workspaceId, messageId, metadata);
+      }
+    }
+  }
+
+  /// Closes the form of a question nobody answered while the asker waited, so
+  /// the client collapses it instead of offering an answer the agent no
+  /// longer reads.
+  Future<void> _markExpired(
+    String workspaceId,
+    String messageId,
+    Map<String, dynamic> metadata,
+  ) async {
+    try {
+      await _messaging.updateMessage(
+        workspaceId,
+        messageId,
+        metadata: {
+          ...metadata,
+          kQuestionAnsweredKey: true,
+          kQuestionExpiredKey: true,
+        },
+      );
+    } catch (_) {
+      // Best-effort: the client also closes the form once expiresAt passes.
     }
   }
 
@@ -88,7 +165,9 @@ class AgentQuestionService implements AgentQuestionPort {
   /// A metadata blob that is not an answered question, or an id nobody is
   /// waiting on, is ignored — this runs on every message update.
   bool resolveFromMetadata(String messageId, Map<String, dynamic>? metadata) {
-    if (metadata == null || metadata[kQuestionAnsweredKey] != true) {
+    if (metadata == null ||
+        metadata[kQuestionAnsweredKey] != true ||
+        metadata[kQuestionExpiredKey] == true) {
       return false;
     }
     final completer = _pending.remove(messageId);

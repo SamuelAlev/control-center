@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/src/tools/ask_user_tool.dart';
@@ -7,10 +9,15 @@ class _RecordingPort implements AgentQuestionPort {
   _RecordingPort(this._answer);
   final AgentQuestionAnswer? _answer;
   AgentQuestionRequest? seen;
+  Future<void>? seenAbandoned;
 
   @override
-  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request) async {
+  Future<AgentQuestionAnswer?> ask(
+    AgentQuestionRequest request, {
+    Future<void>? abandoned,
+  }) async {
     seen = request;
+    seenAbandoned = abandoned;
     return _answer;
   }
 }
@@ -28,29 +35,30 @@ void main() {
         const AgentQuestionAnswer(selectedLabels: ['Postgres']),
       );
       final tool = AskUserTool(port: port);
-      final args = const McpCallScope(
-        workspaceId: 'ws1',
-        agentId: 'agent1',
-        spaceId: 'space1',
-      ).apply(
-        {
-          'question': 'Which database?',
-          'context': 'Both are already in the lockfile.',
-          'options': [
+      final args =
+          const McpCallScope(
+            workspaceId: 'ws1',
+            agentId: 'agent1',
+            spaceId: 'space1',
+          ).apply(
             {
-              'label': 'Postgres',
-              'description': 'What the rest of the app uses',
+              'question': 'Which database?',
+              'context': 'Both are already in the lockfile.',
+              'options': [
+                {
+                  'label': 'Postgres',
+                  'description': 'What the rest of the app uses',
+                },
+                {'label': 'SQLite'},
+              ],
+              // A model-supplied space must not win: the form has to land where
+              // the human is watching.
+              'space_id': 'space-other',
+              'agent_id': 'someone-else',
             },
-            {'label': 'SQLite'},
-          ],
-          // A model-supplied space must not win: the form has to land where
-          // the human is watching.
-          'space_id': 'space-other',
-          'agent_id': 'someone-else',
-        },
-        tool.inputSchema,
-        force: tool.forcedScopeKeys,
-      );
+            tool.inputSchema,
+            force: tool.forcedScopeKeys,
+          );
 
       final result = await tool.call(args);
 
@@ -65,10 +73,9 @@ void main() {
 
     test('refuses a question with nowhere to render', () async {
       final port = _RecordingPort(null);
-      final result = await AskUserTool(port: port).call({
-        'workspace_id': 'ws1',
-        'question': 'Which?',
-      });
+      final result = await AskUserTool(
+        port: port,
+      ).call({'workspace_id': 'ws1', 'question': 'Which?'});
       expect(result.isError, isTrue);
       expect(result.content.single.text, contains('space_id'));
       expect(port.seen, isNull);
@@ -82,6 +89,17 @@ void main() {
       });
       expect(result.isError, isTrue);
       expect(result.content.single.text, contains('timed out'));
+    });
+
+    test('hands the port the signal that the caller stopped waiting', () async {
+      final port = _RecordingPort(null);
+      final abandoned = Completer<void>();
+      await AskUserTool(port: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'space1',
+        'question': 'Which?',
+      }, abandoned: abandoned.future);
+      expect(port.seenAbandoned, same(abandoned.future));
     });
   });
 }

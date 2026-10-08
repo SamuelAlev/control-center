@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
@@ -181,6 +182,8 @@ void main() {
   late _FakeRunLogRepo runLogs;
   late List<_FakeSession> sessions;
   List<String> dispatched = [];
+  List<MessageAttachment> dispatchedAttachments = [];
+  List<String> dispatchedImages = [];
   late SteeringQueueService service;
 
   setUp(() {
@@ -188,6 +191,8 @@ void main() {
     runLogs = _FakeRunLogRepo([_activeRun()]);
     sessions = [];
     dispatched = [];
+    dispatchedAttachments = [];
+    dispatchedImages = [];
     service = SteeringQueueService(
       messagingRepository: messaging,
       runLogRepository: runLogs,
@@ -198,8 +203,12 @@ void main() {
             String? conversationId,
             required String content,
             String? senderUserId,
+            List<MessageAttachment> attachments = const [],
+            List<String> promptImageRefs = const [],
           }) async {
             dispatched.add(content);
+            dispatchedAttachments.addAll(attachments);
+            dispatchedImages.addAll(promptImageRefs);
           },
       sessionsForConversation: (conversationId) => [
         for (final s in sessions)
@@ -592,6 +601,8 @@ void main() {
               String? conversationId,
               required String content,
               String? senderUserId,
+              List<MessageAttachment> attachments = const [],
+              List<String> promptImageRefs = const [],
             }) async {
               dispatched.add(content);
             },
@@ -616,6 +627,118 @@ void main() {
       await fast.handleRunEnded('ws', 'conv', 'space');
       expect(messaging.messages.single.messageType, MessageType.text);
       expect(dispatched, ['nudge']);
+    });
+  });
+
+  group('attachments', () {
+    const shot = {
+      'id': 'a1',
+      'path':
+          'blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'name': 'shot.png',
+      'kind': 'image',
+      'mediaType': 'image/png',
+    };
+
+    SteeringQueueService resolving() => SteeringQueueService(
+      messagingRepository: messaging,
+      runLogRepository: runLogs,
+      dispatchResponder:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            String? conversationId,
+            required String content,
+            String? senderUserId,
+            List<MessageAttachment> attachments = const [],
+            List<String> promptImageRefs = const [],
+          }) async {},
+      sessionsForConversation: (conversationId) => [
+        for (final s in sessions)
+          if (s.conversationId == conversationId) s,
+      ],
+      resolveAttachmentPaths:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            required String text,
+            required List<MessageAttachment> attachments,
+          }) async => text.replaceAll(
+            '@[file:shot.png]',
+            '/space/attachments/shot.png',
+          ),
+    );
+
+    test('a card can be attachments alone, stored on the row', () async {
+      final result = await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: '',
+        senderUserId: 'user-1',
+        attachments: const [shot],
+      );
+      expect(result, isNotNull);
+      final row = messaging.messages.single;
+      expect(row.attachments.single.name, 'shot.png');
+      expect(row.isSteeringQueued, isTrue);
+    });
+
+    test('a live run is handed the attachment paths, in place', () async {
+      final session = _FakeSession();
+      sessions.add(session);
+      await resolving().enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'too big: @[file:shot.png]',
+        senderUserId: 'user-1',
+        attachments: const [shot],
+      );
+      expect(
+        session.steeringQueue.peek(SteeringChannel.steering).single.content,
+        'too big: /space/attachments/shot.png',
+      );
+      // The stored card keeps the reference, so it still renders as a chip.
+      expect(messaging.messages.single.content, 'too big: @[file:shot.png]');
+    });
+
+    test('an attachment the text never names still reaches the run', () async {
+      final session = _FakeSession();
+      sessions.add(session);
+      await resolving().enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'look',
+        senderUserId: 'user-1',
+        attachments: const [shot],
+      );
+      expect(
+        session.steeringQueue.peek(SteeringChannel.steering).single.content,
+        'look\n/space/attachments/shot.png',
+      );
+    });
+
+    test('run-end conversion hands the attachments to the follow-up', () async {
+      sessions.add(_FakeSession()..harnessActive = false);
+      await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'see @[file:shot.png]',
+        senderUserId: 'user-1',
+        attachments: const [shot],
+      );
+      runLogs.active = [];
+      await service.handleRunEnded('ws', 'conv', 'space');
+
+      expect(dispatched, ['see @[file:shot.png]']);
+      expect(dispatchedAttachments.single.name, 'shot.png');
+      expect(dispatchedImages, [
+        'blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ]);
+      expect(messaging.messages.single.attachments, hasLength(1));
     });
   });
 }

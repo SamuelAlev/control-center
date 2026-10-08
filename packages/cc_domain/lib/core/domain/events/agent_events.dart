@@ -37,3 +37,64 @@ class AgentRunCompleted implements DomainEvent {
   @override
   final DateTime occurredAt;
 }
+
+/// What an agent stopped to wait on a human for.
+enum AgentInputKind {
+  /// An action it wants to take needs approval.
+  approval,
+
+  /// It asked a question (`ask_user`).
+  question,
+
+  /// The credential its run needs cannot serve it (signed out, spent plan
+  /// window, missing key), so the run is parked until someone fixes it.
+  credential;
+
+  /// Wire value in `notifications/agent_awaiting_input` frames.
+  String get wire => name;
+}
+
+/// An agent stopped and is waiting on a human before it can continue.
+///
+/// Published once per wait, when it starts: a pending approval, a posted
+/// question, a run parked on a credential. Not published when the wait ends —
+/// the surfaces that resolve it (the approval card, the question form, the
+/// credential dialog) already reflect that.
+class AgentAwaitingInput implements DomainEvent {
+  /// Creates an [AgentAwaitingInput].
+  const AgentAwaitingInput({
+    required this.workspaceId,
+    required this.kind,
+    required this.summary,
+    required this.occurredAt,
+    this.spaceId,
+    this.conversationId,
+    this.agentId,
+    this.agentName,
+  });
+
+  /// Workspace the waiting run belongs to.
+  final String workspaceId;
+
+  /// What it is waiting for.
+  final AgentInputKind kind;
+
+  /// One line saying what is being asked: the question, the action awaiting
+  /// approval, or why the credential cannot serve the run.
+  final String summary;
+
+  /// The space where the wait can be answered, when known.
+  final String? spaceId;
+
+  /// The conversation within [spaceId], when known.
+  final String? conversationId;
+
+  /// The waiting agent, when known.
+  final String? agentId;
+
+  /// The waiting agent's display name, when known.
+  final String? agentName;
+
+  @override
+  final DateTime occurredAt;
+}

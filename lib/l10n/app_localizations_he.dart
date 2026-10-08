@@ -6993,6 +6993,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'דולגה';
 
   @override
+  String get agentQuestionTimedOutLabel => 'הזמן תם';
+
+  @override
+  String get agentQuestionTimeLeft => 'הזמן שנותר למענה';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'תארו במילים שלכם…';
 
   @override
@@ -15250,4 +15256,36 @@ class AppLocalizationsHe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'סוכן ממתין לך';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'כשסוכן צריך את האישור שלך, תשובה או פרטי גישה תקינים';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent צריך את האישור שלך';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed => 'סוכן צריך את האישור שלך';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return 'ל־$agent יש שאלה';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'לסוכן יש שאלה';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent חסום בגלל פרטי גישה';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'סוכן חסום בגלל פרטי גישה';
 }

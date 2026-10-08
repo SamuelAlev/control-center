@@ -88,6 +88,20 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
     DateTime.now(),
   );
 
+  @override
+  Future<void> markConversationMessagesRead(
+    String workspaceId,
+    String userId, {
+    required String spaceId,
+    required String conversationId,
+  }) => _dao(workspaceId).markConversationMessagesRead(
+    workspaceId,
+    userId,
+    spaceId: spaceId,
+    conversationId: conversationId,
+    readAt: DateTime.now(),
+  );
+
   /// Records one `notifications/*` frame into [workspaceId]'s feed (pruning
   /// beyond the retention cap) and returns the stored item.
   Future<NotificationFeedItem> record(

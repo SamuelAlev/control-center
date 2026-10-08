@@ -1,8 +1,8 @@
 ---
 title: Eventos de domínio
-description: Catálogo completo dos 53 eventos de domínio, com os respetivos payloads e os subscritores do lado do servidor que os consomem.
+description: Catálogo completo dos 54 eventos de domínio, com os respetivos payloads e os subscritores do lado do servidor que os consomem.
 slug: pt-PT/manual/referencia/eventos-de-dominio
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Barramento de eventos
@@ -13,7 +13,7 @@ O `DomainEventBus` é um barramento de publicação/subscrição com difusão e 
 
 | Medida                                                      | Contagem                                    |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Classes de eventos concretas                                | 53                                          |
+| Classes de eventos concretas                                | 54                                          |
 | Ficheiros de origem (`packages/cc_domain/lib/core/domain/events/`) | 14 (mais `domain_event_bus.dart`)    |
 | Bases abstratas que nunca são publicadas diretamente        | 1 (`TaskLifecycleEvent`, uma hierarquia selada) |
 
@@ -25,6 +25,7 @@ Todos os eventos do catálogo abaixo vivem nesse único diretório; não há eve
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | O espaço de trabalho é criado                           |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | O agente termina uma execução (com êxito ou com falha)  |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Um agente começa a aguardar por uma pessoa: uma aprovação, uma pergunta `ask_user` ou uma execução parada numa credencial (`kind` é `approval`, `question` ou `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Um repo é registado; desencadeia a indexação de código em segundo plano |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Uma skill é instalada ou atualizada, transportando o veredicto da análise da cadeia de abastecimento |
 
@@ -183,8 +184,8 @@ Todos os subscritores abaixo são construídos dentro do `runCcServer` (ou de um
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injeta um aviso em linguagem simples no canal de orientação do agente que conduz |
 | `StaleReviewWatcher`                | `PrHeadChanged` — publica `ReviewBecameStale` apenas quando existe uma revisão concluída para o commit substituído |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — respostas de saída em conversas de PR                                           |
-| `NotificationFeedRecorder`          | Os vinte e um eventos da classe das notificações abaixo                                               |
-| `RemoteEventForwarder`              | Esses vinte e um, mais `TicketReassigned` e todos os `TaskLifecycleEvent`. Os três eventos de associação apenas invalidam a respetiva cache de associação por espaço de trabalho; não são reencaminhados como frames |
+| `NotificationFeedRecorder`          | Os vinte e dois eventos da classe das notificações abaixo                                               |
+| `RemoteEventForwarder`              | Esses vinte e dois, mais `TicketReassigned` e todos os `TaskLifecycleEvent`. Os três eventos de associação apenas invalidam a respetiva cache de associação por espaço de trabalho; não são reencaminhados como frames |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — elimina as subscrições de espaços de trabalho associadas a esse utilizador; o socket mantém-se aberto |
 
 O `TicketAssigned` é um sinal de auditoria e de notificação e um disparador de pipeline. A atribuição a um agente regista a propriedade e não inicia nenhuma execução — não existe nenhum despachante de tickets. A atribuição a uma equipa (`assignedTeamId` definido) é a exceção: o `TeamRoutingService` despacha o líder da equipa.
@@ -195,12 +196,13 @@ O `TicketRemoteSyncHandler` está declarado mas nunca é construído em código 
 
 No servidor, o `NotificationFeedRecorder` e o `RemoteEventForwarder` transformam estes eventos em frames de protocolo `notifications/*` (`notification_wire.dart`). No cliente, `RpcNotificationMapper` → `mapNotificationFrame` transforma um frame num `AppNotification`.
 
-Existem exatamente **dezasseis** categorias de notificação. Vários eventos correspondem a mais do que um método de transmissão, porque o frame transporta a transição (falhou versus recuperou) enquanto a categoria transporta a pergunta («o que está a CI a fazer?»).
+Existem exatamente **dezassete** categorias de notificação. Vários eventos correspondem a mais do que um método de transmissão, porque o frame transporta a transição (falhou versus recuperou) enquanto a categoria transporta a pergunta («o que está a CI a fazer?»).
 
 | Categoria              | Evento de origem          | Método de transmissão                                                  |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (menciona-o)                          |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, sem o mencionar) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,11 @@ O frame de assunção do controlo do rig não é entregue de volta a quem pegou 
 volante, uma libertação não é filtrada (o evento não regista quem largou o
 controlo) e só um fecho por `backendFailure` produz um frame `rig_closed` — os
 outros motivos ou são pedidos ou já estão cobertos pelo frame de recuperação.
+
+`AgentAwaitingInput` é publicado pelo `AgentAwaitingInputPublisher`, que vigia
+os registos de aprovações e de bloqueios de credenciais à procura de novas
+entradas e é informado de cada pergunta `ask_user` pelo `AgentQuestionService`.
+Uma espera corresponde a um evento; nada é publicado quando a espera termina.
 
 As cinco categorias de PRs próprias transportam `forUserId`, por isso chegam ao autor em vez de chegarem a todos no espaço de trabalho.
 

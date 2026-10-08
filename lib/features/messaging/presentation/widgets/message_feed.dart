@@ -251,11 +251,14 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
       // surviving offset from before the nap is reset — instantly, next frame,
       // no animation. Done here rather than off a window emission because a
       // short nap may not produce one (the provider is still warm) and the
-      // reader must land at the bottom either way.
+      // reader must land at the bottom either way. Landing there is reading
+      // it, so the cursor catches up too (a no-op when nothing is newer than
+      // the last stamp).
       _pendingRevealReconcile = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _landOnLiveEdge();
+          _stampCursor();
         }
       });
     }

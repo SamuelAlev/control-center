@@ -2,7 +2,7 @@
 title: Konfigurasi notifikasi
 description: Nyalakan atau matikan kategori, atur Quiet hours dan suara, serta ketahui notifikasi mana yang sampai kepada Anda dan di mana.
 slug: id-ID/panduan-pengguna/panduan-praktis/notifikasi
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Panduan ini menunjukkan cara mengonfigurasi notifikasi dan apa yang sebenarnya
@@ -24,11 +24,12 @@ ponsel sama sekali tidak memiliki permukaan notifikasi.
 
 1. Buka **Pengaturan → Anda → Notifikasi**
 2. Biarkan **Aktifkan notifikasi** tetap aktif
-3. Nyalakan kategori yang Anda inginkan. Jumlahnya tepat enam belas:
+3. Nyalakan kategori yang Anda inginkan. Jumlahnya tepat tujuh belas:
 
 | Kategori                  | Memicu ketika                                                              |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agen selesai              | Agen membalas dalam run yang Anda mulai, atau run tersebut gagal           |
+| Agen menunggu Anda        | Agen memerlukan persetujuan Anda, mengajukan pertanyaan kepada Anda, atau tertahan oleh kredensial |
 | PR dipublikasikan         | Agen memublikasikan sebuah PR                                              |
 | PR digabungkan            | Sebuah PR digabungkan                                                      |
 | Pesan baru                | Seseorang menyebut Anda di sebuah space                                    |
@@ -47,6 +48,12 @@ ponsel sama sekali tidak memiliki permukaan notifikasi.
 
 Apa pun di luar daftar ini tidak dapat dinotifikasi atau difilter — tidak ada
 kategori "segala hal lainnya".
+
+**Agen menunggu Anda** memicu sekali untuk setiap penantian, saat penantian itu
+dimulai: persetujuan yang tertunda (termasuk hibah eksekusi sandbox dan
+persetujuan alat Claude Code), pertanyaan `ask_user`, atau run yang ditahan
+karena kredensialnya tidak dapat melayaninya. Notifikasi ini membuka space
+tempat Anda menjawab, dan tetap diam selama Anda sedang melihat space tersebut.
 
 Preferensi ini mengikuti pengguna Anda lintas perangkat, sehingga ponsel dan
 laptop tetap selaras. Volume adalah pengecualian yang disengaja dan tetap per

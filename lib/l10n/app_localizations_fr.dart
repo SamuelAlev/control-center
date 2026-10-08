@@ -7072,6 +7072,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Ignorée';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Délai expiré';
+
+  @override
+  String get agentQuestionTimeLeft => 'Temps restant pour répondre';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Décrivez-le avec vos mots…';
 
   @override
@@ -15376,6 +15382,39 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Un agent vous attend';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Lorsqu\'un agent a besoin de votre approbation, d\'une réponse ou d\'identifiants valides';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent a besoin de votre approbation';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Un agent a besoin de votre approbation';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent a une question';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Un agent a une question';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent est bloqué par des identifiants';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Un agent est bloqué par des identifiants';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

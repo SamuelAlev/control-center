@@ -1,8 +1,8 @@
 ---
 title: Domenehendelser
-description: Fullstendig katalog over de 53 domenehendelsene, nyttelastene deres og abonnentene på serversiden som konsumerer dem.
+description: Fullstendig katalog over de 54 domenehendelsene, nyttelastene deres og abonnentene på serversiden som konsumerer dem.
 slug: nb-NO/handbok/referanse/domenehendelser
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Hendelsesbuss
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Mål                                                         | Antall                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Konkrete hendelsesklasser                                   | 53                                          |
+| Konkrete hendelsesklasser                                   | 54                                          |
 | Kildefiler (`packages/cc_domain/lib/core/domain/events/`)   | 14 (pluss `domain_event_bus.dart`)          |
 | Abstrakte basisklasser som aldri publiseres direkte         | 1 (`TaskLifecycleEvent`, et forseglet hierarki) |
 
@@ -25,6 +25,7 @@ Hver hendelse i katalogen nedenfor ligger i denne ene mappen; det finnes ingen d
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Arbeidsområdet opprettes                                |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | En agent fullfører en kjøring (vellykket eller mislykket) |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | En agent begynner å vente på et menneske: en godkjenning, et `ask_user`-spørsmål eller en kjøring som står fast på påloggingsinformasjon (`kind` er `approval`, `question` eller `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Et repo registreres; utløser kodeindeksering i bakgrunnen |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | En skill installeres eller oppdateres, og bærer verdikten fra leverandørkjedeskanneringen |
 
@@ -183,8 +184,8 @@ Alle abonnentene nedenfor konstrueres inne i `runCcServer` (eller en tjeneste de
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injiserer et varsel i klarspråk på styringskanalen til den drivende agenten |
 | `StaleReviewWatcher`                | `PrHeadChanged` — publiserer `ReviewBecameStale` bare når det finnes en fullført gjennomgang for den erstattede commiten |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — utgående svar i PR-samtaler                                                    |
-| `NotificationFeedRecorder`          | De tjueen varselklassehendelsene nedenfor                                                            |
-| `RemoteEventForwarder`              | De tjueen pluss `TicketReassigned` og hver `TaskLifecycleEvent`. De tre medlemskapshendelsene ugyldiggjør bare medlemskapsbufferen per arbeidsområde; de videresendes ikke som rammer |
+| `NotificationFeedRecorder`          | De tjueto varselklassehendelsene nedenfor                                                            |
+| `RemoteEventForwarder`              | De tjueto pluss `TicketReassigned` og hver `TaskLifecycleEvent`. De tre medlemskapshendelsene ugyldiggjør bare medlemskapsbufferen per arbeidsområde; de videresendes ikke som rammer |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — dropper den brukerens tilknyttede arbeidsområdeabonnementer; socketen forblir åpen |
 
 `TicketAssigned` er et revisjons- og varselsignal og en pipeline-utløser. Tildeling til en agent registrerer eierskap og starter ingen kjøring — det finnes ingen saksdispatcher. Tildeling til et team (`assignedTeamId` satt) er unntaket: `TeamRoutingService` sender ut teamlederen.
@@ -195,12 +196,13 @@ Alle abonnentene nedenfor konstrueres inne i `runCcServer` (eller en tjeneste de
 
 På serveren gjør `NotificationFeedRecorder` og `RemoteEventForwarder` disse hendelsene om til `notifications/*`-rammer (`notification_wire.dart`). På klienten gjør `RpcNotificationMapper` → `mapNotificationFrame` en ramme om til en `AppNotification`.
 
-Det finnes nøyaktig **seksten** varselkategorier. Flere hendelser tilordnes mer enn én rammemetode, fordi rammen bærer overgangen (mislykt kontra gjenopprettet) mens kategorien bærer spørsmålet («hva gjør CI?»).
+Det finnes nøyaktig **sytten** varselkategorier. Flere hendelser tilordnes mer enn én rammemetode, fordi rammen bærer overgangen (mislykt kontra gjenopprettet) mens kategorien bærer spørsmålet («hva gjør CI?»).
 
 | Kategori               | Kildehendelse             | Rammemetode                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (nevner deg)                          |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, nevner deg ikke) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,12 @@ Rammen for stasjons-overtakelse leveres ikke tilbake til den som tok rattet, en
 frigivelse filtreres ikke (hendelsen registrerer ikke hvem som slapp), og bare en
 `backendFailure`-lukking produserer en `rig_closed`-ramme — de andre årsakene er
 enten bestilt eller allerede dekket av gjenvinningsrammen.
+
+`AgentAwaitingInput` publiseres av `AgentAwaitingInputPublisher`, som overvåker
+registrene for godkjenninger og blokkert påloggingsinformasjon etter nye
+oppføringer, og som får beskjed om hvert `ask_user`-spørsmål fra
+`AgentQuestionService`. Én venting er én hendelse; ingenting publiseres når
+ventingen tar slutt.
 
 De fem kategoriene for egne PR-er bærer `forUserId`, så de når forfatteren i stedet for alle i arbeidsområdet.
 

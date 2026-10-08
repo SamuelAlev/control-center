@@ -1,8 +1,8 @@
 ---
 title: Domeingebeurtenissen
-description: Volledige catalogus van de 53 domeingebeurtenissen, hun payloads en de abonnees aan de serverkant die ze consumeren.
+description: Volledige catalogus van de 54 domeingebeurtenissen, hun payloads en de abonnees aan de serverkant die ze consumeren.
 slug: nl-NL/handleiding/referentie/domeingebeurtenissen
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Gebeurtenissenbus
@@ -13,7 +13,7 @@ De `DomainEventBus` is een broadcast-publish/subscribe-bus die binnen één proc
 
 | Onderdeel                                                   | Aantal                                      |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete gebeurtenisklassen                                 | 53                                          |
+| Concrete gebeurtenisklassen                                 | 54                                          |
 | Bronbestanden (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
 | Abstracte bases die nooit rechtstreeks worden gepubliceerd  | 1 (`TaskLifecycleEvent`, een sealed hiërarchie) |
 
@@ -25,6 +25,7 @@ Elke gebeurtenis in de catalogus hieronder woont in die ene map; er zijn nergens
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Werkruimte wordt aangemaakt                             |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent rondt een run af (geslaagd of mislukt)            |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Een agent begint op een mens te wachten: een goedkeuring, een `ask_user`-vraag of een run die stilstaat op inloggegevens (`kind` is `approval`, `question` of `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Een repo wordt geregistreerd; start code-indexering op de achtergrond |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Een skill wordt geïnstalleerd of bijgewerkt, met het oordeel van de toeleveringsketenscan erbij |
 
@@ -183,8 +184,8 @@ Elke abonnee hieronder wordt geconstrueerd in `runCcServer` (of in een service d
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injecteert een bericht in gewone taal op de stuurbaan van de aansturende agent |
 | `StaleReviewWatcher`                | `PrHeadChanged` — publiceert `ReviewBecameStale` alleen wanneer er een afgeronde review bestaat voor de vervangen commit |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — uitgaande antwoorden in PR-gesprekken                                          |
-| `NotificationFeedRecorder`          | De eenentwintig gebeurtenissen van de meldingsklasse hieronder                                       |
-| `RemoteEventForwarder`              | Die eenentwintig plus `TicketReassigned` en elke `TaskLifecycleEvent`. De drie lidmaatschapsgebeurtenissen maken alleen de lidmaatschapscache per werkruimte ongeldig; ze worden niet als frames doorgestuurd |
+| `NotificationFeedRecorder`          | De tweeëntwintig gebeurtenissen van de meldingsklasse hieronder                                       |
+| `RemoteEventForwarder`              | Die tweeëntwintig plus `TicketReassigned` en elke `TaskLifecycleEvent`. De drie lidmaatschapsgebeurtenissen maken alleen de lidmaatschapscache per werkruimte ongeldig; ze worden niet als frames doorgestuurd |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — laat de gekoppelde werkruimte-abonnementen van die gebruiker vallen; de socket blijft open |
 
 `TicketAssigned` is een audit- en meldingssignaal en een pipelinetrigger. Toewijzing aan een agent legt eigenaarschap vast en start geen run — er is geen ticketdispatcher. Toewijzing aan een team (`assignedTeamId` ingesteld) is de uitzondering: `TeamRoutingService` dispatcht de teamleider.
@@ -195,12 +196,13 @@ Elke abonnee hieronder wordt geconstrueerd in `runCcServer` (of in een service d
 
 Op de server zetten `NotificationFeedRecorder` en `RemoteEventForwarder` deze gebeurtenissen om in `notifications/*` wire frames (`notification_wire.dart`). Op de client zet `RpcNotificationMapper` → `mapNotificationFrame` een frame om in een `AppNotification`.
 
-Er zijn precies **zestien** meldingscategorieën. Verschillende gebeurtenissen komen overeen met meer dan één wire-methode, omdat het frame de overgang draagt (mislukt versus hersteld) terwijl de categorie de vraag draagt ("wat doet CI?").
+Er zijn precies **zeventien** meldingscategorieën. Verschillende gebeurtenissen komen overeen met meer dan één wire-methode, omdat het frame de overgang draagt (mislukt versus hersteld) terwijl de categorie de vraag draagt ("wat doet CI?").
 
 | Categorie              | Brongebeurtenis           | Wire-methode                                                           |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (vermeldt jou)                        |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, zonder vermelding van jou) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,12 @@ Het frame voor rig-overname wordt niet terugbezorgd aan wie het stuur overnam, e
 vrijgave wordt niet gefilterd (de gebeurtenis legt niet vast wie heeft losgelaten), en alleen een
 sluiting met `backendFailure` levert een `rig_closed`-frame op — de andere redenen zijn
 aangevraagd of al gedekt door het reap-frame.
+
+`AgentAwaitingInput` wordt gepubliceerd door `AgentAwaitingInputPublisher`, die
+de registers voor goedkeuringen en geblokkeerde inloggegevens in de gaten houdt
+voor nieuwe items en door `AgentQuestionService` op de hoogte wordt gebracht van
+elke `ask_user`-vraag. Eén wachtmoment is één gebeurtenis; er wordt niets
+gepubliceerd wanneer het wachten eindigt.
 
 De vijf categorieën voor eigen PR's dragen `forUserId` mee, zodat ze de auteur bereiken in plaats van iedereen in de werkruimte.
 

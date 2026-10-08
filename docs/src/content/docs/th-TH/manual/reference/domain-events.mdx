@@ -1,8 +1,8 @@
 ---
 title: เหตุการณ์โดเมน
-description: แค็ตตาล็อกฉบับสมบูรณ์ของเหตุการณ์โดเมนทั้ง 53 รายการ เพย์โหลดของแต่ละรายการ และผู้สมัครรับฝั่งเซิร์ฟเวอร์ที่บริโภคเหตุการณ์เหล่านี้
+description: แค็ตตาล็อกฉบับสมบูรณ์ของเหตุการณ์โดเมนทั้ง 54 รายการ เพย์โหลดของแต่ละรายการ และผู้สมัครรับฝั่งเซิร์ฟเวอร์ที่บริโภคเหตุการณ์เหล่านี้
 slug: th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## บัสเหตุการณ์
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | ตัวชี้วัด                                                     | จำนวน                                       |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| คลาสเหตุการณ์ที่เป็นรูปธรรม                                      | 53                                          |
+| คลาสเหตุการณ์ที่เป็นรูปธรรม                                      | 54                                          |
 | ไฟล์ต้นทาง (`packages/cc_domain/lib/core/domain/events/`) | 14 (บวก `domain_event_bus.dart`)           |
 | ฐานนามธรรมที่ไม่เคยถูกเผยแพร่โดยตรง            | 1 (`TaskLifecycleEvent` ซึ่งเป็นลำดับชั้นแบบ sealed) |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | เวิร์กสเปซถูกสร้าง                                    |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | เอเจนต์จบการรันหนึ่งครั้ง (สำเร็จหรือล้มเหลว)               |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | เอเจนต์เริ่มรอมนุษย์: การอนุมัติ คำถาม `ask_user` หรือการรันที่ถูกพักไว้เพราะข้อมูลรับรอง (`kind` คือ `approval`, `question` หรือ `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | รีโปถูกขึ้นทะเบียน; ทริกเกอร์การทำดัชนีโค้ดเบื้องหลัง |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | สกิลถูกติดตั้งหรืออัปเดต พร้อมพกคำตัดสินจากการสแกนห่วงโซ่อุปทานของมันมา |
 
@@ -183,8 +184,8 @@ enum `TaskPhase` มีสมาชิก `queued` ด้วย แต่ไม�
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — แทรกข้อความแจ้งแบบภาษาธรรมดาเข้าไปในเลนชี้นำของเอเจนต์ที่เป็นตัวขับ |
 | `StaleReviewWatcher`                | `PrHeadChanged` — เผยแพร่ `ReviewBecameStale` เฉพาะเมื่อมีรีวิวที่เสร็จแล้วสำหรับคอมมิตที่ถูกแทนที่ |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — การตอบกลับการสนทนาบน PR ขาออก                                               |
-| `NotificationFeedRecorder`          | เหตุการณ์ระดับการแจ้งเตือนทั้งยี่สิบเอ็ดรายการด้านล่าง                                                        |
-| `RemoteEventForwarder`              | ยี่สิบเอ็ดรายการนั้นบวก `TicketReassigned` และทุก `TaskLifecycleEvent` เหตุการณ์สมาชิกภาพทั้งสามรายการเพียงทำให้แคชสมาชิกภาพต่อเวิร์กสเปซของมันเป็นโมฆะเท่านั้น ไม่ได้ถูกส่งต่อเป็นเฟรม |
+| `NotificationFeedRecorder`          | เหตุการณ์ระดับการแจ้งเตือนทั้งยี่สิบสองรายการด้านล่าง                                                        |
+| `RemoteEventForwarder`              | ยี่สิบสองรายการนั้นบวก `TicketReassigned` และทุก `TaskLifecycleEvent` เหตุการณ์สมาชิกภาพทั้งสามรายการเพียงทำให้แคชสมาชิกภาพต่อเวิร์กสเปซของมันเป็นโมฆะเท่านั้น ไม่ได้ถูกส่งต่อเป็นเฟรม |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — ทิ้งการสมัครรับเวิร์กสเปซที่ผู้ใช้รายนั้นผูกไว้ ซ็อกเก็ตยังคงเปิดอยู่ |
 
 `TicketAssigned` เป็นสัญญาณการตรวจสอบและการแจ้งเตือน รวมทั้งเป็นทริกเกอร์ของไปป์ไลน์ การมอบหมายให้เอเจนต์บันทึกความเป็นเจ้าของและไม่เริ่มการรันใด ๆ — ไม่มีตัวดิสนพัตช์ตั๋วงาน การมอบหมายให้ทีม (เมื่อตั้ง `assignedTeamId`) คือข้อยกเว้น: `TeamRoutingService` สั่งงานหัวหน้าทีม
@@ -195,12 +196,13 @@ enum `TaskPhase` มีสมาชิก `queued` ด้วย แต่ไม�
 
 บนเซิร์ฟเวอร์ `NotificationFeedRecorder` และ `RemoteEventForwarder` เปลี่ยนเหตุการณ์เหล่านี้เป็นเฟรมบนสาย `notifications/*` (`notification_wire.dart`) บนไคลเอนต์ `RpcNotificationMapper` → `mapNotificationFrame` เปลี่ยนเฟรมเป็น `AppNotification`
 
-มี**สิบหก**หมวดหมู่การแจ้งเตือนพอดี เหตุการณ์หลายรายการแมปไปยังวิธีบนสายมากกว่าหนึ่งวิธี เพราะเฟรมพกความเปลี่ยนแปลง (ล้มเหลวเทียบกับกลับมาผ่าน) ขณะที่หมวดหมู่พกคำถาม ("CI กำลังทำอะไรอยู่?")
+มี**สิบเจ็ด**หมวดหมู่การแจ้งเตือนพอดี เหตุการณ์หลายรายการแมปไปยังวิธีบนสายมากกว่าหนึ่งวิธี เพราะเฟรมพกความเปลี่ยนแปลง (ล้มเหลวเทียบกับกลับมาผ่าน) ขณะที่หมวดหมู่พกคำถาม ("CI กำลังทำอะไรอยู่?")
 
 | หมวดหมู่               | เหตุการณ์ต้นทาง              | วิธีบนสาย                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (กล่าวถึงคุณ)                         |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, ไม่ได้กล่าวถึงคุณ) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ enum `TaskPhase` มีสมาชิก `queued` ด้วย แต่ไม�
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 เฟรมการเข้าควบคุมริกไม่ได้ถูกส่งกลับไปยังผู้ที่เข้ายึดการควบคุม การปล่อยไม่ถูกกรอง (เหตุการณ์ไม่บันทึกว่าใครปล่อย) และเฉพาะการปิดด้วย `backendFailure` เท่านั้นที่สร้างเฟรม `rig_closed` — เหตุผลอื่น ๆ นั้นเกิดจากการร้องขอหรือถูกครอบคลุมอยู่แล้วด้วยเฟรมการยึดคืน
+
+`AgentAwaitingInput` เผยแพร่โดย `AgentAwaitingInputPublisher` ซึ่งเฝ้าดูรายการใหม่ในรีจิสทรีการอนุมัติและรีจิสทรีการบล็อกจากข้อมูลรับรอง และได้รับแจ้งเรื่องคำถาม `ask_user` แต่ละข้อจาก `AgentQuestionService` การรอหนึ่งครั้งคือเหตุการณ์หนึ่งรายการ และไม่มีการเผยแพร่สิ่งใดเมื่อการรอสิ้นสุดลง
 
 หมวดหมู่ PR ที่คุณเป็นผู้เขียนทั้งห้าหมวดพก `forUserId` จึงไปถึงผู้เขียนแทนที่จะไปถึงทุกคนในเวิร์กสเปซ
 

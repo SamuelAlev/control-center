@@ -1,8 +1,8 @@
 ---
 title: Zdarzenia domenowe
-description: Pełny katalog 53 zdarzeń domenowych, ich ładunków oraz działających po stronie serwera subskrybentów, którzy je konsumują.
+description: Pełny katalog 54 zdarzeń domenowych, ich ładunków oraz działających po stronie serwera subskrybentów, którzy je konsumują.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/zdarzenia-domenowe
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Szyna zdarzeń
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Miara                                                       | Liczba                                      |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Konkretne klasy zdarzeń                                     | 53                                          |
+| Konkretne klasy zdarzeń                                     | 54                                          |
 | Pliki źródłowe (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
 | Abstrakcyjne klasy bazowe, które nigdy nie są publikowane bezpośrednio | 1 (`TaskLifecycleEvent`, zapieczętowana hierarchia) |
 
@@ -25,6 +25,7 @@ Każde zdarzenie z poniższego katalogu mieszka w tym jednym katalogu; żadne zd
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Tworzony jest obszar roboczy                            |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent kończy uruchomienie (sukces lub porażka)          |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Agent zaczyna czekać na człowieka: na zgodę, na odpowiedź na pytanie `ask_user` albo z uruchomieniem wstrzymanym na danych logowania (`kind` to `approval`, `question` lub `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Rejestrowane jest repozytorium; uruchamia indeksowanie kodu w tle |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Skill jest instalowany lub aktualizowany, niosąc werdykt skanowania łańcucha dostaw |
 
@@ -183,8 +184,8 @@ Każdy z poniższych subskrybentów jest konstruowany wewnątrz `runCcServer` (a
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — wstrzykuje powiadomienie sformułowane prostym językiem na tor sterowania agenta sterującego |
 | `StaleReviewWatcher`                | `PrHeadChanged` — publikuje `ReviewBecameStale` tylko wtedy, gdy istnieje zakończona recenzja zastąpionego commita |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — odpowiedzi wychodzące w rozmowach PR-ów                                        |
-| `NotificationFeedRecorder`          | Dwadzieścia jeden klas zdarzeń powiadomień wymienionych poniżej                                      |
-| `RemoteEventForwarder`              | Tamte dwadzieścia jeden plus `TicketReassigned` i każde `TaskLifecycleEvent`. Trzy zdarzenia członkostwa jedynie unieważniają jego pamięć podręczną członkostwa dla danego obszaru roboczego; nie są przekazywane jako ramki |
+| `NotificationFeedRecorder`          | Dwadzieścia dwie klasy zdarzeń powiadomień wymienione poniżej                                      |
+| `RemoteEventForwarder`              | Tamte dwadzieścia dwie plus `TicketReassigned` i każde `TaskLifecycleEvent`. Trzy zdarzenia członkostwa jedynie unieważniają jego pamięć podręczną członkostwa dla danego obszaru roboczego; nie są przekazywane jako ramki |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — usuwa subskrypcje obszarów roboczych dołączone przez tego użytkownika; gniazdo pozostaje otwarte |
 
 `TicketAssigned` to sygnał audytowy i powiadomienie oraz wyzwalacz potoku. Przypisanie do agenta zapisuje własność i nie rozpoczyna żadnego uruchomienia — nie istnieje dyspozytor zgłoszeń. Wyjątkiem jest przypisanie do zespołu (ustawione `assignedTeamId`): `TeamRoutingService` wysyła lidera zespołu.
@@ -195,12 +196,13 @@ Każdy z poniższych subskrybentów jest konstruowany wewnątrz `runCcServer` (a
 
 Na serwerze `NotificationFeedRecorder` i `RemoteEventForwarder` zamieniają te zdarzenia na ramki transmisyjne `notifications/*` (`notification_wire.dart`). Na kliencie `RpcNotificationMapper` → `mapNotificationFrame` zamienia ramkę na `AppNotification`.
 
-Kategorii powiadomień jest dokładnie **szesnaście**. Kilka zdarzeń mapuje się na więcej niż jedną metodę transmisyjną, bo ramka niesie samo przejście (niepowodzenie kontra powrót do działania), a kategoria niesie pytanie („co robi CI?”).
+Kategorii powiadomień jest dokładnie **siedemnaście**. Kilka zdarzeń mapuje się na więcej niż jedną metodę transmisyjną, bo ramka niesie samo przejście (niepowodzenie kontra powrót do działania), a kategoria niesie pytanie („co robi CI?”).
 
 | Kategoria              | Zdarzenie źródłowe        | Metoda transmisyjna                                                      |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (wspomina o Tobie)                    |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, bez wzmianki o Tobie) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ Kategorii powiadomień jest dokładnie **szesnaście**. Kilka zdarzeń mapuje si
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 Ramka przejęcia riga nie jest dostarczana z powrotem do tego, kto przejął ster, zwolnienie jest niefiltrowane (zdarzenie nie zapisuje, kto oddał kontrolę), a tylko zamknięcie typu `backendFailure` produkuje ramkę `rig_closed` — pozostałe powody są albo wymuszone żądaniem, albo już objęte ramką odzyskania.
+
+`AgentAwaitingInput` publikuje `AgentAwaitingInputPublisher`, który obserwuje rejestry zgód i blokad danych logowania pod kątem nowych wpisów, a o każdym pytaniu `ask_user` powiadamia go `AgentQuestionService`. Jedno oczekiwanie to jedno zdarzenie; gdy oczekiwanie się kończy, nic nie jest publikowane.
 
 Pięć kategorii autorskich PR-ów niesie `forUserId`, więc docierają do autora, a nie do wszystkich w obszarze roboczym.
 

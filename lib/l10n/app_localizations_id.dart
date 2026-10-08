@@ -7021,6 +7021,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Dilewati';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Waktu habis';
+
+  @override
+  String get agentQuestionTimeLeft => 'Sisa waktu untuk menjawab';
+
+  @override
   String get agentQuestionFreeformOptionHint =>
       'Jelaskan dengan kata-kata Anda…';
 
@@ -15264,4 +15270,37 @@ class AppLocalizationsId extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agen menunggu Anda';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Saat agen memerlukan persetujuan, jawaban, atau kredensial yang berfungsi dari Anda';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent memerlukan persetujuan Anda';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Agen memerlukan persetujuan Anda';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent punya pertanyaan';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Agen punya pertanyaan';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent terhambat oleh kredensial';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Agen terhambat oleh kredensial';
 }

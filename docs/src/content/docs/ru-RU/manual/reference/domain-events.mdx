@@ -1,8 +1,8 @@
 ---
 title: Доменные события
-description: Полный каталог 53 доменных событий, их полезных нагрузок и серверных подписчиков, которые их потребляют.
+description: Полный каталог 54 доменных событий, их полезных нагрузок и серверных подписчиков, которые их потребляют.
 slug: ru-RU/руководство/справка/доменные-события
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Шина событий
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Показатель                                                  | Количество                                   |
 | ----------------------------------------------------------- | -------------------------------------------- |
-| Конкретные классы событий                                   | 53                                           |
+| Конкретные классы событий                                   | 54                                           |
 | Исходные файлы (`packages/cc_domain/lib/core/domain/events/`) | 14 (плюс `domain_event_bus.dart`)          |
 | Абстрактные базовые классы, которые никогда не публикуются напрямую | 1 (`TaskLifecycleEvent`, sealed-иерархия) |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Рабочее пространство создаётся                          |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Агент завершает запуск (успешно или с ошибкой)          |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Агент начинает ждать человека: одобрения, ответа на вопрос `ask_user` или учётных данных для остановленного запуска (`kind` — `approval`, `question` или `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Репозиторий регистрируется; запускает фоновую индексацию кода |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Навык устанавливается или обновляется вместе со своим вердиктом проверки цепочки поставок |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                   | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — вставляет уведомление простым языком в полосу управления управляющего агента |
 | `StaleReviewWatcher`                 | `PrHeadChanged` — публикует `ReviewBecameStale`, только когда для заменённого коммита есть завершённое ревью |
 | `GitHubPrConversationBridge`         | `AgentRunCompleted` — исходящие ответы в разговорах PR                                                |
-| `NotificationFeedRecorder`           | Двадцать один класс событий уведомлений, перечисленный ниже                                          |
-| `RemoteEventForwarder`               | Те же двадцать один, плюс `TicketReassigned` и каждое `TaskLifecycleEvent`. Три события членства лишь инвалидируют его кеш членства по рабочему пространству; кадрами они не пересылаются |
+| `NotificationFeedRecorder`           | Двадцать два класса событий уведомлений, перечисленные ниже                                          |
+| `RemoteEventForwarder`               | Те же двадцать два, плюс `TicketReassigned` и каждое `TaskLifecycleEvent`. Три события членства лишь инвалидируют его кеш членства по рабочему пространству; кадрами они не пересылаются |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — сбрасывает привязанные подписки этого пользователя на рабочее пространство; сокет остаётся открытым |
 
 `TicketAssigned` — это сигнал аудита и уведомлений и триггер конвейера. Назначение агенту фиксирует владение и не запускает выполнение — диспетчера тикетов нет. Исключение — назначение команде (задан `assignedTeamId`): `TeamRoutingService` отправляет лидера команды.
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 На сервере `NotificationFeedRecorder` и `RemoteEventForwarder` превращают эти события в кадры `notifications/*` (`notification_wire.dart`). На клиенте `RpcNotificationMapper` → `mapNotificationFrame` превращает кадр в `AppNotification`.
 
-Категорий уведомлений ровно **шестнадцать**. Несколько событий отображаются более чем на один метод передачи, потому что кадр несёт признак перехода (сбой или восстановление), а категория несёт вопрос («что делает CI?»).
+Категорий уведомлений ровно **семнадцать**. Несколько событий отображаются более чем на один метод передачи, потому что кадр несёт признак перехода (сбой или восстановление), а категория несёт вопрос («что делает CI?»).
 
 | Категория              | Исходное событие          | Метод передачи                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (упоминает вас)                       |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, без упоминания вас) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,11 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 освобождение не фильтруется (событие не фиксирует, кто отпустил управление), и
 только закрытие с `backendFailure` порождает кадр `rig_closed` — остальные
 причины либо запрошены, либо уже покрыты кадром сбора.
+
+`AgentAwaitingInput` публикует `AgentAwaitingInputPublisher`: он следит за
+появлением новых записей в реестрах одобрений и блокировок по учётным данным, а
+о каждом вопросе `ask_user` ему сообщает `AgentQuestionService`. Одно ожидание —
+одно событие; когда ожидание заканчивается, ничего не публикуется.
 
 Пять категорий по созданным вами PR несут `forUserId`, поэтому они доходят до автора, а не до всех в рабочем пространстве.
 

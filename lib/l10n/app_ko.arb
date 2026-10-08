@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "질문 {index} / {count}",
   "agentQuestionSkip": "건너뛰기",
   "agentQuestionSkippedLabel": "건너뜀",
+  "agentQuestionTimedOutLabel": "시간 초과",
+  "agentQuestionTimeLeft": "답변 남은 시간",
   "agentQuestionFreeformOptionHint": "직접 설명해 주세요…",
   "reviewRequested": "리뷰 요청됨",
   "connectGitHubHint": "GitHub에 로그인하거나 설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅에서 토큰을 추가하세요",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path}을(를) 확인 안 함으로 표시함",
   "prLineChangesSemantics": "추가된 줄: {additions}, 삭제된 줄: {deletions}",
   "closeTabNamed": "{tab} 닫기",
-  "threadCommentCount": "{count, plural, other{댓글 {count}개}}"
+  "threadCommentCount": "{count, plural, other{댓글 {count}개}}",
+  "notificationAgentAwaitingInput": "에이전트가 기다리는 중",
+  "notifyAgentAwaitingInput": "에이전트에게 승인, 답변 또는 유효한 자격 증명이 필요할 때",
+  "notificationAgentNeedsApproval": "{agent}에게 승인이 필요합니다",
+  "notificationAgentNeedsApprovalUnnamed": "에이전트에게 승인이 필요합니다",
+  "notificationAgentAskedQuestion": "{agent}에게 질문이 있습니다",
+  "notificationAgentAskedQuestionUnnamed": "에이전트에게 질문이 있습니다",
+  "notificationAgentBlockedOnCredential": "{agent}이(가) 자격 증명 문제로 멈췄습니다",
+  "notificationAgentBlockedOnCredentialUnnamed": "에이전트가 자격 증명 문제로 멈췄습니다"
 }

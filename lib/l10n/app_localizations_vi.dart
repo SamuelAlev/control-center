@@ -7006,6 +7006,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Đã bỏ qua';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Hết thời gian';
+
+  @override
+  String get agentQuestionTimeLeft => 'Thời gian còn lại để trả lời';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Mô tả bằng lời của bạn…';
 
   @override
@@ -15220,4 +15226,37 @@ class AppLocalizationsVi extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agent đang chờ bạn';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Khi agent cần bạn phê duyệt, trả lời hoặc cung cấp thông tin xác thực hợp lệ';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent cần bạn phê duyệt';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Một agent cần bạn phê duyệt';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent có câu hỏi';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Một agent có câu hỏi';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent bị chặn do thông tin xác thực';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Một agent bị chặn do thông tin xác thực';
 }

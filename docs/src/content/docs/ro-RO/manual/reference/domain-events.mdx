@@ -1,8 +1,8 @@
 ---
 title: Evenimente de domeniu
-description: Catalog complet al celor 53 de evenimente de domeniu, al payload-urilor lor și al abonaților din partea serverului care le consumă.
+description: Catalog complet al celor 54 de evenimente de domeniu, al payload-urilor lor și al abonaților din partea serverului care le consumă.
 slug: ro-RO/manual/referinta/evenimente-de-domeniu
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Bus-ul de evenimente
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Măsură                                                     | Număr                                       |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Clase concrete de evenimente                                | 53                                          |
+| Clase concrete de evenimente                                | 54                                          |
 | Fișiere sursă (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
 | Baze abstracte care nu sunt publicate niciodată direct       | 1 (`TaskLifecycleEvent`, o ierarhie sigilată) |
 
@@ -25,6 +25,7 @@ Fiecare eveniment din catalogul de mai jos se află în acel singur director; nu
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Spațiul de lucru este creat                             |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agentul încheie o rulare (cu succes sau cu eroare)      |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Un agent începe să aștepte un om: o aprobare, o întrebare `ask_user` sau o rulare oprită din cauza credențialelor (`kind` este `approval`, `question` sau `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Un repo este înregistrat; declanșează indexarea codului în fundal |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Un skill este instalat sau actualizat, purtând verdictul scanării lanțului de aprovizionare |
 
@@ -183,8 +184,8 @@ Fiecare abonat de mai jos este construit în interiorul `runCcServer` (sau al un
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injectează o notificare în limbaj simplu pe canalul de direcționare al agentului care conduce |
 | `StaleReviewWatcher`                | `PrHeadChanged` — publică `ReviewBecameStale` doar când există o revizuire finalizată pentru commitul înlocuit |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — răspunsuri în conversațiile de PR, în ieșire                                   |
-| `NotificationFeedRecorder`          | Cele douăzeci și unu de evenimente din clasa notificărilor de mai jos                                |
-| `RemoteEventForwarder`              | Aceleași douăzeci și unu, plus `TicketReassigned` și fiecare `TaskLifecycleEvent`. Cele trei evenimente de apartenență doar îi invalidează cache-ul de apartenență per spațiu de lucru; ele nu sunt retransmise ca frame-uri |
+| `NotificationFeedRecorder`          | Cele douăzeci și două de evenimente din clasa notificărilor de mai jos                                |
+| `RemoteEventForwarder`              | Aceleași douăzeci și două, plus `TicketReassigned` și fiecare `TaskLifecycleEvent`. Cele trei evenimente de apartenență doar îi invalidează cache-ul de apartenență per spațiu de lucru; ele nu sunt retransmise ca frame-uri |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — elimină abonamentele la spațiile de lucru atașate de acel utilizator; socketul rămâne deschis |
 
 `TicketAssigned` este un semnal de audit și de notificare și un trigger de pipeline. Atribuirea către un agent înregistrează proprietatea și nu pornește nicio rulare — nu există niciun dispecer de tichete. Atribuirea către o echipă (`assignedTeamId` setat) este excepția: `TeamRoutingService` trimite liderul echipei.
@@ -195,12 +196,13 @@ Fiecare abonat de mai jos este construit în interiorul `runCcServer` (sau al un
 
 Pe server, `NotificationFeedRecorder` și `RemoteEventForwarder` transformă aceste evenimente în cadre JSON-RPC `notifications/*` (`notification_wire.dart`). Pe client, `RpcNotificationMapper` → `mapNotificationFrame` transformă un cadru într-o `AppNotification`.
 
-Există exact **șaisprezece** categorii de notificări. Mai multe evenimente se mapează la mai mult de o metodă JSON-RPC, pentru că respectivul cadru poartă tranziția (eșuat versus revenit), în timp ce categoria poartă întrebarea („ce face CI-ul?”).
+Există exact **șaptesprezece** categorii de notificări. Mai multe evenimente se mapează la mai mult de o metodă JSON-RPC, pentru că respectivul cadru poartă tranziția (eșuat versus revenit), în timp ce categoria poartă întrebarea („ce face CI-ul?”).
 
 | Categorie              | Eveniment sursă           | Metodă JSON-RPC                                                        |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (te menționează)                      |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, fără să te menționeze) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -225,6 +227,12 @@ Cadrul de preluare a stației nu este livrat înapoi celui care a preluat contro
 eliberare nu este filtrată (evenimentul nu înregistrează cine a renunțat), iar doar o
 închidere `backendFailure` produce un cadru `rig_closed` — celelalte motive sunt
 fie cerute, fie deja acoperite de cadrul de recuperare.
+
+`AgentAwaitingInput` este publicat de `AgentAwaitingInputPublisher`, care
+urmărește registrele de aprobări și de blocări pe credențiale pentru intrări noi
+și este anunțat de `AgentQuestionService` despre fiecare întrebare `ask_user`. O
+așteptare înseamnă un singur eveniment; când așteptarea se încheie, nu se
+publică nimic.
 
 Cele cinci categorii de PR-uri proprii poartă `forUserId`, așa că ajung la autor, nu la toată lumea din spațiul de lucru.
 

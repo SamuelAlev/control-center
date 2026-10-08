@@ -120,6 +120,8 @@ AppNotification? mapNotificationFrame(
       return _rigReaped(p, l10n);
     case 'notifications/rig_closed':
       return _rigClosed(p, l10n);
+    case 'notifications/agent_awaiting_input':
+      return _agentAwaitingInput(p, l10n);
   }
   return null;
 }
@@ -765,6 +767,51 @@ AppNotification _rigClosed(Map<String, dynamic> p, AppLocalizations l10n) {
     body: l10n.notificationRigFailedBody,
     route: _wsRoute(workspaceId, settingsRigsRoute),
     workspaceId: workspaceId,
+  );
+}
+
+/// An agent is waiting on the operator. The title says who and for what; the
+/// body is what they are being asked. Tapping opens the space where the wait
+/// is answered — the approval card, the question form, the credential dialog
+/// all render there.
+///
+/// Carries the space id so the toast stays quiet while the operator is already
+/// looking at that space: the card in front of them is the notification.
+AppNotification? _agentAwaitingInput(
+  Map<String, dynamic> p,
+  AppLocalizations l10n,
+) {
+  final workspaceId = p['workspace_id'] as String?;
+  final spaceId = p['space_id'] as String?;
+  final name = (p['agent_name'] as String? ?? '').trim();
+  final named = name.isNotEmpty;
+  // An unknown kind (a newer server) still says an agent is waiting rather
+  // than dropping the one notification that unblocks it.
+  final title = switch (p['kind'] as String?) {
+    'question' =>
+      named
+          ? l10n.notificationAgentAskedQuestion(name)
+          : l10n.notificationAgentAskedQuestionUnnamed,
+    'credential' =>
+      named
+          ? l10n.notificationAgentBlockedOnCredential(name)
+          : l10n.notificationAgentBlockedOnCredentialUnnamed,
+    _ =>
+      named
+          ? l10n.notificationAgentNeedsApproval(name)
+          : l10n.notificationAgentNeedsApprovalUnnamed,
+  };
+  return AppNotification(
+    category: NotificationCategory.agentAwaitingInput,
+    title: title,
+    body: (p['summary'] as String? ?? '').trim(),
+    route: _spaceDeepLink(
+      workspaceId,
+      spaceId,
+      conversationId: p['conversation_id'] as String?,
+    ),
+    workspaceId: workspaceId,
+    spaceId: spaceId,
   );
 }
 

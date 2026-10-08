@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_option_row.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -57,6 +58,7 @@ class AskUserFreeTextRow extends StatelessWidget {
       duration: duration,
       curve: CcMotion.standard,
       color: highlighted ? t.hoverStrong : const Color(0x00000000),
+      constraints: const BoxConstraints(minHeight: kAskUserRowMinHeight),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,

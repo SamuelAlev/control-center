@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
+import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_summary.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter/widgets.dart';
@@ -9,7 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Renders an agent's `user_question` message as an [AskUserCard].
 ///
 /// Submit hands the answer back to the blocked agent via [AgentQuestionPort].
-/// Once answered, the card collapses to a read-only result.
+/// Once answered, skipped or timed out, the form gives way to a compact
+/// [AskUserSummary] of the question and what the agent received.
 class QuestionBubble extends ConsumerStatefulWidget {
   /// Creates a [QuestionBubble].
   const QuestionBubble({super.key, required this.message});
@@ -23,6 +25,10 @@ class QuestionBubble extends ConsumerStatefulWidget {
 
 class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
   bool _submitting = false;
+
+  /// Set when the countdown runs out here, before the server's own expiry
+  /// write arrives — or when it never will (the server restarted mid-wait).
+  bool _expiredLocally = false;
 
   Map<String, dynamic> get _meta => widget.message.metadata ?? const {};
 
@@ -40,8 +46,20 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
     ];
   }
 
+  bool get _expired {
+    if (widget.message.isQuestionAnswered) {
+      return widget.message.isQuestionExpired;
+    }
+    if (_expiredLocally) {
+      return true;
+    }
+    final expiresAt = widget.message.questionExpiresAt;
+    return expiresAt != null && !DateTime.now().isBefore(expiresAt);
+  }
+
   AgentQuestionAnswer? get _answered {
-    if (!widget.message.isQuestionAnswered) {
+    if (!widget.message.isQuestionAnswered ||
+        widget.message.isQuestionExpired) {
       return null;
     }
     final raw = _meta['answer'];
@@ -70,20 +88,31 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
   Widget build(BuildContext context) {
     final index = _meta['questionIndex'];
     final count = _meta['questionCount'];
+    final answered = _answered;
+    final expired = _expired;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: AskUserCard(
-        question: _question,
-        contextText: _meta['context'] as String?,
-        options: _options,
-        allowFreeText: _meta['allowFreeText'] == true,
-        multiSelect: _meta['multiSelect'] == true,
-        questionIndex: index is int ? index : int.tryParse('$index'),
-        questionCount: count is int ? count : int.tryParse('$count'),
-        answered: _answered,
-        submitting: _submitting,
-        onSubmit: _answered == null ? _submit : null,
-      ),
+      child: answered != null || expired
+          ? AskUserSummary(
+              question: _question,
+              options: _options,
+              answer: answered,
+              expired: expired,
+            )
+          : AskUserCard(
+              question: _question,
+              contextText: _meta['context'] as String?,
+              options: _options,
+              allowFreeText: _meta['allowFreeText'] == true,
+              multiSelect: _meta['multiSelect'] == true,
+              questionIndex: index is int ? index : int.tryParse('$index'),
+              questionCount: count is int ? count : int.tryParse('$count'),
+              submitting: _submitting,
+              onSubmit: _submit,
+              expiresAt: widget.message.questionExpiresAt,
+              timeout: widget.message.questionTimeout,
+              onExpired: () => setState(() => _expiredLocally = true),
+            ),
     );
   }
 }

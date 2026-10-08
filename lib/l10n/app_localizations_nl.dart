@@ -7040,6 +7040,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Overgeslagen';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Tijd verstreken';
+
+  @override
+  String get agentQuestionTimeLeft => 'Resterende tijd om te antwoorden';
+
+  @override
   String get agentQuestionFreeformOptionHint =>
       'Beschrijf het in je eigen woorden…';
 
@@ -15299,4 +15305,38 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agent wacht op je';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Wanneer een agent je goedkeuring, een antwoord of werkende inloggegevens nodig heeft';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent heeft je goedkeuring nodig';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Een agent heeft je goedkeuring nodig';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent heeft een vraag';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Een agent heeft een vraag';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent zit vast op inloggegevens';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Een agent zit vast op inloggegevens';
 }

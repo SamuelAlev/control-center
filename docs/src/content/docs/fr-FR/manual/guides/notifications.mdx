@@ -2,7 +2,7 @@
 title: Configurer les notifications
 description: Activez ou désactivez des catégories, définissez des heures de silence et un son, et sachez quelles notifications vous parviennent et où.
 slug: fr-FR/manuel/guides/notifications
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Ce guide vous explique comment configurer les notifications et ce que chaque
@@ -25,11 +25,12 @@ surface de notification.
 
 1. Allez dans **Paramètres → Vous → Notifications**
 2. Laissez **Activer les notifications** activé
-3. Activez ou désactivez les catégories que vous voulez. Il y en a exactement seize :
+3. Activez ou désactivez les catégories que vous voulez. Il y en a exactement dix-sept :
 
 | Catégorie                  | Se déclenche quand                                                         |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agent terminé            | Un agent a répondu dans une exécution que vous avez lancée, ou l’exécution a échoué |
+| Un agent vous attend | Un agent a besoin de votre approbation, vous a posé une question ou est bloqué sur des identifiants |
 | PR publiée              | Un agent a publié une PR                                                            |
 | PR fusionnée            | Une PR a été fusionnée                                                            |
 | Nouveaux messages              | Quelqu’un vous a mentionné dans un espace                                            |
@@ -48,6 +49,13 @@ surface de notification.
 
 Tout ce qui ne figure pas dans cette liste ne peut être ni notifié ni filtré —
 il n’existe pas de catégorie « tout le reste ».
+
+**Un agent vous attend** se déclenche une fois par attente, au moment où elle
+commence : une approbation en suspens (y compris les autorisations d’exécution du
+bac à sable et les approbations d’outils de Claude Code), une question
+`ask_user`, ou une exécution retenue parce que ses identifiants ne peuvent pas
+la servir. La notification ouvre l’espace où vous répondez, et reste muette tant
+que vous regardez déjà cet espace.
 
 Ces préférences suivent votre utilisateur d’un appareil à l’autre, si bien qu’un
 téléphone et un ordinateur portable restent synchronisés. Le volume est

@@ -291,12 +291,15 @@ abstract interface class MessagingPort {
   /// whether a live run can inject mid-run (`steerable` — false for
   /// external-CLI transports, so the client hides the "steer now" button),
   /// or null when no run is active (the caller falls through to a normal
-  /// send).
+  /// send). [attachments] are the uploaded `metadata['attachments']` entries
+  /// a normal send would carry; they ride the card and reach the agent with
+  /// it.
   Future<({String messageId, bool steerable})?> enqueueSteering({
     required String workspaceId,
     required String spaceId,
     required String conversationId,
     required String content,
+    List<Map<String, dynamic>> attachments = const [],
   });
 
   /// Edits the body of a still-queued steering message. Returns false when

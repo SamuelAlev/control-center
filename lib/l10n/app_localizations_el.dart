@@ -7086,6 +7086,12 @@ class AppLocalizationsEl extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Παραλείφθηκε';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Έληξε ο χρόνος';
+
+  @override
+  String get agentQuestionTimeLeft => 'Χρόνος που απομένει για απάντηση';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Περιγράψτε με δικά σας λόγια…';
 
   @override
@@ -15396,4 +15402,38 @@ class AppLocalizationsEl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Ένας πράκτορας σας περιμένει';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Όταν ένας πράκτορας χρειάζεται την έγκρισή σας, μια απάντηση ή έγκυρα διαπιστευτήρια';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent: χρειάζεται την έγκρισή σας';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Ένας πράκτορας χρειάζεται την έγκρισή σας';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent: έχει μια ερώτηση';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed =>
+      'Ένας πράκτορας έχει μια ερώτηση';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent: μπλοκαρισμένος λόγω διαπιστευτηρίων';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Ένας πράκτορας είναι μπλοκαρισμένος λόγω διαπιστευτηρίων';
 }

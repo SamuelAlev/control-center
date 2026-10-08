@@ -1,8 +1,8 @@
 ---
 title: Peristiwa domain
-description: Katalog lengkap dari 53 peristiwa domain, payload-nya, dan pelanggan sisi server yang mengonsumsinya.
+description: Katalog lengkap dari 54 peristiwa domain, payload-nya, dan pelanggan sisi server yang mengonsumsinya.
 slug: id-ID/panduan-pengguna/referensi/peristiwa-domain
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Bus peristiwa
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | Ukuran                                                      | Jumlah                                      |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Kelas peristiwa konkret                                     | 53                                          |
+| Kelas peristiwa konkret                                     | 54                                          |
 | Berkas sumber (`packages/cc_domain/lib/core/domain/events/`) | 14 (ditambah `domain_event_bus.dart`)       |
 | Basis abstrak yang tidak pernah diterbitkan secara langsung | 1 (`TaskLifecycleEvent`, hierarki sealed)   |
 
@@ -25,6 +25,7 @@ Setiap peristiwa dalam katalog di bawah ini berada di satu direktori tersebut; t
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Ruang kerja dibuat                                      |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agen menyelesaikan sebuah run (berhasil atau gagal)     |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Agen mulai menunggu manusia: persetujuan, pertanyaan `ask_user`, atau run yang tertahan oleh kredensial (`kind` bernilai `approval`, `question`, atau `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Repo didaftarkan; memicu pengindeksan kode di latar belakang |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Sebuah skill dipasang atau diperbarui, membawa putusan pemindaian rantai pasoknya |
 
@@ -183,8 +184,8 @@ Setiap pelanggan di bawah ini dikonstruksi di dalam `runCcServer` (atau layanan 
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — menyuntikkan pemberitahuan berbahasa sederhana ke jalur pengarahan agen yang menggerakkannya |
 | `StaleReviewWatcher`                | `PrHeadChanged` — menerbitkan `ReviewBecameStale` hanya saat sudah ada tinjauan selesai untuk commit yang digantikan |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — balasan percakapan PR ke luar                                                  |
-| `NotificationFeedRecorder`          | Dua puluh satu peristiwa kelas notifikasi di bawah ini                                               |
-| `RemoteEventForwarder`              | Kedua puluh satu peristiwa itu ditambah `TicketReassigned` dan setiap `TaskLifecycleEvent`. Ketiga peristiwa keanggotaan hanya membatalkan cache keanggotaan per ruang kerjanya; ketiganya tidak diteruskan sebagai frame |
+| `NotificationFeedRecorder`          | Dua puluh dua peristiwa kelas notifikasi di bawah ini                                               |
+| `RemoteEventForwarder`              | Kedua puluh dua peristiwa itu ditambah `TicketReassigned` dan setiap `TaskLifecycleEvent`. Ketiga peristiwa keanggotaan hanya membatalkan cache keanggotaan per ruang kerjanya; ketiganya tidak diteruskan sebagai frame |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — menjatuhkan langganan ruang kerja pengguna tersebut yang terpasang; soketnya tetap terbuka |
 
 `TicketAssigned` adalah sinyal audit dan notifikasi sekaligus pemicu pipeline. Penugasan kepada agen mencatat kepemilikan dan tidak memulai run apa pun — tidak ada dispatcher tiket. Penugasan kepada tim (`assignedTeamId` diisi) adalah pengecualiannya: `TeamRoutingService` mengirim pemimpin tim.
@@ -195,12 +196,13 @@ Setiap pelanggan di bawah ini dikonstruksi di dalam `runCcServer` (atau layanan 
 
 Di server, `NotificationFeedRecorder` dan `RemoteEventForwarder` mengubah peristiwa-peristiwa ini menjadi frame wire `notifications/*` (`notification_wire.dart`). Di klien, `RpcNotificationMapper` → `mapNotificationFrame` mengubah sebuah frame menjadi `AppNotification`.
 
-Tepat ada **enam belas** kategori notifikasi. Beberapa peristiwa dipetakan ke lebih dari satu metode wire, karena frame membawa transisinya (gagal versus pulih) sementara kategori membawa pertanyaannya ("apa yang sedang dilakukan CI?").
+Tepat ada **tujuh belas** kategori notifikasi. Beberapa peristiwa dipetakan ke lebih dari satu metode wire, karena frame membawa transisinya (gagal versus pulih) sementara kategori membawa pertanyaannya ("apa yang sedang dilakukan CI?").
 
 | Kategori               | Peristiwa sumber          | Metode wire                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (menyebut Anda)                       |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, tidak menyebut Anda) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ Tepat ada **enam belas** kategori notifikasi. Beberapa peristiwa dipetakan ke le
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 Frame pengambilalihan rig tidak dikirim kembali kepada siapa pun yang mengambil alih, pelepasan tidak difilter (peristiwa ini tidak mencatat siapa yang melepasnya), dan hanya penutupan `backendFailure` yang menghasilkan frame `rig_closed` — alasan lainnya diminta atau sudah tercakup oleh frame reap.
+
+`AgentAwaitingInput` diterbitkan oleh `AgentAwaitingInputPublisher`, yang memantau registri persetujuan dan registri blokir kredensial untuk entri baru, serta diberi tahu tentang setiap pertanyaan `ask_user` oleh `AgentQuestionService`. Satu penantian adalah satu peristiwa; tidak ada yang diterbitkan saat penantian berakhir.
 
 Kelima kategori PR yang Anda tulis membawa `forUserId`, sehingga sampai ke penulisnya alih-alih ke semua orang di ruang kerja.
 

@@ -1,8 +1,8 @@
 ---
 title: Domänhändelser
-description: Fullständig katalog över de 53 domänhändelserna, deras nyttolaster och prenumeranterna på serversidan som konsumerar dem.
+description: Fullständig katalog över de 54 domänhändelserna, deras nyttolaster och prenumeranterna på serversidan som konsumerar dem.
 slug: sv-SE/handbok/referens/domanhandelser
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## Händelsebussen
@@ -18,7 +18,7 @@ efter arbetsytans medlemskap.
 
 | Mått                                                        | Antal                                       |
 | ----------------------------------------------------------- | ------------------------------------------- |
-| Konkreta händelseklasser                                    | 53                                          |
+| Konkreta händelseklasser                                    | 54                                          |
 | Källfiler (`packages/cc_domain/lib/core/domain/events/`)    | 14 (plus `domain_event_bus.dart`)           |
 | Abstrakta basklasser som aldrig publiceras direkt           | 1 (`TaskLifecycleEvent`, en sluten hierarki) |
 
@@ -31,6 +31,7 @@ domänhändelser deklarerade någon annanstans.
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Arbetsytan skapas                                       |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agenten avslutar en körning (lyckad eller misslyckad)   |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | En agent börjar vänta på en människa: ett godkännande, en `ask_user`-fråga eller en körning som står still på grund av inloggningsuppgifter (`kind` är `approval`, `question` eller `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Ett repo registreras; startar kodindexering i bakgrunden |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | En skill installeras eller uppdateras och bär sitt scanresultat från leveranskedjan |
 
@@ -209,8 +210,8 @@ bygger). Det finns ingen prenumerant på klientsidan.
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` – injicerar ett meddelande på klarspråk i den drivande agentens styrkanal |
 | `StaleReviewWatcher`                | `PrHeadChanged` – publicerar `ReviewBecameStale` bara när det finns en avslutad granskning för den ersatta commiten |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` – utgående svar i PR-samtal                                                      |
-| `NotificationFeedRecorder`          | De tjugoen händelserna i aviseringsklassen nedan                                                    |
-| `RemoteEventForwarder`              | De tjugoen plus `TicketReassigned` och varje `TaskLifecycleEvent`. De tre medlemskapshändelserna ogiltigförklarar bara dess medlemskapscache per arbetsyta; de vidarebefordras inte som ramar |
+| `NotificationFeedRecorder`          | De tjugotvå händelserna i aviseringsklassen nedan                                                    |
+| `RemoteEventForwarder`              | De tjugotvå plus `TicketReassigned` och varje `TaskLifecycleEvent`. De tre medlemskapshändelserna ogiltigförklarar bara dess medlemskapscache per arbetsyta; de vidarebefordras inte som ramar |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` – släpper den användarens anslutna arbetsyteprenumerationer; socketen förblir öppen |
 
 `TicketAssigned` är en gransknings- och aviseringssignal och en pipelinetrigger.
@@ -231,7 +232,7 @@ händelser till trådramar av typen `notifications/*` (`notification_wire.dart`)
 På klienten omvandlar `RpcNotificationMapper` → `mapNotificationFrame` en ram
 till en `AppNotification`.
 
-Det finns exakt **sexton** aviseringskategorier. Flera händelser mappas till mer
+Det finns exakt **sjutton** aviseringskategorier. Flera händelser mappas till mer
 än en trådmetod, eftersom ramen bär kanten (misslyckades kontra återhämtade sig)
 medan kategorin bär frågan (”vad gör CI?”).
 
@@ -239,6 +240,7 @@ medan kategorin bär frågan (”vad gör CI?”).
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (nämner dig)                          |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, nämner inte dig) |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -263,6 +265,11 @@ Ramen för stationens övertagande levereras inte tillbaka till den som tog öve
 ett släpp filtreras inte (händelsen registrerar inte vem som släppte), och bara
 en stängning med `backendFailure` ger en `rig_closed`-ram – de andra orsakerna är
 antingen begärda eller redan täckta av återtaganderamen.
+
+`AgentAwaitingInput` publiceras av `AgentAwaitingInputPublisher`, som bevakar
+registren för godkännanden och blockerade inloggningsuppgifter efter nya poster
+och får veta om varje `ask_user`-fråga av `AgentQuestionService`. En väntan är en
+händelse; ingenting publiceras när väntan tar slut.
 
 De fem kategorierna för egna PR:er bär `forUserId`, så de når skaparen i stället
 för alla i arbetsytan.

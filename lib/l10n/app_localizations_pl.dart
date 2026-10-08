@@ -7111,6 +7111,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Pominięto';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Upłynął limit czasu';
+
+  @override
+  String get agentQuestionTimeLeft => 'Pozostały czas na odpowiedź';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Opisz własnymi słowami…';
 
   @override
@@ -15477,4 +15483,37 @@ class AppLocalizationsPl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Agent czeka na Ciebie';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Gdy agent potrzebuje Twojej zgody, odpowiedzi lub działających danych logowania';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent potrzebuje Twojej zgody';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Agent potrzebuje Twojej zgody';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return '$agent ma pytanie';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'Agent ma pytanie';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent jest zablokowany przez dane logowania';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Agent jest zablokowany przez dane logowania';
 }

@@ -2,7 +2,7 @@
 title: Konfigurasikan pemberitahuan
 description: Hidupkan atau matikan kategori, tetapkan waktu senyap dan bunyi, serta ketahui pemberitahuan mana yang sampai kepada anda dan di mana.
 slug: ms-MY/manual-pengguna/panduan-cara/pemberitahuan
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Panduan ini menunjukkan cara mengkonfigurasi pemberitahuan dan perkara yang
@@ -24,11 +24,12 @@ langsung tiada permukaan pemberitahuan.
 
 1. Pergi ke **Tetapan → Anda → Pemberitahuan**
 2. Biarkan **Dayakan pemberitahuan** dalam keadaan hidup
-3. Hidupkan kategori yang anda mahu. Jumlahnya tepat enam belas:
+3. Hidupkan kategori yang anda mahu. Jumlahnya tepat tujuh belas:
 
 | Kategori                   | Dicetuskan apabila                                                          |
 | -------------------------- | -------------------------------------------------------------------------- |
 | Ejen selesai               | Ejen membalas dalam larian yang anda mulakan, atau larian itu gagal        |
+| Ejen menunggu anda         | Ejen memerlukan kelulusan anda, bertanya soalan kepada anda, atau tertahan pada kelayakan |
 | PR diterbitkan             | Ejen menerbitkan satu PR                                                   |
 | PR dicantum                | Satu PR telah dicantum                                                     |
 | Mesej baharu               | Seseorang menyebut anda dalam sesuatu ruang                                |
@@ -47,6 +48,12 @@ langsung tiada permukaan pemberitahuan.
 
 Apa-apa di luar senarai ini tidak boleh dimaklumkan atau ditapis — tiada
 kategori "segala-galanya yang lain".
+
+**Ejen menunggu anda** dicetuskan sekali bagi setiap penantian, apabila
+penantian itu bermula: kelulusan yang belum selesai (termasuk geran exec kotak
+pasir dan kelulusan alat Claude Code), soalan `ask_user`, atau larian yang
+ditahan kerana kelayakannya tidak dapat melayaninya. Ia membuka ruang tempat
+anda menjawab, dan kekal senyap selagi anda sedang melihat ruang itu.
 
 Keutamaan ini mengikut pengguna anda merentas peranti, jadi telefon dan komputer
 riba kekal selaras. Kelantangan ialah pengecualian yang disengajakan dan kekal

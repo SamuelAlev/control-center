@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "問題 {index} / {count}",
   "agentQuestionSkip": "略過",
   "agentQuestionSkippedLabel": "已略過",
+  "agentQuestionTimedOutLabel": "已逾時",
+  "agentQuestionTimeLeft": "剩餘回答時間",
   "agentQuestionFreeformOptionHint": "用你自己的話描述…",
   "reviewRequested": "審查請求",
   "connectGitHubHint": "登入 GitHub，或在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中新增權杖",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "已將 {path} 標記為未檢視",
   "prLineChangesSemantics": "新增行數：{additions}，刪除行數：{deletions}",
   "closeTabNamed": "關閉{tab}",
-  "threadCommentCount": "{count, plural, other{{count} 則留言}}"
+  "threadCommentCount": "{count, plural, other{{count} 則留言}}",
+  "notificationAgentAwaitingInput": "代理正在等你",
+  "notifyAgentAwaitingInput": "當代理需要你的核准、回答或可用的憑證時",
+  "notificationAgentNeedsApproval": "{agent} 需要你的核准",
+  "notificationAgentNeedsApprovalUnnamed": "有代理需要你的核准",
+  "notificationAgentAskedQuestion": "{agent} 有一個問題",
+  "notificationAgentAskedQuestionUnnamed": "有代理提出了問題",
+  "notificationAgentBlockedOnCredential": "{agent} 因憑證問題而受阻",
+  "notificationAgentBlockedOnCredentialUnnamed": "有代理因憑證問題而受阻"
 }

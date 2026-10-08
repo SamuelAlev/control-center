@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Soalan {index} daripada {count}",
   "agentQuestionSkip": "Langkau",
   "agentQuestionSkippedLabel": "Dilangkau",
+  "agentQuestionTimedOutLabel": "Masa tamat",
+  "agentQuestionTimeLeft": "Masa yang tinggal untuk menjawab",
   "agentQuestionFreeformOptionHint": "Terangkan dengan kata-kata anda…",
   "reviewRequested": "Semakan diminta",
   "connectGitHubHint": "Log masuk ke GitHub atau tambah token dalam Tetapan → Ruang kerja → Profil & identiti → Hos kod",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} ditandakan belum dilihat",
   "prLineChangesSemantics": "Baris ditambah: {additions}, baris dibuang: {deletions}",
   "closeTabNamed": "Tutup {tab}",
-  "threadCommentCount": "{count, plural, other{{count} komen}}"
+  "threadCommentCount": "{count, plural, other{{count} komen}}",
+  "notificationAgentAwaitingInput": "Ejen menunggu anda",
+  "notifyAgentAwaitingInput": "Apabila ejen memerlukan kelulusan, jawapan atau kelayakan yang berfungsi daripada anda",
+  "notificationAgentNeedsApproval": "{agent} memerlukan kelulusan anda",
+  "notificationAgentNeedsApprovalUnnamed": "Ejen memerlukan kelulusan anda",
+  "notificationAgentAskedQuestion": "{agent} ada soalan",
+  "notificationAgentAskedQuestionUnnamed": "Ejen ada soalan",
+  "notificationAgentBlockedOnCredential": "{agent} tersekat kerana kelayakan",
+  "notificationAgentBlockedOnCredentialUnnamed": "Ejen tersekat kerana kelayakan"
 }

@@ -4,14 +4,17 @@ import 'package:cc_harness/cancellation.dart';
 /// them down on unit completion.
 ///
 /// Layout: `spaces/<spaceId>/repos/<repo>/` (shared CoW worktrees) and
-/// `agents/<agentSlug>/` (returned cwd: AGENTS.md + `.agents` + `repos`
-/// symlinks). Every conversation in a space shares `repos/`; a conversation
-/// id is never a worktree key. `.mcp.json` is not provisioned here —
-/// cc_server derives it at dispatch. No-op-safe: provisioning failures
-/// degrade to the fallback dir rather than throwing.
+/// `agents/<overlay>/` (returned cwd: AGENTS.md + `.agents` + `repos`
+/// symlinks), named by [agentOverlayDirName]. Every conversation in a space
+/// shares `repos/`; a conversation id is never a worktree key, but it does key
+/// the overlay, so two conversations can run the same agent at once.
+/// `.mcp.json` is not provisioned here — cc_server derives it at dispatch.
+/// No-op-safe: provisioning failures degrade to the fallback dir rather than
+/// throwing.
 abstract interface class RepoWorkspaceProvisionerPort {
   /// Ensures space root + isolated worktrees + per-agent overlay at
-  /// `agents/<agentSlug>/`; returns that cwd or [fallbackDir] on failure.
+  /// `agents/<agentOverlayDirName(agentSlug, conversationId)>/`; returns that
+  /// cwd or [fallbackDir] on failure.
   ///
   /// [agentSlug] keys the overlay; [agentConfigDir] targets AGENTS.md+`.agents`.
   /// Branch from [ticketKey]/[ticketTitle] else [spaceScratchBranch]; fetches
@@ -25,6 +28,7 @@ abstract interface class RepoWorkspaceProvisionerPort {
     required String spaceId,
     required String agentSlug,
     required String fallbackDir,
+    String? conversationId,
     String? agentConfigDir,
     String? ticketId,
     String? ticketKey,
@@ -129,4 +133,27 @@ const String kSpaceScratchBranchPrefix = 'space/';
 String spaceScratchBranch(String spaceId) {
   final short = spaceId.length > 8 ? spaceId.substring(0, 8) : spaceId;
   return '$kSpaceScratchBranchPrefix$short';
+}
+
+/// The overlay directory name, under `spaces/<spaceId>/agents/`, for
+/// [agentSlug] working in [conversationId].
+///
+/// Per conversation because the overlay holds per-run state: the derived
+/// `.mcp.json` carries the conversation id the MCP server scopes tool calls to,
+/// and the repo-skill projection rewrites `AGENTS.md` and `.claude/skills` for
+/// the repo the run is in. Shared by two conversations, a run started in one
+/// rewrote the files the other was reading, so the dispatch path lock queued
+/// them instead and one conversation sat silent until the other finished.
+/// A sibling of the bare-slug overlay (same depth) so `../../repos` and every
+/// `dirname(dirname(cwd))` derivation still land on the space root.
+///
+/// No conversation (or one whose id is not a plain token) keeps the bare
+/// slug: a ticket or pipeline run has nothing to collide with, and an id that
+/// could carry a separator never becomes a path segment.
+String agentOverlayDirName(String agentSlug, String? conversationId) {
+  if (conversationId == null ||
+      !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(conversationId)) {
+    return agentSlug;
+  }
+  return '$agentSlug--$conversationId';
 }

@@ -285,6 +285,14 @@ class AskUserOutcome {
 /// in its MCP tool call or PTY relay — receives the answer and continues.
 abstract interface class AgentQuestionPort {
   /// Surfaces [request] and resolves once the user submits the form. Returns
-  /// `null` if the question is dismissed or times out.
-  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request);
+  /// `null` if the question is dismissed, times out, or is [abandoned].
+  ///
+  /// [abandoned] completes when the asker stops waiting before an answer
+  /// arrives: its MCP client gave up on the call, or its run was stopped. The
+  /// form then closes the way it does on timeout, instead of staying open for
+  /// an answer nobody will read.
+  Future<AgentQuestionAnswer?> ask(
+    AgentQuestionRequest request, {
+    Future<void>? abandoned,
+  });
 }

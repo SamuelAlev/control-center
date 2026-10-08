@@ -410,6 +410,7 @@ class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
     required String spaceId,
     required String agentSlug,
     required String fallbackDir,
+    String? conversationId,
     String? agentConfigDir,
     String? ticketId,
     String? ticketKey,

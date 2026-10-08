@@ -125,8 +125,9 @@ class _FakeSpaceReadRepository implements SpaceReadRepository {
   Future<void> markSpaceRead(
     String workspaceId,
     String spaceId,
-    String userId,
-  ) async {}
+    String userId, {
+    String? conversationId,
+  }) async {}
   @override
   Stream<DateTime?> watchUserLastReadAt(
     String workspaceId,

@@ -17,9 +17,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Sends what the space composer submitted.
 ///
 /// Slash commands that the client handles itself never reach the server.
-/// Plain text typed while an agent is already working becomes a queued
-/// steering card. Anything else is sent immediately, or parked while the
-/// space is still provisioning.
+/// A message typed while an agent is already working — attachments included —
+/// becomes a queued steering card. Anything else is sent immediately, or
+/// parked while the space is still provisioning.
 Future<void> submitSpaceComposer({
   required WidgetRef ref,
   required BuildContext context,
@@ -46,17 +46,18 @@ Future<void> submitSpaceComposer({
   final content = dispatched;
 
   // Mid-run steering: if agents are already working in this conversation and
-  // the user submits plain conversational text (no @agent, no slash command),
+  // the user submits a conversational message (no @agent, no slash command),
   // the submission becomes a QUEUED STEERING CARD (the strip below the trail)
   // instead of a new turn — the server persists it as a conversation row, live
   // harness runs inject it at their next turn boundary, and anything still
   // queued when the last run ends is converted to a normal message.
+  // Attachments are uploaded first and ride the card: sent as a plain message
+  // mid-run, they landed in the trail while the run never read them.
   // No toast: the card appearing in the strip IS the feedback.
   final hasAgentMention = submission.mentions.any((m) => m.kind == 'agent');
   if (!parsedCommand.isCommand &&
       !hasAgentMention &&
-      submission.attachments.isEmpty &&
-      content.trim().isNotEmpty) {
+      (content.trim().isNotEmpty || submission.attachments.isNotEmpty)) {
     final activeRuns =
         ref
             .read(
@@ -69,12 +70,16 @@ Future<void> submitSpaceComposer({
             ?.value ??
         const [];
     if (activeRuns.isNotEmpty) {
+      final stored = await ref
+          .read(spaceMessageSendProvider.notifier)
+          .storeAttachments(workspaceId, submission.attachments);
       final port = ref.read(messagingServiceProvider);
       final queued = await port.enqueueSteering(
         workspaceId: workspaceId,
         spaceId: spaceId,
         conversationId: conversationId,
         content: content,
+        attachments: stored,
       );
       if (queued != null) {
         // Remember whether ANY live run can inject mid-run: the strip's

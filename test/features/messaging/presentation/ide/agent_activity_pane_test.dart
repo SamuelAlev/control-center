@@ -41,10 +41,8 @@ class _StaticRunLogRepo implements AgentRunLogRepository {
   final List<AgentRunLog> logs;
 
   @override
-  Stream<List<AgentRunLog>> watchByConversation(
-    String workspaceId,
-    String conversationId,
-  ) => Stream.value(logs);
+  Stream<List<AgentRunLog>> watchBySpace(String workspaceId, String spaceId) =>
+      Stream.value(logs);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

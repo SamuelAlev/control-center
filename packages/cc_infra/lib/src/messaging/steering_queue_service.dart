@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_harness/loop.dart' show SteeringChannel, SteeringMessage;
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
@@ -28,18 +29,32 @@ class EnqueueSteeringResult {
 /// The responder tail of a user message — see
 /// `MessagingService.dispatchResponderForText`. A function type (not a class)
 /// so the queue service depends on the seam, not the whole messaging service.
-typedef DispatchResponder = Future<void> Function({
-  required String workspaceId,
-  required String spaceId,
-  String? conversationId,
-  required String content,
-  String? senderUserId,
-});
+typedef DispatchResponder =
+    Future<void> Function({
+      required String workspaceId,
+      required String spaceId,
+      String? conversationId,
+      required String content,
+      String? senderUserId,
+      List<MessageAttachment> attachments,
+      List<String> promptImageRefs,
+    });
+
+/// Rewrites a card's `@[file:<name>]` references to the paths its
+/// attachments were materialized to — see
+/// `MessagingService.withAttachmentPaths`. A live run reads a card as text,
+/// so a reference it cannot open would be a picture it never sees.
+typedef AttachmentPathResolver =
+    Future<String> Function({
+      required String workspaceId,
+      required String spaceId,
+      required String text,
+      required List<MessageAttachment> attachments,
+    });
 
 /// Live sessions of a conversation, as seen by the steering queue.
-typedef SteeringSessionsFor = List<SteeringSessionView> Function(
-  String conversationId,
-);
+typedef SteeringSessionsFor =
+    List<SteeringSessionView> Function(String conversationId);
 
 /// Durable conversation-scoped steering queue (`MessageType.steering`,
 /// `metadata['steerState']`) shown in the strip until a run takes it.
@@ -58,6 +73,7 @@ class SteeringQueueService {
     required this._dispatchResponder,
     required SteeringSessionsFor sessionsForConversation,
     this._queuedSteering,
+    this._resolveAttachmentPaths,
   }) : _messaging = messagingRepository,
        _runLogs = runLogRepository,
        _sessionsFor = sessionsForConversation;
@@ -66,6 +82,10 @@ class SteeringQueueService {
   final AgentRunLogRepository _runLogs;
   final DispatchResponder _dispatchResponder;
   final SteeringSessionsFor _sessionsFor;
+
+  /// Resolves attachment references for live injection. Null injects the
+  /// stored text as-is.
+  final AttachmentPathResolver? _resolveAttachmentPaths;
 
   /// Queued steering cards without a full-conversation scan. Null keeps
   /// [MessagingRepository.getMessages], which tests use.
@@ -78,17 +98,25 @@ class SteeringQueueService {
 
   /// Queues [content] against the runs live in [conversationId].
   ///
+  /// [attachments] are the uploaded `metadata['attachments']` entries of a
+  /// normal send; they are stored on the card, injected as paths and handed
+  /// to the follow-up turn when the card converts at run end.
+  ///
   /// Returns null when no run is active (the caller falls through to a normal
-  /// send) or the content is blank.
+  /// send) or there is nothing to send.
   Future<EnqueueSteeringResult?> enqueue({
     required String workspaceId,
     required String spaceId,
     required String conversationId,
     required String content,
     required String senderUserId,
+    List<Map<String, dynamic>> attachments = const [],
   }) async {
     final text = content.trim();
-    if (text.isEmpty) {
+    final stored = MessageAttachment.attachmentsFromMetadata({
+      'attachments': attachments,
+    });
+    if (text.isEmpty && stored.isEmpty) {
       return null;
     }
     final active = await _runLogs.activeByConversation(
@@ -105,11 +133,22 @@ class SteeringQueueService {
       conversationId: conversationId,
       content: text,
       senderId: senderUserId,
-      metadata: {'steerState': 'queued', 'steerOrder': order},
+      metadata: {
+        'steerState': 'queued',
+        'steerOrder': order,
+        if (stored.isNotEmpty)
+          'attachments': [for (final a in stored) a.toJson()],
+      },
+    );
+    final laneText = await _laneText(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      content: text,
+      attachments: stored,
     );
     return EnqueueSteeringResult(
       messageId: messageId,
-      steerable: _pushToHarnessSessions(conversationId, text, messageId),
+      steerable: _pushToHarnessSessions(conversationId, laneText, messageId),
     );
   }
 
@@ -139,9 +178,15 @@ class SteeringQueueService {
         'editedAt': DateTime.now().millisecondsSinceEpoch,
       },
     );
+    final laneText = await _laneText(
+      workspaceId: workspaceId,
+      spaceId: row.spaceId,
+      content: content.trim(),
+      attachments: row.attachments,
+    );
     for (final session in _harnessSessions(conversationId)) {
       session.steeringQueue.removeByRef(messageId);
-      session.steeringQueue.pushSteering(content.trim(), ref: messageId);
+      session.steeringQueue.pushSteering(laneText, ref: messageId);
     }
     return true;
   }
@@ -199,13 +244,20 @@ class SteeringQueueService {
         metadata: {...?row.metadata, 'steerOrder': index++},
       );
     }
-    for (final session in _harnessSessions(conversationId)) {
+    final sessions = _harnessSessions(conversationId);
+    if (sessions.isEmpty) {
+      return;
+    }
+    final laneTexts = [
+      for (final row in ordered) await _rowLaneText(workspaceId, row),
+    ];
+    for (final session in sessions) {
       final queue = session.steeringQueue;
       for (final row in ordered) {
         queue.removeByRef(row.id);
       }
-      for (final row in ordered) {
-        queue.pushSteering(row.content, ref: row.id);
+      for (var i = 0; i < ordered.length; i++) {
+        queue.pushSteering(laneTexts[i], ref: ordered[i].id);
       }
     }
   }
@@ -222,13 +274,18 @@ class SteeringQueueService {
     if (row == null) {
       return false;
     }
+    final sessions = _harnessSessions(conversationId);
+    if (sessions.isEmpty) {
+      return false;
+    }
+    final laneText = await _rowLaneText(workspaceId, row);
     var delivered = false;
-    for (final session in _harnessSessions(conversationId)) {
+    for (final session in sessions) {
       final queue = session.steeringQueue;
       queue.removeByRef(row.id);
       queue.pushFront(
         SteeringMessage(
-          content: row.content,
+          content: laneText,
           channel: SteeringChannel.steering,
           enqueuedAt: DateTime.now(),
           ref: row.id,
@@ -263,7 +320,7 @@ class SteeringQueueService {
             .peek(SteeringChannel.steering)
             .any((m) => m.ref == row.id);
         if (!alreadyQueued) {
-          queue.pushSteering(row.content, ref: row.id);
+          queue.pushSteering(await _rowLaneText(workspaceId, row), ref: row.id);
         }
       }
     }());
@@ -333,6 +390,7 @@ class SteeringQueueService {
         return;
       }
       final texts = <String>[];
+      final attachments = <MessageAttachment>[];
       for (final row in queued) {
         await _messaging.updateMessage(
           workspaceId,
@@ -345,18 +403,71 @@ class SteeringQueueService {
             'convertedAt': DateTime.now().millisecondsSinceEpoch,
           },
         );
-        texts.add(row.content);
+        if (row.content.isNotEmpty) {
+          texts.add(row.content);
+        }
+        attachments.addAll(row.attachments);
       }
+      // The follow-up turn sees the cards' pictures the way a typed message's
+      // would: as images on the turn, and as paths where the text names them.
       await _dispatchResponder(
         workspaceId: workspaceId,
         spaceId: spaceId,
         conversationId: conversationId,
         content: texts.join('\n\n'),
         senderUserId: queued.first.senderId,
+        attachments: attachments,
+        promptImageRefs: [
+          for (final a in attachments)
+            if (a.isImage && a.isUploaded) a.path,
+        ],
       );
     } on Object catch (e) {
       CcInfraLog.warning('SteeringQueueService: run-end conversion failed: $e');
     }
+  }
+
+  /// What a live run is handed for [row]: its text with attachment
+  /// references resolved to paths.
+  Future<String> _rowLaneText(String workspaceId, Message row) => _laneText(
+    workspaceId: workspaceId,
+    spaceId: row.spaceId,
+    content: row.content,
+    attachments: row.attachments,
+  );
+
+  Future<String> _laneText({
+    required String workspaceId,
+    required String spaceId,
+    required String content,
+    required List<MessageAttachment> attachments,
+  }) async {
+    final resolve = _resolveAttachmentPaths;
+    if (resolve == null || attachments.isEmpty) {
+      return content;
+    }
+    final text = await resolve(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      text: content,
+      attachments: attachments,
+    );
+    // An attachment the text never names (a picture pasted with no prose)
+    // would otherwise reach the run as nothing at all.
+    final unnamed = [
+      for (final a in attachments)
+        if (!content.contains('@[file:${a.name}]')) a,
+    ];
+    if (unnamed.isEmpty) {
+      return text;
+    }
+    final paths = await resolve(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      text: [for (final a in unnamed) '@[file:${a.name}]'].join('\n'),
+      attachments: unnamed,
+    );
+    return text.isEmpty ? paths : '$text\n$paths';
   }
 
   /// Live harness sessions for a conversation. Workspace-checked: a

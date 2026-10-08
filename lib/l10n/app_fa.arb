@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "پرسش {index} از {count}",
   "agentQuestionSkip": "رد شدن",
   "agentQuestionSkippedLabel": "رد شد",
+  "agentQuestionTimedOutLabel": "مهلت تمام شد",
+  "agentQuestionTimeLeft": "زمان باقی‌مانده برای پاسخ",
   "agentQuestionFreeformOptionHint": "با کلمات خودتان توضیح دهید…",
   "reviewRequested": "بازبینی درخواست شد",
   "connectGitHubHint": "وارد GitHub شوید یا در تنظیمات ← فضای کاری ← نمایه و هویت ← میزبانی کد توکن اضافه کنید",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} به‌عنوان دیده‌نشده علامت خورد",
   "prLineChangesSemantics": "خطوط افزوده‌شده: {additions}، خطوط حذف‌شده: {deletions}",
   "closeTabNamed": "بستن {tab}",
-  "threadCommentCount": "{count, plural, =1{1 نظر} other{{count} نظر}}"
+  "threadCommentCount": "{count, plural, =1{1 نظر} other{{count} نظر}}",
+  "notificationAgentAwaitingInput": "عاملی منتظر شماست",
+  "notifyAgentAwaitingInput": "وقتی عاملی به تأیید، پاسخ یا اعتبارنامهٔ معتبر شما نیاز دارد",
+  "notificationAgentNeedsApproval": "{agent} به تأیید شما نیاز دارد",
+  "notificationAgentNeedsApprovalUnnamed": "عاملی به تأیید شما نیاز دارد",
+  "notificationAgentAskedQuestion": "{agent} سؤالی دارد",
+  "notificationAgentAskedQuestionUnnamed": "عاملی سؤالی دارد",
+  "notificationAgentBlockedOnCredential": "{agent} به‌خاطر اعتبارنامه متوقف شده است",
+  "notificationAgentBlockedOnCredentialUnnamed": "عاملی به‌خاطر اعتبارنامه متوقف شده است"
 }

@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "質問 {index} / {count}",
   "agentQuestionSkip": "スキップ",
   "agentQuestionSkippedLabel": "スキップ済み",
+  "agentQuestionTimedOutLabel": "時間切れ",
+  "agentQuestionTimeLeft": "回答までの残り時間",
   "agentQuestionFreeformOptionHint": "自分の言葉で書いてください…",
   "reviewRequested": "レビュー依頼済み",
   "connectGitHubHint": "GitHub にサインインするか、設定 → ワークスペース → プロフィールと ID → コードホスティング でトークンを追加してください",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} を未閲覧にしました",
   "prLineChangesSemantics": "追加された行: {additions}、削除された行: {deletions}",
   "closeTabNamed": "{tab} を閉じる",
-  "threadCommentCount": "{count, plural, =1{コメント 1 件} other{コメント {count} 件}}"
+  "threadCommentCount": "{count, plural, =1{コメント 1 件} other{コメント {count} 件}}",
+  "notificationAgentAwaitingInput": "エージェントが待機中",
+  "notifyAgentAwaitingInput": "エージェントが承認・回答・有効な認証情報を必要としたとき",
+  "notificationAgentNeedsApproval": "{agent} が承認を求めています",
+  "notificationAgentNeedsApprovalUnnamed": "エージェントが承認を求めています",
+  "notificationAgentAskedQuestion": "{agent} から質問があります",
+  "notificationAgentAskedQuestionUnnamed": "エージェントから質問があります",
+  "notificationAgentBlockedOnCredential": "{agent} が認証情報の問題で停止しています",
+  "notificationAgentBlockedOnCredentialUnnamed": "エージェントが認証情報の問題で停止しています"
 }

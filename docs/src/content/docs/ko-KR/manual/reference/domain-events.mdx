@@ -1,8 +1,8 @@
 ---
 title: 도메인 이벤트
-description: 53개 도메인 이벤트의 전체 목록, 각 이벤트의 페이로드, 그리고 이를 소비하는 서버 측 구독자를 정리합니다.
+description: 54개 도메인 이벤트의 전체 목록, 각 이벤트의 페이로드, 그리고 이를 소비하는 서버 측 구독자를 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/도메인-이벤트
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## 이벤트 버스
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | 항목                                                        | 개수                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| 구체적 이벤트 클래스                                        | 53                                          |
+| 구체적 이벤트 클래스                                        | 54                                          |
 | 소스 파일 (`packages/cc_domain/lib/core/domain/events/`)     | 14 (`domain_event_bus.dart` 포함)           |
 | 직접 발행되지 않는 추상 기반 클래스                         | 1 (`TaskLifecycleEvent`, sealed 계층 구조)  |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 워크스페이스가 생성될 때                                |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 에이전트가 실행을 마칠 때(성공 또는 실패)               |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 에이전트가 사람을 기다리기 시작할 때: 승인, `ask_user` 질문 또는 자격 증명 때문에 멈춘 실행(`kind`는 `approval`, `question`, `credential` 중 하나) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 저장소가 등록될 때이며, 백그라운드 코드 인덱싱을 트리거합니다 |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 스킬이 설치되거나 업데이트될 때이며, 공급망 스캔 판정을 함께 전달합니다 |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — 주도 에이전트의 조종 레인에 평이한 안내를 주입합니다 |
 | `StaleReviewWatcher`                | `PrHeadChanged` — 교체된 커밋에 대해 완료된 리뷰가 있을 때만 `ReviewBecameStale`을 발행합니다        |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted` — 아웃바운드 PR 대화 답글                                                        |
-| `NotificationFeedRecorder`          | 아래 21개의 알림 클래스 이벤트                                                                       |
-| `RemoteEventForwarder`              | 위 21개에 더해 `TicketReassigned`와 모든 `TaskLifecycleEvent`를 전달합니다. 세 가지 멤버십 이벤트는 워크스페이스별 멤버십 캐시를 무효화할 뿐이며, 프레임으로 전달되지 않습니다 |
+| `NotificationFeedRecorder`          | 아래 22개의 알림 클래스 이벤트                                                                       |
+| `RemoteEventForwarder`              | 위 22개에 더해 `TicketReassigned`와 모든 `TaskLifecycleEvent`를 전달합니다. 세 가지 멤버십 이벤트는 워크스페이스별 멤버십 캐시를 무효화할 뿐이며, 프레임으로 전달되지 않습니다 |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — 해당 사용자가 연결한 워크스페이스 구독을 제거합니다. 소켓은 열린 채로 남습니다 |
 
 `TicketAssigned`는 감사 및 알림 신호이자 파이프라인 트리거입니다. 에이전트에 할당하면 소유권이 기록될 뿐 실행은 시작되지 않습니다. 티켓 디스패처가 없습니다. 팀 할당(`assignedTeamId` 설정)은 예외입니다. `TeamRoutingService`가 팀 리더를 디스패치합니다.
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 서버에서는 `NotificationFeedRecorder`와 `RemoteEventForwarder`가 이 이벤트들을 `notifications/*` 와이어 프레임(`notification_wire.dart`)으로 바꿉니다. 클라이언트에서는 `RpcNotificationMapper` → `mapNotificationFrame`이 프레임을 `AppNotification`으로 바꿉니다.
 
-알림 범주는 정확히 **16개**입니다. 여러 이벤트가 둘 이상의 와이어 메서드에 매핑되는데, 프레임은 전환(실패 대 복구)을 담고 범주는 질문(“CI가 무엇을 하고 있나?”)을 담기 때문입니다.
+알림 범주는 정확히 **17개**입니다. 여러 이벤트가 둘 이상의 와이어 메서드에 매핑되는데, 프레임은 전환(실패 대 복구)을 담고 범주는 질문(“CI가 무엇을 하고 있나?”)을 담기 때문입니다.
 
 | 범주                   | 소스 이벤트               | 와이어 메서드                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received` (나를 멘션함)                              |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received` (`is_agent_message`, 나를 멘션하지 않음)      |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 리그 인수 프레임은 조종권을 잡은 사람에게 다시 전달되지 않고, 해제는 필터링되지 않으며(누가 놓았는지는 이벤트에 기록되지 않습니다), `backendFailure` 종료만 `rig_closed` 프레임을 만듭니다 — 나머지 사유는 요청된 것이거나 이미 회수 프레임이 다룹니다.
+
+`AgentAwaitingInput`은 `AgentAwaitingInputPublisher`가 발행합니다. 이 발행자는 승인 레지스트리와 자격 증명 차단 레지스트리에 새 항목이 생기는지 감시하고, 각 `ask_user` 질문은 `AgentQuestionService`로부터 전달받습니다. 대기 하나가 이벤트 하나이며, 대기가 끝날 때는 아무것도 발행되지 않습니다.
 
 작성한 PR 관련 다섯 범주는 `forUserId`를 전달하므로, 워크스페이스의 모든 사람이 아니라 작성자에게 도달합니다.
 

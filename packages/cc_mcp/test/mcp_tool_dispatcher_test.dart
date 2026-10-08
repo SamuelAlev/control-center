@@ -57,7 +57,10 @@ class _EchoTool extends McpTool {
   };
 
   @override
-  Future<CallResult> call(Map<String, dynamic> arguments) async {
+  Future<CallResult> call(
+    Map<String, dynamic> arguments, {
+    Future<void>? abandoned,
+  }) async {
     final message = arguments['message'] as String? ?? '';
     return CallResult.success('echo: $message');
   }
@@ -80,7 +83,10 @@ class _FailingTool extends McpTool {
   Map<String, dynamic> get inputSchema => {'type': 'object', 'properties': {}};
 
   @override
-  Future<CallResult> call(Map<String, dynamic> arguments) async {
+  Future<CallResult> call(
+    Map<String, dynamic> arguments, {
+    Future<void>? abandoned,
+  }) async {
     throw Exception('intentional failure');
   }
 

@@ -333,6 +333,22 @@ class Message {
   /// Whether this question has already been answered by the user.
   bool get isQuestionAnswered => metadata?['answered'] == true;
 
+  /// Whether this question closed without an answer because the asking agent
+  /// stopped waiting. Also reads as [isQuestionAnswered] (it is resolved).
+  bool get isQuestionExpired => metadata?['expired'] == true;
+
+  /// When the asking agent stops waiting for an answer, if it ever does.
+  DateTime? get questionExpiresAt {
+    final raw = metadata?['expiresAt'];
+    return raw is String ? DateTime.tryParse(raw) : null;
+  }
+
+  /// The full wait the asking agent allowed, if it is bounded.
+  Duration? get questionTimeout {
+    final raw = metadata?['timeoutMs'];
+    return raw is num && raw > 0 ? Duration(milliseconds: raw.toInt()) : null;
+  }
+
   /// Plan lifecycle status: 'pending', 'approved', or 'refining'.
   String get planStatus => metadata?['planStatus'] as String? ?? 'pending';
 

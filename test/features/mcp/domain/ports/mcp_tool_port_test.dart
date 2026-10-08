@@ -133,7 +133,10 @@ class _FakeTool extends McpTool {
   Map<String, dynamic> get inputSchema => schema;
 
   @override
-  Future<CallResult> call(Map<String, dynamic> arguments) async {
+  Future<CallResult> call(
+    Map<String, dynamic> arguments, {
+    Future<void>? abandoned,
+  }) async {
     return CallResult.success('fake result');
   }
 

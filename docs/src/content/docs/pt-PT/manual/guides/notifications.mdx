@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba que notificações lhe chegam e onde.
 slug: pt-PT/manual/guias/notificacoes
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Este guia mostra como configurar as notificações e o que cada opção controla de
@@ -25,11 +25,12 @@ telemóvel não tem nenhuma superfície de notificação.
 
 1. Aceda a **Definições → Você → Notificações**
 2. Deixe **Ativar notificações** ligado
-3. Ative ou desative as categorias que quiser. São exatamente dezasseis:
+3. Ative ou desative as categorias que quiser. São exatamente dezassete:
 
 | Categoria                 | Dispara quando                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Agente finalizado         | Um agente respondeu numa execução que iniciou, ou a execução falhou        |
+| Um agente está à sua espera | Um agente precisa da sua aprovação, fez-lhe uma pergunta ou está parado numa credencial |
 | PR publicada              | Um agente publicou uma PR                                                  |
 | PR fundida                | Uma PR foi fundida                                                         |
 | Novas mensagens           | Alguém o mencionou num espaço                                              |
@@ -48,6 +49,12 @@ telemóvel não tem nenhuma superfície de notificação.
 
 Nada fora desta lista pode gerar notificação nem ser filtrado — não existe
 nenhuma categoria «tudo o resto».
+
+**Um agente está à sua espera** dispara uma vez por espera, quando esta começa:
+uma aprovação pendente (incluindo concessões de execução em sandbox e aprovações
+de ferramentas do Claude Code), uma pergunta `ask_user` ou uma execução retida
+porque a respetiva credencial não a consegue servir. A notificação abre o espaço
+onde responde e fica em silêncio enquanto já estiver a ver esse espaço.
 
 Estas preferências acompanham o seu utilizador entre dispositivos, pelo que um
 telemóvel e um portátil ficam em sintonia. O volume é a exceção deliberada e

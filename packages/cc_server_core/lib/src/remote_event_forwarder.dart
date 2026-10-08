@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
@@ -112,6 +113,12 @@ class RemoteEventForwarder {
     _subs.add(_eventBus.on<RigControlChanged>().listen(_onRigControlChanged));
     _subs.add(_eventBus.on<RigReaped>().listen(_onRigReaped));
     _subs.add(_eventBus.on<RigClosedEvent>().listen(_onRigClosed));
+    // An agent waiting on a human: approval, question or credential.
+    _subs.add(
+      _eventBus.on<AgentAwaitingInput>().listen(
+        (e) => _forward(agentAwaitingInputFrame(e)),
+      ),
+    );
     // Membership liveness: a cached verdict must not outlive the change.
     _subs.add(
       _eventBus.on<WorkspaceMemberAdded>().listen((e) {

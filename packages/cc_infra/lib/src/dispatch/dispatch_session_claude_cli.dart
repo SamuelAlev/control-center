@@ -189,6 +189,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // How many times a dead sign-in has already parked this run. Bounded so a
     // credential that 401s again after a login cannot relaunch forever.
     var reauthParks = 0;
+    _claudeSubagents = _openClaudeSubagents();
     var i = 0;
     while (i < attempts.length) {
       final attempt = attempts[i];
@@ -208,6 +209,7 @@ extension _ClaudeCliMethods on DispatchSession {
           onToolCall: (tu) {
             producedOutput = true;
             _claudeToolNames[tu.id] = tu.name;
+            _claudeSubagents?.noteSpawnCall(tu);
             addEvent(
               ToolCallEvent(
                 toolName: tu.name,
@@ -216,14 +218,26 @@ extension _ClaudeCliMethods on DispatchSession {
               ),
             );
           },
-          onToolResult: (tr) => addEvent(
-            ToolResultEvent(
-              toolCallId: tr.id,
-              outputs: tr.outputs,
-              toolName: _claudeToolNames.remove(tr.id),
-              isError: tr.isError,
-            ),
-          ),
+          onToolResult: (tr) {
+            addEvent(
+              ToolResultEvent(
+                toolCallId: tr.id,
+                outputs: tr.outputs,
+                toolName: _claudeToolNames.remove(tr.id),
+                isError: tr.isError,
+              ),
+            );
+            final subagents = _claudeSubagents;
+            if (subagents != null) {
+              unawaited(subagents.complete(tr));
+            }
+          },
+          // A subagent's own work becomes its child run's transcript, not
+          // rows in this turn.
+          onSubagent: (event) {
+            producedOutput = true;
+            _claudeSubagents?.onEvent(event);
+          },
           // `claude` prices itself, so this path does NOT go through
           // [HarnessCostCalculator]: the CLI already knows which model served
           // (including the auxiliary calls it makes on its own) and reports the
@@ -354,6 +368,7 @@ extension _ClaudeCliMethods on DispatchSession {
       break;
     }
 
+    await _closeClaudeSubagents();
     unawaited(_closeRunLog(exitCode: exitCode));
 
     if (exitCode == 127) {
@@ -376,6 +391,29 @@ extension _ClaudeCliMethods on DispatchSession {
     }
     addEvent(DoneEvent());
     _completeRun();
+  }
+
+  /// Child-run recording for the subagents this run spawns. Null when the run
+  /// has no run log or workspace to hang them from.
+  ClaudeSubagentRuns? _openClaudeSubagents() {
+    final parentRunId = runLogId;
+    final ws = workspaceId;
+    if (parentRunId == null ||
+        parentRunId.isEmpty ||
+        ws == null ||
+        ws.isEmpty) {
+      return null;
+    }
+    return ClaudeSubagentRuns(
+      parentRunId: parentRunId,
+      workspaceId: ws,
+      agentId: agentId ?? 'subagent',
+      spaceId: spaceId,
+      conversationId: conversationId,
+      modelId: modelId,
+      repo: deps.runLogRepo,
+      recorder: deps.runTranscriptRecorder,
+    );
   }
 
   Future<void> _reportClaudeAccountFailure(

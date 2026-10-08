@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "שאלה {index} מתוך {count}",
   "agentQuestionSkip": "דילוג",
   "agentQuestionSkippedLabel": "דולגה",
+  "agentQuestionTimedOutLabel": "הזמן תם",
+  "agentQuestionTimeLeft": "הזמן שנותר למענה",
   "agentQuestionFreeformOptionHint": "תארו במילים שלכם…",
   "reviewRequested": "התבקשה סקירה",
   "connectGitHubHint": "היכנסו ל-GitHub או הוסיפו אסימון גישה תחת הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} סומן כלא נצפה",
   "prLineChangesSemantics": "שורות שנוספו: {additions}, שורות שהוסרו: {deletions}",
   "closeTabNamed": "סגירת {tab}",
-  "threadCommentCount": "{count, plural, =1{תגובה אחת} other{{count} תגובות}}"
+  "threadCommentCount": "{count, plural, =1{תגובה אחת} other{{count} תגובות}}",
+  "notificationAgentAwaitingInput": "סוכן ממתין לך",
+  "notifyAgentAwaitingInput": "כשסוכן צריך את האישור שלך, תשובה או פרטי גישה תקינים",
+  "notificationAgentNeedsApproval": "{agent} צריך את האישור שלך",
+  "notificationAgentNeedsApprovalUnnamed": "סוכן צריך את האישור שלך",
+  "notificationAgentAskedQuestion": "ל־{agent} יש שאלה",
+  "notificationAgentAskedQuestionUnnamed": "לסוכן יש שאלה",
+  "notificationAgentBlockedOnCredential": "{agent} חסום בגלל פרטי גישה",
+  "notificationAgentBlockedOnCredentialUnnamed": "סוכן חסום בגלל פרטי גישה"
 }

@@ -12175,6 +12175,18 @@ abstract class AppLocalizations {
   /// **'Skipped'**
   String get agentQuestionSkippedLabel;
 
+  /// No description provided for @agentQuestionTimedOutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out'**
+  String get agentQuestionTimedOutLabel;
+
+  /// No description provided for @agentQuestionTimeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Time left to answer'**
+  String get agentQuestionTimeLeft;
+
   /// No description provided for @agentQuestionFreeformOptionHint.
   ///
   /// In en, this message translates to:
@@ -25759,6 +25771,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
   String threadCommentCount(int count);
+
+  /// No description provided for @notificationAgentAwaitingInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent waiting on you'**
+  String get notificationAgentAwaitingInput;
+
+  /// No description provided for @notifyAgentAwaitingInput.
+  ///
+  /// In en, this message translates to:
+  /// **'When an agent needs your approval, an answer or a working credential'**
+  String get notifyAgentAwaitingInput;
+
+  /// No description provided for @notificationAgentNeedsApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} needs your approval'**
+  String notificationAgentNeedsApproval(String agent);
+
+  /// No description provided for @notificationAgentNeedsApprovalUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'An agent needs your approval'**
+  String get notificationAgentNeedsApprovalUnnamed;
+
+  /// No description provided for @notificationAgentAskedQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} has a question'**
+  String notificationAgentAskedQuestion(String agent);
+
+  /// No description provided for @notificationAgentAskedQuestionUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'An agent has a question'**
+  String get notificationAgentAskedQuestionUnnamed;
+
+  /// No description provided for @notificationAgentBlockedOnCredential.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is blocked on a credential'**
+  String notificationAgentBlockedOnCredential(String agent);
+
+  /// No description provided for @notificationAgentBlockedOnCredentialUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'An agent is blocked on a credential'**
+  String get notificationAgentBlockedOnCredentialUnnamed;
 }
 
 class _AppLocalizationsDelegate

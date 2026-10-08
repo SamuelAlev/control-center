@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Întrebarea {index} din {count}",
   "agentQuestionSkip": "Omite",
   "agentQuestionSkippedLabel": "Omisă",
+  "agentQuestionTimedOutLabel": "Timpul a expirat",
+  "agentQuestionTimeLeft": "Timp rămas pentru răspuns",
   "agentQuestionFreeformOptionHint": "Descrie în cuvintele tale…",
   "reviewRequested": "Revizuire solicitată",
   "connectGitHubHint": "Autentifică-te pe GitHub sau adaugă un token în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} marcat ca nevăzut",
   "prLineChangesSemantics": "Linii adăugate: {additions}, linii eliminate: {deletions}",
   "closeTabNamed": "Închide {tab}",
-  "threadCommentCount": "{count, plural, one{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}"
+  "threadCommentCount": "{count, plural, one{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
+  "notificationAgentAwaitingInput": "Un agent te așteaptă",
+  "notifyAgentAwaitingInput": "Când un agent are nevoie de aprobarea ta, de un răspuns sau de credențiale valide",
+  "notificationAgentNeedsApproval": "{agent} are nevoie de aprobarea ta",
+  "notificationAgentNeedsApprovalUnnamed": "Un agent are nevoie de aprobarea ta",
+  "notificationAgentAskedQuestion": "{agent} are o întrebare",
+  "notificationAgentAskedQuestionUnnamed": "Un agent are o întrebare",
+  "notificationAgentBlockedOnCredential": "{agent} este blocat de credențiale",
+  "notificationAgentBlockedOnCredentialUnnamed": "Un agent este blocat de credențiale"
 }

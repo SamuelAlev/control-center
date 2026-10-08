@@ -1,8 +1,8 @@
 ---
 title: 領域事件
-description: 完整列出全部 53 個領域事件、它們的承載內容，以及消費它們的伺服器端訂閱者。
+description: 完整列出全部 54 個領域事件、它們的承載內容，以及消費它們的伺服器端訂閱者。
 slug: zh-TW/手冊/參考/領域事件
-sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
+sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
 ---
 
 ## 事件匯流排
@@ -13,7 +13,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 | 指標                                                        | 數量                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| 具體的事件類別                                              | 53                                          |
+| 具體的事件類別                                              | 54                                          |
 | 原始碼檔案（`packages/cc_domain/lib/core/domain/events/`）  | 14（加上 `domain_event_bus.dart`）          |
 | 從未直接發佈的抽象基底                                      | 1（`TaskLifecycleEvent`，一個密封階層）     |
 
@@ -25,6 +25,7 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 建立工作區                                              |
 | `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 代理完成一次執行（成功或失敗）                          |
+| `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 代理開始等待人員處理：一項核准、一個 `ask_user` 問題，或一次因憑證而遭擱置的執行（`kind` 為 `approval`、`question` 或 `credential`） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 註冊儲存庫；觸發背景程式碼索引                          |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 安裝或更新技能，並附帶其供應鏈掃描判定          |
 
@@ -183,8 +184,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent`——在操作中代理的引導通道注入一則平實的提示        |
 | `StaleReviewWatcher`                | `PrHeadChanged`——只有在被取代的提交已有完成的審查時，才發佈 `ReviewBecameStale`                     |
 | `GitHubPrConversationBridge`        | `AgentRunCompleted`——對外的 PR 對話回覆                                                              |
-| `NotificationFeedRecorder`          | 下列二十一個通知類事件                                                                               |
-| `RemoteEventForwarder`              | 那二十一個，再加上 `TicketReassigned` 與每個 `TaskLifecycleEvent`。三個成員資格事件只會使其每個工作區的成員資格快取失效；它們不會以訊框轉送 |
+| `NotificationFeedRecorder`          | 下列二十二個通知類事件                                                                               |
+| `RemoteEventForwarder`              | 那二十二個，再加上 `TicketReassigned` 與每個 `TaskLifecycleEvent`。三個成員資格事件只會使其每個工作區的成員資格快取失效；它們不會以訊框轉送 |
 | `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`——捨棄該使用者已附加的工作區訂閱；socket 保持開啟                            |
 
 `TicketAssigned` 是稽核與通知訊號，也是管線觸發器。指派給代理會記錄擁有權，但不會啟動任何執行——沒有工單派送器。指派給團隊（已設定 `assignedTeamId`）是例外：`TeamRoutingService` 會派送團隊領導者。
@@ -195,12 +196,13 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 
 在伺服器上，`NotificationFeedRecorder` 與 `RemoteEventForwarder` 把這些事件轉成 `notifications/*` 線上訊框（`notification_wire.dart`）。在用戶端，`RpcNotificationMapper` → `mapNotificationFrame` 會把訊框轉成 `AppNotification`。
 
-通知類別正好有**十六個**。有幾個事件會對應到多個線上方法，因為訊框承載的是轉折（失敗還是已恢復），而類別承載的是問題（「CI 現在怎麼了？」）。
+通知類別正好有**十七個**。有幾個事件會對應到多個線上方法，因為訊框承載的是轉折（失敗還是已恢復），而類別承載的是問題（「CI 現在怎麼了？」）。
 
 | 類別                   | 來源事件                  | 線上方法                                                                 |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`（提及你）                                  |
 | `agentRunCompleted`    | `MessageReceived`         | `notifications/message_received`（`is_agent_message`，未提及你）              |
+| `agentAwaitingInput`   | `AgentAwaitingInput`      | `notifications/agent_awaiting_input`                                   |
 | `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
 | `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
 | `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
@@ -222,6 +224,8 @@ sourceHash: 74f82a7a34e04a52a158fea240bf3973666d37c0
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
 機台的接管訊框不會送回給接下方向盤的人，釋出則不受篩選（事件不會記錄是誰放手的），而且只有 `backendFailure` 關閉會產生 `rig_closed` 訊框——其他原因不是被要求的，就是已由回收訊框涵蓋。
+
+`AgentAwaitingInput` 由 `AgentAwaitingInputPublisher` 發佈：它會監看核准登錄與憑證封鎖登錄中的新項目，並由 `AgentQuestionService` 告知每個 `ask_user` 問題。一次等待就是一個事件；等待結束時不會發佈任何事件。
 
 五個自己撰寫的 PR 類別都攜帶 `forUserId`，因此它們會送達作者，而不是工作區中的每個人。
 

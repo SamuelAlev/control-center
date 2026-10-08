@@ -53,10 +53,13 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
         // what they've missed below the fold.
         _set(() => _newWhileAway += 1);
       }
+    } else {
+      // This landed during the nap the reader just came back from. They are
+      // sitting on the live edge looking at it, so it is not "missed below the
+      // fold" and the cursor (with the bell) catches up — but the frontier
+      // stays put, so the divider still marks it as new.
+      _stampCursor();
     }
-    // Else: this landed during the nap the reader just came back from. They are
-    // sitting on the live edge looking at it, so it is not "missed below the
-    // fold" — but the frontier stays put, so the divider still marks it as new.
   }
 
   void _onScroll() {
@@ -157,6 +160,8 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
   /// Stamp the user's read cursor for this space (debounced) — called when
   /// pinned to the live edge so messages read down to the bottom are marked
   /// seen. Debounced so a burst of streaming flushes coalesces into one write.
+  /// Carries the conversation, so the host also marks its message
+  /// notifications read.
   void _stampCursor() {
     final newest = _lastNewestId;
     if (newest == null || newest == _lastStampedNewestId) {
@@ -178,6 +183,7 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
             ref.requireWorkspaceId(),
             widget.spaceId,
             ref.read(currentUserIdProvider) ?? '',
+            conversationId: widget.conversationId,
           );
     });
   }

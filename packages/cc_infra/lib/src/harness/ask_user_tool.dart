@@ -120,6 +120,8 @@ class AskUserTool extends HarnessTool {
         askedByAgentId: _askedByAgentId,
         askedByName: _askedByName,
       ),
+      // A stopped run leaves nobody to read the answer; close the form.
+      abandoned: context.cancel?.whenCancelled,
     );
 
     final outcome = AskUserOutcome.fromAnswer(answer);

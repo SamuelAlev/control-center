@@ -7278,11 +7278,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final spaceId = ctx.args['space_id'] as String;
           final conversationId = ctx.args['conversation_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          // Same narrowing as `dispatch.sendAndDispatch`: attachments are the
+          // one client-authored metadata key.
+          final metadata = userMessageMetadataFromWire(ctx.args['metadata']);
           final result = await dispatch.enqueueSteering(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
             conversationId: conversationId,
             content: ctx.args['message'] as String,
+            attachments: [
+              for (final a in (metadata?['attachments'] as List?) ?? const [])
+                (a as Map).cast<String, dynamic>(),
+            ],
           );
           if (result == null) {
             // No run is live: nothing to steer. The client treats this as
@@ -7694,6 +7701,19 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           spaceId,
           ctx.userId,
         );
+        // Reading a conversation reads what the bell said about it. Only the
+        // caller's own per-item states are written, and the match is scoped
+        // to this workspace's feed and the space just verified, so a foreign
+        // conversation id simply matches nothing.
+        final conversationId = ctx.args['conversation_id'];
+        if (conversationId is String && conversationId.isNotEmpty) {
+          await notificationFeedRepository.markConversationMessagesRead(
+            ctx.workspaceId!,
+            ctx.userId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+          );
+        }
         return {'ok': true};
       },
     ),
@@ -11347,10 +11367,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 oauthBroker: oauthBroker,
               );
         return {
-          'providers': await fetch(
-            accounts,
-            force: ctx.args['force'] == true,
-          ),
+          'providers': await fetch(accounts, force: ctx.args['force'] == true),
         };
       },
     ),

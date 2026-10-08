@@ -145,6 +145,7 @@ import 'package:cc_persistence/repositories/team_activity_repository_impl.dart';
 import 'package:cc_persistence/repositories/webhook_delivery_repository_impl.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/activity_log_persister.dart';
+import 'package:cc_server_core/src/agent_awaiting_input_publisher.dart';
 import 'package:cc_server_core/src/backup_archive.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
@@ -712,9 +713,14 @@ Future<CcServer> runCcServer({
   //
   // The timeout is generous but finite: a question nobody answers must end as
   // a tool error the agent can act on, not as a run pinned forever.
+  //
+  // Each question also tells the operator an agent is waiting on them (the
+  // publisher is built below, once the agent roster exists to name the asker).
+  late final AgentAwaitingInputPublisher agentAwaitingInput;
   final agentQuestions = AgentQuestionService(
     messagingRepository,
     timeout: const Duration(minutes: 30),
+    onAsked: (request) => agentAwaitingInput.questionAsked(request),
   );
 
   // Content-addressed storage for the screenshots `browser_use` /
@@ -784,6 +790,10 @@ Future<CcServer> runCcServer({
   );
 
   final agentRepository = DaoAgentRepository(workspaceDbs);
+  agentAwaitingInput = AgentAwaitingInputPublisher(
+    eventBus: eventBus,
+    agents: agentRepository,
+  );
   final agentRunLogRepository = DaoAgentRunLogRepository(workspaceDbs);
   // Per-run activity timelines (subagent runs above all). Kept in its own table
   // so the run-log list watches never ship the fat segment payload.
@@ -1447,6 +1457,12 @@ Future<CcServer> runCcServer({
   final credentialGate = credentialGateRegistry == null
       ? null
       : RemoteRunCredentialGate(credentialGateRegistry);
+  // Every pending approval and parked run also notifies the operator, so an
+  // agent waiting on them is not discovered only by opening its space.
+  agentAwaitingInput.watch(
+    confirmations: pendingConfirmationRegistry,
+    credentialBlocks: credentialGateRegistry,
+  );
   // The sandbox exec-grant prompt is asked BEFORE a run's Seatbelt profile is
   // written and HOLDS the dispatch until it resolves, so it gets its own,
   // far shorter deadline over the same registry: an hour of a parked run slot
@@ -1657,12 +1673,7 @@ Future<CcServer> runCcServer({
         }) => githubClientForOwner(
           workspaceId,
           owner,
-        ).content.getLatestCommitSha(
-          owner,
-          repo,
-          path,
-          branch: branch,
-        ),
+        ).content.getLatestCommitSha(owner, repo, path, branch: branch),
     defaultBranch:
         ({
           required String workspaceId,
@@ -2502,8 +2513,9 @@ Future<CcServer> runCcServer({
     // per-agent overlay's `.agents` symlink resolves the current skill set.
     filesystemPort: workspaceFilesystem,
     // Serialize same-working-directory dispatches (path-lock queue →
-    // `waiting_local_directory`); per-conversation worktree isolation means
-    // contention is rare, so this acquires instantly in the common case.
+    // `waiting_local_directory`). The overlay cwd is per agent and
+    // conversation, so only a second run of one agent in one conversation
+    // waits; conversations in a space run in parallel.
     pathLock: PathLockManager(),
     eventBus: eventBus,
     // Per-adapter launch argv + env from the install-wide settings store.
@@ -2819,6 +2831,7 @@ Future<CcServer> runCcServer({
     sessionsForConversation: agentDispatch.sessionsForConversation,
     // Queue edits and run-start replay only need the queued cards.
     queuedSteering: messagingRepository.queuedSteeringMessages,
+    resolveAttachmentPaths: messagingService.withAttachmentPaths,
   );
   messagingService.steeringQueueService = steeringQueueService;
   agentDispatch.onSessionHarnessStarted =
@@ -4074,14 +4087,12 @@ Future<CcServer> runCcServer({
           if (parts.length < 2) {
             return const [];
           }
-          final files = await githubClientForOwner(
-            workspaceId,
-            parts.first,
-          ).pr.listPullRequestFiles(
-            parts.first,
-            parts.sublist(1).join('/'),
-            prNumber,
-          );
+          final files = await githubClientForOwner(workspaceId, parts.first).pr
+              .listPullRequestFiles(
+                parts.first,
+                parts.sublist(1).join('/'),
+                prNumber,
+              );
           return [for (final f in files) f.filename];
         },
   );
@@ -4090,11 +4101,10 @@ Future<CcServer> runCcServer({
     // pressed it, and the opt-in auto-publish at the end of an agent
     // orchestration passes no user and stays on the workspace's background
     // identity. Both follow the workspace's GitHub identity mode.
-    githubPrClientFor:
-        (actingUserId, {required workspaceId, required owner}) =>
-            actingUserId == null
-            ? githubClientForOwner(workspaceId, owner).pr
-            : githubClientForActor(actingUserId, workspaceId: workspaceId).pr,
+    githubPrClientFor: (actingUserId, {required workspaceId, required owner}) =>
+        actingUserId == null
+        ? githubClientForOwner(workspaceId, owner).pr
+        : githubClientForActor(actingUserId, workspaceId: workspaceId).pr,
     messaging: messagingRepository,
     reviewSpaces: reviewSpaceRepository,
   );
@@ -4281,11 +4291,7 @@ Future<CcServer> runCcServer({
       throw const NotFoundException('Pull request not found');
     }
     final pr = pullRequestFromGitHub(gh, repoFullName: linked.fullName);
-    final files = await github.pr.listPullRequestFiles(
-      owner,
-      repo,
-      prNumber,
-    );
+    final files = await github.pr.listPullRequestFiles(owner, repo, prNumber);
     final changedFiles = files.map((f) => f.filename).toList();
     // Canonical key = the real GitHub node id (migration 46). Prime the cache so
     // the read ops resolve it without a second fetch.
@@ -5846,11 +5852,7 @@ Future<CcServer> runCcServer({
               final gh = await githubClientForOwner(
                 workspaceId,
                 owner,
-              ).pr.getPullRequest(
-                owner,
-                repo,
-                number,
-              );
+              ).pr.getPullRequest(owner, repo, number);
               if (gh == null) {
                 return null;
               }
@@ -5910,10 +5912,9 @@ Future<CcServer> runCcServer({
               if (!await hasGitHubForActor(actingUserId)) {
                 return null;
               }
-              return githubClientForActor(actingUserId).graphql.getTeamProfile(
-                organization: organization,
-                slug: slug,
-              );
+              return githubClientForActor(
+                actingUserId,
+              ).graphql.getTeamProfile(organization: organization, slug: slug);
             },
             // The caller's credential under the bound workspace's identity
             // mode: a workspace set to "personal access token only" reads its
@@ -7558,6 +7559,7 @@ Future<CcServer> runCcServer({
     .._worktreeGcListener = worktreeGcListener
     .._rigEventListener = rigEventListener
     .._notificationFeedRecorder = notificationFeedRecorder
+    .._agentAwaitingInput = agentAwaitingInput
     .._codeGraphWatch = codeGraphWatch
     .._lspSupervisor = lspSupervisor
     .._mcpClientService = mcpClientService

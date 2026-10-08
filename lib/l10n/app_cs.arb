@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Otázka {index} z {count}",
   "agentQuestionSkip": "Přeskočit",
   "agentQuestionSkippedLabel": "Přeskočeno",
+  "agentQuestionTimedOutLabel": "Čas vypršel",
+  "agentQuestionTimeLeft": "Zbývající čas na odpověď",
   "agentQuestionFreeformOptionHint": "Popište to vlastními slovy…",
   "reviewRequested": "Vyžádána kontrola",
   "connectGitHubHint": "Přihlaste se na GitHub nebo přidejte token v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} označeno jako nezobrazené",
   "prLineChangesSemantics": "Přidané řádky: {additions}, odebrané řádky: {deletions}",
   "closeTabNamed": "Zavřít {tab}",
-  "threadCommentCount": "{count, plural, one{1 komentář} few{{count} komentáře} many{{count} komentáře} other{{count} komentářů}}"
+  "threadCommentCount": "{count, plural, one{1 komentář} few{{count} komentáře} many{{count} komentáře} other{{count} komentářů}}",
+  "notificationAgentAwaitingInput": "Agent na vás čeká",
+  "notifyAgentAwaitingInput": "Když agent potřebuje vaše schválení, odpověď nebo funkční přihlašovací údaje",
+  "notificationAgentNeedsApproval": "{agent} potřebuje vaše schválení",
+  "notificationAgentNeedsApprovalUnnamed": "Agent potřebuje vaše schválení",
+  "notificationAgentAskedQuestion": "{agent} má otázku",
+  "notificationAgentAskedQuestionUnnamed": "Agent má otázku",
+  "notificationAgentBlockedOnCredential": "{agent} je zablokován kvůli přihlašovacím údajům",
+  "notificationAgentBlockedOnCredentialUnnamed": "Agent je zablokován kvůli přihlašovacím údajům"
 }

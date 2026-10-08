@@ -7083,6 +7083,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'تم التخطي';
 
   @override
+  String get agentQuestionTimedOutLabel => 'انتهت المهلة';
+
+  @override
+  String get agentQuestionTimeLeft => 'الوقت المتبقي للإجابة';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'صِف الأمر بكلماتك…';
 
   @override
@@ -15479,4 +15485,36 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'وكيل بانتظارك';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'عندما يحتاج وكيل إلى موافقتك أو إجابتك أو بيانات اعتماد صالحة';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent يحتاج إلى موافقتك';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed => 'وكيل يحتاج إلى موافقتك';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return 'لدى $agent سؤال';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'لدى وكيل سؤال';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent متوقف بسبب بيانات الاعتماد';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'وكيل متوقف بسبب بيانات الاعتماد';
 }

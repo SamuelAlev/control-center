@@ -2,7 +2,7 @@
 title: Bildirimleri yapılandırma
 description: Kategorileri açıp kapatın, sessiz saatleri ve bir ses belirleyin; hangi bildirimlerin size nerede ulaştığını öğrenin.
 slug: tr-TR/kilavuz/nasil-yapilir/bildirimler
-sourceHash: a37bc58988f3c37b7360bb046cee2d3bd619290f
+sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
 ---
 
 Bu kılavuz, bildirimleri nasıl yapılandıracağınızı ve her ayarın gerçekte neyi
@@ -24,11 +24,12 @@ istemcisinde hiçbir bildirim yüzeyi yoktur.
 
 1. **Ayarlar → Siz → Bildirimler** bölümüne gidin
 2. **Bildirimleri etkinleştir** seçeneğini açık bırakın
-3. İstediğiniz kategorileri açıp kapatın. Tam olarak on altı kategori vardır:
+3. İstediğiniz kategorileri açıp kapatın. Tam olarak on yedi kategori vardır:
 
 | Kategori                  | Ne zaman tetiklenir                                                        |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Ajan tamamlandı           | Başlattığınız bir çalıştırmada bir ajan yanıt verdi ya da çalıştırma başarısız oldu |
+| Bir ajan sizi bekliyor    | Bir ajanın onayınıza ihtiyacı var, size bir soru sordu ya da bir kimlik bilgisi yüzünden bekletiliyor |
 | PR yayınlandı             | Bir ajan bir PR yayınladı                                                  |
 | PR birleştirildi          | Bir PR birleştirildi                                                       |
 | Yeni mesajlar             | Biri bir alanda sizden bahsetti                                            |
@@ -47,6 +48,12 @@ istemcisinde hiçbir bildirim yüzeyi yoktur.
 
 Bu liste dışındaki hiçbir şey için bildirim gönderilemez veya filtrelenemez —
 “diğer her şey” diye bir kategori yoktur.
+
+**Bir ajan sizi bekliyor** her bekleme için bir kez, bekleme başladığında
+tetiklenir: bekleyen bir onay (sandbox çalıştırma izinleri ve Claude Code araç
+onayları dahil), bir `ask_user` sorusu ya da kimlik bilgisi kendisine hizmet
+veremediği için bekletilen bir çalıştırma. Bildirim, yanıt vereceğiniz alanı
+açar ve o alana zaten bakıyorsanız sessiz kalır.
 
 Bu tercihler kullanıcınızı cihazlar arasında izler, böylece bir telefon ile bir
 dizüstü uyum içinde kalır. Ses düzeyi bilinçli istisnadır ve cihaz başına kalır.

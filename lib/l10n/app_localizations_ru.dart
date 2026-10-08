@@ -7088,6 +7088,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get agentQuestionSkippedLabel => 'Пропущено';
 
   @override
+  String get agentQuestionTimedOutLabel => 'Время истекло';
+
+  @override
+  String get agentQuestionTimeLeft => 'Оставшееся время на ответ';
+
+  @override
   String get agentQuestionFreeformOptionHint => 'Опишите своими словами…';
 
   @override
@@ -15450,4 +15456,37 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationAgentAwaitingInput => 'Агент ждёт вас';
+
+  @override
+  String get notifyAgentAwaitingInput =>
+      'Когда агенту нужно ваше одобрение, ответ или рабочие учётные данные';
+
+  @override
+  String notificationAgentNeedsApproval(String agent) {
+    return '$agent ждёт вашего одобрения';
+  }
+
+  @override
+  String get notificationAgentNeedsApprovalUnnamed =>
+      'Агент ждёт вашего одобрения';
+
+  @override
+  String notificationAgentAskedQuestion(String agent) {
+    return 'У $agent есть вопрос';
+  }
+
+  @override
+  String get notificationAgentAskedQuestionUnnamed => 'У агента есть вопрос';
+
+  @override
+  String notificationAgentBlockedOnCredential(String agent) {
+    return '$agent остановлен из-за учётных данных';
+  }
+
+  @override
+  String get notificationAgentBlockedOnCredentialUnnamed =>
+      'Агент остановлен из-за учётных данных';
 }

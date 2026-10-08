@@ -3948,6 +3948,8 @@
   "agentQuestionProgress": "Soru {index} / {count}",
   "agentQuestionSkip": "Atla",
   "agentQuestionSkippedLabel": "Atlandı",
+  "agentQuestionTimedOutLabel": "Süre doldu",
+  "agentQuestionTimeLeft": "Yanıtlamak için kalan süre",
   "agentQuestionFreeformOptionHint": "Kendi sözlerinizle anlatın…",
   "reviewRequested": "İnceleme istendi",
   "connectGitHubHint": "GitHub’a giriş yapın veya Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümüne bir token ekleyin",
@@ -8828,5 +8830,13 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} görülmedi olarak işaretlendi",
   "prLineChangesSemantics": "Eklenen satırlar: {additions}, kaldırılan satırlar: {deletions}",
   "closeTabNamed": "Kapat: {tab}",
-  "threadCommentCount": "{count, plural, other{{count} yorum}}"
+  "threadCommentCount": "{count, plural, other{{count} yorum}}",
+  "notificationAgentAwaitingInput": "Bir ajan sizi bekliyor",
+  "notifyAgentAwaitingInput": "Bir ajanın onayınıza, yanıtınıza veya çalışan bir kimlik bilgisine ihtiyacı olduğunda",
+  "notificationAgentNeedsApproval": "{agent} onayınızı bekliyor",
+  "notificationAgentNeedsApprovalUnnamed": "Bir ajan onayınızı bekliyor",
+  "notificationAgentAskedQuestion": "{agent} bir soru sordu",
+  "notificationAgentAskedQuestionUnnamed": "Bir ajan bir soru sordu",
+  "notificationAgentBlockedOnCredential": "{agent} kimlik bilgisi nedeniyle durdu",
+  "notificationAgentBlockedOnCredentialUnnamed": "Bir ajan kimlik bilgisi nedeniyle durdu"
 }
