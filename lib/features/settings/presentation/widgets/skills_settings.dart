@@ -387,7 +387,8 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
         for (final agentId in _attachedAgentIds) {
           final agent = await repo.getById(widget.workspaceId, agentId);
           if (agent != null) {
-            final currentSkills = agent.skills.toList();
+            // AgentSkills.toList() is unmodifiable; copy before editing.
+            final currentSkills = [...agent.skills.toList()];
             if (_selectedSkill != null && _selectedSkill != name) {
               currentSkills.remove(_selectedSkill);
             }
