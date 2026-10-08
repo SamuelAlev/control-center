@@ -502,6 +502,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # GTK headers for the native-asset build. Background: the SDK download
+      # and pub get need none of it.
+      - name: Install system packages (GTK)
+        id: system-packages
+        background: true
+        uses: $/.github/actions/linux-desktop-deps
+
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
@@ -509,6 +516,10 @@ jobs:
         id: ns
         shell: bash
         run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      # `dart run tool/...` builds native assets.
+      - name: Wait for system packages
+        wait: [system-packages]
 
       - name: Stamp build identity
         run: |
