@@ -1,6 +1,7 @@
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -115,8 +116,22 @@ class CcFluidHover extends StatefulWidget {
       _CcFluidHoverItemScope.maybeOf(context) != null;
 
   /// Whether the pointer is currently inside the surrounding hover group.
+  ///
+  /// A snapshot: it registers no dependency on the pointer entering or
+  /// leaving (that would rebuild every item of the group on each crossing).
+  /// Listen to [pointerInsideOf] to react to it.
   static bool isPointerInside(BuildContext context) =>
-      _CcFluidHoverItemScope.maybeOf(context)?.pointerInside ?? false;
+      pointerInsideOf(context)?.value ?? false;
+
+  /// Whether the pointer is inside the surrounding hover group, as a
+  /// listenable, or null outside an item scope.
+  ///
+  /// The scope itself only notifies its item when that item's active state
+  /// changes, so the group's enter/exit does not rebuild every row; a reader
+  /// that needs the crossing (see [CcTappable]) listens to this instead and
+  /// repaints only when its own resolved state changes.
+  static ValueListenable<bool>? pointerInsideOf(BuildContext context) =>
+      _CcFluidHoverItemScope.maybeOf(context)?.pointerInside;
 
   /// Whether the item containing [context] is the pointer's nearest target.
   static bool isItemActive(BuildContext context) =>
@@ -137,8 +152,26 @@ class CcFluidHover extends StatefulWidget {
 
 class _CcFluidHoverState extends State<CcFluidHover> {
   final GlobalKey _containerKey = GlobalKey();
+
+  /// Wrapper keys by item identity: the child's own key when it has one, its
+  /// index otherwise. Keyed by identity rather than position so a row moving
+  /// (a space jumping to the top of a recency-sorted list) carries its
+  /// element, and with it its state, instead of every row from 0 to its old
+  /// index remounting.
+  Map<Object, GlobalKey> _keysById = {};
+
+  /// This build's wrapper keys in item order — what [_pick] measures.
   List<GlobalKey> _itemKeys = const [];
+
+  /// The item identities of the last build, to notice a reorder.
+  List<Object> _itemIds = const [];
+
   final List<ScrollPosition> _ancestorScrolls = [];
+
+  /// Item rects relative to the container, measured once and reused by every
+  /// pointer move until layout or scrolling can have moved an item. Null
+  /// when stale.
+  List<Rect?>? _rectCache;
 
   int? _activeIndex;
   Rect? _displayRect;
@@ -155,23 +188,32 @@ class _CcFluidHoverState extends State<CcFluidHover> {
   /// group to follow it drops the animation off the refresh rate.
   final ValueNotifier<_HoverHighlight?> _highlight = ValueNotifier(null);
 
-  @override
-  void initState() {
-    super.initState();
-    _syncKeys();
-  }
+  /// [_pointerInside] as the items see it. Published together with the
+  /// active-index change (not on the raw enter event), so a row's own hover
+  /// and the group's choice hand over in the same frame.
+  final ValueNotifier<bool> _pointerInsideListenable = ValueNotifier(false);
+
+  /// The rows [CcFluidHover.itemBuilder] returned on the last build that had a
+  /// reason to call it: a new widget or a dependency change. A rebuild of this
+  /// state alone (the active row moved) reuses them, so Flutter skips every
+  /// row whose item scope did not change instead of re-running each builder.
+  List<Widget>? _builtItems;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _builtItems = null;
+    _rectCache = null;
     _bindAncestorScrolls();
   }
 
   @override
   void didUpdateWidget(covariant CcFluidHover oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _builtItems = null;
+    // New items or new geometry: re-measure before the next pick.
+    _rectCache = null;
     if (oldWidget.itemCount != widget.itemCount) {
-      _syncKeys();
       if ((_activeIndex ?? -1) >= widget.itemCount) {
         _setActive(null, null);
       }
@@ -188,6 +230,7 @@ class _CcFluidHoverState extends State<CcFluidHover> {
       SchedulerBinding.instance.cancelFrameCallbackWithId(callbackId);
     }
     _highlight.dispose();
+    _pointerInsideListenable.dispose();
     super.dispose();
   }
 
@@ -234,17 +277,11 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     return true;
   }
 
-  void _syncKeys() {
-    _itemKeys = List<GlobalKey>.generate(
-      widget.itemCount,
-      (index) => index < _itemKeys.length ? _itemKeys[index] : GlobalKey(),
-      growable: false,
-    );
-  }
-
   void _onEnter(PointerEnterEvent event) {
     _pointerInside = true;
     _pointerSession++;
+    // Anything may have moved while the pointer was elsewhere.
+    _rectCache = null;
     _rememberPointer(event.position, event.localPosition);
     _queuePick(event.localPosition);
   }
@@ -272,15 +309,24 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     _lastPosition = local;
   }
 
-  void _onScroll() => _queuePickAfterLayout();
+  void _onScroll() {
+    _rectCache = null;
+    _queuePickAfterLayout();
+  }
 
   /// [SizeChangedLayoutNotification] is dispatched mid-layout. Scheduling the
   /// pick for after the frame keeps the measurement off the layout phase;
   /// a synchronous [setState] here would rebuild while the tree is still
   /// laying out.
+  ///
+  /// Handled here and stopped: an enclosing group gets its own notification
+  /// from its own item notifier whenever this group's resize changes the
+  /// size of that item, which is the only way its rects can move. Letting
+  /// every nested resize bubble made each ancestor group re-pick too.
   bool _onDescendantLayout(SizeChangedLayoutNotification _) {
+    _rectCache = null;
     _queuePickAfterLayout();
-    return false;
+    return true;
   }
 
   void _queuePick(Offset position) {
@@ -346,14 +392,12 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     Rect? nearestRect;
     var closestDistance = double.infinity;
 
-    for (var index = 0; index < widget.itemCount; index++) {
-      final itemBox =
-          _itemKeys[index].currentContext?.findRenderObject() as RenderBox?;
-      if (itemBox == null || !itemBox.hasSize || !itemBox.attached) {
+    final rects = _rectCache ??= _measure(containerBox);
+    for (var index = 0; index < rects.length; index++) {
+      final rect = rects[index];
+      if (rect == null) {
         continue;
       }
-      final origin = itemBox.localToGlobal(Offset.zero, ancestor: containerBox);
-      final rect = origin & itemBox.size;
       if (widget.isItemBoundary?.call(index) ?? false) {
         if (rect.contains(resolved)) {
           _setActive(null, null);
@@ -386,13 +430,28 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     _setActive(containing ?? nearest, containingRect ?? nearestRect);
   }
 
-  Widget _wrapItem(int index, Widget child) {
+  /// Each item's rect relative to [containerBox], null for one that is not
+  /// laid out (an unbuilt row of a lazy list). Walking every item to the
+  /// container is the expensive part of a pick, so it runs once per layout
+  /// change rather than once per pointer move.
+  List<Rect?> _measure(RenderBox containerBox) {
+    return [
+      for (final key in _itemKeys)
+        if (key.currentContext?.findRenderObject() case final RenderBox box
+            when box.hasSize && box.attached)
+          box.localToGlobal(Offset.zero, ancestor: containerBox) & box.size
+        else
+          null,
+    ];
+  }
+
+  Widget _wrapItem(int index, GlobalKey key, Widget child) {
     // Size changes (a space expanding under the pointer, a sibling collapsing)
     // must retarget the wash. Pointer events do not fire for a layout shift,
     // so the highlight would keep the rectangle it measured before the shift
     // until the cursor moved.
     final keyed = KeyedSubtree(
-      key: _itemKeys[index],
+      key: key,
       child: SizeChangedLayoutNotifier(child: child),
     );
     // Boundary and disabled items are still measured (so a nested group can
@@ -408,7 +467,7 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     }
     return _CcFluidHoverItemScope(
       active: _pointerInside && _activeIndex == index,
-      pointerInside: _pointerInside,
+      pointerInside: _pointerInsideListenable,
       child: keyed,
     );
   }
@@ -417,6 +476,10 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     if (!mounted) {
       return;
     }
+    // Published here, beside the active change, rather than on the raw
+    // enter/exit: the row under a just-entered pointer keeps its own hover
+    // until the group has picked it, so nothing blinks in between.
+    _pointerInsideListenable.value = _pointerInside;
     if (_activeIndex == index && _displayRect == rect) {
       return;
     }
@@ -445,10 +508,36 @@ class _CcFluidHoverState extends State<CcFluidHover> {
 
   @override
   Widget build(BuildContext context) {
-    final items = <Widget>[
+    final nextKeys = <Object, GlobalKey>{};
+    final ids = <Object>[];
+    final orderedKeys = <GlobalKey>[];
+    final items = <Widget>[];
+    final built = _builtItems ??= [
       for (var index = 0; index < widget.itemCount; index++)
-        _wrapItem(index, widget.itemBuilder(context, index)),
+        widget.itemBuilder(context, index),
     ];
+    for (var index = 0; index < widget.itemCount; index++) {
+      final child = built[index];
+      final ownKey = child.key;
+      // A key repeated within the group (or absent) falls back to the slot,
+      // so two wrappers never share one GlobalKey.
+      final Object id = ownKey != null && !nextKeys.containsKey(ownKey)
+          ? ownKey
+          : _IndexSlot(index);
+      final key = nextKeys[id] = _keysById[id] ?? GlobalKey();
+      ids.add(id);
+      orderedKeys.add(key);
+      items.add(_wrapItem(index, key, child));
+    }
+    // Keys of items no longer built are dropped with this map.
+    _keysById = nextKeys;
+    _itemKeys = orderedKeys;
+    if (!listEquals(ids, _itemIds)) {
+      _itemIds = ids;
+      _rectCache = null;
+      // A reorder moves a different row under a still pointer.
+      _queuePickAfterLayout();
+    }
 
     return NotificationListener<SizeChangedLayoutNotification>(
       onNotification: _onDescendantLayout,
@@ -472,10 +561,16 @@ class _CcFluidHoverState extends State<CcFluidHover> {
               ),
               Positioned.fill(
                 child: IgnorePointer(
-                  child: _FluidHoverWash(
-                    highlight: _highlight,
-                    color: widget.highlightColor,
-                    borderRadius: widget.borderRadius,
+                  // Its own layer: the wash travels and fades for
+                  // [CcMotion.fast] on every row change, and without a
+                  // boundary each of those frames repainted the rows under
+                  // it as well.
+                  child: RepaintBoundary(
+                    child: _FluidHoverWash(
+                      highlight: _highlight,
+                      color: widget.highlightColor,
+                      borderRadius: widget.borderRadius,
+                    ),
                   ),
                 ),
               ),
@@ -568,6 +663,20 @@ class _CcRectTween extends Tween<Rect> {
   Rect lerp(double t) => Rect.lerp(begin, end, t)!;
 }
 
+/// The identity of an item that has no key of its own: its position.
+@immutable
+class _IndexSlot {
+  const _IndexSlot(this.index);
+
+  final int index;
+
+  @override
+  bool operator ==(Object other) => other is _IndexSlot && other.index == index;
+
+  @override
+  int get hashCode => index.hashCode;
+}
+
 class _CcFluidHoverItemScope extends InheritedWidget {
   const _CcFluidHoverItemScope({
     required this.active,
@@ -576,14 +685,19 @@ class _CcFluidHoverItemScope extends InheritedWidget {
   });
 
   final bool active;
-  final bool pointerInside;
+
+  /// The group's pointer-inside flag. A stable listenable rather than a
+  /// value, so the pointer crossing the group edge notifies no item: only
+  /// [active] flipping does, and that is the two rows trading the wash.
+  final ValueListenable<bool> pointerInside;
 
   static _CcFluidHoverItemScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_CcFluidHoverItemScope>();
 
   @override
   bool updateShouldNotify(_CcFluidHoverItemScope oldWidget) =>
-      active != oldWidget.active || pointerInside != oldWidget.pointerInside;
+      active != oldWidget.active ||
+      !identical(pointerInside, oldWidget.pointerInside);
 }
 
 class _CcFluidHoverConsumedScope extends InheritedWidget {

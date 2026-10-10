@@ -8051,6 +8051,53 @@ class AppLocalizationsEs extends AppLocalizations {
       'Todavía no hay transcripción para resumir.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Genéralas a partir de la transcripción o escribe las tuyas.';
+
+  @override
+  String get meetingNotesGenerate => 'Generar notas';
+
+  @override
+  String get meetingNotesWriteOwn => 'Escribir las tuyas';
+
+  @override
+  String get meetingNothingTranscribed => 'No se transcribió nada.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'No hay transcripción que resumir, pero puedes seguir tomando tus propias notas.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Participantes';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'El tiempo de habla de cada participante aparece cuando hay una transcripción.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count más';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share del tiempo de habla, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Todas las tareas están completadas.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Ver todas ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notas copiadas al portapapeles en Markdown.';
 
@@ -15389,6 +15436,52 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Un agente está bloqueado por una credencial';
+
+  @override
+  String get killTerminal => 'Cerrar terminal';
+
+  @override
+  String get stopAgentCommand => 'Detener comando';
+
+  @override
+  String get agentCommandStopping => 'Deteniendo…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Comando del agente $command, en ejecución desde hace $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Se perdió la conexión con el servidor';
+
+  @override
+  String get serverLostBody =>
+      'Control Center sigue intentando reconectarse en segundo plano. Vuelve a intentarlo ahora o ve a la pantalla de inicio de sesión para elegir un servidor.';
+
+  @override
+  String get serverLostRetrying => 'Reconectando…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Próximo intento en $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Intentar reconectar';
+
+  @override
+  String get serverLostSignIn => 'Ir al inicio de sesión';
+
+  @override
+  String get serverEndedTitle => 'No se puede reconectar con el servidor';
+
+  @override
+  String get shutdownSubtitleServer => 'El servidor se está deteniendo';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

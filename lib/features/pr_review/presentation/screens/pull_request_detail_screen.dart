@@ -67,6 +67,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+part 'pull_request_detail_default_tabs.dart';
+
 /// Pull request detail screen.
 class PullRequestDetailScreen extends ConsumerStatefulWidget {
   /// PullRequestDetailScreen({super.key,.
@@ -264,7 +266,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     if (tab.kind != PrTabKinds.codeServer) {
       return null;
     }
-    final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+    final spaceId = ref.read(prSpaceProvider(PrSpaceKey.of(widget.pr))).value;
     if (spaceId == null) {
       return null;
     }
@@ -314,19 +316,26 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   String get _layoutKey =>
       '${widget.prRef.repoFullName}#${widget.prRef.number}';
 
-  /// The default PR tabs, in display order.
-  static const List<String> _kinds = [
-    PrTabKinds.overview,
-    PrTabKinds.diff,
-    PrTabKinds.sourceControl,
-    PrTabKinds.chat,
-    PrTabKinds.actions,
-  ];
+  /// True when [initState] restored this PR's layout from the in-process
+  /// memo, so the post-frame restore has nothing left to read.
+  bool _restoredFromMemo = false;
 
   @override
   void initState() {
     super.initState();
-    _layout = _seedLayout();
+    _persistence = prDetailLayoutPersistence(ref);
+    _workspaceId = ref.read(activeWorkspaceIdProvider);
+    // A revisited PR's layout is already in the memo (this page wrote it on
+    // dispose). Restoring it HERE builds the first frame on it; restoring it
+    // a frame later swapped in new tab instances and remounted every body —
+    // the Overview flashed its markdown stand-in right after opening.
+    final workspaceId = _workspaceId;
+    final warm = workspaceId == null
+        ? null
+        : _persistence!.peek(workspaceId: workspaceId, cacheKey: _layoutKey);
+    final memoLayout = warm?.layout;
+    _restoredFromMemo = warm != null;
+    _layout = memoLayout ?? _seedLayout();
     _layout.addListener(_onLayoutChanged);
     _windowPool.attach(_layout);
     _tabUrl = EditorTabUrlTracker(
@@ -502,22 +511,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
   }
 
-  static EditorLayoutController _seedLayout() {
-    final group = EditorTabGroupController();
-    for (final kind in _kinds) {
-      group.openTab(
-        EditorTab(
-          kind: kind,
-          label: _fallbackLabel(kind),
-          icon: PrTabKinds.iconFor(kind),
-          dedupKey: kind,
-        ),
-      );
-    }
-    group.selectedIndex = 0;
-    return EditorLayoutController.single(controller: group);
-  }
-
   @override
   void dispose() {
     _persistNow();
@@ -608,17 +601,20 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     if (persistence == null || workspaceId == null) {
       return;
     }
-    final restored = await persistence.restore(
-      workspaceId: workspaceId,
-      cacheKey: _layoutKey,
-    );
+    final restored = _restoredFromMemo
+        ? null
+        : await persistence.restore(
+            workspaceId: workspaceId,
+            cacheKey: _layoutKey,
+          );
     if (!mounted) {
+      restored?.dispose();
       return;
     }
     // A missing/unrestorable payload keeps the seeded layout; either way the
     // URL's `?tab=` gets the final say on which tab is focused.
     if (restored != null) {
-      setState(() => _setLayout(restored));
+      _adoptRestored(restored);
     }
     _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
     // A link that names commits and no other tab opens on the diff. A named
@@ -630,25 +626,22 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
   }
 
-  /// English fallback label; the localized label is resolved per-build by the
-  /// chrome's [EditorChrome.labelFor].
-  static String _fallbackLabel(String kind) => switch (kind) {
-    PrTabKinds.overview => 'Overview',
-    PrTabKinds.diff => 'Diff',
-    PrTabKinds.sourceControl => 'Source control',
-    PrTabKinds.chat => 'Chat',
-    PrTabKinds.actions => 'Actions',
-    _ => 'Review',
-  };
-
-  static String _label(String kind, AppLocalizations l10n) => switch (kind) {
-    PrTabKinds.overview => l10n.overview,
-    PrTabKinds.diff => l10n.diff,
-    PrTabKinds.sourceControl => l10n.sourceControl,
-    PrTabKinds.chat => l10n.chat,
-    PrTabKinds.actions => l10n.actions,
-    _ => l10n.review,
-  };
+  /// Swaps in a layout that arrived after the first frame, without remounting
+  /// what is already on screen.
+  ///
+  /// A layout identical to the current one (the common case: the seed IS the
+  /// persisted default) is dropped, keeping the user's selection. Otherwise
+  /// every restored tab that matches a live one takes over the live instance:
+  /// tab identity keys the kept-alive body, so the Overview the reader is
+  /// already looking at carries over instead of rebuilding from scratch.
+  void _adoptRestored(EditorLayoutController restored) {
+    if (restored.sameStructureAs(_layout)) {
+      restored.dispose();
+      return;
+    }
+    restored.adoptTabInstances(_layout.allTabs());
+    setState(() => _setLayout(restored));
+  }
 
   /// Focuses the tab of [kind] wherever it lives in the split tree (opening it
   /// in the active leaf if it was closed).
@@ -861,7 +854,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     if (tab.kind != PrTabKinds.codeServer || path is! String || path.isEmpty) {
       return;
     }
-    final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+    final spaceId = ref.read(prSpaceProvider(PrSpaceKey.of(widget.pr))).value;
     if (spaceId == null) {
       return;
     }
@@ -898,7 +891,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         ref: ref,
         title: l10n.ideCloseKeepTitle(tab.label),
         workspaceId: widget.prRef.workspaceId,
-        conversationId: ref.read(prSpaceProvider(widget.pr)).value,
+        conversationId: ref
+            .read(prSpaceProvider(PrSpaceKey.of(widget.pr)))
+            .value,
         args: tab.args,
       )) {
         return false;
@@ -915,7 +910,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       isDirty: true,
       fileName: path.isEmpty ? tab.label : path.split('/').last,
       onSave: () async {
-        final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+        final spaceId = ref
+            .read(prSpaceProvider(PrSpaceKey.of(widget.pr)))
+            .value;
         if (spaceId != null && path.isNotEmpty) {
           await saveCodeServerFile(
             ref.read(rpcClientProvider),
@@ -928,7 +925,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       // The editor window outlives the tab now, so the unsaved buffer has to
       // be discarded explicitly.
       onDontSave: () async {
-        final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+        final spaceId = ref
+            .read(prSpaceProvider(PrSpaceKey.of(widget.pr)))
+            .value;
         if (spaceId != null && path.isNotEmpty) {
           await closeCodeServerFile(
             ref.read(rpcClientProvider),
@@ -1019,7 +1018,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     if (workspaceId == null || repoId == null) {
       return null;
     }
-    final spaceId = ref.read(prSpaceProvider(widget.pr)).value;
+    final spaceId = ref.read(prSpaceProvider(PrSpaceKey.of(widget.pr))).value;
     if (spaceId == null) {
       return null;
     }
@@ -1298,10 +1297,12 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       (t) => t.kind == PrTabKinds.codeServer,
     );
     if (hasCodeServerTab) {
-      final spaceId = ref.watch(prSpaceProvider(widget.pr)).value;
+      final spaceId = ref
+          .watch(prSpaceProvider(PrSpaceKey.of(widget.pr)))
+          .value;
       // A restored file tab is focused before the space id is known, and
       // nothing else re-reports it once it is.
-      ref.listen(prSpaceProvider(widget.pr), (previous, next) {
+      ref.listen(prSpaceProvider(PrSpaceKey.of(widget.pr)), (previous, next) {
         if (previous?.value == null && next.value != null) {
           _recordRecentFile();
         }
@@ -1543,50 +1544,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// The loading state: the real workbench chrome with the default tab set, each
-/// body a tab-shaped skeleton. Rendering the true tab strip (not a faux one)
-/// means nothing reflows when the PR arrives — the chrome stays put and only
-/// the tab bodies swap from placeholder to content.
-class _PrDetailLoadingBody extends StatefulWidget {
-  const _PrDetailLoadingBody();
-
-  @override
-  State<_PrDetailLoadingBody> createState() => _PrDetailLoadingBodyState();
-}
-
-class _PrDetailLoadingBodyState extends State<_PrDetailLoadingBody> {
-  late final EditorLayoutController _layout;
-
-  @override
-  void initState() {
-    super.initState();
-    _layout = _PrDetailBodyState._seedLayout();
-  }
-
-  @override
-  void dispose() {
-    _layout.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return EditorWorkspace(
-      layout: _layout,
-      chrome: EditorChrome(
-        iconFor: PrTabKinds.iconForTab,
-        labelFor: (tab) => _PrDetailBodyState._label(tab.kind, l10n),
-      ),
-      buildBody: (tab, {required isVisible}) => switch (tab.kind) {
-        PrTabKinds.overview => const PrOverviewSkeleton(),
-        PrTabKinds.diff => const PrDiffTabSkeleton(),
-        _ => const PrPanelSkeleton(),
-      },
     );
   }
 }

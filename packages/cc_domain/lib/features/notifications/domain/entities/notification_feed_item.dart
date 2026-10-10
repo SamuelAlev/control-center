@@ -40,8 +40,17 @@ class NotificationFeedItem {
   /// The JSON-RPC notification method, e.g. `notifications/pr_merged`.
   final String method;
 
-  /// The frame's wire params, exactly as the forwarder pushes them.
+  /// Params key the server stamps (UTC ISO-8601) onto an item whose subject
+  /// is over — an agent wait that was answered. Nobody needs to act on it,
+  /// so it renders read for everyone who has not said otherwise.
+  static const String resolvedAtKey = 'resolved_at';
+
+  /// The frame's wire params, exactly as the forwarder pushed them, plus
+  /// [resolvedAtKey] once the item is resolved.
   final Map<String, dynamic> params;
+
+  /// Whether the server has stamped this item resolved.
+  bool get isResolved => params[resolvedAtKey] != null;
 
   /// When the server recorded the item (server clock — clients never stamp).
   final DateTime createdAt;

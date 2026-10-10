@@ -40,6 +40,7 @@ class ShutdownProgressState {
     this.active = false,
     this.services = const [],
     this.complete = false,
+    this.initiatedHere = false,
   });
 
   /// Whether the overlay should be visible (a quit was initiated).
@@ -52,15 +53,22 @@ class ShutdownProgressState {
   /// Whether the server reported the whole sequence complete.
   final bool complete;
 
+  /// Whether this app stopped the server (quitting the desktop stops its
+  /// bundled one). False when the server announced its own shutdown, e.g. an
+  /// operator stopped it.
+  final bool initiatedHere;
+
   /// Returns a copy with the given fields replaced.
   ShutdownProgressState copyWith({
     bool? active,
     List<ShutdownService>? services,
     bool? complete,
+    bool? initiatedHere,
   }) => ShutdownProgressState(
     active: active ?? this.active,
     services: services ?? this.services,
     complete: complete ?? this.complete,
+    initiatedHere: initiatedHere ?? this.initiatedHere,
   );
 }
 
@@ -107,8 +115,8 @@ class ShutdownProgressNotifier extends Notifier<ShutdownProgressState> {
 
   /// Show the overlay (the local server is being stopped).
   void begin() {
-    if (!state.active) {
-      state = state.copyWith(active: true);
+    if (!state.active || !state.initiatedHere) {
+      state = state.copyWith(active: true, initiatedHere: true);
     }
   }
 
@@ -128,6 +136,7 @@ class ShutdownProgressNotifier extends Notifier<ShutdownProgressState> {
         state = ShutdownProgressState(
           active: true,
           services: services ?? const [],
+          initiatedHere: state.initiatedHere,
         );
       case 'step':
         final id = n.params['service'] as String?;

@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
-# Generates Sparkle appcast.xml (macOS DMG, EdDSA) and appcast-windows.xml
-# (Inno exe, DSA-SHA1). Separate feeds — a combined one would cross-apply.
-# Fail-closed unsigned. sparkle:version is CFBundleVersion/build-number on
-# macOS and FLUTTER_VERSION on Windows (do not unify). Items need both version
-# elements. Keys: SPARKLE_ED25519_KEY, SPARKLE_DSA_PRIVATE_KEY.
+# Generates Sparkle appcast.xml (macOS DMG, EdDSA), appcast-windows.xml (x64
+# Inno exe, DSA-SHA1) and appcast-windows-arm64.xml (Arm64 Inno exe, DSA-SHA1).
+# Separate feeds — a combined one would cross-apply: WinSparkle 0.8.1 cannot
+# select an item by architecture, so each Windows build reads its own feed.
+# Fail-closed unsigned. Items need both version elements.
+#
+# sparkle:version is what each updater compares against the INSTALLED build,
+# so it must be byte-for-byte the string that build reports (do not unify):
+#   macOS    CFBundleVersion = the build number (--build-number).
+#   Windows  the exe's version resource, which windows/runner/Runner.rc fills
+#            from FLUTTER_VERSION = "<version>+<build-number>" (e.g. 0.0.7+43).
+# Writing just "<version>" on Windows looked equivalent and was not: WinSparkle's
+# comparator (Sparkle's) rates a string with an extra trailing component that
+# starts with a non-digit ("+43") as OLDER than the bare one, so "0.0.7" beat
+# the installed "0.0.7+43" and every launch offered the same release again.
+# Keys: SPARKLE_ED25519_KEY, SPARKLE_DSA_PRIVATE_KEY.
 # Usage: gen_appcast.sh <version> <tag> <build-number>
 set -euo pipefail
 
@@ -21,22 +32,32 @@ DSA_KEY="${SPARKLE_DSA_PRIVATE_KEY:?SPARKLE_DSA_PRIVATE_KEY (dsa_priv.pem conten
 export SPARKLE_ED25519_KEY SPARKLE_DSA_PRIVATE_KEY
 
 # Which feeds to emit follows the platforms the release actually ships
-# (scripts/lib/artifact_names.sh). Windows is currently off, so no Windows
-# enclosure exists to sign and no appcast-windows.xml is written — rather than
-# failing on a missing artifact that was never built.
+# (scripts/lib/artifact_names.sh). A platform that is off has no enclosure to
+# sign and gets no feed — rather than failing on a missing artifact that was
+# never built.
 # shellcheck source=../lib/artifact_names.sh
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
 
 DMG="${ARTIFACTS}/macos/Control-Center-${VERSION}-arm64.dmg"
-# WinSparkle launches the enclosure as an installer — the Inno .exe, never the
-# portable zip (which it has no way to unpack).
-SETUP="${ARTIFACTS}/windows/Control-Center-${VERSION}-x64-setup.exe"
 if release_ships_platform macos; then
   [ -f "$DMG" ] || { echo "::error::missing macOS artifact $DMG" >&2; exit 1; }
 fi
-if release_ships_platform windows; then
-  [ -f "$SETUP" ] || { echo "::error::missing Windows artifact $SETUP" >&2; exit 1; }
-fi
+
+# The Windows platforms, one feed each. WinSparkle launches the enclosure as an
+# installer — the Inno .exe, never the portable zip (which it has no way to
+# unpack). The directory is the build job's upload-artifact name, which the
+# release job's download-artifact step uses as the subdirectory.
+#   platform|artifact dir|installer kind
+WINDOWS_FEEDS=(
+  "windows|windows|win-setup"
+  "windows-arm64|windows-arm64|win-arm64-setup"
+)
+for row in "${WINDOWS_FEEDS[@]}"; do
+  IFS='|' read -r platform dir kind <<< "$row"
+  release_ships_platform "$platform" || continue
+  setup="${ARTIFACTS}/${dir}/$(release_asset_name "$kind" "$VERSION")"
+  [ -f "$setup" ] || { echo "::error::missing Windows artifact $setup ($platform)" >&2; exit 1; }
+done
 
 # Clients fetch the feed through releases/latest/download/… (see
 # desktop_update_config.dart); the enclosures are tag-pinned so an item always
@@ -208,10 +229,6 @@ if release_ships_platform macos; then
   DMG_SIG="$(sign_ed25519 "$DMG")"
   DMG_LEN="$(file_size "$DMG")"
 fi
-if release_ships_platform windows; then
-  SETUP_SIG="$(sign_dsa "$SETUP")"
-  SETUP_LEN="$(file_size "$SETUP")"
-fi
 
 if release_ships_platform macos; then
 # Sparkle's default channel accepts only untagged items. The bundled plugin
@@ -238,29 +255,41 @@ cat > "${OUT}/appcast.xml" <<EOF
 EOF
 fi
 
-if release_ships_platform windows; then
 # /SILENT /SP- : Inno's unattended mode with no "this will install…" prompt —
 # the user already consented in WinSparkle's own dialog. WinSparkle relaunches
 # the app itself after the installer exits.
-cat > "${OUT}/appcast-windows.xml" <<EOF
+write_windows_feed() { # platform artifact-dir installer-kind
+  local platform="$1" dir="$2" kind="$3" feed setup_name setup sig len
+  feed="$(release_platform_feed "$platform")"
+  setup_name="$(release_asset_name "$kind" "$VERSION")"
+  setup="${ARTIFACTS}/${dir}/${setup_name}"
+  sig="$(sign_dsa "$setup")"
+  len="$(file_size "$setup")"
+  cat > "${OUT}/${feed}" <<EOF
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>Control Center</title>
-    <link>${LATEST}/appcast-windows.xml</link>
+    <link>${LATEST}/${feed}</link>
     <description>Most recent releases</description>
     <language>en</language>
     <item>
       <title>Version ${VERSION}</title>
       <pubDate>${PUB_DATE}</pubDate>
-      <sparkle:version>${VERSION}</sparkle:version>
+      <sparkle:version>${VERSION}+${BUILD_NUMBER}</sparkle:version>
       <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
       <sparkle:releaseNotesLink>https://github.com/${REPO}/releases/tag/${TAG}</sparkle:releaseNotesLink>
-      <enclosure url="${BASE}/Control-Center-${VERSION}-x64-setup.exe" sparkle:dsaSignature="${SETUP_SIG}" sparkle:installerArguments="/SILENT /SP-" length="${SETUP_LEN}" type="application/octet-stream" />
+      <enclosure url="${BASE}/${setup_name}" sparkle:dsaSignature="${sig}" sparkle:installerArguments="/SILENT /SP-" length="${len}" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 EOF
-fi
+}
+
+for row in "${WINDOWS_FEEDS[@]}"; do
+  IFS='|' read -r platform dir kind <<< "$row"
+  release_ships_platform "$platform" || continue
+  write_windows_feed "$platform" "$dir" "$kind"
+done
 
 echo "Wrote appcasts for ${TAG} into ${OUT} (platforms: ${RELEASE_PLATFORMS})."

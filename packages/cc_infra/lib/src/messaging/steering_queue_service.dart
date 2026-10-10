@@ -19,10 +19,10 @@ class EnqueueSteeringResult {
   /// The persisted steering message row id.
   final String messageId;
 
-  /// Whether at least one live run can inject mid-run (built-in harness).
-  /// False for external-CLI transports (`claude -p`, `codex -p`, …): the card
-  /// still queues and converts at run end, but a "steer now" affordance would
-  /// be a lie, so the client hides it.
+  /// Whether at least one live run can inject mid-run (built-in harness, or a
+  /// `claude -p` turn with its stdin open). False for ACP: the card still
+  /// queues and converts at run end, but a "steer now" affordance would be a
+  /// lie, so the client hides it.
   final bool steerable;
 }
 
@@ -59,10 +59,11 @@ typedef SteeringSessionsFor =
 /// Durable conversation-scoped steering queue (`MessageType.steering`,
 /// `metadata['steerState']`) shown in the strip until a run takes it.
 ///
-/// `enqueue` persists + pushes into live harness inboxes (`ref` = row id);
-/// drain → `injected` (strip → trail). External CLIs have no mid-run lane —
-/// rows stay queued/editable until last run ends, then convert to `text` in
-/// order and dispatch like a typed message (never silently swallow).
+/// `enqueue` persists + pushes into live run inboxes (`ref` = row id); drain →
+/// `injected` (strip → trail). The harness drains at turn boundaries, a
+/// `claude -p` turn as messages arrive. ACP has no mid-run lane — rows stay
+/// queued/editable until last run ends, then convert to `text` in order and
+/// dispatch like a typed message (never silently swallow).
 /// `reorder` stamps `steerOrder`; `deliver` jumps to the front of live queues.
 /// Wire [handleHarnessStarted] / [handleRunEnded] from the dispatch stack.
 class SteeringQueueService {
@@ -263,8 +264,8 @@ class SteeringQueueService {
   }
 
   /// Jump-to-front delivery ("steer now"): [messageId] becomes the next
-  /// queued message every live harness run injects. Returns false when no
-  /// live run can take mid-run steering (external-CLI transport, or none).
+  /// queued message every live run injects. Returns false when no live run
+  /// can take mid-run steering (ACP, or none).
   Future<bool> deliver({
     required String workspaceId,
     required String conversationId,
@@ -470,12 +471,12 @@ class SteeringQueueService {
     return text.isEmpty ? paths : '$text\n$paths';
   }
 
-  /// Live harness sessions for a conversation. Workspace-checked: a
-  /// conversation id from another workspace must never receive this one's
+  /// Live sessions for a conversation that take steering. Workspace-checked:
+  /// a conversation id from another workspace must never receive this one's
   /// steering, even though uuid collisions are not a practical concern.
   List<SteeringSessionView> _harnessSessions(String conversationId) => [
     for (final s in _sessionsFor(conversationId))
-      if (s.isHarnessActive && s.workspaceId != null) s,
+      if (s.acceptsSteering && s.workspaceId != null) s,
   ];
 
   /// Pushes [content] (correlated by [ref]) into every live harness session

@@ -293,8 +293,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
       data: text,
       selectable: true,
       style: appMarkdownStyle(context, compact: true),
-      codeBuilder: (code, language, {required bool cache}) =>
-          buildSharedCodeBlock(context, code, language, cache: cache),
+      codeBuilder: sharedCodeBuilder(),
       plugins: chatMarkdownPlugins,
       options: chatMarkdownOptions,
       builders: chatMarkdownBuilders,

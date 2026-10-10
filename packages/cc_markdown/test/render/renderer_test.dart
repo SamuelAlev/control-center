@@ -222,6 +222,55 @@ void main() {
     });
   });
 
+  group('CcMarkdown render memo', () {
+    testWidgets('a rebuild with unchanged inputs does not re-render', (
+      tester,
+    ) async {
+      var codeRenders = 0;
+      Widget code(String code, String? language, {required bool cache}) {
+        codeRenders++;
+        return Text(code);
+      }
+
+      Widget doc(CcCodeBuilder builder) => _host(
+        CcMarkdown(
+          data: 'Intro.\n\n```\nprint(1)\n```',
+          style: style,
+          codeBuilder: builder,
+        ),
+      );
+
+      await tester.pumpWidget(doc(code));
+      expect(codeRenders, 1);
+      // A parent rebuild handing over value-equal inputs: the memoized
+      // subtree is returned as-is, so nothing below it re-renders.
+      await tester.pumpWidget(doc(code));
+      expect(codeRenders, 1);
+
+      // A different builder instance must take effect (it is held by
+      // identity), or the memo would keep rendering with a stale callback.
+      Widget other(String c, String? l, {required bool cache}) {
+        codeRenders++;
+        return Text('other $c');
+      }
+
+      await tester.pumpWidget(doc(other));
+      expect(codeRenders, 2);
+      expect(find.textContaining('other print(1)'), findsOneWidget);
+    });
+
+    testWidgets('new data re-renders', (tester) async {
+      await tester.pumpWidget(
+        _host(const CcMarkdown(data: 'First.', style: style)),
+      );
+      await tester.pumpWidget(
+        _host(const CcMarkdown(data: 'Second.', style: style)),
+      );
+      expect(find.text('Second.', findRichText: true), findsOneWidget);
+      expect(find.text('First.', findRichText: true), findsNothing);
+    });
+  });
+
   group('builder overrides', () {
     testWidgets('canBuild fall-through: override claims some links, not others', (
       tester,

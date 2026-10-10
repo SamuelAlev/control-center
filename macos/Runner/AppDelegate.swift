@@ -206,6 +206,13 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    // Before the engine exists: its first frame already draws from the
+    // back-buffer cache this patches (flutter/flutter#185394).
+    SurfaceCacheGuard.install()
+    // Debug hot restarts close every Dart-owned window; without this, closing
+    // the key one aborts the app.
+    WindowCloseGuard.install()
+
     // Run a headless engine and register all generated plugins on it. Flutter's
     // windowing owner attaches the windows created from Dart to this engine.
     let engine = FlutterEngine(name: "control_center", project: nil)

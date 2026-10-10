@@ -149,6 +149,10 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
   /// The split edge a hovering drag currently targets, or null.
   DropEdge? _dropEdge;
 
+  /// Whether the drop preview hides at once (a drop was just accepted here,
+  /// and the landing wash takes over) rather than fading out.
+  bool _snapPreview = false;
+
   EditorTabGroupController get _c => widget.controller;
 
   void _onBodyDragMove(DragTargetDetails<TabDragData> details) {
@@ -157,8 +161,11 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
       return;
     }
     final edge = computeDropEdge(box.globalToLocal(details.offset), box.size);
-    if (edge != _dropEdge) {
-      setState(() => _dropEdge = edge);
+    if (edge != _dropEdge || _snapPreview) {
+      setState(() {
+        _dropEdge = edge;
+        _snapPreview = false;
+      });
     }
   }
 
@@ -379,8 +386,26 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
       onLeave: (_) => _clearEdge(),
       onAcceptWithDetails: (details) {
         final edge = _dropEdge ?? DropEdge.center;
-        _clearEdge();
-        widget.layout.splitWithTab(widget.leafId, edge, details.data);
+        setState(() {
+          _dropEdge = null;
+          _snapPreview = true;
+        });
+        final layout = widget.layout;
+        final activeBefore = layout.activeLeafId;
+        layout.splitWithTab(widget.leafId, edge, details.data);
+        // The preview becomes the pane the tab landed in: the new half of a
+        // split (now the active leaf), or this pane for a move from another.
+        // A split the layout refused leaves the active leaf as it was.
+        final landed = edge == DropEdge.center
+            ? (details.data.sourceLeafId == widget.leafId
+                  ? null
+                  : widget.leafId)
+            : (layout.activeLeafId == activeBefore
+                  ? null
+                  : layout.activeLeafId);
+        if (landed != null) {
+          markEditorPaneLanding(layout, landed);
+        }
       },
       builder: (context, candidate, rejected) {
         return Stack(
@@ -388,7 +413,8 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
           fit: StackFit.expand,
           children: [
             body,
-            EditorDropOverlay(edge: _dropEdge),
+            EditorPaneLandingWash(layout: widget.layout, leafId: widget.leafId),
+            EditorDropOverlay(edge: _dropEdge, snap: _snapPreview),
           ],
         );
       },

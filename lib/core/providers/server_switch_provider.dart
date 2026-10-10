@@ -13,3 +13,13 @@ final serverSwitchHandlerProvider =
             'Server switching is not wired on this platform',
           ),
     );
+
+/// Leaves the connected app for the platform's server sign-in screen: the
+/// desktop's server setup window, the web's connect gate. Pairings are kept,
+/// so the user can reconnect to the same server or pick another one.
+///
+/// Each composition root overrides this; null where there is no sign-in
+/// screen to return to (tests, fakes), and the UI then hides the action.
+final returnToServerSignInProvider = Provider<Future<void> Function()?>(
+  (ref) => null,
+);

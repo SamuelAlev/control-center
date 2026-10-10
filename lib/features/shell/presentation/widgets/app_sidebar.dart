@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/ticketing/domain/entities/project.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
@@ -8,6 +10,7 @@ import 'package:control_center/features/settings/presentation/widgets/settings_s
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar_header.dart';
 import 'package:control_center/features/shell/presentation/widgets/offline_pending_pill.dart';
 import 'package:control_center/features/shell/presentation/widgets/sidebar_chrome.dart';
+import 'package:control_center/features/shell/providers/shell_route_providers.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/new_project_dialog.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/project_visuals.dart';
@@ -19,6 +22,8 @@ import 'package:control_center/shared/widgets/calendar_day_icon.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+part 'app_sidebar_nav_item.dart';
 
 /// Primary application navigation, rendered as a single grouped left sidebar
 /// built on cc_ui's [CcSidebar] / [CcSidebarGroup] / [CcSidebarItem] /
@@ -34,21 +39,14 @@ import 'package:go_router/go_router.dart';
 /// everything below the header slides over to the settings destinations
 /// ([SettingsSidebarNav]) behind an "Exit settings" row, and back out again on
 /// leaving. The header stays put so the workspace switcher never moves.
+///
+/// Takes no route parameters on purpose. The sidebar reads the router through
+/// [routerPathProvider] and its derivations, so a navigation rebuilds only the
+/// rows whose highlight changed (each [_ShellNavItem] selects its own flag)
+/// instead of this whole tree, every nav item and the space list.
 class AppSidebar extends ConsumerStatefulWidget {
-  /// Creates an [AppSidebar]. [location] is the current router location and
-  /// [workspaceId] the active workspace (both sourced from the route), used to
-  /// build prefixed navigation targets and resolve the active item.
-  const AppSidebar({
-    super.key,
-    required this.location,
-    required this.workspaceId,
-  });
-
-  /// The current matched router location.
-  final String location;
-
-  /// The active workspace id from the route (`:workspaceId`).
-  final String workspaceId;
+  /// Creates an [AppSidebar].
+  const AppSidebar({super.key});
 
   @override
   ConsumerState<AppSidebar> createState() => _AppSidebarState();
@@ -58,34 +56,45 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
   /// The last location outside settings — where "Exit settings" returns to.
   String? _returnLocation;
 
-  String get location => widget.location;
-  String get workspaceId => widget.workspaceId;
+  GoRouter? _router;
+  ProviderSubscription<String>? _pathSubscription;
 
-  static bool _isSettings(String location) =>
-      workspaceShellLogicalRoute(location).startsWith('/settings');
+  static bool _isSettings(String logical) => logical.startsWith('/settings');
 
   @override
-  void initState() {
-    super.initState();
-    _rememberReturnLocation();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.of(context);
+    if (identical(router, _router)) {
+      return;
+    }
+    _router = router;
+    _pathSubscription?.close();
+    // A listener, not a watch: remembering where settings was entered from
+    // must not rebuild the sidebar on every navigation.
+    _pathSubscription = ref.listenManual(
+      routerPathProvider(router),
+      (_, path) => _rememberReturnLocation(path),
+      fireImmediately: true,
+    );
   }
 
   @override
-  void didUpdateWidget(covariant AppSidebar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _rememberReturnLocation();
+  void dispose() {
+    _pathSubscription?.close();
+    super.dispose();
   }
 
-  void _rememberReturnLocation() {
-    if (!_isSettings(location)) {
-      _returnLocation = location;
+  void _rememberReturnLocation(String path) {
+    if (!_isSettings(workspaceShellLogicalRoute(path))) {
+      _returnLocation = path;
     }
   }
 
   /// Leaves settings for the page it was entered from. A deep link straight
   /// into settings, or a workspace switch made from inside it, has nothing in
   /// this workspace to return to, so it lands on the inbox.
-  void _exitSettings() {
+  void _exitSettings(String workspaceId) {
     final remembered = _returnLocation;
     final target =
         remembered != null && remembered.startsWith('/workspaces/$workspaceId/')
@@ -94,50 +103,25 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     GoRouter.of(context).go(target);
   }
 
-  /// Active-item check against the *logical* route (prefix-stripped), so it is
-  /// independent of which workspace is in the URL. [logicalPath] is e.g.
-  /// `/inbox` or `/tickets`.
-  bool _isActive(String logicalPath, {bool exact = false}) {
-    final logical = workspaceShellLogicalRoute(location);
-    if (exact) {
-      return logical == logicalPath;
-    }
-    return logical == logicalPath || logical.startsWith('$logicalPath/');
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final collapsed = ref.watch(sidebarCollapsedProvider);
-    if (_isSettings(location)) {
-      return _buildSettings(context, collapsed: collapsed);
+    final router = GoRouter.of(context);
+    // The shell only renders for `/workspaces/:workspaceId/…` routes, so the
+    // workspace id is present; it changes only on a workspace switch.
+    final workspaceId = ref.watch(routeWorkspaceIdProvider(router));
+    if (workspaceId == null) {
+      return const SizedBox.shrink();
     }
-    // A pre-reduced int feed, not the run list: the run stream re-emits on
-    // every pipeline mutation (progress ticks, step transitions), which would
-    // otherwise rebuild all of this chrome and its count is settled so a
-    // sub-second housekeeping run can't blink the badge on and off.
-    final runningPipelines =
-        ref.watch(runningPipelineCountProvider(workspaceId)).value ?? 0;
-
-    CcSidebarItem navItem({
-      required IconData icon,
-      required String label,
-      required String logicalPath,
-      required String target,
-      bool exact = false,
-      int badge = 0,
-      Widget Function(Color color, double size)? iconBuilder,
-    }) {
-      final selected = _isActive(logicalPath, exact: exact);
-      return CcSidebarItem(
-        icon: icon,
-        label: label,
-        iconBuilder: iconBuilder,
-        badge: badge > 0
-            ? SidebarCountBadge(count: badge, selected: selected)
-            : null,
-        selected: selected,
-        onPressed: () => GoRouter.of(context).go(target),
+    final collapsed = ref.watch(sidebarCollapsedProvider);
+    final inSettings = ref.watch(
+      shellLogicalRouteProvider(router).select(_isSettings),
+    );
+    if (inSettings) {
+      return _buildSettings(
+        context,
+        workspaceId: workspaceId,
+        collapsed: collapsed,
       );
     }
 
@@ -150,11 +134,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       // thumb stop short of the footer's hairline. The footer's own divider
       // already carries [AppSpacing.xs] of air on top.
       footerGap: 0,
-      footer: _SidebarFooter(
-        location: location,
-        workspaceId: workspaceId,
-        collapsed: collapsed,
-      ),
+      footer: _SidebarFooter(workspaceId: workspaceId, collapsed: collapsed),
       // The workspace nav is a fixed set of destinations, so it is pinned and
       // only the spaces list below it scrolls: one scrollbar, and its thumb
       // reports the length of the space list rather than of the whole panel.
@@ -162,25 +142,26 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       pinnedChildren: [
         CcSidebarGroup(
           children: [
-            navItem(
+            _ShellNavItem(
               icon: AppIcons.inbox,
               label: l10n.inboxTitle,
               logicalPath: '/inbox',
               target: inboxRoute(workspaceId),
-              badge: ref.watch(inboxCountProvider),
+              badge: (ref, selected) =>
+                  _countBadge(ref.watch(inboxCountProvider), selected),
             ),
             // The accordion's project children are full-width rows; in rail
             // mode the entry flattens to its plain icon-only nav item. The
             // slot reads the (deferred) sidebar scope itself, so the swap
             // lands exactly when the items flip their geometry.
-            _TicketsNavSlot(location: location, workspaceId: workspaceId),
-            navItem(
+            _TicketsNavSlot(workspaceId: workspaceId),
+            _ShellNavItem(
               icon: AppIcons.gitPullRequest,
               label: l10n.pullRequests,
               logicalPath: '/pull-requests',
               target: pullRequestsRoute(workspaceId),
             ),
-            navItem(
+            _ShellNavItem(
               icon: AppIcons.calendar,
               // The Phosphor glyph hardcodes a "12"; render the signed-in
               // user's LOCAL day of month into the blank outline instead.
@@ -190,18 +171,26 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
               logicalPath: '/calendar',
               target: calendarRoute(workspaceId),
             ),
-            navItem(
+            _ShellNavItem(
               icon: AppIcons.audioLines,
               label: l10n.navMeetings,
               logicalPath: '/meetings',
               target: meetingsRoute(workspaceId),
             ),
-            navItem(
+            _ShellNavItem(
               icon: AppIcons.workflow,
               label: l10n.pipelinesScreenTitle,
               logicalPath: '/pipelines',
               target: pipelinesRoute(workspaceId),
-              badge: runningPipelines,
+              // A pre-reduced int feed, not the run list: the run stream
+              // re-emits on every pipeline mutation (progress ticks, step
+              // transitions), and its count is settled so a sub-second
+              // housekeeping run can't blink the badge on and off. Watched
+              // by this row alone, so a count change repaints only it.
+              badge: (ref, selected) => _countBadge(
+                ref.watch(runningPipelineCountProvider(workspaceId)).value ?? 0,
+                selected,
+              ),
             ),
             // No "Plans" destination: a plan belongs to the conversation that
             // produced it, so Plan Studio opens as an editor tab from the plan's
@@ -228,14 +217,18 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
         // surface with its own filtered space list sidebar. The slot reads
         // the (deferred) sidebar scope itself, so the list folds into the
         // icon exactly when the nav items flip their geometry.
-        _SpacesNavSlot(location: location, workspaceId: workspaceId),
+        _SpacesNavSlot(workspaceId: workspaceId),
       ],
     );
   }
 
   /// The settings drill-in: the same header, an exit row pinned above the
   /// settings destinations, and no footer (it is one exit away).
-  Widget _buildSettings(BuildContext context, {required bool collapsed}) {
+  Widget _buildSettings(
+    BuildContext context, {
+    required String workspaceId,
+    required bool collapsed,
+  }) {
     final l10n = AppLocalizations.of(context);
     return CcSidebar(
       collapsed: collapsed,
@@ -249,16 +242,32 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
               // Mirrors under RTL: points at the edge the global nav returns to.
               icon: AppIcons.chevronLeft,
               label: l10n.exitSettings,
-              onPressed: _exitSettings,
+              onPressed: () => _exitSettings(workspaceId),
             ),
           ],
         ),
         const SidebarHairline(),
       ],
-      children: [
-        SettingsSidebarNav(location: location, workspaceId: workspaceId),
-      ],
+      children: [_SettingsNavSlot(workspaceId: workspaceId)],
     );
+  }
+}
+
+/// The trailing count pill, or nothing at zero.
+Widget? _countBadge(int count, bool selected) =>
+    count > 0 ? SidebarCountBadge(count: count, selected: selected) : null;
+
+/// The settings destinations. Its own consumer so moving between settings
+/// pages rebuilds the destination list, not the drill-in around it.
+class _SettingsNavSlot extends ConsumerWidget {
+  const _SettingsNavSlot({required this.workspaceId});
+
+  final String workspaceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = ref.watch(routerPathProvider(GoRouter.of(context)));
+    return SettingsSidebarNav(location: location, workspaceId: workspaceId);
   }
 }
 
@@ -267,24 +276,22 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
 /// driven by [CcSidebarScope] — the same deferred, animation-aware flag the
 /// items themselves flip on — rather than the instantly-updating provider.
 class _TicketsNavSlot extends StatelessWidget {
-  const _TicketsNavSlot({required this.location, required this.workspaceId});
+  const _TicketsNavSlot({required this.workspaceId});
 
-  final String location;
   final String workspaceId;
 
   @override
   Widget build(BuildContext context) {
     final collapsed = CcSidebarScope.collapsedOf(context) ?? false;
     if (!collapsed) {
-      return _TicketsAccordion(location: location, workspaceId: workspaceId);
+      return _TicketsAccordion(workspaceId: workspaceId);
     }
     final l10n = AppLocalizations.of(context);
-    final logical = workspaceShellLogicalRoute(location);
-    return CcSidebarItem(
+    return _ShellNavItem(
       icon: AppIcons.ticket,
       label: l10n.navTickets,
-      selected: logical == '/tickets' || logical.startsWith('/tickets/'),
-      onPressed: () => GoRouter.of(context).go(ticketsRoute(workspaceId)),
+      logicalPath: '/tickets',
+      target: ticketsRoute(workspaceId),
     );
   }
 }
@@ -293,9 +300,8 @@ class _TicketsNavSlot extends StatelessWidget {
 /// ([ConversationsSidebarSection]) expanded, a single icon opening the
 /// spaces directory page in the rail. Scope-driven like [_TicketsNavSlot].
 class _SpacesNavSlot extends StatelessWidget {
-  const _SpacesNavSlot({required this.location, required this.workspaceId});
+  const _SpacesNavSlot({required this.workspaceId});
 
-  final String location;
   final String workspaceId;
 
   @override
@@ -305,14 +311,13 @@ class _SpacesNavSlot extends StatelessWidget {
       return const ConversationsSidebarSection();
     }
     final l10n = AppLocalizations.of(context);
-    final logical = workspaceShellLogicalRoute(location);
     return CcSidebarGroup(
       children: [
-        CcSidebarItem(
+        _ShellNavItem(
           icon: AppIcons.messagesSquare,
           label: l10n.spaces,
-          selected: logical == '/spaces' || logical.startsWith('/spaces/'),
-          onPressed: () => GoRouter.of(context).go(spacesRoute(workspaceId)),
+          logicalPath: '/spaces',
+          target: spacesRoute(workspaceId),
         ),
       ],
     );
@@ -332,9 +337,8 @@ class _SpacesNavSlot extends StatelessWidget {
 /// a hover boundary: the header row and the nested branch keep their own
 /// wash instead of the parent highlighting Inbox or Pull requests.
 class _TicketsAccordion extends ConsumerStatefulWidget {
-  const _TicketsAccordion({required this.location, required this.workspaceId});
+  const _TicketsAccordion({required this.workspaceId});
 
-  final String location;
   final String workspaceId;
 
   @override
@@ -342,47 +346,40 @@ class _TicketsAccordion extends ConsumerStatefulWidget {
 }
 
 class _TicketsAccordionState extends ConsumerState<_TicketsAccordion> {
-  // Sticky open/closed state. Seeded from the route, then auto-expanded when
-  // entering the tickets/projects area — but never auto-collapsed on leaving,
-  // so navigating away from "All tickets" no longer snaps the accordion shut.
-  late bool _expanded = _isTicketsArea(widget.location);
+  // Sticky open/closed state. Seeded from the route on the first build, then
+  // auto-expanded when entering the tickets/projects area — but never
+  // auto-collapsed on leaving, so navigating away from "All tickets" no
+  // longer snaps the accordion shut.
+  bool? _expanded;
 
-  bool get _ticketsActive {
-    final logical = workspaceShellLogicalRoute(widget.location);
-    return logical == '/tickets' || logical.startsWith('/tickets/');
-  }
-
-  static bool _isTicketsArea(String location) {
-    final logical = workspaceShellLogicalRoute(location);
-    return logical == '/tickets' ||
-        logical.startsWith('/tickets/') ||
-        logical.startsWith('/projects/');
-  }
-
-  @override
-  void didUpdateWidget(covariant _TicketsAccordion oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Auto-expand only when entering the tickets/projects area from elsewhere;
-    // a manual collapse while already inside the area is respected and
-    // leaving the area never forces it closed.
-    if (_isTicketsArea(widget.location) &&
-        !_isTicketsArea(oldWidget.location)) {
-      _expanded = true;
-    }
-  }
+  static bool _isTicketsArea(String logical) =>
+      logical == '/tickets' ||
+      logical.startsWith('/tickets/') ||
+      logical.startsWith('/projects/');
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final wsId = widget.workspaceId;
+    final router = GoRouter.of(context);
+    final area = shellLogicalRouteProvider(router).select(_isTicketsArea);
+    // Auto-expand only when entering the tickets/projects area from
+    // elsewhere; a manual collapse while already inside the area is respected
+    // and leaving the area never forces it closed. A listener, so other
+    // navigations never rebuild the accordion.
+    ref.listen<bool>(area, (previous, inArea) {
+      if (inArea && previous != true && _expanded != true) {
+        setState(() => _expanded = true);
+      }
+    });
+    final bool expanded = _expanded ?? ref.read(area);
+    _expanded = expanded;
 
     final projects =
         (ref.watch(workspaceProjectsProvider(wsId)).asData?.value ??
                 const <Project>[])
             .where((p) => p.status != ProjectStatus.archived)
             .toList();
-
-    final expanded = _expanded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -398,50 +395,47 @@ class _TicketsAccordionState extends ConsumerState<_TicketsAccordion> {
             expanded: expanded,
             onTap: () => setState(() => _expanded = !expanded),
           ),
-          onPressed: () => GoRouter.of(context).go(ticketsRoute(wsId)),
+          onPressed: () => router.go(ticketsRoute(wsId)),
         ),
         CcCollapsible(
           expanded: expanded,
           child: CcSidebarBranch(
             children: [
-              CcSidebarItem(
+              _ShellNavItem(
                 icon: AppIcons.list,
                 label: l10n.allTickets,
-                selected: _ticketsActive,
-                onPressed: () => GoRouter.of(context).go(ticketsRoute(wsId)),
+                logicalPath: '/tickets',
+                target: ticketsRoute(wsId),
               ),
               for (final p in projects)
-                () {
-                  final selected =
-                      widget.location == projectOverviewRoute(wsId, p.id);
-                  return CcSidebarItem(
-                    icon: AppIcons.dot,
-                    label: p.name,
-                    selected: selected,
-                    badge: ProjectGlyph(color: p.color, onBrandFill: selected),
-                    onPressed: () => GoRouter.of(
-                      context,
-                    ).go(projectOverviewRoute(wsId, p.id)),
-                  );
-                }(),
+                _ShellNavItem(
+                  key: ValueKey(p.id),
+                  icon: AppIcons.dot,
+                  label: p.name,
+                  logicalPath: '/projects/${p.id}',
+                  match: ShellNavMatch.exact,
+                  target: projectOverviewRoute(wsId, p.id),
+                  badge: (_, selected) =>
+                      ProjectGlyph(color: p.color, onBrandFill: selected),
+                ),
               CcSidebarItem(
                 icon: AppIcons.plus,
                 label: l10n.newProject,
-                onPressed: () async {
-                  final id = await showProjectDialog(
-                    context,
-                    workspaceId: wsId,
-                  );
-                  if (id != null && context.mounted) {
-                    GoRouter.of(context).go(projectOverviewRoute(wsId, id));
-                  }
-                },
+                onPressed: () => unawaited(_newProject(context, wsId)),
               ),
             ],
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _newProject(BuildContext context, String wsId) async {
+    final router = GoRouter.of(context);
+    final id = await showProjectDialog(context, workspaceId: wsId);
+    if (id != null && context.mounted) {
+      router.go(projectOverviewRoute(wsId, id));
+    }
   }
 }
 
@@ -477,14 +471,9 @@ class _ExpandChevron extends StatelessWidget {
 }
 
 /// Sidebar footer: theme toggle and Settings.
-class _SidebarFooter extends ConsumerWidget {
-  const _SidebarFooter({
-    required this.location,
-    required this.workspaceId,
-    this.collapsed = false,
-  });
+class _SidebarFooter extends StatelessWidget {
+  const _SidebarFooter({required this.workspaceId, this.collapsed = false});
 
-  final String location;
   final String workspaceId;
 
   /// Rail mode: the text-only [OfflinePendingPill] doesn't fit the 54px rail,
@@ -492,9 +481,8 @@ class _SidebarFooter extends ConsumerWidget {
   final bool collapsed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final logical = workspaceShellLogicalRoute(location);
     // The scope's deferred flag wins over the constructor's: the pill is also
     // dropped while the width is animating, where it would clip.
     final railMode =
@@ -521,27 +509,27 @@ class _SidebarFooter extends ConsumerWidget {
             // Always mounted and never selected: a status surface, not a
             // destination — tapping it opens the flyout to the right.
             const ServiceStatusSidebarEntry(),
-            CcSidebarItem(
+            _ShellNavItem(
               icon: AppIcons.newspaper,
               label: l10n.newsfeed,
-              selected: logical.startsWith('/newsfeed'),
-              onPressed: () =>
-                  GoRouter.of(context).go(newsfeedRoute(workspaceId)),
+              logicalPath: '/newsfeed',
+              match: ShellNavMatch.prefix,
+              target: newsfeedRoute(workspaceId),
             ),
-            CcSidebarItem(
+            _ShellNavItem(
               icon: AppIcons.gauge,
               label: l10n.navObservability,
-              selected: logical.startsWith('/observability'),
-              onPressed: () =>
-                  GoRouter.of(context).go(observabilityRoute(workspaceId)),
+              logicalPath: '/observability',
+              match: ShellNavMatch.prefix,
+              target: observabilityRoute(workspaceId),
             ),
-            CcSidebarItem(
+            _ShellNavItem(
               icon: AppIcons.settings,
               label: l10n.navSettings,
-              selected: logical.startsWith('/settings'),
+              logicalPath: '/settings',
+              match: ShellNavMatch.prefix,
               // The settings landing is Appearance, the first item in You.
-              onPressed: () =>
-                  GoRouter.of(context).go(settingsAppearanceRoute(workspaceId)),
+              target: settingsAppearanceRoute(workspaceId),
             ),
           ],
         ),

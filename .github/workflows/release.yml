@@ -34,7 +34,7 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -79,7 +79,7 @@ jobs:
     steps:
       - name: Harden runner
         # block is Linux-only. This job holds the Developer ID certificate.
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -147,7 +147,7 @@ jobs:
                 cc_server-${{ env.VERSION }}-macos-arm64.tar.gz
 
           - name: Upload macOS artifacts
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
               name: macos
               path: |
@@ -155,27 +155,60 @@ jobs:
               if-no-files-found: error
 
           - name: Upload standalone cc_server (macOS)
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
               name: cc_server-macos
               path: |
                 cc_server-*-macos-*.tar.gz
               if-no-files-found: error
 
+  # One leg per Windows architecture, each compiled NATIVELY on its own runner:
+  # Flutter cannot cross-compile Windows, and the natives (cargo's host triple,
+  # cl.exe, the vcpkg triplet) are built for the machine they run on.
+  # windows-11-arm is GitHub's hosted Arm64 image (Windows 11, VS 2022 with the
+  # Arm64 toolset, Rust, LLVM, CMake, Ninja, Python, vcpkg and Inno Setup
+  # preinstalled). The x64 leg keeps every name it had (artifact `windows`,
+  # `cc_server-windows`), so the release job and gen_appcast.sh read it from the
+  # same artifacts/windows/ directory as before.
   build-windows:
+    name: build-windows (${{ matrix.arch }})
     needs: prepare
-    runs-on: windows-latest
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       id-token: write
       attestations: write
+    strategy:
+      # A failed leg must not cancel the other: the release job's
+      # expected-asset gate already refuses a partial release, and a finished
+      # leg keeps its logs and artifacts for the retry.
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-latest
+            artifact: windows
+            server-artifact: cc_server-windows
+            setup-glob: dist/Control-Center-*-x64-setup.exe
+            zip-glob: dist/Control-Center-*-windows-x64.zip
+            server-glob: cc_server-*-windows-x64.zip
+          - arch: arm64
+            runner: windows-11-arm
+            artifact: windows-arm64
+            server-artifact: cc_server-windows-arm64
+            setup-glob: dist/Control-Center-*-arm64-setup.exe
+            zip-glob: dist/Control-Center-*-windows-arm64.zip
+            server-glob: cc_server-*-windows-arm64.zip
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       BUILD_NUMBER: ${{ github.run_number }}
+      ARCH: ${{ matrix.arch }}
     steps:
       - name: Harden runner
-        # block is Linux-only.
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        # block is Linux-only. On windows-11-arm (v2.22.1) the action logs
+        # "Windows ARM runners are not yet supported" and installs no agent;
+        # it does not fail the job, so both legs keep the same first step.
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -185,19 +218,25 @@ jobs:
           persist-credentials: false
 
       # Background: the SDK install needs neither. MSVC's environment reaches
-      # later steps only after the wait below.
+      # later steps only after the wait below. `arch` is the TARGET; on the
+      # Arm64 runner vcvarsall resolves `arm64` to the native Hostarm64 tools
+      # (VSCMD_ARG_TGT_ARCH=arm64, which windows_natives.sh cross-checks).
       - name: Set up MSVC developer environment
         id: msvc
         background: true
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
-          arch: x64
+          arch: ${{ matrix.arch }}
 
+      # PyPI has win_arm64 ninja wheels; meson is pure Python.
       - name: Install AEC build tools (meson/ninja)
         id: build-tools
         background: true
         run: pip install meson ninja
 
+      # subosito/flutter-action clones the commit pinned in .fvmrc (no
+      # per-arch archive is involved), and the SDK's first run fetches the Dart
+      # SDK for the host, which is windows-arm64 on the Arm64 runner.
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
@@ -208,6 +247,7 @@ jobs:
         uses: $/.github/actions/prepare-release-build
         with:
           os: windows
+          arch: ${{ matrix.arch }}
           version: ${{ env.VERSION }}
           google-client-id: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_ID }}
           google-client-secret: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_SECRET }}
@@ -217,6 +257,7 @@ jobs:
 
       # pwsh: Git Bash shadows MSVC link.exe and Windows tar.exe. Prepend the
       # tar.exe setup-flutter staged. Do not use GITHUB_PATH (see that action).
+      # On an Arm64 host Flutter builds an Arm64 app into build/windows/arm64/.
       - name: Build Windows release
         shell: pwsh
         run: |
@@ -227,18 +268,22 @@ jobs:
           }
           $env:PATH = "$dir;$env:PATH"
           flutter build windows --release --build-name="$env:VERSION" --build-number="$env:BUILD_NUMBER"
+          $out = "build/windows/$env:ARCH/runner/Release"
+          if (-not (Test-Path $out)) {
+            throw "flutter build windows produced no $out (is this runner's host architecture $env:ARCH?)"
+          }
 
       - name: Package (bundle + verify + installer + sign + zip)
         shell: bash
         env:
           WINDOWS_CERT: ${{ secrets.WINDOWS_CERT }}
           WINDOWS_CERT_PWD: ${{ secrets.WINDOWS_CERT_PWD }}
-        run: bash scripts/release/windows_package.sh "$VERSION"
+        run: bash scripts/release/windows_package.sh "$VERSION" "$ARCH"
 
       # Unsigned, matching the installer. Reuses the bundle windows_package.sh built.
       - name: Package standalone cc_server
         shell: bash
-        run: bash scripts/release/cc_server_package.sh "$VERSION" windows
+        run: bash scripts/release/cc_server_package.sh "$VERSION" windows "$ARCH"
 
       # Read-only over finished files: no ordering between them.
       - parallel:
@@ -246,25 +291,25 @@ jobs:
             uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
             with:
               subject-path: |
-                dist/Control-Center-*-x64-setup.exe
-                dist/Control-Center-*-windows-x64.zip
-                cc_server-*-windows-x64.zip
+                ${{ matrix.setup-glob }}
+                ${{ matrix.zip-glob }}
+                ${{ matrix.server-glob }}
 
           - name: Upload Windows artifacts
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
-              name: windows
+              name: ${{ matrix.artifact }}
               path: |
-                dist/Control-Center-*-x64-setup.exe
-                dist/Control-Center-*-windows-x64.zip
+                ${{ matrix.setup-glob }}
+                ${{ matrix.zip-glob }}
               if-no-files-found: error
 
           - name: Upload standalone cc_server (Windows)
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
-              name: cc_server-windows
+              name: ${{ matrix.server-artifact }}
               path: |
-                cc_server-*-windows-*.zip
+                ${{ matrix.server-glob }}
               if-no-files-found: error
 
   build-linux:
@@ -286,7 +331,7 @@ jobs:
       # (meson), SourceForge (LAME; downloads. redirects to *.dl), Flutter,
       # sigstore, Azure blobs (actions/cache).
       - name: Harden runner
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -399,7 +444,7 @@ jobs:
                 cc_demo_server-${{ env.VERSION }}-linux-x64.tar.gz
 
           - name: Upload Linux artifacts
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
               name: linux
               path: |
@@ -409,7 +454,7 @@ jobs:
               if-no-files-found: error
 
           - name: Upload standalone cc_server (Linux)
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
               name: cc_server-linux
               path: |
@@ -417,7 +462,7 @@ jobs:
               if-no-files-found: error
 
           - name: Upload standalone cc_demo_server (Linux)
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
             with:
               name: cc_demo_server-linux
               path: |
@@ -436,7 +481,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: block
           # download-artifact redirects to Azure blob storage.
@@ -458,12 +503,14 @@ jobs:
         run: python3 -m pip install --quiet --disable-pip-version-check cryptography
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: artifacts
           # Platform bundles only. A download-everything default also pulls
           # the containers job's *.dockerbuild records and can fail on them.
-          pattern: "{macos,windows,linux,cc_server-*}"
+          # windows-arm64 is the Arm64 leg's desktop bundle (cc_server-* covers
+          # both legs' server archives).
+          pattern: "{macos,windows,windows-arm64,linux,cc_server-*}"
 
       # Sparkle keys, not the code-signing certs. Drafts stay off
       # releases/latest until published. BUILD_NUMBER must match the build
@@ -493,7 +540,7 @@ jobs:
     steps:
       - name: Harden runner
         # audit: base-image pulls hit Docker Hub and GHCR hosts that move.
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -547,13 +594,13 @@ jobs:
       # Different artifacts into different directories: nothing shared.
       - parallel:
           - name: Download standalone cc_server (Linux)
-            uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+            uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
             with:
               name: cc_server-linux
               path: artifacts/cc_server-linux
 
           - name: Download standalone cc_demo_server (Linux)
-            uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+            uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
             with:
               name: cc_demo_server-linux
               path: artifacts/cc_demo_server-linux

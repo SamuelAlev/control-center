@@ -2,7 +2,7 @@
 title: Installer
 description: Bruk Control Center i nettleseren eller installer skrivebordsappen, sett opp en agentbackend og velg hvor serveren skal kjøre.
 slug: nb-NO/handbok/installer
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center kjører på to måter: som en **nettapp** på
@@ -64,7 +64,7 @@ følg [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-serve
 | Krav          | macOS                                                 | Windows     | Linux                                                      |
 | ------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS-versjon    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ eller en annen distro med glibc 2.35+ og GTK 3 |
-| Arkitektur    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Arkitektur    | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git           | Påkrevd                                               | Påkrevd     | Påkrevd                                                    |
 | Diskplass     | ~200 MB for appen, pluss serverens datakatalog        | ~200 MB     | ~200 MB                                                    |
 
@@ -82,10 +82,12 @@ Alle artefaktene nedenfor kommer fra [GitHub Releases](https://github.com/Samuel
 
 Last ned `Control-Center-<version>-arm64.dmg`, åpne den og dra Control Center til Programmer. Byggingen er signert med en Developer ID og notarisert av Apple, så den åpnes normalt.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: en installasjonspakke per bruker.
 - `Control-Center-<version>-windows-x64.zip`: en portabel zip.
+- `Control-Center-<version>-arm64-setup.exe`: en installasjonspakke per bruker.
+- `Control-Center-<version>-windows-arm64.zip`: en portabel zip.
 
 Windows bruker `git worktree` for utsjekking av områder (ingen copy-on-write).
 
@@ -100,7 +102,7 @@ Begge bygges på Ubuntu 22.04 og kjører på den eller nyere (Debian 12, Fedora 
 
 ### Frittstående server
 
-Hver utgivelse inneholder også den headless serveren for seg selv — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — ved siden av avbildningene `cc-server`, `cc-webapp` og `cc-remote` på GHCR. Se [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/).
+Hver utgivelse inneholder også den headless serveren for seg selv — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — ved siden av avbildningene `cc-server`, `cc-webapp` og `cc-remote` på GHCR. Se [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/).
 
 Linux-arkivet bygges på Ubuntu 22.04, og de medfølgende native bibliotekene lenker mot glibc 2.35 og libstdc++ fra GCC 12, så det krever en vert som er minst like ny (Ubuntu 22.04, Debian 12, Fedora 36 eller senere). På en eldre distribusjon bruker du avbildningen `cc-server` i stedet — en container har sitt eget brukerland, så bare kjernen må være din.
 

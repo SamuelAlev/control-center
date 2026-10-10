@@ -331,7 +331,7 @@ export const ko: LandingCopy = {
     description:
       "다음 개발하는 하루는 여기서 시작할 수 있습니다. 무료이고 오픈 소스입니다.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "릴리스 보기",
     web: "웹 앱 열기",

@@ -330,7 +330,7 @@ export const he: LandingCopy = {
     title: "תרגישו\nבבית.",
     description: "יום הפיתוח הבא יכול להתחיל כאן. חינם ובקוד פתוח.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "צפייה במהדורות",
     web: "פתיחת יישום האינטרנט",

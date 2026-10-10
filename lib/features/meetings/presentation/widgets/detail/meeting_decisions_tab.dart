@@ -11,6 +11,31 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Opens the hand-entry dialog for a new decision on [meeting]. Shared by the
+/// tab and the overview rail beside the notes.
+Future<void> showAddMeetingDecisionDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Meeting meeting,
+) {
+  final l10n = AppLocalizations.of(context);
+  return showCcDialog<void>(
+    context: context,
+    builder: (_) => MeetingTextFieldDialog(
+      title: l10n.meetingAddDecision,
+      label: l10n.meetingDecisionContentLabel,
+      hint: l10n.meetingDecisionContentHint,
+      submitLabel: l10n.add,
+      multiline: true,
+      onSubmit: (value) {
+        ref
+            .read(meetingRecorderControllerProvider.notifier)
+            .addDecision(meeting.id, content: value);
+      },
+    ),
+  );
+}
+
 /// The Decisions tab: a numbered list of the decisions the agent extracted,
 /// each editable/deletable, with a footer row to add a custom decision. Each
 /// decision's first sentence reads as a heading, the remainder as body.
@@ -28,24 +53,8 @@ class MeetingDecisionsTab extends ConsumerWidget {
   /// The persisted decisions, in order.
   final List<MeetingDecision> decisions;
 
-  Future<void> _add(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return showCcDialog<void>(
-      context: context,
-      builder: (_) => MeetingTextFieldDialog(
-        title: l10n.meetingAddDecision,
-        label: l10n.meetingDecisionContentLabel,
-        hint: l10n.meetingDecisionContentHint,
-        submitLabel: l10n.add,
-        multiline: true,
-        onSubmit: (value) {
-          ref
-              .read(meetingRecorderControllerProvider.notifier)
-              .addDecision(meeting.id, content: value);
-        },
-      ),
-    );
-  }
+  Future<void> _add(BuildContext context, WidgetRef ref) =>
+      showAddMeetingDecisionDialog(context, ref, meeting);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

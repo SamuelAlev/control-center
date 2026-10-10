@@ -28,6 +28,7 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 
 part 'message_feed_build.dart';
 part 'message_feed_navigation.dart';
+part 'message_feed_precalc.dart';
 part 'message_feed_scrolling.dart';
 
 /// How far below the viewport top a freshly anchored turn lands, leaving the
@@ -84,6 +85,8 @@ class SpaceMessageFeed extends ConsumerStatefulWidget {
 class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   void _set(VoidCallback fn) => setState(fn);
 
+  void _openThread(String threadId) => widget.onOpenThread?.call(threadId);
+
   final _scrollController = ScrollController();
   final _follow = FollowState();
   final _rowKeys = <String, GlobalKey>{};
@@ -105,6 +108,11 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   /// Re-arms [_precalcPolicy] once nothing has moved for
   /// [_precalcIdleDelay].
   Timer? _precalcTimer;
+
+  /// Set when activity lands while [_precalcTimer] is already running, so the
+  /// timer re-runs its wait instead of being cancelled and reallocated on
+  /// every scroll tick.
+  bool _precalcDeferredAgain = false;
 
   /// The current display rows (ascending, oldest→newest), mirrored from the
   /// last build so the anchor path can map a message id to its reverse
@@ -179,23 +187,6 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
     _listController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  /// Holds extent precalculation off until the feed has been still for
-  /// [_precalcIdleDelay], then re-arms it.
-  ///
-  /// Called on open, on every window emission and on every scroll, so
-  /// precalculation only ever runs in the gaps: opening a chat, growing the
-  /// window and reading through it all push it back out.
-  void _deferPrecalculation() {
-    _precalcPolicy.disarm();
-    _precalcTimer?.cancel();
-    _precalcTimer = Timer(_precalcIdleDelay, () {
-      _precalcTimer = null;
-      if (mounted) {
-        _precalcPolicy.arm();
-      }
-    });
   }
 
   /// The in-flight highlight-pulse timer, so a dispose (or a second jump

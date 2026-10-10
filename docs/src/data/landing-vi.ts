@@ -332,7 +332,7 @@ export const vi: LandingCopy = {
     description:
       "Ngày lập trình kế tiếp có thể bắt đầu ở đây. Miễn phí và mã nguồn mở.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Xem các bản phát hành",
     web: "Mở ứng dụng web",

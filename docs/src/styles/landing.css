@@ -192,6 +192,13 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
 .install-link { display: flex; align-items: center; gap: var(--spacing-4); margin-block-start: var(--spacing-8); font-size: 13px; font-weight: 600; }
 .install-platform:hover .install-link, .install-platform:hover h3 > span { color: var(--color-accent-strong); }
 .install-platform:hover { background: var(--color-hover); }
+/* A card with one download per architecture (Windows): the card is not a link
+   itself, so each link highlights on its own. */
+.install-downloads { display: flex; flex-wrap: wrap; gap: var(--spacing-2) var(--spacing-8); margin-block-start: var(--spacing-8); }
+.install-platform-multi .install-link { margin-block-start: 0; color: var(--color-fg); text-decoration: none; }
+.install-platform-multi:hover .install-link { color: var(--color-fg); }
+.install-platform-multi .install-link:hover, .install-platform-multi .install-link:focus-visible { color: var(--color-accent-strong); }
+.install-arch { color: var(--color-muted); font-weight: 400; }
 .install-remote { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--color-line-strong); border-block-start: 0; }
 .install-remote a { display: grid; gap: var(--spacing-2); color: var(--color-fg); padding: var(--spacing-6) var(--spacing-8); text-decoration: none; }
 .install-remote a:first-child { border-inline-end: 1px solid var(--color-line-strong); }
@@ -326,6 +333,7 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
   .install-platform h3 { font-size: 24px; }
   .install-platform p { margin-block-start: var(--spacing-2); }
   .install-link { margin-block-start: var(--spacing-4); }
+  .install-downloads { margin-block-start: var(--spacing-4); }
   .install-remote { grid-template-columns: 1fr; }
   .install-remote a, .install-remote a:first-child { padding: var(--spacing-6); border-inline-end: 0; }
   .install-remote a:first-child { border-block-end: 1px solid var(--color-line-strong); }

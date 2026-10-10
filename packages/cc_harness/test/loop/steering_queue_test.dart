@@ -255,6 +255,44 @@ void main() {
     });
   });
 
+  group('onEnqueued', () {
+    test('fires after every push, with the message already in its lane', () {
+      final lengths = <int>[];
+      final queue = SteeringQueue();
+      queue.onEnqueued = () {
+        lengths.add(
+          queue.peek(SteeringChannel.steering).length +
+              queue.peek(SteeringChannel.aside).length +
+              queue.peek(SteeringChannel.followUp).length,
+        );
+      };
+      queue
+        ..pushSteering('s', now: t0)
+        ..pushAside('a', now: t0)
+        ..pushFollowUp('f', now: t0)
+        ..pushFront(
+          SteeringMessage(
+            content: 'urgent',
+            channel: SteeringChannel.steering,
+            enqueuedAt: t0,
+          ),
+        );
+      expect(lengths, [1, 2, 3, 4]);
+    });
+
+    test('does not fire on drain or removeByRef', () {
+      var fired = 0;
+      final queue = SteeringQueue()..pushSteering('s', now: t0, ref: 'r');
+      queue.onEnqueued = () {
+        fired++;
+      };
+      queue
+        ..removeByRef('r')
+        ..drainSteering();
+      expect(fired, 0);
+    });
+  });
+
   group('removeByRef', () {
     test('removes the matching message from the steering lane', () {
       final queue = SteeringQueue()

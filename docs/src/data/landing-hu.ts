@@ -344,7 +344,7 @@ export const hu: LandingCopy = {
     description:
       "A következő fejlesztői napod itt kezdődhet. Ingyenes és nyílt forráskódú.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Kiadások megtekintése",
     web: "A webalkalmazás megnyitása",

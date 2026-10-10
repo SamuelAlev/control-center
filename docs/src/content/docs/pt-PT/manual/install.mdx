@@ -2,7 +2,7 @@
 title: Instalar
 description: Utilize o Control Center no navegador ou instale a aplicação de ambiente de trabalho, configure um backend de agentes e escolha onde é executado o servidor.
 slug: pt-PT/manual/instalar
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 O Control Center funciona de duas formas: como **aplicação web** em
@@ -67,7 +67,7 @@ alojar o servidor, siga
 | Requisito                   | macOS                                                          | Windows     | Linux                                                       |
 | --------------------------- | -------------------------------------------------------------- | ----------- | ----------------------------------------------------------- |
 | Versão do sistema operativo | macOS 13+ (Ventura)                                            | Windows 10+ | Ubuntu 22.04+ ou outra distribuição com glibc 2.35+ e GTK 3 |
-| Arquitetura                 | Apple Silicon (arm64)                                          | x64         | x86_64                                                      |
+| Arquitetura                 | Apple Silicon (arm64)                                          | x64, ARM64  | x86_64                                                      |
 | Git                         | Obrigatório                                                    | Obrigatório | Obrigatório                                                 |
 | Espaço em disco             | ~200 MB para a aplicação, mais o diretório de dados do servidor | ~200 MB     | ~200 MB                                                     |
 
@@ -102,10 +102,12 @@ Descarregue o `Control-Center-<version>-arm64.dmg`, abra-o e arraste o Control
 Center para Aplicações. A compilação está assinada com um Developer ID e
 notarizada pela Apple, pelo que abre normalmente.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: um instalador por utilizador.
 - `Control-Center-<version>-windows-x64.zip`: um zip portátil.
+- `Control-Center-<version>-arm64-setup.exe`: um instalador por utilizador.
+- `Control-Center-<version>-windows-arm64.zip`: um zip portátil.
 
 O Windows usa `git worktree` para os checkouts dos espaços (sem copy-on-write).
 
@@ -131,8 +133,8 @@ no Fedora); sem ela, a aplicação arranca com esses controlos ocultos.
 ### Servidor autónomo
 
 Cada versão também traz o servidor headless isoladamente —
-`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip` — a par das imagens `cc-server`, `cc-webapp`
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip` — a par das imagens `cc-server`, `cc-webapp`
 e `cc-remote` no GHCR. Consulte
 [Executar um servidor headless](/pt-PT/manual/guias/executar-servidor-headless/).
 

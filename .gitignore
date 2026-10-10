@@ -38,10 +38,11 @@ migrate_working_dir/
 dist
 
 # Release job scratch, written at the repo root: make_release.sh assembles
-# release/ and gen_appcast.sh writes the two signed feeds beside it.
+# release/ and gen_appcast.sh writes the signed feeds beside it.
 /release/
 /appcast.xml
 /appcast-windows.xml
+/appcast-windows-arm64.xml
 
 # Updater signing PRIVATE keys. Only the public halves are committed
 # (dsa_pub.pem and SUPublicEDKey in macos/Runner/Info.plist); the private ones

@@ -8,6 +8,7 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:flutter/foundation.dart' show immutable, listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// No backing space for this PR, and the host will not mint one.
@@ -24,6 +25,50 @@ final class PrSpaceUnavailable implements Exception {
   String toString() => 'No review space for this pull request';
 }
 
+/// The [prSpaceProvider] family key: WHICH pull request (`id` + repo), carrying
+/// the fields `pr.ensureSpace` seeds a new space from.
+///
+/// [PullRequest.==] is value equality, so keying the family by the entity made
+/// every detail snapshot (a poll, an edited title, the list seed giving way to
+/// the fetched detail) a new member — a fresh `pr.ensureSpace` round trip and a
+/// loading flash in every chat/terminal/files tab watching it. This key is
+/// equal across snapshots of the same PR; the seeding fields are the ones of
+/// the snapshot that first asked, which is all the server uses them for.
+@immutable
+final class PrSpaceKey {
+  /// The key for [pr].
+  PrSpaceKey.of(PullRequest pr)
+    : id = pr.id,
+      repoFullName = pr.repoFullName,
+      number = pr.number,
+      externalId = pr.externalId,
+      title = pr.title;
+
+  /// The PR's id (the mappers set it to the PR number).
+  final int id;
+
+  /// `owner/repo` the PR belongs to.
+  final String repoFullName;
+
+  /// PR number, as `pr.ensureSpace` takes it.
+  final int number;
+
+  /// Forge node id, seeding the space association.
+  final String externalId;
+
+  /// PR title, naming a newly minted space.
+  final String title;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PrSpaceKey &&
+      other.id == id &&
+      other.repoFullName == repoFullName;
+
+  @override
+  int get hashCode => Object.hash(id, repoFullName);
+}
+
 /// Ensures a PR has a backing space (chat/terminal/files hang off it) and
 /// returns its space id. Idempotent server-side (`pr.ensureSpace`): the
 /// first call creates the space, links the review-space association and
@@ -34,7 +79,7 @@ final class PrSpaceUnavailable implements Exception {
 /// provisioning), so this resolves off `review_space.watchByWorkspace`
 /// matched by repo + number — forge node ids on the fixture and the
 /// association are not the same string.
-final prSpaceProvider = FutureProvider.autoDispose.family<String, PullRequest>((
+final prSpaceProvider = FutureProvider.autoDispose.family<String, PrSpaceKey>((
   ref,
   pr,
 ) async {
@@ -78,7 +123,7 @@ final prSpaceProvider = FutureProvider.autoDispose.family<String, PullRequest>((
 /// keyed off `detail.id` (`4120001`), and REST-fetched PRs often have an
 /// empty external id. Repo + number is what the review tab already uses
 /// for the same reason.
-Future<String?> _existingPrSpaceId(Ref ref, PullRequest pr) async {
+Future<String?> _existingPrSpaceId(Ref ref, PrSpaceKey pr) async {
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
     return null;
@@ -158,7 +203,10 @@ final spaceBranchPullRequestsProvider = StreamProvider.autoDispose
                       ),
                     ),
               ],
-            );
+            )
+            // The open-PR poller re-sends the same snapshot on every sweep;
+            // every space row badges off this, so an unchanged one stops here.
+            .distinct(listEquals);
       } on RemoteRpcException catch (e) {
         if (e.code == RpcErrorCodes.opUnknown) {
           yield const [];

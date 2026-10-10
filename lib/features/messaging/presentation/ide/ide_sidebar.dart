@@ -29,6 +29,7 @@ class IdeSidebar extends ConsumerStatefulWidget {
     required this.onRevertFiles,
     required this.onOpenAgentRun,
     required this.onFocusTerminal,
+    required this.onKillTerminal,
     required this.onFocusRig,
     required this.onFocusBrowserTab,
     required this.onCloseBrowserTab,
@@ -73,6 +74,9 @@ class IdeSidebar extends ConsumerStatefulWidget {
 
   /// Called from the General panel to focus (or open) a terminal by session id.
   final ValueChanged<String> onFocusTerminal;
+
+  /// Ends the terminal identified by its session id.
+  final ValueChanged<String> onKillTerminal;
 
   /// Called from the General panel to focus (or open) a machine's rig tab.
   final ValueChanged<RigTabTarget> onFocusRig;
@@ -137,6 +141,7 @@ class _IdeSidebarState extends ConsumerState<IdeSidebar> {
                 workspaceId: widget.workspaceId,
                 onOpenAgentRun: widget.onOpenAgentRun,
                 onFocusTerminal: widget.onFocusTerminal,
+                onKillTerminal: widget.onKillTerminal,
                 onFocusRig: widget.onFocusRig,
                 onFocusBrowserTab: widget.onFocusBrowserTab,
                 onCloseBrowserTab: widget.onCloseBrowserTab,

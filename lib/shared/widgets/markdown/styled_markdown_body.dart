@@ -92,15 +92,10 @@ class _StyledMarkdownBodyState extends ConsumerState<StyledMarkdownBody> {
       options: githubMarkdownOptions,
       builders: widget.builders ?? githubMarkdownBuilders,
       imageBuilder: appMarkdownImageBuilder,
-      codeBuilder: (code, language, {required bool cache}) =>
-          buildSharedCodeBlock(
-            context,
-            code,
-            language,
-            codeFontFamily: codeFont,
-            codeLigatures: codeLigatures,
-            cache: cache,
-          ),
+      codeBuilder: sharedCodeBuilder(
+        codeFontFamily: codeFont,
+        codeLigatures: codeLigatures,
+      ),
     );
   }
 }

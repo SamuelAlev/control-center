@@ -1363,6 +1363,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     required bool expanded,
     bool animate = true,
   }) {
+    if (!expanded && _document.isExpanded(index)) {
+      _keepPlaceAcrossCollapse(index);
+    }
     final running = _fileReveals.remove(index);
     running?.dispose();
     if (expanded) {
@@ -1381,6 +1384,38 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       _pendingFileReveals.add(index);
     }
     setState(() => _revision++);
+  }
+
+  /// Moves the scroll offset so folding file [index] does not drop the reader
+  /// part-way into whatever follows it.
+  ///
+  /// A file whose top is in view needs nothing: its rows slide up under its
+  /// header. One whose header is docked has been scrolled into, so the offset
+  /// sits inside the body about to vanish; left alone it would point that
+  /// far into the next file. Land on the next file's top instead, where
+  /// marking a file viewed is meant to take the reader. A body scrolled
+  /// entirely past shifts everything below it, so subtract it to keep the
+  /// view still. Runs before the document changes: the jump and the fold
+  /// reach the same layout, so no frame shows the wrong rows.
+  void _keepPlaceAcrossCollapse(int index) {
+    final position = Scrollable.maybeOf(context)?.position;
+    final sliver = _sliver;
+    if (position == null || sliver == null) {
+      return;
+    }
+    final topInset = StickyHeaderInset.of(context);
+    final top = sliver.scrollOffsetForFile(index);
+    final viewTop = position.pixels + topInset;
+    if (top >= viewTop) {
+      return;
+    }
+    final header = _document.headerHeight;
+    final shownBody =
+        _document.heightOfFile(index) - header - _document.fileSeparator;
+    final target = top + header + shownBody <= viewTop
+        ? position.pixels - shownBody
+        : top + header + _document.fileSeparator - topInset;
+    position.jumpTo(math.max(0, target));
   }
 
   /// Starts (or snaps) the motions [_setFileExpanded] queued. Runs in build.

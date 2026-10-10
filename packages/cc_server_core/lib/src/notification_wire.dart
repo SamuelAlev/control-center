@@ -369,11 +369,13 @@ NotificationFrame? rigClosedFrame(RigClosedEvent event) {
 
 /// An agent stopped and is waiting on a human: an approval, a question or a
 /// credential. The client names the agent and says which, and links to the
-/// space where the wait can be answered.
+/// space where the wait can be answered. `wait_id` lets the feed find the row
+/// again when the wait ends.
 NotificationFrame agentAwaitingInputFrame(AgentAwaitingInput event) => (
   method: 'notifications/agent_awaiting_input',
   params: {
     'workspace_id': event.workspaceId,
+    'wait_id': event.waitId,
     'kind': event.kind.wire,
     'summary': event.summary,
     if (event.spaceId != null) 'space_id': event.spaceId,

@@ -64,7 +64,7 @@ class PrRigTab extends ConsumerWidget {
 
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final spaceAsync = ref.watch(prSpaceProvider(pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(pr)));
 
     return spaceAsync.when(
       loading: () => _Preparing(label: l10n.preparingWorkspace, t: t),

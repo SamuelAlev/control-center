@@ -399,6 +399,34 @@ void main() {
       }
     });
 
+    test('the Arm64 natives are compiled for Arm64, not for the host', () {
+      // The arm64 set is built natively on windows-11-arm. Every tool that
+      // could quietly emit x64 objects there is pinned to the target: cargo
+      // (asserted host triple), the grammars' clang and the AEC's clang-cl
+      // (explicit --target: the clang on PATH may be an emulated x64 build),
+      // CMake (explicit -A) and vcpkg (per-arch triplet). A wrong-arch DLL
+      // passes verify_natives.sh by name and then fails LoadLibrary at boot,
+      // so the script also checks every DLL's PE machine type at the end.
+      for (final snippet in const [
+        r'cc_windows_arch "$WIN_ARCH"',
+        r'"$MSVC_ARCH" != "$WIN_ARCH"',
+        'arm64) RUST_HOST=aarch64-pc-windows-msvc; CLANG_TARGET=aarch64-pc-windows-msvc; CMAKE_PLATFORM=ARM64',
+        r'[ "$RUSTC_HOST" = "$RUST_HOST" ]',
+        r'-A "$CMAKE_PLATFORM"',
+        r'"$compiler" --target="$CLANG_TARGET"',
+        r'CC="clang-cl --target=$CLANG_TARGET"',
+        r'LAME_TRIPLET="${LAME_TRIPLET:-$WIN_ARCH-windows-static}"',
+        r'arm64) sherpa_slug=win-arm64; sherpa_sha="${SHERPA_ONNX_LIB_SHA256_WIN_ARM64:?}"',
+        r'assert_pe_machine "$WIN_ARCH" build/natives',
+      ]) {
+        expect(
+          source,
+          contains(snippet),
+          reason: 'windows_natives.sh lost `$snippet`',
+        );
+      }
+    });
+
     test("MSVC's link.exe wins over Git's coreutils `link`", () {
       // Git for Windows ships /usr/bin/link.exe (the coreutils hardlink tool)
       // and Git Bash puts /usr/bin ahead of everything vcvarsall prepended.

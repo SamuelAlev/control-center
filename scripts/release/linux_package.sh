@@ -54,11 +54,7 @@ install -m644 LICENSE "$BUNDLE/LICENSE"
 bash scripts/release/gen_third_party_licenses.sh desktop \
   "$BUNDLE/THIRD-PARTY-LICENSES.txt"
 
-# 1e. Sentry spawns crashpad_handler to report native crashes, but the Flutter
-# template installs plugin files with install(FILES), which drops the mode.
-chmod 755 "$BUNDLE/lib/crashpad_handler"
-
-# 1f. The libraries a stock desktop may lack, and RUNPATHs that find them: a
+# 1e. The libraries a stock desktop may lack, and RUNPATHs that find them: a
 # plugin's RUNPATH is the build tree's, so a library beside it is invisible.
 # After this and the notices, since it appends the bundled licenses to them.
 bash scripts/release/bundle_linux_deps.sh "$BUNDLE"

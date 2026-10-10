@@ -339,7 +339,7 @@ export const ru: LandingCopy = {
     description:
       "Ваш следующий день разработчика может начаться здесь. Бесплатно и с открытым кодом.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Смотреть выпуски",
     web: "Открыть веб-приложение",

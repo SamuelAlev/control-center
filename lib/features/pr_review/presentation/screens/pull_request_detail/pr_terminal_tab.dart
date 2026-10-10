@@ -59,7 +59,7 @@ class _PrTerminalTabState extends ConsumerState<PrTerminalTab> {
 
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final spaceAsync = ref.watch(prSpaceProvider(widget.pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(widget.pr)));
     return spaceAsync.when(
       loading: () => _Preparing(label: l10n.preparingWorkspace, t: t),
       error: (e, _) => Center(

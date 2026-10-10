@@ -19,6 +19,8 @@ import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'pr_header_deferred_markdown.dart';
+
 /// The Overview tab's main column: the metadata strip, the (editable) PR
 /// description and the reaction bar. The reviewers/assignees/checks/files
 /// rail moved to the Overview sidebar, rendered beside this column.
@@ -84,6 +86,7 @@ class PrHeaderSection extends ConsumerWidget {
       repoFullName: pr.repoFullName,
       canEdit: canEdit,
       bodyHtml: pr.bodyHtml,
+      pending: descriptionPending,
       readChild: markdown,
     );
 
@@ -178,10 +181,11 @@ class PrBodyMarkdown extends ConsumerWidget {
   /// renders a skeleton instead of the "no description" placeholder.
   final bool pending;
 
-  /// When true (the default), the first frame paints a plain-text stand-in so
-  /// the Overview header can appear inside the interaction budget. Timeline
-  /// cards pass false: a later swap from placeholder to markdown is what made
-  /// the Overview scrollbar thumb jump while scrolling.
+  /// When true (the default), the first frame that ever shows a given body
+  /// paints the description skeleton so the Overview header can appear inside
+  /// the interaction budget. Timeline cards pass false: a later swap from
+  /// placeholder to markdown is what made the Overview scrollbar thumb jump
+  /// while scrolling.
   final bool deferParse;
 
   /// Markdown body text.
@@ -256,48 +260,10 @@ class PrBodyMarkdown extends ConsumerWidget {
     if (!deferParse) {
       return markdown;
     }
-    final t = context.designSystem ?? DesignSystemTokens.light();
     return _DeferredMarkdown(
-      placeholder: Text(
-        body,
-        maxLines: 8,
-        overflow: TextOverflow.ellipsis,
-        style: CcTypography.body.copyWith(color: t.textPrimary),
-      ),
+      contentKey: Object.hash(body, bodyHtml),
+      placeholder: const PrDescriptionSkeleton(),
       child: markdown,
     );
-  }
-}
-
-/// Paints [placeholder] on the first frame, then [child].
-///
-/// GitHub-flavoured markdown parse + widget build is the Overview hitch:
-/// a long description or a bot report must not run before first paint.
-class _DeferredMarkdown extends StatefulWidget {
-  const _DeferredMarkdown({required this.placeholder, required this.child});
-
-  final Widget placeholder;
-  final Widget child;
-
-  @override
-  State<_DeferredMarkdown> createState() => _DeferredMarkdownState();
-}
-
-class _DeferredMarkdownState extends State<_DeferredMarkdown> {
-  var _ready = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() => _ready = true);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _ready ? widget.child : widget.placeholder;
   }
 }

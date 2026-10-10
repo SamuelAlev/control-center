@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27
+# syntax=docker/dockerfile:1.28
 
 # =============================================================================
 # Dockerfile for self-hosting the Control Center phone PWA (cc_remote).

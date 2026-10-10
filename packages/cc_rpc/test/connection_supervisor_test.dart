@@ -411,6 +411,44 @@ void main() {
       },
     );
 
+    test(
+      'reconnectNow cuts the backoff short and reports the next attempt',
+      () async {
+        final first = scriptedConnection();
+        final second = scriptedConnection();
+        final gated = _GatedResolver(first.connection, second.connection);
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: gated,
+        );
+        addTearDown(sup.close);
+
+        await sup.start();
+        final backingOff = sup.status.firstWhere(
+          (s) => s.nextAttemptAt != null,
+        );
+        // Drop the transport: the first reconnect attempt is refused.
+        unawaited(first.server.close());
+        final waiting = await backingOff.timeout(const Duration(seconds: 2));
+        expect(waiting.phase, ServerConnectionPhase.reconnecting);
+        expect(waiting.nextAttemptAt!.isAfter(DateTime.now()), isTrue);
+
+        // The server is back; a manual retry must not wait out the backoff.
+        gated.open = true;
+        second.sub = serveHealthChecks(second.server);
+        final connected = sup.status.firstWhere(
+          (s) => s.phase == ServerConnectionPhase.connected,
+        );
+        sup.reconnectNow();
+        final status = await connected.timeout(
+          const Duration(milliseconds: 500),
+        );
+        expect(status.nextAttemptAt, isNull);
+      },
+    );
+
     test('an identity mismatch is terminal (no retry loop)', () async {
       final first = scriptedConnection();
       final r = _ScriptedResolver([
@@ -596,6 +634,33 @@ void main() {
       expect(s.error, isNull);
     });
   });
+}
+
+/// Returns one healthy session, then refuses every reconnect until [open].
+class _GatedResolver extends ReachabilityResolver {
+  _GatedResolver(this.initial, this.recovered);
+
+  final ResolvedConnection initial;
+  final ResolvedConnection recovered;
+  bool open = false;
+  int attempts = 0;
+
+  @override
+  Future<ResolvedConnection> connect(
+    ConnectionDescriptor descriptor, {
+    required String deviceId,
+    required String psk,
+    String? pinnedFingerprint,
+  }) async {
+    attempts++;
+    if (attempts == 1) {
+      return initial;
+    }
+    if (!open) {
+      throw StateError('connection refused');
+    }
+    return recovered;
+  }
 }
 
 /// Returns one healthy session, then a typed device rejection on reconnect.

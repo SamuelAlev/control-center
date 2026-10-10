@@ -50,7 +50,7 @@ Future<String> sendCommentToAgent(
   if (pull == null) {
     throw StateError('Pull request is not loaded');
   }
-  final spaceId = await ref.read(prSpaceProvider(pull).future);
+  final spaceId = await ref.read(prSpaceProvider(PrSpaceKey.of(pull)).future);
   final conversationId = await _emptyOrNewConversation(
     ref,
     workspaceId: workspaceId,

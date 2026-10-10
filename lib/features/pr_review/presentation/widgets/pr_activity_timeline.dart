@@ -42,6 +42,7 @@ import 'package:go_router/go_router.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 part 'pr_activity_timeline_commits.dart';
+part 'pr_activity_timeline_feed.dart';
 
 /// The Overview tab's conversation feed, rendered under the PR description:
 /// a chronological timeline of the opened event, review requests, label
@@ -85,7 +86,8 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
   ConsumerState<PrActivityTimeline> createState() => _PrActivityTimelineState();
 }
 
-class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
+class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
+    with _FeedRowsMemo {
   /// Per-conversation open/closed presses, keyed by thread id. The DEFAULT is
   /// derived (`open == !resolved`), matching the diff.
   ///
@@ -201,82 +203,35 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
 
-    final reviewsAsync = ref.watch(prReviewsProvider(prRef));
-    final reviews = reviewsAsync.hasError
-        ? const <PrReviewSubmission>[]
-        : (reviewsAsync.value ?? const <PrReviewSubmission>[]);
-    final commentsAsync = ref.watch(prIssueCommentsProvider(prRef));
-    final comments = commentsAsync.hasError
-        ? const <IssueComment>[]
-        : (commentsAsync.value ?? const <IssueComment>[]);
-    final commitsAsync = ref.watch(prCommitsProvider(prRef));
-    final commits = commitsAsync.hasError
-        ? const <PrCommit>[]
-        : (commitsAsync.value ?? const <PrCommit>[]);
-    final eventsAsync = ref.watch(prTimelineEventsProvider(prRef));
-    final events = eventsAsync.hasError
-        ? const <PrTimelineEvent>[]
-        : (eventsAsync.value ?? const <PrTimelineEvent>[]);
-    final codeCommentsAsync = ref.watch(prReviewCommentIndexProvider(prRef));
-    final codeComments = codeCommentsAsync.hasError
-        ? const <PrCodeReviewComment>[]
-        : (codeCommentsAsync.value ?? const <PrCodeReviewComment>[]);
-    final filesAsync = ref.watch(prFileIndexProvider(prRef));
-    final orderedFiles = sortFilesByTreeOrder(
-      filesAsync.hasError
-          ? const <PrFile>[]
-          : (filesAsync.value ?? const <PrFile>[]),
-    );
-
-    // Conversations, keyed by the review that STARTED each one.
-    //
-    // Keyed by the root's review id, not by every comment's: a reply is
-    // submitted with its own later review, so bucketing per comment would
-    // scatter one discussion across several timeline entries and show the
-    // reply detached from what it answers.
-    final allThreads = groupServerReviewThreads(codeComments);
-    final threadsByReview = <int, List<ServerReviewThread>>{};
-    for (final thread in allThreads) {
-      final reviewId = thread.reviewId;
-      if (reviewId != null) {
-        threadsByReview.putIfAbsent(reviewId, () => []).add(thread);
-      }
-    }
-    // A review that only REPLIED to earlier conversations owns no thread of its
-    // own, so its entry would render as a bare "reviewed · 3 hours ago" with
-    // the words nowhere in sight. Surface the replies there, pointing back.
-    final repliesByReview = serverReviewRepliesByReview(allThreads);
-
-    final entries = buildPrActivityEntries(
+    // `.value` survives an error: the resilient client replays a cached
+    // snapshot and a retried subscription error lands between two identical
+    // snapshots — reading an error as "none" flipped the feed long → empty →
+    // long. Nothing here has an error affordance to show instead.
+    final reviews =
+        ref.watch(prReviewsProvider(prRef)).value ??
+        const <PrReviewSubmission>[];
+    final comments =
+        ref.watch(prIssueCommentsProvider(prRef)).value ??
+        const <IssueComment>[];
+    final commits =
+        ref.watch(prCommitsProvider(prRef)).value ?? const <PrCommit>[];
+    final events =
+        ref.watch(prTimelineEventsProvider(prRef)).value ??
+        const <PrTimelineEvent>[];
+    final codeComments =
+        ref.watch(prReviewCommentIndexProvider(prRef)).value ??
+        const <PrCodeReviewComment>[];
+    final files =
+        ref.watch(prFileIndexProvider(prRef)).value ?? const <PrFile>[];
+    final orderedFiles = _orderedFilesFor(files);
+    final rows = _rowsFor(
       pr: pr,
       reviews: reviews,
       comments: comments,
       commits: commits,
       events: events,
+      codeComments: codeComments,
     );
-
-    // One sliver child per conversation so a review that started twenty
-    // threads does not build (and markdown-parse) all twenty the moment
-    // its verdict row enters the cache extent.
-    final rows = <_FeedRow>[];
-    for (final entry in entries) {
-      if (entry is PrReviewEntry) {
-        final threads = threadsByReview[entry.review.id] ?? const [];
-        final replies = repliesByReview[entry.review.id] ?? const [];
-        rows.add(_EntryRow(entry));
-        if (replies.isNotEmpty) {
-          rows.add(_RepliesRow(replies));
-        }
-        if (threads.isNotEmpty) {
-          rows.add(_ThreadsIntroRow(entry.review.id, threads.length));
-          for (final thread in threads) {
-            rows.add(_ThreadRow(thread));
-          }
-        }
-      } else {
-        rows.add(_EntryRow(entry));
-      }
-    }
 
     final controller = ref.watch(
       prInlineCommentsControllerProvider(prRef).notifier,
@@ -1432,12 +1387,9 @@ class _CommentCard extends ConsumerWidget {
     final comment = entry.comment;
     final edit = ref.watch(prEditProvider(prRef));
     final displayBody = edit.optimisticComments[comment.id] ?? comment.body;
-    final login = ref
-        .watch(githubUserProvider)
-        .maybeWhen(
-          data: (user) => user?.login.toLowerCase() ?? '',
-          orElse: () => '',
-        );
+    final login = ref.watch(
+      githubUserProvider.select((u) => u.value?.login.toLowerCase() ?? ''),
+    );
     final isAuthor =
         login.isNotEmpty && comment.user?.login.toLowerCase() == login;
     // Checking a task box is a write the author and anyone with push access
@@ -1728,33 +1680,6 @@ class _ClickableAuthorName extends StatelessWidget {
       ),
     );
   }
-}
-
-/// One virtualised sliver child in the activity feed. A review's
-/// conversations are unbundled so only on-screen cards build.
-sealed class _FeedRow {
-  const _FeedRow();
-}
-
-class _EntryRow extends _FeedRow {
-  const _EntryRow(this.entry);
-  final PrActivityEntry entry;
-}
-
-class _RepliesRow extends _FeedRow {
-  const _RepliesRow(this.replies);
-  final List<ServerReviewReply> replies;
-}
-
-class _ThreadsIntroRow extends _FeedRow {
-  const _ThreadsIntroRow(this.reviewId, this.count);
-  final int reviewId;
-  final int count;
-}
-
-class _ThreadRow extends _FeedRow {
-  const _ThreadRow(this.thread);
-  final ServerReviewThread thread;
 }
 
 /// Gutter bubble / rail column.

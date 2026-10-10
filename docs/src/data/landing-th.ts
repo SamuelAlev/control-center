@@ -328,7 +328,7 @@ export const th: LandingCopy = {
     title: "ทำให้ตัวเอง\nอยู่สบาย",
     description: "วันทำงานนักพัฒนาถัดไปเริ่มที่นี่ได้ ฟรีและโอเพนซอร์ส",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "ดูรุ่นที่ออก",
     web: "เปิดเว็บแอป",

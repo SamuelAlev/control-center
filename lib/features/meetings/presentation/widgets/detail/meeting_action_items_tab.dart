@@ -13,6 +13,28 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Opens the hand-entry dialog for a new action item on [meeting]. Shared by
+/// the tab and the overview rail beside the notes.
+Future<void> showAddMeetingActionItemDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Meeting meeting,
+) {
+  final l10n = AppLocalizations.of(context);
+  return showCcDialog<void>(
+    context: context,
+    builder: (_) => MeetingActionItemDialog(
+      title: l10n.meetingAddActionItem,
+      submitLabel: l10n.add,
+      onSubmit: (content, owner) {
+        ref
+            .read(meetingRecorderControllerProvider.notifier)
+            .addActionItem(meeting.id, content: content, owner: owner);
+      },
+    ),
+  );
+}
+
 /// The Action items tab: each persisted action item with a checkbox (its
 /// `done` state is stored on the row), an owner line, edit/delete affordances,
 /// and a "Create ticket" action that files a real ticket and links it back to
@@ -31,21 +53,8 @@ class MeetingActionItemsTab extends ConsumerWidget {
   /// The persisted action items.
   final List<MeetingActionItem> actionItems;
 
-  Future<void> _add(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return showCcDialog<void>(
-      context: context,
-      builder: (_) => MeetingActionItemDialog(
-        title: l10n.meetingAddActionItem,
-        submitLabel: l10n.add,
-        onSubmit: (content, owner) {
-          ref
-              .read(meetingRecorderControllerProvider.notifier)
-              .addActionItem(meeting.id, content: content, owner: owner);
-        },
-      ),
-    );
-  }
+  Future<void> _add(BuildContext context, WidgetRef ref) =>
+      showAddMeetingActionItemDialog(context, ref, meeting);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

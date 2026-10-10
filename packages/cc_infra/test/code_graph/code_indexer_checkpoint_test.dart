@@ -111,6 +111,71 @@ void main() {
     indexedAt: DateTime(2025),
   );
 
+  test(
+    'a worktree full pass reuses base hashes its last clean run proved',
+    () async {
+      final toolchain = await fingerprintFor(const ['stamp-1']);
+      repo.hashesByCheckout[null] = {
+        'same.dart': 'h-base',
+        'rewritten.dart': 'h-base-2',
+      };
+      // Rewritten in the base after the worktree's last run: unproven.
+      repo.indexedAtOverride['rewritten.dart'] = DateTime(2026);
+      repo.hashesByCheckout['wt1'] = {'delta.dart': 'h-delta'};
+      // The worktree's last clean run, since invalidated by a base re-index.
+      repo.checkpoints['ws1|repo1|wt1'] = checkpoint(
+        checkoutId: 'wt1',
+        toolchain: toolchain,
+        baseGeneration: 1,
+      );
+      repo.checkpoints['ws1|repo1|'] = checkpoint(
+        toolchain: toolchain,
+        generation: 2,
+      );
+
+      await indexer(
+        tree: {
+          'same.dart': 'h-base',
+          'rewritten.dart': 'h-base-2',
+          'delta.dart': 'h-delta',
+        },
+        fingerprint: fp,
+      ).indexRepo(
+        workspaceId: 'ws1',
+        repoId: 'repo1',
+        repoPath: tmp.path,
+        checkoutId: 'wt1',
+      );
+
+      final known = walker.lastKnown;
+      expect(known['same.dart']?.contentHash, 'h-base');
+      expect(
+        known['same.dart']?.indexedAt,
+        DateTime(2025),
+        reason: 'only as fresh as the run that proved it',
+      );
+      expect(
+        known.containsKey('rewritten.dart'),
+        isFalse,
+        reason: 'a base row newer than the proof is re-hashed',
+      );
+      expect(known['delta.dart']?.contentHash, 'h-delta');
+    },
+  );
+
+  test('a worktree with no checkpoint seeds nothing from base', () async {
+    repo.hashesByCheckout[null] = {'same.dart': 'h-base'};
+
+    await indexer(tree: {'same.dart': 'h-base'}, fingerprint: fp).indexRepo(
+      workspaceId: 'ws1',
+      repoId: 'repo1',
+      repoPath: tmp.path,
+      checkoutId: 'wt1',
+    );
+
+    expect(walker.lastKnown, isEmpty);
+  });
+
   test('a full checkpoint match skips the whole run', () async {
     final toolchain = await fingerprintFor(const ['stamp-1']);
     repo.checkpoints['ws1|repo1|'] = checkpoint(toolchain: toolchain);
@@ -496,12 +561,16 @@ class _CountingWalker implements SourceFileWalker {
   /// the partition back.
   bool failWalk = false;
 
+  /// The `known` map the last walk was handed: the hashes it may reuse.
+  Map<String, IndexedFileState> lastKnown = const {};
+
   @override
   Future<List<HashedSourceFile>> walkAndHash(
     String rootPath, {
     Map<String, IndexedFileState> known = const {},
   }) async {
     walkCalls++;
+    lastKnown = known;
     if (failWalk) {
       throw StateError('walk exploded');
     }
@@ -531,6 +600,9 @@ class _CheckpointRepo implements CodeGraphRepository {
   final Map<String, CodeIndexCheckpoint> checkpoints = {};
   final List<String> ingestedPaths = [];
   int fileStatesCalls = 0;
+
+  /// Per-path `indexedAt` for [fileStates] rows; everything else is old.
+  final Map<String, DateTime> indexedAtOverride = {};
   int resolveCalls = 0;
   int pruneCalls = 0;
 
@@ -550,7 +622,10 @@ class _CheckpointRepo implements CodeGraphRepository {
     fileStatesCalls++;
     return {
       for (final e in (hashesByCheckout[checkoutId] ?? const {}).entries)
-        e.key: (contentHash: e.value, indexedAt: DateTime(2000)),
+        e.key: (
+          contentHash: e.value,
+          indexedAt: indexedAtOverride[e.key] ?? DateTime(2000),
+        ),
     };
   }
 

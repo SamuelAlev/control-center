@@ -8026,6 +8026,53 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is nog geen transcript om samen te vatten.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Genereer ze uit het transcript of schrijf je eigen.';
+
+  @override
+  String get meetingNotesGenerate => 'Notities genereren';
+
+  @override
+  String get meetingNotesWriteOwn => 'Zelf schrijven';
+
+  @override
+  String get meetingNothingTranscribed => 'Er is niets getranscribeerd.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Er is geen transcript om samen te vatten, maar je kunt nog steeds je eigen notities bijhouden.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Sprekers';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Spreektijd per spreker verschijnt zodra er een transcript is.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count meer';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share van de spreektijd, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Alle actiepunten zijn afgerond.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Alle $count bekijken';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notities als Markdown naar het klembord gekopieerd.';
 
@@ -15339,4 +15386,50 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Een agent zit vast op inloggegevens';
+
+  @override
+  String get killTerminal => 'Terminal beëindigen';
+
+  @override
+  String get stopAgentCommand => 'Opdracht stoppen';
+
+  @override
+  String get agentCommandStopping => 'Bezig met stoppen…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Agentopdracht $command, actief sinds $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Verbinding met de server verbroken';
+
+  @override
+  String get serverLostBody =>
+      'Control Center blijft op de achtergrond proberen opnieuw verbinding te maken. Probeer het nu opnieuw of ga naar het aanmeldscherm om een server te kiezen.';
+
+  @override
+  String get serverLostRetrying => 'Opnieuw verbinden…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Volgende poging over $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Opnieuw proberen te verbinden';
+
+  @override
+  String get serverLostSignIn => 'Naar aanmelden';
+
+  @override
+  String get serverEndedTitle => 'Kan niet opnieuw verbinden met de server';
+
+  @override
+  String get shutdownSubtitleServer => 'De server wordt gestopt';
 }

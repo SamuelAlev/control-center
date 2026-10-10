@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27
+# syntax=docker/dockerfile:1.28
 
 # =============================================================================
 # Dockerfile for the Control Center signaling server.

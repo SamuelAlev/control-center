@@ -16,6 +16,7 @@ void main() {
     void Function(ClaudeToolResult)? onToolResult,
     void Function(ClaudeUsage)? onUsage,
     void Function(String)? onError,
+    void Function()? onResult,
   }) => ClaudeStreamJsonParser(
     ClaudeStreamJsonCallbacks(
       onText: onText,
@@ -24,6 +25,7 @@ void main() {
       onToolResult: onToolResult,
       onUsage: onUsage,
       onError: onError,
+      onResult: onResult,
     ),
   );
 
@@ -448,6 +450,18 @@ void main() {
       final p2 = build(onError: errs2.add);
       p2.process({'type': 'result', 'is_error': true});
       expect(errs2.single, 'claude reported an error');
+    });
+
+    test('onResult fires once per result, after the error is reported', () {
+      final seen = <String>[];
+      final p = build(
+        onError: (e) => seen.add('error:$e'),
+        onResult: () => seen.add('result'),
+      );
+      p.process({'type': 'result', 'is_error': false, 'result': 'ok'});
+      p.process({'type': 'result', 'is_error': true, 'error': 'overloaded'});
+      p.process({'type': 'system', 'subtype': 'init'});
+      expect(seen, ['result', 'error:overloaded', 'result']);
     });
 
     test('a non-error result is dropped (not surfaced)', () {

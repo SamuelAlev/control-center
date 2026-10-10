@@ -306,6 +306,9 @@ void main() {
     'terminal.spawn': {'processSpawn'},
     'terminal.write': {'processSpawn'},
     'terminal.kill': {'processSpawn'},
+    // Signals an agent's shell command tree on the host — process control of
+    // the same class as ending a terminal.
+    'process.killAgentShell': {'processSpawn'},
     // Launches (or reuses) a code-server process for the space.
     'codeServer.open': {'processSpawn'},
     // Launches a GUI editor on the host against one conversation worktree.

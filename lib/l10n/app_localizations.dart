@@ -13745,6 +13745,76 @@ abstract class AppLocalizations {
   /// **'There\'s no transcript to summarize yet.'**
   String get meetingReRunNoTranscript;
 
+  /// No description provided for @meetingNotesEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate them from the transcript, or write your own.'**
+  String get meetingNotesEmptyDescription;
+
+  /// No description provided for @meetingNotesGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate notes'**
+  String get meetingNotesGenerate;
+
+  /// No description provided for @meetingNotesWriteOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your own'**
+  String get meetingNotesWriteOwn;
+
+  /// No description provided for @meetingNothingTranscribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was transcribed.'**
+  String get meetingNothingTranscribed;
+
+  /// No description provided for @meetingNothingTranscribedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no transcript to summarize, but you can still keep your own notes.'**
+  String get meetingNothingTranscribedDescription;
+
+  /// No description provided for @meetingOverviewSpeakers.
+  ///
+  /// In en, this message translates to:
+  /// **'Speakers'**
+  String get meetingOverviewSpeakers;
+
+  /// No description provided for @meetingOverviewSpeakersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk time per speaker appears once there\'s a transcript.'**
+  String get meetingOverviewSpeakersEmpty;
+
+  /// Overflow line under the speaker talk-time list.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String meetingOverviewMoreSpeakers(int count);
+
+  /// Screen-reader label for one speaker's talk-time bar.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {share} of talk time, {duration}'**
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  );
+
+  /// No description provided for @meetingOverviewActionItemsAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All action items are done.'**
+  String get meetingOverviewActionItemsAllDone;
+
+  /// Link from an overview section to its full tab.
+  ///
+  /// In en, this message translates to:
+  /// **'View all {count}'**
+  String meetingOverviewViewAll(int count);
+
   /// No description provided for @meetingExportCopied.
   ///
   /// In en, this message translates to:
@@ -25819,6 +25889,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An agent is blocked on a credential'**
   String get notificationAgentBlockedOnCredentialUnnamed;
+
+  /// Tooltip on a sidebar TERMINALS row's trash button that ends the shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Kill terminal'**
+  String get killTerminal;
+
+  /// Tooltip on the stop button of a running agent shell command in the sidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop command'**
+  String get stopAgentCommand;
+
+  /// Status shown on an agent command row after Stop, until the process exits.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get agentCommandStopping;
+
+  /// Compact sidebar age in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'{count}s'**
+  String sidebarAgeSeconds(int count);
+
+  /// Screen reader label for a running agent shell command row.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent command {command}, running for {elapsed}'**
+  String agentCommandSemantics(String command, String elapsed);
+
+  /// Title of the dialog shown while the app has lost its server connection and is retrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost connection to the server'**
+  String get serverLostTitle;
+
+  /// Body of the lost-connection dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center keeps trying to reconnect in the background. Try again now, or go to the sign-in screen to pick a server.'**
+  String get serverLostBody;
+
+  /// Status line while a reconnect attempt is in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get serverLostRetrying;
+
+  /// Countdown to the next automatic reconnect attempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Next attempt in {seconds}s'**
+  String serverLostNextAttempt(int seconds);
+
+  /// Button that retries the server connection immediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Try to reconnect'**
+  String get serverLostReconnect;
+
+  /// Button that leaves the app for the server sign-in screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to sign-in'**
+  String get serverLostSignIn;
+
+  /// Title of the dialog shown when the server rejected this device or changed identity, so retrying cannot help.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reconnect to the server'**
+  String get serverEndedTitle;
+
+  /// Shutdown dialog subtitle when the server itself is stopping (not stopped by this app).
+  ///
+  /// In en, this message translates to:
+  /// **'The server is stopping'**
+  String get shutdownSubtitleServer;
 }
 
 class _AppLocalizationsDelegate

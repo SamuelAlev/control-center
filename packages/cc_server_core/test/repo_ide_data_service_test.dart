@@ -62,6 +62,67 @@ void main() {
     return root.path;
   }
 
+  group('change reads', () {
+    test(
+      'concurrent identical reads share one capture, scoped per workspace',
+      () async {
+        final ws = _FakeWorkspaceRepo()
+          ..linked['ws'] = {'a'}
+          ..linked['other'] = {'a'};
+        final diff = _GatedDiff();
+        final svc = RepoIdeDataService(
+          repoRepository: _FakeRepoRepo({'a': repo('a', '/repos/a')}),
+          workspaceRepository: ws,
+          isolatedRepoRepository: _FakeIsolatedRepoRepo(),
+          fileSearch: DartFileSearch(),
+          diff: diff,
+        );
+
+        final first = svc.repoChanges('ws', 'a');
+        final second = svc.repoChanges('ws', 'a');
+        final foreign = svc.repoChanges('other', 'a');
+        await pumpEventQueue();
+        expect(diff.calls, 2, reason: 'one capture per workspace');
+
+        diff.release();
+        await Future.wait([first, second, foreign]);
+
+        final third = svc.repoChanges('ws', 'a');
+        await pumpEventQueue();
+        expect(diff.calls, 3, reason: 'a finished read is not reused');
+        diff.release();
+        await third;
+      },
+    );
+
+    test(
+      'a read after a mutation never joins a capture from before it',
+      () async {
+        final ws = _FakeWorkspaceRepo()..linked['ws'] = {'a'};
+        final diff = _GatedDiff();
+        final svc = RepoIdeDataService(
+          repoRepository: _FakeRepoRepo({'a': repo('a', '/repos/a')}),
+          workspaceRepository: ws,
+          isolatedRepoRepository: _FakeIsolatedRepoRepo(),
+          fileSearch: DartFileSearch(),
+          diff: diff,
+        );
+
+        final before = svc.repoChanges('ws', 'a');
+        await pumpEventQueue();
+        // No worktree for the space: the stage is a no-op, but it is still a
+        // mutation boundary.
+        await svc.stageFiles('ws', 'space', 'a', const []);
+        final after = svc.repoChanges('ws', 'a');
+        await pumpEventQueue();
+        expect(diff.calls, 2);
+
+        diff.release();
+        await Future.wait([before, after]);
+      },
+    );
+  });
+
   group('searchFiles', () {
     test(
       'lists a workspace\'s linked repos, tagging each hit with its repoId',
@@ -1677,6 +1738,99 @@ void main() {
       expect((head.stdout as String).trim(), (remote.stdout as String).trim());
     });
 
+    group('background fetch', () {
+      RepoIdeDataService autoFetching(String wt) => RepoIdeDataService(
+        repoRepository: _FakeRepoRepo(),
+        workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+        isolatedRepoRepository: _FakeIsolatedRepoRepo()
+          ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
+        fileSearch: DartFileSearch(),
+        autoFetchInterval: const Duration(minutes: 3),
+      );
+
+      /// Pushes one commit to [name]'s origin `main` from a second clone.
+      Future<void> pushFromElsewhere(String name, String content) async {
+        final origin = p.join(tmp.path, '$name-origin.git');
+        final other = p.join(tmp.path, '$name-other');
+        if (!Directory(other).existsSync()) {
+          await git(['symbolic-ref', 'HEAD', 'refs/heads/main'], origin);
+          await git(['clone', '-q', origin, other], tmp.path);
+          await git(['config', 'user.email', 'test@example.com'], other);
+          await git(['config', 'user.name', 'Test'], other);
+          await git(['config', 'commit.gpgsign', 'false'], other);
+        }
+        File(p.join(other, 'src/app.dart')).writeAsStringSync(content);
+        await git(['add', '-A'], other);
+        await git(['commit', '-q', '-m', content.trim()], other);
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], other);
+      }
+
+      test('commits pushed elsewhere reach behind on a later poll', () async {
+        final wt = await gitWorktreeWithOrigin('wt-autofetch');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        await pushFromElsewhere('wt-autofetch', '// remote\n');
+        final svc = autoFetching(wt);
+
+        // The poll itself never waits on the network.
+        final first = await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+        );
+        expect(first.behind, 0);
+        await svc.autoFetchesSettled();
+
+        final second = await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+        );
+        expect(second.hasUpstream, isTrue);
+        expect(second.ahead, 0);
+        expect(second.behind, 1);
+      });
+
+      test('a space branch tracking main fetches main', () async {
+        final wt = await gitWorktreeWithOrigin('wt-autofetch-track');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc', '--track', 'main'], wt);
+        await git(['config', 'branch.space/abc.remote', 'origin'], wt);
+        await git(['config', 'branch.space/abc.merge', 'refs/heads/main'], wt);
+        await pushFromElsewhere('wt-autofetch-track', '// remote\n');
+        final svc = autoFetching(wt);
+
+        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.autoFetchesSettled();
+
+        final grouped = await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+        );
+        expect(grouped.behind, 1);
+      });
+
+      test('fetches at most once per interval', () async {
+        final wt = await gitWorktreeWithOrigin('wt-autofetch-throttle');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        await pushFromElsewhere('wt-autofetch-throttle', '// one\n');
+        final svc = autoFetching(wt);
+        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.autoFetchesSettled();
+
+        await pushFromElsewhere('wt-autofetch-throttle', '// two\n');
+        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.autoFetchesSettled();
+
+        final grouped = await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+        );
+        expect(grouped.behind, 1);
+      });
+    });
+
     test(
       'syncBranch reports a conflict and does not start the rebase',
       () async {
@@ -2120,4 +2274,35 @@ class _FakeSessionDiff implements SessionDiffPort {
       unstaged: _byPath[worktreePath] ?? const [],
     );
   }
+}
+
+/// A diff port whose captures stay pending until [release], counting how many
+/// were started.
+class _GatedDiff implements SessionDiffPort {
+  int calls = 0;
+  final List<Completer<List<PrFile>>> _pending = [];
+
+  void release() {
+    for (final c in _pending) {
+      c.complete(const []);
+    }
+    _pending.clear();
+  }
+
+  @override
+  Future<List<PrFile>> changedFiles(
+    String worktreePath,
+    String baseRef, {
+    String? headRef,
+  }) {
+    calls++;
+    final c = Completer<List<PrFile>>();
+    _pending.add(c);
+    return c.future;
+  }
+
+  @override
+  Future<({List<PrFile> staged, List<PrFile> unstaged})> groupedChanges(
+    String worktreePath,
+  ) async => (staged: const <PrFile>[], unstaged: const <PrFile>[]);
 }

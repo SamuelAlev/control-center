@@ -10,9 +10,10 @@ import 'package:cc_infra/src/dispatch/dispatch_session.dart'
 /// `DispatchSession` owns processes, transcripts and credentials, none of
 /// which a queue test should have to fake.
 abstract class SteeringSessionView {
-  /// Whether a built-in harness loop is driving this session (the only
-  /// transport whose turn boundaries drain steering).
-  bool get isHarnessActive;
+  /// Whether a message pushed into [steeringQueue] now will reach the run: a
+  /// built-in harness loop drains it at its next turn boundary, a `claude -p`
+  /// turn writes it to its open stdin.
+  bool get acceptsSteering;
 
   /// The session's workspace, when scoped.
   String? get workspaceId;
@@ -26,7 +27,8 @@ abstract class SteeringSessionView {
   /// The run-log id backing this session, when it has one.
   String? get runLogId;
 
-  /// The session's steering inbox. Safe to mutate between turns; the loop
-  /// reads it only at turn boundaries.
+  /// The session's steering inbox. Safe to mutate between turns: the harness
+  /// loop reads it only at turn boundaries, a Claude run on the next
+  /// microtask after a push.
   SteeringQueue get steeringQueue;
 }

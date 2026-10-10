@@ -330,7 +330,7 @@ export const ja: LandingCopy = {
     description:
       "次の開発者の一日は、ここから始められます。無料で、オープンソースです。",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "リリースを見る",
     web: "ウェブアプリを開く",

@@ -2,6 +2,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
+import 'package:control_center/shared/editor/editor_tab_face.dart';
+import 'package:control_center/shared/editor/editor_tab_ghost.dart';
+import 'package:control_center/shared/editor/editor_tab_landing.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart'
     show kMiddleMouseButton, PointerSignalEvent, PointerScrollEvent;
@@ -23,11 +26,15 @@ typedef TabReorderDrop = void Function(TabDragData data, int insertIndex);
 /// visually "opens" onto its content.
 ///
 /// Tabs are [Draggable]: drag one within this bar to reorder, or onto another
-/// pane to move/split it. The whole strip is a single [DragTarget]; while a tab
-/// hovers, an animated gap opens at the insertion point (neighbours slide
-/// aside, Chrome-style) and the dragged tab's own slot collapses — both
-/// respecting reduced motion via [CcMotion.resolve]. Tab bodies are owned by
-/// the caller; this widget renders chrome + selection + drag only. Trailing
+/// pane to move/split it. The tab itself lifts ([EditorTabGhost]): held at the
+/// point it was grabbed, it rides the strip while the pointer is over one and
+/// tears free over the panes. The whole strip is a single [DragTarget]; while
+/// a tab hovers, an animated gap opens at the insertion point (neighbours
+/// slide aside, Chrome-style) and the dragged tab's own slot collapses. On
+/// release the strip snaps to its final layout — which the open gap already
+/// showed — and the tab glides into its slot ([EditorTabLanding]), wherever
+/// that slot ended up. All of it respects reduced motion. Tab bodies are owned
+/// by the caller; this widget renders chrome + selection + drag only. Trailing
 /// [actions] (close / split / new-tab menu) are right-aligned.
 class EditorTabBar extends StatefulWidget {
   /// Creates an [EditorTabBar].
@@ -165,6 +172,17 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// tab claims its space (animating it closed would double-count the width).
   bool _gapsAnimate = true;
 
+  /// Bumped on every accepted drop that touches this strip. It keys the slots'
+  /// [AnimatedSize]s, so the strip's post-drop layout appears at once instead
+  /// of each positional slot easing from the width of the tab it used to hold
+  /// — the open gap already previewed that layout, and the landing flight
+  /// carries the motion.
+  int _settleEpoch = 0;
+
+  /// The tab scroller's viewport: the lane a carried tab rides while over this
+  /// strip, so it never slides over the pinned trailing actions.
+  final GlobalKey _laneKey = GlobalKey();
+
   /// Per-cell keys so a hovering drag can measure tab boundaries.
   List<GlobalKey> _tabKeys = const [];
 
@@ -180,11 +198,6 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// Full-IDE pointer shield active while a tab is being dragged. See
   /// [_beginDragShield].
   OverlayEntry? _dragShield;
-
-  /// Max width of a single tab cell. Longer labels ellipsize (VS Code parity)
-  /// so one long path can't blow the tab out to the full bar width. Hovering
-  /// the label shows the uncut text.
-  static const double _maxTabWidth = 220;
 
   /// Drop-gap width when the dragged tab's cell couldn't be measured (e.g. a
   /// cross-bar drag whose payload carries no width).
@@ -327,6 +340,14 @@ class _EditorTabBarState extends State<EditorTabBar> {
   }
 
   void _onDragMove(DragTargetDetails<TabDragData> details) {
+    // The ghost rides this strip while the pointer is over it.
+    final box = _laneKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      EditorTabDragSession.current?.enterLane(
+        this,
+        box.localToGlobal(Offset.zero) & box.size,
+      );
+    }
     final next = _insertionIndexFor(details.offset);
     final width = details.data.width ?? _fallbackGapWidth;
     if (next != _dropIndex || width != _hoverGapWidth || !_gapsAnimate) {
@@ -339,6 +360,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
   }
 
   void _clearDrop() {
+    EditorTabDragSession.current?.leaveLane(this);
     if (_dropIndex != null) {
       setState(() => _dropIndex = null);
     }
@@ -350,6 +372,38 @@ class _EditorTabBarState extends State<EditorTabBar> {
     final box =
         _tabKeys[index].currentContext?.findRenderObject() as RenderBox?;
     return (box != null && box.hasSize) ? box.size.width : null;
+  }
+
+  /// The drag anchor for tab [index]: opens the [EditorTabDragSession] (before
+  /// the avatar exists, so its first hit test already finds it) and keeps the
+  /// avatar's origin AT the pointer, so every drop target keeps reading the
+  /// pointer from `details.offset`. The ghost does the grab-point offset.
+  Offset _beginSession(int index, BuildContext cell, Offset position) {
+    final box = cell.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final origin = box.localToGlobal(Offset.zero);
+      EditorTabDragSession.current = EditorTabDragSession(
+        tab: widget.tabs[index],
+        face: _ghostFace(index),
+        grab: position - origin,
+        size: box.size,
+        origin: origin,
+      );
+    }
+    return Offset.zero;
+  }
+
+  /// The face a lifted tab shows: the tab as selected, with its close slot
+  /// reserved but empty.
+  Widget _ghostFace(int index) {
+    return EditorTabFace(
+      label: widget.labels[index],
+      selected: true,
+      icon: widget.icons?[index],
+      leading: widget.leadings?[index],
+      trailing: widget.trailings?[index],
+      reserveAffordance: widget.onTabClosed != null,
+    );
   }
 
   /// A drag left this bar with tab [index]: collapse its slot and pre-open the
@@ -365,18 +419,29 @@ class _EditorTabBarState extends State<EditorTabBar> {
     });
   }
 
-  /// The drag ended (accepted anywhere, or cancelled): restore the slot. On a
-  /// cancel the tab is still here and its slot re-expands; on an accepted move
-  /// the layout mutation has already rebuilt the strip. The avatar can outlive
-  /// this bar (moving a leaf's last tab away closes the leaf), so guard.
-  void _onDragEnded() {
+  /// The drag ended (accepted anywhere, or cancelled): launch the landing
+  /// flight and restore the slot. On a cancel the tab is still here, its slot
+  /// re-expands and the flight carries it home; on an accepted move the layout
+  /// mutation rebuilds the strips and the flight finds the tab's new slot. The
+  /// avatar can outlive this bar (moving a leaf's last tab away closes the
+  /// leaf), so guard.
+  void _onDragEnded(DraggableDetails details) {
     _endDragShield();
+    final session = EditorTabDragSession.current;
+    EditorTabDragSession.current = null;
     if (!mounted) {
       return;
+    }
+    if (session != null) {
+      EditorTabLanding.fly(context, session);
     }
     setState(() {
       _draggingIndex = null;
       _dropIndex = null;
+      if (details.wasAccepted) {
+        _gapsAnimate = false;
+        _settleEpoch++;
+      }
     });
   }
 
@@ -402,18 +467,15 @@ class _EditorTabBarState extends State<EditorTabBar> {
           onLeave: (_) => _clearDrop(),
           onAcceptWithDetails: (details) {
             final index = _dropIndex ?? widget.tabs.length;
-            // A drop that lands the tab back where it started is a silent
-            // no-op: the gap closes ANIMATED, in step with the source slot
-            // re-expanding at the same boundary, so the strip's total width
-            // never jumps. A real move snaps the gap shut instead — the
-            // dropped tab claims the held-open space in the same frame.
-            final isNoOp =
-                details.data.sourceLeafId == widget.leafId &&
-                (index == details.data.tabIndex ||
-                    index == details.data.tabIndex + 1);
+            // The open gap already shows the strip as it will be after the
+            // drop, so the strip snaps straight to it: the gap shuts in the
+            // same frame the dropped tab claims its space, and no slot eases
+            // from the width of the tab it held before. The landing flight
+            // (launched by the source bar) carries the motion.
             setState(() {
               _dropIndex = null;
-              _gapsAnimate = isNoOp;
+              _gapsAnimate = false;
+              _settleEpoch++;
             });
             widget.onReorderDrop(details.data, index);
           },
@@ -428,6 +490,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
                 // scrolling (no reserved row → no layout shift).
                 Expanded(
                   child: Listener(
+                    key: _laneKey,
                     onPointerSignal: _onPointerSignal,
                     child: CcScrollbar(
                       controller: _scrollController,
@@ -449,7 +512,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
                             // dragged tab's width, sliding neighbours aside.
                             for (var i = 0; i < widget.labels.length; i++) ...[
                               _buildGap(i),
-                              _buildTab(t, i),
+                              _buildTab(i),
                             ],
                             _buildGap(widget.labels.length),
                             ...widget.inlineActions,
@@ -514,18 +577,14 @@ class _EditorTabBarState extends State<EditorTabBar> {
     );
   }
 
-  Widget _buildTab(DesignSystemTokens t, int index) {
+  Widget _buildTab(int index) {
     final selected = index == widget.selectedIndex;
     // A tab holding an open context menu reads as hovered: the pointer is over
     // the menu overlay by then, so the real hover has already left.
     final hovered =
         index == _hovered || identical(widget.tabs[index], _contextMenuTab);
-    final labelColor = selected ? t.fg : t.textTertiary;
-    final leading = widget.leadings == null ? null : widget.leadings![index];
-    final trailing = widget.trailings == null ? null : widget.trailings![index];
-    final background = selected
-        ? t.bgPrimary
-        : (hovered ? t.hover : const Color(0x00000000));
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final labelColor = EditorTabFace.labelColorFor(t, selected: selected);
 
     final focusNode = _tabFocus[index];
     final cell = KeyedSubtree(
@@ -557,146 +616,31 @@ class _EditorTabBarState extends State<EditorTabBar> {
                     ? null
                     : (details) =>
                           _openContextMenu(index, details.globalPosition),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: _maxTabWidth),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: background,
-                      border: BorderDirectional(
-                        end: BorderSide(color: t.borderPrimary),
-                        // The strip's single divider line is the editor body's top
-                        // border (drawn by the host). The active tab alone paints its
-                        // own bottom rule in the body color so it visually "opens" onto
-                        // the content; inactive tabs have no bottom border — otherwise
-                        // the line doubles against the body's top border.
-                        bottom: selected
-                            ? BorderSide(color: t.bgPrimary)
-                            : BorderSide.none,
-                      ),
-                    ),
-                    // The accent rule is an overlay (not a border) so selecting a tab
-                    // doesn't inset — and thus nudge — the label.
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          // widthFactor: 1 makes the cell shrink-wrap its content (up to
-                          // the ConstrainedBox's maxWidth) instead of expanding to fill
-                          // the full 220px; heightFactor stays null so it still centers
-                          // vertically in the strip.
-                          child: Center(
-                            widthFactor: 1,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (leading != null) ...[
-                                  leading(labelColor),
-                                  const SizedBox(width: 6),
-                                ] else if (widget.icons case final icons?) ...[
-                                  Icon(
-                                    icons[index],
-                                    size: 14,
-                                    color: labelColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                // The selected label is medium (w500), which measures
-                                // wider than the resting w400 — Manrope is a variable
-                                // font, so weight really changes advance widths. An
-                                // invisible w500 twin reserves the selected width up
-                                // front, so switching tabs restyles the label without
-                                // resizing the cell (which would shift every tab to
-                                // its right).
-                                Flexible(
-                                  child: CcTooltip(
-                                    message: widget.labels[index],
-                                    // Below the strip: the bar sits under the window
-                                    // chrome, so a tooltip above it has nowhere to go.
-                                    placement: CcTooltipPlacement.bottom,
-                                    child: Stack(
-                                      alignment:
-                                          AlignmentDirectional.centerStart,
-                                      children: [
-                                        ExcludeSemantics(
-                                          child: Opacity(
-                                            opacity: 0,
-                                            child: Text(
-                                              widget.labels[index],
-                                              maxLines: 1,
-                                              softWrap: false,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        CcScrambleText(
-                                          widget.labels[index],
-                                          scrambling:
-                                              widget.scrambling?[index] ??
-                                              false,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: selected
-                                                ? CcTypography.mediumWeight
-                                                : CcTypography.regularWeight,
-                                            color: labelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (trailing != null) ...[
-                                  const SizedBox(width: 6),
-                                  trailing(labelColor),
-                                ],
-                                // Close / dirty affordance: the slot is always reserved
-                                // (so the label never shifts). Hovering shows the close
-                                // button; otherwise a dirty tab shows an unsaved-changes
-                                // dot, a selected clean tab shows the close button and an
-                                // unselected clean tab shows nothing — VS Code behaviour.
-                                if (widget.onTabClosed != null) ...[
-                                  const SizedBox(width: 6),
-                                  SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: _buildTabAffordance(
-                                      index: index,
-                                      hovered: hovered,
-                                      selected: selected,
-                                      color: labelColor,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
+                // Invisible while a released drag of this tab is still gliding
+                // into this slot — see [EditorTabLanding].
+                child: EditorTabLandingSlot(
+                  tab: widget.tabs[index],
+                  child: EditorTabFace(
+                    label: widget.labels[index],
+                    selected: selected,
+                    hovered: hovered,
+                    icon: widget.icons?[index],
+                    leading: widget.leadings?[index],
+                    trailing: widget.trailings?[index],
+                    scrambling: widget.scrambling?[index] ?? false,
+                    // Hovering shows the close button; otherwise a dirty tab
+                    // shows an unsaved-changes dot, a selected clean tab shows
+                    // the close button and an unselected clean tab shows
+                    // nothing — VS Code behaviour.
+                    reserveAffordance: widget.onTabClosed != null,
+                    affordance: widget.onTabClosed == null
+                        ? null
+                        : _buildTabAffordance(
+                            index: index,
+                            hovered: hovered,
+                            selected: selected,
+                            color: labelColor,
                           ),
-                        ),
-                        if (selected)
-                          // Accent underline at the BOTTOM — matches the sidebar's
-                          // CcTabs indicator so the two tab strips read as aligned
-                          // (both underline the active tab) rather than one over-lining
-                          // and the other under-lining. Offset by the 1px rule the
-                          // strip draws under itself, exactly as CcTabs does, so the two
-                          // accents land on the same scanline; the selected cell's
-                          // body-colored bottom border then stays visible below it,
-                          // breaking the rule so the tab "opens" onto its content.
-                          Positioned(
-                            bottom: 1,
-                            left: 0,
-                            right: 0,
-                            child: IgnorePointer(
-                              child: SizedBox(
-                                height: 2,
-                                child: ColoredBox(color: t.accent),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
                   ),
                 ),
               ),
@@ -708,16 +652,18 @@ class _EditorTabBarState extends State<EditorTabBar> {
 
     // While this tab's avatar is in flight its slot collapses (the drop gap
     // stands in for it); a cancelled drag re-expands it. The AnimatedSize
-    // element survives the drag-state rebuilds, so both directions animate.
-    // Reduced motion skips AnimatedSize entirely (the slot snaps) — it cannot
-    // take a zero duration: its controller would complete synchronously inside
-    // its own performLayout and re-dirty the render object mid-layout.
+    // element survives the drag-state rebuilds, so both directions animate —
+    // until an accepted drop re-keys it (see [_settleEpoch]). Reduced motion
+    // skips AnimatedSize entirely (the slot snaps) — it cannot take a zero
+    // duration: its controller would complete synchronously inside its own
+    // performLayout and re-dirty the render object mid-layout.
     final Widget collapsible = _draggingIndex == index
         ? const SizedBox(width: 0, height: EditorTabBar.height)
         : cell;
     final slot = CcMotion.reduced(context)
         ? collapsible
         : AnimatedSize(
+            key: ValueKey(_settleEpoch),
             duration: CcMotion.normal,
             curve: CcMotion.standard,
             alignment: AlignmentDirectional.centerStart,
@@ -733,16 +679,14 @@ class _EditorTabBarState extends State<EditorTabBar> {
         // this at drag start, so the receiving bar's gap matches the cell.
         width: _measuredWidthOf(index),
       ),
-      dragAnchorStrategy: pointerDragAnchorStrategy,
+      dragAnchorStrategy: (_, cell, position) =>
+          _beginSession(index, cell, position),
       // The drag shield (begun in _onDragStarted) protects the drag from the
       // IDE's iframes — see _beginDragShield. onDragEnd fires whether the drop
       // was accepted or cancelled.
       onDragStarted: () => _onDragStarted(index),
-      onDragEnd: (_) => _onDragEnded(),
-      feedback: _DragFeedback(
-        label: widget.labels[index],
-        icon: widget.icons?[index],
-      ),
+      onDragEnd: _onDragEnded,
+      feedback: const EditorTabGhost(),
       child: slot,
     );
     // Middle-click closes the tab (VS Code parity). A passive [Listener] so it
@@ -861,53 +805,6 @@ class _TabCloseButton extends StatelessWidget {
             AppIcons.x,
             size: 13,
             color: states.contains(WidgetState.hovered) ? t.fg : color,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The floating chip shown under the pointer while dragging a tab. Rendered in
-/// the root overlay, so it supplies its own [DefaultTextStyle].
-class _DragFeedback extends StatelessWidget {
-  const _DragFeedback({required this.label, this.icon});
-
-  final String label;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return DefaultTextStyle(
-      style: CcFonts.ui(
-        textStyle: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: t.fg,
-          decoration: TextDecoration.none,
-        ),
-      ),
-      child: Opacity(
-        opacity: 0.9,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: t.bgSecondary,
-            border: Border.all(color: t.accent),
-            boxShadow: CcElevation.floating,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 14, color: t.fg),
-                  const SizedBox(width: 6),
-                ],
-                Text(label),
-              ],
-            ),
           ),
         ),
       ),

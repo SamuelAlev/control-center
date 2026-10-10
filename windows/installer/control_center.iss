@@ -1,7 +1,15 @@
 ; Inno Setup script for Control Center (Windows).
 ;
-; Compiled by .github/workflows/release.yml:
-;   ISCC.exe /DAppVersion=<version> windows/installer/control_center.iss
+;
+; Compiled by scripts/release/windows_package.sh (from release.yml), once per
+; Windows architecture:
+;   ISCC.exe /DAppVersion=<version> /DTargetArch=x64|arm64 windows/installer/control_center.iss
+;
+; TargetArch (default x64) selects the Flutter output directory, the
+; architecture gate and the output name (Control-Center-<version>-<arch>-setup).
+; Both variants share one AppId and install directory, so the arm64 installer
+; upgrades an x64 install in place (and vice versa) rather than installing a
+; second copy beside it.
 ;
 ; Packages the entire `flutter build windows --release` output (the exe, the
 ; Flutter runtime DLLs, the bundled native FFI DLLs and the data/ folder) into
@@ -11,6 +19,13 @@
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
+#endif
+
+#ifndef TargetArch
+  #define TargetArch "x64"
+#endif
+#if TargetArch != "x64" && TargetArch != "arm64"
+  #error TargetArch must be x64 or arm64
 #endif
 
 #define AppName "Control Center"
@@ -45,11 +60,18 @@ PrivilegesRequiredOverridesAllowed=dialog
 ; payload actually needs: x64 Windows plus Arm64 Windows 11, where the x64 exe
 ; and its x64 DLLs run under emulation. Installing in 64-bit mode is right on
 ; both — an emulated x64 app belongs in the 64-bit {autopf}, not the x86 one.
+#if TargetArch == "arm64"
+; Native Arm64 build: the exe and every DLL are Arm64 images, which only Arm64
+; Windows can run. `arm64` is Inno's identifier for exactly that.
+ArchitecturesAllowed=arm64
+ArchitecturesInstallIn64BitMode=arm64
+#else
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+#endif
 SourceDir={#RepoRoot}
 OutputDir=dist
-OutputBaseFilename=Control-Center-{#AppVersion}-x64-setup
+OutputBaseFilename=Control-Center-{#AppVersion}-{#TargetArch}-setup
 SetupIconFile=windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName} {#AppVersion}
@@ -64,7 +86,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "build\windows\{#TargetArch}\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"

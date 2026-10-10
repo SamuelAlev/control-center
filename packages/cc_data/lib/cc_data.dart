@@ -67,6 +67,7 @@ export 'src/repositories/rpc_adapter_repository.dart';
 export 'src/repositories/rpc_agent_goal_run_repository.dart';
 export 'src/repositories/rpc_agent_repository.dart';
 export 'src/repositories/rpc_agent_run_log_repository.dart';
+export 'src/repositories/rpc_agent_shell_process_port.dart';
 export 'src/repositories/rpc_agent_working_memory_repository.dart';
 export 'src/repositories/rpc_cache_repository.dart';
 export 'src/repositories/rpc_calendar_repository.dart';

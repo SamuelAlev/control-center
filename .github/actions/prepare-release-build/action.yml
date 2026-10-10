@@ -11,6 +11,12 @@ inputs:
   os:
     description: macos | linux | windows
     required: true
+  arch:
+    description: >
+      Windows only: x64 | arm64. Must match the runner and the MSVC
+      environment (natives are compiled natively, never cross-compiled).
+    required: false
+    default: x64
   version:
     description: The release version, used for the build-identity stamp.
     required: true
@@ -57,21 +63,27 @@ runs:
       # Inputs via env, not ${{ }} inside run: (template injection).
       env:
         OS: ${{ inputs.os }}
+        ARCH: ${{ inputs.arch }}
       run: |
         if [ "$OS" = "windows" ]; then
-          bash scripts/release/windows_natives.sh
+          bash scripts/release/windows_natives.sh "$ARCH"
         else
           bash scripts/natives/build_natives.sh build/natives
         fi
 
-    # Hit and miss. Desktop + server roles are the full staged set.
+    # Hit and miss. Desktop + server roles are the full staged set. On Windows
+    # --arch also checks each DLL's PE machine type, so a cache entry or build
+    # for the other architecture can never pass by name.
     - name: Verify staged natives
       shell: bash
       env:
         OS: ${{ inputs.os }}
+        ARCH: ${{ inputs.arch }}
       run: |
-        bash scripts/release/verify_natives.sh build/natives "$OS" desktop
-        bash scripts/release/verify_natives.sh build/natives "$OS" server
+        arch_args=()
+        [ "$OS" = "windows" ] && arch_args=(--arch "$ARCH")
+        bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" desktop
+        bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" server
 
     # Missing secrets are not an error; the build ships no baked credentials.
     - name: Inject built-in app credentials

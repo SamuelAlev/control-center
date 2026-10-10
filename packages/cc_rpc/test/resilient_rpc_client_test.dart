@@ -795,6 +795,82 @@ void main() {
     );
 
     test(
+      'a forge auth rejection evicts only its own view, not the workspace',
+      () async {
+        final c = scriptedConnection();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([c.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final cache = RpcSnapshotCache();
+        final resilient = ResilientRpcClient(sup, snapshotCache: cache)
+          ..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        final prSeed = resilient
+            .subscribe('pr_review.watchPullRequest', const {'number': 7})
+            .listen((_) {});
+        await deliver(c, 'pr', {'title': 'Fix it'});
+        await prSeed.cancel();
+        final checksSeed = resilient
+            .subscribe('pr_review.watchCheckRuns', const {'number': 7})
+            .listen((_) {});
+        await deliver(c, 'checks', {
+          'runs': [1],
+        });
+        await checksSeed.cancel();
+
+        final errors = <Object>[];
+        final checks = resilient
+            .subscribe('pr_review.watchCheckRuns', const {'number': 7})
+            .listen((_) {}, onError: errors.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await c.server.send({
+          'jsonrpc': '2.0',
+          'id': c.subIdFor(RpcMethods.subscribe),
+          'result': {'subscriptionId': 'checks-2'},
+        });
+        await c.server.send({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subError,
+          'params': {
+            'subscriptionId': 'checks-2',
+            'code': RpcErrorCodes.unauthorized,
+            'data': {'kind': kSubErrorUpstreamAuthKind},
+          },
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(errors, hasLength(1));
+        expect(isUpstreamAuthDenial(errors.single), isTrue);
+        await checks.cancel();
+
+        // The failed view no longer renders stale…
+        final checksAfter = <Map<String, dynamic>>[];
+        final checksRetry = resilient
+            .subscribe('pr_review.watchCheckRuns', const {'number': 7})
+            .listen(checksAfter.add);
+        // …but the rest of the workspace's cached screens survive it.
+        final prAfter = <Map<String, dynamic>>[];
+        final prRetry = resilient
+            .subscribe('pr_review.watchPullRequest', const {'number': 7})
+            .listen(prAfter.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(checksAfter, isEmpty);
+        expect(prAfter, [
+          {'title': 'Fix it'},
+        ]);
+        await checksRetry.cancel();
+        await prRetry.cancel();
+      },
+    );
+
+    test(
       'watchCall revalidates allowed reads and rejects mutation names',
       () async {
         var count = 0;

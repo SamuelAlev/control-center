@@ -10,7 +10,14 @@ const { copy: t } = Astro.props;
 // Manual links go straight to this language's translated page.
 const routes = await getManualRoutes();
 const localized = (href: string) => localizeSitePath(href, localeFromPath(Astro.url.pathname), routes);
-const platforms = [ { name: 'macOS', id: 'macos', note: t.install.mac }, { name: 'Windows', id: 'windows', note: t.install.windows }, { name: 'Linux', id: 'linux', note: t.install.linux } ];
+// Windows ships two native builds, so its card carries one download per
+// architecture (each a /download/<id> redirect to that installer); the other
+// cards are a single link.
+const platforms = [
+  { name: 'macOS', id: 'macos', note: t.install.mac },
+  { name: 'Windows', id: 'windows', note: t.install.windows, downloads: [ { id: 'windows', arch: 'x64' }, { id: 'windows-arm64', arch: 'ARM64' } ] },
+  { name: 'Linux', id: 'linux', note: t.install.linux },
+];
 ---
 <section class="landing-install landing-section" id="install" aria-labelledby="install-title">
   <div class="landing-wrap">
@@ -18,7 +25,9 @@ const platforms = [ { name: 'macOS', id: 'macos', note: t.install.mac }, { name:
       <div class="section-intro"><h2 id="install-title">{t.install.title}</h2><p>{t.install.description}</p></div>
       <Paraglider copy={t} variant="install" />
     </div>
-    <div class="install-platforms">{platforms.map(platform => <a href={`/download/${platform.id}`} class="install-platform" data-acquisition-event="release_page_click" data-acquisition-placement="download" data-acquisition-platform={platform.id}><h3>{platform.name}<span aria-hidden="true">↓</span></h3><p>{platform.note}</p><span class="install-link">{t.nav.download}<span aria-hidden="true">↓</span></span></a>)}</div>
+    <div class="install-platforms">{platforms.map(platform => platform.downloads
+      ? <div class="install-platform install-platform-multi"><h3>{platform.name}<span aria-hidden="true">↓</span></h3><p>{platform.note}</p><div class="install-downloads">{platform.downloads.map(download => <a href={`/download/${download.id}`} class="install-link" data-acquisition-event="release_page_click" data-acquisition-placement="download" data-acquisition-platform={download.id}><span>{t.nav.download} <span class="install-arch">{download.arch}</span></span><span aria-hidden="true">↓</span></a>)}</div></div>
+      : <a href={`/download/${platform.id}`} class="install-platform" data-acquisition-event="release_page_click" data-acquisition-placement="download" data-acquisition-platform={platform.id}><h3>{platform.name}<span aria-hidden="true">↓</span></h3><p>{platform.note}</p><span class="install-link">{t.nav.download}<span aria-hidden="true">↓</span></span></a>)}</div>
     <div class="install-remote"><a href={WEB_APP_URL}><strong>{t.install.web}<span aria-hidden="true">↗</span></strong><span>{t.install.webNote}</span></a><a href="https://remote.usectrl.dev"><strong>{t.install.phone}<span aria-hidden="true">↗</span></strong><span>{t.install.phoneNote}</span></a></div>
     <div class="install-links"><p>{t.install.selfHost} <a href={localized('/manual/guides/run-headless-server/')}>{t.install.server}<span aria-hidden="true"> ↗</span></a></p><a href={localized('/manual/quick-start/')}>{t.install.guide}<span aria-hidden="true"> ↗</span></a></div>
   </div>

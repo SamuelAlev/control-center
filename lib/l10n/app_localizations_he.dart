@@ -7990,6 +7990,52 @@ class AppLocalizationsHe extends AppLocalizations {
   String get meetingReRunNoTranscript => 'אין עדיין תמלול לסיכום.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'צרו אותן מהתמלול, או כתבו הערות משלכם.';
+
+  @override
+  String get meetingNotesGenerate => 'יצירת הערות';
+
+  @override
+  String get meetingNotesWriteOwn => 'כתיבת הערות משלכם';
+
+  @override
+  String get meetingNothingTranscribed => 'לא תומלל דבר.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'אין תמלול לסכם, אבל אפשר עדיין לנהל הערות משלכם.';
+
+  @override
+  String get meetingOverviewSpeakers => 'דוברים';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'זמן הדיבור של כל דובר יופיע כשיהיה תמלול.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count נוספים';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share מזמן הדיבור, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => 'כל המשימות לביצוע הושלמו.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'הצגת הכול ($count)';
+  }
+
+  @override
   String get meetingExportCopied => 'ההערות הועתקו ללוח כ-Markdown.';
 
   @override
@@ -15288,4 +15334,50 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'סוכן חסום בגלל פרטי גישה';
+
+  @override
+  String get killTerminal => 'סגירת המסוף';
+
+  @override
+  String get stopAgentCommand => 'עצירת הפקודה';
+
+  @override
+  String get agentCommandStopping => 'עוצר…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count ש׳';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'פקודת סוכן $command, פועלת כבר $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'החיבור לשרת אבד';
+
+  @override
+  String get serverLostBody =>
+      'Control Center ממשיך לנסות להתחבר מחדש ברקע. נסו שוב עכשיו, או עברו למסך הכניסה כדי לבחור שרת.';
+
+  @override
+  String get serverLostRetrying => 'מתחבר מחדש…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'הניסיון הבא בעוד $seconds שנ׳';
+  }
+
+  @override
+  String get serverLostReconnect => 'ניסיון להתחבר מחדש';
+
+  @override
+  String get serverLostSignIn => 'מעבר לכניסה';
+
+  @override
+  String get serverEndedTitle => 'לא ניתן להתחבר מחדש לשרת';
+
+  @override
+  String get shutdownSubtitleServer => 'השרת נעצר';
 }

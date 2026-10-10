@@ -121,11 +121,17 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
   Widget build(BuildContext context) {
     final selectedId = ref.watch(selectedSpaceIdProvider);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final spaces = workspaceId != null
-        ? ref.watch(workspaceSpacesProvider(workspaceId)).value ?? const []
-        : ref.watch(spacesProvider).value ?? const [];
+    // Listened, not watched: the list re-emits on every message (each one
+    // bumps its space's `updatedAt`), and a watch here rebuilt the whole IDE
+    // surface for each. Only the next/prev-space shortcut reads it, at press
+    // time; the listener just keeps the stream subscribed for that read.
+    final spacesSource = workspaceId != null
+        ? workspaceSpacesProvider(workspaceId)
+        : spacesProvider;
+    ref.listen(spacesSource, (_, _) {});
 
     void cycleSpace({required int delta}) {
+      final spaces = ref.read(spacesSource).value ?? const [];
       if (spaces.isEmpty || workspaceId == null) {
         return;
       }

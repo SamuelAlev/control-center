@@ -175,11 +175,30 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
-    test('same id but different other fields are equal (identity by id)', () {
+    test('same id but different fields are unequal, yet the same PR', () {
+      // Value equality: Riverpod drops an emission equal to the previous one,
+      // so an identity-only `==` swallowed every later detail snapshot.
       final a = createPr(id: 1, title: 'A');
       final b = createPr(id: 1, title: 'B');
-      expect(a, equals(b));
-      expect(a.hashCode, equals(b.hashCode));
+      expect(a, isNot(equals(b)));
+      expect(a.isSamePr(b), isTrue);
+      expect(a.identityKey, equals(b.identityKey));
+    });
+
+    test('a changed body or head SHA makes unequal', () {
+      expect(createPr(body: 'x'), isNot(equals(createPr(body: 'y'))));
+      expect(createPr(headSha: 'a'), isNot(equals(createPr(headSha: 'b'))));
+    });
+
+    test('an author avatar change makes unequal', () {
+      final a = createPr(
+        authorParam: const PrUser(login: 'dev', avatarUrl: 'https://a/1'),
+      );
+      final b = createPr(
+        authorParam: const PrUser(login: 'dev', avatarUrl: 'https://a/2'),
+      );
+      expect(a, isNot(equals(b)));
+      expect(a.isSamePr(b), isTrue);
     });
 
     test('self equality', () {

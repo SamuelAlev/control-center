@@ -8032,6 +8032,52 @@ class AppLocalizationsHu extends AppLocalizations {
       'Még nincs átirat, amit összefoglalhatnánk.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Hozza létre őket az átiratból, vagy írja meg a sajátját.';
+
+  @override
+  String get meetingNotesGenerate => 'Jegyzetek létrehozása';
+
+  @override
+  String get meetingNotesWriteOwn => 'Saját jegyzet írása';
+
+  @override
+  String get meetingNothingTranscribed => 'Semmi sem lett átírva.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Nincs összefoglalható átirat, de a saját jegyzeteit így is vezetheti.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Beszélők';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'A beszélőnkénti beszédidő megjelenik, amint elkészül az átirat.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count további';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: a beszédidő $share része, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => 'Minden teendő elkészült.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Összes megjelenítése ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Jegyzetek a vágólapra másolva Markdownként.';
 
@@ -15353,4 +15399,50 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Egy ügynök hitelesítő adatok miatt elakadt';
+
+  @override
+  String get killTerminal => 'Terminál leállítása';
+
+  @override
+  String get stopAgentCommand => 'Parancs leállítása';
+
+  @override
+  String get agentCommandStopping => 'Leállítás…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count mp';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Ügynökparancs: $command, fut $elapsed óta';
+  }
+
+  @override
+  String get serverLostTitle => 'Megszakadt a kapcsolat a szerverrel';
+
+  @override
+  String get serverLostBody =>
+      'A Control Center a háttérben tovább próbál újracsatlakozni. Próbálja újra most, vagy lépjen a bejelentkezési képernyőre egy szerver kiválasztásához.';
+
+  @override
+  String get serverLostRetrying => 'Újracsatlakozás…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Következő próbálkozás $seconds mp múlva';
+  }
+
+  @override
+  String get serverLostReconnect => 'Újracsatlakozás megkísérlése';
+
+  @override
+  String get serverLostSignIn => 'Ugrás a bejelentkezéshez';
+
+  @override
+  String get serverEndedTitle => 'Nem lehet újracsatlakozni a szerverhez';
+
+  @override
+  String get shutdownSubtitleServer => 'A szerver leáll';
 }

@@ -235,7 +235,9 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     targetYaw = targetTurn = targetPitch = 0;
   };
   const onDownload = (event: MouseEvent) => {
-    const link = (event.target as Element).closest<HTMLAnchorElement>('.install-platform');
+    // The card itself is the link, except on a multi-architecture card
+    // (Windows), where each download inside it is.
+    const link = (event.target as Element).closest<HTMLAnchorElement>('a.install-platform, .install-platform a');
     if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey ||
         event.ctrlKey || event.shiftKey || event.altKey || link.target ||
         !model || !visible || document.hidden || reduced.matches || userPaused) return;

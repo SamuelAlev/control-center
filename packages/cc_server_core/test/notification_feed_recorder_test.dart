@@ -103,6 +103,7 @@ void main() {
     bus.publish(
       AgentAwaitingInput(
         workspaceId: 'ws-1',
+        waitId: 'm-q',
         kind: AgentInputKind.question,
         summary: 'Which database?',
         spaceId: 'space-1',
@@ -119,6 +120,36 @@ void main() {
     expect(item.params['summary'], 'Which database?');
     expect(item.params['space_id'], 'space-1');
     expect(item.params['agent_name'], 'Ada');
+    expect(item.params['wait_id'], 'm-q');
+    expect(item.isResolved, isFalse);
+  });
+
+  test('stamps the waiting row resolved when the wait ends', () async {
+    AgentAwaitingInput wait(String waitId) => AgentAwaitingInput(
+      workspaceId: 'ws-1',
+      waitId: waitId,
+      kind: AgentInputKind.approval,
+      summary: 'Let agents run programs from this workspace copy?',
+      occurredAt: DateTime(2026, 10, 9),
+    );
+    // Published back to back: the resolution must not overtake the insert.
+    bus
+      ..publish(wait('approval-1'))
+      ..publish(wait('approval-2'))
+      ..publish(
+        AgentInputResolved(
+          workspaceId: 'ws-1',
+          waitId: 'approval-1',
+          occurredAt: DateTime(2026, 10, 9),
+        ),
+      );
+    await _pump();
+
+    final items = await repository.watchFeed('ws-1').first;
+    final resolved = {
+      for (final item in items) item.params['wait_id']: item.isResolved,
+    };
+    expect(resolved, {'approval-1': true, 'approval-2': false});
   });
 
   group('PR / code-review lanes', () {

@@ -104,6 +104,13 @@ print(json.dumps({
     File('${tmp.path}/artifacts/windows/Control-Center-1.2.3-x64-setup.exe')
       ..createSync(recursive: true)
       ..writeAsStringSync('fake installer payload');
+    // The Arm64 leg uploads under its own artifact name (release.yml), so it
+    // lands in its own directory.
+    File(
+      '${tmp.path}/artifacts/windows-arm64/Control-Center-1.2.3-arm64-setup.exe',
+    )
+      ..createSync(recursive: true)
+      ..writeAsStringSync('fake arm64 installer payload');
 
     // Scaffold repo root: a copy of the script plus the public halves of the
     // throwaway keys, in the exact files `assert_public_keys` reads. The
@@ -181,6 +188,10 @@ print(json.dumps({
 
     final win = File('${tmp.path}/appcast-windows.xml').readAsStringSync();
     expect(win, contains('sparkle:dsaSignature="'));
+    final arm = File(
+      '${tmp.path}/appcast-windows-arm64.xml',
+    ).readAsStringSync();
+    expect(arm, contains('sparkle:dsaSignature="'));
   }, skip: skip);
 
   test('macOS stable releases are visible to the default Sparkle channel', () async {
@@ -206,9 +217,25 @@ print(json.dumps({
       ),
     );
 
-    final win = File('${tmp.path}/appcast-windows.xml').readAsStringSync();
-    expect(win, contains('<sparkle:version>'));
-    expect(win, contains('<sparkle:shortVersionString>'));
+    // WinSparkle compares sparkle:version against the exe's version resource,
+    // which Runner.rc fills from FLUTTER_VERSION = "<version>+<build>". A bare
+    // "1.2.3" would rate NEWER than the installed "1.2.3+4242" (a trailing
+    // component starting with a non-digit makes a version older), so every
+    // launch would offer the release that is already installed.
+    for (final feed in const ['appcast-windows.xml', 'appcast-windows-arm64.xml']) {
+      final win = File('${tmp.path}/$feed').readAsStringSync();
+      expect(
+        win,
+        contains('<sparkle:version>1.2.3+4242</sparkle:version>'),
+        reason: '$feed must carry FLUTTER_VERSION (<version>+<build>)',
+      );
+      expect(
+        win,
+        contains(
+          '<sparkle:shortVersionString>1.2.3</sparkle:shortVersionString>',
+        ),
+      );
+    }
   }, skip: skip);
 
   test('windows points at the installer WinSparkle can launch', () async {
@@ -218,7 +245,68 @@ print(json.dumps({
     // WinSparkle *runs* the enclosure; a portable zip is not launchable.
     expect(win, contains('Control-Center-1.2.3-x64-setup.exe'));
     expect(win, isNot(contains('windows-x64.zip')));
+    expect(win, isNot(contains('arm64')));
     expect(win, contains('sparkle:installerArguments='));
+    expect(win, contains('releases/latest/download/appcast-windows.xml'));
+  }, skip: skip);
+
+  test('windows arm64 has its own feed naming the arm64 installer', () async {
+    expect((await runScript()).exitCode, 0);
+    // WinSparkle 0.8.1 cannot select an item by architecture, so an Arm64
+    // install reads its own feed; crossing them would install an x64 build
+    // over a native one (or the reverse).
+    final arm = File(
+      '${tmp.path}/appcast-windows-arm64.xml',
+    ).readAsStringSync();
+    expect(
+      arm,
+      contains(
+        'https://github.com/SamuelAlev/control-center/releases/download/'
+        'v1.2.3/Control-Center-1.2.3-arm64-setup.exe',
+      ),
+    );
+    expect(arm, isNot(contains('x64')));
+    expect(arm, isNot(contains('windows-arm64.zip')));
+    expect(arm, contains('sparkle:installerArguments='));
+    expect(arm, contains('releases/latest/download/appcast-windows-arm64.xml'));
+    final length = RegExp(r'length="(\d+)"').firstMatch(arm)!.group(1);
+    expect(length, '${'fake arm64 installer payload'.length}');
+  }, skip: skip);
+
+  test('the emitted DSA signatures verify against each installer', () async {
+    expect((await runScript()).exitCode, 0);
+    for (final (feed, installer) in const [
+      ('appcast-windows.xml', 'windows/Control-Center-1.2.3-x64-setup.exe'),
+      (
+        'appcast-windows-arm64.xml',
+        'windows-arm64/Control-Center-1.2.3-arm64-setup.exe',
+      ),
+    ]) {
+      final xml = File('${tmp.path}/$feed').readAsStringSync();
+      final signature = RegExp(
+        r'sparkle:dsaSignature="([^"]+)"',
+      ).firstMatch(xml)!.group(1)!;
+      final check = await Process.run('python3', [
+        '-c',
+        '''
+import base64, sys
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.exceptions import InvalidSignature
+
+pub = serialization.load_pem_public_key(sys.argv[1].encode())
+payload = open(sys.argv[2], "rb").read()
+try:
+    pub.verify(base64.b64decode(sys.argv[3]), payload, hashes.SHA1())
+    print("ok")
+except InvalidSignature:
+    print("bad")
+''',
+        dsaPubPem,
+        '${tmp.path}/artifacts/$installer',
+        signature,
+      ]);
+      expect((check.stdout as String).trim(), 'ok', reason: feed);
+    }
   }, skip: skip);
 
   test('macOS points at the notarized dmg', () async {
@@ -320,5 +408,17 @@ except InvalidSignature:
 
     expect(result.exitCode, isNot(0));
     expect(result.stderr, contains('missing Windows artifact'));
+  }, skip: skip);
+
+  test('refuses when only the arm64 installer is missing', () async {
+    File(
+      '${tmp.path}/artifacts/windows-arm64/Control-Center-1.2.3-arm64-setup.exe',
+    ).deleteSync();
+    final result = await runScript();
+
+    expect(result.exitCode, isNot(0));
+    expect(result.stderr, contains('missing Windows artifact'));
+    expect(result.stderr, contains('windows-arm64'));
+    expect(File('${tmp.path}/appcast-windows.xml').existsSync(), isFalse);
   }, skip: skip);
 }

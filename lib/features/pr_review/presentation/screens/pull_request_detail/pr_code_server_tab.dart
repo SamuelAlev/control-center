@@ -66,7 +66,7 @@ class PrCodeServerTab extends ConsumerWidget {
       return const DemoUnavailable(capability: DemoCapability.editor);
     }
 
-    final spaceAsync = ref.watch(prSpaceProvider(pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(pr)));
     return spaceAsync.when(
       loading: () => _Preparing(label: l10n.preparingWorkspace, t: t),
       error: (e, _) => Center(

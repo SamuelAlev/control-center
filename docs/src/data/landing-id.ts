@@ -334,7 +334,7 @@ export const id: LandingCopy = {
     description:
       "Hari pengembang berikutnya bisa dimulai di sini. Gratis dan sumber terbuka.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Lihat rilis",
     web: "Buka aplikasi web",

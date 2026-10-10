@@ -597,6 +597,73 @@ class EditorLayoutController extends ChangeNotifier {
     }
   }
 
+  /// Whether [other] has the same tree as this one: the same splits (axis and
+  /// weights) and, leaf by leaf, the same tabs in the same order (see
+  /// [EditorTabGroupController.sameTab]). Selection, the active leaf and node
+  /// ids are ignored — a host compares a decoded layout against the one on
+  /// screen to skip a swap that would change nothing.
+  bool sameStructureAs(EditorLayoutController other) =>
+      _sameNode(_root, other._root);
+
+  static bool _sameNode(EditorNode a, EditorNode b) {
+    if (a is EditorLeafNode && b is EditorLeafNode) {
+      final at = a.controller.tabs;
+      final bt = b.controller.tabs;
+      if (at.length != bt.length) {
+        return false;
+      }
+      for (var i = 0; i < at.length; i++) {
+        if (!EditorTabGroupController.sameTab(at[i], bt[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (a is EditorSplitNode && b is EditorSplitNode) {
+      if (a.axis != b.axis || a.children.length != b.children.length) {
+        return false;
+      }
+      for (var i = 0; i < a.children.length; i++) {
+        if ((a.weights[i] - b.weights[i]).abs() > 1e-6 ||
+            !_sameNode(a.children[i], b.children[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /// Replaces every tab in this tree that matches one of [live] (same kind,
+  /// dedup key, label and args) with that live instance, so the bodies keyed
+  /// by those instances carry over when this layout replaces the one they
+  /// came from. Each live instance is adopted at most once; tabs without a
+  /// dedup key are never matched (two of them are indistinguishable).
+  void adoptTabInstances(Iterable<EditorTab> live) {
+    final byKey = <String, EditorTab>{
+      for (final tab in live)
+        if (tab.dedupKey != null) tab.dedupKey!: tab,
+    };
+    if (byKey.isEmpty) {
+      return;
+    }
+    _mutating = true;
+    try {
+      _forEachLeaf(_root, (leaf) {
+        final tabs = leaf.controller.tabs;
+        for (var i = 0; i < tabs.length; i++) {
+          final key = tabs[i].dedupKey;
+          final instance = key == null ? null : byKey.remove(key);
+          if (instance != null) {
+            leaf.controller.adoptInstanceAt(i, instance);
+          }
+        }
+      });
+    } finally {
+      _mutating = false;
+    }
+  }
+
   /// Every tab currently in the tree (across all leaves), in no particular
   /// order. Used by the body host to reconcile keep-alive entries.
   List<EditorTab> allTabs() {

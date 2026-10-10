@@ -2,7 +2,7 @@
 title: インストール
 description: ブラウザーで Control Center を使うか、デスクトップアプリをインストールし、エージェントバックエンドを設定して、サーバーをどこで実行するかを選びます。
 slug: ja-JP/マニュアル/インストール
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center の使い方は 2 通りあります。ダウンロード不要の **Web アプリ**として [app.usectrl.dev](https://app.usectrl.dev) で使うか、インストールする **デスクトップアプリ**として使うかです。どちらも同じ機能を持つ同じアプリケーションで、違うのはサーバーをどこで実行するかだけです — そして Web アプリは、あなたの代わりにサーバーを実行することはできません。
@@ -36,7 +36,7 @@ Web アプリをサーバーに接続するには、[リモートサーバーに
 | 要件             | macOS                                                 | Windows     | Linux                                                      |
 | ---------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS のバージョン  | macOS 13+（Ventura）                                  | Windows 10+ | Ubuntu 22.04+、または glibc 2.35+ と GTK 3 を備えた別のディストリビューション |
-| アーキテクチャ   | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| アーキテクチャ   | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git              | 必須                                                  | 必須        | 必須                                                       |
 | ディスク容量     | アプリ用に約 200 MB、加えてサーバーのデータディレクトリ | 約 200 MB   | 約 200 MB                                                  |
 
@@ -54,10 +54,12 @@ Intel Mac 向けのビルド済みダウンロードはありません。代わ�
 
 `Control-Center-<version>-arm64.dmg` をダウンロードして開き、Control Center を Applications にドラッグします。このビルドは Developer ID で署名され、Apple による公証を受けているため、そのまま開けます。
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: ユーザーごとのインストーラー。
 - `Control-Center-<version>-windows-x64.zip`: ポータブルな zip。
+- `Control-Center-<version>-arm64-setup.exe`: ユーザーごとのインストーラー。
+- `Control-Center-<version>-windows-arm64.zip`: ポータブルな zip。
 
 Windows ではスペースのチェックアウトに `git worktree` を使います（コピーオンライトはありません）。
 
@@ -72,7 +74,7 @@ AppImage は更新情報を内包しているため、[AppImageUpdate](https://g
 
 ### スタンドアロンサーバー
 
-各リリースには、ヘッドレスサーバー単体も収められています — `cc_server-<version>-macos-arm64.tar.gz`、`cc_server-<version>-linux-x64.tar.gz`、`cc_server-<version>-windows-x64.zip` — さらに GHCR 上の `cc-server`、`cc-webapp`、`cc-remote` イメージもあります。詳しくは[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)を参照してください。
+各リリースには、ヘッドレスサーバー単体も収められています — `cc_server-<version>-macos-arm64.tar.gz`、`cc_server-<version>-linux-x64.tar.gz`、`cc_server-<version>-windows-x64.zip`、`cc_server-<version>-windows-arm64.zip` — さらに GHCR 上の `cc-server`、`cc-webapp`、`cc-remote` イメージもあります。詳しくは[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)を参照してください。
 
 Linux アーカイブは Ubuntu 22.04 でビルドされ、同梱のネイティブライブラリは glibc 2.35 と GCC 12 の libstdc++ にリンクしているため、少なくともそれと同じか新しいホスト（Ubuntu 22.04、Debian 12、Fedora 36 以降）が必要です。古いディストリビューションでは、代わりに `cc-server` イメージを実行してください — コンテナは独自のユーザーランドを持ち込むため、カーネルだけがホストのものであれば済みます。
 

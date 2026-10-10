@@ -714,13 +714,16 @@ Future<CcServer> runCcServer({
   // The timeout is generous but finite: a question nobody answers must end as
   // a tool error the agent can act on, not as a run pinned forever.
   //
-  // Each question also tells the operator an agent is waiting on them (the
-  // publisher is built below, once the agent roster exists to name the asker).
+  // Each question also tells the operator an agent is waiting on them, and
+  // marks that notification resolved once it closes (the publisher is built
+  // below, once the agent roster exists to name the asker).
   late final AgentAwaitingInputPublisher agentAwaitingInput;
   final agentQuestions = AgentQuestionService(
     messagingRepository,
     timeout: const Duration(minutes: 30),
-    onAsked: (request) => agentAwaitingInput.questionAsked(request),
+    onAsked: (request, messageId) =>
+        agentAwaitingInput.questionAsked(request, messageId),
+    onClosed: (messageId) => agentAwaitingInput.questionClosed(messageId),
   );
 
   // Content-addressed storage for the screenshots `browser_use` /
@@ -3478,15 +3481,31 @@ Future<CcServer> runCcServer({
       paths: voicePaths,
       libPath: inferenceLibPath,
     );
-    meetingRecording = MeetingRecordingService(
+    // Meetings and dictation share the loaded ASR model (hundreds of MB of
+    // weights). Either one going idle schedules the release; it happens once
+    // NEITHER has a live session a minute later, so back-to-back dictations
+    // keep the model warm. Only meetings used to release it at all — one
+    // dictation kept it resident for the rest of the server's life.
+    Timer? speechIdleTimer;
+    late final MeetingRecordingService recording;
+    late final DictationService dictation;
+    void scheduleSpeechRelease() {
+      speechIdleTimer?.cancel();
+      speechIdleTimer = Timer(const Duration(minutes: 1), () {
+        if (!recording.hasActiveSessions && !dictation.hasActiveSessions) {
+          unawaited(transcriber.unload());
+        }
+      });
+    }
+
+    recording = meetingRecording = MeetingRecordingService(
       repository: meetingRepository,
       transcriber: meetingTranscriber,
       eventBus: eventBus,
       paths: paths,
-      // Release the loaded ASR model (hundreds of MB of weights) once the
-      // last live recording stops; the next recording reloads it lazily
-      // while its first audio window buffers.
-      onIdle: () => unawaited(transcriber.unload()),
+      // The next recording reloads the model lazily while its first audio
+      // window buffers.
+      onIdle: scheduleSpeechRelease,
     );
     // Composer voice dictation (PRD 25 §2) rides the SAME transcriber instance
     // as the meeting recorder — one set of loaded ASR weights for both and
@@ -3494,7 +3513,10 @@ Future<CcServer> runCcServer({
     // both directions: `unload()` no-ops while decodes are pending and leaves
     // the transcriber reusable, so a meeting going idle mid-dictation cannot
     // strand a window (the next chunk re-initializes lazily).
-    dictationService = DictationService(transcriber: transcriber);
+    dictation = dictationService = DictationService(
+      transcriber: transcriber,
+      onIdle: scheduleSpeechRelease,
+    );
   } else if (demo != null) {
     CcHostLog.info(
       'cc_server: demo: audio recording and dictation are disabled; '
@@ -4517,6 +4539,10 @@ Future<CcServer> runCcServer({
           actingUserId,
           workspaceId: workspaceId,
         ),
+    // Source control counts behind from local refs. Without this, commits
+    // pushed from anywhere else never show until the user runs Sync.
+    // VS Code's autofetch period.
+    autoFetchInterval: const Duration(minutes: 3),
     // A pull request opened outside this worktree (the forge UI, `gh`)
     // publishes the branch without writing a remote-tracking ref here. The
     // open-PR snapshot's head is that tip, so source control stops offering
@@ -5707,6 +5733,12 @@ Future<CcServer> runCcServer({
             agentRepo: agentRepository,
             workspaceRepo: workspaceRepository,
           ),
+    // The TERMINALS section's agent commands: walks each running run's process
+    // tree (and the in-process harness shells) for one space at a time.
+    // demo: nothing runs, so there is nothing to list or stop.
+    agentShells: demo != null
+        ? null
+        : AgentShellProcessService(runLogs: agentRunLogRepository),
     // Run-viewer reads: the NDJSON logs live under the server's data dir, which
     // also bounds what the op may open.
     runLogReader: RunLogReader(allowedRoot: config.dataDir),

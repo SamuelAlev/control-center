@@ -19,12 +19,12 @@
 <script>
   type EventName = 'release_page_click' | 'demo_open_click' | 'install_section_click';
   type Placement = 'hero' | 'nav' | 'download';
-  type Platform = 'macos' | 'windows' | 'linux' | 'none';
+  type Platform = 'macos' | 'windows' | 'windows-arm64' | 'linux' | 'none';
   type Umami = { track: (name: EventName, data: { placement: Placement; platform: Platform }) => void | Promise<unknown> };
 
   const eventNames = new Set<EventName>(['release_page_click', 'demo_open_click', 'install_section_click']);
   const placements = new Set<Placement>(['hero', 'nav', 'download']);
-  const platforms = new Set<Platform>(['macos', 'windows', 'linux', 'none']);
+  const platforms = new Set<Platform>(['macos', 'windows', 'windows-arm64', 'linux', 'none']);
 
   document.addEventListener('click', (event) => {
     // Native anchor activation already handles pointer, keyboard, modifiers and nested content.

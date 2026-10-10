@@ -1,9 +1,11 @@
 import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
+import 'package:cc_markdown/cc_markdown.dart' show CcSelectionScope;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/test_wrap.dart';
@@ -244,6 +246,50 @@ void main() {
         find.textContaining('Hello there', findRichText: true),
         findsWidgets,
       );
+      await registry.unregister('m1');
+      await tester.pump();
+    });
+
+    testWidgets('a row that closes in the feed finalizes in place', (
+      tester,
+    ) async {
+      const text = 'Para one.\n\nPara two.\n\ntail\nx';
+      final registry = ActiveStreamRegistry();
+      registry.register('m1', spaceId: 'c1');
+      registry.apply(
+        'm1',
+        SegmentOpened(0, TextSegment(text: text, startedAt: ts)),
+      );
+      final live = LiveTranscriptController(registry, 'm1');
+      addTearDown(live.dispose);
+
+      // The feed owns selection, which is what lets the row stay on the
+      // streaming renderer once it closes.
+      Widget flow() => testWrap(
+        CcSelectionScope(
+          child: TranscriptFlow(
+            codeFont: 'monospace',
+            isLive: true,
+            live: live,
+            segments: registry.snapshot('m1')!,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(flow());
+      final first = find.textContaining('Para one', findRichText: true);
+      final before = tester.renderObject(first);
+
+      registry.apply(
+        'm1',
+        SegmentClosed(0, TextSegment(text: text, startedAt: ts, durationMs: 5)),
+      );
+      await tester.pumpWidget(flow());
+
+      // Same paragraph render object: closing did not re-parse and relayout
+      // the answer (it moved from the delta listener to the closed slot).
+      expect(identical(tester.renderObject(first), before), isTrue);
+      expect(find.textContaining('tail', findRichText: true), findsWidgets);
       await registry.unregister('m1');
       await tester.pump();
     });

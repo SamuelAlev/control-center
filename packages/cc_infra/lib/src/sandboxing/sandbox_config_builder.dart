@@ -148,6 +148,9 @@ class SandboxConfigBuilder {
     return resolved.toList()..sort();
   }
 
+  /// Binaries [_resolveAbsolute] has already reported as unpinnable.
+  static final Set<String> _unpinnedReported = {};
+
   /// Resolves [binary] to an ABSOLUTE path, or null when it cannot be pinned.
   ///
   /// Probes the known install prefixes and an absolute `PATH` scan only — no
@@ -170,7 +173,10 @@ class SandboxConfigBuilder {
       }
     }
     final scanned = _scanPath(binary);
-    if (scanned == null) {
+    // Once per binary per process: the builder runs on every dispatch, and a
+    // tool that is simply not installed (go, deno, nsenter on macOS) printed
+    // the same seven warnings for each agent turn.
+    if (scanned == null && _unpinnedReported.add(binary)) {
       CcInfraLog.warning(
         'SandboxConfigBuilder: "$binary" could not be pinned '
         'to an absolute path; its sandbox exec rule is omitted rather than '

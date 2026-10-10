@@ -145,6 +145,45 @@ class DefaultCodeIndexer implements CodeIndexer {
     }
   }
 
+  /// Walk seed for the files a worktree inherits from its base partition.
+  ///
+  /// A worktree partition stores only its delta, so its own states cover a
+  /// few hundred files of a ~20k-file tree, and the rest missed the walker's
+  /// mtime fast-path: every full pass re-read and SHA-256'd every inherited
+  /// file. Full passes are common, because every base re-index (a save in the
+  /// linked checkout) invalidates every worktree checkpoint of the repo, and
+  /// each run burned 7-50s of CPU to index nothing. Base row times cannot be
+  /// reused as they are: provisioning rewrites the copy's mtimes.
+  ///
+  /// What the worktree's own [checkpoint] proves is enough: a clean run that
+  /// started at `checkpoint.indexedAt` left every path outside the delta
+  /// identical to its base row. A path that is still outside the delta, whose base row has not
+  /// been rewritten since, and whose file has not been touched since that run
+  /// (the walker's mtime check against the seeded time) therefore still
+  /// hashes to the base row. Anything newer is re-hashed as before, and a path
+  /// the base dropped has no row to seed from, so it is hashed too.
+  static Map<String, IndexedFileState> _inheritedWalkSeed(
+    Map<String, ({String contentHash, DateTime indexedAt})>? baseStates, {
+    required Map<String, ({String contentHash, DateTime indexedAt})> own,
+    required CodeIndexCheckpoint? checkpoint,
+  }) {
+    if (baseStates == null || checkpoint == null) {
+      return const {};
+    }
+    final provenAt = checkpoint.indexedAt;
+    return {
+      for (final entry in baseStates.entries)
+        // Strictly before: stored times are whole seconds, and a base row
+        // written in the run's first second may postdate its base read.
+        if (!own.containsKey(entry.key) &&
+            entry.value.indexedAt.isBefore(provenAt))
+          entry.key: IndexedFileState(
+            contentHash: entry.value.contentHash,
+            indexedAt: provenAt,
+          ),
+    };
+  }
+
   /// One partition's index pass, already serialized by [indexRepo].
   Future<CodeIndexResult> _indexPartition({
     required String workspaceId,
@@ -163,6 +202,10 @@ class DefaultCodeIndexer implements CodeIndexer {
     // bypasses the comparison but still reads the view, which the checkpoint
     // write at the end needs. A null probe (not a git tree, git missing,
     // huge dirty set) NEVER skips.
+    // Recorded as the checkpoint's time: what a clean run proves holds as of
+    // when it STARTED reading (see [_inheritedWalkSeed]); a file or base row
+    // written while it ran is newer than that, and is re-checked next time.
+    final runStartedAt = DateTime.now();
     final stateFp = await _probe.probe(repoPath);
     String? toolchainFp;
     CodeIndexCheckpointView? checkpointView;
@@ -220,6 +263,13 @@ class DefaultCodeIndexer implements CodeIndexer {
             repoId,
             checkoutId: checkoutId,
           );
+    // A worktree full pass also needs the base partition (see the delta note
+    // below). Read as states rather than bare hashes: the same rows answer
+    // both the delta comparison and the walk seed.
+    final baseStates = checkoutId == null || targeted
+        ? null
+        : await _repository.fileStates(workspaceId, repoId);
+
     // Enumeration + hashing runs on its own isolate either way; inline it would
     // stall the server's event loop for the whole run. `hashPaths` applies the
     // SAME extension / generated-file / gitignore filters the walk does, so a
@@ -229,6 +279,11 @@ class DefaultCodeIndexer implements CodeIndexer {
         : await _walker.walkAndHash(
             repoPath,
             known: {
+              ..._inheritedWalkSeed(
+                baseStates,
+                own: knownStates,
+                checkpoint: checkpointView?.own,
+              ),
               for (final entry in knownStates.entries)
                 entry.key: IndexedFileState(
                   contentHash: entry.value.contentHash,
@@ -253,7 +308,10 @@ class DefaultCodeIndexer implements CodeIndexer {
         ? const <String, String>{}
         : targeted
         ? await _repository.fileHashesFor(workspaceId, repoId, changedPaths)
-        : await _repository.fileHashes(workspaceId, repoId);
+        : {
+            for (final entry in baseStates!.entries)
+              entry.key: entry.value.contentHash,
+          };
     final indexable = <HashedSourceFile>[];
     var inheritedFromBase = 0;
     for (final file in files) {
@@ -551,7 +609,7 @@ class DefaultCodeIndexer implements CodeIndexer {
           baseGeneration: checkoutId == null
               ? 0
               : (checkpointView?.baseGeneration ?? 0),
-          indexedAt: DateTime.now(),
+          indexedAt: runStartedAt,
         ),
       );
     }

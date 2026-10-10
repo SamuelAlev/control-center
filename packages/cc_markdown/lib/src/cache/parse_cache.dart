@@ -21,7 +21,11 @@ import 'package:meta/meta.dart';
 final class CcParseCache {
   /// Creates a cache holding at most [maxSize] parses totalling at most
   /// [maxSourceChars] characters of source.
-  CcParseCache({this.maxSize = 48, this.maxSourceChars = 1024 * 1024});
+  ///
+  /// The defaults hold a long conversation's worth of turns: every agent turn
+  /// carries several prose segments, so 48 entries were exhausted by a single
+  /// screen of history and re-entering a space re-parsed everything it showed.
+  CcParseCache({this.maxSize = 256, this.maxSourceChars = 2 * 1024 * 1024});
 
   /// Maximum number of cached parses.
   final int maxSize;

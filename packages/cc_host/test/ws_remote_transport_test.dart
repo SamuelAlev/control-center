@@ -209,6 +209,31 @@ void main() {
       });
     });
 
+    test(
+      'one frame larger than the outbound ceiling is still delivered',
+      () async {
+        transport.start();
+        final arrived = Completer<String>();
+        final sub = clientSocket.listen((frame) {
+          if (!arrived.isCompleted) {
+            arrived.complete(frame as String);
+          }
+        });
+
+        // Past the 8 MiB ceiling on its own, onto an empty queue: a big
+        // snapshot, not a stalled peer. Closing here was a reconnect loop,
+        // since the re-seed pushed the same snapshot again.
+        final big = 'x' * (9 * 1024 * 1024);
+        await transport.send({'jsonrpc': '2.0', 'id': 1, 'result': big});
+
+        final frame = await arrived.future.timeout(const Duration(seconds: 10));
+        await sub.cancel();
+        expect(transport.isOpen, isTrue);
+        expect((jsonDecode(frame) as Map)['result'], hasLength(big.length));
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
+
     test('send throws StateError once the transport is closed', () async {
       transport.start();
       await pumpEventQueue(times: 5);

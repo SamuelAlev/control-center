@@ -2,7 +2,7 @@
 title: Install
 description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
 slug: en-GB/manual/install
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center runs two ways: as a **web app** at
@@ -59,7 +59,7 @@ follow [Run a headless server](/en-GB/manual/guides/run-headless-server/).
 | Requirement  | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architecture | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Required                                              | Required    | Required                                                   |
 | Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
 
@@ -77,10 +77,12 @@ Every artefact below comes from [GitHub Releases](https://github.com/SamuelAlev/
 
 Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarised by Apple, so it opens normally.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: a per-user installer.
 - `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-arm64-setup.exe`: a per-user installer.
+- `Control-Center-<version>-windows-arm64.zip`: a portable zip.
 
 Windows uses `git worktree` for space checkouts (no copy-on-write).
 
@@ -95,7 +97,7 @@ Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedor
 
 ### Standalone server
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/en-GB/manual/guides/run-headless-server/).
+Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/en-GB/manual/guides/run-headless-server/).
 
 The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
 

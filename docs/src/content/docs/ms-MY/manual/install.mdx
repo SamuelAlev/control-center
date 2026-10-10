@@ -2,7 +2,7 @@
 title: Pasang
 description: Gunakan Control Center dalam penyemak imbas atau pasang apl desktop, sediakan bahagian belakang ejen dan pilih tempat pelayanannya berjalan.
 slug: ms-MY/manual-pengguna/pasang
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center berjalan dalam dua cara: sebagai **apl web** di
@@ -64,7 +64,7 @@ ikut [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalanka
 | Keperluan    | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Versi OS     | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ atau distro lain dengan glibc 2.35+ dan GTK 3 |
-| Seni bina    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Seni bina    | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Diperlukan                                            | Diperlukan  | Diperlukan                                                 |
 | Ruang cakera | ~200 MB untuk apl, serta direktori data pelayan       | ~200 MB     | ~200 MB                                                    |
 
@@ -94,10 +94,12 @@ Muat turun `Control-Center-<version>-arm64.dmg`, bukanya dan seret Control Cente
 Applications. Binaan ini ditandatangani dengan Developer ID dan dinotari oleh Apple, jadi
 ia terbuka seperti biasa.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: pemasang setiap pengguna.
 - `Control-Center-<version>-windows-x64.zip`: zip mudah alih.
+- `Control-Center-<version>-arm64-setup.exe`: pemasang setiap pengguna.
+- `Control-Center-<version>-windows-arm64.zip`: zip mudah alih.
 
 Windows menggunakan `git worktree` untuk checkout ruang (tiada copy-on-write).
 
@@ -121,8 +123,8 @@ landskap bunyi, audio rig dan loceng pemberitahuan — dimainkan melalui libmpv 
 ### Pelayan berdiri sendiri
 
 Setiap keluaran juga membawa pelayan tanpa kepala secara berasingan —
-`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip` — bersama imej `cc-server`, `cc-webapp` dan
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip` — bersama imej `cc-server`, `cc-webapp` dan
 `cc-remote` pada GHCR. Lihat [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
 
 Arkib Linux dibina pada Ubuntu 22.04 dan pustaka natif yang dibundelkannya memaut glibc

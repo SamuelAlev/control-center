@@ -48,7 +48,12 @@ class TextEmbedderWorker {
   Isolate? _isolate;
   SendPort? _commands;
   ReceivePort? _fromWorker;
+  // Cancelled in [dispose], through the local it detaches it to.
+  // ignore: cancel_subscriptions
   StreamSubscription<dynamic>? _fromWorkerSub;
+
+  /// Completes when the worker isolate exits (its `onExit` message).
+  Completer<void>? _exited;
   Completer<void>? _ready;
   final Map<int, Completer<List<Float32List>>> _pending = {};
   int _nextRequestId = 0;
@@ -76,8 +81,14 @@ class TextEmbedderWorker {
     try {
       final fromWorker = _fromWorker = ReceivePort();
       final handshake = Completer<SendPort>();
+      final exited = _exited = Completer<void>();
       _fromWorkerSub = fromWorker.listen((Object? message) {
-        if (message is SendPort) {
+        if (message == null) {
+          // `onExit`: the worker is gone, and with it everything it freed.
+          if (!exited.isCompleted) {
+            exited.complete();
+          }
+        } else if (message is SendPort) {
           handshake.complete(message);
         } else if (message is List) {
           // Uncaught error / abnormal exit forwarded via onError/onExit.
@@ -183,9 +194,14 @@ class TextEmbedderWorker {
     return completer.future;
   }
 
-  /// Shuts the worker down, releasing the whole ONNX session + arena with the
-  /// isolate. Idempotent. The next [initialize] after dispose fails; create a
-  /// fresh instance instead (the owning service does).
+  /// Shuts the worker down: it frees the ONNX session + arena, then exits.
+  /// Idempotent. The next [initialize] after dispose fails; create a fresh
+  /// instance instead (the owning service does).
+  ///
+  /// Waits for the worker to exit on its own. Killing the isolate right after
+  /// sending `dispose` skipped the message, and an isolate kill frees no FFI
+  /// allocation, so every idle unload leaked a whole session (~90 MB for
+  /// MiniLM) and a long-running server grew by one per indexing burst.
   Future<void> dispose() async {
     if (_disposed) {
       return;
@@ -198,17 +214,29 @@ class TextEmbedderWorker {
       }
     }
     _pending.clear();
-    _commands?.send(const <String, Object?>{'type': 'dispose'});
-    await _fromWorkerSub?.cancel();
-    _fromWorkerSub = null;
-    _fromWorker?.close();
-    _fromWorker = null;
+    final commands = _commands;
+    final exited = _exited;
+    final sub = _fromWorkerSub;
+    final fromWorker = _fromWorker;
+    final isolate = _isolate;
     _commands = null;
-    // Backstop for a worker that never processes the graceful message
-    // (mirrors SherpaOnnxTranscriber.dispose).
-    _isolate?.kill(priority: Isolate.beforeNextEvent);
+    _exited = null;
+    _fromWorkerSub = null;
+    _fromWorker = null;
     _isolate = null;
     _ready = null;
+    if (commands != null && exited != null) {
+      commands.send(const <String, Object?>{'type': 'dispose'});
+      await exited.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {},
+      );
+    }
+    await sub?.cancel();
+    fromWorker?.close();
+    // Backstop for a worker that never processes the graceful message
+    // (mirrors SherpaOnnxTranscriber's shutdown).
+    isolate?.kill(priority: Isolate.beforeNextEvent);
   }
 }
 

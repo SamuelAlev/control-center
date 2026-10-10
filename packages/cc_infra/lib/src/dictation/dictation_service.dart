@@ -17,13 +17,22 @@ import 'package:cc_infra/src/meetings/meeting_transcription_service.dart';
 /// server's main loop.
 class DictationService {
   /// Creates a [DictationService] over [transcriber] (the installed ASR model).
+  ///
+  /// `onIdle` fires when the last session stops. The transcriber holds the
+  /// loaded ASR model (hundreds of MB), and with no idle hook one dictation
+  /// kept it resident for the rest of the server's life.
   DictationService({
     required SpeechTranscriber transcriber,
     MeetingTranscriptionService? transcription,
+    this._onIdle,
   }) : _transcription =
            transcription ?? MeetingTranscriptionService(transcriber);
 
   final MeetingTranscriptionService _transcription;
+  final void Function()? _onIdle;
+
+  /// Whether any dictation session is open.
+  bool get hasActiveSessions => _sessions.isNotEmpty;
 
   final Map<String, _DictationSession> _sessions = {};
   int _counter = 0;
@@ -78,6 +87,9 @@ class DictationService {
       return;
     }
     await session.dispose();
+    if (_sessions.isEmpty) {
+      _onIdle?.call();
+    }
   }
 
   /// The finalized-window stream for [dictationId] (empty when unknown).

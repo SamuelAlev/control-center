@@ -195,6 +195,10 @@ class _MeetingEqualizerBarsState extends State<MeetingEqualizerBars>
 bool meetingCompactActions(BuildContext context) =>
     MediaQuery.sizeOf(context).width < 1100;
 
+/// Height of the heading row above the notes and transcript panels (it fits
+/// the Enhanced/Your notes toggle).
+const double kMeetingNotesHeadingHeight = 28;
+
 /// A monospaced, letter-spaced, uppercase eyebrow label — the design system's
 /// signature mono label. Colors come from the design-system tokens.
 class MeetingEyebrow extends StatelessWidget {

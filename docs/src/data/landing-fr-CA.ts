@@ -353,7 +353,7 @@ export const frCa: LandingCopy = {
     description:
       "Ta prochaine journée de développement peut commencer ici. Gratuit et libre.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Voir les versions",
     web: "Ouvrir l’application web",

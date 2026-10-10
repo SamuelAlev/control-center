@@ -275,6 +275,55 @@ void main() {
     expect(identical(tester.widget(slot), before), isFalse);
     expect(find.textContaining('Hel', findRichText: true), findsWidgets);
   });
+
+  testWidgets('a settled turn keeps its slot across equal re-emissions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final host = GlobalKey<_LiveFlushHostState>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          agentDetailProvider('agent-1').overrideWith((ref) async => _agent),
+          activeStreamRegistryProvider.overrideWithValue(
+            ActiveStreamRegistry(),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: _wrap(_LiveFlushHost(key: host))),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final slot = find.ancestor(
+      of: find.byType(TurnProse),
+      matching: find.byType(ValueListenableBuilder<int>),
+    );
+    expect(slot, findsOneWidget);
+    final before = tester.widget(slot);
+
+    // The feed re-emits the row (a drift write elsewhere): a fresh but equal
+    // message must not rebuild the body.
+    host.currentState!.show('Hel');
+    await tester.pump();
+    expect(identical(tester.widget(slot), before), isTrue);
+
+    host.currentState!.show('Hello, edited');
+    await tester.pump();
+    expect(identical(tester.widget(slot), before), isFalse);
+    expect(
+      find.textContaining('Hello, edited', findRichText: true),
+      findsWidgets,
+    );
+  });
 }
 
 class _LiveFlushHost extends StatefulWidget {

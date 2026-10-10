@@ -340,7 +340,7 @@ export const nl: LandingCopy = {
     description:
       "Je volgende ontwikkelaarsdag kan hier beginnen. Gratis en open source.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Releases bekijken",
     web: "De webapp openen",

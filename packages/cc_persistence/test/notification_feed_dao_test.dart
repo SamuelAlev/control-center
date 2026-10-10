@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
@@ -285,6 +286,84 @@ void main() {
       );
 
       expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
+    });
+  });
+
+  group('resolveAgentWait', () {
+    NotificationFeedTableCompanion wait(
+      String id,
+      String waitId, {
+      String workspaceId = 'ws-1',
+      String method = NotificationFeedDao.agentAwaitingInputMethod,
+    }) => NotificationFeedTableCompanion.insert(
+      id: id,
+      workspaceId: workspaceId,
+      method: method,
+      paramsJson: jsonEncode({
+        'workspace_id': workspaceId,
+        'wait_id': waitId,
+        'kind': 'approval',
+      }),
+      createdAt: Value(DateTime(2026, 10, 9)),
+    );
+
+    Future<Map<String, Object?>> resolvedAt() async => {
+      for (final row in await dao.watchRecent('ws-1').first)
+        row.id:
+            (jsonDecode(row.paramsJson)
+                as Map<String, dynamic>)[NotificationFeedItem.resolvedAtKey],
+    };
+
+    test('stamps only the rows announcing that wait', () async {
+      await dao.insertAndPrune(wait('n1', 'approval-1'));
+      await dao.insertAndPrune(wait('n2', 'approval-2'));
+      await dao.insertAndPrune(
+        wait('n3', 'approval-1', method: 'notifications/pr_merged'),
+      );
+
+      final at = DateTime.utc(2026, 10, 9, 11);
+      await dao.resolveAgentWait('ws-1', 'approval-1', at);
+
+      final stamps = await resolvedAt();
+      expect(stamps['n1'], at.toIso8601String());
+      expect(stamps['n2'], isNull);
+      expect(stamps['n3'], isNull, reason: 'only agent wait rows');
+      // The rest of the frame is untouched.
+      final n1 = (await dao.watchRecent('ws-1').first).firstWhere(
+        (r) => r.id == 'n1',
+      );
+      expect(
+        (jsonDecode(n1.paramsJson) as Map<String, dynamic>)['kind'],
+        'approval',
+      );
+    });
+
+    test('keeps the first stamp', () async {
+      await dao.insertAndPrune(wait('n1', 'approval-1'));
+      final first = DateTime.utc(2026, 10, 9, 11);
+      await dao.resolveAgentWait('ws-1', 'approval-1', first);
+      await dao.resolveAgentWait(
+        'ws-1',
+        'approval-1',
+        first.add(const Duration(hours: 1)),
+      );
+
+      expect((await resolvedAt())['n1'], first.toIso8601String());
+    });
+
+    test('touches no other workspace', () async {
+      await dao.insertAndPrune(
+        wait('theirs', 'approval-1', workspaceId: 'ws-2'),
+      );
+      await dao.resolveAgentWait('ws-1', 'approval-1', DateTime.utc(2026));
+
+      final rows = await (db.select(
+        db.notificationFeedTable,
+      )..where((t) => t.id.equals('theirs'))).get();
+      expect(
+        jsonDecode(rows.single.paramsJson),
+        isNot(contains(NotificationFeedItem.resolvedAtKey)),
+      );
     });
   });
 }

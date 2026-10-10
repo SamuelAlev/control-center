@@ -1,11 +1,15 @@
 import 'package:cc_domain/features/meetings/domain/entities/meeting.dart';
+import 'package:cc_domain/features/meetings/domain/entities/meeting_action_item.dart';
+import 'package:cc_domain/features/meetings/domain/entities/meeting_decision.dart';
 import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/meetings/presentation/utils/meeting_theme.dart';
 import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_notes_editor.dart';
+import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_notes_empty_state.dart';
+import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_overview_rail.dart';
+import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_transcript_reference.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_common.dart';
-import 'package:control_center/features/meetings/presentation/widgets/meeting_transcript_row.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
@@ -23,8 +27,13 @@ enum MeetingNotesMode {
   yours,
 }
 
-/// The Notes tab: a split of the notes editor (Enhanced ↔ Your notes toggle)
-/// beside a reference excerpt of the transcript. Stacks vertically when narrow.
+/// The Notes tab, the meeting's overview: the notes editor (Enhanced ↔ Your
+/// notes toggle), a transcript excerpt and the [MeetingOverviewRail] of
+/// speakers, action items and decisions.
+///
+/// Wide windows lay the three side by side; mid-width ones keep notes and
+/// transcript paired and run the overview as a band beneath them; narrow ones
+/// stack everything.
 class MeetingNotesTab extends StatelessWidget {
   /// Creates a [MeetingNotesTab].
   const MeetingNotesTab({
@@ -36,7 +45,12 @@ class MeetingNotesTab extends StatelessWidget {
     required this.onNotesChanged,
     required this.savingLabel,
     required this.segments,
+    required this.actionItems,
+    required this.decisions,
     required this.onViewFullTranscript,
+    required this.onViewActionItems,
+    required this.onViewDecisions,
+    required this.onGenerateNotes,
   });
 
   /// The meeting being viewed.
@@ -60,8 +74,32 @@ class MeetingNotesTab extends StatelessWidget {
   /// Transcript segments (first few are shown as a reference).
   final List<MeetingSegment> segments;
 
+  /// The meeting's action items, previewed in the overview.
+  final List<MeetingActionItem> actionItems;
+
+  /// The meeting's decisions, previewed in the overview.
+  final List<MeetingDecision> decisions;
+
   /// Invoked when "View full transcript" is pressed.
   final VoidCallback onViewFullTranscript;
+
+  /// Switches to the Action items tab.
+  final VoidCallback onViewActionItems;
+
+  /// Switches to the Decisions tab.
+  final VoidCallback onViewDecisions;
+
+  /// Starts the summary pipeline from the empty Enhanced pane.
+  final VoidCallback onGenerateNotes;
+
+  /// Width at which the overview becomes a third column.
+  static const double _wideBreakpoint = 1400;
+
+  /// Width below which everything stacks.
+  static const double _narrowBreakpoint = 880;
+
+  /// Width of the overview column on wide windows.
+  static const double _railWidth = 320;
 
   @override
   Widget build(BuildContext context) {
@@ -74,27 +112,78 @@ class MeetingNotesTab extends StatelessWidget {
           notesController: notesController,
           onNotesChanged: onNotesChanged,
           savingLabel: savingLabel,
+          hasTranscript: segments.isNotEmpty,
+          onGenerateNotes: onGenerateNotes,
         );
-        final transcript = _TranscriptReference(
-          segments: segments,
-          onViewFullTranscript: onViewFullTranscript,
-        );
-        if (constraints.maxWidth < 880) {
+        // A finished meeting with no transcript has nothing to excerpt, and
+        // the notes pane already says so; the column would only repeat it.
+        final transcribed =
+            meeting.status == MeetingStatus.done ||
+            meeting.status == MeetingStatus.failed;
+        final transcript = segments.isEmpty && transcribed
+            ? null
+            : MeetingTranscriptReference(
+                segments: segments,
+                onViewFullTranscript: onViewFullTranscript,
+              );
+        MeetingOverviewRail overview(MeetingOverviewLayout layout) =>
+            MeetingOverviewRail(
+              meeting: meeting,
+              segments: segments,
+              actionItems: actionItems,
+              decisions: decisions,
+              onViewActionItems: onViewActionItems,
+              onViewDecisions: onViewDecisions,
+              layout: layout,
+            );
+        final width = constraints.maxWidth;
+        if (width < _narrowBreakpoint) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               notes,
+              if (transcript != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                transcript,
+              ],
               const SizedBox(height: AppSpacing.lg),
-              transcript,
+              overview(MeetingOverviewLayout.stacked),
+            ],
+          );
+        }
+        final pair = [
+          Expanded(flex: 118, child: notes),
+          if (transcript != null) ...[
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(flex: 82, child: transcript),
+          ],
+        ];
+        if (width < _wideBreakpoint) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: pair),
+              const SizedBox(height: AppSpacing.lg),
+              overview(MeetingOverviewLayout.row),
             ],
           );
         }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 118, child: notes),
+            ...pair,
             const SizedBox(width: AppSpacing.lg),
-            Expanded(flex: 82, child: transcript),
+            SizedBox(
+              width: _railWidth,
+              child: Padding(
+                // Clears the column headings beside it so the three panels
+                // share a top edge.
+                padding: const EdgeInsets.only(
+                  top: kMeetingNotesHeadingHeight + AppSpacing.md,
+                ),
+                child: overview(MeetingOverviewLayout.stacked),
+              ),
+            ),
           ],
         );
       },
@@ -110,6 +199,8 @@ class _NotesColumn extends StatelessWidget {
     required this.notesController,
     required this.onNotesChanged,
     required this.savingLabel,
+    required this.hasTranscript,
+    required this.onGenerateNotes,
   });
 
   final Meeting meeting;
@@ -118,6 +209,8 @@ class _NotesColumn extends StatelessWidget {
   final TextEditingController notesController;
   final ValueChanged<String> onNotesChanged;
   final String savingLabel;
+  final bool hasTranscript;
+  final VoidCallback onGenerateNotes;
 
   @override
   Widget build(BuildContext context) {
@@ -125,31 +218,39 @@ class _NotesColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            MeetingEyebrow(l10n.meetingTabNotes),
-            const Spacer(),
-            CcSegmentedToggle<MeetingNotesMode>(
-              value: mode,
-              onChanged: onModeChanged,
-              segments: [
-                CcSegment(
-                  value: MeetingNotesMode.enhanced,
-                  label: l10n.meetingNotesEnhancedToggle,
-                ),
-                CcSegment(
-                  value: MeetingNotesMode.yours,
-                  label: l10n.meetingNotesYoursToggle,
-                ),
-              ],
-            ),
-          ],
+        SizedBox(
+          height: kMeetingNotesHeadingHeight,
+          child: Row(
+            children: [
+              MeetingEyebrow(l10n.meetingTabNotes),
+              const Spacer(),
+              CcSegmentedToggle<MeetingNotesMode>(
+                value: mode,
+                onChanged: onModeChanged,
+                segments: [
+                  CcSegment(
+                    value: MeetingNotesMode.enhanced,
+                    label: l10n.meetingNotesEnhancedToggle,
+                  ),
+                  CcSegment(
+                    value: MeetingNotesMode.yours,
+                    label: l10n.meetingNotesYoursToggle,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         SectionCard(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: mode == MeetingNotesMode.enhanced
-              ? _EnhancedNotes(meeting: meeting)
+              ? _EnhancedNotes(
+                  meeting: meeting,
+                  hasTranscript: hasTranscript,
+                  onGenerate: onGenerateNotes,
+                  onWriteOwn: () => onModeChanged(MeetingNotesMode.yours),
+                )
               : _YourNotes(
                   controller: notesController,
                   onChanged: onNotesChanged,
@@ -162,24 +263,30 @@ class _NotesColumn extends StatelessWidget {
 }
 
 class _EnhancedNotes extends StatelessWidget {
-  const _EnhancedNotes({required this.meeting});
+  const _EnhancedNotes({
+    required this.meeting,
+    required this.hasTranscript,
+    required this.onGenerate,
+    required this.onWriteOwn,
+  });
 
   final Meeting meeting;
+  final bool hasTranscript;
+  final VoidCallback onGenerate;
+  final VoidCallback onWriteOwn;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (meeting.status == MeetingStatus.processing ||
-        meeting.status == MeetingStatus.recording) {
-      return Text(
-        l10n.meetingEnhancedPending,
-        style: TextStyle(color: context.ds.muted),
-      );
-    }
-    if (!meeting.isEnhanced) {
-      return Text(
-        l10n.meetingNotesEmpty,
-        style: TextStyle(color: context.ds.muted),
+    final pending =
+        meeting.status == MeetingStatus.processing ||
+        meeting.status == MeetingStatus.recording;
+    if (pending || !meeting.isEnhanced) {
+      return MeetingNotesEmptyState(
+        meeting: meeting,
+        hasTranscript: hasTranscript,
+        onGenerate: onGenerate,
+        onWriteOwn: onWriteOwn,
       );
     }
     return Column(
@@ -195,8 +302,7 @@ class _EnhancedNotes extends StatelessWidget {
           options: githubMarkdownOptions,
           builders: githubMarkdownBuilders,
           imageBuilder: appMarkdownImageBuilder,
-          codeBuilder: (code, language, {required bool cache}) =>
-              buildSharedCodeBlock(context, code, language, cache: cache),
+          codeBuilder: sharedCodeBuilder(),
         ),
       ],
     );
@@ -269,90 +375,6 @@ class _YourNotes extends StatelessWidget {
             const SizedBox(width: 6),
             Text(savingLabel, style: meetingMono(context, fontSize: 11)),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TranscriptReference extends StatelessWidget {
-  const _TranscriptReference({
-    required this.segments,
-    required this.onViewFullTranscript,
-  });
-
-  final List<MeetingSegment> segments;
-  final VoidCallback onViewFullTranscript;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final ds = context.ds;
-    final preview = segments.take(4).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: 28,
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: MeetingEyebrow(l10n.meetingTabTranscript),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SectionCard(
-          padding: EdgeInsets.zero,
-          child: ClipRRect(
-            borderRadius: AppRadii.brMd,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (preview.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Text(
-                      l10n.meetingTranscriptEmpty,
-                      style: TextStyle(color: ds.muted),
-                    ),
-                  )
-                else
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 420),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      itemCount: preview.length,
-                      separatorBuilder: (_, _) =>
-                          CcDivider(color: ds.borderSecondary),
-                      itemBuilder: (context, i) =>
-                          MeetingTranscriptRow.fromSegment(
-                            preview[i],
-                            compact: true,
-                            timeColumnWidth: 46,
-                          ),
-                    ),
-                  ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.md,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: ds.borderSecondary)),
-                  ),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: CcButton(
-                      variant: CcButtonVariant.secondary,
-                      size: CcButtonSize.sm,
-                      onPressed: onViewFullTranscript,
-                      child: Text(l10n.meetingViewFullTranscript),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );

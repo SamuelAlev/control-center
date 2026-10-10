@@ -2,7 +2,10 @@
 #
 # Verifies every REQUIRED native for a role/OS is present under build/natives
 # (or NATIVES). Reads the matrix from scripts/lib/natives.sh. Fail-hard.
-# Usage: scripts/release/verify_natives.sh <role> <os>
+# Usage: scripts/release/verify_natives.sh [--arch x64|arm64] [--dir D]... <dir> <os> <role>
+#
+# --arch (Windows only) also asserts every required native is a PE image for
+# that architecture, so an x64 DLL can never satisfy the arm64 set by name.
 #
 set -euo pipefail
 
@@ -11,10 +14,13 @@ source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/natives.sh"
 
 DIRS=()
-while [ "${1:-}" = "--dir" ]; do
-  shift
-  DIRS+=("${1:?--dir needs a path}")
-  shift
+ARCH=""
+while :; do
+  case "${1:-}" in
+    --dir)  shift; DIRS+=("${1:?--dir needs a path}"); shift ;;
+    --arch) shift; ARCH="${1:?--arch needs x64|arm64}"; shift ;;
+    *) break ;;
+  esac
 done
 
 if [ "${#DIRS[@]}" -eq 0 ]; then
@@ -34,6 +40,10 @@ case "$ROLE" in
   desktop|server) ;;
   *) die "verify_natives.sh: unknown role '$ROLE'" ;;
 esac
+if [ -n "$ARCH" ]; then
+  [ "$OS" = windows ] || die "verify_natives.sh: --arch is only meaningful for windows"
+  ARCH="$(cc_windows_arch "$ARCH")"
+fi
 
 for d in "${DIRS[@]}"; do
   [ -d "$d" ] || die "verify_natives.sh: not a directory: $d"
@@ -56,7 +66,7 @@ found_native() { # base
     for f in "$dir/$PREFIX$base".*; do
       case "${f##*/}" in
         "$PREFIX$base".*."$EXT"|"$PREFIX$base"."$EXT"|"$PREFIX$base"."$EXT".*)
-          [ -e "$f" ] && { printf '%s\n' "$(basename "$f")"; return 0; } ;;
+          [ -e "$f" ] && { printf '%s\n' "$f"; return 0; } ;;
       esac
     done
   done
@@ -65,7 +75,13 @@ found_native() { # base
 
 while IFS='|' read -r base desc; do
   if hit="$(found_native "$base")"; then
-    printf '  ok %s (%s)\n' "$desc" "$hit"
+    if [ -n "$ARCH" ] && [ "$(pe_machine "$hit")" != "$ARCH" ]; then
+      printf 'ERROR: required native is the wrong architecture: %s (%s is %s, not %s)\n' \
+        "$desc" "$(basename "$hit")" "$(pe_machine "$hit")" "$ARCH" >&2
+      missing=1
+      continue
+    fi
+    printf '  ok %s (%s%s)\n' "$desc" "$(basename "$hit")" "${ARCH:+, $ARCH}"
   else
     printf 'ERROR: required native missing: %s (%s%s.%s)\n' "$desc" "$PREFIX" "$base" "$EXT" >&2
     missing=1
@@ -166,7 +182,7 @@ else
   echo "  -- no .scm queries on disk (falling back to the compiled-in copies)"
 fi
 
-[ "$missing" -eq 0 ] || die "$ROLE bundle is missing required natives — run scripts/natives/build_natives.sh (on Windows scripts/release/windows_natives.sh) and re-package"
+[ "$missing" -eq 0 ] || die "$ROLE bundle is missing required natives (or holds them for the wrong architecture) — run scripts/natives/build_natives.sh (on Windows scripts/release/windows_natives.sh) and re-package"
 
 # Presence, then loadability. Both must hold, and only the first one has ever
 # been obvious from a directory listing.

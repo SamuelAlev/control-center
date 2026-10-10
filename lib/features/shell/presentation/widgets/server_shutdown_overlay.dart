@@ -127,7 +127,9 @@ class _ShutdownCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
-            l10n.shutdownSubtitle,
+            state.initiatedHere
+                ? l10n.shutdownSubtitle
+                : l10n.shutdownSubtitleServer,
             style: CcFonts.ui(
               family: family,
               textStyle: CcTypography.body.copyWith(

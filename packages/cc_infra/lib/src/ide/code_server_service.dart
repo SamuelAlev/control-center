@@ -20,7 +20,7 @@ const String codeServerBinaryName = 'code-server';
 /// The pinned code-server release tag vendored / downloaded on demand
 /// (Renovate-tracked — bump here and the CI fetch + managed download follow).
 /// Matches the `coder/code-server` GitHub release naming (`v<version>`).
-const String codeServerVersion = '4.140.0';
+const String codeServerVersion = '4.141.0';
 
 /// Curated language extensions pre-provisioned into the shared `--extensions-dir`
 /// so the embedded editor demonstrably ships one LSP end-to-end (the "one LSP

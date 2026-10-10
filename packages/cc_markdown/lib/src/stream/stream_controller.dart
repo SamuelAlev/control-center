@@ -152,19 +152,79 @@ final class CcMarkdownStreamController extends ChangeNotifier {
   /// resolving late link-reference/footnote definitions). When
   /// [seedGlobalCache] is true the result also seeds [CcMarkdownCache], so
   /// the persisted re-render of the final text is a cache hit.
+  ///
+  /// When the authoritative parse agrees node-for-node with the incremental
+  /// segmentation (the common case: no late reference definitions, no
+  /// footnotes), the existing sealed blocks are KEPT and only the tail is
+  /// sealed. A widget memoizing sealed blocks by identity then re-renders
+  /// just that last block instead of relaying out the whole answer in the
+  /// frame the stream ends.
   void complete({bool seedGlobalCache = true}) {
     _complete = true;
     final nodes = seedGlobalCache
         ? CcMarkdownCache.parseCached(_text, plugins, options: options)
         : CcMarkdownCache.parseEphemeral(_text, plugins, options: options);
-    _sealed
-      ..clear()
-      ..add(
-        CcSealedBlock(start: 0, end: _text.length, source: _text, nodes: nodes),
-      );
+    final tailSource = _text.substring(_sealedUpTo);
+    final tailNodes = tailSource.trim().isEmpty
+        ? const <CcBlockNode>[]
+        : CcMarkdownCache.parseEphemeral(tailSource, plugins, options: options);
+    if (_sealed.isNotEmpty && _segmentationAgrees(nodes, tailNodes)) {
+      if (tailNodes.isNotEmpty) {
+        _sealed.add(
+          CcSealedBlock(
+            start: _sealedUpTo,
+            end: _text.length,
+            source: tailSource,
+            nodes: tailNodes,
+          ),
+        );
+      }
+    } else {
+      _sealed
+        ..clear()
+        ..add(
+          CcSealedBlock(
+            start: 0,
+            end: _text.length,
+            source: _text,
+            nodes: nodes,
+          ),
+        );
+    }
     _sealedUpTo = _text.length;
     _revision++;
     notifyListeners();
+  }
+
+  /// Whether the sealed blocks followed by [tailNodes] are exactly the
+  /// authoritative parse [whole]. Footnotes always take the single-block path:
+  /// their definitions ride at the end of the whole-document list and render
+  /// in one document-end section, which per-block contexts would split.
+  bool _segmentationAgrees(
+    List<CcBlockNode> whole,
+    List<CcBlockNode> tailNodes,
+  ) {
+    var i = 0;
+    bool matches(CcBlockNode node) {
+      if (node is CcFootnoteDef || i >= whole.length) {
+        return false;
+      }
+      return whole[i++] == node;
+    }
+
+    for (final block in _sealed) {
+      for (final node in block.nodes) {
+        if (!matches(node)) {
+          return false;
+        }
+      }
+    }
+    for (final node in tailNodes) {
+      if (!matches(node)) {
+        return false;
+      }
+    }
+    return i == whole.length;
   }
 
   /// Clears all state (optionally seeding [initial] text).

@@ -20,6 +20,7 @@ import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/stdin_pipe.dart';
 
 /// `SandboxPort` implementation that wraps each command with the in-project
 /// native sandbox runtime: `sandbox-exec` (Seatbelt) on macOS, `bubblewrap`
@@ -133,6 +134,7 @@ class NativeSandboxAdapter implements SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async {
     if (argv.isEmpty) {
       throw ArgumentError('argv must not be empty');
@@ -145,6 +147,15 @@ class NativeSandboxAdapter implements SandboxPort {
     _updateState(handle.sessionId, SandboxState.active);
     _activeSession = handle.sessionId;
     final controller = _streams[handle.sessionId];
+    // `destroy` closes the session's stream while a killed child can still be
+    // flushing stdout/stderr (and before its exit code is reaped); adding to
+    // the closed controller then was an uncaught zone error per late line.
+    void emit(SandboxEvent event) {
+      if (controller != null && !controller.isClosed) {
+        controller.add(event);
+      }
+    }
+
     final workingDirectory =
         workdir ??
         _handles[handle.sessionId]?.details['workingDirectory'] as String?;
@@ -190,12 +201,7 @@ class NativeSandboxAdapter implements SandboxPort {
     onPid?.call(process.pid);
 
     // Always settle stdin — a CLI that reads it hangs forever otherwise.
-    // Pipe the prompt when one is provided; close immediately to signal EOF
-    // when not.
-    if (stdinInput != null) {
-      process.stdin.write(stdinInput);
-    }
-    unawaited(process.stdin.close());
+    settleStdin(process, input: stdinInput, stream: stdinStream);
 
     void forward(
       Stream<List<int>> stream,
@@ -210,7 +216,7 @@ class NativeSandboxAdapter implements SandboxPort {
           .transform(const Utf8Decoder(allowMalformed: true))
           .transform(const LineSplitter())
           .listen((line) {
-            controller?.add(SandboxEvent(type: type, content: line));
+            emit(SandboxEvent(type: type, content: line));
             if (watchEperm) {
               _manager.reportLinuxStderr(line);
             }
@@ -229,14 +235,11 @@ class NativeSandboxAdapter implements SandboxPort {
     final exitCode = await _awaitExitWithTimeout(
       process,
       timeout,
-      (message) => controller?.add(
-        SandboxEvent(type: SandboxEventType.stderr, content: message),
-      ),
+      (message) =>
+          emit(SandboxEvent(type: SandboxEventType.stderr, content: message)),
     );
     _processes.remove(handle.sessionId);
-    controller?.add(
-      SandboxEvent(type: SandboxEventType.exit, exitCode: exitCode),
-    );
+    emit(SandboxEvent(type: SandboxEventType.exit, exitCode: exitCode));
     _updateState(handle.sessionId, SandboxState.warm);
     if (_activeSession == handle.sessionId) {
       _activeSession = null;

@@ -290,8 +290,15 @@ class ResilientRpcClient implements RemoteRpcClient {
         await controller.close();
         return;
       }
-      final stale = cache?.read(key);
-      if (stale != null && !cancelled) {
+      // Decoded off the UI isolate when large: this runs as a screen mounts.
+      // Re-checked after the decode: a denial or sign-out that evicted the
+      // entry meanwhile must not still render it.
+      final stale = await cache?.readAsync(key);
+      if (stale != null &&
+          !cancelled &&
+          !controller.isClosed &&
+          _terminalError == null &&
+          cache!.contains(key)) {
         controller.add(stale);
       }
       while (!cancelled && !_closed) {
@@ -434,8 +441,15 @@ class ResilientRpcClient implements RemoteRpcClient {
         await controller.close();
         return;
       }
-      final stale = cache?.read(key);
-      if (stale != null && !cancelled) {
+      // Decoded off the UI isolate when large: this runs as a screen mounts.
+      // Re-checked after the decode: a denial or sign-out that evicted the
+      // entry meanwhile must not still render it.
+      final stale = await cache?.readAsync(key);
+      if (stale != null &&
+          !cancelled &&
+          !controller.isClosed &&
+          _terminalError == null &&
+          cache!.contains(key)) {
         controller.add(stale);
       }
       RemoteRpcClient? last;
@@ -595,6 +609,14 @@ class ResilientRpcClient implements RemoteRpcClient {
     Object error,
   ) {
     if (cache == null) {
+      return;
+    }
+    // The forge refusing the server's credential says nothing about this
+    // session's workspace: drop the one view it failed, not every cached
+    // screen of the workspace (PR detail, comments, repos…), which a single
+    // rejected check-runs watch used to wipe.
+    if (isUpstreamAuthDenial(error)) {
+      cache.remove(key);
       return;
     }
     final code = (error as RemoteRpcException).code;

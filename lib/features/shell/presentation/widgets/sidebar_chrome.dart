@@ -23,11 +23,11 @@ class SidebarCountBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    // The row's fill and ink lerp over CcMotion.fast; the pill travels WITH
-    // them on one tween, or a white pill snaps on while the row is still its
-    // pale mid-lerp self.
+    // The pill travels WITH the row's fill and ink on one timing, or a white
+    // pill snaps on while the row is still its pale mid-lerp self: selecting
+    // snaps (the row does too), deselecting lerps over CcMotion.fast.
     return TweenAnimationBuilder<double>(
-      duration: CcMotion.fast,
+      duration: selected ? Duration.zero : CcMotion.fast,
       curve: CcMotion.standard,
       tween: Tween<double>(end: selected ? 1 : 0),
       builder: (context, progress, _) => Container(

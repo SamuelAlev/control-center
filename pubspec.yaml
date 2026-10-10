@@ -36,7 +36,7 @@ workspace:
   - apps/cc_worker
 
 dependencies:
-  sentry_flutter: ^9.26.0
+  sentry_flutter: ^10.0.0
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -138,10 +138,10 @@ dependencies:
   # Unified native surface: window control, multi-window, plain (NSUserDefaults/
   # registry/GSettings) storage, URL opening. Replaces window_manager +
   # desktop_multi_window + url_launcher + shared_preferences.
-  nativeapi: ^0.4.1
+  nativeapi: ^0.5.2
   # Flutter-side half of nativeapi since 0.4: the drag/drop/context-menu
   # widgets, windowing helpers and dart:ui conversions of its value types.
-  nativeapi_flutter: ^0.4.1
+  nativeapi_flutter: ^0.5.2
   local_notifier: ^0.1.6
   file_selector: ^1.1.0
 
@@ -228,7 +228,7 @@ dependencies:
 dependency_overrides:
   device_info_plus: ^13.2.0
   # sqlite_vector (latest 1.1.2) still constrains hooks/code_assets to ^1,
-  # while nativeapi 0.4 (via cnativeapi) needs ^2. Its build hook only uses
+  # while nativeapi 0.5 (via cnativeapi) needs ^2. Its build hook only uses
   # build(), CodeAsset and OS/Architecture switches, which hooks 2 keeps. Drop
   # these once sqlite_vector allows ^2.
   hooks: ^2.2.0

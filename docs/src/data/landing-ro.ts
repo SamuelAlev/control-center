@@ -339,7 +339,7 @@ export const ro: LandingCopy = {
     description:
       "Următoarea zi de dezvoltare poate începe aici. Gratuit și cu sursă deschisă.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Vezi versiunile",
     web: "Deschide aplicația web",

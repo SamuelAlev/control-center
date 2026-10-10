@@ -317,7 +317,7 @@ export const zhTw: LandingCopy = {
     title: "安頓\n下來。",
     description: "下一個開發日可以從這裡開始。免費，並且開源。",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "查看版本",
     web: "開啟網頁應用程式",

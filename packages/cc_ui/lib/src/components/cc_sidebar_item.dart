@@ -98,13 +98,15 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
   }) {
     final fg = selected ? t.accentOn : t.textSecondary;
     const iconSize = 18.0;
-    // The brand fill fades in via opacity over CcMotion.fast (see the
-    // overlay below); the foreground must travel WITH it. A white label
-    // snapped on while the fill is still fading in reads as white-on-wash
-    // (and the deselect reverse as dark-ink-on-orange). Same duration and
-    // curve, so fill and ink stay in lockstep.
+    // Selecting snaps: the row the user just pressed reads as current on the
+    // very next frame instead of fading in over CcMotion.fast behind the
+    // click. Deselecting (the row being left) and hover keep their fade.
+    // Fill, border and ink all take this one duration, so they stay in
+    // lockstep either way — a white label snapped on while the fill is still
+    // fading in would read as white-on-wash.
+    final selection = selected ? Duration.zero : duration;
     return TweenAnimationBuilder<Color?>(
-      duration: duration,
+      duration: selection,
       curve: CcMotion.standard,
       tween: ColorTween(end: fg),
       builder: (context, animatedFg, _) {
@@ -205,7 +207,9 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
         // accent border is a foregroundDecoration so it still rims the
         // orange (invisible in light, a brighter edge in dark).
         final Widget container = AnimatedContainer(
-          duration: duration,
+          // The selected row's hover wash sits under the opaque brand fill,
+          // so snapping it with the selection costs nothing visible.
+          duration: selection,
           curve: CcMotion.standard,
           // The expanded row height is fixed at 32px (design rule); the 18px
           // icon and label center vertically inside it.
@@ -227,7 +231,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
               IgnorePointer(
                 child: AnimatedOpacity(
                   opacity: selected ? 1 : 0,
-                  duration: duration,
+                  duration: selection,
                   curve: CcMotion.standard,
                   child: ColoredBox(color: t.bgBrandSolid),
                 ),

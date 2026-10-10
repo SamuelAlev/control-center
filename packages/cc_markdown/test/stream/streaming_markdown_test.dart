@@ -24,6 +24,29 @@ void main() {
       expect(find.text('Hello world.', findRichText: true), findsOneWidget);
     });
 
+    testWidgets('complete: true finalizes in place and seeds the cache', (
+      tester,
+    ) async {
+      const text = 'First para.\n\nSecond para.\n\ntail\nx';
+      await tester.pumpWidget(
+        _host(const CcStreamingMarkdown.value(data: text)),
+      );
+      final first = find.textContaining('First para', findRichText: true);
+      final before = tester.renderObject(first);
+
+      await tester.pumpWidget(
+        _host(const CcStreamingMarkdown.value(data: text, complete: true)),
+      );
+      // The sealed block was not re-rendered: same render object, so the
+      // frame the stream ends does not relayout the answer.
+      expect(identical(tester.renderObject(first), before), isTrue);
+      expect(find.textContaining('tail', findRichText: true), findsOneWidget);
+      // A later CcMarkdown of the final text is a parse-cache hit.
+      CcMarkdownCache.debugParseCount = 0;
+      CcMarkdownCache.parseCached(text, CcPluginSet.empty);
+      expect(CcMarkdownCache.debugParseCount, 0);
+    });
+
     testWidgets('a growing tail re-parses on rebuild', (tester) async {
       await tester.pumpWidget(
         _host(const CcStreamingMarkdown.value(data: 'One two')),

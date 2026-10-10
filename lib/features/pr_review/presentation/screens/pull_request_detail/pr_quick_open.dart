@@ -49,7 +49,7 @@ class PrQuickOpenPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final spaceAsync = ref.watch(prSpaceProvider(pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(pr)));
     final spaceId = spaceAsync.value;
     // Read the row itself rather than `spaceProvisioningStatusProvider`, which
     // answers `ready` for a space the stream has not delivered yet. A space

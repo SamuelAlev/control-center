@@ -174,6 +174,9 @@ class RepoSkillProjector {
   /// whole overlay `AGENTS.md`.
   static const int _maxRepoInstructionBytes = 24000;
 
+  /// `(repo, withheld slugs)` pairs already reported by [project].
+  static final Set<String> _reportedQuarantines = {};
+
   /// How a skill name in the prompt maps onto the Skill tool. Shared by the
   /// overlay `AGENTS.md` and the steering announcement so they cannot drift.
   static const String invocationBlurb =
@@ -266,7 +269,10 @@ class RepoSkillProjector {
     }
     _writeAgentsMd(active, written);
     _projected = active;
-    if (quarantined.isNotEmpty) {
+    // Once per repo and withheld set per process: projection runs on every
+    // dispatch, and an unchanged quarantine repeated the same line per turn.
+    if (quarantined.isNotEmpty &&
+        _reportedQuarantines.add('$active\u0000${quarantined.join(',')}')) {
       CcInfraLog.warning(
         'RepoSkillProjector: withheld ${quarantined.length} skill(s): '
         '${quarantined.join(', ')}',

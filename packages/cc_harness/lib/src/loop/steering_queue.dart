@@ -30,6 +30,14 @@ class SteeringQueue {
   /// cap never pass through here — they were not delivered.
   void Function(SteeringMessage message)? onDrained;
 
+  /// Invoked after every [enqueue] / `push*` / [pushFront], once the message
+  /// is in its lane.
+  ///
+  /// The arrival signal for a consumer that cannot poll at turn boundaries —
+  /// an external CLI whose stdin is its only input lane drains as messages
+  /// arrive instead of waiting for a loop to ask.
+  void Function()? onEnqueued;
+
   /// Routes [message] into the lane named by its [SteeringMessage.channel].
   void enqueue(SteeringMessage message) {
     switch (message.channel) {
@@ -40,6 +48,7 @@ class SteeringQueue {
       case SteeringChannel.followUp:
         _push(_followUp, message);
     }
+    onEnqueued?.call();
   }
 
   /// Enqueues [message] at the FRONT of its lane, ahead of anything already
@@ -61,6 +70,7 @@ class SteeringQueue {
         _followUp.insert(0, message);
         _cap(_followUp);
     }
+    onEnqueued?.call();
   }
 
   /// Removes the first message (searching the steering lane, then aside, then

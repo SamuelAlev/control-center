@@ -363,21 +363,118 @@ class PullRequest {
   bool get isPriority =>
       requestedReviewers.isNotEmpty || requestedTeamSlugs.isNotEmpty;
 
-  /// Equality comparison.
+  /// Whether [other] is the same pull request as this one — the same number
+  /// in the same repo — regardless of how either snapshot's fields differ.
   ///
-  /// Keyed on `(id, repoFullName)` — the mappers set `id` to the PR NUMBER,
+  /// Keyed on `(id, repoFullName)`: the mappers set `id` to the PR NUMBER,
   /// which is unique only within its repo, so `id` alone made repo-a#33373
-  /// equal repo-b#33373. Two PRs are the same PR only when they are the same
-  /// number in the same repo.
+  /// the same PR as repo-b#33373. Use this (or [identityKey]) wherever the
+  /// question is "which PR", never `==`.
+  bool isSamePr(PullRequest other) =>
+      id == other.id && repoFullName == other.repoFullName;
+
+  /// A stable key for "which PR" (see [isSamePr]), for maps, sets and
+  /// provider families that must survive a snapshot's fields changing.
+  ({int id, String repoFullName}) get identityKey =>
+      (id: id, repoFullName: repoFullName);
+
+  /// Value equality over every field.
+  ///
+  /// Two snapshots of the same PR with a different title, body or head SHA are
+  /// NOT equal. Riverpod drops an emission equal to the previous one, so the
+  /// former identity-only `==` swallowed every later detail update — a fresh
+  /// fetch after a stale cache, an edited body, a new head commit. Identity
+  /// questions use [isSamePr] / [identityKey].
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is PullRequest &&
           runtimeType == other.runtimeType &&
           id == other.id &&
-          repoFullName == other.repoFullName;
+          number == other.number &&
+          repoFullName == other.repoFullName &&
+          title == other.title &&
+          body == other.body &&
+          bodyHtml == other.bodyHtml &&
+          state == other.state &&
+          isDraft == other.isDraft &&
+          _sameUser(author, other.author) &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt &&
+          htmlUrl == other.htmlUrl &&
+          externalId == other.externalId &&
+          headSha == other.headSha &&
+          baseRef == other.baseRef &&
+          baseSha == other.baseSha &&
+          headRef == other.headRef &&
+          _sameUsers(requestedReviewers, other.requestedReviewers) &&
+          _listEquals(requestedTeamSlugs, other.requestedTeamSlugs) &&
+          _sameUsers(assignees, other.assignees) &&
+          _listEquals(labels, other.labels) &&
+          mergedAt == other.mergedAt &&
+          reviewedByMe == other.reviewedByMe &&
+          _listEquals(reactions, other.reactions) &&
+          changedFiles == other.changedFiles &&
+          commitsCount == other.commitsCount &&
+          additions == other.additions &&
+          deletions == other.deletions &&
+          commentsCount == other.commentsCount &&
+          checksStatus == other.checksStatus &&
+          mergeableState == other.mergeableState &&
+          reviewDecision == other.reviewDecision;
 
-  /// Hash code.
+  /// Hash code over the identity plus the fields most likely to differ
+  /// between snapshots — consistent with [==], cheap on a large [body].
   @override
-  int get hashCode => Object.hash(id, repoFullName);
+  int get hashCode => Object.hash(
+    id,
+    repoFullName,
+    title,
+    body.length,
+    state,
+    isDraft,
+    updatedAt,
+    headSha,
+    baseSha,
+  );
+
+  /// [PrUser.==] compares the login only; a rendered snapshot also shows the
+  /// avatar and display name.
+  static bool _sameUser(PrUser? a, PrUser? b) =>
+      identical(a, b) ||
+      a != null &&
+          b != null &&
+          a.login == b.login &&
+          a.avatarUrl == b.avatarUrl &&
+          a.name == b.name;
+
+  static bool _sameUsers(List<PrUser> a, List<PrUser> b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (!_sameUser(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool _listEquals<T>(List<T> a, List<T> b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

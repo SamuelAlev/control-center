@@ -8091,6 +8091,53 @@ class AppLocalizationsRu extends AppLocalizations {
   String get meetingReRunNoTranscript => 'Пока нет транскрипта для сводки.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Создайте их из транскрипта или напишите свои.';
+
+  @override
+  String get meetingNotesGenerate => 'Создать заметки';
+
+  @override
+  String get meetingNotesWriteOwn => 'Написать свои';
+
+  @override
+  String get meetingNothingTranscribed => 'Ничего не было расшифровано.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Транскрипта для сводки нет, но вы можете вести свои заметки.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Участники';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Время речи каждого участника появится, когда будет транскрипт.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return 'Ещё $count';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share времени речи, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Все пункты действий выполнены.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Показать все ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Заметки скопированы в буфер обмена как Markdown.';
 
@@ -15489,4 +15536,50 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Агент остановлен из-за учётных данных';
+
+  @override
+  String get killTerminal => 'Завершить терминал';
+
+  @override
+  String get stopAgentCommand => 'Остановить команду';
+
+  @override
+  String get agentCommandStopping => 'Остановка…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count с';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Команда агента $command, выполняется $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Соединение с сервером потеряно';
+
+  @override
+  String get serverLostBody =>
+      'Control Center продолжает пытаться переподключиться в фоновом режиме. Повторите попытку сейчас или перейдите на экран входа, чтобы выбрать сервер.';
+
+  @override
+  String get serverLostRetrying => 'Переподключение…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Следующая попытка через $seconds с';
+  }
+
+  @override
+  String get serverLostReconnect => 'Переподключиться';
+
+  @override
+  String get serverLostSignIn => 'Перейти ко входу';
+
+  @override
+  String get serverEndedTitle => 'Не удаётся переподключиться к серверу';
+
+  @override
+  String get shutdownSubtitleServer => 'Сервер останавливается';
 }

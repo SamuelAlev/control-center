@@ -5,6 +5,7 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
+import 'package:control_center/core/providers/cache_for.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -25,7 +26,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class TranscriptLruCache {
   /// Creates a cache holding at most [capacity] transcripts and at most
   /// [maxChars] characters of segment text.
-  TranscriptLruCache({this.capacity = 32, this.maxChars = 512 * 1024});
+  ///
+  /// Sized for a scrolled-through conversation, not a screenful: every agent
+  /// turn in a window holds an entry, and a miss is a server round trip plus
+  /// a height jump when the transcript replaces the prose fallback.
+  TranscriptLruCache({this.capacity = 128, this.maxChars = 4 * 1024 * 1024});
 
   /// Maximum number of cached transcripts.
   final int capacity;
@@ -122,8 +127,14 @@ final transcriptCacheProvider = Provider<TranscriptLruCache>((ref) {
 /// The RPC snapshot holds full transcripts across navigation and restarts.
 /// The live-turn memo may render immediately too; the read still revalidates
 /// so edits and deletion are not hidden behind an immutable local answer.
+///
+/// Held for [kTranscriptReadHold] after its last listener: a row scrolled out
+/// of the feed's cache extent and back in (or measured by idle extent
+/// precalculation, then built for real) reuses the open read instead of
+/// tearing the subscription down and dialing the server again.
 final messageTranscriptProvider = StreamProvider.autoDispose
     .family<List<TranscriptSegment>, String>((ref, messageId) {
+      ref.cacheFor(kTranscriptReadHold);
       final cache = ref.watch(transcriptCacheProvider);
       final repository = RpcMessagingRepository(ref.watch(rpcClientProvider));
       return repository
@@ -140,6 +151,9 @@ final messageTranscriptProvider = StreamProvider.autoDispose
             Error.throwWithStackTrace(error, stack);
           });
     });
+
+/// How long [messageTranscriptProvider] outlives its last listener.
+const kTranscriptReadHold = Duration(seconds: 30);
 
 /// Live turn relay fold for one space.
 ///

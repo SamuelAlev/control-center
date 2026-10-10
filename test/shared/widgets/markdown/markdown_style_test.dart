@@ -171,6 +171,87 @@ void main() {
     });
   });
 
+  group('style and builder interning', () {
+    testWidgets('interleaved style variants each keep their instance', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp((context) {
+          // The feed builds prose, reasoning and tool rows in one frame: a
+          // single-slot memo handed back a fresh style on almost every call,
+          // which also invalidated every markdown memo keyed on it.
+          final prose = appMarkdownStyle(context, codeFontFamily: 'Fira Code');
+          final reasoning = appMarkdownStyle(
+            context,
+            codeFontFamily: 'Fira Code',
+            compact: true,
+          );
+          final tool = appMarkdownStyle(context, compact: true);
+          expect(
+            appMarkdownStyle(context, codeFontFamily: 'Fira Code'),
+            same(prose),
+          );
+          expect(
+            appMarkdownStyle(
+              context,
+              codeFontFamily: 'Fira Code',
+              compact: true,
+            ),
+            same(reasoning),
+          );
+          expect(appMarkdownStyle(context, compact: true), same(tool));
+          return const SizedBox.shrink();
+        }),
+      );
+    });
+
+    test('sharedCodeBuilder is one instance per font pair', () {
+      expect(
+        sharedCodeBuilder(codeFontFamily: 'Fira Code'),
+        same(sharedCodeBuilder(codeFontFamily: 'Fira Code')),
+      );
+      expect(
+        sharedCodeBuilder(codeFontFamily: 'Fira Code'),
+        isNot(
+          same(
+            sharedCodeBuilder(
+              codeFontFamily: 'Fira Code',
+              codeLigatures: false,
+            ),
+          ),
+        ),
+      );
+    });
+
+    testWidgets('a streaming fence leaves only the unfinished line plain', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp((context) {
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: sharedCodeBuilder()(
+              'class A {}\nclass B',
+              'dart',
+              cache: false,
+            ),
+          );
+        }),
+      );
+      final scroll = tester
+          .widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView))
+          .firstWhere((s) => s.child is Text);
+      final span = (scroll.child! as Text).textSpan! as TextSpan;
+      final children = span.children!.cast<TextSpan>();
+      // The line still being typed is one uncoloured run…
+      expect(children.last.text, 'class B');
+      expect(children.last.style, isNull);
+      // …while the completed line above it is highlighted.
+      expect(children.where((s) => s.style?.color != null), isNotEmpty);
+      expect(span.toPlainText(), 'class A {}\nclass B');
+    });
+  });
+
   group('buildSharedInlineCodeChip', () {
     testWidgets('renders the code text in a chip widget', (tester) async {
       await tester.pumpWidget(

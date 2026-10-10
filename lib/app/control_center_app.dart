@@ -12,6 +12,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/presence/providers/follow_providers.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
 import 'package:control_center/features/shell/presentation/widgets/route_title.dart';
+import 'package:control_center/features/shell/presentation/widgets/server_disconnected_overlay.dart';
 import 'package:control_center/features/shell/presentation/widgets/server_shutdown_overlay.dart';
 import 'package:control_center/features/shell/presentation/widgets/title_bar_workspace_chip.dart';
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
@@ -194,6 +195,9 @@ class ControlCenterApp extends ConsumerWidget {
                       // App-wide shutdown overlay (above every route + toasts),
                       // driven by server-fed progress during a local-server quit.
                       const Positioned.fill(child: ServerShutdownOverlay()),
+                      // Takes over once the connection drops (shutdown or
+                      // not): retry now or leave for the sign-in screen.
+                      const Positioned.fill(child: ServerDisconnectedOverlay()),
                     ],
                   ),
                 ),

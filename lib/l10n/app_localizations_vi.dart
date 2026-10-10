@@ -7986,6 +7986,53 @@ class AppLocalizationsVi extends AppLocalizations {
   String get meetingReRunNoTranscript => 'Chưa có bản ghi để tóm tắt.';
 
   @override
+  String get meetingNotesEmptyDescription => 'Tạo từ bản ghi, hoặc tự viết.';
+
+  @override
+  String get meetingNotesGenerate => 'Tạo ghi chú';
+
+  @override
+  String get meetingNotesWriteOwn => 'Tự viết';
+
+  @override
+  String get meetingNothingTranscribed =>
+      'Không có nội dung nào được chép lời.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Không có bản ghi để tóm tắt, nhưng bạn vẫn có thể giữ ghi chú của riêng mình.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Người nói';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Thời gian nói của từng người sẽ hiển thị khi có bản ghi.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count người khác';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share thời gian nói, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Đã hoàn thành tất cả mục việc.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Xem tất cả ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Đã sao chép ghi chú vào clipboard dạng Markdown.';
 
@@ -15259,4 +15306,50 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Một agent bị chặn do thông tin xác thực';
+
+  @override
+  String get killTerminal => 'Đóng terminal';
+
+  @override
+  String get stopAgentCommand => 'Dừng lệnh';
+
+  @override
+  String get agentCommandStopping => 'Đang dừng…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count giây';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Lệnh của tác tử $command, đã chạy $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Mất kết nối với máy chủ';
+
+  @override
+  String get serverLostBody =>
+      'Control Center vẫn đang thử kết nối lại trong nền. Hãy thử lại ngay hoặc chuyển đến màn hình đăng nhập để chọn máy chủ.';
+
+  @override
+  String get serverLostRetrying => 'Đang kết nối lại…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Lần thử tiếp theo sau $seconds giây';
+  }
+
+  @override
+  String get serverLostReconnect => 'Thử kết nối lại';
+
+  @override
+  String get serverLostSignIn => 'Đến màn hình đăng nhập';
+
+  @override
+  String get serverEndedTitle => 'Không thể kết nối lại với máy chủ';
+
+  @override
+  String get shutdownSubtitleServer => 'Máy chủ đang dừng';
 }

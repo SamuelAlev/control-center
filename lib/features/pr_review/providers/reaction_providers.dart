@@ -36,9 +36,7 @@ Future<void> toggleReaction(
     return;
   }
   final prNumber = pr.number;
-  final login = ref
-      .read(githubUserProvider)
-      .maybeWhen(data: (user) => user?.login, orElse: () => null);
+  final login = ref.read(githubUserProvider).value?.login;
 
   switch (target) {
     case ReactionTarget.reviewComment:

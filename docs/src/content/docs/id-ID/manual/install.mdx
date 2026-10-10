@@ -2,7 +2,7 @@
 title: Instal
 description: Gunakan Control Center di peramban atau instal aplikasi desktop, siapkan backend agen, dan pilih tempat server-nya berjalan.
 slug: id-ID/panduan-pengguna/instal
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center berjalan dengan dua cara: sebagai **aplikasi web** di
@@ -64,7 +64,7 @@ ikuti [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalanka
 | Persyaratan  | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Versi OS     | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ atau distro lain dengan glibc 2.35+ dan GTK 3 |
-| Arsitektur   | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Arsitektur   | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Wajib                                                 | Wajib       | Wajib                                                      |
 | Ruang disk   | ~200 MB untuk aplikasi, plus direktori data server    | ~200 MB     | ~200 MB                                                    |
 
@@ -82,10 +82,12 @@ Setiap artefak di bawah ini berasal dari [GitHub Releases](https://github.com/Sa
 
 Unduh `Control-Center-<version>-arm64.dmg`, buka, lalu seret Control Center ke Applications. Build-nya ditandatangani dengan Developer ID dan dinotarisasi oleh Apple, sehingga terbuka seperti biasa.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: penginstal per pengguna.
 - `Control-Center-<version>-windows-x64.zip`: zip portabel.
+- `Control-Center-<version>-arm64-setup.exe`: penginstal per pengguna.
+- `Control-Center-<version>-windows-arm64.zip`: zip portabel.
 
 Windows menggunakan `git worktree` untuk checkout space (tanpa copy-on-write).
 
@@ -100,7 +102,7 @@ Keduanya dibangun di Ubuntu 22.04 dan berjalan di versi itu atau yang lebih baru
 
 ### Server mandiri
 
-Setiap rilis juga membawa server headless secara terpisah — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — bersama image `cc-server`, `cc-webapp`, dan `cc-remote` di GHCR. Lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
+Setiap rilis juga membawa server headless secara terpisah — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — bersama image `cc-server`, `cc-webapp`, dan `cc-remote` di GHCR. Lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
 
 Arsip Linux dibangun di Ubuntu 22.04 dan pustaka native yang dibundel menautkan glibc 2.35 dan libstdc++ dari GCC 12, sehingga memerlukan host yang setidaknya sebaru itu (Ubuntu 22.04, Debian 12, Fedora 36 atau lebih baru). Pada distribusi yang lebih lama, jalankan image `cc-server` sebagai gantinya — kontainer membawa userland-nya sendiri, jadi hanya kernel yang perlu milik Anda.
 

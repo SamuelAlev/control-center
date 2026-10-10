@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cc_infra/src/git/process_git_snapshot_adapter.dart';
+import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -27,7 +28,10 @@ void main() {
     await _git(['commit', '-q', '-m', 'init'], repo.path);
   });
 
-  tearDown(() => repo.deleteSync(recursive: true));
+  tearDown(() async {
+    await discardWorkingTreeCapture(repo.path);
+    repo.deleteSync(recursive: true);
+  });
 
   test('capture + restore round-trips a modified file', () async {
     const adapter = ProcessGitSnapshotAdapter();

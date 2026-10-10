@@ -1,4 +1,7 @@
+import 'dart:collection';
+
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:collection/collection.dart' show ListEquality;
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,16 +13,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// cannot disagree with the feed: when the server flips a row to `injected`
 /// the card leaves the strip and the bubble appears in the trail in the same
 /// emission.
+///
+/// The window re-emits on every flush of a streaming turn, so the result is
+/// value-comparable: the shared const empty list when nothing is queued (the
+/// usual case) and an element-wise-equal list otherwise. Riverpod filters
+/// updates with `==`, so the strip and the composer above which it docks no
+/// longer rebuild per token for a queue that did not change.
 final steeringQueueProvider = Provider.autoDispose
     .family<List<Message>, ConversationRef>((ref, key) {
       final window = ref.watch(spaceFeedWindowedProvider(key)).asData?.value;
       if (window == null) {
         return const <Message>[];
       }
-      final queued = window.messages.where((m) => m.isSteeringQueued).toList()
-        ..sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
-      return queued;
+      final queued = window.messages.where((m) => m.isSteeringQueued).toList();
+      if (queued.isEmpty) {
+        return const <Message>[];
+      }
+      queued.sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
+      return _SteeringQueue(queued);
     });
+
+/// An unmodifiable queue snapshot that compares by its messages.
+final class _SteeringQueue extends UnmodifiableListView<Message> {
+  _SteeringQueue(List<Message> super.source) : _messages = source;
+
+  final List<Message> _messages;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _SteeringQueue &&
+          const ListEquality<Message>().equals(_messages, other._messages);
+
+  @override
+  int get hashCode => const ListEquality<Message>().hash(_messages);
+}
 
 /// Whether any live run in the conversation can take mid-run steering (built-in harness).
 /// False for external-CLI transports (`claude -p`, …): their cards still queue and convert

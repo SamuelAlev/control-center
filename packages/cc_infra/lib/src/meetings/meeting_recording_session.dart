@@ -251,6 +251,10 @@ class MeetingRecordingService {
   bool isRecording(String workspaceId, String meetingId) =>
       _sessions.containsKey(_key(workspaceId, meetingId));
 
+  /// Whether any recording session is open, in any workspace — the transcriber
+  /// this service shares with dictation must stay loaded while one is.
+  bool get hasActiveSessions => _sessions.isNotEmpty;
+
   /// Tears down every open session without finalizing (server shutdown). The
   /// stranded meetings are recovered by the `MeetingSummaryReconciler`'s startup
   /// sweep on next boot.

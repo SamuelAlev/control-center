@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_persistence/database/tables/notification_feed_table.dart';
 import 'package:cc_persistence/database/tables/notification_item_states_table.dart';
 import 'package:cc_persistence/database/tables/notification_read_marks_table.dart';
@@ -29,6 +30,13 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// The feed method a space message is recorded under.
   static const String messageReceivedMethod = 'notifications/message_received';
+
+  /// The feed method an agent waiting on a human is recorded under.
+  static const String agentAwaitingInputMethod =
+      'notifications/agent_awaiting_input';
+
+  /// Params key an agent wait's notification carries its wait id under.
+  static const String waitIdKey = 'wait_id';
 
   /// Watches the newest [limit] feed items, most-recent-first.
   Stream<List<NotificationFeedTableData>> watchRecent(
@@ -224,6 +232,57 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
       ], mode: InsertMode.insertOrIgnore);
     });
   });
+
+  /// Stamps [resolvedAt] onto the `notifications/agent_awaiting_input` items
+  /// announcing [waitId] — the wait ended, so the row stops asking anyone to
+  /// act. One write for every user: the resolution is a fact about the item,
+  /// not a per-user read opinion, so it lives in the item rather than in each
+  /// user's states. An item already stamped keeps its first stamp.
+  Future<void> resolveAgentWait(
+    String workspaceId,
+    String waitId,
+    DateTime resolvedAt,
+  ) => transaction(() async {
+    final rows =
+        await (select(notificationFeedTable)..where(
+              (t) =>
+                  t.workspaceId.equals(workspaceId) &
+                  t.method.equals(agentAwaitingInputMethod),
+            ))
+            .get();
+    for (final row in rows) {
+      final params = _decodeParams(row.paramsJson);
+      if (params == null ||
+          params[waitIdKey] != waitId ||
+          params[NotificationFeedItem.resolvedAtKey] != null) {
+        continue;
+      }
+      await (update(notificationFeedTable)..where(
+            (t) => t.workspaceId.equals(workspaceId) & t.id.equals(row.id),
+          ))
+          .write(
+            NotificationFeedTableCompanion(
+              paramsJson: Value(
+                jsonEncode({
+                  ...params,
+                  NotificationFeedItem.resolvedAtKey: resolvedAt
+                      .toUtc()
+                      .toIso8601String(),
+                }),
+              ),
+            ),
+          );
+    }
+  });
+
+  static Map<String, dynamic>? _decodeParams(String paramsJson) {
+    try {
+      final params = jsonDecode(paramsJson);
+      return params is Map<String, dynamic> ? params : null;
+    } on FormatException {
+      return null;
+    }
+  }
 
   static bool _isFromConversation(
     String paramsJson,

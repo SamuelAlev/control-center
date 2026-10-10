@@ -2,7 +2,7 @@
 title: Instalar
 description: Usa Control Center en el navegador o instala la aplicación de escritorio, configura un backend de agentes y elige dónde se ejecuta su servidor.
 slug: es-ES/manual/instalar
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center se ejecuta de dos maneras: como **aplicación web** en
@@ -68,7 +68,7 @@ sigue [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-head
 | Requisito                   | macOS                                                 | Windows     | Linux                                                      |
 | --------------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Versión del sistema operativo | macOS 13+ (Ventura)                                 | Windows 10+ | Ubuntu 22.04+ u otra distribución con glibc 2.35+ y GTK 3 |
-| Arquitectura                | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Arquitectura                | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git                         | Necesario                                             | Necesario   | Necesario                                                  |
 | Espacio en disco            | ~200 MB para la aplicación, más el directorio de datos del servidor | ~200 MB     | ~200 MB                                                    |
 
@@ -101,10 +101,12 @@ Todos los artefactos de abajo proceden de [GitHub Releases](https://github.com/S
 
 Descarga `Control-Center-<version>-arm64.dmg`, ábrelo y arrastra Control Center a Aplicaciones. La compilación está firmada con un Developer ID y notarizada por Apple, así que se abre con normalidad.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: un instalador por usuario.
 - `Control-Center-<version>-windows-x64.zip`: un zip portable.
+- `Control-Center-<version>-arm64-setup.exe`: un instalador por usuario.
+- `Control-Center-<version>-windows-arm64.zip`: un zip portable.
 
 Windows usa `git worktree` para los checkouts de los espacios (sin copy-on-write).
 
@@ -119,7 +121,7 @@ Ambos se compilan en Ubuntu 22.04 y se ejecutan en él o en cualquier versión p
 
 ### Servidor independiente
 
-Cada versión también incluye el servidor headless por separado — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — junto a las imágenes `cc-server`, `cc-webapp` y `cc-remote` en GHCR. Consulta [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/).
+Cada versión también incluye el servidor headless por separado — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — junto a las imágenes `cc-server`, `cc-webapp` y `cc-remote` en GHCR. Consulta [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/).
 
 El archivo de Linux se compila en Ubuntu 22.04 y sus bibliotecas nativas incluidas enlazan glibc 2.35 y la libstdc++ de GCC 12, así que necesita un host al menos igual de reciente (Ubuntu 22.04, Debian 12, Fedora 36 o posterior). En una distribución más antigua, ejecuta la imagen `cc-server` en su lugar: un contenedor trae su propio userland, así que solo el kernel tiene que ser el tuyo.
 

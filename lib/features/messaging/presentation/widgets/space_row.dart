@@ -161,7 +161,9 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
 
     Widget painted(Set<WidgetState> states) {
       return TweenAnimationBuilder<Color?>(
-        duration: CcMotion.fast,
+        // Selecting snaps with the fill (see [SpaceRowLayout]); the row being
+        // left fades back over CcMotion.fast.
+        duration: _filled ? Duration.zero : CcMotion.fast,
         curve: CcMotion.standard,
         tween: ColorTween(end: fg),
         builder: (context, animatedFg, _) {

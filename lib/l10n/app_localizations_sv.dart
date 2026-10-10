@@ -8002,6 +8002,53 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det finns ingen utskrift att sammanfatta ännu.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Skapa dem från utskriften eller skriv egna.';
+
+  @override
+  String get meetingNotesGenerate => 'Skapa anteckningar';
+
+  @override
+  String get meetingNotesWriteOwn => 'Skriv egna';
+
+  @override
+  String get meetingNothingTranscribed => 'Ingenting transkriberades.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Det finns ingen utskrift att sammanfatta, men du kan fortfarande föra egna anteckningar.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Talare';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Taltid per talare visas när det finns en utskrift.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count till';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share av taltiden, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Alla åtgärdspunkter är klara.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Visa alla ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Anteckningar kopierade till urklipp som Markdown.';
 
@@ -15303,4 +15350,50 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'En agent är blockerad av inloggningsuppgifter';
+
+  @override
+  String get killTerminal => 'Avsluta terminal';
+
+  @override
+  String get stopAgentCommand => 'Stoppa kommando';
+
+  @override
+  String get agentCommandStopping => 'Stoppar…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Agentkommando $command, har körts i $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Anslutningen till servern bröts';
+
+  @override
+  String get serverLostBody =>
+      'Control Center fortsätter att försöka ansluta igen i bakgrunden. Försök igen nu eller gå till inloggningsskärmen för att välja en server.';
+
+  @override
+  String get serverLostRetrying => 'Ansluter igen…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Nästa försök om $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Försök ansluta igen';
+
+  @override
+  String get serverLostSignIn => 'Gå till inloggning';
+
+  @override
+  String get serverEndedTitle => 'Det går inte att ansluta till servern igen';
+
+  @override
+  String get shutdownSubtitleServer => 'Servern stoppas';
 }

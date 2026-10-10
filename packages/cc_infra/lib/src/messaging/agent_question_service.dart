@@ -37,17 +37,21 @@ const String kQuestionTimeoutMsKey = 'timeoutMs';
 class AgentQuestionService implements AgentQuestionPort {
   /// Creates an [AgentQuestionService]. [_timeout] bounds how long the asking
   /// agent waits for an answer (`Duration.zero` waits indefinitely).
-  /// [_onAsked] runs once each question is posted, so the host can tell the
-  /// operator an agent is waiting on them.
+  /// [_onAsked] runs once each question is posted, with the id of the
+  /// message it was posted as, so the host can tell the operator an agent is
+  /// waiting on them; [_onClosed] runs with that id once the asker stops
+  /// waiting, answered or not.
   AgentQuestionService(
     this._messaging, {
     this._timeout = const Duration(hours: 1),
     this._onAsked,
+    this._onClosed,
   });
 
   final MessagingRepository _messaging;
   final Duration _timeout;
-  final void Function(AgentQuestionRequest request)? _onAsked;
+  final void Function(AgentQuestionRequest request, String messageId)? _onAsked;
+  final void Function(String messageId)? _onClosed;
 
   /// Pending questions keyed by the question message id.
   final Map<String, Completer<AgentQuestionAnswer?>> _pending = {};
@@ -91,7 +95,7 @@ class AgentQuestionService implements AgentQuestionPort {
 
     final completer = Completer<AgentQuestionAnswer?>();
     _pending[messageId] = completer;
-    _onAsked?.call(request);
+    _onAsked?.call(request, messageId);
     var closedUnanswered = false;
     // The asker can stop waiting long before the timeout: its MCP client gave
     // up on the call, or the run was stopped. An answer given after that
@@ -119,6 +123,7 @@ class AgentQuestionService implements AgentQuestionPort {
       );
     } finally {
       _pending.remove(messageId);
+      _onClosed?.call(messageId);
       if (closedUnanswered) {
         await _markExpired(request.workspaceId, messageId, metadata);
       }

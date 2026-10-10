@@ -131,14 +131,12 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
     // anything. Read from the same derived provider the strip renders (itself
     // a projection of the feed window this pane already watches), so the two
     // cannot disagree about whether there is something up there.
-    final steeringAttached = ref
-        .watch(
-          steeringQueueProvider((
-            spaceId: spaceId,
-            conversationId: conversationId,
-          )),
-        )
-        .isNotEmpty;
+    final steeringAttached = ref.watch(
+      steeringQueueProvider((
+        spaceId: spaceId,
+        conversationId: conversationId,
+      )).select((queue) => queue.isNotEmpty),
+    );
 
     return SpaceMessageComposer(
       spaceId: spaceId,

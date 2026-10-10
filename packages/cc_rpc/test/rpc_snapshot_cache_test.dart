@@ -215,6 +215,85 @@ void main() {
       'meetings': [2],
     });
   });
+  test('flush writes the version-1 document older builds decode', () async {
+    final store = _Store();
+    final cache = RpcSnapshotCache(store: store);
+    cache.write('a "quoted" key', {'text': 'line\nbreak "q" é', 'n': 1});
+    cache.write('empty', {});
+    await cache.flush();
+
+    // Exactly what the old decode-everything path produced and reads back.
+    expect(jsonDecode(store.payload!), {
+      'version': 1,
+      'entries': [
+        {
+          'key': 'a "quoted" key',
+          'value': {'text': 'line\nbreak "q" é', 'n': 1},
+        },
+        {'key': 'empty', 'value': <String, dynamic>{}},
+      ],
+    });
+    final restored = RpcSnapshotCache(store: store);
+    await restored.hydrate();
+    expect(restored.read('a "quoted" key'), {
+      'text': 'line\nbreak "q" é',
+      'n': 1,
+    });
+    expect(await restored.readAsync('empty'), <String, dynamic>{});
+  });
+
+  test(
+    'a document in another shape still hydrates via a full decode',
+    () async {
+      final store = _Store()
+        ..payload = jsonEncode({
+          'entries': [
+            {
+              'value': {'n': 1},
+              'key': 'reordered',
+            },
+          ],
+          'version': 1,
+        });
+      final cache = RpcSnapshotCache(store: store);
+      await cache.hydrate();
+      expect(cache.read('reordered'), {'n': 1});
+    },
+  );
+
+  test('a corrupt hydrated entry reads as absent and is dropped', () async {
+    final store = _Store()
+      ..payload =
+          '{"version":1,"entries":[{"key":"bad","value":{"n":1,}},'
+          '{"key":"good","value":{"n":2}}]}';
+    final cache = RpcSnapshotCache(store: store);
+    await cache.hydrate();
+    expect(cache.contains('bad'), isTrue, reason: 'values decode lazily');
+    expect(cache.read('bad'), isNull);
+    expect(cache.contains('bad'), isFalse);
+    expect(await cache.readAsync('good'), {'n': 2});
+  });
+
+  test('an oversized snapshot is not kept and evicts the one it replaces', () {
+    final cache = RpcSnapshotCache(maxEntryChars: 40);
+    cache.write('k', {'n': 1});
+    expect(cache.read('k'), {'n': 1});
+    cache.write('k', {'data': List.filled(100, 'x').join()});
+    // Never the superseded value rendered as if it were current.
+    expect(cache.read('k'), isNull);
+  });
+
+  test('readAsync returns detached values', () async {
+    final cache = RpcSnapshotCache();
+    cache.write('rows', {
+      'rows': [1],
+    });
+    final first = await cache.readAsync('rows');
+    (first!['rows'] as List).clear();
+    expect(await cache.readAsync('rows'), {
+      'rows': [1],
+    });
+  });
 }
 
 class _Store implements RpcSnapshotStore {

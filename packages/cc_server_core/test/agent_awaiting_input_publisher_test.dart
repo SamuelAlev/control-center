@@ -36,7 +36,9 @@ Future<void> _pump() => Future<void>.delayed(const Duration(milliseconds: 20));
 void main() {
   late DomainEventBus bus;
   late List<AgentAwaitingInput> published;
+  late List<AgentInputResolved> resolved;
   late StreamSubscription<AgentAwaitingInput> sub;
+  late StreamSubscription<AgentInputResolved> resolvedSub;
   late AgentAwaitingInputPublisher publisher;
   late PendingConfirmationRegistry approvals;
   late PendingCredentialBlockRegistry credentials;
@@ -44,7 +46,9 @@ void main() {
   setUp(() {
     bus = DomainEventBus();
     published = [];
+    resolved = [];
     sub = bus.on<AgentAwaitingInput>().listen(published.add);
+    resolvedSub = bus.on<AgentInputResolved>().listen(resolved.add);
     publisher = AgentAwaitingInputPublisher(eventBus: bus, agents: _Agents());
     approvals = PendingConfirmationRegistry();
     credentials = PendingCredentialBlockRegistry(deadline: null);
@@ -54,6 +58,7 @@ void main() {
   tearDown(() async {
     await publisher.dispose();
     await sub.cancel();
+    await resolvedSub.cancel();
     approvals.dispose();
     credentials.dispose();
     bus.dispose();
@@ -88,6 +93,7 @@ void main() {
     expect(event.workspaceId, 'ws-1');
     expect(event.spaceId, 'space-1');
     expect(event.agentName, 'Ada');
+    expect(event.waitId, first.id);
     // No space id is no space, not an empty one to deep-link into.
     expect(published.last.spaceId, isNull);
     expect(published.last.agentName, isNull);
@@ -95,18 +101,63 @@ void main() {
     approvals.respond(first.id, approved: true);
     await _pump();
     expect(published, hasLength(2));
+    // Answering it ends that wait, and only that one.
+    expect(resolved.single.waitId, first.id);
+    expect(resolved.single.workspaceId, 'ws-1');
+  });
+
+  test('a denied approval ends the wait too', () async {
+    final entry = approvals.register(
+      const ConfirmationRequest(
+        spaceId: 'space-1',
+        workspaceId: 'ws-1',
+        title: 'Push to main',
+        detail: 'git push origin main',
+      ),
+    );
+    await _pump();
+    approvals.respond(entry.id, approved: false);
+    await _pump();
+
+    expect(resolved.single.waitId, entry.id);
+  });
+
+  test('an approval answered before its notification went out still resolves '
+      'after it', () async {
+    final order = <String>[];
+    final orderSub = bus.on<DomainEvent>().listen(
+      (e) => order.add(e is AgentAwaitingInput ? 'start' : 'end'),
+    );
+    // agent-1's name is still resolving when the approval is answered.
+    final entry = approvals.register(
+      const ConfirmationRequest(
+        spaceId: 'space-1',
+        workspaceId: 'ws-1',
+        title: 'Push to main',
+        detail: 'git push origin main',
+        agentId: 'agent-1',
+      ),
+    );
+    approvals.respond(entry.id, approved: true);
+    await _pump();
+    await orderSub.cancel();
+
+    expect(order, ['start', 'end']);
   });
 
   test('an approval with no workspace is left to the approval card', () async {
-    approvals.register(
+    final entry = approvals.register(
       const ConfirmationRequest(spaceId: 's', title: 't', detail: 'd'),
     );
     await _pump();
+    approvals.respond(entry.id, approved: true);
+    await _pump();
     expect(published, isEmpty);
+    expect(resolved, isEmpty);
   });
 
   test('a run parked on a credential notifies with why', () async {
-    credentials.register(
+    final parked = credentials.register(
       const RunCredentialBlockRequest(
         lane: RunCredentialLane.claudeCode,
         reason: RunCredentialReason.signedOut,
@@ -126,6 +177,11 @@ void main() {
     expect(event.summary, 'Claude Code is signed out.');
     expect(event.conversationId, 'conv-1');
     expect(event.agentName, 'Grace');
+    expect(event.waitId, parked.id);
+
+    await credentials.respond(parked.id, cancel: true);
+    await _pump();
+    expect(resolved.single.waitId, parked.id);
   });
 
   test('a question notifies with the question', () async {
@@ -136,6 +192,7 @@ void main() {
         question: 'Which database?',
         askedByAgentId: 'agent-1',
       ),
+      'm-1',
     );
     await _pump();
 
@@ -143,5 +200,14 @@ void main() {
     expect(event.kind, AgentInputKind.question);
     expect(event.summary, 'Which database?');
     expect(event.agentName, 'Ada');
+    expect(event.waitId, 'm-1');
+
+    publisher
+      ..questionClosed('m-1')
+      // Closing it twice, or one never asked, announces nothing more.
+      ..questionClosed('m-1')
+      ..questionClosed('m-unknown');
+    await _pump();
+    expect(resolved.single.waitId, 'm-1');
   });
 }

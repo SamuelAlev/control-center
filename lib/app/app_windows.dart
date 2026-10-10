@@ -111,7 +111,11 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
 
   @override
   void dispose() {
-    _controller.destroy();
+    // Unmounted mid-frame when the app gives way to the server setup window
+    // (or remounts on a server switch): defer the native destroy past the
+    // frame for the same focus reason as `_ServerSetupWindowState.dispose`.
+    final controller = _controller;
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.destroy());
     super.dispose();
   }
 

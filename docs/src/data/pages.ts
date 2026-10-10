@@ -123,7 +123,7 @@ export const developersPage: SitePageData = {
       title: 'Quickstart',
       html: `<p>Run the server, then point any MCP client at it:</p>
 <ul>
-<li>Install the desktop app or grab the standalone <code>cc_server</code> binary from <a href="${REPO_URL}/releases">GitHub Releases</a> (<code>cc_server-&lt;version&gt;-macos-arm64.tar.gz</code>, <code>-linux-x64.tar.gz</code>, <code>-windows-x64.zip</code>), or run the Docker image <code>ghcr.io/samuelalev/cc-server</code> with <code>-p 9030:9030</code>.</li>
+<li>Install the desktop app or grab the standalone <code>cc_server</code> binary from <a href="${REPO_URL}/releases">GitHub Releases</a> (<code>cc_server-&lt;version&gt;-macos-arm64.tar.gz</code>, <code>-linux-x64.tar.gz</code>, <code>-windows-x64.zip</code>, <code>-windows-arm64.zip</code>), or run the Docker image <code>ghcr.io/samuelalev/cc-server</code> with <code>-p 9030:9030</code>.</li>
 <li>Start it: <code>cc_server</code> (listens on <code>127.0.0.1:9030</code> by default).</li>
 <li>Connect a client: the MCP endpoint is <code>http://127.0.0.1:9030/mcp</code> (Streamable HTTP).</li>
 </ul>

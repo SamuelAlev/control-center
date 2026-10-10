@@ -1,5 +1,6 @@
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/primitives/focus_ring.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -103,6 +104,25 @@ class _CcTappableState extends State<CcTappable> {
   FocusNode get _focusNode =>
       widget.focusNode ?? (_internalFocus ??= FocusNode());
 
+  /// The controller [_resolve] currently listens to.
+  WidgetStatesController? _listenedStates;
+
+  /// The enclosing [CcFluidHover] group's pointer-inside flag, when an item
+  /// scope is above this tappable.
+  ValueListenable<bool>? _fluidPointer;
+
+  /// Whether the enclosing group owns this tappable's hover (see
+  /// [CcFluidHover.controlsTappable]), and whether it picked this item.
+  bool _fluidControlled = false;
+  bool _fluidActive = false;
+
+  /// The states [CcTappable.builder] last painted, and the signal that they
+  /// changed. The builder re-runs only when this resolved set changes: a raw
+  /// hover change the group overrides, or the pointer crossing into a group
+  /// while this row is not the one it picks, repaints nothing.
+  Set<WidgetState> _visible = const <WidgetState>{};
+  final _StatesChanged _visibleChanged = _StatesChanged();
+
   late final Map<Type, Action<Intent>> _actions = {
     ActivateIntent: CallbackAction<ActivateIntent>(
       onInvoke: (_) {
@@ -121,20 +141,65 @@ class _CcTappableState extends State<CcTappable> {
   @override
   void initState() {
     super.initState();
+    _bindStates();
     _states.update(WidgetState.disabled, !widget.enabled);
   }
 
   @override
   void didUpdateWidget(CcTappable oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _bindStates();
     _states.update(WidgetState.disabled, !widget.enabled);
   }
 
   @override
   void dispose() {
+    _listenedStates?.removeListener(_resolve);
+    _fluidPointer?.removeListener(_resolve);
+    _visibleChanged.dispose();
     _internalStates?.dispose();
     _internalFocus?.dispose();
     super.dispose();
+  }
+
+  void _bindStates() {
+    final next = _states;
+    if (identical(next, _listenedStates)) {
+      return;
+    }
+    _listenedStates?.removeListener(_resolve);
+    _listenedStates = next..addListener(_resolve);
+  }
+
+  void _bindFluidPointer(ValueListenable<bool>? next) {
+    if (identical(next, _fluidPointer)) {
+      return;
+    }
+    _fluidPointer?.removeListener(_resolve);
+    _fluidPointer = next?..addListener(_resolve);
+  }
+
+  /// Inside a fluid group with the pointer in it, hover is the group's pick,
+  /// not this row's own [MouseRegion]: the nearest row washes even while the
+  /// pointer sits in a gap.
+  Set<WidgetState> _compute() {
+    final states = Set<WidgetState>.of(_states.value);
+    if (_fluidControlled && (_fluidPointer?.value ?? false)) {
+      states.remove(WidgetState.hovered);
+      if (_fluidActive) {
+        states.add(WidgetState.hovered);
+      }
+    }
+    return states;
+  }
+
+  void _resolve() {
+    final next = _compute();
+    if (setEquals(next, _visible)) {
+      return;
+    }
+    _visible = next;
+    _visibleChanged.notify();
   }
 
   void _activate() {
@@ -154,21 +219,16 @@ class _CcTappableState extends State<CcTappable> {
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
     final fluidControlled = CcFluidHover.controlsTappable(context);
-    final fluidActive = CcFluidHover.isItemActive(context);
-    final fluidPointerInside = CcFluidHover.isPointerInside(context);
+    // Both read the item scope, which notifies only when THIS item's active
+    // state changes — the pointer entering or leaving the group arrives
+    // through the listenable instead, so it does not rebuild every row.
+    _fluidControlled = fluidControlled;
+    _fluidActive = CcFluidHover.isItemActive(context);
+    _bindFluidPointer(CcFluidHover.pointerInsideOf(context));
+    _visible = _compute();
     Widget child = ListenableBuilder(
-      listenable: _states,
-      builder: (context, _) {
-        if (!fluidControlled || !fluidPointerInside) {
-          return widget.builder(context, _states.value);
-        }
-        final states = Set<WidgetState>.of(_states.value)
-          ..remove(WidgetState.hovered);
-        if (fluidActive) {
-          states.add(WidgetState.hovered);
-        }
-        return widget.builder(context, states);
-      },
+      listenable: _visibleChanged,
+      builder: (context, _) => widget.builder(context, _visible),
     );
 
     child = GestureDetector(
@@ -234,4 +294,9 @@ class _CcTappableState extends State<CcTappable> {
       child: child,
     );
   }
+}
+
+/// Lets the tappable signal its resolved states changed.
+class _StatesChanged extends ChangeNotifier {
+  void notify() => notifyListeners();
 }

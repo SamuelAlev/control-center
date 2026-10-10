@@ -2,7 +2,7 @@
 title: انسٹال
 description: Control Center کو براؤزر میں استعمال کریں یا ڈیسک ٹاپ ایپ انسٹال کریں، ایجنٹ بیک اینڈ سیٹ اپ کریں اور منتخب کریں کہ اس کا سرور کہاں چلے۔
 slug: ur-PK/ہدایت-نامہ/انسٹال
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center دو طرح سے چلتا ہے: [app.usectrl.dev](https://app.usectrl.dev) پر ایک **ویب
@@ -62,7 +62,7 @@ Control Center دو طرح سے چلتا ہے: [app.usectrl.dev](https://app.use
 | تقاضا        | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS ورژن      | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ یا glibc 2.35+ اور GTK 3 والی کوئی اور ڈسٹرو |
-| آرکیٹیکچر    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| آرکیٹیکچر    | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | درکار                                                 | درکار       | درکار                                                      |
 | ڈسک اسپیس    | ایپ کے لیے ~200 MB، اس کے علاوہ سرور کی ڈیٹا ڈائریکٹری | ~200 MB     | ~200 MB                                                    |
 
@@ -80,10 +80,12 @@ Intel Macs کے لیے کوئی تیار ڈاؤن لوڈ موجود نہیں۔ �
 
 `Control-Center-<version>-arm64.dmg` ڈاؤن لوڈ کریں، اسے کھولیں اور Control Center کو Applications میں گھسیٹیں۔ یہ بلڈ Developer ID سے سائن اور Apple سے نوٹرائز شدہ ہے، اس لیے یہ عام طور پر کھل جاتا ہے۔
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: فی صارف انسٹالر۔
 - `Control-Center-<version>-windows-x64.zip`: پورٹیبل zip۔
+- `Control-Center-<version>-arm64-setup.exe`: فی صارف انسٹالر۔
+- `Control-Center-<version>-windows-arm64.zip`: پورٹیبل zip۔
 
 Windows اسپیس چیک آؤٹس کے لیے `git worktree` استعمال کرتا ہے (copy-on-write نہیں)۔
 
@@ -98,7 +100,7 @@ AppImage اپ ڈیٹ کی معلومات ساتھ رکھتا ہے، اس لیے 
 
 ### علیحدہ سرور
 
-ہر ریلیز میں ہیڈلیس سرور الگ سے بھی ہوتا ہے — `cc_server-<version>-macos-arm64.tar.gz`، `cc_server-<version>-linux-x64.tar.gz`، `cc_server-<version>-windows-x64.zip` — اور GHCR پر `cc-server`، `cc-webapp` اور `cc-remote` امیجز بھی۔ دیکھیں [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)۔
+ہر ریلیز میں ہیڈلیس سرور الگ سے بھی ہوتا ہے — `cc_server-<version>-macos-arm64.tar.gz`، `cc_server-<version>-linux-x64.tar.gz`، `cc_server-<version>-windows-x64.zip`، `cc_server-<version>-windows-arm64.zip` — اور GHCR پر `cc-server`، `cc-webapp` اور `cc-remote` امیجز بھی۔ دیکھیں [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)۔
 
 Linux آرکائیو Ubuntu 22.04 پر بنا ہے اور اس کی ساتھ شامل نیٹو لائبریریاں glibc 2.35 اور GCC 12 کی libstdc++ سے لنک ہوتی ہیں، اس لیے اسے کم از کم اُتنے ہی نئے ہوسٹ کی ضرورت ہے (Ubuntu 22.04، Debian 12، Fedora 36 یا بعد کا)۔ پرانے ڈسٹری بیوشن پر اس کے بجائے `cc-server` امیج چلائیں — کنٹینر اپنا یوزرلینڈ ساتھ لاتا ہے، اس لیے صرف کرنل آپ کا ہونا چاہیے۔
 

@@ -33,15 +33,15 @@ bool canToggleDraft(WidgetRef ref, PullRequest pr, PrRef prRef) {
   if (isAuthor) {
     return true;
   }
-  return ref
-          .watch(
-            repoPermissionProvider((
-              owner: repo.remoteOwner,
-              repo: repo.remoteName,
-            )),
-          )
-          .whenOrNull(data: (perm) => perm == 'admin' || perm == 'write') ??
-      false;
+  final perm = ref
+      .watch(
+        repoPermissionProvider((
+          owner: repo.remoteOwner,
+          repo: repo.remoteName,
+        )),
+      )
+      .value;
+  return perm == 'admin' || perm == 'write';
 }
 
 /// The primary action on a draft pull request: take it out of draft so

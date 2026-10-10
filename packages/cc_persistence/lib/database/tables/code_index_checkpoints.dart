@@ -63,7 +63,8 @@ class CodeIndexCheckpointsTable extends Table {
   /// this delta was measured against. 0 for linked checkouts.
   IntColumn get baseGeneration => integer().withDefault(const Constant(0))();
 
-  /// When the checkpoint was written.
+  /// When the run that wrote the checkpoint started: what it proves holds as
+  /// of then, so anything written while it ran is newer and re-checked.
   DateTimeColumn get indexedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override

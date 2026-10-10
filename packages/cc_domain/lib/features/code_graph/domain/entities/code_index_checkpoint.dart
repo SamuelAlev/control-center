@@ -47,7 +47,8 @@ class CodeIndexCheckpoint {
   /// invalidates the worktrees that indexed against the older base.
   final int baseGeneration;
 
-  /// When the checkpoint was written.
+  /// When the run that wrote the checkpoint started: what it proves holds as
+  /// of then, so anything written while it ran is newer and re-checked.
   final DateTime indexedAt;
 
   @override

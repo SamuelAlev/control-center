@@ -2,7 +2,7 @@
 title: 설치
 description: 브라우저에서 Control Center를 사용하거나 데스크톱 앱을 설치하고, 에이전트 백엔드를 설정하며 서버가 실행될 위치를 선택합니다.
 slug: ko-KR/매뉴얼/설치
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center는 두 가지 방식으로 실행됩니다. [app.usectrl.dev](https://app.usectrl.dev)에서
@@ -61,7 +61,7 @@ Control Center는 두 가지 방식으로 실행됩니다. [app.usectrl.dev](htt
 | 요구 사항    | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS 버전      | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ 또는 glibc 2.35+ 및 GTK 3를 갖춘 다른 배포판 |
-| 아키텍처     | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| 아키텍처     | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | 필수                                                  | 필수        | 필수                                                       |
 | 디스크 공간  | 앱에 약 200 MB, 서버 데이터 디렉터리 별도             | 약 200 MB   | 약 200 MB                                                  |
 
@@ -93,10 +93,12 @@ TDT v3, 약 600 MB, Whisper 변형은 198–626 MB) — 과 내장 code-server �
 드래그합니다. 이 빌드는 Developer ID로 서명되고 Apple의 공증을 받았으므로 정상적으로
 열립니다.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: 사용자별 설치 프로그램입니다.
 - `Control-Center-<version>-windows-x64.zip`: 휴대용 zip입니다.
+- `Control-Center-<version>-arm64-setup.exe`: 사용자별 설치 프로그램입니다.
+- `Control-Center-<version>-windows-arm64.zip`: 휴대용 zip입니다.
 
 Windows는 스페이스 체크아웃에 `git worktree`를 사용합니다(copy-on-write 없음).
 
@@ -120,7 +122,7 @@ AppImage에는 업데이트 정보가 포함되어 있으므로
 ### 독립 실행형 서버
 
 각 릴리스에는 헤드리스 서버도 단독으로 포함됩니다. `cc_server-<version>-macos-arm64.tar.gz`,
-`cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`과 GHCR의
+`cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip`과 GHCR의
 `cc-server`, `cc-webapp`, `cc-remote` 이미지가 함께 제공됩니다.
 [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)을 참고하세요.
 

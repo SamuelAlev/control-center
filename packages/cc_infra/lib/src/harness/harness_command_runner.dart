@@ -14,6 +14,7 @@ import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
@@ -42,7 +43,12 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     this._protectedPaths,
     this._baseEnv = const {},
     this._maxOutputChars = 16000,
-  });
+    HarnessShellRegistry? shellRegistry,
+  }) : _shellRegistry = shellRegistry ?? HarnessShellRegistry.shared;
+
+  /// Where each spawned command is recorded while it runs, so the space's
+  /// TERMINALS list can show it and a person can stop it.
+  final HarnessShellRegistry _shellRegistry;
 
   /// The OS sandbox manager, or null to run with env sanitization only.
   final SandboxManager? sandboxManager;
@@ -216,6 +222,15 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
           runInShell: false,
         );
       }
+
+      final unregister = _shellRegistry.register(
+        pid: process.pid,
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentId: agentId,
+        command: command,
+      );
+      unawaited(process.exitCode.then((_) => unregister()));
 
       // Collect output with bounded memory (head + rolling tail) and tolerate
       // malformed/binary bytes rather than losing the whole output on one bad

@@ -57,13 +57,13 @@ enum AgentInputKind {
 /// An agent stopped and is waiting on a human before it can continue.
 ///
 /// Published once per wait, when it starts: a pending approval, a posted
-/// question, a run parked on a credential. Not published when the wait ends —
-/// the surfaces that resolve it (the approval card, the question form, the
-/// credential dialog) already reflect that.
+/// question, a run parked on a credential. The end of the same wait is
+/// [AgentInputResolved], keyed by the same [waitId].
 class AgentAwaitingInput implements DomainEvent {
   /// Creates an [AgentAwaitingInput].
   const AgentAwaitingInput({
     required this.workspaceId,
+    required this.waitId,
     required this.kind,
     required this.summary,
     required this.occurredAt,
@@ -75,6 +75,10 @@ class AgentAwaitingInput implements DomainEvent {
 
   /// Workspace the waiting run belongs to.
   final String workspaceId;
+
+  /// Identifies this wait: the pending approval's or credential block's id,
+  /// or the question's message id.
+  final String waitId;
 
   /// What it is waiting for.
   final AgentInputKind kind;
@@ -94,6 +98,27 @@ class AgentAwaitingInput implements DomainEvent {
 
   /// The waiting agent's display name, when known.
   final String? agentName;
+
+  @override
+  final DateTime occurredAt;
+}
+
+/// The wait an [AgentAwaitingInput] announced is over: the approval was
+/// answered, the question answered or abandoned, the credential fixed or the
+/// parked run given up on. Either way nobody needs to act on it any more.
+class AgentInputResolved implements DomainEvent {
+  /// Creates an [AgentInputResolved].
+  const AgentInputResolved({
+    required this.workspaceId,
+    required this.waitId,
+    required this.occurredAt,
+  });
+
+  /// Workspace the wait belonged to.
+  final String workspaceId;
+
+  /// The [AgentAwaitingInput.waitId] of the wait that ended.
+  final String waitId;
 
   @override
   final DateTime occurredAt;

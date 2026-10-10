@@ -8008,6 +8008,53 @@ class AppLocalizationsId extends AppLocalizations {
   String get meetingReRunNoTranscript => 'Belum ada transkrip untuk diringkas.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Buat dari transkrip, atau tulis sendiri.';
+
+  @override
+  String get meetingNotesGenerate => 'Buat catatan';
+
+  @override
+  String get meetingNotesWriteOwn => 'Tulis sendiri';
+
+  @override
+  String get meetingNothingTranscribed => 'Tidak ada yang ditranskripsi.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Tidak ada transkrip untuk diringkas, tetapi Anda tetap bisa menyimpan catatan sendiri.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Pembicara';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Waktu bicara per pembicara muncul setelah ada transkrip.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count lainnya';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share waktu bicara, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Semua item tindakan sudah selesai.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Lihat semua ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Catatan disalin ke papan klip sebagai Markdown.';
 
@@ -15303,4 +15350,50 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Agen terhambat oleh kredensial';
+
+  @override
+  String get killTerminal => 'Matikan terminal';
+
+  @override
+  String get stopAgentCommand => 'Hentikan perintah';
+
+  @override
+  String get agentCommandStopping => 'Menghentikan…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count dtk';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Perintah agen $command, berjalan selama $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Koneksi ke server terputus';
+
+  @override
+  String get serverLostBody =>
+      'Control Center terus mencoba menyambung ulang di latar belakang. Coba lagi sekarang, atau buka layar masuk untuk memilih server.';
+
+  @override
+  String get serverLostRetrying => 'Menyambung ulang…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Percobaan berikutnya dalam $seconds dtk';
+  }
+
+  @override
+  String get serverLostReconnect => 'Coba sambungkan ulang';
+
+  @override
+  String get serverLostSignIn => 'Buka layar masuk';
+
+  @override
+  String get serverEndedTitle => 'Tidak dapat menyambung ulang ke server';
+
+  @override
+  String get shutdownSubtitleServer => 'Server sedang berhenti';
 }

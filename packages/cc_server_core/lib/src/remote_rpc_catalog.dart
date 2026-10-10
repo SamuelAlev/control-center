@@ -16,6 +16,7 @@ import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/workspace_events.dart';
 import 'package:cc_domain/core/domain/ports/activity_log_reader.dart';
+import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart';
 import 'package:cc_domain/core/domain/ports/editor_launcher_port.dart';
 import 'package:cc_domain/core/domain/ports/entitlements_port.dart';
@@ -671,6 +672,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // process is privileged, so both ops are `fullClient`-only (a companion phone
   // is denied). Absent when null → the client sees an empty process list.
   ProcessDetectionPort? processDetection,
+  // The shell commands agents left running in one space (backgrounded tasks,
+  // long foreground ones), and the stop for a stuck one. Unlike the
+  // process.detect pair this is workspace AND space scoped: the port derives
+  // every pid from the space's own runs and refuses any other. Absent when
+  // null → the TERMINALS section lists terminals only.
+  AgentShellProcessPort? agentShells,
   // Reads an agent run's NDJSON log off the SERVER's disk for the run viewer.
   // The file lives in the server's data dir, so the thin client cannot open it
   // itself (it used to try, and rendered an empty dialog against any remote
@@ -2030,6 +2037,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final providerPolicy = providerPolicyRepository;
   final sandboxDetect = sandboxDetector;
   final processes = processDetection;
+  final shells = agentShells;
   final launcher = editorLauncher;
   final cacheRepo = cacheRepository;
   final repoCh = repoChanges;
@@ -4305,6 +4313,63 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           await processes.killProcess((ctx.args['pid'] as num).toInt());
           return const {};
+        },
+      ),
+    ],
+    // A space's running agent shell commands, and the stop for one. Both read
+    // the space's worktree surface (command lines name its paths), so they
+    // carry the same per-repo grant check a terminal does; a stop is
+    // privileged, so both are fullClient-only like the terminal ops.
+    if (shells != null) ...[
+      RepoOp(
+        name: 'process.agentShells',
+        kind: RepoOpKind.read,
+        requiredArgs: ['space_id'],
+        requiredCapability: SessionCapability.fullClient,
+        repoAccess: RepoGrantLevel.read,
+        repoAccessVia: reposExposedBySpaceArg,
+        // Polled while the TERMINALS section is open.
+        audited: false,
+        handler: (ctx) async {
+          final found = await shells.list(
+            workspaceId: ctx.workspaceId!,
+            spaceId: ctx.args['space_id'] as String,
+          );
+          return {
+            'processes': [
+              for (final p in found)
+                {
+                  'pid': p.pid,
+                  'agent_id': p.agentId,
+                  'run_id': ?p.runId,
+                  'command': p.command,
+                  'started_at': p.startedAt.toUtc().toIso8601String(),
+                  'origin': p.origin.name,
+                },
+            ],
+          };
+        },
+      ),
+      RepoOp(
+        name: 'process.killAgentShell',
+        kind: RepoOpKind.mutate,
+        actionClasses: const {ActionClass.processSpawn},
+        requiredArgs: ['space_id', 'pid'],
+        requiredCapability: SessionCapability.fullClient,
+        repoAccess: RepoGrantLevel.read,
+        repoAccessVia: reposExposedBySpaceArg,
+        handler: (ctx) async {
+          final killed = await shells.kill(
+            workspaceId: ctx.workspaceId!,
+            spaceId: ctx.args['space_id'] as String,
+            pid: (ctx.args['pid'] as num).toInt(),
+          );
+          if (!killed) {
+            throw const NotFoundException(
+              'No running agent command with that pid in this space',
+            );
+          }
+          return {'killed': true};
         },
       ),
     ],

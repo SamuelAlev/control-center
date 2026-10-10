@@ -337,7 +337,7 @@ export const cs: LandingCopy = {
     description:
       "Tvůj další vývojářský den může začít tady. Zdarma a s otevřeným zdrojovým kódem.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Zobrazit vydání",
     web: "Otevřít webovou aplikaci",

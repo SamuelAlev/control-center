@@ -8117,6 +8117,53 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie ma jeszcze transkryptu do podsumowania.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Wygeneruj je z transkryptu albo napisz własne.';
+
+  @override
+  String get meetingNotesGenerate => 'Wygeneruj notatki';
+
+  @override
+  String get meetingNotesWriteOwn => 'Napisz własne';
+
+  @override
+  String get meetingNothingTranscribed => 'Nic nie zostało przetranskrybowane.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Nie ma transkryptu do podsumowania, ale nadal możesz prowadzić własne notatki.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Mówcy';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Czas mówienia każdej osoby pojawi się, gdy będzie transkrypt.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count więcej';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share czasu mówienia, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Wszystkie zadania są wykonane.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Pokaż wszystkie ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Skopiowano notatki do schowka jako Markdown.';
 
@@ -15516,4 +15563,50 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Agent jest zablokowany przez dane logowania';
+
+  @override
+  String get killTerminal => 'Zakończ terminal';
+
+  @override
+  String get stopAgentCommand => 'Zatrzymaj polecenie';
+
+  @override
+  String get agentCommandStopping => 'Zatrzymywanie…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Polecenie agenta $command, działa od $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Utracono połączenie z serwerem';
+
+  @override
+  String get serverLostBody =>
+      'Control Center nadal próbuje ponownie połączyć się w tle. Spróbuj teraz lub przejdź do ekranu logowania, aby wybrać serwer.';
+
+  @override
+  String get serverLostRetrying => 'Ponowne łączenie…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Następna próba za $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Spróbuj połączyć ponownie';
+
+  @override
+  String get serverLostSignIn => 'Przejdź do logowania';
+
+  @override
+  String get serverEndedTitle => 'Nie można ponownie połączyć się z serwerem';
+
+  @override
+  String get shutdownSubtitleServer => 'Serwer się zatrzymuje';
 }

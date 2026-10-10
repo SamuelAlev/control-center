@@ -2,7 +2,7 @@
 title: التثبيت
 description: استخدم Control Center في المتصفح أو ثبّت تطبيق سطح المكتب، وأعدّ خلفية وكيل، واختر أين يعمل خادمه.
 slug: ar-SA/دليل-المستخدم/تثبيت
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 يعمل Control Center بطريقتين: **تطبيق ويب** على
@@ -59,7 +59,7 @@ sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 | المتطلب | macOS | Windows | Linux |
 | --- | --- | --- | --- |
 | إصدار النظام | macOS 13+ (Ventura) | Windows 10+ | Ubuntu 22.04+ أو توزيعة أخرى فيها glibc 2.35+ وGTK 3 |
-| المعمارية | Apple Silicon (arm64) | x64 | x86_64 |
+| المعمارية | Apple Silicon (arm64) | x64, ARM64 | x86_64 |
 | Git | مطلوب | مطلوب | مطلوب |
 | مساحة القرص | نحو 200 MB للتطبيق، بالإضافة إلى دليل بيانات الخادم | نحو 200 MB | نحو 200 MB |
 
@@ -90,10 +90,12 @@ Windows). الكلام ليس اختياريًا: من غير نموذج ASR ل�
 نزّل `Control-Center-<version>-arm64.dmg`، وافتحه، واسحب Control Center إلى
 مجلد Applications. البناء موقّع بـ Developer ID وموثّق من Apple، فيُفتح كالمعتاد.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: مثبّت لكل مستخدم.
 - `Control-Center-<version>-windows-x64.zip`: أرشيف zip محمول.
+- `Control-Center-<version>-arm64-setup.exe`: مثبّت لكل مستخدم.
+- `Control-Center-<version>-windows-arm64.zip`: أرشيف zip محمول.
 
 يستخدم Windows `git worktree` لسحب المساحات (بلا نسخ عند الكتابة).
 
@@ -117,8 +119,8 @@ GTK 3 من النظام. المكتبات القليلة التي قد يخلو 
 ### الخادم المستقل
 
 يحمل كل إصدار الخادم بلا واجهة منفصلًا أيضًا —
-`cc_server-<version>-macos-arm64.tar.gz` و`cc_server-<version>-linux-x64.tar.gz`
-و`cc_server-<version>-windows-x64.zip` — إلى جانب صور `cc-server` و`cc-webapp`
+`cc_server-<version>-macos-arm64.tar.gz` و`cc_server-<version>-linux-x64.tar.gz` و`cc_server-<version>-windows-x64.zip`
+و`cc_server-<version>-windows-arm64.zip` — إلى جانب صور `cc-server` و`cc-webapp`
 و`cc-remote` على GHCR. انظر
 [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
 

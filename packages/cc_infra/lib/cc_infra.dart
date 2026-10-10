@@ -196,6 +196,7 @@ export 'src/pr_review/review_dependency_service.dart';
 export 'src/pr_review/review_finalizer.dart';
 export 'src/pr_review/review_finding_status_service.dart';
 export 'src/pr_review/visual_diff_service.dart';
+export 'src/process/agent_shell_process_service.dart';
 export 'src/process/binary_resolver.dart';
 export 'src/process/cc_server_process.dart';
 export 'src/process/process_control_service.dart';

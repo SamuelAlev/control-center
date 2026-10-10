@@ -31,6 +31,12 @@ void main() {
       expect(cache.length, 2);
     });
 
+    test('defaults hold a long conversation of turns', () {
+      final cache = CcParseCache();
+      expect(cache.maxSize, 256);
+      expect(cache.maxSourceChars, 2 * 1024 * 1024);
+    });
+
     test('keys on plugin-set identity: distinct sets are distinct entries', () {
       final cache = CcParseCache();
       final setA = CcPluginSet(const [CcThinkingPlugin()]);

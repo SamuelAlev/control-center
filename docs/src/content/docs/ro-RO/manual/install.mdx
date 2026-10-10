@@ -2,7 +2,7 @@
 title: Instalare
 description: Folosește Control Center în browser sau instalează aplicația desktop, configurează un backend de agenți și alege unde rulează serverul.
 slug: ro-RO/manual/instalare
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center rulează în două moduri: ca **aplicație web** la
@@ -63,7 +63,7 @@ urmează [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-se
 | Cerință      | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Versiune de sistem | macOS 13+ (Ventura)                             | Windows 10+ | Ubuntu 22.04+ sau altă distribuție cu glibc 2.35+ și GTK 3 |
-| Arhitectură  | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Arhitectură  | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Necesar                                               | Necesar     | Necesar                                                    |
 | Spațiu pe disc | ~200 MB pentru aplicație, plus directorul de date al serverului | ~200 MB | ~200 MB                                        |
 
@@ -82,10 +82,12 @@ Fiecare artefact de mai jos provine din [GitHub Releases](https://github.com/Sam
 
 Descarcă `Control-Center-<version>-arm64.dmg`, deschide-l și trage Control Center în dosarul Applications. Buildul este semnat cu un Developer ID și notarizat de Apple, așa că se deschide normal.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: un instalator per utilizator.
 - `Control-Center-<version>-windows-x64.zip`: un zip portabil.
+- `Control-Center-<version>-arm64-setup.exe`: un instalator per utilizator.
+- `Control-Center-<version>-windows-arm64.zip`: un zip portabil.
 
 Windows folosește `git worktree` pentru check-out-urile spațiilor (fără copy-on-write).
 
@@ -100,7 +102,7 @@ Ambele sunt construite pe Ubuntu 22.04 și rulează pe el sau pe ceva mai nou (D
 
 ### Server autonom
 
-Fiecare versiune include și serverul headless separat — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alături de imaginile `cc-server`, `cc-webapp` și `cc-remote` de pe GHCR. Vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
+Fiecare versiune include și serverul headless separat — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — alături de imaginile `cc-server`, `cc-webapp` și `cc-remote` de pe GHCR. Vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
 
 Arhiva Linux este construită pe Ubuntu 22.04, iar bibliotecile native incluse se leagă la glibc 2.35 și la libstdc++ din GCC 12, așa că are nevoie de o gazdă cel puțin la fel de nouă (Ubuntu 22.04, Debian 12, Fedora 36 sau mai nou). Pe o distribuție mai veche, rulează în schimb imaginea `cc-server` — un container își aduce propriul userland, așa că doar kernelul trebuie să fie al tău.
 

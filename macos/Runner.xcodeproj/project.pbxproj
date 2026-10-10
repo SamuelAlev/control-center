@@ -32,6 +32,8 @@
 		A1B2C3D40000000000000002 /* MacOsNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40000000000000001 /* MacOsNotifier.swift */; };
 		A1B2C3D40000000000000012 /* FileDropBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40000000000000011 /* FileDropBridge.swift */; };
 		A1B2C3D40000000000000022 /* TextContextMenuBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40000000000000021 /* TextContextMenuBridge.swift */; };
+		A1B2C3D40000000000000032 /* SurfaceCacheGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40000000000000031 /* SurfaceCacheGuard.swift */; };
+		A1B2C3D40000000000000034 /* WindowCloseGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40000000000000033 /* WindowCloseGuard.swift */; };
 		E9A1C674D2D31CCCB803EC65 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E172128F307DE2587CCAF3A /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
 
@@ -93,6 +95,8 @@
 		A1B2C3D40000000000000001 /* MacOsNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacOsNotifier.swift; sourceTree = "<group>"; };
 		A1B2C3D40000000000000011 /* FileDropBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDropBridge.swift; sourceTree = "<group>"; };
 		A1B2C3D40000000000000021 /* TextContextMenuBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextContextMenuBridge.swift; sourceTree = "<group>"; };
+		A1B2C3D40000000000000031 /* SurfaceCacheGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceCacheGuard.swift; sourceTree = "<group>"; };
+		A1B2C3D40000000000000033 /* WindowCloseGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCloseGuard.swift; sourceTree = "<group>"; };
 		B4614ED69A6E388A5883FCE7 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BD91095B9766A5D08506390A /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		F52341B740A8DD610F3D3CFA /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
@@ -189,6 +193,8 @@
 				A1B2C3D40000000000000001 /* MacOsNotifier.swift */,
 				A1B2C3D40000000000000011 /* FileDropBridge.swift */,
 				A1B2C3D40000000000000021 /* TextContextMenuBridge.swift */,
+				A1B2C3D40000000000000031 /* SurfaceCacheGuard.swift */,
+				A1B2C3D40000000000000033 /* WindowCloseGuard.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
@@ -454,6 +460,8 @@
 				A1B2C3D40000000000000002 /* MacOsNotifier.swift in Sources */,
 				A1B2C3D40000000000000012 /* FileDropBridge.swift in Sources */,
 				A1B2C3D40000000000000022 /* TextContextMenuBridge.swift in Sources */,
+				A1B2C3D40000000000000032 /* SurfaceCacheGuard.swift in Sources */,
+				A1B2C3D40000000000000034 /* WindowCloseGuard.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

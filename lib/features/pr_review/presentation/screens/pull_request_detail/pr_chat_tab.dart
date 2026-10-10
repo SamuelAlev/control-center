@@ -36,7 +36,7 @@ class PrChatTab extends ConsumerWidget {
               number: pr.number,
             )),
           );
-    final spaceAsync = ref.watch(prSpaceProvider(pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(pr)));
     return spaceAsync.when(
       loading: () => Center(
         child: Column(
@@ -91,7 +91,8 @@ class PrChatTab extends ConsumerWidget {
                 CcButton(
                   variant: CcButtonVariant.secondary,
                   size: CcButtonSize.sm,
-                  onPressed: () => ref.invalidate(prSpaceProvider(pr)),
+                  onPressed: () =>
+                      ref.invalidate(prSpaceProvider(PrSpaceKey.of(pr))),
                   child: Text(l10n.retry),
                 ),
               ],

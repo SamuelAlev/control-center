@@ -7965,6 +7965,53 @@ class AppLocalizationsFa extends AppLocalizations {
   String get meetingReRunNoTranscript => 'هنوز رونوشتی برای خلاصه نیست.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'آن‌ها را از رونوشت بسازید یا یادداشت‌های خودتان را بنویسید.';
+
+  @override
+  String get meetingNotesGenerate => 'ساخت یادداشت‌ها';
+
+  @override
+  String get meetingNotesWriteOwn => 'نوشتن یادداشت خودتان';
+
+  @override
+  String get meetingNothingTranscribed => 'چیزی رونویسی نشد.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'رونوشتی برای خلاصه کردن نیست، اما همچنان می‌توانید یادداشت‌های خودتان را داشته باشید.';
+
+  @override
+  String get meetingOverviewSpeakers => 'گویندگان';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'زمان صحبت هر گوینده پس از آماده شدن رونوشت نمایش داده می‌شود.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count مورد دیگر';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share از زمان صحبت، $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'همه موارد اقدام انجام شده‌اند.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'نمایش همه ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'یادداشت‌ها به‌صورت Markdown در کلیپ‌بورد کپی شد.';
 
@@ -15232,4 +15279,50 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'عاملی به‌خاطر اعتبارنامه متوقف شده است';
+
+  @override
+  String get killTerminal => 'بستن ترمینال';
+
+  @override
+  String get stopAgentCommand => 'توقف فرمان';
+
+  @override
+  String get agentCommandStopping => 'در حال توقف…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count ث';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'فرمان عامل $command، در حال اجرا به مدت $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'اتصال به سرور قطع شد';
+
+  @override
+  String get serverLostBody =>
+      'Control Center در پس‌زمینه همچنان برای اتصال دوباره تلاش می‌کند. اکنون دوباره امتحان کنید یا برای انتخاب سرور به صفحهٔ ورود بروید.';
+
+  @override
+  String get serverLostRetrying => 'در حال اتصال دوباره…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'تلاش بعدی تا $seconds ثانیه دیگر';
+  }
+
+  @override
+  String get serverLostReconnect => 'تلاش برای اتصال دوباره';
+
+  @override
+  String get serverLostSignIn => 'رفتن به صفحهٔ ورود';
+
+  @override
+  String get serverEndedTitle => 'اتصال دوباره به سرور ممکن نیست';
+
+  @override
+  String get shutdownSubtitleServer => 'سرور در حال توقف است';
 }

@@ -437,6 +437,9 @@ class DesktopBackendSession {
         serverSwitchHandlerProvider.overrideWithValue(
           DesktopServerSwitcher.instance.switchTo,
         ),
+        returnToServerSignInProvider.overrideWithValue(
+          DesktopServerSwitcher.instance.returnToSetup,
+        ),
         mediaPlaybackAvailableProvider.overrideWithValue(
           _mediaPlaybackAvailable,
         ),
@@ -498,9 +501,17 @@ class DesktopBackendSession {
   RpcNotificationMapper? _notificationMapper;
 
   /// Disposes the container and the backend (local child included).
+  ///
+  /// The backend is disposed even when the container's teardown throws (a
+  /// provider's `onDispose`): on a switch to a remote server this is what
+  /// stops the bundled `cc_server`, and skipping it left that child running
+  /// behind the remote session.
   Future<void> dispose() async {
-    container.dispose();
-    await backend.dispose();
+    try {
+      container.dispose();
+    } finally {
+      await backend.dispose();
+    }
   }
 }
 
@@ -517,6 +528,9 @@ class DesktopServerSwitcher {
   AppPreferences? _prefs;
   SecureStore? _secure;
   final ValueNotifier<int> _generation = ValueNotifier(0);
+
+  /// True while [returnToSetup] has the setup window up instead of the app.
+  bool _inSetup = false;
 
   /// The live session (the host widget renders it).
   DesktopBackendSession? get current => _current;
@@ -536,7 +550,7 @@ class DesktopServerSwitcher {
   Future<void> adoptPairLink(String rawUrl) async {
     final prefs = _prefs;
     final secure = _secure;
-    if (prefs == null || secure == null) {
+    if (prefs == null || secure == null || _inSetup) {
       // Pre-app (the server-setup window started the browser round-trip):
       // park the credential for the setup screen, which is listening.
       AppLog.w(
@@ -636,13 +650,86 @@ class DesktopServerSwitcher {
       // painted but dead — visible content, no navigation, hard quit only.
       // Post-frame callbacks run after `finalizeTree`, i.e. once the old tree
       // is unmounted for real.
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => unawaited(old.dispose()),
-      );
+      final binding = WidgetsBinding.instance
+        ..addPostFrameCallback((_) => unawaited(old.dispose()));
       // A post-frame callback needs a frame to be scheduled; `setState` above
       // normally does that, but not if the host widget is not mounted yet.
-      WidgetsBinding.instance.ensureVisualUpdate();
+      // Nor while frames are disabled (the window is hidden or minimised —
+      // e.g. a switch adopted from an SSO bounce while the browser is in
+      // front): the old session, and with it a bundled `cc_server` the user
+      // just switched away from, would then outlive the switch until the
+      // window next painted. A forced frame is the one scheduling path that
+      // ignores `framesEnabled`.
+      if (binding.framesEnabled) {
+        binding.ensureVisualUpdate();
+      } else {
+        binding.scheduleForcedFrame();
+      }
     }
+  }
+
+  /// Leaves the running app for the server setup window: the "sign in"
+  /// action of the lost-connection dialog. Pairings are kept, so the user can
+  /// reconnect to the same server, pick another or run locally.
+  ///
+  /// The setup window replaces the app tree on the next frame and the current
+  /// session (with a bundled `cc_server`, if it spawned one) is torn down only
+  /// after that frame, once nothing mounted still reads its container. The
+  /// app remounts around the backend the user resolves there.
+  Future<void> returnToSetup() async {
+    final prefs = _prefs;
+    final secure = _secure;
+    if (prefs == null || secure == null || _inSetup) {
+      return;
+    }
+    _inSetup = true;
+    final old = _current;
+    _current = null;
+    final oldClosed = Completer<void>();
+    final binding = WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        unawaited(() async {
+          try {
+            await old?.dispose();
+          } on Object catch (e) {
+            AppLog.w('cc_server', 'tearing down the left session failed: $e');
+          } finally {
+            oldClosed.complete();
+          }
+        }());
+      });
+    final setup = showServerSetup(
+      ServerConnectionStore(prefs, secure),
+      previousSessionClosed: oldClosed.future,
+    );
+    // See [switchTo]: a hidden window disables frames, and the old session
+    // must not wait for the next paint to be torn down.
+    if (binding.framesEnabled) {
+      binding.ensureVisualUpdate();
+    } else {
+      binding.scheduleForcedFrame();
+    }
+    final backend = await setup;
+    await oldClosed.future;
+    final DesktopBackendSession next;
+    try {
+      next = await DesktopBackendSession.build(
+        backend: backend,
+        prefs: prefs,
+        secureStore: secure,
+      );
+    } on Object catch (error, stack) {
+      // No window is left to report into: the setup window is resolved and
+      // the app tree is gone. Same last resort as a failed boot.
+      await backend.dispose();
+      _inSetup = false;
+      AppLog.e('cc_server', 'session build after setup failed', error, stack);
+      runBootFailureWindow(error, stack);
+      return;
+    }
+    _inSetup = false;
+    _adopt(next, prefs, secure);
+    runWidget(const _DesktopAppHost());
   }
 }
 

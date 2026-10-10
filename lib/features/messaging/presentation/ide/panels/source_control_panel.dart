@@ -247,7 +247,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   /// The working tree lives on the SERVER and nothing pushes an edit to the
   /// client, so an agent (or code-server) writing a file would leave this list
   /// stale. Poll lightly while the section is visible and expanded.
-  Timer? _poll;
+  Timer? _pollTimer;
   bool _polling = false;
 
   static const _pollInterval = Duration(seconds: 4);
@@ -271,7 +271,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
 
   @override
   void dispose() {
-    _poll?.cancel();
+    _pollTimer?.cancel();
     _message.dispose();
     super.dispose();
   }
@@ -280,11 +280,56 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     if (!mounted) {
       return;
     }
-    // The review tab reads the flat working-tree diff, not this split. Invalidate
-    // both so a poll, stage, or commit updates the open diff with the list.
-    ref
-      ..invalidate(repoChangesGroupedProvider(_args))
-      ..invalidate(repoChangesProvider(_args));
+    // The open review tab follows this read: see [_followIntoReview].
+    ref.invalidate(repoChangesGroupedProvider(_args));
+  }
+
+  /// A poll tick leaves a read that is still running alone. Invalidating it
+  /// would drop its result, and on a repository where one read outlasts the
+  /// interval no result would ever land.
+  void _poll() {
+    if (!mounted || ref.read(repoChangesGroupedProvider(_args)).isLoading) {
+      return;
+    }
+    _refresh();
+  }
+
+  /// Refetches the review tab's flat working-tree diff when this split moved.
+  /// That diff is HEAD against the working tree, so a change to either bucket
+  /// is the only sign it went stale; refetching it on every tick re-runs a
+  /// whole-tree capture for nothing.
+  void _followIntoReview(
+    AsyncValue<RepoChanges>? prev,
+    AsyncValue<RepoChanges> next,
+  ) {
+    final before = prev?.value;
+    final after = next.value;
+    if (before == null || after == null || identical(before, after)) {
+      return;
+    }
+    if (_sameFiles(before.staged, after.staged) &&
+        _sameFiles(before.unstaged, after.unstaged)) {
+      return;
+    }
+    ref.invalidate(repoChangesProvider(_args));
+  }
+
+  /// [PrFile] equality is the filename alone; a re-edit keeps the name.
+  static bool _sameFiles(List<PrFile> a, List<PrFile> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x.filename != y.filename ||
+          x.status != y.status ||
+          x.previousFilename != y.previousFilename ||
+          x.patch != y.patch) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void _syncPolling({required bool active}) {
@@ -293,10 +338,10 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     }
     _polling = active;
     if (active) {
-      _poll = Timer.periodic(_pollInterval, (_) => _refresh());
+      _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
     } else {
-      _poll?.cancel();
-      _poll = null;
+      _pollTimer?.cancel();
+      _pollTimer = null;
     }
   }
 
@@ -844,6 +889,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     final t = context.designSystem ?? DesignSystemTokens.light();
 
     final async = ref.watch(repoChangesGroupedProvider(_args));
+    ref.listen(repoChangesGroupedProvider(_args), _followIntoReview);
     final changes = async.value ?? kEmptyRepoChanges;
     final staged = changes.staged;
     final unstaged = changes.unstaged;

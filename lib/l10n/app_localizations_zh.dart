@@ -7747,6 +7747,49 @@ class AppLocalizationsZh extends AppLocalizations {
   String get meetingReRunNoTranscript => '暂无转录可供摘要。';
 
   @override
+  String get meetingNotesEmptyDescription => '从转写生成，或自己撰写。';
+
+  @override
+  String get meetingNotesGenerate => '生成笔记';
+
+  @override
+  String get meetingNotesWriteOwn => '自己撰写';
+
+  @override
+  String get meetingNothingTranscribed => '没有转写出任何内容。';
+
+  @override
+  String get meetingNothingTranscribedDescription => '没有可摘要的转写，但你仍可以记录自己的笔记。';
+
+  @override
+  String get meetingOverviewSpeakers => '发言人';
+
+  @override
+  String get meetingOverviewSpeakersEmpty => '有转写后，会显示每位发言人的发言时长。';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '另外 $count 位';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name：发言时长占 $share，$duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => '所有待办事项均已完成。';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return '查看全部（$count）';
+  }
+
+  @override
   String get meetingExportCopied => '已将笔记以 Markdown 复制到剪贴板。';
 
   @override
@@ -14780,6 +14823,52 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notificationAgentBlockedOnCredentialUnnamed => '有智能体因凭据问题被阻塞';
+
+  @override
+  String get killTerminal => '终止终端';
+
+  @override
+  String get stopAgentCommand => '停止命令';
+
+  @override
+  String get agentCommandStopping => '正在停止…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count秒';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return '智能体命令 $command，已运行 $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => '与服务器的连接已断开';
+
+  @override
+  String get serverLostBody =>
+      'Control Center 会在后台继续尝试重新连接。你可以立即重试，或前往登录界面选择服务器。';
+
+  @override
+  String get serverLostRetrying => '正在重新连接…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return '$seconds 秒后再次尝试';
+  }
+
+  @override
+  String get serverLostReconnect => '尝试重新连接';
+
+  @override
+  String get serverLostSignIn => '前往登录';
+
+  @override
+  String get serverEndedTitle => '无法重新连接到服务器';
+
+  @override
+  String get shutdownSubtitleServer => '服务器正在停止';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22686,6 +22775,49 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get meetingReRunNoTranscript => '還沒有可摘要的逐字稿。';
 
   @override
+  String get meetingNotesEmptyDescription => '從逐字稿產生，或自己撰寫。';
+
+  @override
+  String get meetingNotesGenerate => '產生筆記';
+
+  @override
+  String get meetingNotesWriteOwn => '自己撰寫';
+
+  @override
+  String get meetingNothingTranscribed => '沒有轉錄出任何內容。';
+
+  @override
+  String get meetingNothingTranscribedDescription => '沒有可摘要的逐字稿，但你仍可以記下自己的筆記。';
+
+  @override
+  String get meetingOverviewSpeakers => '發言者';
+
+  @override
+  String get meetingOverviewSpeakersEmpty => '有逐字稿後，會顯示每位發言者的發言時間。';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '另外 $count 位';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name：發言時間佔 $share，$duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => '所有行動項目皆已完成。';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return '檢視全部（$count）';
+  }
+
+  @override
   String get meetingExportCopied => '筆記已以 Markdown 複製到剪貼簿。';
 
   @override
@@ -29724,4 +29856,50 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get notificationAgentBlockedOnCredentialUnnamed => '有代理因憑證問題而受阻';
+
+  @override
+  String get killTerminal => '終止終端機';
+
+  @override
+  String get stopAgentCommand => '停止指令';
+
+  @override
+  String get agentCommandStopping => '正在停止…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count秒';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return '代理程式指令 $command，已執行 $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => '與伺服器的連線已中斷';
+
+  @override
+  String get serverLostBody =>
+      'Control Center 會在背景持續嘗試重新連線。你可以立即重試，或前往登入畫面選擇伺服器。';
+
+  @override
+  String get serverLostRetrying => '正在重新連線…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return '$seconds 秒後再次嘗試';
+  }
+
+  @override
+  String get serverLostReconnect => '嘗試重新連線';
+
+  @override
+  String get serverLostSignIn => '前往登入';
+
+  @override
+  String get serverEndedTitle => '無法重新連線到伺服器';
+
+  @override
+  String get shutdownSubtitleServer => '伺服器正在停止';
 }

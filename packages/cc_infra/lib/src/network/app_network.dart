@@ -30,6 +30,10 @@ Map<String, dynamic> expectStatuses(Iterable<int> statuses) => {
   expectedStatusesExtra: List<int>.unmodifiable(statuses),
 };
 
+/// Request-extra flag set once a failure has been logged, so a retried
+/// request's final error is not logged again by each attempt's chain.
+const String _errorLoggedKey = '__ccErrorLogged';
+
 /// Creates a configured [Dio] instance.
 ///
 /// `baseUrl` is optional and defaults to an empty string.
@@ -113,6 +117,16 @@ Dio createDio({String? baseUrl}) {
           handler.next(e);
           return;
         }
+        // [RetryInterceptor] re-issues a request through this whole chain
+        // from inside its own `onError`, so the final failure unwinds through
+        // every attempt's chain: one GitHub 502 after three retries was four
+        // identical error lines in the same millisecond. Log it once.
+        final extra = e.requestOptions.extra;
+        if (extra[_errorLoggedKey] == true) {
+          handler.next(e);
+          return;
+        }
+        extra[_errorLoggedKey] = true;
         // Include the (truncated, whitespace-collapsed) request + response
         // bodies on every error in every build, on the SAME line as the status
         // and URL so one failure is one greppable line. The request body is the

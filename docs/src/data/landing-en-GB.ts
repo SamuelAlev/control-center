@@ -337,7 +337,7 @@ export const enGb: LandingCopy = {
     description:
       "Your next developer day can start here. Free and open source.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "View releases",
     web: "Open the web app",

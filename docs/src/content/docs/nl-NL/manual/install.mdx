@@ -2,7 +2,7 @@
 title: Installeren
 description: Gebruik Control Center in de browser of installeer de desktopapp, stel een agentbackend in en kies waar zijn server draait.
 slug: nl-NL/handleiding/installeren
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center werkt op twee manieren: als **webapp** op
@@ -63,7 +63,7 @@ een server te hosten.
 | Vereiste     | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS-versie    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ of een andere distro met glibc 2.35+ en GTK 3 |
-| Architectuur | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architectuur | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Vereist                                               | Vereist     | Vereist                                                    |
 | Schijfruimte | ~200 MB voor de app, plus de datadirectory van de server | ~200 MB     | ~200 MB                                                    |
 
@@ -94,10 +94,12 @@ Download `Control-Center-<version>-arm64.dmg`, open het en sleep Control Center 
 Programma's. De build is ondertekend met een Developer ID en door Apple genotariseerd,
 dus hij opent gewoon.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: een installatieprogramma per gebruiker.
 - `Control-Center-<version>-windows-x64.zip`: een draagbare zip.
+- `Control-Center-<version>-arm64-setup.exe`: een installatieprogramma per gebruiker.
+- `Control-Center-<version>-windows-arm64.zip`: een draagbare zip.
 
 Windows gebruikt `git worktree` voor de checkouts van ruimtes (geen copy-on-write).
 
@@ -112,7 +114,7 @@ Beide zijn gebouwd op Ubuntu 22.04 en draaien daarop of op alles wat nieuwer is 
 
 ### Losstaande server
 
-Elke release bevat ook de headless server apart — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — naast de images `cc-server`, `cc-webapp` en `cc-remote` op GHCR. Zie [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/).
+Elke release bevat ook de headless server apart — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — naast de images `cc-server`, `cc-webapp` en `cc-remote` op GHCR. Zie [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/).
 
 Het Linux-archief is gebouwd op Ubuntu 22.04 en de meegeleverde native bibliotheken linken naar glibc 2.35 en de libstdc++ van GCC 12, dus het vereist een host die minstens zo nieuw is (Ubuntu 22.04, Debian 12, Fedora 36 of later). Draai op een oudere distributie in plaats daarvan de `cc-server`-image — een container brengt zijn eigen userland mee, dus alleen de kernel hoeft van jou te zijn.
 

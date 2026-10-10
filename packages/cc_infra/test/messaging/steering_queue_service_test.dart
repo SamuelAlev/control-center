@@ -157,7 +157,7 @@ class _FakeSession implements SteeringSessionView {
   final String? runLogId;
   bool harnessActive = true;
   @override
-  bool get isHarnessActive => harnessActive;
+  bool get acceptsSteering => harnessActive;
   @override
   final SteeringQueue steeringQueue = SteeringQueue();
 }

@@ -347,7 +347,7 @@ export const el: LandingCopy = {
     description:
       "Η επόμενη ημέρα σου ως developer μπορεί να ξεκινήσει εδώ. Δωρεάν και ανοιχτού κώδικα.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Δες τις εκδόσεις",
     web: "Άνοιξε την εφαρμογή web",

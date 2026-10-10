@@ -191,14 +191,84 @@ cc_platform() {
   esac
 }
 
-# Echoes the `dart build cli` output-directory tag for an OS.
-cc_cli_dir() { # macos|linux|windows
+# Validates a Windows release architecture and echoes it (default x64).
+#
+# Windows ships two native builds — x64 and arm64 — and every Windows
+# packaging/build script takes the arch explicitly rather than sniffing the
+# host: Git Bash on an Arm64 runner may itself be an emulated x64 process, so
+# `uname -m` there describes the shell, not the toolchain or the build output.
+cc_windows_arch() { # [x64|arm64]
+  case "${1:-x64}" in
+    x64)   printf 'x64\n' ;;
+    arm64) printf 'arm64\n' ;;
+    *) die "unknown Windows architecture '$1' (expected x64|arm64)" ;;
+  esac
+}
+
+# Echoes the `dart build cli` output-directory tag for an OS (and, on Windows,
+# an architecture — `dart build cli` builds for the host, so the arm64 runner
+# writes build/cli/windows_arm64).
+cc_cli_dir() { # macos|linux|windows [x64|arm64]
   case "$1" in
     macos)   printf 'macos_arm64\n' ;;
     linux)   printf 'linux_x64\n' ;;
-    windows) printf 'windows_x64\n' ;;
+    windows)
+      local arch
+      arch="$(cc_windows_arch "${2:-x64}")" || return 1
+      printf 'windows_%s\n' "$arch" ;;
     *) die "cc_cli_dir: unknown OS '$1' (expected macos|linux|windows)" ;;
   esac
+}
+
+# Echoes the machine type of a Windows PE image (exe/dll): x64, arm64, x86, or
+# `unknown-<hex>`. Reads the COFF header with od, which Git Bash, macOS and
+# Linux all ship — the packaging gates run on the Windows runner, the tests on
+# a developer machine.
+#
+# Why it exists: presence is not loadability. A DLL built for the wrong
+# architecture (a clang that defaulted to x86_64, a plugin that downloads an
+# x64-only prebuilt) sits in the bundle, passes every name check and then
+# fails LoadLibrary with ERROR_BAD_EXE_FORMAT in the user's Arm64 process.
+pe_machine() { # file
+  local f="$1" off sig machine
+  [ -f "$f" ] || die "pe_machine: no such file: $f"
+  # e_lfanew: little-endian u32 at 0x3C. Assembled byte by byte so the host's
+  # endianness never matters.
+  # `|| true` + stderr dropped: a file shorter than the offset makes od fail,
+  # and that must read as "not a PE image", not abort the caller's pipefail.
+  off="$( { od -An -v -t u1 -j 60 -N 4 "$f" 2>/dev/null || true; } | awk 'NF == 4 { printf "%d", $1 + $2*256 + $3*65536 + $4*16777216 }')"
+  [ -n "$off" ] || { printf 'unknown-not-pe\n'; return 0; }
+  sig="$( { od -An -v -t x1 -j "$off" -N 4 "$f" 2>/dev/null || true; } | tr -d ' \n')"
+  [ "$sig" = "50450000" ] || { printf 'unknown-not-pe\n'; return 0; }
+  machine="$( { od -An -v -t x1 -j $((off + 4)) -N 2 "$f" 2>/dev/null || true; } | awk 'NF == 2 { print $2 $1 }')"
+  case "$machine" in
+    8664) printf 'x64\n' ;;
+    aa64) printf 'arm64\n' ;;
+    014c) printf 'x86\n' ;;
+    *)    printf 'unknown-%s\n' "$machine" ;;
+  esac
+}
+
+# Fails unless every *.dll / *.exe under the given dirs (recursively) is a PE
+# image for the given architecture. Names every offender, then dies.
+assert_pe_machine() { # arch dir...
+  local arch="$1" dir f got bad=0 n=0
+  shift
+  arch="$(cc_windows_arch "$arch")"
+  for dir in "$@"; do
+    [ -d "$dir" ] || die "assert_pe_machine: not a directory: $dir"
+    while IFS= read -r -d '' f; do
+      n=$((n + 1))
+      got="$(pe_machine "$f")"
+      if [ "$got" != "$arch" ]; then
+        printf 'ERROR: %s is a %s image, not %s\n' "$f" "$got" "$arch" >&2
+        bad=1
+      fi
+    done < <(find "$dir" -type f \( -iname '*.dll' -o -iname '*.exe' \) -print0)
+  done
+  [ "$n" -gt 0 ] || die "assert_pe_machine: no .dll/.exe found under $* — nothing was checked"
+  [ "$bad" -eq 0 ] || die "the $arch bundle carries binaries for another architecture (listed above); Windows refuses to load them into an $arch process"
+  log "all $n PE images under $* are $arch"
 }
 
 # Echoes the shared-library extension for an OS.
@@ -220,9 +290,9 @@ cc_lib_ext() { # macos|linux|windows
 #
 # Whatever `builtin_credentials.sh inject` wrote is compiled into that bundle,
 # so injection must precede the first call — an existing bundle is reused as-is.
-ensure_cc_server_bundle() { # macos|linux|windows
+ensure_cc_server_bundle() { # macos|linux|windows [x64|arm64]
   local bundle exe dart
-  bundle="apps/cc_server/build/cli/$(cc_cli_dir "$1")/bundle"
+  bundle="apps/cc_server/build/cli/$(cc_cli_dir "$1" "${2:-}")/bundle"
   exe="$bundle/bin/cc_server"
   [ "$1" = "windows" ] && exe="$bundle/bin/cc_server.exe"
   if [ ! -x "$exe" ] && [ ! -f "$exe" ]; then

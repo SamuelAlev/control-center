@@ -126,9 +126,9 @@ void main() {
     );
     await tester.pump();
 
-    // Title + subtitle.
+    // Title + subtitle: the server announced its own shutdown.
     expect(find.text('Shutting down'), findsOneWidget);
-    expect(find.text('Closing the local server'), findsOneWidget);
+    expect(find.text('The server is stopping'), findsOneWidget);
     // Service labels (localized).
     expect(find.text('Approvals'), findsOneWidget);
     expect(find.text('Meetings'), findsOneWidget);

@@ -11,13 +11,13 @@ import 'package:control_center/features/messaging/presentation/ide/panels/agent_
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/goals_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/rigs_sections.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/terminals_section.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/plan_studio/providers/plan_studio_providers.dart';
 import 'package:control_center/features/plan_studio/providers/space_plan_execution_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
-import 'package:control_center/features/sandboxing/providers/terminal_sessions_provider.dart';
 import 'package:control_center/features/todos/providers/todo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -40,6 +40,7 @@ class GeneralPanel extends ConsumerWidget {
     required this.workspaceId,
     required this.onOpenAgentRun,
     required this.onFocusTerminal,
+    required this.onKillTerminal,
     required this.onFocusRig,
     required this.onFocusBrowserTab,
     required this.onCloseBrowserTab,
@@ -53,6 +54,10 @@ class GeneralPanel extends ConsumerWidget {
 
   /// Focuses (or opens) the terminal identified by its session id.
   final ValueChanged<String> onFocusTerminal;
+
+  /// Ends the terminal identified by its session id (a TERMINALS row's
+  /// hover trash), closing its tab when it has one.
+  final ValueChanged<String> onKillTerminal;
 
   /// Focuses (or opens) the rig tab for the tapped machine — see
   /// [RigTabTarget].
@@ -100,7 +105,12 @@ class GeneralPanel extends ConsumerWidget {
           workspaceId: workspaceId,
           onOpenAgentRun: onOpenAgentRun,
         ),
-        _TerminalsSection(spaceId: spaceId, onFocusTerminal: onFocusTerminal),
+        TerminalsSection(
+          spaceId: spaceId,
+          workspaceId: workspaceId,
+          onFocusTerminal: onFocusTerminal,
+          onKillTerminal: onKillTerminal,
+        ),
         // The machines this conversation can drive: browsers first (there can
         // be three, one per engine), then desktops. Rows focus the rig's tab.
         BrowsersSection(
@@ -661,99 +671,6 @@ class _TodoStatusGlyph extends StatelessWidget {
     return Semantics(
       label: label,
       child: Icon(icon, size: 14, color: color),
-    );
-  }
-}
-
-// TERMINALS
-
-class _TerminalsSection extends ConsumerWidget {
-  const _TerminalsSection({
-    required this.spaceId,
-    required this.onFocusTerminal,
-  });
-
-  final String spaceId;
-  final ValueChanged<String> onFocusTerminal;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final sessions = ref.watch(spaceTerminalsProvider(spaceId));
-    return CollapsibleSidebarSection(
-      icon: AppIcons.terminal,
-      label: l10n.generalSectionTerminals,
-      count: sessions.isEmpty ? null : '${sessions.length}/${sessions.length}',
-      child: sessions.isEmpty
-          ? SidebarEmptyRow(message: l10n.generalTerminalsEmpty)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < sessions.length; i++)
-                  _TerminalRow(
-                    mirror: sessions[i],
-                    onTap: () => onFocusTerminal(sessions[i].sessionId),
-                    color: t.fgSuccessPrimary,
-                  ),
-              ],
-            ),
-    );
-  }
-}
-
-class _TerminalRow extends StatelessWidget {
-  const _TerminalRow({
-    required this.mirror,
-    required this.onTap,
-    required this.color,
-  });
-
-  final TerminalMirror mirror;
-  final VoidCallback onTap;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    // Prefer the shell's live title (OSC / foreground process); fall back to
-    // the bound agent id, then the generic section label.
-    final name = mirror.title.isNotEmpty
-        ? mirror.title
-        : (mirror.session.agentId.isEmpty
-              ? l10n.terminal
-              : mirror.session.agentId);
-    return InkWell(
-      onTap: onTap,
-      child: Semantics(
-        button: true,
-        label: l10n.focusTerminal,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: 5,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: t.textSecondary),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

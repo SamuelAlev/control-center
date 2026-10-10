@@ -51,14 +51,19 @@ class ThinClientBackend {
   /// `server/shutdown_progress` notifications during its teardown. Resolves
   /// once the child has exited (SIGTERM, then SIGKILL after the grace period).
   /// Call [dispose] afterwards to close the client.
-  Future<void> stopServer() => _holder.process.stop();
+  ///
+  /// The supervisor is still live at this point and its reconnect hook would
+  /// otherwise answer the closed transport by respawning the child, so this
+  /// shuts the holder down for good rather than merely stopping the process.
+  Future<void> stopServer() => _holder.shutDown();
 
   /// Stops the client and the child process.
-  Future<void> dispose() async {
-    await client.close();
-    await _holder.stopWatchingQuitSignals();
-    await _holder.process.stop();
-  }
+  ///
+  /// The child is stopped even when closing the client throws: this is the
+  /// path an in-app switch to a REMOTE server takes to retire the bundled
+  /// server, and a failure here used to leave it running behind the remote
+  /// session for the rest of the app's life.
+  Future<void> dispose() => _holder.shutDown(first: client.close);
 }
 
 /// Mutable owner of the current child process (replaced on respawn), shared
@@ -71,6 +76,53 @@ class LocalServerProcessHolder {
   CcServerProcess process;
 
   final List<StreamSubscription<ProcessSignal>> _signalSubs = [];
+
+  bool _shutDown = false;
+
+  /// Whether [shutDown] has run: the backend is being retired (app quit, or
+  /// an in-app switch to another server), so no further child may spawn.
+  bool get isShutDown => _shutDown;
+
+  /// Replaces [process] with a fresh child from [spawn] when the current one
+  /// has exited — the supervisor's reconnect hook. Returns whether it spawned.
+  ///
+  /// Refuses (throws [StateError]) once [shutDown] has run, so a reconnect
+  /// racing the teardown cannot bring the bundled server back behind a remote
+  /// session. A spawn that was already in flight when the shutdown began is
+  /// stopped on arrival instead of being adopted.
+  Future<bool> respawnIfExited(Future<CcServerProcess> Function() spawn) async {
+    _throwIfShutDown();
+    if (process.isRunning) {
+      return false;
+    }
+    final next = await spawn();
+    if (_shutDown) {
+      await next.stop();
+      _throwIfShutDown();
+    }
+    process = next;
+    return true;
+  }
+
+  void _throwIfShutDown() {
+    if (_shutDown) {
+      throw StateError('The local cc_server is shut down; not respawning it.');
+    }
+  }
+
+  /// Retires the local server for good: refuses any later respawn, runs
+  /// [first] (closing the RPC client), then stops the current child and
+  /// releases the quit-signal listeners. The child is stopped even when
+  /// [first] throws. Idempotent.
+  Future<void> shutDown({Future<void> Function()? first}) async {
+    _shutDown = true;
+    try {
+      await first?.call();
+    } finally {
+      await stopWatchingQuitSignals();
+      await process.stop();
+    }
+  }
 
   /// Best-effort: SIGKILL whatever child is CURRENT when this app is signalled
   /// to quit, so no orphan keeps the SQLite file open against the next boot.
@@ -136,6 +188,25 @@ Future<ThinClientBackend> startThinClientBackend() async {
   final holder = LocalServerProcessHolder(
     await _spawnLocalServer(dataDir: dataDir, psk: psk),
   )..watchQuitSignals();
+  try {
+    return await _connectThinClient(holder: holder, dataDir: dataDir, psk: psk);
+  } on Object {
+    // The child is up but the client never connected. The caller falls back
+    // to the setup screen, where the user may well pick a REMOTE server — so
+    // a child left running here would keep the bundled server alive behind
+    // that remote session for the rest of the app's life.
+    await holder.shutDown();
+    rethrow;
+  }
+}
+
+/// Connects the thin client to [holder]'s freshly spawned child: identity
+/// probe, supervised loopback connection (with respawn) and snapshot cache.
+Future<ThinClientBackend> _connectThinClient({
+  required LocalServerProcessHolder holder,
+  required String dataDir,
+  required String psk,
+}) async {
   final endpoint = holder.process.endpoint!;
 
   // Learn the server's identity (id + fingerprint) from its health endpoint;
@@ -144,7 +215,6 @@ Future<ThinClientBackend> startThinClientBackend() async {
     Uri.parse('http://127.0.0.1:${endpoint.port}'),
   );
   if (probe == null) {
-    holder.process.killSync();
     throw StateError(
       'The spawned cc_server did not report its identity on /healthz.',
     );
@@ -179,24 +249,38 @@ Future<ThinClientBackend> startThinClientBackend() async {
     psk: psk,
     pinnedFingerprint: probe.fingerprint,
     beforeReconnect: () async {
-      if (holder.process.isRunning) {
-        return;
+      final respawned = await holder.respawnIfExited(() {
+        AppLog.w('cc_server', 'local cc_server exited — respawning');
+        return _spawnLocalServer(dataDir: dataDir, psk: psk);
+      });
+      if (respawned) {
+        supervisor.adoptDescriptor(
+          loopbackDescriptor(holder.process.endpoint!.port),
+        );
       }
-      AppLog.w('cc_server', 'local cc_server exited — respawning');
-      holder.process = await _spawnLocalServer(dataDir: dataDir, psk: psk);
-      supervisor.adoptDescriptor(
-        loopbackDescriptor(holder.process.endpoint!.port),
-      );
     },
   );
-  await supervisor.start();
+  // On a failure below the caller stops the child, so the supervisor must not
+  // outlive it: a live one would keep dialling (and asking for a respawn of)
+  // a server that is gone for good.
+  try {
+    await supervisor.start();
+  } on Object {
+    await supervisor.close();
+    rethrow;
+  }
   final client = ResilientRpcClient(supervisor);
-  await attachVerifiedSnapshotCache(
-    client: client,
-    serverId: probe.serverId,
-    fingerprint: supervisor.pinnedFingerprint,
-    supervisor: supervisor,
-  );
+  try {
+    await attachVerifiedSnapshotCache(
+      client: client,
+      serverId: probe.serverId,
+      fingerprint: supervisor.pinnedFingerprint,
+      supervisor: supervisor,
+    );
+  } on Object {
+    await client.close(); // Closes the supervisor too.
+    rethrow;
+  }
   AppLog.i('cc_server', 'thin client connected on ${endpoint.rpcUri}');
   final mediaProxy = MediaProxyConfig.fromConnection(
     serverUri: endpoint.rpcUri,

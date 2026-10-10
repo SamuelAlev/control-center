@@ -26,6 +26,8 @@ import 'package:control_center/shared/widgets/source_control/scm_view.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'pr_source_control_tab_states.dart';
+
 /// A VS Code-style source-control surface for the PR workbench: a commit
 /// message + "commit & push" split button pinned at the TOP of the left
 /// column, the PR space worktree's changes split into Staged changes (the
@@ -92,6 +94,10 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
     super.dispose();
   }
 
+  bool get _changesLoading =>
+      _lastArgs != null &&
+      ref.read(repoChangesGroupedProvider(_lastArgs!)).isLoading;
+
   void _refreshChanges() {
     final args = _lastArgs;
     if (args != null && mounted) {
@@ -107,7 +113,9 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
     if (visible) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _refreshChanges());
       _poll ??= Timer.periodic(_pollInterval, (_) {
-        if (_wasVisible) {
+        // A tick leaves a running read alone: dropping it piled whole-tree
+        // captures up on the server until its request slots ran out.
+        if (_wasVisible && !_changesLoading) {
           _refreshChanges();
         }
       });
@@ -376,7 +384,7 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
     _handleVisibility(visible: TickerMode.valuesOf(context).enabled);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final repoId = prRepoIdFor(ref, widget.pr);
-    final spaceAsync = ref.watch(prSpaceProvider(widget.pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(widget.pr)));
 
     if (workspaceId == null || repoId == null) {
       return Center(child: Text(l10n.ideFileLoading));
@@ -506,68 +514,6 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
       },
     );
   }
-
-  Widget _empty(DesignSystemTokens t, AppLocalizations l10n) => ColoredBox(
-    color: t.bgPrimary,
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.gitBranch, size: 22, color: t.textTertiary),
-          const SizedBox(height: 10),
-          Text(
-            l10n.ideSourceControlNoChanges,
-            style: TextStyle(fontSize: 12, color: t.textTertiary),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  Widget _preparing(DesignSystemTokens t, String label) => ColoredBox(
-    color: t.bgPrimary,
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CcSpinner(),
-          const SizedBox(height: AppSpacing.sm),
-          Text(label, style: TextStyle(fontSize: 12, color: t.textTertiary)),
-        ],
-      ),
-    ),
-  );
-
-  Widget _failed(DesignSystemTokens t, AppLocalizations l10n) => ColoredBox(
-    color: t.bgPrimary,
-    child: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(AppIcons.triangleAlert, size: 22, color: t.textTertiary),
-            const SizedBox(height: 10),
-            Text(
-              l10n.prWorktreeUnavailable,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: t.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.prWorktreeUnavailableHint,
-              style: TextStyle(fontSize: 12, color: t.textTertiary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 /// The two-group changed-files list (Staged changes / Changes), VS Code style,

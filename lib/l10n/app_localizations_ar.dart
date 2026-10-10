@@ -8099,6 +8099,52 @@ class AppLocalizationsAr extends AppLocalizations {
   String get meetingReRunNoTranscript => 'لا يوجد تفريغ نصي لتلخيصه بعد.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'أنشئها من التفريغ النصي، أو اكتب ملاحظاتك بنفسك.';
+
+  @override
+  String get meetingNotesGenerate => 'إنشاء الملاحظات';
+
+  @override
+  String get meetingNotesWriteOwn => 'اكتب ملاحظاتك';
+
+  @override
+  String get meetingNothingTranscribed => 'لم يُفرَّغ أي شيء.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'لا يوجد تفريغ نصي لتلخيصه، لكن يمكنك الاحتفاظ بملاحظاتك الخاصة.';
+
+  @override
+  String get meetingOverviewSpeakers => 'المتحدثون';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'يظهر وقت حديث كل متحدث بعد توفر التفريغ النصي.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count آخرون';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share من وقت الحديث، $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => 'اكتملت جميع بنود العمل.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'عرض الكل ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'تم نسخ الملاحظات إلى الحافظة بتنسيق Markdown.';
 
@@ -15517,4 +15563,50 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'وكيل متوقف بسبب بيانات الاعتماد';
+
+  @override
+  String get killTerminal => 'إنهاء الطرفية';
+
+  @override
+  String get stopAgentCommand => 'إيقاف الأمر';
+
+  @override
+  String get agentCommandStopping => 'جارٍ الإيقاف…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count ث';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'أمر الوكيل $command، قيد التشغيل منذ $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'انقطع الاتصال بالخادم';
+
+  @override
+  String get serverLostBody =>
+      'يواصل Control Center محاولة إعادة الاتصال في الخلفية. أعد المحاولة الآن، أو انتقل إلى شاشة تسجيل الدخول لاختيار خادم.';
+
+  @override
+  String get serverLostRetrying => 'جارٍ إعادة الاتصال…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'المحاولة التالية خلال $seconds ث';
+  }
+
+  @override
+  String get serverLostReconnect => 'إعادة محاولة الاتصال';
+
+  @override
+  String get serverLostSignIn => 'الانتقال إلى تسجيل الدخول';
+
+  @override
+  String get serverEndedTitle => 'تعذّرت إعادة الاتصال بالخادم';
+
+  @override
+  String get shutdownSubtitleServer => 'الخادم يتوقف';
 }

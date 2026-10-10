@@ -2,7 +2,7 @@
 title: Установка
 description: Пользуйтесь Control Center в браузере или установите приложение для компьютера, настройте бэкенд агента и выберите, где запускается его сервер.
 slug: ru-RU/руководство/установка
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center работает двумя способами: как **веб-приложение** по адресу
@@ -64,7 +64,7 @@ TLS, поэтому выберите одно из:
 | Требование   | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Версия ОС    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ или другой дистрибутив с glibc 2.35+ и GTK 3 |
-| Архитектура  | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Архитектура  | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Требуется                                             | Требуется   | Требуется                                                  |
 | Место на диске | ~200 МБ для приложения плюс каталог данных сервера  | ~200 МБ     | ~200 МБ                                                    |
 
@@ -93,10 +93,12 @@ code-server; кроме того, каждая беседа агента пол�
 папку «Программы». Сборка подписана Developer ID и нотаризована Apple, поэтому
 открывается обычным образом.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe` — установщик для текущего пользователя.
 - `Control-Center-<version>-windows-x64.zip` — портативный zip-архив.
+- `Control-Center-<version>-arm64-setup.exe` — установщик для текущего пользователя.
+- `Control-Center-<version>-windows-arm64.zip` — портативный zip-архив.
 
 В Windows checkout'ы пространств делаются через `git worktree` (без copy-on-write).
 
@@ -118,7 +120,7 @@ Fedora 36 и новее): они линкуются с glibc 2.35 и libstdc++ �
 
 ### Отдельный сервер
 
-В каждом релизе headless-сервер поставляется и сам по себе — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — вместе с образами `cc-server`, `cc-webapp` и `cc-remote` в GHCR. См. [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
+В каждом релизе headless-сервер поставляется и сам по себе — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — вместе с образами `cc-server`, `cc-webapp` и `cc-remote` в GHCR. См. [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
 
 Архив для Linux собран на Ubuntu 22.04, и его встроенные нативные библиотеки линкуются с
 glibc 2.35 и libstdc++ из GCC 12, поэтому ему нужен хост не старее этого (Ubuntu 22.04,

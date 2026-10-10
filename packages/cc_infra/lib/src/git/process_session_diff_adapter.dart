@@ -99,12 +99,12 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     await _run(['update-index', '-q', '--refresh'], worktreePath);
 
     // Staged = index vs HEAD; unstaged (tracked) = working tree vs index.
-    final staged = await _filesForDiff(worktreePath, const [
-      '--cached',
-      'HEAD',
-    ]);
-    final unstagedTracked = await _filesForDiff(worktreePath, const []);
-    final untracked = await _untrackedFiles(worktreePath);
+    // Read-only once the refresh above has landed, so they run side by side.
+    final (staged, unstagedTracked, untracked) = await (
+      _filesForDiff(worktreePath, const ['--cached', 'HEAD']),
+      _filesForDiff(worktreePath, const []),
+      _untrackedFiles(worktreePath),
+    ).wait;
     return (
       staged: _scmOrdered(staged),
       unstaged: _scmOrdered([...unstagedTracked, ...untracked]),
@@ -117,18 +117,20 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     String worktreePath,
     List<String> diffArgs,
   ) async {
-    final nameStatus = await _run([
-      'diff',
-      '--name-status',
-      '-z',
-      ...diffArgs,
-    ], worktreePath);
-    final numstat = await _run([
-      'diff',
-      '--numstat',
-      '-z',
-      ...diffArgs,
-    ], worktreePath);
+    // quotePath=false keeps non-ASCII paths raw in the `diff --git` headers so
+    // they match the verbatim `-z` paths — otherwise the per-file patch lookup
+    // misses and the file renders with an empty body.
+    final (nameStatus, numstat, full) = await (
+      _run(['diff', '--name-status', '-z', ...diffArgs], worktreePath),
+      _run(['diff', '--numstat', '-z', ...diffArgs], worktreePath),
+      _run([
+        '-c',
+        'core.quotePath=false',
+        'diff',
+        '--no-color',
+        ...diffArgs,
+      ], worktreePath),
+    ).wait;
     if (nameStatus.exitCode != 0 || numstat.exitCode != 0) {
       return const [];
     }
@@ -137,16 +139,6 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     if (files.isEmpty) {
       return const [];
     }
-    // quotePath=false keeps non-ASCII paths raw in the `diff --git` headers so
-    // they match the verbatim `-z` paths — otherwise the per-file patch lookup
-    // misses and the file renders with an empty body.
-    final full = await _run([
-      '-c',
-      'core.quotePath=false',
-      'diff',
-      '--no-color',
-      ...diffArgs,
-    ], worktreePath);
     final patches = full.exitCode == 0
         ? extractAllFilePatches(full.stdout)
         : const <String, String>{};
@@ -175,39 +167,51 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     if (res.exitCode != 0) {
       return const [];
     }
-    final names = res.stdout.split('\x00').where((s) => s.isNotEmpty);
+    final names = res.stdout.split('\x00').where((s) => s.isNotEmpty).toList();
     final out = <PrFile>[];
-    for (final name in names) {
-      // --no-index exits 1 when the files differ (always, for a new file) — that
-      // is expected, so read stdout regardless of the exit code.
-      final diff = await _run([
-        '-c',
-        'core.quotePath=false',
-        'diff',
-        '--no-color',
-        '--no-index',
-        '--',
-        '/dev/null',
-        name,
-      ], worktreePath);
-      final patch = extractAllFilePatches(diff.stdout)[name] ?? diff.stdout;
-      // Count added lines from the patch (lines starting with '+' that aren't
-      // the '+++' file header).
-      final additions = patch
-          .split('\n')
-          .where((l) => l.startsWith('+') && !l.startsWith('+++'))
-          .length;
-      out.add(
-        PrFile(
-          filename: name,
-          status: PrFileStatus.added,
-          additions: additions,
-          deletions: 0,
-          patch: patch,
+    // A few at a time: an agent can leave hundreds of new files.
+    for (var i = 0; i < names.length; i += _untrackedBatch) {
+      out.addAll(
+        await Future.wait(
+          names
+              .skip(i)
+              .take(_untrackedBatch)
+              .map((name) => _untrackedFile(worktreePath, name)),
         ),
       );
     }
     return out;
+  }
+
+  static const _untrackedBatch = 8;
+
+  Future<PrFile> _untrackedFile(String worktreePath, String name) async {
+    // --no-index exits 1 when the files differ (always, for a new file) — that
+    // is expected, so read stdout regardless of the exit code.
+    final diff = await _run([
+      '-c',
+      'core.quotePath=false',
+      'diff',
+      '--no-color',
+      '--no-index',
+      '--',
+      '/dev/null',
+      name,
+    ], worktreePath);
+    final patch = extractAllFilePatches(diff.stdout)[name] ?? diff.stdout;
+    // Count added lines from the patch (lines starting with '+' that aren't
+    // the '+++' file header).
+    final additions = patch
+        .split('\n')
+        .where((l) => l.startsWith('+') && !l.startsWith('+++'))
+        .length;
+    return PrFile(
+      filename: name,
+      status: PrFileStatus.added,
+      additions: additions,
+      deletions: 0,
+      patch: patch,
+    );
   }
 
   List<PrFile> _scmOrdered(List<PrFile> files) =>

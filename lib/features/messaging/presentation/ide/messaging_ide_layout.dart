@@ -27,6 +27,8 @@ import 'package:control_center/features/messaging/presentation/ide/quick_open/qu
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/widgets/create_untitled_conversation.dart';
 import 'package:control_center/features/messaging/presentation/widgets/rename_conversation_dialog.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row.dart'
+    show ConversationUnreadMark;
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
@@ -178,6 +180,13 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// chat tabs scramble the label meanwhile. Watched in [build] beside
   /// [_conversationsById], for the same reason.
   Set<String> _titleGeneratingIds = const {};
+
+  /// Conversations of the selected space with an agent run in flight, and
+  /// those with unseen agent messages. Their chat tabs lead with the same
+  /// spinner / unread dot the sidebar's conversation rows wear. Watched in
+  /// [build] beside [_conversationsById], for the same reason.
+  Set<String> _busyConversationIds = const {};
+  Set<String> _unreadConversationIds = const {};
 
   /// The open space's standing conversation id, so the seeded chat tab — which
   /// deliberately carries no conversation arg — can still name what it shows.
@@ -769,6 +778,29 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
   }
 
+  /// [_openConversation] bound to one space, interned so a chat tab's pane
+  /// gets the SAME callback on every layout rebuild instead of a fresh
+  /// closure that defeats its rebuild short-circuits.
+  void Function(String conversationId) _conversationOpenerFor(String spaceId) =>
+      _conversationOpeners.putIfAbsent(
+        spaceId,
+        () =>
+            (conversationId) => _openConversation(spaceId, conversationId),
+      );
+
+  final _conversationOpeners = <String, void Function(String)>{};
+
+  /// Opens the subagent run a transcript's `task` cell spawned. A method
+  /// tear-off (equal across builds) so [RunActivityOpenerScope] does not
+  /// notify every transcript cell on each layout rebuild.
+  void _openSubagentRun({required String runId, required String label}) =>
+      _openAgentActivity((
+        agentId: '',
+        runId: runId,
+        label: label,
+        isSubAgent: true,
+      ));
+
   /// Seeds a fresh single-leaf layout with the conversation tab alone. A new
   /// space starts slim — Terminal and Browser open on demand from the `[+]`
   /// menu, never by default (a seeded terminal spawns a shell process and a
@@ -1257,7 +1289,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         final pane = ConversationPane(
           spaceId: spaceId,
           conversationId: conversationId,
-          onSelectConversation: (convId) => _openConversation(spaceId, convId),
+          onSelectConversation: _conversationOpenerFor(spaceId),
         );
         if (workspaceId == null) {
           return pane;
@@ -1268,12 +1300,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         return RunActivityOpenerScope(
           workspaceId: workspaceId,
           spaceId: spaceId,
-          openRun: ({required runId, required label}) => _openAgentActivity((
-            agentId: '',
-            runId: runId,
-            label: label,
-            isSubAgent: true,
-          )),
+          openRun: _openSubagentRun,
           child: pane,
         );
       case MessagingTabKinds.terminal:
@@ -1571,6 +1598,21 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _titleGeneratingIds = spaceId == null
         ? const {}
         : ref.watch(spaceTitleGeneratingIdsProvider(spaceId)).value ?? const {};
+    _busyConversationIds = spaceId == null
+        ? const {}
+        : ref.watch(spaceBusyConversationIdsProvider(spaceId));
+    _unreadConversationIds = spaceId == null
+        ? const {}
+        : {
+            for (final id in _conversationsById.keys)
+              if (ref.watch(
+                conversationUnreadProvider((
+                  spaceId: spaceId,
+                  conversationId: id,
+                )),
+              ))
+                id,
+          };
 
     // Opening a space opens its conversations in the top tab strip. The data
     // above is watched, so whichever of (restore, conversation list, standing
@@ -1750,6 +1792,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                   onRevertFiles: _revertFiles,
                   onOpenAgentRun: _openAgentRun,
                   onFocusTerminal: _focusOrOpenTerminal,
+                  onKillTerminal: _killTerminal,
                   // Focusing a machine selects (or opens) ITS tab: the match is
                   // surface + engine + slot, so "Firefox (VM)" never focuses
                   // the Chromium tab beside it and the second WebKit machine
@@ -2205,6 +2248,26 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     return id == null ? null : _conversationsById[id];
   }
 
+  /// A chat tab's activity mark, mirroring the sidebar's conversation row: a
+  /// spinner while an agent is working, the accent dot when there are unseen
+  /// messages. Null when idle, so the tab keeps its kind icon.
+  Widget Function(Color color)? _chatActivityLeading(EditorTab tab) {
+    final id = _tabConversation(tab)?.id;
+    if (id == null) {
+      return null;
+    }
+    if (_busyConversationIds.contains(id)) {
+      return (_) => const CcSpinner(size: 14, strokeWidth: 1.5);
+    }
+    if (_unreadConversationIds.contains(id)) {
+      return (_) => const SizedBox.square(
+        dimension: 14,
+        child: Center(child: ConversationUnreadMark()),
+      );
+    }
+    return null;
+  }
+
   /// A chat tab's header: the conversation's own title. A thread is prefixed
   /// so it can never be mistaken for the stream it was branched from — two
   /// tabs of the same space otherwise read identically.
@@ -2241,6 +2304,23 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
           ? _newTerminalTab()
           : _terminalTab(sessionId, backend: kept.backend),
     );
+  }
+
+  /// Ends the shell [sessionId] — a TERMINALS row's trash. A shell with a tab
+  /// is ended by closing that tab (the reconcile kills it, as the tab's own ×
+  /// would after "End shell"); a shell kept running with no tab is killed in
+  /// the registry directly. No confirmation: the trash is the explicit,
+  /// targeted version of the question the tab's × asks.
+  void _killTerminal(String sessionId) {
+    for (final entry in _terminalSessions.entries) {
+      if (entry.value.session.sessionId == sessionId) {
+        _keptShells.remove(entry.key);
+        _layout.closeTabByIdentity(entry.key);
+        return;
+      }
+    }
+    ref.read(terminalRegistryProvider.notifier).kill(sessionId);
+    _publishTerminals();
   }
 
   /// Shows [target]'s machine: its tab if one is open anywhere in the tree,
@@ -2325,15 +2405,16 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // icon font has no glyph for), so "Firefox (VM)" and "Chromium (VM)"
     // are told apart at a glance — the job the generic globe could not do.
     leadingFor: (tab) =>
-        tab.kind == MessagingTabKinds.rig &&
-            tab.args['surface'] == RigTabSurfaces.browser
-        ? (color) => BrowserEngineLogo(
-            engine:
-                RigTabSurfaces.browserEngineOf(tab.args) ??
-                RigBrowserEngine.fallback,
-            color: color,
-          )
-        : null,
+        _chatActivityLeading(tab) ??
+        (tab.kind == MessagingTabKinds.rig &&
+                tab.args['surface'] == RigTabSurfaces.browser
+            ? (color) => BrowserEngineLogo(
+                engine:
+                    RigTabSurfaces.browserEngineOf(tab.args) ??
+                    RigBrowserEngine.fallback,
+                color: color,
+              )
+            : null),
     trailingFor: (tab) {
       if (tab.kind != MessagingTabKinds.rig) {
         return null;

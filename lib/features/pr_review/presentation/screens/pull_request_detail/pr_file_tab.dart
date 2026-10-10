@@ -32,7 +32,7 @@ class PrFileTab extends ConsumerWidget {
 
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final repoId = prRepoIdFor(ref, pr);
-    final spaceAsync = ref.watch(prSpaceProvider(pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(pr)));
     if (workspaceId == null || repoId == null) {
       return Center(child: Text(AppLocalizations.of(context).ideFileLoading));
     }

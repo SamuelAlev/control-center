@@ -55,6 +55,7 @@ class _FakeSandboxPort implements SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async {
     return 0;
   }

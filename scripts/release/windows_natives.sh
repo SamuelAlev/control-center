@@ -4,8 +4,16 @@
 # tree-sitter + grammars, aec, lame, cc_inference, cc_saml). rift is the sole
 # intentional gap (git worktree backend). All listed libs are REQUIRED — first
 # failure aborts. Pins from scripts/lib/native_pins.env (env overrides). Needs
-# cargo, cmake, clang, MSVC, and vcpkg/LAME_PREFIX for LAME.
-# Usage: scripts/release/windows_natives.sh
+# cargo, cmake, clang, MSVC, and vcpkg/LAME_PREFIX for LAME; on arm64 also
+# clang-cl (the AEC build, see that block).
+# Usage: scripts/release/windows_natives.sh [x64|arm64]
+#
+# The architecture defaults to the MSVC environment's target
+# (VSCMD_ARG_TGT_ARCH, set by vcvarsall / ilammy/msvc-dev-cmd) and must agree
+# with it when given. Every native is compiled NATIVELY for that architecture:
+# the arm64 set is built on an Arm64 host (GitHub's windows-11-arm runner),
+# never cross-compiled, so cargo's host triple, cl.exe and the vcpkg triplet
+# all describe the same machine the DLLs will load on.
 #
 set -euo pipefail
 
@@ -35,6 +43,29 @@ LINK_DIR="$(dirname "$(command -v link 2>/dev/null || echo /nonexistent/link)")"
   exit 1
 }
 log "MSVC toolchain: $MSVC_BIN"
+
+# --- target architecture -----------------------------------------------------
+MSVC_ARCH="${VSCMD_ARG_TGT_ARCH:-}"
+WIN_ARCH="${1:-${MSVC_ARCH:-x64}}"
+WIN_ARCH="$(cc_windows_arch "$WIN_ARCH")"
+if [ -n "$MSVC_ARCH" ] && [ "$MSVC_ARCH" != "$WIN_ARCH" ]; then
+  echo "ERROR: building $WIN_ARCH natives, but the MSVC environment targets '$MSVC_ARCH' — set up the developer environment for $WIN_ARCH (msvc-dev-cmd arch: $WIN_ARCH)" >&2
+  exit 1
+fi
+case "$WIN_ARCH" in
+  x64)   RUST_HOST=x86_64-pc-windows-msvc;  CLANG_TARGET=x86_64-pc-windows-msvc;  CMAKE_PLATFORM=x64 ;;
+  arm64) RUST_HOST=aarch64-pc-windows-msvc; CLANG_TARGET=aarch64-pc-windows-msvc; CMAKE_PLATFORM=ARM64 ;;
+esac
+# cargo builds for its HOST triple (every block below uses target/release, no
+# --target), so a rustup whose default host is the other architecture would
+# silently produce the wrong DLLs. Fail before the first crate instead.
+command -v rustc >/dev/null 2>&1 || { echo "ERROR: rustc not on PATH" >&2; exit 1; }
+RUSTC_HOST="$(rustc -vV | sed -n 's/^host: //p' | tr -d '\r')"
+[ "$RUSTC_HOST" = "$RUST_HOST" ] || {
+  echo "ERROR: rustc's host is '$RUSTC_HOST' but the $WIN_ARCH natives need '$RUST_HOST' — install the $RUST_HOST toolchain (rustup default stable-$RUST_HOST)" >&2
+  exit 1
+}
+log "Target architecture: $WIN_ARCH (rust $RUST_HOST, cmake -A $CMAKE_PLATFORM)"
 
 # Each native block is a plain subshell with errexit (not `(…) || echo`) — bash
 # ignores set -e on the left of `||`, so failures reported the LAST error. EXIT
@@ -102,15 +133,22 @@ log "MSVC toolchain: $MSVC_BIN"
 (
   trap '[ $? -eq 0 ] || echo "ERROR: cc_inference.dll not built — cc_server REFUSES TO BOOT without it (semantic embeddings and the whole speech stack have no fallback)" >&2' EXIT
   : "${SHERPA_ONNX_VERSION:?SHERPA_ONNX_VERSION unset}"
-  archive="sherpa-onnx-v${SHERPA_ONNX_VERSION}-win-x64-static-MT-Release-lib.tar.bz2"
+  # The same archive pair sherpa-onnx-sys itself maps the two Windows targets
+  # to (win-x64 / win-arm64 `-static-MT-Release-lib`), each pinned by its own
+  # checksum in native_pins.env.
+  case "$WIN_ARCH" in
+    x64)   sherpa_slug=win-x64;   sherpa_sha="${SHERPA_ONNX_LIB_SHA256_WIN_X64:?}" ;;
+    arm64) sherpa_slug=win-arm64; sherpa_sha="${SHERPA_ONNX_LIB_SHA256_WIN_ARM64:?}" ;;
+  esac
+  archive="sherpa-onnx-v${SHERPA_ONNX_VERSION}-${sherpa_slug}-static-MT-Release-lib.tar.bz2"
   url="https://github.com/k2-fsa/sherpa-onnx/releases/download/v${SHERPA_ONNX_VERSION}/${archive}"
   cache="$RUNNER_TEMP/sherpa-onnx"
-  libdir="$cache/sherpa-onnx-v${SHERPA_ONNX_VERSION}-win-x64-static-MT-Release-lib/lib"
+  libdir="$cache/sherpa-onnx-v${SHERPA_ONNX_VERSION}-${sherpa_slug}-static-MT-Release-lib/lib"
   if [ ! -d "$libdir" ]; then
     mkdir -p "$cache"
     curl -fSL "$url" -o "$cache/$archive"
     got="$(sha256_of "$cache/$archive")"
-    [ "$got" = "${SHERPA_ONNX_LIB_SHA256_WIN_X64:?}" ] \
+    [ "$got" = "$sherpa_sha" ] \
       || { echo "ERROR: sherpa-onnx archive sha256 mismatch: got $got" >&2; exit 1; }
 # tree-sitter grammars: each parser.c carries _WIN32 dllexport; build with clang.
     tar xj -C "$(cygpath -u "$cache")" <"$cache/$archive" \
@@ -180,7 +218,9 @@ log "MSVC toolchain: $MSVC_BIN"
   # CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS is required for the ts_* symbols to be
   # exported from the DLL (otherwise it builds but exports nothing and the
   # loader's lookupFunction fails at runtime).
-  cmake -S "$RUNNER_TEMP/ts" -B "$RUNNER_TEMP/ts/build" \
+  # -A: the Visual Studio generator's platform, explicit so the DLL's
+  # architecture never depends on which arch CMake guesses for the host.
+  cmake -S "$RUNNER_TEMP/ts" -B "$RUNNER_TEMP/ts/build" -A "$CMAKE_PLATFORM" \
     -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
   cmake --build "$RUNNER_TEMP/ts/build" --config Release
@@ -210,8 +250,12 @@ build_grammar() {
     # A C++ external scanner needs the C++ driver so the C++ runtime links in.
     # parser.c carries _WIN32 dllexport for tree_sitter_<lang>.
     if [ -f "$src/scanner.cc" ]; then srcs="$srcs $src/scanner.cc"; compiler="clang++"; fi
+    # --target: the clang on PATH may be an x64 build running under emulation
+    # on the Arm64 runner, and its DEFAULT target is its own host — an x64
+    # grammar that loads nowhere in an Arm64 process. Naming the triple makes
+    # the output architecture independent of how LLVM was installed.
     # shellcheck disable=SC2086
-    "$compiler" -shared -O2 -I "$src" $srcs -o "build/natives/tree-sitter-$name.dll"
+    "$compiler" --target="$CLANG_TARGET" -shared -O2 -I "$src" $srcs -o "build/natives/tree-sitter-$name.dll"
     log "Built tree-sitter-$name.dll"
   )
 }
@@ -270,7 +314,26 @@ build_grammar ada        https://github.com/briot/tree-sitter-ada.git           
   #   'MD_DynamicRelease' doesn't match value 'MT_StaticRelease'
   # for every object in the archive. A meson base option, so the abseil
   # subproject inherits it too.
-  ( cd "$SRC" && meson setup build --vsenv \
+  #
+  # arm64 compiles the library with clang-cl, not cl. WebRTC is only ever built
+  # for Windows on Arm with clang-cl upstream (Chromium), and the pinned
+  # sources rely on that: system_wrappers/source/denormal_disabler.cc reads and
+  # writes FPCR with GCC-style `asm volatile("mrs …")` whenever
+  # WEBRTC_ARCH_ARM_FAMILY is set — gated on __clang__ only for x86 — and MSVC
+  # has no inline assembler at all on Arm64, so cl cannot compile it. clang-cl
+  # speaks the same MSVC ABI, CRT (/MT via b_vscrt) and COFF archives, so the
+  # shim below still compiles with cl and link.exe still whole-archives the
+  # result. --target is explicit for the same reason as the grammar builds:
+  # the clang-cl on PATH may be an emulated x64 build whose default target is
+  # x86_64. meson splits CC/CXX into argv, so the flag rides along into every
+  # compile including meson's own sanity checks. x64 keeps cl.
+  AEC_CC_ENV=()
+  if [ "$WIN_ARCH" = arm64 ]; then
+    command -v clang-cl >/dev/null 2>&1 \
+      || { echo "clang-cl not on PATH (the arm64 AEC build needs LLVM's clang-cl)"; exit 1; }
+    AEC_CC_ENV=(CC="clang-cl --target=$CLANG_TARGET" CXX="clang-cl --target=$CLANG_TARGET")
+  fi
+  ( cd "$SRC" && env ${AEC_CC_ENV[@]+"${AEC_CC_ENV[@]}"} meson setup build --vsenv \
       --buildtype=release --default-library=static \
       -Dcpp_std=c++20 -Dabseil-cpp:cpp_std=c++20 -Db_vscrt=mt \
       --force-fallback-for=abseil-cpp )
@@ -317,7 +380,8 @@ build_grammar ada        https://github.com/briot/tree-sitter-ada.git           
 (
   trap '[ $? -eq 0 ] || echo "ERROR: lame_ffi.dll not built — cc_server REFUSES TO BOOT without it (soundscape MP3 encoding has no fallback)" >&2' EXIT
   SHIM="$REPO_ROOT/packages/cc_natives/native/lame_ffi.cc"
-  LAME_TRIPLET="${LAME_TRIPLET:-x64-windows-static}"
+  # vcpkg's mp3lame port builds ARM64 through its MSBuild solution like x64.
+  LAME_TRIPLET="${LAME_TRIPLET:-$WIN_ARCH-windows-static}"
   command -v cl >/dev/null 2>&1 || { echo "cl.exe (MSVC) not on PATH"; exit 1; }
   [ -f "$SHIM" ] || { echo "shim missing: $SHIM"; exit 1; }
 
@@ -377,5 +441,9 @@ SCM_COUNT="$(find build/natives -maxdepth 1 -name '*.scm' | wc -l | tr -d ' ' ||
 [ "$SCM_COUNT" -gt 0 ] || { echo "ERROR: no .scm queries staged into build/natives" >&2; exit 1; }
 log "Staged $SCM_COUNT .scm queries"
 
-log "Staged Windows native libraries:"
+# Every DLL must be a PE image for the target architecture: a wrong-arch DLL
+# passes verify_natives.sh by name and then fails LoadLibrary at boot.
+assert_pe_machine "$WIN_ARCH" build/natives
+
+log "Staged Windows native libraries ($WIN_ARCH):"
 ls -la build/natives

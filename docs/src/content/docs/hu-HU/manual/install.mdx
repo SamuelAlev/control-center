@@ -2,7 +2,7 @@
 title: Telepítés
 description: Használja a Control Centert böngészőben, vagy telepítse az asztali alkalmazást, állítson be egy ügynök-háttérrendszert, és válassza ki, hol fusson a szervere.
 slug: hu-HU/kezikonyv/telepites
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 A Control Center kétféleképpen fut: **webalkalmazásként** a
@@ -70,7 +70,7 @@ oldalt.
 | Követelmény    | macOS                                                 | Windows     | Linux                                                      |
 | -------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Operációs rendszer | macOS 13+ (Ventura)                               | Windows 10+ | Ubuntu 22.04+ vagy más disztribúció glibc 2.35+ és GTK 3 verzióval |
-| Architektúra   | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architektúra   | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git            | Szükséges                                             | Szükséges   | Szükséges                                                  |
 | Lemezterület   | ~200 MB az alkalmazásnak, plusz a szerver adatkönyvtára | ~200 MB   | ~200 MB                                                    |
 
@@ -106,10 +106,12 @@ Töltse le a `Control-Center-<version>-arm64.dmg` fájlt, nyissa meg, és húzza
 Centert az Applications mappába. A build Developer ID-val van aláírva, és az Apple
 notarizálta, így normálisan megnyílik.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: felhasználónkénti telepítő.
 - `Control-Center-<version>-windows-x64.zip`: hordozható zip.
+- `Control-Center-<version>-arm64-setup.exe`: felhasználónkénti telepítő.
+- `Control-Center-<version>-windows-arm64.zip`: hordozható zip.
 
 A Windows `git worktree`-t használ a terek checkoutjaihoz (nincs copy-on-write).
 
@@ -135,8 +137,8 @@ alkalmazás úgy indul el, hogy ezek a vezérlők rejtve vannak.
 ### Önálló szerver
 
 Minden kiadás külön is tartalmazza a headless szervert —
-`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip` —, a GHCR-en lévő `cc-server`, `cc-webapp` és
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip` —, a GHCR-en lévő `cc-server`, `cc-webapp` és
 `cc-remote` image-ek mellett. Lásd:
 [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/).
 

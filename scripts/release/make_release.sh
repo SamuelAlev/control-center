@@ -87,8 +87,14 @@ if release_ships_platform macos; then
   first_run+="The macOS DMG is Developer ID signed + notarized, so it opens normally."$'\n'
 fi
 if release_ships_platform windows; then
-  desktop_downloads+="- **Windows** — \`$(release_asset_name win-setup "$VERSION")\`"$'\n'
-  server_downloads+="- **Windows** — \`$(release_asset_name server-windows "$VERSION")\` (unsigned)"$'\n'
+  desktop_downloads+="- **Windows (x64)** — \`$(release_asset_name win-setup "$VERSION")\`"$'\n'
+  server_downloads+="- **Windows (x64)** — \`$(release_asset_name server-windows "$VERSION")\` (unsigned)"$'\n'
+fi
+if release_ships_platform windows-arm64; then
+  desktop_downloads+="- **Windows (ARM64)** — \`$(release_asset_name win-arm64-setup "$VERSION")\` (native build for Windows on Arm)"$'\n'
+  server_downloads+="- **Windows (ARM64)** — \`$(release_asset_name server-windows-arm64 "$VERSION")\` (unsigned)"$'\n'
+fi
+if release_ships_platform windows || release_ships_platform windows-arm64; then
   first_run+="- **Windows:** SmartScreen → **More info** → **Run anyway**."$'\n'
   updater_note="macOS and Windows update IN APP (Sparkle / WinSparkle — the app checks on launch, daily and from Settings → Advanced → About; updates verify a signature before applying). $updater_note"
 else

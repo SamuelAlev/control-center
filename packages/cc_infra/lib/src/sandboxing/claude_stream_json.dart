@@ -221,6 +221,7 @@ class ClaudeStreamJsonCallbacks {
     this.onError,
     this.onTerminalError,
     this.onSubagent,
+    this.onResult,
   });
 
   /// Streamed assistant text delta.
@@ -278,6 +279,12 @@ class ClaudeStreamJsonCallbacks {
   /// the parent, and a subagent's tool rows merged into it would read as the
   /// parent's own work.
   final void Function(ClaudeSubagentEvent event)? onSubagent;
+
+  /// The turn ended: a terminal `result` event, successful or not, after
+  /// [onUsage] and [onTerminalError] have seen it. With `--input-format
+  /// stream-json` the process then waits for the next user message, so this
+  /// is where the caller decides between writing one and closing stdin.
+  final void Function()? onResult;
 }
 
 /// A classified terminal `result` failure.
@@ -458,6 +465,7 @@ class ClaudeStreamJsonParser {
           ClaudeTerminalError.fromResult(obj, message),
         );
       }
+      _callbacks.onResult?.call();
       return;
     }
     // Tool RESULTS are the one thing the `stream_event` lane never carries:

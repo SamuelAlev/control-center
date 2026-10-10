@@ -102,6 +102,13 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
     readAt: DateTime.now(),
   );
 
+  /// Marks the notification announcing agent wait [waitId] in [workspaceId]
+  /// resolved, so it renders read for every user. Server-side only, like
+  /// [record]: the end of a wait is observed by the host, never claimed by a
+  /// client.
+  Future<void> resolveAgentWait(String workspaceId, String waitId) =>
+      _dao(workspaceId).resolveAgentWait(workspaceId, waitId, DateTime.now());
+
   /// Records one `notifications/*` frame into [workspaceId]'s feed (pruning
   /// beyond the retention cap) and returns the stored item.
   Future<NotificationFeedItem> record(

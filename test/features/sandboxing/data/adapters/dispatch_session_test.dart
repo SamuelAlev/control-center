@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
@@ -57,6 +58,7 @@ class FakeSandboxPort implements SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async => 0;
 
   @override
@@ -205,6 +207,7 @@ class ControllableSandboxPort extends FakeSandboxPort {
   List<String>? lastArgv;
   Map<String, String>? lastEnv;
   String? lastStdinInput;
+  Stream<String>? lastStdinStream;
   void Function(int pid)? lastOnPid;
 
   /// Stream of sandbox events that tests can push into.
@@ -225,11 +228,13 @@ class ControllableSandboxPort extends FakeSandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async {
     execCallCount++;
     lastArgv = argv;
     lastEnv = env;
     lastStdinInput = stdinInput;
+    lastStdinStream = stdinStream;
     lastOnPid = onPid;
     onPid?.call(42);
     return _execCompleter.future;
@@ -1595,7 +1600,7 @@ void main() {
       expect(sandbox.lastEnv!, contains('API_KEY'));
     });
 
-    test('passes prompt as stdin to exec', () async {
+    test('passes prompt as the first stream-json message on stdin', () async {
       final sandbox = ControllableSandboxPort();
       final session = _makeSession(
         deps: _makeDeps(sandbox: sandbox),
@@ -1610,7 +1615,14 @@ void main() {
       sandbox.completeExec(0);
       await Future<void>.delayed(Duration.zero);
 
-      expect(sandbox.lastStdinInput, 'custom prompt text');
+      final lines = await sandbox.lastStdinStream!.toList();
+      expect(lines.map(jsonDecode), [
+        {
+          'type': 'user',
+          'message': {'role': 'user', 'content': 'custom prompt text'},
+        },
+      ]);
+      expect(lines.single, endsWith('\n'));
     });
 
     test('onPid callback is invoked during exec', () async {

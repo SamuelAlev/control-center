@@ -10,6 +10,7 @@ const installers = [
   asset(`Control-Center-${version}-arm64.dmg`),
   asset(`Control-Center-${version}-x64-setup.exe`),
   asset(`Control-Center-${version}-x86_64.AppImage`),
+  asset(`Control-Center-${version}-arm64-setup.exe`),
 ];
 const release = (assets: unknown[] = installers, changes = {}) => ({
   tag_name: `v${version}`, draft: false, prerelease: false, published_at: '2026-09-25T08:36:26Z', assets, ...changes,
@@ -23,10 +24,13 @@ describe('latest desktop installer resolution', () => {
       asset(`cc_server-${version}-linux-x64.tar.gz`),
       asset(`Control-Center-${version}-linux-x64.tar.gz`),
       asset(`Control-Center-${version}-windows-x64.zip`),
+      asset(`Control-Center-${version}-windows-arm64.zip`),
       asset(`Control-Center-${version}-x64.dmg`),
       ...installers,
     ];
-    for (const [platform, expected] of [['macos', installers[0]], ['windows', installers[1]], ['linux', installers[2]]] as const) {
+    for (const [platform, expected] of [
+      ['macos', installers[0]], ['windows', installers[1]], ['linux', installers[2]], ['windows-arm64', installers[3]],
+    ] as const) {
       assert.deepEqual(await resolveDesktopDownload(platform, github(release(assets))), {
         status: 302, url: expected.browser_download_url,
       });

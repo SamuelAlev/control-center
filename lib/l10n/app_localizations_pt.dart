@@ -8039,6 +8039,53 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda não há transcrição para resumir.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Gere-as a partir da transcrição ou escreva as suas.';
+
+  @override
+  String get meetingNotesGenerate => 'Gerar notas';
+
+  @override
+  String get meetingNotesWriteOwn => 'Escrever as suas';
+
+  @override
+  String get meetingNothingTranscribed => 'Nada foi transcrito.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Não há transcrição para resumir, mas você ainda pode fazer suas próprias notas.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Participantes';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'O tempo de fala de cada participante aparece quando houver uma transcrição.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count a mais';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share do tempo de fala, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Todas as tarefas foram concluídas.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Ver todas ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notas copiadas para a área de transferência em Markdown.';
 
@@ -15371,6 +15418,52 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Um agente está bloqueado por uma credencial';
+
+  @override
+  String get killTerminal => 'Encerrar terminal';
+
+  @override
+  String get stopAgentCommand => 'Parar comando';
+
+  @override
+  String get agentCommandStopping => 'Parando…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Comando do agente $command, em execução há $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'A conexão com o servidor foi perdida';
+
+  @override
+  String get serverLostBody =>
+      'O Control Center continua tentando se reconectar em segundo plano. Tente novamente agora ou vá para a tela de login para escolher um servidor.';
+
+  @override
+  String get serverLostRetrying => 'Reconectando…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Próxima tentativa em $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Tentar reconectar';
+
+  @override
+  String get serverLostSignIn => 'Ir para o login';
+
+  @override
+  String get serverEndedTitle => 'Não é possível reconectar ao servidor';
+
+  @override
+  String get shutdownSubtitleServer => 'O servidor está parando';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

@@ -334,7 +334,7 @@ export const fa: LandingCopy = {
     description:
       "روز توسعهٔ بعدی می‌تواند از اینجا شروع شود. رایگان و متن‌باز.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "دیدن انتشارها",
     web: "بازکردن برنامهٔ وب",

@@ -29,10 +29,12 @@ class CcStreamingMarkdown extends StatefulWidget {
     this.selectable = false,
   }) : data = null,
        source = null,
+       complete = false,
        plugins = CcPluginSet.empty,
        options = const CcParseOptions();
 
-  /// Data-driven: pass the (growing) accumulated text each rebuild.
+  /// Data-driven: pass the (growing) accumulated text each rebuild. Flip
+  /// [complete] to true once the text is final (see [complete]).
   const CcStreamingMarkdown.value({
     required String this.data,
     super.key,
@@ -45,6 +47,7 @@ class CcStreamingMarkdown extends StatefulWidget {
     this.imageBuilder,
     this.codeBuilder,
     this.selectable = false,
+    this.complete = false,
   }) : controller = null,
        source = null;
 
@@ -63,7 +66,8 @@ class CcStreamingMarkdown extends StatefulWidget {
     this.codeBuilder,
     this.selectable = false,
   }) : controller = null,
-       data = null;
+       data = null,
+       complete = false;
 
   /// External controller (controller constructor only).
   final CcMarkdownStreamController? controller;
@@ -101,6 +105,13 @@ class CcStreamingMarkdown extends StatefulWidget {
   /// Whether rendered text participates in an ancestor selection region.
   final bool selectable;
 
+  /// Value constructor only: [data] is final. The internal controller runs
+  /// its authoritative [CcMarkdownStreamController.complete] parse, which
+  /// seeds [CcMarkdownCache] (a later `CcMarkdown` of the same text is a hit)
+  /// and keeps the sealed blocks it agrees with, so an answer that stops
+  /// streaming in place re-renders only its last block.
+  final bool complete;
+
   @override
   State<CcStreamingMarkdown> createState() => _CcStreamingMarkdownState();
 }
@@ -135,6 +146,9 @@ class _CcStreamingMarkdownState extends State<CcStreamingMarkdown> {
       );
       if (widget.data != null) {
         _ownedController!.setText(widget.data!);
+        if (widget.complete) {
+          _ownedController!.complete();
+        }
       }
       if (widget.source != null) {
         _ownedController!.setText(widget.source!.value);
@@ -159,10 +173,14 @@ class _CcStreamingMarkdownState extends State<CcStreamingMarkdown> {
         _ownedController!.setText(widget.source!.value);
       }
     }
-    if (widget.data != null &&
-        widget.data != old.data &&
-        _ownedController != null) {
-      _ownedController!.setText(widget.data!);
+    final owned = _ownedController;
+    if (widget.data != null && owned != null) {
+      if (widget.data != old.data) {
+        owned.setText(widget.data!);
+      }
+      if (widget.complete && !owned.isComplete) {
+        owned.complete();
+      }
     }
   }
 
@@ -263,16 +281,13 @@ class _CcStreamingMarkdownState extends State<CcStreamingMarkdown> {
     // string and the body, so build it directly and skip the parse.
     final openFence = _controller.openFenceTail;
     if (openFence != null) {
-      tail = renderer.render(
-        [
-          CcCodeBlock(
-            code: openFence.code,
-            language: openFence.info.isEmpty ? null : openFence.info,
-            closed: false,
-          ),
-        ],
-        context: baseContext.copyWith(codeCache: false),
-      );
+      tail = renderer.render([
+        CcCodeBlock(
+          code: openFence.code,
+          language: openFence.info.isEmpty ? null : openFence.info,
+          closed: false,
+        ),
+      ], context: baseContext.copyWith(codeCache: false));
     } else {
       final tailText = _controller.tailText;
       if (tailText.trim().isNotEmpty) {

@@ -145,6 +145,63 @@ void main() {
     });
   });
 
+  group('Windows architecture helpers', () {
+    test('cc_cli_dir follows the Windows arch, defaulting to x64', () {
+      // `dart build cli` writes build/cli/<os>_<arch>; the arm64 leg's bundle
+      // is windows_arm64, and every existing caller (no arch) keeps x64.
+      final (out, _) = run('''
+        printf '%s|%s|%s\\n' "\$(cc_cli_dir windows)" \\
+          "\$(cc_cli_dir windows x64)" "\$(cc_cli_dir windows arm64)"
+      ''');
+      expect(out.trim(), 'windows_x64|windows_x64|windows_arm64');
+
+      final (_, err) = run('cc_windows_arch ia64');
+      expect(err, contains("unknown Windows architecture 'ia64'"));
+    });
+
+    test('pe_machine reads the COFF machine field of a PE image', () {
+      // Hand-built minimal images: MZ, e_lfanew at 0x3C -> "PE\0\0" + machine.
+      final tmp = Directory.systemTemp.createTempSync('cc_pe');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      void image(String name, int machine) {
+        final bytes = List<int>.filled(0x100, 0);
+        bytes[0] = 0x4D; // M
+        bytes[1] = 0x5A; // Z
+        bytes[0x3C] = 0x80;
+        bytes.setRange(0x80, 0x84, const [0x50, 0x45, 0, 0]);
+        bytes[0x84] = machine & 0xFF;
+        bytes[0x85] = machine >> 8;
+        File('${tmp.path}/$name').writeAsBytesSync(bytes);
+      }
+
+      image('arm.dll', 0xAA64);
+      image('x64.dll', 0x8664);
+      image('x86.exe', 0x014C);
+      File('${tmp.path}/short.dll').writeAsStringSync('MZ');
+      final (out, _) = run('''
+        for f in arm.dll x64.dll x86.exe short.dll; do
+          printf '%s=%s\\n' "\$f" "\$(pe_machine "${tmp.path}/\$f")"
+        done
+      ''');
+      expect(out.trim().split('\n'), [
+        'arm.dll=arm64',
+        'x64.dll=x64',
+        'x86.exe=x86',
+        'short.dll=unknown-not-pe',
+      ]);
+
+      // assert_pe_machine names every offender and fails; an all-arm64 tree
+      // passes.
+      final (_, err) = run('assert_pe_machine arm64 "${tmp.path}"');
+      expect(err, contains('x64.dll is a x64 image, not arm64'));
+      expect(err, contains('x86.exe is a x86 image, not arm64'));
+      Directory('${tmp.path}/ok').createSync();
+      File('${tmp.path}/arm.dll').copySync('${tmp.path}/ok/arm.dll');
+      final (ok, _) = run('assert_pe_machine arm64 "${tmp.path}/ok"');
+      expect(ok, contains('all 1 PE images'));
+    });
+  });
+
   test('every value-returning helper keeps stdout clean', () {
     // The same contract for the rest of the library. Each of these is captured
     // with $(...) somewhere in the release scripts.

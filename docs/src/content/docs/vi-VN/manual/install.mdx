@@ -2,7 +2,7 @@
 title: Cài đặt
 description: Dùng Control Center trong trình duyệt hoặc cài ứng dụng desktop, thiết lập backend agent và chọn nơi máy chủ của nó chạy.
 slug: vi-VN/so-tay/cai-dat
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center chạy theo hai cách: dưới dạng **ứng dụng web** tại
@@ -63,7 +63,7 @@ hãy làm theo [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-th
 | Yêu cầu             | macOS                                                 | Windows     | Linux                                                      |
 | ------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Phiên bản hệ điều hành | macOS 13+ (Ventura)                                | Windows 10+ | Ubuntu 22.04+ hoặc bản phân phối khác có glibc 2.35+ và GTK 3 |
-| Kiến trúc           | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Kiến trúc           | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git                 | Bắt buộc                                              | Bắt buộc    | Bắt buộc                                                   |
 | Dung lượng đĩa      | ~200 MB cho ứng dụng, cộng thêm thư mục dữ liệu của máy chủ | ~200 MB | ~200 MB                                                    |
 
@@ -92,10 +92,12 @@ Mọi tệp phát hành bên dưới đều đến từ [GitHub Releases](https:
 
 Tải `Control-Center-<version>-arm64.dmg`, mở nó và kéo Control Center vào Applications. Bản dựng được ký bằng một Developer ID và được Apple công chứng, nên nó mở bình thường.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: trình cài đặt theo từng người dùng.
 - `Control-Center-<version>-windows-x64.zip`: tệp zip di động.
+- `Control-Center-<version>-arm64-setup.exe`: trình cài đặt theo từng người dùng.
+- `Control-Center-<version>-windows-arm64.zip`: tệp zip di động.
 
 Windows dùng `git worktree` cho các bản checkout của space (không có copy-on-write).
 
@@ -110,7 +112,7 @@ Cả hai đều được dựng trên Ubuntu 22.04 và chạy trên nó hoặc b
 
 ### Máy chủ độc lập
 
-Mỗi bản phát hành cũng mang theo máy chủ không giao diện riêng — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — cùng với các ảnh `cc-server`, `cc-webapp` và `cc-remote` trên GHCR. Xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
+Mỗi bản phát hành cũng mang theo máy chủ không giao diện riêng — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — cùng với các ảnh `cc-server`, `cc-webapp` và `cc-remote` trên GHCR. Xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
 
 Bản lưu trữ Linux được dựng trên Ubuntu 22.04 và các thư viện native đi kèm của nó liên kết với glibc 2.35 và libstdc++ của GCC 12, nên nó cần một máy chủ ít nhất mới như vậy (Ubuntu 22.04, Debian 12, Fedora 36 trở lên). Trên một bản phân phối cũ hơn, hãy chạy ảnh `cc-server` thay thế — container mang theo userland của riêng nó, nên chỉ có kernel là phải của bạn.
 

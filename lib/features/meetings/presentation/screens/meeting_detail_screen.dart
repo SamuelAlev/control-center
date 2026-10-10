@@ -285,92 +285,87 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
         AppSpacing.xxxl,
       ),
       children: [
-        // Start-aligned so the capped column starts at the same inset as the
-        // page title above it (see the meetings list for the same note).
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1140),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _DetailMeta(meeting: meeting),
-                if (processing) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  _StatusBanner(label: l10n.meetingAugmentingBanner),
-                ],
-                // The per-channel WAVs are still open while recording, so the
-                // mixed clip can't be read yet; the bar appears once recording
-                // stops (status `processing` onward), when the audio is final.
-                if (meeting.audioPath != null &&
-                    meeting.status != MeetingStatus.recording) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  MeetingPlaybackBar(
+        // Full width, like the header above it: the Notes tab lays the
+        // overview rail into the space a capped column used to leave empty.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _DetailMeta(meeting: meeting),
+            if (processing) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _StatusBanner(label: l10n.meetingAugmentingBanner),
+            ],
+            // The per-channel WAVs are still open while recording, so the
+            // mixed clip can't be read yet; the bar appears once recording
+            // stops (status `processing` onward), when the audio is final.
+            if (meeting.audioPath != null &&
+                meeting.status != MeetingStatus.recording) ...[
+              const SizedBox(height: AppSpacing.lg),
+              MeetingPlaybackBar(
+                workspaceId: meeting.workspaceId,
+                meetingId: meeting.id,
+                audioPath: meeting.audioPath,
+                status: meeting.status,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            CcTabView(
+              scrollable: true,
+              selectedIndex: MeetingDetailTab.values.indexOf(_tab),
+              onChanged: (i) =>
+                  setState(() => _tab = MeetingDetailTab.values[i]),
+              tabs: [
+                CcTabViewEntry(
+                  label: const _TabLabel(_notesTabKey),
+                  content: MeetingNotesTab(
+                    meeting: meeting,
+                    mode: _notesMode,
+                    onModeChanged: (m) => setState(() => _notesMode = m),
+                    notesController: _notesController,
+                    onNotesChanged: _onNotesChanged,
+                    savingLabel: _saving
+                        ? l10n.meetingNotesSaving
+                        : l10n.meetingNotesSavedLocally,
+                    segments: segments,
+                    actionItems: actionItems,
+                    decisions: decisions,
+                    onViewFullTranscript: () =>
+                        setState(() => _tab = MeetingDetailTab.transcript),
+                    onViewActionItems: () =>
+                        setState(() => _tab = MeetingDetailTab.actionItems),
+                    onViewDecisions: () =>
+                        setState(() => _tab = MeetingDetailTab.decisions),
+                    onGenerateNotes: () => _reRun(meeting, segments),
+                  ),
+                ),
+                CcTabViewEntry(
+                  label: _TabLabel(_transcriptTabKey, count: segments.length),
+                  content: MeetingTranscriptTab(
+                    segments: segments,
                     workspaceId: meeting.workspaceId,
                     meetingId: meeting.id,
-                    audioPath: meeting.audioPath,
-                    status: meeting.status,
                   ),
-                ],
-                const SizedBox(height: AppSpacing.xl),
-                CcTabView(
-                  scrollable: true,
-                  selectedIndex: MeetingDetailTab.values.indexOf(_tab),
-                  onChanged: (i) =>
-                      setState(() => _tab = MeetingDetailTab.values[i]),
-                  tabs: [
-                    CcTabViewEntry(
-                      label: const _TabLabel(_notesTabKey),
-                      content: MeetingNotesTab(
-                        meeting: meeting,
-                        mode: _notesMode,
-                        onModeChanged: (m) => setState(() => _notesMode = m),
-                        notesController: _notesController,
-                        onNotesChanged: _onNotesChanged,
-                        savingLabel: _saving
-                            ? l10n.meetingNotesSaving
-                            : l10n.meetingNotesSavedLocally,
-                        segments: segments,
-                        onViewFullTranscript: () =>
-                            setState(() => _tab = MeetingDetailTab.transcript),
-                      ),
-                    ),
-                    CcTabViewEntry(
-                      label: _TabLabel(
-                        _transcriptTabKey,
-                        count: segments.length,
-                      ),
-                      content: MeetingTranscriptTab(
-                        segments: segments,
-                        workspaceId: meeting.workspaceId,
-                        meetingId: meeting.id,
-                      ),
-                    ),
-                    CcTabViewEntry(
-                      label: _TabLabel(
-                        _actionItemsTabKey,
-                        count: actionItems.length,
-                      ),
-                      content: MeetingActionItemsTab(
-                        meeting: meeting,
-                        actionItems: actionItems,
-                      ),
-                    ),
-                    CcTabViewEntry(
-                      label: _TabLabel(
-                        _decisionsTabKey,
-                        count: decisions.length,
-                      ),
-                      content: MeetingDecisionsTab(
-                        meeting: meeting,
-                        decisions: decisions,
-                      ),
-                    ),
-                  ],
+                ),
+                CcTabViewEntry(
+                  label: _TabLabel(
+                    _actionItemsTabKey,
+                    count: actionItems.length,
+                  ),
+                  content: MeetingActionItemsTab(
+                    meeting: meeting,
+                    actionItems: actionItems,
+                  ),
+                ),
+                CcTabViewEntry(
+                  label: _TabLabel(_decisionsTabKey, count: decisions.length),
+                  content: MeetingDecisionsTab(
+                    meeting: meeting,
+                    decisions: decisions,
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ],
     );

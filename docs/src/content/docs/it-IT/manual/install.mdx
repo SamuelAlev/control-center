@@ -2,7 +2,7 @@
 title: Installazione
 description: Usa Control Center nel browser oppure installa l'app desktop, configura un backend per gli agenti e scegli dove viene eseguito il suo server.
 slug: it-IT/manuale/installazione
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center funziona in due modi: come **app web** su
@@ -63,7 +63,7 @@ segui [Esegui un server headless](/it-IT/manuale/guide/esegui-server-headless/).
 | Requisito    | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Versione del sistema operativo | macOS 13+ (Ventura)                 | Windows 10+ | Ubuntu 22.04+ o un'altra distribuzione con glibc 2.35+ e GTK 3 |
-| Architettura | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architettura | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Richiesto                                             | Richiesto   | Richiesto                                                  |
 | Spazio su disco | ~200 MB per l'app, più la directory dati del server | ~200 MB     | ~200 MB                                                    |
 
@@ -93,10 +93,12 @@ Ogni artefatto qui sotto proviene dalle [GitHub Releases](https://github.com/Sam
 
 Scarica `Control-Center-<version>-arm64.dmg`, aprilo e trascina Control Center in Applicazioni. La build è firmata con un Developer ID e notarizzata da Apple, quindi si apre normalmente.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: un programma di installazione per utente.
 - `Control-Center-<version>-windows-x64.zip`: un archivio zip portatile.
+- `Control-Center-<version>-arm64-setup.exe`: un programma di installazione per utente.
+- `Control-Center-<version>-windows-arm64.zip`: un archivio zip portatile.
 
 Su Windows gli spazi usano `git worktree` per i checkout (niente copy-on-write).
 
@@ -111,7 +113,7 @@ Entrambi sono compilati su Ubuntu 22.04 e funzionano su quella versione o su ver
 
 ### Server autonomo
 
-Ogni release include anche il server headless a sé stante — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — insieme alle immagini `cc-server`, `cc-webapp` e `cc-remote` su GHCR. Vedi [Esegui un server headless](/it-IT/manuale/guide/esegui-server-headless/).
+Ogni release include anche il server headless a sé stante — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — insieme alle immagini `cc-server`, `cc-webapp` e `cc-remote` su GHCR. Vedi [Esegui un server headless](/it-IT/manuale/guide/esegui-server-headless/).
 
 L'archivio Linux è compilato su Ubuntu 22.04 e le sue librerie native incluse si collegano a glibc 2.35 e alla libstdc++ di GCC 12, quindi richiede un host almeno altrettanto recente (Ubuntu 22.04, Debian 12, Fedora 36 o successivi). Su una distribuzione più vecchia esegui invece l'immagine `cc-server` — un container porta con sé il proprio userland, quindi solo il kernel deve essere il tuo.
 

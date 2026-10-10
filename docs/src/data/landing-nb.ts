@@ -333,7 +333,7 @@ export const nb: LandingCopy = {
     title: "Gjør deg\nhjemme.",
     description: "Neste utviklerdag kan starte her. Gratis og åpen kildekode.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Se versjoner",
     web: "Åpne nettappen",

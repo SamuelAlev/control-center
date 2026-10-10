@@ -17,6 +17,11 @@ class _FakeChannel implements RemoteRpcChannelPort {
 
   int _repoCallsAnswered = 0;
 
+  /// As [onRepoCall], for `sub/subscribe`.
+  Map<String, dynamic> Function(int seq, Object id)? onSubscribe;
+
+  int _subscribesAnswered = 0;
+
   @override
   Stream<Map<String, dynamic>> get incoming => _incoming.stream;
 
@@ -31,14 +36,25 @@ class _FakeChannel implements RemoteRpcChannelPort {
   Future<void> send(Map<String, dynamic> frame) async {
     sent.add(frame);
     final id = frame['id'];
-    if (id == null || frame['method'] != RpcMethods.repoCall) {
+    if (id == null) {
       return;
     }
-    final responder = onRepoCall;
-    if (responder == null) {
+    final Map<String, dynamic> response;
+    if (frame['method'] == RpcMethods.repoCall) {
+      final responder = onRepoCall;
+      if (responder == null) {
+        return;
+      }
+      response = responder(_repoCallsAnswered++, id);
+    } else if (frame['method'] == RpcMethods.subscribe) {
+      final responder = onSubscribe;
+      if (responder == null) {
+        return;
+      }
+      response = responder(_subscribesAnswered++, id);
+    } else {
       return;
     }
-    final response = responder(_repoCallsAnswered++, id);
     scheduleMicrotask(() => _incoming.add(response));
   }
 
@@ -51,6 +67,15 @@ class _FakeChannel implements RemoteRpcChannelPort {
 
   List<Map<String, dynamic>> get repoCalls =>
       sent.where((f) => f['method'] == RpcMethods.repoCall).toList();
+
+  List<Map<String, dynamic>> get subscribes =>
+      sent.where((f) => f['method'] == RpcMethods.subscribe).toList();
+
+  static Map<String, dynamic> subscribed(Object id, String subscriptionId) => {
+    'jsonrpc': '2.0',
+    'id': id,
+    'result': {'subscriptionId': subscriptionId},
+  };
 
   static Map<String, dynamic> refusal(Object id) => {
     'jsonrpc': '2.0',
@@ -136,6 +161,87 @@ void main() {
     );
     expect(channel.repoCalls, hasLength(1));
     await client.close();
+  });
+
+  group('subscribe', () {
+    const query = 'pr.watchForSpaceBranches';
+    const args = {'space_id': 's1'};
+
+    test(
+      'a -32005 refusal is retried until the subscription is live',
+      () async {
+        final channel = _FakeChannel()
+          ..onSubscribe = (seq, id) => seq < 3
+              ? _FakeChannel.refusal(id)
+              : _FakeChannel.subscribed(id, 'sub-1');
+        final client = RemoteRpcClient(channel)..start();
+        addTearDown(client.close);
+        final values = <Map<String, dynamic>>[];
+        final errors = <Object>[];
+        final sub = client
+            .subscribe(query, args)
+            .listen(values.add, onError: errors.add);
+
+        // Three refusals back off 125-250ms, 250-500ms and 500ms-1s.
+        await Future<void>.delayed(const Duration(milliseconds: 1900));
+        expect(channel.subscribes, hasLength(4));
+        expect(channel.subscribes.map((f) => f['id']).toSet(), hasLength(4));
+
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subSnapshot,
+          'params': {
+            'subscriptionId': 'sub-1',
+            'data': {'matches': <Object>[]},
+          },
+        });
+        await _settle();
+        expect(errors, isEmpty);
+        expect(values, [
+          {'matches': <Object>[]},
+        ]);
+        await sub.cancel();
+      },
+    );
+
+    test('cancelled rate-limit backoff never resubscribes', () async {
+      final channel = _FakeChannel()
+        ..onSubscribe = (seq, id) => _FakeChannel.refusal(id);
+      final client = RemoteRpcClient(channel)..start();
+      addTearDown(client.close);
+      final sub = client.subscribe(query, args).listen((_) {});
+      await _settle();
+      expect(channel.subscribes, hasLength(1));
+      await sub.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      expect(channel.subscribes, hasLength(1));
+      expect(
+        channel.sent.where((f) => f['method'] == RpcMethods.unsubscribe),
+        isEmpty,
+      );
+    });
+
+    test(
+      'only -32005 is retried — every other error surfaces at once',
+      () async {
+        final channel = _FakeChannel()
+          ..onSubscribe = (seq, id) => _FakeChannel.notFound(id);
+        final client = RemoteRpcClient(channel)..start();
+        addTearDown(client.close);
+
+        await expectLater(
+          client.subscribe(query, args),
+          emitsError(
+            isA<RemoteRpcException>().having(
+              (e) => e.code,
+              'code',
+              RpcErrorCodes.notFound,
+            ),
+          ),
+        );
+        expect(channel.subscribes, hasLength(1));
+      },
+    );
   });
 
   group('watchCall request ownership', () {

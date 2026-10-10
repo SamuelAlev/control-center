@@ -487,4 +487,82 @@ void main() {
       expect(a.hashCode == b.hashCode, isFalse);
     });
   });
+
+  group('conflateWhilePaused', () {
+    test('forwards every event while listened', () async {
+      final source = StreamController<int>();
+      final seen = <int>[];
+      final sub = conflateWhilePaused(source.stream).listen(seen.add);
+      source
+        ..add(1)
+        ..add(2);
+      await pumpEventQueue();
+      expect(seen, [1, 2]);
+      await sub.cancel();
+      await source.close();
+    });
+
+    test(
+      'a paused listener receives only the newest event on resume',
+      () async {
+        final source = StreamController<int>();
+        final seen = <int>[];
+        final sub = conflateWhilePaused(source.stream).listen(seen.add);
+        source.add(1);
+        await pumpEventQueue();
+        sub.pause();
+        source
+          ..add(2)
+          ..add(3)
+          ..add(4);
+        await pumpEventQueue();
+        expect(seen, [1]);
+        sub.resume();
+        await pumpEventQueue();
+        expect(seen, [1, 4]);
+        await sub.cancel();
+        await source.close();
+      },
+    );
+
+    test('an error after a value while paused is what resumes', () async {
+      final source = StreamController<int>();
+      final seen = <Object>[];
+      final sub = conflateWhilePaused(
+        source.stream,
+      ).listen(seen.add, onError: (Object e) => seen.add('error:$e'));
+      sub.pause();
+      source
+        ..add(1)
+        ..addError('boom');
+      await pumpEventQueue();
+      sub.resume();
+      await pumpEventQueue();
+      expect(seen, ['error:boom']);
+      await sub.cancel();
+      await source.close();
+    });
+
+    test(
+      'a source that finishes while paused closes after the flush',
+      () async {
+        final source = StreamController<int>();
+        final seen = <int>[];
+        var done = false;
+        final sub = conflateWhilePaused(
+          source.stream,
+        ).listen(seen.add, onDone: () => done = true);
+        sub.pause();
+        source.add(7);
+        await source.close();
+        await pumpEventQueue();
+        expect(done, isFalse);
+        sub.resume();
+        await pumpEventQueue();
+        expect(seen, [7]);
+        expect(done, isTrue);
+        await sub.cancel();
+      },
+    );
+  });
 }

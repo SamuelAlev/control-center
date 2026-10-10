@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_infra/src/git/process_session_diff_adapter.dart';
+import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -23,7 +24,10 @@ void main() {
     await _git(['commit', '-q', '-m', 'init'], repo.path);
   });
 
-  tearDown(() => repo.deleteSync(recursive: true));
+  tearDown(() async {
+    await discardWorkingTreeCapture(repo.path);
+    repo.deleteSync(recursive: true);
+  });
 
   test(
     'reports a modified tracked file and a new untracked file vs HEAD',
@@ -80,6 +84,62 @@ void main() {
       expect(files.single.patch, contains('changed!'));
     },
   );
+
+  test(
+    'a warm capture still sees a same-size edit with the mtime put back',
+    () async {
+      // The second capture reuses the first one's private index and stat
+      // cache; the edit rewrites the file's ctime, so it is re-hashed anyway.
+      const adapter = ProcessSessionDiffAdapter();
+      final file = File(p.join(repo.path, 'tracked.txt'));
+      expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
+
+      final mtime = file.lastModifiedSync();
+      file.writeAsStringSync('changed!\n');
+      file.setLastModifiedSync(mtime);
+      final edited = await adapter.changedFiles(repo.path, 'HEAD');
+      expect(edited.single.patch, contains('changed!'));
+
+      file.writeAsStringSync('original\n');
+      file.setLastModifiedSync(mtime);
+      expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
+    },
+  );
+
+  test(
+    'a warm capture follows HEAD and drops removed untracked files',
+    () async {
+      const adapter = ProcessSessionDiffAdapter();
+      final fresh = File(p.join(repo.path, 'fresh.txt'))
+        ..writeAsStringSync('new\n');
+      expect(
+        (await adapter.changedFiles(repo.path, 'HEAD')).map((f) => f.filename),
+        ['fresh.txt'],
+      );
+
+      await _git(['add', '-A'], repo.path);
+      await _git(['commit', '-q', '-m', 'add fresh'], repo.path);
+      expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
+
+      fresh.deleteSync();
+      final removed = await adapter.changedFiles(repo.path, 'HEAD');
+      expect(removed.single.filename, 'fresh.txt');
+      expect(removed.single.status, PrFileStatus.removed);
+    },
+  );
+
+  test('concurrent captures of one worktree all succeed', () async {
+    const adapter = ProcessSessionDiffAdapter();
+    File(p.join(repo.path, 'tracked.txt')).writeAsStringSync('changed\n');
+
+    final results = await Future.wait([
+      for (var i = 0; i < 4; i++) adapter.changedFiles(repo.path, 'HEAD'),
+    ]);
+
+    for (final files in results) {
+      expect(files.single.filename, 'tracked.txt');
+    }
+  });
 
   test(
     'a tracked file that .gitignore also matches is not a phantom deletion',

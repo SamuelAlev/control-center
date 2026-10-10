@@ -36,8 +36,13 @@ class SherpaOnnxTranscriber implements SpeechTranscriber {
   Isolate? _isolate;
   SendPort? _commands; // main → worker
   ReceivePort? _fromWorker; // worker → main (also the spawn error/exit port)
+  // Cancelled by [_stopWorker], through the local it detaches it to.
+  // ignore: cancel_subscriptions
   StreamSubscription<dynamic>? _fromWorkerSub;
   Completer<void>? _ready;
+
+  /// Completes when the worker isolate exits (its `onExit` message).
+  Completer<void>? _exited;
   final Map<int, Completer<String>> _pending = {};
   int _nextRequestId = 0;
   bool _disposed = false;
@@ -66,8 +71,14 @@ class SherpaOnnxTranscriber implements SpeechTranscriber {
     try {
       final fromWorker = _fromWorker = ReceivePort();
       final handshake = Completer<SendPort>();
+      final exited = _exited = Completer<void>();
       _fromWorkerSub = fromWorker.listen((Object? message) {
-        if (message is SendPort) {
+        if (message == null) {
+          // `onExit`: the worker is gone, and with it everything it freed.
+          if (!exited.isCompleted) {
+            exited.complete();
+          }
+        } else if (message is SendPort) {
           handshake.complete(message);
         } else if (message is List) {
           // Uncaught error / abnormal exit forwarded via onError/onExit.
@@ -205,16 +216,42 @@ class SherpaOnnxTranscriber implements SpeechTranscriber {
     if (_disposed || !(_ready?.isCompleted ?? false) || _pending.isNotEmpty) {
       return;
     }
-    _commands?.send(<String, Object?>{'type': 'dispose'});
-    await _fromWorkerSub?.cancel();
-    _fromWorker?.close();
-    _isolate?.kill(priority: Isolate.beforeNextEvent);
+    // Cleared before the wait, so a recording that starts meanwhile spawns a
+    // fresh worker instead of decoding on the one shutting down.
+    _ready = null;
+    await _stopWorker();
+  }
+
+  /// Asks the worker to free its native recognizer and waits for it to exit
+  /// on its own; the kill is only a backstop for a wedged worker.
+  ///
+  /// Killing the isolate right after sending `dispose` meant the message was
+  /// never handled, and an isolate kill frees no FFI allocation: every unload
+  /// (the boot preflight, the end of every recording) leaked the whole loaded
+  /// model, several hundred MB each time.
+  Future<void> _stopWorker() async {
+    final commands = _commands;
+    final exited = _exited;
+    final isolate = _isolate;
+    final sub = _fromWorkerSub;
+    final fromWorker = _fromWorker;
     _isolate = null;
     _commands = null;
     _fromWorker = null;
     _fromWorkerSub = null;
-    _ready = null;
+    _exited = null;
+    if (commands != null && exited != null) {
+      commands.send(<String, Object?>{'type': 'dispose'});
+      await exited.future.timeout(_workerExitGrace, onTimeout: () {});
+    }
+    await sub?.cancel();
+    fromWorker?.close();
+    isolate?.kill(priority: Isolate.beforeNextEvent);
   }
+
+  /// How long [_stopWorker] waits for a worker to free its model and exit; a
+  /// decode in progress finishes first, so this covers a long window.
+  static const Duration _workerExitGrace = Duration(seconds: 10);
 
   @override
   Future<void> dispose() async {
@@ -222,14 +259,7 @@ class SherpaOnnxTranscriber implements SpeechTranscriber {
       return;
     }
     _disposed = true;
-    _commands?.send(<String, Object?>{'type': 'dispose'});
-    await _fromWorkerSub?.cancel();
-    _fromWorker?.close();
-    _isolate?.kill(priority: Isolate.beforeNextEvent);
-    _isolate = null;
-    _commands = null;
-    _fromWorker = null;
-    _fromWorkerSub = null;
+    await _stopWorker();
     for (final completer in _pending.values) {
       if (!completer.isCompleted) {
         completer.complete('');

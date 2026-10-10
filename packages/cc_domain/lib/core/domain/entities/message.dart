@@ -480,11 +480,14 @@ class Message {
           senderType == other.senderType &&
           content == other.content &&
           messageType == other.messageType &&
-          const DeepCollectionEquality().equals(metadata, other.metadata) &&
           compacted == other.compacted &&
           reverted == other.reverted &&
           revertedAt == other.revertedAt &&
-          createdAt == other.createdAt;
+          createdAt == other.createdAt &&
+          // Deep metadata walk last (it can hold a whole transcript), and
+          // skipped when both sides share the map.
+          (identical(metadata, other.metadata) ||
+              const DeepCollectionEquality().equals(metadata, other.metadata));
 
   @override
   int get hashCode => Object.hash(

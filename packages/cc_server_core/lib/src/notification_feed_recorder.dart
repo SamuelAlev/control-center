@@ -14,6 +14,8 @@ import 'package:cc_server_core/src/notification_wire.dart';
 /// Durable per-workspace notification feed from domain events (same mapping as live toasts).
 ///
 /// Skips frames with no notification rendering and frames without `workspace_id`.
+/// When an agent wait ends ([AgentInputResolved]) the row that announced it is
+/// stamped resolved, so the bell stops counting it.
 class NotificationFeedRecorder {
   /// Creates a [NotificationFeedRecorder].
   NotificationFeedRecorder({
@@ -24,6 +26,10 @@ class NotificationFeedRecorder {
   final DomainEventBus _eventBus;
   final DaoNotificationFeedRepository _repository;
   final List<StreamSubscription<Object?>> _subs = [];
+
+  /// Feed writes run one after another, in event order: a wait that resolves
+  /// while its row is still being inserted must find the row.
+  Future<void> _writes = Future<void>.value();
 
   /// Begins recording. Idempotent per instance lifetime.
   void start() {
@@ -128,6 +134,14 @@ class NotificationFeedRecorder {
         _eventBus.on<AgentAwaitingInput>().listen(
           (e) => _record(agentAwaitingInputFrame(e)),
         ),
+      )
+      ..add(
+        _eventBus.on<AgentInputResolved>().listen(
+          (e) => _write(
+            'resolve',
+            () => _repository.resolveAgentWait(e.workspaceId, e.waitId),
+          ),
+        ),
       );
   }
 
@@ -139,14 +153,21 @@ class NotificationFeedRecorder {
     if (workspaceId is! String || workspaceId.isEmpty) {
       return;
     }
-    // Fire-and-forget: a failed write drops one history row, never the event.
-    unawaited(() async {
+    _write(
+      'record',
+      () => _repository.record(workspaceId, frame.method, frame.params),
+    );
+  }
+
+  // Fire-and-forget: a failed write drops one history row, never the event.
+  void _write(String what, Future<Object?> Function() write) {
+    _writes = _writes.then((_) async {
       try {
-        await _repository.record(workspaceId, frame.method, frame.params);
+        await write();
       } catch (e) {
-        CcHostLog.warning('NotificationFeedRecorder: record failed: $e');
+        CcHostLog.warning('NotificationFeedRecorder: $what failed: $e');
       }
-    }());
+    });
   }
 
   /// Stops recording and cancels all subscriptions.

@@ -14,17 +14,32 @@ OS="$(cc_platform)"
 VERSION="0.0.0-dry"
 SKIP_NATIVES=0
 SKIP_SIGN=0
+# Windows only: x64 (default) or arm64. Flutter cannot cross-compile Windows,
+# so --arch arm64 needs an Arm64 host with an arm64 MSVC environment.
+WIN_ARCH=x64
 while [ $# -gt 0 ]; do
   case "$1" in
     --os)           OS="${2:?--os needs a value}"; shift 2 ;;
     --version)      VERSION="${2:?--version needs a value}"; shift 2 ;;
     --skip-natives) SKIP_NATIVES=1; shift ;;
     --skip-sign)    SKIP_SIGN=1; shift ;;
+    --arch)         WIN_ARCH="${2:?--arch needs a value}"; shift 2 ;;
     -h|--help)      sed -n '2,22p' "$0"; exit 0 ;;
     *) die "unknown argument '$1' (see --help)" ;;
   esac
 done
 case "$OS" in macos|linux|windows) ;; *) die "--os must be macos|linux|windows" ;; esac
+WIN_ARCH="$(cc_windows_arch "$WIN_ARCH")"
+# The platform name in scripts/lib/artifact_names.sh (Windows on Arm is its own
+# platform there, with its own assets and feed) and the packagers' arch arg.
+PLATFORM="$OS"
+PKG_ARCH=()
+if [ "$OS" = windows ]; then
+  PKG_ARCH=("$WIN_ARCH")
+  [ "$WIN_ARCH" = arm64 ] && PLATFORM=windows-arm64
+elif [ "$WIN_ARCH" != x64 ]; then
+  die "--arch is only meaningful with --os windows"
+fi
 
 FLUTTER="$(resolve_flutter)"
 DART="$(resolve_dart)"
@@ -36,7 +51,7 @@ if [ "$SKIP_NATIVES" = "1" ]; then
   log "--skip-natives: reusing build/natives"
 else
   if [ "$OS" = "windows" ]; then
-    bash scripts/release/windows_natives.sh
+    bash scripts/release/windows_natives.sh "$WIN_ARCH"
   else
     bash scripts/natives/build_natives.sh build/natives
   fi
@@ -63,14 +78,14 @@ $FLUTTER build "$OS" --release --build-name="$VERSION" --build-number=0
 if [ "$SKIP_SIGN" = "1" ]; then
   export ALLOW_UNSIGNED=1
 fi
-bash "scripts/release/${OS}_package.sh" "$VERSION"
-bash scripts/release/cc_server_package.sh "$VERSION" "$OS"
+bash "scripts/release/${OS}_package.sh" "$VERSION" ${PKG_ARCH[@]+"${PKG_ARCH[@]}"}
+bash scripts/release/cc_server_package.sh "$VERSION" "$OS" ${PKG_ARCH[@]+"${PKG_ARCH[@]}"}
 
 # 5. Report against the canonical name table, so a rename shows up here rather
 # than as a missing asset in make_release.sh during a real release.
 log "Artifacts produced (expected names from scripts/lib/artifact_names.sh):"
 kinds=()
-while IFS= read -r kind; do kinds+=("$kind"); done < <(release_platform_kinds "$OS")
+while IFS= read -r kind; do kinds+=("$kind"); done < <(release_platform_kinds "$PLATFORM")
 missing=0
 for kind in "${kinds[@]}"; do
   name="$(release_asset_name "$kind" "$VERSION")"

@@ -131,9 +131,10 @@ class DispatchSession implements SteeringSessionView {
     this.resolveBinary = resolveBinaryPath,
   });
 
-  /// Fired once, at the top of [_runHarness], the moment this session's
-  /// steering queue becomes drainable. The steering queue service uses it to
-  /// attach drain notifications and flush persisted queued rows into the run.
+  /// Fired once per run, the moment this session's steering queue becomes
+  /// drainable: at the top of [_runHarness], or once a `claude -p` run's stdin
+  /// lane is open. The steering queue service uses it to attach drain
+  /// notifications and flush persisted queued rows into the run.
   ///
   /// Late-bound (mutable) because the adapter assigns it right after
   /// constructing the session — the natural wiring point lives after the
@@ -409,6 +410,21 @@ class DispatchSession implements SteeringSessionView {
   /// Child runs for the subagents the active `claude -p` process spawned.
   ClaudeSubagentRuns? _claudeSubagents;
 
+  /// The running `claude -p` attempt's stdin, while it takes steering. Null
+  /// outside a Claude run and once the turn's `result` closed it — what is
+  /// queued after that converts to a follow-up message at run end.
+  // ignore: close_sinks
+  StreamController<String>? _claudeStdin;
+
+  /// Steering this run already wrote to `claude`, in order. An account
+  /// failover restarts the turn on a fresh process, which gets these again
+  /// after the prompt: the cards are already marked injected.
+  final List<String> _claudeSteered = [];
+
+  /// Whether a microtask is already due to drain the steering queue into
+  /// [_claudeStdin], so a burst of pushes is written in one pass.
+  bool _claudeSteeringPumpScheduled = false;
+
   /// Closes any Claude subagent still open: its parent process is gone, so
   /// its spawn call will never return.
   Future<void> _closeClaudeSubagents() async {
@@ -454,10 +470,11 @@ class DispatchSession implements SteeringSessionView {
   /// share this token) when the session is terminated.
   final CancellationTokenSource _cancelSource = CancellationTokenSource();
 
-  /// Mid-run steering inbox for the built-in harness. A client can push a
-  /// message here while a run is active (via [steer]); the loop drains it at the
-  /// next turn boundary, so the user can nudge a running agent without starting
-  /// a new dispatch. Unused by the external-CLI transports.
+  /// Mid-run steering inbox. A client can push a message here while a run is
+  /// active (via [steer]); the built-in harness drains it at the next turn
+  /// boundary and a `claude -p` run writes it to the process's stdin as it
+  /// arrives, so the user can nudge a running agent without starting a new
+  /// dispatch. Unused by ACP.
   final SteeringQueue _steering = SteeringQueue();
 
   /// The run's steering inbox, exposed for the host's queue surgery: the
@@ -476,14 +493,17 @@ class DispatchSession implements SteeringSessionView {
   /// only transport that can pause at a turn boundary).
   bool _harnessActive = false;
 
-  /// Whether a built-in harness loop is currently driving this session.
-  ///
-  /// The mid-run affordances that only the harness can honor — pause, and
-  /// steering that will actually be drained — gate on this so an
-  /// external-CLI transport reports "cannot" instead of accepting a message
+  /// Whether a built-in harness loop is currently driving this session (the
+  /// only transport that can pause at a turn boundary).
+  bool get isHarnessActive => _harnessActive;
+
+  /// Whether a message pushed into [steeringQueue] now will reach the run:
+  /// a built-in harness loop is driving the session, or a `claude -p` turn
+  /// still has its stdin open. Steering gates on this so ACP (and a Claude
+  /// turn that already ended) reports "cannot" instead of accepting a message
   /// into a queue nobody reads.
   @override
-  bool get isHarnessActive => _harnessActive;
+  bool get acceptsSteering => _harnessActive || _claudeStdin != null;
 
   /// Deferred tools this run pulled in, in activation order.
   ///
@@ -535,15 +555,15 @@ class DispatchSession implements SteeringSessionView {
   /// Releases a paused loop (hand-back). Idempotent.
   void resumeHarness() => _pauseGate.resume();
 
-  /// Queues a mid-run steering message for the active built-in harness run.
+  /// Queues a mid-run steering message for the active run.
   ///
   /// [channel] selects the lane: [SteeringChannel.steering] (default) is
   /// injected at the next turn boundary; [SteeringChannel.aside] is a passive
   /// note; [SteeringChannel.followUp] runs only once the agent would otherwise
-  /// stop. Returns true when a harness loop will drain it; FALSE — with
-  /// nothing enqueued — for non-harness transports, whose one-shot CLI
-  /// processes have no input lane (accepting the message would park it in a
-  /// queue nobody reads: the silently-swallowed steering bug).
+  /// stop. Returns true when the run will take it ([acceptsSteering]); FALSE —
+  /// with nothing enqueued — otherwise, since ACP has no input lane (accepting
+  /// the message would park it in a queue nobody reads: the
+  /// silently-swallowed steering bug).
   bool steer(
     String content, {
     SteeringChannel channel = SteeringChannel.steering,
@@ -552,7 +572,7 @@ class DispatchSession implements SteeringSessionView {
     if (content.trim().isEmpty) {
       return false;
     }
-    if (!_harnessActive) {
+    if (!acceptsSteering) {
       return false;
     }
     _steering.enqueue(

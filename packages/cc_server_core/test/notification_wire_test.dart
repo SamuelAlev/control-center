@@ -35,6 +35,7 @@ void main() {
       final frame = agentAwaitingInputFrame(
         AgentAwaitingInput(
           workspaceId: 'ws-1',
+          waitId: 'wait-1',
           kind: AgentInputKind.approval,
           summary: 'Push to main',
           occurredAt: DateTime(2026),
@@ -43,6 +44,7 @@ void main() {
       expect(frame.method, 'notifications/agent_awaiting_input');
       expect(frame.params, {
         'workspace_id': 'ws-1',
+        'wait_id': 'wait-1',
         'kind': 'approval',
         'summary': 'Push to main',
       });

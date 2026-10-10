@@ -217,6 +217,7 @@ void main() {
       'terminal.spawn',
       'terminal.write',
       'terminal.kill',
+      'process.killAgentShell',
       'fs.writeString',
       'fs.writeAgentFile',
       'rig.open',

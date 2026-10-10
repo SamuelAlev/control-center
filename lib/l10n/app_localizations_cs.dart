@@ -8088,6 +8088,53 @@ class AppLocalizationsCs extends AppLocalizations {
   String get meetingReRunNoTranscript => 'Zatím není žádný přepis ke shrnutí.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Vygenerujte je z přepisu, nebo si napište vlastní.';
+
+  @override
+  String get meetingNotesGenerate => 'Vygenerovat poznámky';
+
+  @override
+  String get meetingNotesWriteOwn => 'Napsat vlastní';
+
+  @override
+  String get meetingNothingTranscribed => 'Nic nebylo přepsáno.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Není co shrnout, ale vlastní poznámky si vést můžete.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Mluvčí';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Čas mluvení jednotlivých mluvčích se zobrazí, jakmile bude k dispozici přepis.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count další';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share času mluvení, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Všechny akční položky jsou hotové.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Zobrazit vše ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Poznámky zkopírovány do schránky jako Markdown.';
 
@@ -15462,4 +15509,50 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Agent je zablokován kvůli přihlašovacím údajům';
+
+  @override
+  String get killTerminal => 'Ukončit terminál';
+
+  @override
+  String get stopAgentCommand => 'Zastavit příkaz';
+
+  @override
+  String get agentCommandStopping => 'Zastavování…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Příkaz agenta $command, běží $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Spojení se serverem bylo ztraceno';
+
+  @override
+  String get serverLostBody =>
+      'Control Center se na pozadí dál pokouší znovu připojit. Zkuste to hned, nebo přejděte na přihlašovací obrazovku a vyberte server.';
+
+  @override
+  String get serverLostRetrying => 'Opětovné připojování…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Další pokus za $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Zkusit se znovu připojit';
+
+  @override
+  String get serverLostSignIn => 'Přejít na přihlášení';
+
+  @override
+  String get serverEndedTitle => 'K serveru se nelze znovu připojit';
+
+  @override
+  String get shutdownSubtitleServer => 'Server se zastavuje';
 }

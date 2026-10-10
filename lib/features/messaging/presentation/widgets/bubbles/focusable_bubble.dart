@@ -13,6 +13,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'focusable_bubble_rail.dart';
+
 /// A bubble wrapper that shows a focus outline and a hover toolbar
 /// (copy / permalink / revert / react / edit / delete).
 class FocusableBubble extends ConsumerStatefulWidget {
@@ -265,62 +267,6 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
             if (actions.isNotEmpty)
               _Rail(revealed: _revealed, actions: actions),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The action rail: one row of icons directly under the message.
-///
-/// Its height is reserved unconditionally — the strip occupies the same
-/// [_railItemExtent] whether or not the pointer is on the message, so revealing
-/// it moves nothing in the feed. That is the whole reason it is laid out here
-/// rather than floated beside the message in the app Overlay, which is what it
-/// used to be: an overlay costs no space, but it also has to be chased across
-/// scroll ticks, kept alive while the cursor crosses the dead pixels between
-/// the message and the icons, and de-duplicated against every other rail. In
-/// flow, inside the message's own hover region, none of that exists.
-class _Rail extends StatelessWidget {
-  const _Rail({required this.revealed, required this.actions});
-
-  /// Whether the icons are showing. Only this subtree listens, so a hover never
-  /// rebuilds the message body.
-  final ValueListenable<bool> revealed;
-
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: _railTopGap),
-      child: SizedBox(
-        height: _railItemExtent,
-        child: ValueListenableBuilder<bool>(
-          valueListenable: revealed,
-          // Passed as `child` so a reveal rebuilds the opacity wrappers alone,
-          // never the icons or their hit regions.
-          child: RepaintBoundary(
-            child: Row(mainAxisSize: MainAxisSize.min, children: actions),
-          ),
-          builder: (context, shown, child) => ExcludeSemantics(
-            excluding: !shown,
-            // A hidden rail must not be clickable and must not add a tab stop:
-            // seven invisible buttons per message would otherwise put hundreds
-            // of them between a keyboard user and the composer.
-            child: ExcludeFocus(
-              excluding: !shown,
-              child: IgnorePointer(
-                ignoring: !shown,
-                child: AnimatedOpacity(
-                  opacity: shown ? 1 : 0,
-                  duration: CcMotion.resolve(context, CcMotion.fast),
-                  curve: CcMotion.standard,
-                  child: child,
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );

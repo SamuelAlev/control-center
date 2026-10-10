@@ -153,7 +153,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('ink lerps in lockstep with the fill when selection toggles', (
+  testWidgets('selecting snaps fill and ink; deselecting lerps them together', (
     tester,
   ) async {
     final t = DesignSystemTokens.light();
@@ -177,23 +177,36 @@ void main() {
     Color ink() => tester.widget<Text>(find.text('Inbox')).style!.color!;
     expect(ink(), t.textSecondary);
 
-    // Selecting lerps fill AND ink over CcMotion.fast: mid-flight the ink is
-    // between the two endpoints — never white snapped onto the still-mid-lerp
-    // fill (which would read white-on-white).
+    double fill() => tester
+        .widget<FadeTransition>(
+          find
+              .ancestor(
+                of: find.byWidgetPredicate(
+                  (w) => w is ColoredBox && w.color == t.bgBrandSolid,
+                ),
+                matching: find.byType(FadeTransition),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    // Selecting snaps fill AND ink together on the next frame: the pressed
+    // row reads as current at once instead of fading in behind the click.
     selected.value = true;
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 60));
-    expect(ink(), isNot(t.accentOn));
-    expect(ink(), isNot(t.textSecondary));
-    await tester.pumpAndSettle();
     expect(ink(), t.accentOn);
+    expect(fill(), 1);
 
-    // … and deselecting lerps back.
+    // Deselecting lerps back over CcMotion.fast, ink in lockstep with the
+    // fill: mid-flight both sit between their endpoints — never dark ink
+    // snapped onto a still-orange fill.
     selected.value = false;
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pump(const Duration(milliseconds: 40));
     expect(ink(), isNot(t.accentOn));
     expect(ink(), isNot(t.textSecondary));
+    expect(fill(), inExclusiveRange(0, 1));
     await tester.pumpAndSettle();
     expect(ink(), t.textSecondary);
   });

@@ -7,10 +7,14 @@ import 'package:control_center/features/messaging/presentation/widgets/space_row
 import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
+import 'package:control_center/features/shell/providers/shell_route_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+part 'space_folders_list_drag_row.dart';
 
 typedef _SpaceDragData = ({String workspaceId, String spaceId});
 
@@ -42,7 +46,6 @@ class SpaceFoldersList extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     required this.spaces,
-    required this.routeSpaceId,
     required this.spaceBuilder,
     this.filter = '',
   });
@@ -52,9 +55,6 @@ class SpaceFoldersList extends ConsumerStatefulWidget {
 
   /// Visible, human-facing spaces in their current recency order.
   final List<Space> spaces;
-
-  /// Space selected by the current route, if any.
-  final String? routeSpaceId;
 
   /// Builds the layout-specific row for one space.
   final Widget Function(Space space) spaceBuilder;
@@ -228,20 +228,38 @@ class _SpaceFoldersListState extends ConsumerState<SpaceFoldersList> {
     if (oldWidget.workspaceId != widget.workspaceId) {
       _draggingSpaceId = null;
       _expanded.clear();
-    } else if (oldWidget.routeSpaceId != widget.routeSpaceId &&
-        widget.routeSpaceId != null) {
-      // A newly opened space must not be hidden behind a previously closed
-      // folder. A manual collapse of the currently selected folder still holds.
-      for (final folder in ref.read(spaceFoldersProvider(widget.workspaceId))) {
-        if (folder.spaceIds.contains(widget.routeSpaceId)) {
-          _expanded.remove(folder.id);
-        }
-      }
+    }
+  }
+
+  /// A newly opened space must not be hidden behind a previously closed
+  /// folder. A manual collapse of the currently selected folder still holds.
+  void _revealRouteSpace(String? spaceId) {
+    if (spaceId == null) {
+      return;
+    }
+    final reopened = [
+      for (final folder in ref.read(spaceFoldersProvider(widget.workspaceId)))
+        if (folder.spaceIds.contains(spaceId) &&
+            _expanded.containsKey(folder.id))
+          folder.id,
+    ];
+    if (reopened.isNotEmpty) {
+      setState(() => reopened.forEach(_expanded.remove));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // The route's space through a listener, not a watch: the list reacts to
+    // a navigation only when it has a folder to reopen, and otherwise never
+    // rebuilds for one.
+    ref.listen<String?>(
+      routeSpaceIdProvider((
+        router: GoRouter.of(context),
+        workspaceId: widget.workspaceId,
+      )),
+      (_, spaceId) => _revealRouteSpace(spaceId),
+    );
     final folders = ref.watch(spaceFoldersProvider(widget.workspaceId));
     final filter = widget.filter.trim().toLowerCase();
     final available = {for (final space in widget.spaces) space.id: space};
@@ -296,95 +314,6 @@ class _SpaceFoldersListState extends ConsumerState<SpaceFoldersList> {
     return children.isEmpty
         ? const SizedBox.shrink()
         : CcSidebarGroup(children: children);
-  }
-}
-
-/// Keeps the existing sidebar row and its hover semantics while making the
-/// whole space a drag source in both sidebar layouts.
-class _DraggableSpaceRow extends StatelessWidget implements CcFluidHoverTarget {
-  const _DraggableSpaceRow({
-    super.key,
-    required this.space,
-    required this.workspaceId,
-    required this.available,
-    required this.onDropOnSpace,
-    required this.onDragStarted,
-    required this.onDragEnd,
-    required this.child,
-  });
-
-  final Space space;
-  final String workspaceId;
-  final Map<String, Space> available;
-  final void Function(String sourceId, String targetId) onDropOnSpace;
-  final VoidCallback onDragStarted;
-  final ValueChanged<DraggableDetails> onDragEnd;
-  final Widget child;
-
-  @override
-  bool get fluidHoverEnabled => true;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.ds;
-    return DragTarget<_SpaceDragData>(
-      onWillAcceptWithDetails: (details) =>
-          details.data.workspaceId == workspaceId &&
-          available.containsKey(details.data.spaceId),
-      onAcceptWithDetails: (details) {
-        if (details.data.spaceId != space.id) {
-          onDropOnSpace(details.data.spaceId, space.id);
-        }
-      },
-      builder: (context, candidates, _) => DecoratedBox(
-        position: DecorationPosition.foreground,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color:
-                candidates.any(
-                  (candidate) =>
-                      candidate != null && candidate.spaceId != space.id,
-                )
-                ? tokens.accent
-                : const Color(0x00000000),
-          ),
-          borderRadius: AppRadii.brSm,
-        ),
-        child: Draggable<_SpaceDragData>(
-          data: (workspaceId: workspaceId, spaceId: space.id),
-          dragAnchorStrategy: pointerDragAnchorStrategy,
-          onDragStarted: onDragStarted,
-          onDragEnd: onDragEnd,
-          feedback: DefaultTextStyle(
-            style: CcTypography.body.copyWith(
-              color: tokens.textPrimary,
-              decoration: TextDecoration.none,
-            ),
-            child: SizedBox(
-              width: 220,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.bgSecondary,
-                  borderRadius: AppRadii.brSm,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Text(
-                    space.name.isEmpty
-                        ? AppLocalizations.of(context).spaceLabel
-                        : space.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          childWhenDragging: Opacity(opacity: 0.4, child: child),
-          child: child,
-        ),
-      ),
-    );
   }
 }
 

@@ -8060,6 +8060,53 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucune transcription à résumer pour l\'instant.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Générez-les à partir de la transcription ou rédigez les vôtres.';
+
+  @override
+  String get meetingNotesGenerate => 'Générer les notes';
+
+  @override
+  String get meetingNotesWriteOwn => 'Rédiger les vôtres';
+
+  @override
+  String get meetingNothingTranscribed => 'Rien n\'a été transcrit.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Il n\'y a aucune transcription à résumer, mais vous pouvez toujours prendre vos propres notes.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Intervenants';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Le temps de parole de chaque intervenant s\'affiche dès qu\'une transcription existe.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count de plus';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name : $share du temps de parole, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Toutes les tâches sont terminées.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Tout afficher ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notes copiées dans le presse-papiers au format Markdown.';
 
@@ -15415,6 +15462,52 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Un agent est bloqué par des identifiants';
+
+  @override
+  String get killTerminal => 'Fermer le terminal';
+
+  @override
+  String get stopAgentCommand => 'Arrêter la commande';
+
+  @override
+  String get agentCommandStopping => 'Arrêt…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Commande de l’agent $command, en cours depuis $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Connexion au serveur perdue';
+
+  @override
+  String get serverLostBody =>
+      'Control Center continue d\'essayer de se reconnecter en arrière-plan. Réessayez maintenant ou accédez à l\'écran de connexion pour choisir un serveur.';
+
+  @override
+  String get serverLostRetrying => 'Reconnexion…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Prochaine tentative dans $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Tenter de se reconnecter';
+
+  @override
+  String get serverLostSignIn => 'Aller à la connexion';
+
+  @override
+  String get serverEndedTitle => 'Impossible de se reconnecter au serveur';
+
+  @override
+  String get shutdownSubtitleServer => 'Le serveur s\'arrête';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

@@ -127,7 +127,6 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
     }
   }
 
-
   void _onPointerDown(PointerDownEvent _) {
     if (!_enabled) {
       return;
@@ -139,16 +138,9 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
   }
 
   void _onPointerUp(PointerUpEvent _) {
-    if (!_enabled) {
-      return;
-    }
-    if (_holdMode) {
-      if (_pointerHold) {
-        _pointerHold = false;
-        unawaited(_stop());
-      }
-    } else {
-      unawaited(_toggle());
+    if (_pointerHold) {
+      _pointerHold = false;
+      unawaited(_stop());
     }
   }
 
@@ -158,7 +150,6 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
       unawaited(_stop());
     }
   }
-
 
   bool _onHardwareKey(KeyEvent event) {
     if (!_enabled || !widget.composerFocused) {
@@ -230,7 +221,6 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
     return true;
   }
 
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -260,10 +250,10 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
     });
 
     final listening = _sessionActive && dictation.isListening;
-    final Color color;
+    final Color? color;
     final String tooltip;
     if (!_enabled) {
-      color = ds.textTertiary;
+      color = null;
       tooltip = l10n.dictationUnavailable;
     } else if (dictation.hasError) {
       color = ds.textErrorPrimary;
@@ -275,54 +265,49 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
       color = ds.textErrorPrimary;
       tooltip = l10n.dictationListening;
     } else {
-      color = ds.textTertiary;
+      color = null;
       tooltip = _holdMode ? l10n.dictationHoldToTalkTitle : l10n.dictationStart;
     }
 
-    return CcTooltip(
-      message: tooltip,
-      child: MouseRegion(
-        cursor: _enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
-        child: Listener(
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: _onPointerDown,
-          onPointerUp: _onPointerUp,
-          onPointerCancel: _onPointerCancel,
-          child: Semantics(
-            button: true,
-            enabled: _enabled,
-            label: tooltip,
-            child: SizedBox(
-              // 36px box (matching CcIconButton md) around a 16px glyph — a
-              // comfortable click/touch target that lines up with its toolbar
-              // siblings.
-              width: 36,
-              height: 36,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(AppIcons.mic, size: 16, color: color),
-                  if (listening)
-                    Positioned(
-                      top: 5,
-                      right: 5,
-                      child: FadeTransition(
-                        opacity: _pulse,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: ds.textErrorPrimary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
+    // Hold-to-talk needs pointer-down/up, which a tap callback cannot see, so
+    // the pointer handlers observe raw events around the button. In hold mode
+    // the tap itself is a no-op (the Listener already started/stopped).
+    return Listener(
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CcIconButton(
+            icon: AppIcons.mic,
+            onPressed: !_enabled
+                ? null
+                : _holdMode
+                ? () {}
+                : () => unawaited(_toggle()),
+            color: color,
+            tooltip: tooltip,
+          ),
+          if (listening)
+            PositionedDirectional(
+              top: 7,
+              end: 7,
+              child: IgnorePointer(
+                child: FadeTransition(
+                  opacity: _pulse,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: ds.textErrorPrimary,
+                      shape: BoxShape.circle,
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }

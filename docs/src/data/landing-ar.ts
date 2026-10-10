@@ -325,7 +325,7 @@ export const ar: LandingCopy = {
     title: "اجعل نفسك\nفي بيتك.",
     description: "يمكن ليوم المطوّر التالي أن يبدأ هنا. مجاني ومفتوح المصدر.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "عرض الإصدارات",
     web: "افتح تطبيق الويب",

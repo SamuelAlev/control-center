@@ -11,9 +11,16 @@ library;
 const String kMacAppcastUrl =
     'https://github.com/SamuelAlev/control-center/releases/latest/download/appcast.xml';
 
-/// The Windows appcast (portable-zip enclosures for WinSparkle).
+/// The Windows x64 appcast (setup.exe enclosures for WinSparkle).
 const String kWindowsAppcastUrl =
     'https://github.com/SamuelAlev/control-center/releases/latest/download/appcast-windows.xml';
+
+/// The Windows ARM64 appcast. A feed of its own because WinSparkle 0.8 only
+/// matches `sparkle:os="windows"` and cannot pick an item by architecture, so
+/// a shared feed would hand an ARM64 install the x64 installer (or the
+/// reverse).
+const String kWindowsArm64AppcastUrl =
+    'https://github.com/SamuelAlev/control-center/releases/latest/download/appcast-windows-arm64.xml';
 
 /// The human fallback: newest published release page (the Linux path and the
 /// no-backend answer).

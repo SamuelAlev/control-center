@@ -224,17 +224,17 @@ class _PrCommentActionsState extends ConsumerState<PrCommentActions> {
     final parts = widget.prRef.repoFullName.split('/');
     final owner = parts.isNotEmpty ? parts.first : '';
     final repo = parts.length > 1 ? parts[1] : '';
-    // Same gate as write-access on the title: don't ask the forge who the
-    // viewer is until the pull request itself has loaded. A miss is "cannot
-    // delete", which the menu treats as hidden.
-    final detailLoaded = ref.watch(prDetailProvider(widget.prRef)).hasValue;
+    // Don't ask the forge who the viewer is until the pull request itself has
+    // loaded. A miss is "cannot delete", which the menu treats as hidden.
+    // Selected down to the flag: every row carries this widget, and a whole
+    // detail watch rebuilt all of them on each detail snapshot.
+    final detailLoaded = ref.watch(
+      prDetailProvider(widget.prRef).select((d) => d.hasValue),
+    );
     final permission = (!detailLoaded || owner.isEmpty || repo.isEmpty)
         ? null
-        : ref
-              .watch(repoPermissionProvider((owner: owner, repo: repo)))
-              .asData
-              ?.value;
-    final viewer = ref.watch(githubUserProvider).asData?.value?.login;
+        : ref.watch(repoPermissionProvider((owner: owner, repo: repo))).value;
+    final viewer = ref.watch(githubUserProvider).value?.login;
     final isAuthor = commentIsAuthor(widget.authorLogin, viewer);
     final canDelete = canDeleteComment(
       isAuthor: isAuthor,

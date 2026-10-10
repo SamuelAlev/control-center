@@ -156,12 +156,15 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
     }
     // A per-item state is an OVERRIDE: where one exists it is the whole
     // answer, so "mark as unread" survives a watermark that would otherwise
-    // cover the row. Where none exists the watermark decides, and while the
-    // mark is still loading we cannot tell "never acknowledged" from "not
-    // loaded yet" — rendering read avoids a spurious badge flash.
+    // cover the row. Where none exists, a resolved item (an agent wait that
+    // was answered) is read — there is nothing left to act on — and otherwise
+    // the watermark decides. While the mark is still loading we cannot tell
+    // "never acknowledged" from "not loaded yet" — rendering read avoids a
+    // spurious badge flash.
     final read =
         state?.isRead ??
-        (!markAsync.hasValue ||
+        (item.isResolved ||
+            !markAsync.hasValue ||
             (lastSeenAt != null && !item.createdAt.isAfter(lastSeenAt)));
     final owner = item.params['repo_owner'] as String?;
     final repoName = item.params['repo_name'] as String?;

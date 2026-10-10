@@ -74,6 +74,28 @@ void main() {
     },
   );
 
+  test('the last session stopping reports idle, not before', () async {
+    var idle = 0;
+    final s = DictationService(
+      transcriber: _FixedTranscriber('unused'),
+      transcription: MeetingTranscriptionService(
+        _FixedTranscriber('x'),
+        detectorFactory: _AlwaysSpeech.new,
+      ),
+      onIdle: () => idle++,
+    );
+    final a = s.start('ws1');
+    final b = s.start('ws1');
+    expect(s.hasActiveSessions, isTrue);
+
+    await s.stop(a);
+    expect(idle, 0, reason: 'another dictation still needs the model');
+
+    await s.stop(b);
+    expect(idle, 1);
+    expect(s.hasActiveSessions, isFalse);
+  });
+
   test('watch on an unknown session is an empty stream', () async {
     final s = service('x');
     expect(await s.watch('nope').toList(), isEmpty);

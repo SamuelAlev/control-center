@@ -13,6 +13,7 @@
 library;
 
 import 'dart:async';
+import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:auto_updater/auto_updater.dart' as au;
@@ -76,11 +77,21 @@ Future<void> initDesktopUpdater() async {
     return;
   }
   final override = _feedOverride;
-  await au.autoUpdater.setFeedURL(
-    override ?? (Platform.isWindows ? kWindowsAppcastUrl : kMacAppcastUrl),
-  );
+  await au.autoUpdater.setFeedURL(override ?? _platformFeedUrl());
   await au.autoUpdater.setScheduledCheckInterval(0);
   au.autoUpdater.addListener(_listener);
+}
+
+/// The feed for this build's own architecture: an x64 build running under
+/// emulation on Windows on Arm keeps updating to x64, a native ARM64 build to
+/// ARM64.
+String _platformFeedUrl() {
+  if (!Platform.isWindows) {
+    return kMacAppcastUrl;
+  }
+  return Abi.current() == Abi.windowsArm64
+      ? kWindowsArm64AppcastUrl
+      : kWindowsAppcastUrl;
 }
 
 /// Interactive (UI) or background check. `background: true` only probes and

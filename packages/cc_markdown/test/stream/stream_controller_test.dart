@@ -64,6 +64,26 @@ void main() {
     expect(CcMarkdownCache.debugParseCount, 0);
   });
 
+  test('complete keeps the incremental blocks it agrees with', () {
+    final c = CcMarkdownStreamController();
+    c.append('Alpha.\n\nBeta.\n\nlast\nx');
+    final sealed = c.sealedBlocks;
+    expect(sealed, isNotEmpty);
+    c.complete();
+    expect(c.isComplete, isTrue);
+    expect(c.tailText, isEmpty);
+    // The already-sealed blocks survive as the identical instances (a widget
+    // memoizing them re-renders nothing); only the tail became a block.
+    expect(c.sealedBlocks, hasLength(sealed.length + 1));
+    for (var i = 0; i < sealed.length; i++) {
+      expect(identical(c.sealedBlocks[i], sealed[i]), isTrue);
+    }
+    // Still the authoritative parse that seeds the cache.
+    CcMarkdownCache.debugParseCount = 0;
+    CcMarkdownCache.parseCached(c.text, CcPluginSet.empty);
+    expect(CcMarkdownCache.debugParseCount, 0);
+  });
+
   test('setText appends when the text extends, rescans on a rewrite', () {
     final c = CcMarkdownStreamController();
     c.setText('One.\n\nTwo.\n\ntail\nx');

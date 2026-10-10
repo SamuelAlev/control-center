@@ -180,13 +180,17 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
     // attached to [_sendChain] before the first await below, so two sends
     // still leave the socket in call order when their encodes finish
     // out of order.
-    final encodedFuture = encodeJsonFrame(frame);
-    final queued = _sendChain.then((_) async {
-      final encoded = await encodedFuture;
-      if (_closed || _socket.readyState != WebSocket.open) {
-        return;
-      }
-      if (_outboundBytes + encoded.length > _maxOutboundBytes) {
+    //
+    // Admission happens as soon as the bytes exist, so frames waiting behind
+    // a slow socket count against [_maxOutboundBytes] — sends are serialized,
+    // so counting only the frame being written meant the gauge never held
+    // more than one frame. It read "0 bytes queued" and closed a healthy
+    // connection whenever a SINGLE snapshot was larger than the ceiling, and
+    // the reconnect re-seeded the same snapshot, in a loop. A frame is always
+    // admitted onto an empty queue: one big frame is not a stalled peer.
+    final encodedFuture = encodeJsonFrame(frame).then((encoded) {
+      if (_outboundBytes > 0 &&
+          _outboundBytes + encoded.length > _maxOutboundBytes) {
         // Saturated. Dropping the frame silently would leave the peer's
         // mirror quietly wrong; closing makes it reconnect and re-seed,
         // which is the only outcome that stays honest.
@@ -198,7 +202,17 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
         throw StateError('WsRemoteTransport ($label) outbound buffer is full');
       }
       _outboundBytes += encoded.length;
+      return encoded;
+    });
+    // Observed by the chain below only once earlier frames are written; a
+    // rejection before then must not surface as an unhandled zone error.
+    unawaited(encodedFuture.then<void>((_) {}, onError: (Object _) {}));
+    final queued = _sendChain.then((_) async {
+      final encoded = await encodedFuture;
       try {
+        if (_closed || _socket.readyState != WebSocket.open) {
+          return;
+        }
         // `addStream`'s future completes only once the socket has ACCEPTED
         // the bytes. That is the only backpressure signal dart:io's
         // WebSocket exposes.

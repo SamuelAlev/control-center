@@ -635,4 +635,101 @@ void main() {
       tester.getRect(find.byKey(const ValueKey('shift-0'))),
     );
   });
+
+  testWidgets('a keyed item moving keeps its state instead of remounting', (
+    tester,
+  ) async {
+    final order = ValueNotifier<List<String>>(const ['a', 'b', 'c']);
+    addTearDown(order.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<List<String>>(
+          valueListenable: order,
+          builder: (context, ids, _) => CcFluidHover(
+            itemCount: ids.length,
+            itemBuilder: (context, index) =>
+                _Mounted(key: ValueKey(ids[index]), id: ids[index]),
+            layoutBuilder: (context, items) =>
+                Column(mainAxisSize: MainAxisSize.min, children: items),
+          ),
+        ),
+      ),
+    );
+    final mountedBefore = _Mounted.mounts;
+
+    // `c` jumps to the top, the way a space does when it gets a message.
+    order.value = const ['c', 'a', 'b'];
+    await tester.pump();
+
+    expect(_Mounted.mounts, mountedBefore, reason: 'no row remounted');
+    expect(
+      tester.widgetList<_Mounted>(find.byType(_Mounted)).map((row) => row.id),
+      ['c', 'a', 'b'],
+    );
+  });
+
+  testWidgets('the pointer crossing into the group rebuilds only the row it '
+      'picks', (tester) async {
+    final builds = <int, int>{};
+    await tester.pumpWidget(
+      ccTestApp(
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 120,
+            child: CcFluidHover(
+              itemCount: 3,
+              itemBuilder: (context, index) => CcTappable(
+                onPressed: () {},
+                builder: (context, states) {
+                  builds[index] = (builds[index] ?? 0) + 1;
+                  return const SizedBox(height: 40);
+                },
+              ),
+              layoutBuilder: (context, items) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: items,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final before = Map<int, int>.of(builds);
+
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await pointer.addPointer(
+      location:
+          tester.getTopLeft(find.byType(CcFluidHover)) + const Offset(60, 20),
+    );
+    await _settlePointerFrame(tester);
+
+    expect(builds[0], greaterThan(before[0]!), reason: 'the hovered row');
+    expect(builds[1], before[1], reason: 'an untouched row');
+    expect(builds[2], before[2], reason: 'an untouched row');
+  });
+}
+
+/// Counts how often a row's state is created, to tell a move from a remount.
+class _Mounted extends StatefulWidget {
+  const _Mounted({super.key, required this.id});
+
+  static int mounts = 0;
+
+  final String id;
+
+  @override
+  State<_Mounted> createState() => _MountedState();
+}
+
+class _MountedState extends State<_Mounted> {
+  @override
+  void initState() {
+    super.initState();
+    _Mounted.mounts++;
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(height: 20);
 }

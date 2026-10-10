@@ -40,6 +40,7 @@ class ServerConnectionStatus {
     this.insecure = false,
     this.error,
     this.authenticationRejected = false,
+    this.nextAttemptAt,
   });
 
   /// Current phase.
@@ -64,6 +65,12 @@ class ServerConnectionStatus {
   /// True only when the server explicitly rejected the device credential.
   /// Distinguishes revocation from a transient network outage or normal close.
   final bool authenticationRejected;
+
+  /// When the next reconnect attempt starts, while [phase] is
+  /// [ServerConnectionPhase.reconnecting] and the supervisor is backing off
+  /// between attempts. Null while an attempt is in flight (and in every other
+  /// phase). [ServerConnectionSupervisor.reconnectNow] cuts the wait short.
+  final DateTime? nextAttemptAt;
 
   /// Whether the live path relays through a broker.
   bool get relayed => path != null && !path!.isDirect;
@@ -122,6 +129,9 @@ class ServerConnectionSupervisor {
   Timer? _pingTimer;
   Timer? _describeTimer;
   StreamSubscription<Object?>? _stateSub;
+
+  /// Completed by [reconnectNow] to end the current reconnect backoff early.
+  Completer<void>? _wake;
 
   final StreamController<ServerConnectionStatus> _status =
       StreamController<ServerConnectionStatus>.broadcast();
@@ -352,13 +362,35 @@ class ServerConnectionSupervisor {
       } catch (e) {
         reason = e.toString();
       }
+      if (_closed) {
+        break;
+      }
       // Exponential backoff capped at 30s, with jitter.
       final base = (1000 * (1 << (attempt - 1).clamp(0, 5))).clamp(1000, 30000);
-      await Future<void>.delayed(
-        Duration(milliseconds: base + rnd.nextInt(base ~/ 3 + 1)),
+      final backoff = Duration(milliseconds: base + rnd.nextInt(base ~/ 3 + 1));
+      _emit(
+        ServerConnectionStatus(
+          phase: ServerConnectionPhase.reconnecting,
+          attempt: attempt,
+          insecure: _descriptor.insecureAllowed,
+          error: reason,
+          nextAttemptAt: DateTime.now().add(backoff),
+        ),
       );
+      final wake = _wake = Completer<void>();
+      await Future.any([Future<void>.delayed(backoff), wake.future]);
+      _wake = null;
     }
     _reconnecting = false;
+  }
+
+  /// Starts the next reconnect attempt now instead of waiting out the backoff.
+  /// A no-op unless the supervisor is between reconnect attempts.
+  void reconnectNow() {
+    final wake = _wake;
+    if (wake != null && !wake.isCompleted) {
+      wake.complete();
+    }
   }
 
   void _emit(ServerConnectionStatus status) {
@@ -374,6 +406,7 @@ class ServerConnectionSupervisor {
       return;
     }
     _closed = true;
+    reconnectNow();
     _teardownLive();
     _emit(const ServerConnectionStatus(phase: ServerConnectionPhase.closed));
     await _status.close();

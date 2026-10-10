@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection' show UnmodifiableListView;
 
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
@@ -72,7 +73,12 @@ final prRepoRowProvider = Provider.autoDispose.family<Repo?, PrRef>((ref, pr) {
   final owner = pr.repoFullName.substring(0, slash).toLowerCase();
   final name = pr.repoFullName.substring(slash + 1).toLowerCase();
   final repoSnapshot = ref.watch(reposForWorkspaceProvider(pr.workspaceId));
-  if (repoSnapshot.hasError) {
+  // A transient failure (a retried RPC error) keeps answering from the rows
+  // Riverpod retained: flipping to null tore down every PR subscription and
+  // swapped the page for its loading body until the retry landed. A refusal
+  // (membership revoked, workspace gone) fails closed.
+  if (repoSnapshot.hasError &&
+      (!repoSnapshot.hasValue || isAuthoritativeRpcError(repoSnapshot.error))) {
     return null;
   }
   final repos = repoSnapshot.value ?? const <Repo>[];
@@ -111,6 +117,11 @@ final prRepositoryProvider = Provider.autoDispose
 /// the surface stays in its loading state and — the point — issues no request.
 /// It must never fall back to another repo: a PR number is meaningless outside
 /// its own repo.
+///
+/// Conflated while paused: a hidden workbench tab's `TickerMode` pauses its
+/// provider subscriptions, and the RPC subscription buffers every snapshot
+/// meanwhile, so a tab coming back replayed stale cache → cache → fresh, one
+/// full rebuild each. Only the newest event is held for the resume.
 Stream<T> _prStream<T>(
   Ref ref,
   PrRef pr,
@@ -120,8 +131,100 @@ Stream<T> _prStream<T>(
   if (repository == null) {
     return const Stream.empty();
   }
-  return read(repository);
+  return conflateWhilePaused(read(repository));
 }
+
+/// Forwards [source], but while the listener is paused keeps only the newest
+/// event (value or error) instead of queueing every one, and delivers it on
+/// resume.
+///
+/// The source subscription is NOT paused with the listener. The RPC
+/// subscriptions behind these streams never stop the server feed on pause —
+/// they only queue — so this costs no extra network, and it is what lets the
+/// queue collapse to one entry.
+@visibleForTesting
+Stream<T> conflateWhilePaused<T>(Stream<T> source) {
+  late final StreamController<T> out;
+  StreamSubscription<T>? sub;
+  var paused = false;
+  var hasPending = false;
+  var pendingIsError = false;
+  T? pendingValue;
+  Object? pendingError;
+  StackTrace? pendingStack;
+  var doneWhilePaused = false;
+
+  void flush() {
+    if (hasPending) {
+      hasPending = false;
+      if (pendingIsError) {
+        out.addError(pendingError!, pendingStack);
+      } else {
+        out.add(pendingValue as T);
+      }
+      pendingValue = null;
+      pendingError = null;
+      pendingStack = null;
+    }
+    if (doneWhilePaused) {
+      unawaited(out.close());
+    }
+  }
+
+  out = StreamController<T>(
+    onListen: () {
+      sub = source.listen(
+        (value) {
+          if (!paused) {
+            out.add(value);
+            return;
+          }
+          hasPending = true;
+          pendingIsError = false;
+          pendingValue = value;
+          pendingError = null;
+          pendingStack = null;
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!paused) {
+            out.addError(error, stack);
+            return;
+          }
+          hasPending = true;
+          pendingIsError = true;
+          pendingValue = null;
+          pendingError = error;
+          pendingStack = stack;
+        },
+        onDone: () {
+          if (paused) {
+            doneWhilePaused = true;
+          } else {
+            unawaited(out.close());
+          }
+        },
+      );
+    },
+    onPause: () => paused = true,
+    onResume: () {
+      paused = false;
+      flush();
+    },
+    onCancel: () => sub?.cancel(),
+  );
+  return out.stream;
+}
+
+/// Whether [error] is the server refusing the read outright — access denied,
+/// a missing resource, a workspace the session is not bound to — rather than
+/// a transient failure a retry can recover from. A refusal must discard any
+/// retained snapshot; a transient failure keeps it on screen.
+bool isAuthoritativeRpcError(Object? error) =>
+    error is RemoteRpcException &&
+    (error.code == RpcErrorCodes.unauthorized ||
+        error.code == RpcErrorCodes.workspaceMismatch ||
+        error.code == RpcErrorCodes.notFound ||
+        error.code == RpcErrorCodes.noWorkspaceBound);
 
 /// Provides the cached PR review repository for repo-level work — reads and
 /// writes that carry no PR identity at all (the assignee/reviewer pickers the
@@ -236,9 +339,13 @@ final prDetailOrSeedProvider = Provider.autoDispose.family<PullRequest?, PrRef>(
     }
     final detail = ref.watch(prDetailProvider(pr));
     // Only loading may use the list seed. An authoritative rejection must
-    // discard both Riverpod's retained previous value and any old list seed.
+    // discard both Riverpod's retained previous value and any old list seed;
+    // a transient error (retried) keeps the PR that is already on screen —
+    // dropping it swapped the whole workbench for the loading body and back.
     if (detail.hasError) {
-      return null;
+      return detail.hasValue && !isAuthoritativeRpcError(detail.error)
+          ? detail.value
+          : null;
     }
     if (detail.hasValue) {
       return detail.value;
@@ -625,12 +732,7 @@ Stream<JobRunDetail?> _watchJobDetail(PrReviewRepository repository, int jobId) 
   var hasData = false;
   var logWaitPolls = 0;
 
-  bool authoritativeError(Object error) =>
-      error is RemoteRpcException &&
-      (error.code == RpcErrorCodes.unauthorized ||
-          error.code == RpcErrorCodes.workspaceMismatch ||
-          error.code == RpcErrorCodes.notFound ||
-          error.code == RpcErrorCodes.noWorkspaceBound);
+  bool authoritativeError(Object error) => isAuthoritativeRpcError(error);
 
   void schedule(void Function() action) {
     if (!stopped) {
@@ -925,9 +1027,26 @@ final spacePrsProvider = Provider.autoDispose.family<List<PullRequest>, String>(
         prs.add(pr);
       }
     }
-    return prs;
+    return prs.isEmpty ? const <PullRequest>[] : _SpacePrList(prs);
   },
 );
+
+/// A [spacePrsProvider] result that compares by its PRs, so a recompute that
+/// lands on the same PRs (an association re-emitting, an unrelated detail
+/// stream ticking) does not notify every row watching it.
+final class _SpacePrList extends UnmodifiableListView<PullRequest> {
+  _SpacePrList(List<PullRequest> super.source) : _prs = source;
+
+  final List<PullRequest> _prs;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _SpacePrList && listEquals(_prs, other._prs);
+
+  @override
+  int get hashCode => Object.hashAll(_prs);
+}
 
 /// Repo permission key.
 typedef RepoKey = ({String owner, String repo});
@@ -953,38 +1072,56 @@ final repoPermissionProvider = FutureProvider.autoDispose
     });
 
 /// Whether the current user has write/admin permission on the PR's repo.
+///
+/// Keyed off the PR's linked repo row, not the fetched detail, so the
+/// permission lookup runs in parallel with the detail fetch instead of one
+/// round trip after it — the late `false → true` flip is what swapped the
+/// description's subtree (and re-deferred its markdown) right after it
+/// painted. Reads `.value` so a reload never reads as "no permission".
 final prRepoWriteAccessProvider = Provider.autoDispose.family<bool, PrRef>((
   ref,
   pr,
 ) {
-  final prEntity = ref.watch(prDetailProvider(pr)).value;
-  if (prEntity == null) {
+  final repo = ref.watch(prRepoRowProvider(pr));
+  if (repo == null) {
     return false;
   }
-  final parts = prEntity.repoFullName.split('/');
-  final owner = parts.isNotEmpty ? parts[0] : '';
-  final repoName = parts.length > 1 ? parts[1] : '';
-  return ref
-          .watch(repoPermissionProvider((owner: owner, repo: repoName)))
-          .whenOrNull(data: (perm) => perm == 'admin' || perm == 'write') ??
-      false;
+  final perm = ref
+      .watch(
+        repoPermissionProvider((
+          owner: repo.remoteOwner,
+          repo: repo.remoteName,
+        )),
+      )
+      .value;
+  return perm == 'admin' || perm == 'write';
 });
 
 /// Whether the current user may edit the given PR's title/body: the PR author,
 /// or a user with write/admin permission on the repo. Mirrors the derivation
 /// behind the title-bar merge/close actions.
+///
+/// Gated on the fetched detail, never the list seed: the seed's body is
+/// empty, and an editor opened on it would save that emptiness over the real
+/// description. Only the detail's author login is watched, so a body/title
+/// update does not recompute this. `.value` reads keep a provider reload (the
+/// identity lookup's retry, a permission refetch) from flickering the answer
+/// to `false`.
 final prCanEditProvider = Provider.autoDispose.family<bool, PrRef>((ref, pr) {
-  final prEntity = ref.watch(prDetailProvider(pr)).value;
-  if (prEntity == null) {
+  final detail = ref.watch(
+    prDetailProvider(pr).select(
+      (d) => (
+        loaded: d.value != null,
+        author: d.value?.author?.login.toLowerCase(),
+      ),
+    ),
+  );
+  if (!detail.loaded) {
     return false;
   }
-  final login = ref
-      .watch(githubUserProvider)
-      .maybeWhen(
-        data: (user) => user?.login.toLowerCase() ?? '',
-        orElse: () => '',
-      );
-  final isAuthor =
-      login.isNotEmpty && prEntity.author?.login.toLowerCase() == login;
+  final login = ref.watch(
+    githubUserProvider.select((u) => u.value?.login.toLowerCase() ?? ''),
+  );
+  final isAuthor = login.isNotEmpty && detail.author == login;
   return isAuthor || ref.watch(prRepoWriteAccessProvider(pr));
 });

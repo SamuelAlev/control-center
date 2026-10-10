@@ -71,6 +71,10 @@ abstract interface class SandboxPort {
   /// is then closed. Used by CLIs that expect the prompt on stdin rather
   /// than as an argv entry. When null the child's stdin is closed immediately
   /// so reads return EOF instead of blocking.
+  /// [stdinStream], when non-null, replaces [stdinInput]: each chunk is
+  /// written to the child's stdin as it arrives and stdin closes when the
+  /// stream completes. Used by CLIs that take further input mid-run (Claude
+  /// Code's stream-json steering lane).
   Future<int> exec(
     SandboxHandle handle,
     List<String> argv, {
@@ -79,6 +83,7 @@ abstract interface class SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   });
 
   /// Pauses a warm sandbox. Implementations may checkpoint to disk to free

@@ -331,7 +331,7 @@ export const sv: LandingCopy = {
     description:
       "Din nästa utvecklardag kan börja här. Gratis och öppen källkod.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Visa versioner",
     web: "Öppna webbappen",

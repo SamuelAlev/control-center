@@ -2,7 +2,7 @@
 title: Εγκατάσταση
 description: Χρησιμοποιήστε το Control Center στο πρόγραμμα περιήγησης ή εγκαταστήστε την εφαρμογή υπολογιστή, ρυθμίστε ένα υποσύστημα πράκτορα και επιλέξτε πού εκτελείται ο διακομιστής του.
 slug: el-GR/εγχειρίδιο/εγκατάσταση
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Το Control Center εκτελείται με δύο τρόπους: ως **εφαρμογή web** στο
@@ -68,7 +68,7 @@ sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
 | Απαίτηση     | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Έκδοση λειτουργικού | macOS 13+ (Ventura)                            | Windows 10+ | Ubuntu 22.04+ ή άλλη διανομή με glibc 2.35+ και GTK 3      |
-| Αρχιτεκτονική | Apple Silicon (arm64)                                | x64         | x86_64                                                     |
+| Αρχιτεκτονική | Apple Silicon (arm64)                                | x64, ARM64  | x86_64                                                     |
 | Git          | Απαιτείται                                            | Απαιτείται  | Απαιτείται                                                 |
 | Χώρος στον δίσκο | ~200 MB για την εφαρμογή, συν τον κατάλογο δεδομένων του διακομιστή | ~200 MB | ~200 MB                                     |
 
@@ -99,10 +99,12 @@ Windows, `$XDG_DATA_HOME/control-center` (ή `~/.local/share/control-center`) σ
 
 Κατεβάστε το `Control-Center-<version>-arm64.dmg`, ανοίξτε το και σύρετε το Control Center στον φάκελο Applications. Το build είναι υπογεγραμμένο με Developer ID και φέρει επικύρωση της Apple, οπότε ανοίγει κανονικά.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: πρόγραμμα εγκατάστασης ανά χρήστη.
 - `Control-Center-<version>-windows-x64.zip`: φορητό zip.
+- `Control-Center-<version>-arm64-setup.exe`: πρόγραμμα εγκατάστασης ανά χρήστη.
+- `Control-Center-<version>-windows-arm64.zip`: φορητό zip.
 
 Τα Windows χρησιμοποιούν `git worktree` για τα checkouts των χώρων (χωρίς copy-on-write).
 
@@ -117,7 +119,7 @@ Windows, `$XDG_DATA_HOME/control-center` (ή `~/.local/share/control-center`) σ
 
 ### Αυτόνομος διακομιστής
 
-Κάθε έκδοση φέρει επίσης τον headless διακομιστή μεμονωμένα — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — μαζί με τα images `cc-server`, `cc-webapp` και `cc-remote` στο GHCR. Δείτε την [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
+Κάθε έκδοση φέρει επίσης τον headless διακομιστή μεμονωμένα — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — μαζί με τα images `cc-server`, `cc-webapp` και `cc-remote` στο GHCR. Δείτε την [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
 
 Το αρχείο Linux είναι χτισμένο σε Ubuntu 22.04 και οι εγγενείς βιβλιοθήκες που περιλαμβάνει συνδέονται με τη glibc 2.35 και τη libstdc++ του GCC 12, οπότε χρειάζεται ξενιστή τουλάχιστον τόσο πρόσφατο (Ubuntu 22.04, Debian 12, Fedora 36 ή νεότερο). Σε παλαιότερη διανομή εκτελέστε το image `cc-server` — ένα κοντέινερ φέρνει τον δικό του χώρο χρήστη, οπότε μόνο ο πυρήνας πρέπει να είναι δικός σας.
 

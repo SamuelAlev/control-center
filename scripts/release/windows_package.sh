@@ -2,7 +2,12 @@
 #
 # Packages the Windows desktop app (Inno + portable zip) with embedded
 # cc_server and staged natives. Verifies REQUIRED natives before archive.
-# Usage: scripts/release/windows_package.sh <version>
+# Usage: scripts/release/windows_package.sh <version> [x64|arm64]
+#
+# The architecture (default x64) selects Flutter's output dir
+# (build/windows/<arch>/runner/Release), the asset names, the cc_server bundle
+# (build/cli/windows_<arch>) and the Inno installer variant. Flutter cannot
+# cross-compile Windows, so the arm64 package is built on an Arm64 host.
 #
 set -euo pipefail
 
@@ -12,10 +17,19 @@ source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
 
 VERSION="${1:-${VERSION:?VERSION is required}}"
+ARCH="$(cc_windows_arch "${2:-x64}")"
 NATIVES="${NATIVES:-build/natives}"
-OUT="build/windows/x64/runner/Release"
-SETUP="dist/$(release_asset_name win-setup "$VERSION")"
-ZIP="dist/$(release_asset_name win-portable "$VERSION")"
+OUT="build/windows/$ARCH/runner/Release"
+case "$ARCH" in
+  x64)
+    SETUP="dist/$(release_asset_name win-setup "$VERSION")"
+    ZIP="dist/$(release_asset_name win-portable "$VERSION")"
+    ;;
+  arm64)
+    SETUP="dist/$(release_asset_name win-arm64-setup "$VERSION")"
+    ZIP="dist/$(release_asset_name win-arm64-portable "$VERSION")"
+    ;;
+esac
 
 [ -d "$OUT" ] || die "no Windows build at $OUT — run 'flutter build windows --release' first."
 mkdir -p dist
@@ -32,7 +46,7 @@ stage_natives "$NATIVES" "$OUT" dll
 #
 # Whatever `builtin_credentials.sh inject` wrote is compiled in here, so that
 # step has to precede this one (a bundle built earlier is reused as-is).
-CC_SERVER_BUNDLE="$(ensure_cc_server_bundle windows)"
+CC_SERVER_BUNDLE="$(ensure_cc_server_bundle windows "$ARCH")"
 log "Embedding cc_server backend"
 rm -rf "$OUT/cc_server"
 mkdir -p "$OUT/cc_server"
@@ -46,6 +60,16 @@ stage_natives "$NATIVES" "$OUT/cc_server/bin" dll
 # to the runtime table by test/tooling/native_matrix_test.dart.
 bash scripts/release/verify_natives.sh "$OUT" windows desktop
 bash scripts/release/verify_natives.sh "$OUT/cc_server/bin" windows server
+# arm64: every PE image in the app directory — the runner, Flutter's and every
+# plugin's DLLs, our natives, the embedded cc_server — must be an Arm64 image.
+# Presence is not loadability: an x64 DLL (a plugin that downloads an x64-only
+# prebuilt, a compiler that defaulted to x86_64) passes every check above and
+# then fails LoadLibrary in the user's Arm64 process. The x64 package keeps its
+# existing checks: built on an x64 host, a stray image there can only be a
+# separately launched helper, which x64 Windows runs fine.
+if [ "$ARCH" = arm64 ]; then
+  assert_pe_machine "$ARCH" "$OUT"
+fi
 
 # 3b. Legal notices beside the executable, so both the installer (which copies
 # this tree) and the portable zip carry them.
@@ -69,7 +93,9 @@ else
   #   You may not specify more than one script filename.
   # // collapses to a single slash because the remainder is slash-free — the
   # same convention as windows_natives.sh's MSVC calls.
-  "$ISCC" "//DAppVersion=$VERSION" "windows/installer/control_center.iss"
+  # TargetArch picks the installer variant (architecture gate, source dir and
+  # output name) — see control_center.iss.
+  "$ISCC" "//DAppVersion=$VERSION" "//DTargetArch=$ARCH" "windows/installer/control_center.iss"
   [ -f "$SETUP" ] || die "ISCC produced no $SETUP"
 
   # 4b. Authenticode signing — inside the script, like macOS signs inside

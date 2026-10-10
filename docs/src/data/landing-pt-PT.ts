@@ -341,7 +341,7 @@ export const ptPt: LandingCopy = {
     description:
       "O teu próximo dia de desenvolvimento pode começar aqui. Gratuito e de código aberto.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Ver as versões",
     web: "Abrir a aplicação web",

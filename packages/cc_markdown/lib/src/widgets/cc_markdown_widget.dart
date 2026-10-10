@@ -13,14 +13,17 @@ import 'package:flutter/widgets.dart';
 /// One-shot markdown rendering with an always-on process-global parse cache.
 ///
 /// The parse is cached by `(data, plugins identity)` — re-rendering the same
-/// content never re-parses, plugins or not. Render-from-AST is cheap and
-/// runs per build (styles/theme can change between builds).
+/// content never re-parses, plugins or not. The AST → widget render is
+/// memoized per element on everything it reads (the identical parse, the
+/// style by value, the builders and callbacks by identity), so a parent
+/// rebuild that changes none of them hands back the identical subtree and
+/// `Element.update` skips it.
 ///
 /// When an ancestor owns selection (one region per feed, marked by
 /// [CcSelectionScope]), the widget renders plain non-selectable text under
 /// it; otherwise `selectable: true` wraps this document in its own
 /// [CcSelectionRegion].
-class CcMarkdown extends StatelessWidget {
+class CcMarkdown extends StatefulWidget {
   /// Creates a [CcMarkdown].
   const CcMarkdown({
     required this.data,
@@ -82,27 +85,76 @@ class CcMarkdown extends StatelessWidget {
   final bool ephemeral;
 
   @override
-  Widget build(BuildContext context) {
-    final List<CcBlockNode> nodes = ephemeral
-        ? CcMarkdownCache.parseEphemeral(data, plugins, options: options)
-        : CcMarkdownCache.parseCached(data, plugins, options: options);
+  State<CcMarkdown> createState() => _CcMarkdownState();
+}
 
-    final resolvedStyle = style ?? const CcMarkdownStyle();
-    final renderer = CcRenderer(style: resolvedStyle, builders: builders);
+class _CcMarkdownState extends State<CcMarkdown> {
+  /// The last rendered subtree and everything it was rendered from. Held by
+  /// IDENTITY except the style (value-equal styles rebuilt from the same
+  /// tokens are a non-event): a parent passing a NEW callback closure must
+  /// re-render, or the memoized subtree keeps firing the stale one.
+  Widget? _memo;
+  List<CcBlockNode>? _memoNodes;
+  CcMarkdownStyle? _memoStyle;
+  CcBuilderRegistry? _memoBuilders;
+  void Function(String url)? _memoOnTapLink;
+  void Function(String url, String? alt, String? title)? _memoOnTapImage;
+  CcImageBuilder? _memoImageBuilder;
+  CcCodeBuilder? _memoCodeBuilder;
+  void Function(int index, bool checked)? _memoOnTaskCheckboxChanged;
+  bool? _memoSelectable;
+  bool? _memoRepaintBoundary;
+
+  @override
+  Widget build(BuildContext context) {
+    final widget = this.widget;
+    final List<CcBlockNode> nodes = widget.ephemeral
+        ? CcMarkdownCache.parseEphemeral(
+            widget.data,
+            widget.plugins,
+            options: widget.options,
+          )
+        : CcMarkdownCache.parseCached(
+            widget.data,
+            widget.plugins,
+            options: widget.options,
+          );
+
+    final resolvedStyle = widget.style ?? const CcMarkdownStyle();
     final ancestorOwnsSelection = CcSelectionScope.of(context);
+    final selectable = widget.selectable && !ancestorOwnsSelection;
+    final memo = _memo;
+    if (memo != null &&
+        identical(_memoNodes, nodes) &&
+        _memoStyle == resolvedStyle &&
+        identical(_memoBuilders, widget.builders) &&
+        identical(_memoOnTapLink, widget.onTapLink) &&
+        identical(_memoOnTapImage, widget.onTapImage) &&
+        identical(_memoImageBuilder, widget.imageBuilder) &&
+        identical(_memoCodeBuilder, widget.codeBuilder) &&
+        identical(_memoOnTaskCheckboxChanged, widget.onTaskCheckboxChanged) &&
+        _memoSelectable == selectable &&
+        _memoRepaintBoundary == widget.useRepaintBoundary) {
+      return memo;
+    }
+
+    final renderer = CcRenderer(
+      style: resolvedStyle,
+      builders: widget.builders,
+    );
     final rendered = renderer.render(
       nodes,
       context: CcRenderContext(
         style: resolvedStyle,
-        onTapLink: onTapLink,
-        onTapImage: onTapImage,
-        imageBuilder: imageBuilder,
-        codeBuilder: codeBuilder,
-        onTaskCheckboxChanged: onTaskCheckboxChanged,
-        taskCheckboxCursor: onTaskCheckboxChanged == null
+        onTapLink: widget.onTapLink,
+        onTapImage: widget.onTapImage,
+        imageBuilder: widget.imageBuilder,
+        codeBuilder: widget.codeBuilder,
+        onTaskCheckboxChanged: widget.onTaskCheckboxChanged,
+        taskCheckboxCursor: widget.onTaskCheckboxChanged == null
             ? null
             : CcTaskCheckboxCursor(),
-        selectable: selectable && !ancestorOwnsSelection,
+        selectable: selectable,
         footnotes: [
           for (final node in nodes)
             if (node is CcFootnoteDef) node,
@@ -110,12 +162,21 @@ class CcMarkdown extends StatelessWidget {
       ),
     );
 
-    final content = (selectable && !ancestorOwnsSelection)
-        ? CcSelectionRegion(child: rendered)
-        : rendered;
-    if (useRepaintBoundary) {
-      return RepaintBoundary(child: content);
-    }
-    return content;
+    final content = selectable ? CcSelectionRegion(child: rendered) : rendered;
+    final result = widget.useRepaintBoundary
+        ? RepaintBoundary(child: content)
+        : content;
+    _memo = result;
+    _memoNodes = nodes;
+    _memoStyle = resolvedStyle;
+    _memoBuilders = widget.builders;
+    _memoOnTapLink = widget.onTapLink;
+    _memoOnTapImage = widget.onTapImage;
+    _memoImageBuilder = widget.imageBuilder;
+    _memoCodeBuilder = widget.codeBuilder;
+    _memoOnTaskCheckboxChanged = widget.onTaskCheckboxChanged;
+    _memoSelectable = selectable;
+    _memoRepaintBoundary = widget.useRepaintBoundary;
+    return result;
   }
 }

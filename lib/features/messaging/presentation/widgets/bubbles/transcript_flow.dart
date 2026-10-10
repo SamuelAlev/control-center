@@ -14,6 +14,8 @@ import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
 import 'package:flutter/widgets.dart';
 
+part 'transcript_flow_prose.dart';
+
 /// Agent turn as chronological inline flow (reasoning, tools, answer).
 ///
 /// Persisted ordered segments; tools as [TranscriptSegmentRow]. Parent rebuilds
@@ -56,15 +58,29 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
   final Map<int, (TranscriptSegment, Widget)> _memo = {};
   String? _memoFont;
 
+  /// Per-index keys for the prose and reasoning rows. A row that closes moves
+  /// from under its delta listener to the plain closed slot; the key carries
+  /// its element (and the streaming renderer's sealed-block memo) along, so
+  /// closing finalizes the text in place instead of re-parsing and relaying
+  /// out the whole answer in one frame. Separate maps per row type: a key is
+  /// only ever attached to one widget type. Only allocated once this flow has
+  /// been live: a persisted transcript never closes a row.
+  final Map<int, GlobalKey> _proseKeys = {};
+  final Map<int, GlobalKey> _reasoningKeys = {};
+  bool _everLive = false;
+
   @override
   Widget build(BuildContext context) {
     if (_memoFont != widget.codeFont) {
       _memo.clear();
       _memoFont = widget.codeFont;
     }
+    _everLive = _everLive || widget.isLive;
     final segments = widget.segments;
     // A revert/re-seed can shrink the list; drop stale trailing entries.
     _memo.removeWhere((i, _) => i >= segments.length);
+    _proseKeys.removeWhere((i, _) => i >= segments.length);
+    _reasoningKeys.removeWhere((i, _) => i >= segments.length);
 
     final children = <Widget>[];
     TranscriptSegment? prev;
@@ -104,7 +120,7 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
     if (widget.isLive && _isOpen(seg)) {
       _memo.remove(index);
       if (live == null) {
-        return _renderSegment(seg, open: true);
+        return _renderSegment(index, seg, open: true);
       }
       // The open row re-reads its own segment per delta pulse; the registry
       // materializes only that index and Flutter coalesces pulses into one
@@ -118,7 +134,7 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
           valueListenable: live.tail,
           builder: (context, _, _) {
             final current = live.segmentAt(index) ?? seg;
-            return _renderSegment(current, open: true) ??
+            return _renderSegment(index, current, open: true) ??
                 const SizedBox.shrink();
           },
         ),
@@ -129,7 +145,7 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
     if (memoed != null && memoed.$1 == seg) {
       return memoed.$2;
     }
-    final rendered = _renderSegment(seg, open: false);
+    final rendered = _renderSegment(index, seg, open: false);
     if (rendered == null) {
       _memo.remove(index);
       return null;
@@ -147,14 +163,22 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
     ErrorSegment() || ViolationSegment() => false,
   };
 
-  Widget? _renderSegment(TranscriptSegment seg, {required bool open}) {
+  Widget? _renderSegment(
+    int index,
+    TranscriptSegment seg, {
+    required bool open,
+  }) {
     switch (seg) {
       case TextSegment(:final text):
+        final key = _everLive
+            ? _proseKeys.putIfAbsent(index, GlobalKey.new)
+            : null;
         if (open) {
           // Streaming answer prose: fence-safe prefix/tail split so a delta
           // never re-parses the whole accumulated text (see
           // `CcStreamingMarkdown`).
           return TurnProse(
+            key: key,
             content: text,
             codeFont: widget.codeFont,
             streaming: true,
@@ -163,12 +187,15 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
         if (text.trim().isEmpty) {
           return null;
         }
-        return TurnProse(content: text, codeFont: widget.codeFont);
+        return TurnProse(key: key, content: text, codeFont: widget.codeFont);
       case ReasoningSegment(:final text):
         if (!open && text.trim().isEmpty) {
           return null;
         }
         return _ReasoningBlock(
+          key: _everLive
+              ? _reasoningKeys.putIfAbsent(index, GlobalKey.new)
+              : null,
           segment: seg,
           codeFont: widget.codeFont,
           streaming: open,
@@ -241,36 +268,11 @@ class TurnProse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = appMarkdownStyle(context, codeFontFamily: codeFont);
-    Widget codeBuilder(String code, String? language, {required bool cache}) =>
-        buildSharedCodeBlock(
-          context,
-          code,
-          language,
-          codeFontFamily: codeFont,
-          cache: cache,
-        );
-    if (streaming) {
-      return CcStreamingMarkdown.value(
-        data: content,
-        selectable: true,
-        style: style,
-        plugins: chatMarkdownPlugins,
-        options: chatMarkdownOptions,
-        builders: chatMarkdownBuilders,
-        imageBuilder: appMarkdownImageBuilder,
-        codeBuilder: codeBuilder,
-      );
-    }
-    return CcMarkdown(
+    return _ChatProseMarkdown(
       data: content,
-      selectable: true,
-      style: style,
-      plugins: chatMarkdownPlugins,
-      options: chatMarkdownOptions,
-      builders: chatMarkdownBuilders,
-      imageBuilder: appMarkdownImageBuilder,
-      codeBuilder: codeBuilder,
+      style: appMarkdownStyle(context, codeFontFamily: codeFont),
+      codeBuilder: sharedCodeBuilder(codeFontFamily: codeFont),
+      streaming: streaming,
     );
   }
 }
@@ -282,6 +284,7 @@ class TurnProse extends StatelessWidget {
 /// watches it think.
 class _ReasoningBlock extends StatefulWidget {
   const _ReasoningBlock({
+    super.key,
     required this.segment,
     required this.codeFont,
     required this.streaming,
@@ -297,6 +300,13 @@ class _ReasoningBlock extends StatefulWidget {
 
 class _ReasoningBlockState extends State<_ReasoningBlock> {
   bool? _userExpanded;
+
+  /// The muted prose style and the base it was derived from. Re-derived only
+  /// when the base changes: a fresh `copyWith` per build is value-equal but a
+  /// new instance, and the markdown memo below is keyed on it.
+  CcMarkdownStyle? _mutedBase;
+  Color? _mutedColor;
+  CcMarkdownStyle? _muted;
 
   bool get _expanded => widget.streaming || (_userExpanded ?? true);
 
@@ -329,9 +339,14 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
       codeFontFamily: widget.codeFont,
       compact: true,
     );
-    final muted = base.copyWith(
-      paragraph: base.paragraph?.copyWith(color: tokens.textSecondary),
-    );
+    if (!identical(_mutedBase, base) || _mutedColor != tokens.textSecondary) {
+      _mutedBase = base;
+      _mutedColor = tokens.textSecondary;
+      _muted = base.copyWith(
+        paragraph: base.paragraph?.copyWith(color: tokens.textSecondary),
+      );
+    }
+    final muted = _muted!;
 
     return Container(
       decoration: BoxDecoration(
@@ -368,39 +383,12 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
             expanded: expanded,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: widget.streaming
-                  ? CcStreamingMarkdown.value(
-                      data: widget.segment.text,
-                      selectable: true,
-                      style: muted,
-                      plugins: chatMarkdownPlugins,
-                      options: chatMarkdownOptions,
-                      builders: chatMarkdownBuilders,
-                      imageBuilder: appMarkdownImageBuilder,
-                      codeBuilder: (code, language, {required bool cache}) =>
-                          buildSharedCodeBlock(
-                            context,
-                            code,
-                            language,
-                            cache: cache,
-                          ),
-                    )
-                  : CcMarkdown(
-                      data: widget.segment.text,
-                      selectable: true,
-                      style: muted,
-                      plugins: chatMarkdownPlugins,
-                      options: chatMarkdownOptions,
-                      builders: chatMarkdownBuilders,
-                      imageBuilder: appMarkdownImageBuilder,
-                      codeBuilder: (code, language, {required bool cache}) =>
-                          buildSharedCodeBlock(
-                            context,
-                            code,
-                            language,
-                            cache: cache,
-                          ),
-                    ),
+              child: _ChatProseMarkdown(
+                data: widget.segment.text,
+                style: muted,
+                codeBuilder: sharedCodeBuilder(),
+                streaming: widget.streaming,
+              ),
             ),
           ),
         ],

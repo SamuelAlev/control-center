@@ -198,9 +198,17 @@ extension _BuildMethods on _SpaceMessageFeedState {
     ThemeData theme,
   ) {
     if (window.hasMore && index == items.length) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(child: CcSpinner()),
+      // Past the window ceiling nothing can load, so a spinner there would
+      // just animate (a ticker and a repaint per frame) for as long as the
+      // reader sits at the top. Hold the row's place without it.
+      final canLoad =
+          ref.read(spaceFeedWindowProvider(widget.conversationId)) <
+          kSpaceFeedMaxWindow;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: canLoad
+            ? const Center(child: CcSpinner())
+            : const SizedBox.shrink(),
       );
     }
     final item = items[items.length - 1 - index];
@@ -221,7 +229,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
           kept.message == m.message &&
           kept.collapseHeader == m.collapseHeader &&
           kept.highlighted == highlighted &&
-          identical(kept.onOpenThread, openThread) &&
+          (kept.onOpenThread == null) == (openThread == null) &&
           (kept.onStartThread == null) == (startThread == null)) {
         content = kept.child;
       } else {
@@ -231,7 +239,9 @@ extension _BuildMethods on _SpaceMessageFeedState {
           onStartThread: startThread == null
               ? null
               : () => widget.onStartThread!(m.message),
-          onOpenThread: openThread,
+          // Parents rebuild with a fresh closure on every layout build, so
+          // rows call through the State instead of capturing the instance.
+          onOpenThread: openThread == null ? null : _openThread,
         );
         content = highlighted ? Highlight(child: bubble) : bubble;
         _keptRows[m.message.id] = _KeptFeedRow(

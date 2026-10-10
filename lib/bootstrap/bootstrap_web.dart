@@ -525,6 +525,42 @@ class _WebRootState extends State<_WebRoot> {
     });
   }
 
+  /// Leaves a lost server for the connect gate (the lost-connection dialog's
+  /// sign-in action). Unlike [_disconnect] the pairing stays stored, so the
+  /// gate can reconnect to it or pair with another server.
+  Future<void> _returnToGate() async {
+    await _statusSub?.cancel();
+    _statusSub = null;
+    final old = _connection;
+    // Pre-fill the gate with the stored pairing, so Connect retries this
+    // server in one click.
+    final entry = old?.entry ?? _store.readActive();
+    final psk = entry == null ? null : await _store.readPsk(entry.serverId);
+    if (!mounted) {
+      await old?.dispose();
+      return;
+    }
+    setState(() {
+      if (entry != null) {
+        _hints = _Creds(
+          server:
+              entry.descriptor.paths.firstOrNull?.rpcUri?.toString() ??
+              _hints.server,
+          device: entry.deviceId,
+          psk: psk,
+        );
+      }
+      _connection = null;
+      _activeWorkspaceId = null;
+      _phase = _Phase.disconnected;
+      _error = null;
+    });
+    // After the frame that unmounts `_ConnectedApp`, as in [_adopt].
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) => unawaited(old?.dispose()))
+      ..ensureVisualUpdate();
+  }
+
   @override
   void dispose() {
     _statusSub?.cancel();
@@ -545,6 +581,7 @@ class _WebRootState extends State<_WebRoot> {
           connection: _connection!,
           activeWorkspaceId: _activeWorkspaceId,
           onDisconnect: _disconnect,
+          onReturnToGate: _returnToGate,
           onSwitchServer: _switchTo,
         ),
         _ when !_bootResolved => const Center(child: CcSpinner()),
@@ -586,12 +623,14 @@ class _ConnectedApp extends StatelessWidget {
     required this.connection,
     required this.activeWorkspaceId,
     required this.onDisconnect,
+    required this.onReturnToGate,
     required this.onSwitchServer,
   });
 
   final RemoteServerConnection connection;
   final String? activeWorkspaceId;
   final VoidCallback onDisconnect;
+  final Future<void> Function() onReturnToGate;
   final Future<void> Function(String serverId) onSwitchServer;
 
   @override
@@ -617,6 +656,7 @@ class _ConnectedApp extends StatelessWidget {
           connection.supervisor,
         ),
         serverSwitchHandlerProvider.overrideWithValue(onSwitchServer),
+        returnToServerSignInProvider.overrideWithValue(onReturnToGate),
         // localStorage-backed so web preferences (theme, the server list, …)
         // survive a reload. Shares `_webBackend` with the connect gate's
         // `_store`, so a change made in Settings is read on next boot.

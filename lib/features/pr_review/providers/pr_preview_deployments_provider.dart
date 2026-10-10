@@ -17,7 +17,11 @@ final prPreviewDeploymentsProvider = Provider.autoDispose
     .family<List<DeploymentPreview>, PrRef>((ref, pr) {
       final statusesAsync = ref.watch(prCommitStatusesProvider(pr));
       final comments = ref.watch(prIssueCommentsProvider(pr)).value;
-      final prEntity = ref.watch(prDetailProvider(pr)).value;
+      // Only the body feeds detection; a title/label/head update must not
+      // re-run the detector (and re-reconcile the preview tabs).
+      final prBody = ref.watch(
+        prDetailProvider(pr).select((d) => d.value?.body),
+      );
 
       // The Statuses stream is the primary signal; hold off until it has first
       // resolved (data OR error) so a comment-only false positive can't flash a
@@ -29,7 +33,7 @@ final prPreviewDeploymentsProvider = Provider.autoDispose
       final statuses = statusesAsync.value ?? const [];
 
       final texts = <String>[
-        if (prEntity != null && prEntity.body.isNotEmpty) prEntity.body,
+        if (prBody != null && prBody.isNotEmpty) prBody,
         for (final c in comments ?? const <IssueComment>[]) c.body,
       ];
 

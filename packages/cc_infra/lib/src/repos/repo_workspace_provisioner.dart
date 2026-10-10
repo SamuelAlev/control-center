@@ -13,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart'
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/settings/domain/services/branch_template_resolver.dart';
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:path/path.dart' as p;
@@ -755,8 +756,20 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       await _removeSpaceDir(workspaceId, spaceId);
     }
     reaped += await _sweepOrphanSpaceDirs(workspaceId);
+    // Teardown discards each worktree's warm review index; this catches the
+    // ones left by worktrees removed some other way. The files sit in one
+    // temp dir for every workspace, so this sweep prunes all of them: they
+    // are caches holding nothing a workspace owns, and a pruned one only
+    // costs its next review a cold re-hash. Not counted as reaped worktrees.
+    final pruned = pruneWorkingTreeCaptures(olderThan: _captureIndexMaxAge);
+    if (pruned > 0) {
+      CcInfraLog.info('sweepStale: pruned $pruned idle review index file(s)');
+    }
     return reaped;
   }
+
+  /// Idle time after which a sweep deletes a worktree's warm review index.
+  static const _captureIndexMaxAge = Duration(days: 7);
 
   /// Deletes the workspace's obsolete `conversations/` tree.
   ///

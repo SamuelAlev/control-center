@@ -47,14 +47,8 @@ class BubbleBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget codeBuilder(String code, String? language, {required bool cache}) =>
-        buildSharedCodeBlock(
-          context,
-          code,
-          language,
-          codeFontFamily: codeFont,
-          cache: cache,
-        );
+    // Interned per font: the markdown memos key on the builder's identity.
+    final codeBuilder = sharedCodeBuilder(codeFontFamily: codeFont);
     final style = appMarkdownStyle(context, codeFontFamily: codeFont);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

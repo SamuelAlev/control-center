@@ -1,6 +1,6 @@
 # Releasing Control Center
 
-[`.github/workflows/release.yml`](.github/workflows/release.yml) builds macOS (Apple Silicon), Windows (x64) and Linux (x86_64) in parallel, then creates a **draft** GitHub Release. Review it before publishing; draft assets are invisible to the updater feeds.
+[`.github/workflows/release.yml`](.github/workflows/release.yml) builds macOS (Apple Silicon), Windows (x64 and native ARM64) and Linux (x86_64) in parallel, then creates a **draft** GitHub Release. Review it before publishing; draft assets are invisible to the updater feeds.
 
 ## Cut a release
 
@@ -14,9 +14,12 @@
 | --- | --- | --- |
 | macOS arm64 | `Control-Center-<v>-arm64.dmg` (Developer ID signed, notarized, stapled) | `cc_server-<v>-macos-arm64.tar.gz` (signed, notarized) |
 | Windows x64 | `Control-Center-<v>-x64-setup.exe` (per-user installer); `Control-Center-<v>-windows-x64.zip` (portable) | `cc_server-<v>-windows-x64.zip` (unsigned) |
+| Windows ARM64 | `Control-Center-<v>-arm64-setup.exe` (per-user installer); `Control-Center-<v>-windows-arm64.zip` (portable) | `cc_server-<v>-windows-arm64.zip` (unsigned) |
 | Linux x86_64 | `Control-Center-<v>-x86_64.AppImage` (with its `.zsync`) and `.tar.gz` | `cc_server-<v>-linux-x64.tar.gz` |
 
-`appcast.xml` and `appcast-windows.xml` are signed update feeds. The `containers` job publishes GHCR `cc-server`, `cc-webapp` and `cc-remote` images with SLSA attestations. [`scripts/lib/artifact_names.sh`](scripts/lib/artifact_names.sh) defines the exact artifact set; `make_release.sh` refuses to draft a partial set.
+`appcast.xml`, `appcast-windows.xml` (x64) and `appcast-windows-arm64.xml` (ARM64) are signed update feeds. The `containers` job publishes GHCR `cc-server`, `cc-webapp` and `cc-remote` images with SLSA attestations. [`scripts/lib/artifact_names.sh`](scripts/lib/artifact_names.sh) defines the exact artifact set; `make_release.sh` refuses to draft a partial set.
+
+**Windows ARM64** is a native build, not the x64 one under emulation. `build-windows` is a two-leg matrix: x64 on `windows-latest`, ARM64 on GitHub's `windows-11-arm` runner, each compiling the app and every native for its own host (Flutter cannot cross-compile Windows, and `windows_natives.sh` asserts that cargo's host triple, the MSVC environment and its own `x64|arm64` argument agree). The ARM64 leg uploads `windows-arm64` / `cc_server-windows-arm64`; natives.yml seeds a separate ARM64 cache. Its sherpa-onnx archive is the `win-arm64-static-MT-Release-lib` asset (`SHERPA_ONNX_LIB_SHA256_WIN_ARM64`), the tree-sitter grammars and CMake build target ARM64 explicitly, LAME comes from vcpkg's `arm64-windows-static`, and webrtc-audio-processing is compiled with `clang-cl` because its ARM64 denormal code is GCC-style inline assembly that MSVC cannot compile. `windows_natives.sh`, `verify_natives.sh --arch`, `windows_package.sh` and `cc_server_package.sh` check every PE image's machine type, so an x64 DLL can never satisfy the ARM64 set by name. One Inno script builds both installers (`/DTargetArch=x64|arm64`); they share the AppId and install directory, so the ARM64 installer upgrades an emulated x64 install in place.
 
 **First Windows release:** `build-windows` is enabled but has not produced a shipped artifact. Validate the installer, portable zip and standalone server zip manually before publishing. `scripts/release/windows_natives.sh` uses MSVC: `rift` is absent, so Windows uses `git worktree` as its backend. `cc_inference` links a static-CRT sherpa archive and builds with `RUSTFLAGS=-Ctarget-feature=+crt-static`. Windows is unsigned unless `WINDOWS_CERT` and `WINDOWS_CERT_PWD` are set.
 
@@ -48,7 +51,7 @@ Use `--repo`, not `--owner`, which accepts attestations from other repositories 
 Updates ask for confirmation and release notes; checks run after startup, every 24 hours and on demand. A prompt is deferred during meeting recording. Draft feeds cannot update clients.
 
 - **macOS:** Sparkle 2 replaces the entire `.app` (including embedded `cc_server` and natives). `appcast.xml` DMG enclosures use `sparkle:edSignature`. Stable feed items **must be untagged**: the bundled plugin does not opt in to `<sparkle:channel>stable</sparkle:channel>`.
-- **Windows:** WinSparkle launches the Inno `-x64-setup.exe` silently (`/SILENT /SP-`), not the portable zip. `appcast-windows.xml` uses `sparkle:dsaSignature` for WinSparkle 0.8.x. Its embedded server updates with the app.
+- **Windows:** WinSparkle launches the Inno installer silently (`/SILENT /SP-`), not the portable zip. WinSparkle 0.8.x cannot pick an appcast item by architecture, so each architecture has its own feed: `appcast-windows.xml` names the `-x64-setup.exe` and `appcast-windows-arm64.xml` the `-arm64-setup.exe`, and the app reads the one matching its process ABI. Both use `sparkle:dsaSignature`. Their `sparkle:version` is `<version>+<build>`, the exe's `FLUTTER_VERSION` resource: a bare `<version>` would compare as newer than the installed `<version>+<build>` and re-offer the same release on every launch. The embedded server updates with the app.
 - **Linux:** check opens the latest release page; no automatic install. The AppImage embeds `gh-releases-zsync` update information, so AppImageUpdate and appimaged update it in place from the latest release's `.zsync`, downloading only the changed blocks.
 - **Standalone `cc_server`:** never auto-updates. `cc_server update` checks, downloads, SHA256/SLSA-verifies and stages; `--apply` swaps the tree with a one-deep `.bak`. It rejects downgrades without `--allow-downgrade`, refuses when `CC_EMBEDDED`, and on Windows parks the running executable as `.old` before overlaying the verified tree. Docker users pull a new image.
 - **Hosted web and `cc_remote`:** `/deploy.json` prompts a consent-driven refresh. Do not rename it `version.json`: `fvm flutter build web` generates that file itself.
@@ -185,7 +188,7 @@ The workflow delegates to locally runnable scripts. Keep **every** `scripts/rele
 | `scripts/release/lint_appdir.sh` | AppImageHub's checks on the AppDir before `appimagetool`: layout, desktop entry, AppStream, ABI floor, library closure |
 | `scripts/release/cc_server_package.sh`, `scripts/release/cc_demo_server_package.sh` | Standalone server/demo archives |
 | `scripts/release/gen_third_party_licenses.sh` | Offline license notices |
-| `scripts/release/gen_appcast.sh` | Sign both updater feeds, checking committed public keys |
+| `scripts/release/gen_appcast.sh` | Sign the updater feeds (macOS, Windows x64, Windows ARM64), checking committed public keys |
 | `scripts/release/make_release.sh` | Assemble/check assets and create draft |
 | `tool/gen_build_info.dart`, `tool/gen_deploy_manifest.dart` | Shared build identity and hosted `/deploy.json` |
 | `scripts/build_web.sh`, `scripts/run_desktop.sh` | Local web build and embedded-server desktop launch |
@@ -200,4 +203,4 @@ bash scripts/release/dry_run.sh --os macos --version 1.2.3 --skip-natives # reus
 bash scripts/release/dry_run.sh --os macos --version 1.2.3 --skip-sign    # local only
 ```
 
-`--skip-sign` disables signing/notarization **only outside** `GITHUB_ACTIONS`; unsigned arm64 binaries cannot execute. To sign locally, export `MACOS_CERTIFICATE` (base64 `.p12`), `MACOS_CERTIFICATE_PWD`, `APPLE_ID`, `APPLE_TEAM_ID` and `APPLE_APP_PASSWORD` first. Windows dry runs require Git Bash, cargo/cmake/clang and an MSVC dev environment on `PATH`; vcpkg supplies `libmp3lame` unless `LAME_PREFIX` is set. If Inno Setup is unavailable, `SKIP_INSTALLER=1` still validates staging and creates the portable zip.
+`--skip-sign` disables signing/notarization **only outside** `GITHUB_ACTIONS`; unsigned arm64 binaries cannot execute. To sign locally, export `MACOS_CERTIFICATE` (base64 `.p12`), `MACOS_CERTIFICATE_PWD`, `APPLE_ID`, `APPLE_TEAM_ID` and `APPLE_APP_PASSWORD` first. Windows dry runs require Git Bash, cargo/cmake/clang and an MSVC dev environment on `PATH`; `--os windows --arch arm64` builds the ARM64 package and needs an ARM64 host, an ARM64 MSVC environment and `clang-cl`; vcpkg supplies `libmp3lame` unless `LAME_PREFIX` is set. If Inno Setup is unavailable, `SKIP_INSTALLER=1` still validates staging and creates the portable zip.

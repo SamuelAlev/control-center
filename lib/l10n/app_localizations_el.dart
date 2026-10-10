@@ -8076,6 +8076,53 @@ class AppLocalizationsEl extends AppLocalizations {
       'Δεν υπάρχει ακόμη πρακτικό για σύνοψη.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Δημιουργήστε τις από το πρακτικό ή γράψτε τις δικές σας.';
+
+  @override
+  String get meetingNotesGenerate => 'Δημιουργία σημειώσεων';
+
+  @override
+  String get meetingNotesWriteOwn => 'Γράψτε τις δικές σας';
+
+  @override
+  String get meetingNothingTranscribed => 'Δεν απομαγνητοφωνήθηκε τίποτα.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Δεν υπάρχει πρακτικό για σύνοψη, αλλά μπορείτε να κρατάτε τις δικές σας σημειώσεις.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Ομιλητές';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Ο χρόνος ομιλίας ανά ομιλητή εμφανίζεται μόλις υπάρξει πρακτικό.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count ακόμη';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share του χρόνου ομιλίας, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Όλα τα στοιχεία ενέργειας ολοκληρώθηκαν.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Προβολή όλων ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Οι σημειώσεις αντιγράφηκαν στο πρόχειρο ως Markdown.';
 
@@ -15436,4 +15483,51 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Ένας πράκτορας είναι μπλοκαρισμένος λόγω διαπιστευτηρίων';
+
+  @override
+  String get killTerminal => 'Τερματισμός τερματικού';
+
+  @override
+  String get stopAgentCommand => 'Διακοπή εντολής';
+
+  @override
+  String get agentCommandStopping => 'Διακοπή…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count δ';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Εντολή πράκτορα $command, εκτελείται για $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Η σύνδεση με τον διακομιστή χάθηκε';
+
+  @override
+  String get serverLostBody =>
+      'Το Control Center συνεχίζει να προσπαθεί να επανασυνδεθεί στο παρασκήνιο. Δοκιμάστε ξανά τώρα ή μεταβείτε στην οθόνη σύνδεσης για να επιλέξετε διακομιστή.';
+
+  @override
+  String get serverLostRetrying => 'Επανασύνδεση…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Επόμενη προσπάθεια σε $seconds δευτ.';
+  }
+
+  @override
+  String get serverLostReconnect => 'Δοκιμή επανασύνδεσης';
+
+  @override
+  String get serverLostSignIn => 'Μετάβαση στη σύνδεση';
+
+  @override
+  String get serverEndedTitle =>
+      'Δεν είναι δυνατή η επανασύνδεση με τον διακομιστή';
+
+  @override
+  String get shutdownSubtitleServer => 'Ο διακομιστής τερματίζεται';
 }

@@ -53,7 +53,8 @@ class ServerBackend {
   /// expressed as a proxy base (e.g. relay-only with no HTTP path).
   final MediaProxyConfig? mediaProxy;
 
-  /// Tears the whole backend down (used when switching servers in-app).
+  /// Tears the whole backend down (used when switching servers in-app). For
+  /// the local mode this also stops the spawned `cc_server` child.
   Future<void> dispose() async {
     if (local != null) {
       await local!.dispose();
@@ -63,32 +64,64 @@ class ServerBackend {
   }
 }
 
+/// Where [resolveServerBackend] gets each kind of backend from. The defaults
+/// spawn the bundled `cc_server`, connect to a paired server and show the
+/// pre-app setup window; tests pass fakes so the local-vs-remote decision is
+/// checked without a process, a socket or a window.
+class ServerBackendSources {
+  /// Creates the sources, defaulting each to the real implementation.
+  const ServerBackendSources({
+    this.startLocal = _localBackend,
+    this.connectRemote = _connectRemoteBackend,
+    this.runSetup = _runServerSetup,
+  });
+
+  /// Spawns the bundled `cc_server` and connects to it over loopback. The
+  /// ONLY way a local server process comes into existence.
+  final Future<ServerBackend> Function() startLocal;
+
+  /// Connects to a paired remote server with its stored pairing key.
+  final Future<ServerBackend> Function(
+    ServerConnectionStore store,
+    ServerEntry entry,
+    String psk,
+  )
+  connectRemote;
+
+  /// Shows the pre-app setup screen (optionally with the error that sent
+  /// the boot there) and resolves with the backend the user's choice made.
+  final Future<ServerBackend> Function(
+    ServerConnectionStore store, {
+    Object? error,
+  })
+  runSetup;
+}
+
 /// Resolves how the desktop reaches its `cc_server`, returning a connected [ServerBackend].
 /// The desktop opens no database — it must connect to a server that owns the data.
 /// the [ReachabilityResolver] (best reachable + secure path wins) with the keychain-stored
 /// pairing key and the TOFU-pinned fingerprint.
+///
+/// The bundled server is spawned ONLY when local is the target: a boot whose
+/// persisted mode is remote, or a switch to a paired server, never starts one.
+///
+/// [forceServerId] is the in-app switch (`DesktopServerSwitcher.switchTo`):
+/// see [_switchServerBackend] for how it differs from a boot.
 Future<ServerBackend> resolveServerBackend({
   required AppPreferences prefs,
   required SecureStore secureStore,
   String? forceServerId,
+  ServerBackendSources sources = const ServerBackendSources(),
 }) async {
   final store = ServerConnectionStore(prefs, secureStore);
 
   if (forceServerId != null) {
-    if (forceServerId == localServerId) {
-      await store.setMode(ServerConnectionMode.local);
-    } else {
-      final entry = store.entry(forceServerId);
-      if (entry != null) {
-        await store.setMode(ServerConnectionMode.remote);
-        await store.setActiveServer(forceServerId);
-      }
-    }
+    return _switchServerBackend(store, forceServerId, sources);
   }
 
   if (!store.isConfigured) {
     // First run: ask the user how Control Center should run.
-    return _runServerSetup(store);
+    return sources.runSetup(store);
   }
 
   if (store.readMode() == ServerConnectionMode.local) {
@@ -98,10 +131,10 @@ Future<ServerBackend> resolveServerBackend({
     // with the error so the user can retry locally or switch to a remote
     // server, instead of crashing the boot.
     try {
-      return await _localBackend();
+      return await sources.startLocal();
     } on Object catch (e) {
       AppLog.w('cc_server', 'local server start failed, asking user: $e');
-      return _runServerSetup(store, error: e);
+      return sources.runSetup(store, error: e);
     }
   }
 
@@ -119,17 +152,76 @@ Future<ServerBackend> resolveServerBackend({
       // credential into a silent, windowless boot.
       final psk = await store.readPsk(entry.serverId);
       if (psk != null && psk.isNotEmpty) {
-        return _remoteBackend(
-          await connectToEntry(store: store, entry: entry, psk: psk),
-        );
+        return await sources.connectRemote(store, entry, psk);
       }
     } on Object catch (e) {
       AppLog.w('cc_server', 'remote connect failed, asking user: $e');
-      return _runServerSetup(store, error: e);
+      return sources.runSetup(store, error: e);
     }
   }
-  return _runServerSetup(store);
+  return sources.runSetup(store);
 }
+
+/// The in-app switch to [serverId] (a paired server id, or [localServerId]).
+///
+/// Unlike a boot, the app is already running on another session that stays
+/// live until this one has connected, so:
+///  * a failure THROWS for the settings UI to show. It never falls back to
+///    the setup screen, which replaces the whole running app and offers
+///    "Run locally" — a second bundled server against the same data dir.
+///  * an unknown server id throws instead of falling through to the persisted
+///    mode, which spawned a second bundled server when that mode was local.
+///  * the choice is persisted only once the new backend is up, so a failed
+///    switch leaves the next boot (and the settings list) on the session that
+///    is actually live.
+///
+/// The bundled server is spawned only for [localServerId]; switching to a
+/// paired server never starts one. The local child of the session being left
+/// is stopped when the caller disposes that session.
+Future<ServerBackend> _switchServerBackend(
+  ServerConnectionStore store,
+  String serverId,
+  ServerBackendSources sources,
+) async {
+  final ServerBackend backend;
+  final Future<void> Function() persist;
+  if (serverId == localServerId) {
+    backend = await sources.startLocal();
+    persist = () => store.setMode(ServerConnectionMode.local);
+  } else {
+    final entry = store.entry(serverId);
+    if (entry == null) {
+      throw StateError('No paired server with id "$serverId".');
+    }
+    final psk = await store.readPsk(serverId);
+    if (psk == null || psk.isEmpty) {
+      throw StateError(
+        'No pairing key is stored for ${entry.name}. Pair with it again.',
+      );
+    }
+    backend = await sources.connectRemote(store, entry, psk);
+    persist = () async {
+      await store.setMode(ServerConnectionMode.remote);
+      await store.setActiveServer(serverId);
+    };
+  }
+  try {
+    await persist();
+  } on Object {
+    // The caller never sees this backend, so nobody else would stop a local
+    // child it spawned.
+    await backend.dispose();
+    rethrow;
+  }
+  return backend;
+}
+
+Future<ServerBackend> _connectRemoteBackend(
+  ServerConnectionStore store,
+  ServerEntry entry,
+  String psk,
+) async =>
+    _remoteBackend(await connectToEntry(store: store, entry: entry, psk: psk));
 
 ServerBackend _remoteBackend(RemoteServerConnection connection) =>
     ServerBackend(
@@ -158,6 +250,21 @@ Future<ServerBackend> _localBackend() async {
 Future<ServerBackend> _runServerSetup(
   ServerConnectionStore store, {
   Object? error,
+}) => showServerSetup(store, error: error);
+
+/// Shows the server setup window in place of whatever the root view renders
+/// and resolves with the backend the user's choice produced.
+///
+/// The boot path reaches it through [resolveServerBackend]; the running app
+/// returns here when the user leaves a lost server for the sign-in screen
+/// (`DesktopServerSwitcher.returnToSetup`). [previousSessionClosed] completes
+/// once the session being left is torn down: "Run locally" waits for it, so
+/// the bundled server it starts never overlaps the one being stopped on the
+/// same data directory.
+Future<ServerBackend> showServerSetup(
+  ServerConnectionStore store, {
+  Object? error,
+  Future<void>? previousSessionClosed,
 }) {
   final completer = Completer<ServerBackend>();
   // Render in a real native window via `runServerSetupWindow` — NOT a bare
@@ -169,6 +276,7 @@ Future<ServerBackend> _runServerSetup(
     _ServerSetupApp(
       store: store,
       initialError: error,
+      previousSessionClosed: previousSessionClosed,
       onResolved: completer.complete,
     ),
   );
@@ -182,11 +290,13 @@ class _ServerSetupApp extends StatelessWidget {
   const _ServerSetupApp({
     required this.store,
     required this.initialError,
+    required this.previousSessionClosed,
     required this.onResolved,
   });
 
   final ServerConnectionStore store;
   final Object? initialError;
+  final Future<void>? previousSessionClosed;
   final ValueChanged<ServerBackend> onResolved;
 
   @override
@@ -203,6 +313,7 @@ class _ServerSetupApp extends StatelessWidget {
           final screen = _ServerSetupScreen(
             store: store,
             initialError: initialError,
+            previousSessionClosed: previousSessionClosed,
             onResolved: onResolved,
           );
           return WidgetsApp(
@@ -244,11 +355,16 @@ class _ServerSetupScreen extends StatefulWidget {
   const _ServerSetupScreen({
     required this.store,
     required this.initialError,
+    required this.previousSessionClosed,
     required this.onResolved,
   });
 
   final ServerConnectionStore store;
   final Object? initialError;
+
+  /// Completes once the app session this screen replaced is torn down (null
+  /// on boot, where there was none). Gates the local spawn.
+  final Future<void>? previousSessionClosed;
   final ValueChanged<ServerBackend> onResolved;
 
   @override
@@ -476,8 +592,16 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
     });
     try {
       if (_mode == ServerConnectionMode.local) {
+        await widget.previousSessionClosed;
         final backend = await _localBackend();
-        await widget.store.setMode(ServerConnectionMode.local);
+        try {
+          await widget.store.setMode(ServerConnectionMode.local);
+        } on Object {
+          // The form stays up with the error, and the user may now choose a
+          // remote server instead: the child spawned above must not survive.
+          await backend.dispose();
+          rethrow;
+        }
         widget.onResolved(backend);
         return;
       }

@@ -330,7 +330,7 @@ export const tr: LandingCopy = {
     description:
       "Sonraki geliştirici günün burada başlayabilir. Ücretsiz ve açık kaynak.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Sürümleri gör",
     web: "Web uygulamasını aç",

@@ -1,0 +1,41 @@
+diff --git a/cxx_impl/src/platform/windows/window_manager_windows.cpp b/cxx_impl/src/platform/windows/window_manager_windows.cpp
+index cf08eb401b0ad974ecc98474ecb75563a609657a..af3b65fe101a984dd69eb1aaedb235859ac67073 100644
+--- a/cxx_impl/src/platform/windows/window_manager_windows.cpp
++++ b/cxx_impl/src/platform/windows/window_manager_windows.cpp
+@@ -223,6 +223,14 @@ using PFN_ShowWindowAsync = BOOL(WINAPI*)(HWND, int);
+ static PFN_ShowWindow g_original_show_window = nullptr;
+ static PFN_ShowWindowAsync g_original_show_window_async = nullptr;
+ static bool g_hooks_installed = false;
++// Control Center patch: the thread that installed the show/hide hooks. The IAT
++// patch below rewrites ShowWindow in EVERY loaded module, so it also runs for
++// windows that third-party DLLs create and show on their own UI threads
++// (WinSparkle's update dialog, for one). The will-show/will-hide hooks are
++// bound to that installing thread (the Dart binding wraps them in an
++// isolate-local NativeCallable, which aborts the process when entered from any
++// other thread), and the windows they style all live on it.
++static DWORD g_hooks_thread = 0;
+ 
+ static bool IsShowCommand(int cmd) {
+   switch (cmd) {
+@@ -241,6 +249,13 @@ static bool IsShowCommand(int cmd) {
+ // Intercept show/hide commands and invoke hooks if registered
+ // Returns true if hook handled the operation (skip original implementation)
+ static bool TryHandleWithHook(HWND hwnd, int cmd) {
++  // Control Center patch: leave other threads' calls and windows to the real
++  // ShowWindow. Checked before GetWindowIdFromHwnd, which would otherwise
++  // allocate an ID for (and register) a foreign thread's window.
++  const DWORD thread = GetCurrentThreadId();
++  if (thread != g_hooks_thread || GetWindowThreadProcessId(hwnd, nullptr) != thread) {
++    return false;
++  }
+   WindowId window_id = GetWindowIdFromHwnd(hwnd);
+   if (window_id == IdAllocator::kInvalidId) {
+     return false;
+@@ -451,6 +466,7 @@ static void InstallHooks() {
+     }
+   });
+ 
++  g_hooks_thread = GetCurrentThreadId();
+   g_hooks_installed = true;
+ }
+ 

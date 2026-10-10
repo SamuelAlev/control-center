@@ -60,11 +60,10 @@ class PrDetailActions extends ConsumerWidget {
     final permissionAsync = ref.watch(
       repoPermissionProvider((owner: owner, repo: repoName)),
     );
-    final hasWriteAccess =
-        permissionAsync.whenOrNull(
-          data: (perm) => perm == 'admin' || perm == 'write',
-        ) ??
-        false;
+    // `.value`, not `whenOrNull(data:)`: a refetch must not read as "no
+    // access" and blink the merge/close actions out.
+    final permission = permissionAsync.value;
+    final hasWriteAccess = permission == 'admin' || permission == 'write';
 
     final checksAsync = ref.watch(prCheckRunsProvider(prRef));
     final reviewsAsync = ref.watch(prReviewsProvider(prRef));

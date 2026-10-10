@@ -178,6 +178,39 @@ class EditorTabGroupController extends ChangeNotifier {
     return true;
   }
 
+  /// Swaps the tab at [index] for [instance] when the two describe the same
+  /// tab (same kind, dedup key, label and args), keeping the selection.
+  /// Returns whether the swap happened.
+  ///
+  /// The inverse of [refreshTabAt]'s guard: a tab's identity keys its live
+  /// body, so a host adopting a freshly decoded layout hands back the
+  /// instances already on screen and their bodies carry over instead of
+  /// remounting.
+  bool adoptInstanceAt(int index, EditorTab instance) {
+    if (index < 0 || index >= _tabs.length) {
+      return false;
+    }
+    final current = _tabs[index];
+    if (identical(current, instance) || !sameTab(current, instance)) {
+      return false;
+    }
+    _tabs[index] = instance;
+    final at = _visitOrder.indexWhere((t) => identical(t, current));
+    if (at >= 0) {
+      _visitOrder[at] = instance;
+    }
+    notifyListeners();
+    return true;
+  }
+
+  /// Whether [a] and [b] describe the same tab: kind, dedup key, label and
+  /// args all match.
+  static bool sameTab(EditorTab a, EditorTab b) =>
+      a.kind == b.kind &&
+      a.dedupKey == b.dedupKey &&
+      a.label == b.label &&
+      _sameArgs(a.args, b.args);
+
   static bool _sameArgs(Map<String, Object?> a, Map<String, Object?> b) {
     if (a.length != b.length) {
       return false;

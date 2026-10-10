@@ -145,10 +145,19 @@ String? _workspaceOwningSpace(Ref ref, String spaceId) {
   if (workspaceId == null) {
     return null;
   }
-  final spaces = ref.watch(workspaceSpacesProvider(workspaceId)).asData?.value;
-  final owned =
-      spaces?.any((s) => s.id == spaceId && s.workspaceId == workspaceId) ??
-      false;
+  // A `.select`, not the list: every message bumps its space's `updatedAt`,
+  // so the list re-emits constantly, and each per-space subscription gated
+  // here would otherwise be torn down and reopened over RPC on every emit.
+  // Only a change to the ownership answer itself re-runs the caller.
+  final owned = ref.watch(
+    workspaceSpacesProvider(workspaceId).select(
+      (spaces) =>
+          spaces.asData?.value.any(
+            (s) => s.id == spaceId && s.workspaceId == workspaceId,
+          ) ??
+          false,
+    ),
+  );
   return owned ? workspaceId : null;
 }
 
@@ -308,7 +317,14 @@ SpaceActivity? _spaceActivityOf(Ref ref, String spaceId) {
   if (workspaceId == null) {
     return null;
   }
-  return ref.watch(workspaceSpaceActivityProvider(workspaceId)).value?[spaceId];
+  // This space's entry only (SpaceActivity compares by value): the aggregate
+  // re-emits on every message in the workspace, and every row's status and
+  // unread providers read through here.
+  return ref.watch(
+    workspaceSpaceActivityProvider(
+      workspaceId,
+    ).select((activity) => activity.value?[spaceId]),
+  );
 }
 
 /// Whether a space has an agent question awaiting the user's answer.
@@ -334,18 +350,15 @@ final spaceStatusProvider = Provider.autoDispose.family<SpaceStatus, String>((
   // workspace switch. See [_workspaceOwningSpace].
   final workspaceId = _workspaceOwningSpace(ref, spaceId);
   if (workspaceId != null) {
-    final busy =
-        (ref
-                    .watch(
-                      spaceActiveRunsProvider((
-                        workspaceId: workspaceId,
-                        spaceId: spaceId,
-                      )),
-                    )
-                    .asData
-                    ?.value ??
-                const [])
-            .isNotEmpty;
+    // Selected down to the one bit this needs: the run stream re-emits about
+    // once a second per running agent (its output stamp), which must not
+    // re-run every row's status.
+    final busy = ref.watch(
+      spaceActiveRunsProvider((
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+      )).select((runs) => runs.asData?.value.isNotEmpty ?? false),
+    );
     if (busy) {
       return SpaceStatus.running;
     }
@@ -367,24 +380,17 @@ final spaceStatusProvider = Provider.autoDispose.family<SpaceStatus, String>((
 final spaceBusyConversationIdsProvider = Provider.autoDispose
     .family<Set<String>, String>((ref, spaceId) {
       // Ownership-gated, same as [spaceStatusProvider] — it shares the space
-      // run stream, and an unowned pair would open a second one.
-      final workspaceId = _workspaceOwningSpace(ref, spaceId);
-      if (workspaceId == null) {
-        return const <String>{};
-      }
-      final runs = ref
+      // run stream, and an unowned pair would open a second one. The busy set
+      // is exactly the keys of the start map, which is already value-stable,
+      // so this re-runs (and hands out a new set) only when the SET changes —
+      // not when a start time or a run's output stamp does.
+      return ref
           .watch(
-            spaceActiveRunsProvider((
-              workspaceId: workspaceId,
-              spaceId: spaceId,
-            )),
+            spaceRunStartedAtProvider(
+              spaceId,
+            ).select((started) => _ConversationIds(started.keys.toSet())),
           )
-          .asData
-          ?.value;
-      if (runs == null) {
-        return const <String>{};
-      }
-      return {for (final run in runs) ?run.conversationId};
+          .ids;
     });
 
 /// Earliest start of an in-flight run on each conversation in the space.
@@ -393,37 +399,76 @@ final spaceBusyConversationIdsProvider = Provider.autoDispose
 /// caption is how long that agent has been running, so the oldest start wins
 /// when a conversation holds more than one active run. A run with no
 /// `conversationId` is dropped, same as the busy-id set.
+///
+/// Value-stable: the server rewrites a running agent's `lastOutputAt` about
+/// once a second, so the run stream re-emits with the same starts; the map
+/// is compared by value and only a real change notifies.
 final spaceRunStartedAtProvider = Provider.autoDispose
     .family<Map<String, DateTime>, String>((ref, spaceId) {
       final workspaceId = _workspaceOwningSpace(ref, spaceId);
       if (workspaceId == null) {
         return const <String, DateTime>{};
       }
-      final runs = ref
+      return ref
           .watch(
             spaceActiveRunsProvider((
               workspaceId: workspaceId,
               spaceId: spaceId,
-            )),
+            )).select((runs) => _RunStarts.of(runs.asData?.value)),
           )
-          .asData
-          ?.value;
-      if (runs == null) {
-        return const <String, DateTime>{};
-      }
-      final started = <String, DateTime>{};
-      for (final run in runs) {
-        final id = run.conversationId;
-        if (id == null) {
-          continue;
-        }
-        final current = started[id];
-        if (current == null || run.startedAt.isBefore(current)) {
-          started[id] = run.startedAt;
-        }
-      }
-      return started;
+          .byConversation;
     });
+
+/// The earliest in-flight start per conversation, compared by value so a
+/// run-stream emission that changes nothing here is dropped by `.select`.
+@immutable
+class _RunStarts {
+  const _RunStarts(this.byConversation);
+
+  factory _RunStarts.of(List<AgentRunLog>? runs) {
+    if (runs == null || runs.isEmpty) {
+      return const _RunStarts(<String, DateTime>{});
+    }
+    final started = <String, DateTime>{};
+    for (final run in runs) {
+      final id = run.conversationId;
+      if (id == null) {
+        continue;
+      }
+      final current = started[id];
+      if (current == null || run.startedAt.isBefore(current)) {
+        started[id] = run.startedAt;
+      }
+    }
+    return _RunStarts(started);
+  }
+
+  final Map<String, DateTime> byConversation;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _RunStarts && mapEquals(other.byConversation, byConversation);
+
+  @override
+  int get hashCode => Object.hashAllUnordered(
+    byConversation.entries.map((e) => Object.hash(e.key, e.value)),
+  );
+}
+
+/// A set of conversation ids compared by value (see [_RunStarts]).
+@immutable
+class _ConversationIds {
+  const _ConversationIds(this.ids);
+
+  final Set<String> ids;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ConversationIds && setEquals(other.ids, ids);
+
+  @override
+  int get hashCode => Object.hashAllUnordered(ids);
+}
 
 /// When a run last showed a sign of life: its newest of output, completion and
 /// start. A pending run has only a start, a streaming one has output, a
@@ -537,12 +582,19 @@ final spaceMeteredAgentIdProvider = NotifierProvider.family
 /// list is still loading) so the composer never blocks on a transient miss.
 final spaceProvisioningStatusProvider = Provider.autoDispose
     .family<SpaceProvisioningStatus, String>((ref, spaceId) {
+      // Selected to this space's field, so a message elsewhere (which
+      // re-emits the whole list) leaves the composer alone.
+      SpaceProvisioningStatus? select(AsyncValue<List<Space>> spaces) => spaces
+          .asData
+          ?.value
+          .where((c) => c.id == spaceId)
+          .firstOrNull
+          ?.provisioningStatus;
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
-      final spaces = workspaceId != null
-          ? ref.watch(workspaceSpacesProvider(workspaceId)).asData?.value
-          : ref.watch(spacesProvider).asData?.value;
-      final space = spaces?.where((c) => c.id == spaceId).firstOrNull;
-      return space?.provisioningStatus ?? SpaceProvisioningStatus.ready;
+      final status = workspaceId != null
+          ? ref.watch(workspaceSpacesProvider(workspaceId).select(select))
+          : ref.watch(spacesProvider.select(select));
+      return status ?? SpaceProvisioningStatus.ready;
     });
 
 /// The granular step an in-flight provision is on ("cloning repo X",
@@ -551,14 +603,17 @@ final spaceProvisioningStatusProvider = Provider.autoDispose
 /// [spaceProvisioningStatusProvider].
 final spaceProvisioningStepProvider = Provider.autoDispose
     .family<SpaceProvisioningStep?, String>((ref, spaceId) {
-      final workspaceId = ref.watch(activeWorkspaceIdProvider);
-      final spaces = workspaceId != null
-          ? ref.watch(workspaceSpacesProvider(workspaceId)).asData?.value
-          : ref.watch(spacesProvider).asData?.value;
-      return spaces
-          ?.where((c) => c.id == spaceId)
+      // Selected to this space's field, like the status above.
+      SpaceProvisioningStep? select(AsyncValue<List<Space>> spaces) => spaces
+          .asData
+          ?.value
+          .where((c) => c.id == spaceId)
           .firstOrNull
           ?.provisioningStep;
+      final workspaceId = ref.watch(activeWorkspaceIdProvider);
+      return workspaceId != null
+          ? ref.watch(workspaceSpacesProvider(workspaceId).select(select))
+          : ref.watch(spacesProvider.select(select));
     });
 
 /// The user participant's read cursor for a space (when they last opened
@@ -689,6 +744,12 @@ final spaceFeedWindowedProvider = StreamProvider.autoDispose
       ref2,
     ) {
       final limit = ref.watch(spaceFeedWindowProvider(ref2.conversationId));
+      // Every emission decodes fresh [Message] instances. Hand back the
+      // previous instance for a message that did not change, so the dedupe
+      // below and the feed's kept-row check hit `identical` instead of a deep
+      // compare per row, and per-instance memos (the parsed transcript)
+      // survive an emission that changed some other row.
+      var previous = const <String, Message>{};
       return ref
           .watch(messagingRepositoryProvider)
           .watchMessagesWindow(
@@ -697,6 +758,18 @@ final spaceFeedWindowedProvider = StreamProvider.autoDispose
             ref2.conversationId,
             limit: limit,
           )
+          .map((window) {
+            final byId = <String, Message>{};
+            final messages = <Message>[
+              for (final m in window.messages)
+                byId[m.id] = switch (previous[m.id]) {
+                  final p? when p == m => p,
+                  _ => m,
+                },
+            ];
+            previous = byId;
+            return (messages: messages, hasMore: window.hasMore);
+          })
           // Same dedupe as [spaceMessagesProvider]. A transcript flush that
           // does not change the list projection must not rebuild the feed.
           .distinct(
@@ -714,22 +787,104 @@ final spaceParticipantsProvider = StreamProvider.autoDispose
           .watchParticipants(ref.requireWorkspaceId(), spaceId);
     });
 
+/// Whether two snapshots of a space render the same sidebar row: the fields
+/// the list shows or filters on. Everything else on [Space] — `updatedAt`
+/// above all, which every message bumps, but also mode and provisioning —
+/// has its own provider, so a change there must not rebuild the list.
+bool sameSidebarSpace(Space a, Space b) =>
+    identical(a, b) ||
+    (a.id == b.id &&
+        a.name == b.name &&
+        a.kind == b.kind &&
+        a.workspaceId == b.workspaceId &&
+        a.pipelineRunId == b.pipelineRunId &&
+        a.isArchived == b.isArchived);
+
+/// A space list compared by what the sidebar renders of it ([sameSidebarSpace]
+/// per row, in order), so a `.select` over the raw stream drops the
+/// emissions that only moved a timestamp. A reorder (a message making another
+/// space the most recent) is a real change and still passes.
+@immutable
+class _SidebarSpaceList {
+  const _SidebarSpaceList(this.spaces);
+
+  /// Null while loading, or when the stream failed.
+  final List<Space>? spaces;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! _SidebarSpaceList) {
+      return false;
+    }
+    final a = spaces;
+    final b = other.spaces;
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a == null || b == null || a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (!sameSidebarSpace(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hashAll([for (final space in spaces ?? const <Space>[]) space.id]);
+}
+
+/// The ids of the spaces that have any message, compared by value. The only
+/// part of the activity aggregate the visible-space filter reads.
+@immutable
+class _MessagedSpaceIds {
+  const _MessagedSpaceIds(this.ids);
+
+  factory _MessagedSpaceIds.of(Map<String, SpaceActivity>? activity) =>
+      _MessagedSpaceIds(
+        activity == null
+            ? null
+            : {
+                for (final entry in activity.entries)
+                  if (entry.value.lastMessageAt != null) entry.key,
+              },
+      );
+
+  /// Null while the aggregate is loading.
+  final Set<String>? ids;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _MessagedSpaceIds &&
+      (identical(other.ids, ids) ||
+          (other.ids != null && ids != null && setEquals(other.ids, ids)));
+
+  @override
+  int get hashCode => ids == null ? 0 : Object.hashAllUnordered(ids!);
+}
+
+_SidebarSpaceList _sidebarProjection(AsyncValue<List<Space>> spaces) =>
+    _SidebarSpaceList(
+      spaces.maybeWhen(data: (value) => value, orElse: () => null),
+    );
+
 /// Sidebar-visible spaces (all workspaces), excluding pipeline-managed
 /// (hidden) ones, archived ones and PR-workbench spaces (which need the
 /// workspace-scoped activity aggregate to know whether they've been messaged —
 /// without an active workspace they stay hidden). Used as the fallback when no
-/// active workspace is resolved.
+/// active workspace is resolved. Value-stable like
+/// [workspaceVisibleSpacesProvider].
 final visibleSpacesProvider = Provider<List<Space>>((ref) {
-  return ref
-      .watch(spacesProvider)
-      .maybeWhen(
-        data: (spaces) => spaces
-            .where(
-              (c) => c.pipelineRunId == null && !c.kind.isPr && !c.isArchived,
-            )
-            .toList(),
-        orElse: () => const [],
-      );
+  final spaces = ref.watch(spacesProvider.select(_sidebarProjection)).spaces;
+  if (spaces == null) {
+    return const [];
+  }
+  return spaces
+      .where((c) => c.pipelineRunId == null && !c.kind.isPr && !c.isArchived)
+      .toList();
 });
 
 /// Workspace-scoped sidebar-visible spaces, excluding pipeline-managed
@@ -741,30 +896,46 @@ final visibleSpacesProvider = Provider<List<Space>>((ref) {
 /// sidebar. It surfaces once someone actually messages in it (the server-
 /// computed activity aggregate reports a non-null `lastMessageAt`), i.e. once
 /// the user engaged an agent on that PR.
+///
+/// Value-stable: every message bumps its space's `updatedAt` (re-emitting the
+/// space stream) and rewrites the activity aggregate, yet neither usually
+/// changes this list. Both inputs are watched through a `.select` of only
+/// what the filter and the rows read, so this re-runs — and the sidebar
+/// rebuilds — only when a visible row's rendered fields, the order, or a PR
+/// space's messaged-ness actually change. The [Space] objects handed out can
+/// therefore carry an older `updatedAt`, mode or provisioning state; read
+/// those from their own providers.
 final workspaceVisibleSpacesProvider = Provider.family<List<Space>, String>((
   ref,
   workspaceId,
 ) {
-  final activity = ref.watch(workspaceSpaceActivityProvider(workspaceId)).value;
-  return ref
-      .watch(workspaceSpacesProvider(workspaceId))
-      .maybeWhen(
-        data: (spaces) => spaces.where((c) {
-          if (c.isArchived) {
-            return false;
-          }
-          if (c.pipelineRunId != null) {
-            return false;
-          }
-          if (c.kind.isPr) {
-            // Hidden while the aggregate is still loading too — a brief delay
-            // before an interacted PR space appears beats a flash of clutter.
-            return activity?[c.id]?.lastMessageAt != null;
-          }
-          return true;
-        }).toList(),
-        orElse: () => const [],
-      );
+  final messaged = ref
+      .watch(
+        workspaceSpaceActivityProvider(
+          workspaceId,
+        ).select((activity) => _MessagedSpaceIds.of(activity.value)),
+      )
+      .ids;
+  final spaces = ref
+      .watch(workspaceSpacesProvider(workspaceId).select(_sidebarProjection))
+      .spaces;
+  if (spaces == null) {
+    return const [];
+  }
+  return spaces.where((c) {
+    if (c.isArchived) {
+      return false;
+    }
+    if (c.pipelineRunId != null) {
+      return false;
+    }
+    if (c.kind.isPr) {
+      // Hidden while the aggregate is still loading too — a brief delay
+      // before an interacted PR space appears beats a flash of clutter.
+      return messaged?.contains(c.id) ?? false;
+    }
+    return true;
+  }).toList();
 });
 
 /// Notifier that exposes the [Mode] of the currently selected
@@ -872,17 +1043,35 @@ final standingConversationIdProvider = FutureProvider.autoDispose
       // on revisit; keeping this provider alive would also keep its pending
       // conversation-list revalidation attached after navigation.
       final repository = ref.watch(conversationRepositoryProvider);
-      final spaces = ref.watch(workspaceSpacesProvider(workspaceId).future);
+      bool owns(List<Space> spaces) => spaces.any(
+        (space) => space.id == spaceId && space.workspaceId == workspaceId,
+      );
+      // The ownership ANSWER, selected: the space list re-emits on every
+      // message (each bumps its space's `updatedAt`), and watching its
+      // `.future` re-ran this resolution — and flashed every watcher of the
+      // open space through loading — once per message.
+      final ownership = ref.watch(
+        workspaceSpacesProvider(
+          workspaceId,
+        ).select((spaces) => spaces.whenData(owns)),
+      );
+      // Only the first load waits on the list itself.
+      final spaces = ownership.hasValue || ownership.hasError
+          ? null
+          : ref.watch(workspaceSpacesProvider(workspaceId).future);
       final conversations = ref.watch(spaceConversationsProvider(spaceId));
       // Resolving an existing chat is a read. The cached conversation list
       // must be enough to open it without waiting for an ensure mutation.
-      final ownedSpaces = await spaces;
+      if (ownership.hasError && !ownership.hasValue) {
+        Error.throwWithStackTrace(ownership.error!, ownership.stackTrace!);
+      }
+      final owned = spaces == null
+          ? ownership.requireValue
+          : owns(await spaces);
       if (!ref.mounted) {
         throw StateError('Conversation resolution was disposed');
       }
-      if (!ownedSpaces.any(
-        (space) => space.id == spaceId && space.workspaceId == workspaceId,
-      )) {
+      if (!owned) {
         throw StateError('Space does not belong to the active workspace');
       }
       if (conversations.hasError) {

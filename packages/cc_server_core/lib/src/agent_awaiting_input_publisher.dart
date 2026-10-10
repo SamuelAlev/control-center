@@ -6,16 +6,18 @@ import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_host/cc_host.dart';
 
-/// Publishes [AgentAwaitingInput] whenever an agent stops to wait on a human.
+/// Publishes [AgentAwaitingInput] whenever an agent stops to wait on a human,
+/// and [AgentInputResolved] when that wait ends.
 ///
 /// Three things park an agent on a person, and each keeps its own state: the
 /// approvals registry (every gated action, including the sandbox exec grant
 /// and Claude Code's tool hook), the credential-block registry (a run held on
 /// a credential that cannot serve it) and the question service (`ask_user`).
-/// The registries are watched for entries not seen before; the question
-/// service reports each question through [questionAsked]. Either way, one wait
-/// is one event — which the notification wire turns into one toast and one
-/// bell row.
+/// The registries are watched for entries not seen before (and for entries
+/// that left); the question service reports each question through
+/// [questionAsked] and [questionClosed]. Either way, one wait is one event —
+/// which the notification wire turns into one toast and one bell row — and its
+/// end is one more, which marks that row resolved.
 class AgentAwaitingInputPublisher {
   /// Creates a publisher onto the event bus. The agent repository names the
   /// waiting agent when the wait itself does not.
@@ -30,8 +32,15 @@ class AgentAwaitingInputPublisher {
   final DateTime Function() _clock;
 
   final List<StreamSubscription<Object?>> _subs = [];
-  final Set<String> _seenApprovals = {};
-  final Set<String> _seenCredentialBlocks = {};
+
+  /// Registry entries already announced, by entry id. A null value is an
+  /// entry seen but not announced (no workspace to file it under), so its end
+  /// is not announced either.
+  final Map<String, _Wait?> _approvals = {};
+  final Map<String, _Wait?> _credentialBlocks = {};
+
+  /// Questions announced and not yet closed, by question message id.
+  final Map<String, _Wait> _questions = {};
 
   /// Starts watching [confirmations] and, when the credential gate is on,
   /// [credentialBlocks].
@@ -45,10 +54,11 @@ class AgentAwaitingInputPublisher {
     }
   }
 
-  /// Reports a question an agent just posted.
-  void questionAsked(AgentQuestionRequest request) {
-    _publish(
+  /// Reports a question an agent just posted as [messageId].
+  void questionAsked(AgentQuestionRequest request, String messageId) {
+    _questions[messageId] = _publish(
       workspaceId: request.workspaceId,
+      waitId: messageId,
       kind: AgentInputKind.question,
       summary: request.question,
       spaceId: request.spaceId,
@@ -57,11 +67,20 @@ class AgentAwaitingInputPublisher {
     );
   }
 
+  /// Reports that the question posted as [messageId] closed: answered, timed
+  /// out or abandoned by the agent that asked it.
+  void questionClosed(String messageId) {
+    final wait = _questions.remove(messageId);
+    if (wait != null) {
+      _resolve(wait);
+    }
+  }
+
   void _onApprovals(List<PendingConfirmation> pending) {
     final current = <String>{};
     for (final entry in pending) {
       current.add(entry.id);
-      if (_seenApprovals.contains(entry.id)) {
+      if (_approvals.containsKey(entry.id)) {
         continue;
       }
       final request = entry.request;
@@ -69,36 +88,37 @@ class AgentAwaitingInputPublisher {
       if (workspaceId == null || workspaceId.isEmpty) {
         // Single-user hosts without identity wiring: no workspace to file the
         // notification under, and the approval card is the only surface.
+        _approvals[entry.id] = null;
         continue;
       }
-      _publish(
+      _approvals[entry.id] = _publish(
         workspaceId: workspaceId,
+        waitId: entry.id,
         kind: AgentInputKind.approval,
         summary: request.title,
         spaceId: request.spaceId,
         agentId: request.agentId,
       );
     }
-    // Forget resolved entries so the set stays the size of what is pending.
-    _seenApprovals
-      ..clear()
-      ..addAll(current);
+    _resolveGone(_approvals, current);
   }
 
   void _onCredentialBlocks(List<PendingCredentialBlock> blocked) {
     final current = <String>{};
     for (final entry in blocked) {
       current.add(entry.id);
-      if (_seenCredentialBlocks.contains(entry.id)) {
+      if (_credentialBlocks.containsKey(entry.id)) {
         continue;
       }
       final request = entry.request;
       final workspaceId = request.workspaceId;
       if (workspaceId == null || workspaceId.isEmpty) {
+        _credentialBlocks[entry.id] = null;
         continue;
       }
-      _publish(
+      _credentialBlocks[entry.id] = _publish(
         workspaceId: workspaceId,
+        waitId: entry.id,
         kind: AgentInputKind.credential,
         summary: request.detail,
         spaceId: request.spaceId,
@@ -107,13 +127,48 @@ class AgentAwaitingInputPublisher {
         agentName: request.agentName,
       );
     }
-    _seenCredentialBlocks
-      ..clear()
-      ..addAll(current);
+    _resolveGone(_credentialBlocks, current);
   }
 
-  void _publish({
+  /// Announces the end of every wait in [seen] that is no longer [current],
+  /// and forgets it, so the map stays the size of what is pending.
+  void _resolveGone(Map<String, _Wait?> seen, Set<String> current) {
+    final gone = [
+      for (final id in seen.keys)
+        if (!current.contains(id)) id,
+    ];
+    for (final id in gone) {
+      final wait = seen.remove(id);
+      if (wait != null) {
+        _resolve(wait);
+      }
+    }
+  }
+
+  void _resolve(_Wait wait) {
+    final occurredAt = _clock().toUtc();
+    // After the announcement itself, which may still be resolving the agent's
+    // name: the end of a wait must never reach the feed before its start.
+    unawaited(
+      wait.announced.then((_) {
+        try {
+          _eventBus.publish(
+            AgentInputResolved(
+              workspaceId: wait.workspaceId,
+              waitId: wait.waitId,
+              occurredAt: occurredAt,
+            ),
+          );
+        } on StateError {
+          // The bus closed first (server shutdown).
+        }
+      }),
+    );
+  }
+
+  _Wait _publish({
     required String workspaceId,
+    required String waitId,
     required AgentInputKind kind,
     required String summary,
     String? spaceId,
@@ -122,12 +177,13 @@ class AgentAwaitingInputPublisher {
     String? agentName,
   }) {
     final occurredAt = _clock().toUtc();
-    unawaited(() async {
+    final announced = () async {
       final name = agentName ?? await _nameOf(workspaceId, agentId);
       try {
         _eventBus.publish(
           AgentAwaitingInput(
             workspaceId: workspaceId,
+            waitId: waitId,
             kind: kind,
             summary: summary,
             spaceId: (spaceId == null || spaceId.isEmpty) ? null : spaceId,
@@ -140,7 +196,8 @@ class AgentAwaitingInputPublisher {
       } on StateError {
         // The bus closed while the name was resolving (server shutdown).
       }
-    }());
+    }();
+    return (workspaceId: workspaceId, waitId: waitId, announced: announced);
   }
 
   Future<String?> _nameOf(String workspaceId, String? agentId) async {
@@ -161,3 +218,6 @@ class AgentAwaitingInputPublisher {
     _subs.clear();
   }
 }
+
+/// One announced wait: enough to announce its end, once its start is out.
+typedef _Wait = ({String workspaceId, String waitId, Future<void> announced});

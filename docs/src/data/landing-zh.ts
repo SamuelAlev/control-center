@@ -317,7 +317,7 @@ export const zh: LandingCopy = {
     title: "安顿\n下来。",
     description: "下一个开发日可以从这里开始。免费，并且开源。",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "查看版本",
     web: "打开网页应用",

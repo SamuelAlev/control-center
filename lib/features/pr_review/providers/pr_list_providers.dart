@@ -544,9 +544,11 @@ List<RepoPullRequests> overlayReviewedByMe(
 /// the filter menu's facet counts (via [prListPopulationProvider]) and other
 /// PR surfaces (the context rail) run over.
 final prListDataProvider = Provider.autoDispose<AsyncValue<PrListData>>((ref) {
-  final currentLogin = ref
-      .watch(githubUserProvider)
-      .maybeWhen(data: (user) => user?.login, orElse: () => null);
+  // `.value`: the identity lookup retries by reloading, and a reload must not
+  // reclassify every row as "not mine" for a frame.
+  final currentLogin = ref.watch(
+    githubUserProvider.select((u) => u.value?.login),
+  );
   final queue = ref.watch(prsByRepoProvider);
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   final userId = ref.watch(currentUserIdProvider);

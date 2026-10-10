@@ -44,7 +44,9 @@ concurrency:
 
 jobs:
   build:
-    name: natives (${{ matrix.os }})
+    # `label` only on the Arm64 leg, so the existing job names (and any
+    # required checks keyed on them) stay exactly as they were.
+    name: natives (${{ matrix.label || matrix.os }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     permissions:
@@ -59,6 +61,13 @@ jobs:
             os: macos
           - runner: windows-latest
             os: windows
+            msvc-arch: x64
+          # Native Arm64 natives for the Windows-on-Arm release leg. The cache
+          # key carries runner.arch, so the two Windows sets never collide.
+          - runner: windows-11-arm
+            os: windows
+            msvc-arch: arm64
+            label: windows-arm64
     steps:
       # One step: a skipped harden-runner still runs its pre-hook, so a
       # Linux-only block sibling would install this allowlist on macOS and
@@ -67,7 +76,7 @@ jobs:
       # assets, crates/rustup, freedesktop + wrapdb (aec), PyPI (meson),
       # SourceForge (LAME), Azure blobs (actions/cache).
       - name: Harden runner
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: ${{ runner.os == 'Linux' && 'block' || 'audit' }}
           allowed-endpoints: >
@@ -119,7 +128,7 @@ jobs:
         if: runner.os == 'Windows' && steps.natives-cache.outputs.cache-hit != 'true'
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
-          arch: x64
+          arch: ${{ matrix.msvc-arch }}
 
       - name: Install AEC build tools (meson/ninja)
         if: runner.os == 'Windows' && steps.natives-cache.outputs.cache-hit != 'true'
@@ -131,18 +140,22 @@ jobs:
         shell: bash
         env:
           OS: ${{ matrix.os }}
+          ARCH: ${{ matrix.msvc-arch }}
         run: |
           if [ "$OS" = "windows" ]; then
-            bash scripts/release/windows_natives.sh
+            bash scripts/release/windows_natives.sh "$ARCH"
           else
             bash scripts/natives/build_natives.sh build/natives
           fi
 
-      # Hit and miss.
+      # Hit and miss. On Windows --arch also checks each DLL's PE machine type.
       - name: Verify the staged set
         shell: bash
         env:
           OS: ${{ matrix.os }}
+          ARCH: ${{ matrix.msvc-arch }}
         run: |
-          bash scripts/release/verify_natives.sh build/natives "$OS" desktop
-          bash scripts/release/verify_natives.sh build/natives "$OS" server
+          arch_args=()
+          [ "$OS" = "windows" ] && arch_args=(--arch "$ARCH")
+          bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" desktop
+          bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" server

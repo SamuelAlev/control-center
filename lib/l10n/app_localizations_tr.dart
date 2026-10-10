@@ -7994,6 +7994,53 @@ class AppLocalizationsTr extends AppLocalizations {
   String get meetingReRunNoTranscript => 'Özetlenecek transkript henüz yok.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Transkriptten oluşturun veya kendiniz yazın.';
+
+  @override
+  String get meetingNotesGenerate => 'Not oluştur';
+
+  @override
+  String get meetingNotesWriteOwn => 'Kendin yaz';
+
+  @override
+  String get meetingNothingTranscribed => 'Hiçbir şey transkribe edilmedi.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Özetlenecek transkript yok, ancak kendi notlarınızı tutmaya devam edebilirsiniz.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Konuşmacılar';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Konuşmacı başına konuşma süresi, transkript oluşunca görünür.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count daha';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: konuşma süresinin $share kadarı, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Tüm eylem öğeleri tamamlandı.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Tümünü gör ($count)';
+  }
+
+  @override
   String get meetingExportCopied => 'Notlar panoya Markdown olarak kopyalandı.';
 
   @override
@@ -15289,4 +15336,50 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Bir ajan kimlik bilgisi nedeniyle durdu';
+
+  @override
+  String get killTerminal => 'Terminali sonlandır';
+
+  @override
+  String get stopAgentCommand => 'Komutu durdur';
+
+  @override
+  String get agentCommandStopping => 'Durduruluyor…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count sn';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Ajan komutu $command, $elapsed süredir çalışıyor';
+  }
+
+  @override
+  String get serverLostTitle => 'Sunucuyla bağlantı kesildi';
+
+  @override
+  String get serverLostBody =>
+      'Control Center arka planda yeniden bağlanmayı denemeye devam ediyor. Şimdi yeniden deneyin veya bir sunucu seçmek için oturum açma ekranına gidin.';
+
+  @override
+  String get serverLostRetrying => 'Yeniden bağlanılıyor…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Sonraki deneme $seconds sn içinde';
+  }
+
+  @override
+  String get serverLostReconnect => 'Yeniden bağlanmayı dene';
+
+  @override
+  String get serverLostSignIn => 'Oturum açmaya git';
+
+  @override
+  String get serverEndedTitle => 'Sunucuya yeniden bağlanılamıyor';
+
+  @override
+  String get shutdownSubtitleServer => 'Sunucu durduruluyor';
 }

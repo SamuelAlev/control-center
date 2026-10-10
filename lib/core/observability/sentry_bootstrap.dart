@@ -39,14 +39,9 @@ Future<void> runAppWithSentry(Widget Function() root) async {
     // Adds request headers and IP for users, for more info visit:
     // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
     options.sendDefaultPii = true;
-    options.enableLogs = true;
-    // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+    // Set tracesSampleRate to 1.0 to capture 100% of spans for tracing.
     // We recommend adjusting this value in production.
     options.tracesSampleRate = 1.0;
-    // The sampling rate for profiling is relative to tracesSampleRate
-    // Setting to 1.0 will profile 100% of sampled transactions:
-    // ignore: experimental_member_use
-    options.profilesSampleRate = 1.0;
     // Configure Session Replay
     options.replay.sessionSampleRate = 0.1;
     options.replay.onErrorSampleRate = 1.0;

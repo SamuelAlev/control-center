@@ -7926,6 +7926,52 @@ class AppLocalizationsTh extends AppLocalizations {
   String get meetingReRunNoTranscript => 'ยังไม่มีทรานสคริปต์ให้สรุป';
 
   @override
+  String get meetingNotesEmptyDescription => 'สร้างจากทรานสคริปต์ หรือเขียนเอง';
+
+  @override
+  String get meetingNotesGenerate => 'สร้างโน้ต';
+
+  @override
+  String get meetingNotesWriteOwn => 'เขียนเอง';
+
+  @override
+  String get meetingNothingTranscribed => 'ไม่มีสิ่งใดถูกถอดความ';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'ไม่มีทรานสคริปต์ให้สรุป แต่คุณยังจดโน้ตของคุณเองได้';
+
+  @override
+  String get meetingOverviewSpeakers => 'ผู้พูด';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'เวลาพูดของผู้พูดแต่ละคนจะแสดงเมื่อมีทรานสคริปต์';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+อีก $count';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share ของเวลาพูด, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'รายการดำเนินการทั้งหมดเสร็จแล้ว';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'ดูทั้งหมด ($count)';
+  }
+
+  @override
   String get meetingExportCopied => 'คัดลอกโน้ตไปคลิปบอร์ดเป็น Markdown แล้ว';
 
   @override
@@ -15146,4 +15192,50 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'เอเจนต์ติดขัดเพราะข้อมูลรับรอง';
+
+  @override
+  String get killTerminal => 'ปิดเทอร์มินัล';
+
+  @override
+  String get stopAgentCommand => 'หยุดคำสั่ง';
+
+  @override
+  String get agentCommandStopping => 'กำลังหยุด…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count วิ';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'คำสั่งของเอเจนต์ $command ทำงานมาแล้ว $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'การเชื่อมต่อกับเซิร์ฟเวอร์ขาดหาย';
+
+  @override
+  String get serverLostBody =>
+      'Control Center ยังคงพยายามเชื่อมต่อใหม่อยู่เบื้องหลัง ลองอีกครั้งตอนนี้ หรือไปที่หน้าจอลงชื่อเข้าใช้เพื่อเลือกเซิร์ฟเวอร์';
+
+  @override
+  String get serverLostRetrying => 'กำลังเชื่อมต่อใหม่…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'ลองครั้งถัดไปใน $seconds วินาที';
+  }
+
+  @override
+  String get serverLostReconnect => 'ลองเชื่อมต่อใหม่';
+
+  @override
+  String get serverLostSignIn => 'ไปที่การลงชื่อเข้าใช้';
+
+  @override
+  String get serverEndedTitle => 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ใหม่ได้';
+
+  @override
+  String get shutdownSubtitleServer => 'เซิร์ฟเวอร์กำลังหยุดทำงาน';
 }

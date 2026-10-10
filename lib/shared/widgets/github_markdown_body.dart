@@ -149,15 +149,10 @@ class GitHubMarkdownBody extends ConsumerWidget {
       options: githubMarkdownOptions,
       builders: builders,
       onTaskCheckboxChanged: onTaskCheckboxChanged,
-      codeBuilder: (code, language, {required bool cache}) =>
-          buildSharedCodeBlock(
-            context,
-            code,
-            language,
-            codeFontFamily: codeFontFamily,
-            codeLigatures: codeLigatures,
-            cache: cache,
-          ),
+      codeBuilder: sharedCodeBuilder(
+        codeFontFamily: codeFontFamily,
+        codeLigatures: codeLigatures,
+      ),
       imageBuilder: (url, alt, title) {
         final uri = Uri.tryParse(url);
         if (uri == null) {

@@ -25,6 +25,21 @@ class RemoteRpcException implements Exception {
   String toString() => 'RemoteRpcException($code): $message';
 }
 
+/// `sub/error` `data.kind` for a watch the UPSTREAM forge refused (GitHub
+/// answering 401/403 for the server's own credential). It rides
+/// [RpcErrorCodes.unauthorized] — the stream is just as unrecoverable, so no
+/// client resubscribes into it — but it is not THIS session being denied its
+/// workspace, and must not be treated as a membership revocation.
+const String kSubErrorUpstreamAuthKind = 'upstream_auth';
+
+/// Whether [error] is a forge-side authorization failure rather than the
+/// server denying the caller (see [kSubErrorUpstreamAuthKind]).
+bool isUpstreamAuthDenial(Object? error) =>
+    error is RemoteRpcException &&
+    error.code == RpcErrorCodes.unauthorized &&
+    error.data is Map &&
+    (error.data! as Map)['kind'] == kSubErrorUpstreamAuthKind;
+
 /// Signalled to in-flight requests when the [RemoteRpcClient] is closed
 /// (e.g. the server disconnected/restarted). Not an error — a cancellation.
 class RemoteRpcClientClosedException implements Exception {
@@ -261,15 +276,9 @@ class RemoteRpcClient {
           if (error is Map &&
               error['code'] == RpcErrorCodes.rateLimited &&
               attempt < _retryAttempts - 1) {
-            final target = _retryBaseDelay * (1 << attempt);
-            final delay = Duration(
-              microseconds:
-                  (target.inMicroseconds * (0.5 + _jitter.nextDouble() * 0.5))
-                      .round(),
-            );
             final waiter = Completer<void>();
             retryWaiter = waiter;
-            retryTimer = Timer(delay, waiter.complete);
+            retryTimer = Timer(_retryDelay(attempt), waiter.complete);
             await waiter.future;
             retryTimer = null;
             retryWaiter = null;
@@ -447,16 +456,7 @@ class RemoteRpcClient {
       // effects unknown, and every other error is a terminal statement about
       // the request itself.
       if (code == RpcErrorCodes.rateLimited && attempt < _retryAttempts - 1) {
-        // Full jitter (half of the exponential target, randomized) so N
-        // clients refused together do not retry in lockstep.
-        final target = _retryBaseDelay * (1 << attempt);
-        await Future<void>.delayed(
-          Duration(
-            microseconds:
-                (target.inMicroseconds * (0.5 + _jitter.nextDouble() * 0.5))
-                    .round(),
-          ),
-        );
+        await Future<void>.delayed(_retryDelay(attempt));
         continue;
       }
       _throwIfError(res);
@@ -474,7 +474,25 @@ class RemoteRpcClient {
   /// the round-trip.
   static const Duration _retryBaseDelay = Duration(milliseconds: 250);
 
+  /// Total attempts a rate-limit-refused `sub/subscribe` may make. More than
+  /// [_retryAttempts]: a refused call surfaces to a caller that can try again,
+  /// but a refused subscription is final above this layer — the provider
+  /// retry policy never resubscribes on `-32005` — so the watch would stay
+  /// empty until the screen is rebuilt. Five backoffs span roughly 4–8s.
+  static const int _subscribeRetryAttempts = 6;
+
   static final Random _jitter = Random();
+
+  /// Backoff before retry [attempt] (0-based): the exponential target from
+  /// [_retryBaseDelay], with jitter over its upper half so N requests refused
+  /// together do not retry in lockstep.
+  static Duration _retryDelay(int attempt) {
+    final target = _retryBaseDelay * (1 << attempt);
+    return Duration(
+      microseconds: (target.inMicroseconds * (0.5 + _jitter.nextDouble() * 0.5))
+          .round(),
+    );
+  }
 
   /// Opens a reactive subscription. Each emission is a full snapshot map. The
   /// `sub/unsubscribe` is sent automatically when the returned stream is
@@ -534,16 +552,44 @@ class RemoteRpcClient {
     // A response already accepted before cancellation is unsubscribed below;
     // a late response is cleaned up by the server's request-id cancellation.
     var cancelled = false;
+    Timer? retryTimer;
+    Completer<void>? retryWaiter;
     controller = StreamController<Map<String, dynamic>>(
       onListen: () async {
         try {
-          final req = _requestCancelable(RpcMethods.subscribe, {
-            'query': query,
-            'args': _withWorkspace(args),
-          });
-          request = req;
-          final res = await req.future;
-          request = null;
+          Map<String, dynamic> res;
+          for (var attempt = 0; ; attempt++) {
+            final req = _requestCancelable(RpcMethods.subscribe, {
+              'query': query,
+              'args': _withWorkspace(args),
+            });
+            request = req;
+            res = await req.future;
+            request = null;
+            if (cancelled) {
+              break;
+            }
+            // Like a `repo/call` refusal, a `-32005` here is the session's
+            // in-flight cap or request budget saying no before dispatch: the
+            // server created no subscription, so asking again is safe.
+            // Nothing above this layer retries it, and a cold start opens
+            // enough watches at once to trip the cap.
+            final error = res['error'];
+            if (error is! Map ||
+                error['code'] != RpcErrorCodes.rateLimited ||
+                attempt >= _subscribeRetryAttempts - 1) {
+              break;
+            }
+            final waiter = Completer<void>();
+            retryWaiter = waiter;
+            retryTimer = Timer(_retryDelay(attempt), waiter.complete);
+            await waiter.future;
+            retryTimer = null;
+            retryWaiter = null;
+            if (cancelled) {
+              return;
+            }
+          }
           if (cancelled && res.containsKey('error')) {
             return;
           }
@@ -587,6 +633,11 @@ class RemoteRpcClient {
       },
       onCancel: () async {
         cancelled = true;
+        retryTimer?.cancel();
+        final waiter = retryWaiter;
+        if (waiter != null && !waiter.isCompleted) {
+          waiter.complete();
+        }
         final req = request;
         if (req != null) {
           req.cancel();
@@ -802,10 +853,12 @@ class RemoteRpcClient {
         if (subId == null) {
           return;
         }
-        final kind = (params['data'] as Map?)?['kind'];
+        final data = params['data'];
+        final kind = data is Map ? data['kind'] : null;
         final exception = RemoteRpcException(
           params['code'] as int? ?? RpcErrorCodes.internalError,
           kind is String ? 'subscription error: $kind' : 'subscription error',
+          data,
         );
         final controller = _subs.remove(subId);
         if (controller != null && !controller.isClosed) {

@@ -7974,6 +7974,52 @@ class AppLocalizationsEn extends AppLocalizations {
       'There\'s no transcript to summarize yet.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Generate them from the transcript, or write your own.';
+
+  @override
+  String get meetingNotesGenerate => 'Generate notes';
+
+  @override
+  String get meetingNotesWriteOwn => 'Write your own';
+
+  @override
+  String get meetingNothingTranscribed => 'Nothing was transcribed.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'There\'s no transcript to summarize, but you can still keep your own notes.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Speakers';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Talk time per speaker appears once there\'s a transcript.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share of talk time, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => 'All action items are done.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'View all $count';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notes copied to the clipboard as Markdown.';
 
@@ -15245,6 +15291,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'An agent is blocked on a credential';
+
+  @override
+  String get killTerminal => 'Kill terminal';
+
+  @override
+  String get stopAgentCommand => 'Stop command';
+
+  @override
+  String get agentCommandStopping => 'Stopping…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '${count}s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Agent command $command, running for $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Lost connection to the server';
+
+  @override
+  String get serverLostBody =>
+      'Control Center keeps trying to reconnect in the background. Try again now, or go to the sign-in screen to pick a server.';
+
+  @override
+  String get serverLostRetrying => 'Reconnecting…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Next attempt in ${seconds}s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Try to reconnect';
+
+  @override
+  String get serverLostSignIn => 'Go to sign-in';
+
+  @override
+  String get serverEndedTitle => 'Can\'t reconnect to the server';
+
+  @override
+  String get shutdownSubtitleServer => 'The server is stopping';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

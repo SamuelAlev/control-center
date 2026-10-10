@@ -176,29 +176,46 @@ enum StatusService {
 /// credential is confirmed rather than flashing in and back out. Both reads
 /// ride pollers that are already running (the title-bar usage pill and the
 /// settings provider list); this adds no fetches of its own.
+///
+/// Value-stable: those pollers re-emit on every poll, and a fresh set is
+/// never `==` the last one, so the answer is worked out as a record of flags
+/// (compared by value) and a new set is handed out only when one flips.
 final servicesInUseProvider = Provider<Set<StatusService>>((ref) {
-  final forges = ref.watch(connectedForgesProvider);
-  final plans = {
-    for (final usage
-        in ref.watch(subscriptionUsageProvider).value ??
-            const <SubscriptionUsage>[])
-      if (usage.status != SubscriptionStatus.unconfigured) usage.providerId,
-  };
-  final keys = {
-    for (final provider
-        in ref.watch(harnessProvidersProvider).value ??
-            const <HarnessProviderInfo>[])
-      if (provider.connected) provider.id,
-  };
-  bool any(Iterable<String> ids) =>
-      ids.any((id) => plans.contains(id) || keys.contains(id));
+  final inUse = ref.watch(_servicesInUseFlagsProvider);
   return {
-    if (forges.contains(ForgeHost.github)) StatusService.github,
-    if (any(const ['claude', 'anthropic'])) StatusService.claude,
-    if (any(const ['codex', 'openai'])) StatusService.openai,
-    if (any(const ['kimi-code', 'moonshotai'])) StatusService.kimi,
+    if (inUse.github) StatusService.github,
+    if (inUse.claude) StatusService.claude,
+    if (inUse.openai) StatusService.openai,
+    if (inUse.kimi) StatusService.kimi,
   };
 });
+
+/// [servicesInUseProvider]'s answer as flags. A record, so `Provider`'s `==`
+/// filter drops a poll that changed nothing.
+final _servicesInUseFlagsProvider =
+    Provider<({bool github, bool claude, bool openai, bool kimi})>((ref) {
+      final forges = ref.watch(connectedForgesProvider);
+      final plans = {
+        for (final usage
+            in ref.watch(subscriptionUsageProvider).value ??
+                const <SubscriptionUsage>[])
+          if (usage.status != SubscriptionStatus.unconfigured) usage.providerId,
+      };
+      final keys = {
+        for (final provider
+            in ref.watch(harnessProvidersProvider).value ??
+                const <HarnessProviderInfo>[])
+          if (provider.connected) provider.id,
+      };
+      bool any(Iterable<String> ids) =>
+          ids.any((id) => plans.contains(id) || keys.contains(id));
+      return (
+        github: forges.contains(ForgeHost.github),
+        claude: any(const ['claude', 'anthropic']),
+        openai: any(const ['codex', 'openai']),
+        kimi: any(const ['kimi-code', 'moonshotai']),
+      );
+    });
 
 /// Maps the combined snapshot onto one provider's [AsyncValue]: loading stays
 /// loading, a failed combined fetch fails every slice, and a page the host

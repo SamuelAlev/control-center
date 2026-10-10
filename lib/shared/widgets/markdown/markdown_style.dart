@@ -122,14 +122,16 @@ CcMarkdownStyle appMarkdownStyle(
   // const factories, so instances are canonicalized and identity is a sound
   // (and cheap) key; the remaining inputs are the flags and the resolved
   // families.
-  final cached = _appMarkdownStyleCache;
-  if (cached != null &&
-      identical(cached.tokens, tokens) &&
-      cached.compact == compact &&
-      cached.codeFontFamily == codeFontFamily &&
-      cached.codeLigatures == codeLigatures &&
-      cached.uiFamily == uiFamilyKey) {
-    return cached.style;
+  final memo = _appMarkdownStyleCache;
+  for (var i = 0; i < memo.length; i++) {
+    final cached = memo[i];
+    if (identical(cached.tokens, tokens) &&
+        cached.compact == compact &&
+        cached.codeFontFamily == codeFontFamily &&
+        cached.codeLigatures == codeLigatures &&
+        cached.uiFamily == uiFamilyKey) {
+      return cached.style;
+    }
   }
 
   final fg = tokens.textPrimary;
@@ -252,22 +254,34 @@ CcMarkdownStyle appMarkdownStyle(
     // every rebuild.
     checkbox: _appMarkdownCheckbox,
   );
-  _appMarkdownStyleCache = _AppMarkdownStyleMemo(
-    tokens: tokens,
-    compact: compact,
-    codeFontFamily: codeFontFamily,
-    codeLigatures: codeLigatures,
-    uiFamily: uiFamilyKey,
-    style: built,
+  if (memo.length >= _kAppMarkdownStyleMemoSize) {
+    memo.removeLast();
+  }
+  memo.insert(
+    0,
+    _AppMarkdownStyleMemo(
+      tokens: tokens,
+      compact: compact,
+      codeFontFamily: codeFontFamily,
+      codeLigatures: codeLigatures,
+      uiFamily: uiFamilyKey,
+      style: built,
+    ),
   );
   return built;
 }
 
-/// One-entry memo for [appMarkdownStyle].
+/// Entry cap for the [appMarkdownStyle] memo.
 ///
-/// One entry, not an LRU: a running app renders essentially every markdown
-/// surface with the same tokens and flags, so the hit rate of a single slot is
-/// already ~100% and a map would add hashing to a hot path for nothing.
+/// Several entries, not one: a chat feed interleaves the prose (regular,
+/// chat font), reasoning (compact, chat font) and tool-row (compact, default
+/// font) variants in the same frame, so a single slot rebuilt ~30 TextStyles
+/// on nearly every call — and handed back a NEW style each time, which also
+/// defeated every downstream memo keyed on it. A short list scanned by
+/// identity, not a map: hashing [DesignSystemTokens] hashes every token.
+const int _kAppMarkdownStyleMemoSize = 8;
+
+/// One entry of the [appMarkdownStyle] memo.
 class _AppMarkdownStyleMemo {
   const _AppMarkdownStyleMemo({
     required this.tokens,
@@ -286,7 +300,8 @@ class _AppMarkdownStyleMemo {
   final CcMarkdownStyle style;
 }
 
-_AppMarkdownStyleMemo? _appMarkdownStyleCache;
+/// Most-recently-built first; bounded by [_kAppMarkdownStyleMemoSize].
+final List<_AppMarkdownStyleMemo> _appMarkdownStyleCache = [];
 
 /// THE mermaid diagram stylesheet, built from the same design tokens as the
 /// markdown body so a diagram reads as part of the surface it sits on (and
@@ -442,6 +457,32 @@ class _InlineCodeChip extends StatelessWidget {
   }
 }
 
+/// A process-stable [CcCodeBuilder] that renders [buildSharedCodeBlock] with
+/// [codeFontFamily] / [codeLigatures].
+///
+/// Prefer this over an inline closure: markdown widgets memoize their rendered
+/// blocks on the code builder's IDENTITY, so a closure re-created on every
+/// build (once per streaming delta) wiped that memo and re-rendered every
+/// sealed block of a live answer per token. One instance per font pair.
+CcCodeBuilder sharedCodeBuilder({
+  String? codeFontFamily,
+  bool codeLigatures = true,
+}) => _sharedCodeBuilders.putIfAbsent(
+  (codeFontFamily, codeLigatures),
+  () =>
+      (code, language, {required bool cache}) => _SharedCodeBlock(
+        code: code,
+        language: language,
+        codeFontFamily: codeFontFamily,
+        codeLigatures: codeLigatures,
+        cache: cache,
+      ),
+);
+
+/// Interned [sharedCodeBuilder]s, keyed by (code font, ligatures). Bounded by
+/// the handful of font families a user can pick.
+final Map<(String?, bool), CcCodeBuilder> _sharedCodeBuilders = {};
+
 /// Builds the canonical fenced code-block widget.
 /// Pass `cache: false` for volatile content (a still-streaming code block) whose string
 /// changes on every build — see [highlightCodeSpans].
@@ -526,6 +567,12 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
   /// the same tokenize on every rebuild while it is in flight.
   (String, String?, bool)? _pendingAsync;
 
+  /// Streaming-fence memo: the completed-lines prefix last highlighted, the
+  /// (language, dark) it was highlighted for, and its spans.
+  String? _streamHead;
+  (String?, bool)? _streamHeadKey;
+  List<InlineSpan>? _streamHeadSpans;
+
   /// Resolves the spans for [displayCode], choosing sync, async-with-plain-
   /// first, or bounded streaming highlighting by the grammar's measured
   /// weight (see `syntax_languages.dart`).
@@ -537,18 +584,43 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
     final lineCount = _countLines(displayCode);
     if (!widget.cache) {
       // A still-streaming fence re-renders on every delta and is deliberately
-      // uncached. Highlight a bounded head synchronously and leave the
-      // growing tail plain: stable colors, bounded main-thread cost per
-      // frame regardless of grammar weight. The sealed rebuild (cache: true)
-      // re-highlights the whole block.
+      // kept out of the highlight LRU. Highlight a bounded head synchronously
+      // and leave the growing tail plain: stable colors, bounded main-thread
+      // cost per frame regardless of grammar weight. The sealed rebuild
+      // (cache: true) re-highlights the whole block.
       final budget = syncLineBudget(syntaxWeightFor(languageId));
       if (lineCount <= budget) {
-        return highlightCodeSpans(
-          code: displayCode,
-          languageId: languageId,
-          dark: dark,
-          cache: false,
-        );
+        // Only COMPLETED lines are highlighted; the line still being typed
+        // renders plain until its newline lands. Tokens arrive many per line,
+        // so re-tokenizing the whole fence per delta (up to the budget) was
+        // the dominant per-frame cost of a streaming code block. The
+        // completed prefix only changes once per line and is memoized on this
+        // State, outside the shared LRU (one entry per line would churn it).
+        final lastNewline = displayCode.lastIndexOf('\n');
+        if (lastNewline < 0) {
+          return [TextSpan(text: displayCode)];
+        }
+        final completed = displayCode.substring(0, lastNewline + 1);
+        final key = (languageId, dark);
+        var spans = _streamHeadSpans;
+        if (spans == null ||
+            _streamHeadKey != key ||
+            _streamHead != completed) {
+          spans = highlightCodeSpans(
+            code: completed,
+            languageId: languageId,
+            dark: dark,
+            cache: false,
+          );
+          _streamHead = completed;
+          _streamHeadKey = key;
+          _streamHeadSpans = spans;
+        }
+        final partial = displayCode.substring(lastNewline + 1);
+        if (partial.isEmpty) {
+          return spans;
+        }
+        return [...spans, TextSpan(text: partial)];
       }
       // Past the budget the HEAD is frozen — those first `budget` lines can
       // never change again for the rest of this stream — so it is cached like

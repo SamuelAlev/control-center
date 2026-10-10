@@ -7966,6 +7966,53 @@ class AppLocalizationsUr extends AppLocalizations {
       'خلاصہ کرنے کے لیے ابھی کوئی ٹرانسکرپٹ نہیں۔';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'انہیں ٹرانسکرپٹ سے بنائیں، یا اپنے نوٹس لکھیں۔';
+
+  @override
+  String get meetingNotesGenerate => 'نوٹس بنائیں';
+
+  @override
+  String get meetingNotesWriteOwn => 'اپنے نوٹس لکھیں';
+
+  @override
+  String get meetingNothingTranscribed => 'کچھ بھی ٹرانسکرائب نہیں ہوا۔';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'خلاصہ کرنے کے لیے کوئی ٹرانسکرپٹ نہیں، لیکن آپ اب بھی اپنے نوٹس رکھ سکتے ہیں۔';
+
+  @override
+  String get meetingOverviewSpeakers => 'بولنے والے';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'ہر بولنے والے کا وقت ٹرانسکرپٹ دستیاب ہونے پر دکھایا جائے گا۔';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count مزید';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: بولنے کے وقت کا $share، $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'تمام ایکشن آئٹمز مکمل ہو گئے۔';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'سب دیکھیں ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'نوٹس Markdown کے طور پر کلپ بورڈ پر کاپی ہو گئے۔';
 
@@ -15233,4 +15280,50 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'ایجنٹ اسناد کی وجہ سے رکا ہوا ہے';
+
+  @override
+  String get killTerminal => 'ٹرمینل بند کریں';
+
+  @override
+  String get stopAgentCommand => 'کمانڈ روکیں';
+
+  @override
+  String get agentCommandStopping => 'روکا جا رہا ہے…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count سیکنڈ';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'ایجنٹ کمانڈ $command، $elapsed سے چل رہی ہے';
+  }
+
+  @override
+  String get serverLostTitle => 'سرور سے رابطہ منقطع ہو گیا';
+
+  @override
+  String get serverLostBody =>
+      'Control Center پس منظر میں دوبارہ جڑنے کی کوشش جاری رکھے ہوئے ہے۔ ابھی دوبارہ کوشش کریں، یا سرور منتخب کرنے کے لیے سائن ان اسکرین پر جائیں۔';
+
+  @override
+  String get serverLostRetrying => 'دوبارہ جڑ رہا ہے…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'اگلی کوشش $seconds سیکنڈ میں';
+  }
+
+  @override
+  String get serverLostReconnect => 'دوبارہ جڑنے کی کوشش کریں';
+
+  @override
+  String get serverLostSignIn => 'سائن ان پر جائیں';
+
+  @override
+  String get serverEndedTitle => 'سرور سے دوبارہ جڑا نہیں جا سکتا';
+
+  @override
+  String get shutdownSubtitleServer => 'سرور بند ہو رہا ہے';
 }

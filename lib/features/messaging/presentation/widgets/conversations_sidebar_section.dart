@@ -19,34 +19,54 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+part 'conversations_sidebar_archived.dart';
+
 /// The "Spaces" group rendered inline in the global app sidebar: the space
 /// list with its `+` action, empty hint and space rows. A separate
-/// [ConsumerWidget] so space/selection watches rebuild only this group, not
-/// the Work/Team/Knowledge groups.
+/// consumer so space watches rebuild only this group, not the Work/Team/
+/// Knowledge groups.
 ///
 /// Tapping a row navigates to that space ([spaceRoute]); the URL is the
 /// source of truth for the open space, so the row's active highlight follows
-/// the route's `:spaceId` and clears the moment the user navigates away.
-class ConversationsSidebarSection extends ConsumerWidget {
+/// the route's `:spaceId` and clears the moment the user navigates away. Each
+/// row reads that highlight itself ([watchRouteSpaceSelected]): this section
+/// does not depend on the route at all, so a navigation never rebuilds it.
+class ConversationsSidebarSection extends ConsumerStatefulWidget {
   /// Creates a [ConversationsSidebarSection].
   const ConversationsSidebarSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConversationsSidebarSection> createState() =>
+      _ConversationsSidebarSectionState();
+}
+
+class _ConversationsSidebarSectionState
+    extends ConsumerState<ConversationsSidebarSection> {
+  /// The row last built for each space. A list change (a reorder when another
+  /// space gets a message, a rename) hands the framework the SAME widget for
+  /// every space whose rendered fields did not change, so those cards are
+  /// skipped instead of rebuilt.
+  final Map<String, SpaceSidebarGroup> _rows = {};
+
+  SpaceSidebarGroup _row(Space space) {
+    final cached = _rows[space.id];
+    if (cached != null && sameSidebarSpace(cached.space, space)) {
+      return cached;
+    }
+    return _rows[space.id] = SpaceSidebarGroup(
+      key: ValueKey(space.id),
+      space: space,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Keeps the read-cursor side effect alive while the sidebar is mounted: it
     // stamps the user's read cursor on selection so the unseen dot clears.
     ref.watch(selectedSpaceReadCursorEffectProvider);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    // The URL is the source of truth for the open space: a row reads as
-    // selected iff its id is the route's `:spaceId`. The sidebar lives in the
-    // shell (above the route's page), so the child route's path parameters
-    // aren't in scope here — derive the id from the full location instead.
-    // Reading GoRouterState makes the section rebuild on navigation, so the
-    // highlight clears the moment the user leaves the space surface.
-    final routeSpaceId = selectedSpaceIdFromLocation(
-      GoRouterState.of(context).uri.path,
-      workspaceId,
-    );
+    // Value-stable: re-emits only when a rendered field or the order of the
+    // visible spaces changes, not on every message that bumps `updatedAt`.
     final spaces = workspaceId != null
         ? ref.watch(workspaceVisibleSpacesProvider(workspaceId))
         : ref.watch(visibleSpacesProvider);
@@ -57,10 +77,15 @@ class ConversationsSidebarSection extends ConsumerWidget {
     // muted section so agent chatter never touches the human unread counts.
     final humanSpaces = spaces.where((c) => !c.kind.isAgentPeer).toList();
     final agentSpaces = spaces.where((c) => c.kind.isAgentPeer).toList();
+    final humanIds = {for (final space in humanSpaces) space.id};
+    _rows.removeWhere((id, _) => !humanIds.contains(id));
 
-    return ListView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    // A plain column, not a shrink-wrapped non-scrolling ListView: this sits
+    // inside the sidebar's own scrolling list, so a nested viewport bought
+    // nothing but a second layout pass over every row.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         _SidebarSection(
           label: l10n.spaces,
@@ -102,22 +127,10 @@ class ConversationsSidebarSection extends ConsumerWidget {
               SpaceFoldersList(
                 workspaceId: workspaceId,
                 spaces: humanSpaces,
-                routeSpaceId: routeSpaceId,
-                spaceBuilder: (space) => SpaceSidebarGroup(
-                  key: ValueKey(space.id),
-                  space: space,
-                  routeSpaceId: routeSpaceId,
-                  onOpenSpace: () => _selectAndNavigate(context, ref, space.id),
-                ),
+                spaceBuilder: _row,
               )
             else
-              for (final space in humanSpaces)
-                SpaceSidebarGroup(
-                  key: ValueKey(space.id),
-                  space: space,
-                  routeSpaceId: routeSpaceId,
-                  onOpenSpace: () => _selectAndNavigate(context, ref, space.id),
-                ),
+              for (final space in humanSpaces) _row(space),
           ],
         ),
         // The sections carry no edge padding (so the list meets the sidebar's
@@ -129,23 +142,16 @@ class ConversationsSidebarSection extends ConsumerWidget {
             initiallyExpanded: false,
             children: [
               for (final space in agentSpaces)
-                SpaceSidebarItem(
+                RouteSpaceSidebarItem(
+                  key: ValueKey(space.id),
                   space: space,
-                  selected: space.id == routeSpaceId,
                   muted: true,
-                  onPress: () => _selectAndNavigate(context, ref, space.id),
                 ),
             ],
           ),
         ],
       ],
     );
-  }
-
-  void _selectAndNavigate(BuildContext context, WidgetRef ref, String spaceId) {
-    // Navigate only — MessagingScreen mirrors the URL into the selection
-    // provider, keeping the URL the single source of truth.
-    GoRouter.of(context).go(spaceRoute(context.currentWorkspaceId!, spaceId));
   }
 }
 
@@ -325,8 +331,10 @@ Future<void> showNewSpaceDialog(BuildContext context, WidgetRef ref) async {
   // The route's `:workspaceId` is the source of truth — read it directly so the
   // new space always lands in the workspace the user is viewing, never a
   // stale/lagging `activeWorkspaceIdProvider` value. (We're inside the workspace
-  // shell here, so the param is always present.)
-  final workspaceId = context.currentWorkspaceId!;
+  // shell here, so the param is always present.) Read through the router, not
+  // `GoRouterState`: that lookup would subscribe the sidebar to every later
+  // navigation.
+  final workspaceId = routeWorkspaceIdOf(context)!;
   // A bare `ref.read(...future)` adds no listener, and Riverpod pauses an
   // unlistened provider — so on a screen that doesn't already watch these
   // streams the future never resolved and the `+` did nothing until some
@@ -517,159 +525,5 @@ class _CreateSpaceDialogState extends State<_CreateSpaceDialog> {
         ),
       ],
     );
-  }
-}
-
-/// Opens the archived-spaces dialog (the trigger left of the sidebar's `+`):
-/// every archived space of the current workspace, most-recently-archived
-/// first. Restore returns a space to the sidebar and opens it; the per-row
-/// delete is the one remaining path to permanent deletion, behind a
-/// confirmation — archiving itself never destroys anything.
-Future<void> showArchivedSpacesDialog(BuildContext context) {
-  // Resolved in the SIDEBAR's context, under the router: the dialog mounts in
-  // the root overlay, where `GoRouterState.of` — and so `currentWorkspaceId` —
-  // has no route above it (same reason [showNewSpaceDialog] reads the id
-  // before opening).
-  final workspaceId = context.currentWorkspaceId!;
-  final router = GoRouter.of(context);
-  return showCcDialog<void>(
-    context: context,
-    builder: (_) =>
-        _ArchivedSpacesDialog(workspaceId: workspaceId, router: router),
-  );
-}
-
-class _ArchivedSpacesDialog extends ConsumerWidget {
-  const _ArchivedSpacesDialog({
-    required this.workspaceId,
-    required this.router,
-  });
-
-  /// The workspace whose archived spaces are listed (resolved by the caller,
-  /// never from the dialog's overlay context).
-  final String workspaceId;
-
-  /// The app's router, captured by the caller for the same reason — restore
-  /// navigates to the reopened space.
-  final GoRouter router;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final archived = ref.watch(archivedSpacesProvider(workspaceId));
-    return CcDialog(
-      title: l10n.archivedSpaces,
-      content: SizedBox(
-        width: 360,
-        child: archived.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  l10n.archivedSpacesEmpty,
-                  style: CcTypography.caption.copyWith(
-                    color: context.designSystem?.textTertiary,
-                  ),
-                ),
-              )
-            : ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 320),
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final space in archived)
-                      CcTile(
-                        leadingIcon: AppIcons.archive,
-                        title: space.name.isNotEmpty
-                            ? space.name
-                            : l10n.spaceLabel,
-                        subtitle: Text(
-                          l10n.archivedWhen(
-                            formatRelativeTime(context, space.archivedAt),
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CcIconButton(
-                              icon: AppIcons.archiveRestore,
-                              size: CcButtonSize.sm,
-                              variant: CcButtonVariant.ghost,
-                              tooltip: l10n.restoreSpace,
-                              onPressed: () =>
-                                  unawaited(_restore(context, ref, space)),
-                            ),
-                            CcIconButton(
-                              icon: AppIcons.trash2,
-                              size: CcButtonSize.sm,
-                              variant: CcButtonVariant.ghost,
-                              tooltip: l10n.deleteSpacePermanently,
-                              onPressed: () => unawaited(
-                                _confirmDeletePermanently(context, ref, space),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-      ),
-      actions: [
-        CcButton(
-          variant: CcButtonVariant.secondary,
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.close),
-        ),
-      ],
-    );
-  }
-
-  /// Restores [space] to the sidebar and opens it — the visible proof the
-  /// archive kept everything (messages, participants, worktrees) intact.
-  Future<void> _restore(
-    BuildContext context,
-    WidgetRef ref,
-    Space space,
-  ) async {
-    await ref
-        .read(messagingServiceProvider)
-        .unarchiveSpace(workspaceId, space.id);
-    if (context.mounted) {
-      Navigator.of(context).pop();
-      router.go(spaceRoute(workspaceId, space.id));
-    }
-  }
-
-  Future<void> _confirmDeletePermanently(
-    BuildContext context,
-    WidgetRef ref,
-    Space space,
-  ) async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showCcDialog<bool>(
-      context: context,
-      builder: (ctx) => CcDialog(
-        title: l10n.deleteSpace,
-        content: Text(l10n.deleteSpaceConfirm),
-        actions: [
-          CcButton(
-            variant: CcButtonVariant.secondary,
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          CcButton(
-            variant: CcButtonVariant.destructive,
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
-    await ref.read(messagingServiceProvider).deleteSpace(workspaceId, space.id);
-    // No navigation handling: the row drops out of the dialog's watched list
-    // on its own, and an archived space cannot be the open route space.
   }
 }

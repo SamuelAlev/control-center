@@ -1,6 +1,6 @@
 import { REPO_URL } from './site.ts';
 
-export type DesktopPlatform = 'macos' | 'windows' | 'linux';
+export type DesktopPlatform = 'macos' | 'windows' | 'windows-arm64' | 'linux';
 
 type ReleaseAsset = {
   name: string;
@@ -23,6 +23,8 @@ export type DownloadResult =
 const assetNames: Record<DesktopPlatform, RegExp> = {
   macos: /^Control-Center-[\w.+-]+-arm64\.dmg$/,
   windows: /^Control-Center-[\w.+-]+-x64-setup\.exe$/,
+  // The native Windows-on-Arm installer. `windows` stays the x64 one.
+  'windows-arm64': /^Control-Center-[\w.+-]+-arm64-setup\.exe$/,
   linux: /^Control-Center-[\w.+-]+-x86_64\.AppImage$/,
 };
 

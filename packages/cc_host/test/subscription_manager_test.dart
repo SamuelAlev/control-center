@@ -8,6 +8,7 @@ import 'package:cc_host/src/repo_rpc/repo_op_dispatcher.dart'
     show WorkspaceRoleResolver;
 import 'package:cc_host/src/repo_rpc/subscription_manager.dart';
 import 'package:cc_host/src/repo_rpc/watch_query.dart';
+import 'package:cc_rpc/cc_rpc.dart' show kSubErrorUpstreamAuthKind;
 import 'package:test/test.dart';
 
 /// Unit coverage for [SubscriptionManager]: the subscribe/unsubscribe surface,
@@ -132,6 +133,66 @@ void main() {
       expect(params['rev'], before + 2);
     });
 
+    test('an identical re-emission is not re-sent; a change is', () async {
+      final mgr = _harness();
+      addTearDown(mgr.dispose);
+      mgr.subscribe(
+        id: 1,
+        params: const {
+          'query': 'scoped.watch',
+          'args': {'workspace_id': 'ws-1'},
+        },
+      );
+      await pumpEventQueue(times: 10);
+      List<Map<String, dynamic>> snaps() =>
+          mgr.sent.where((f) => f['method'] == RpcMethods.subSnapshot).toList();
+      expect(snaps(), hasLength(1));
+
+      // A drift watch re-emits on any write to its tables: value-equal (fresh
+      // instances, same content) is a non-event for the client.
+      mgr.scopedController.add({
+        'rows': <String>['ws-1'],
+      });
+      await pumpEventQueue(times: 10);
+      expect(snaps(), hasLength(1));
+
+      mgr.scopedController.add({
+        'rows': <String>['ws-1', 'new'],
+      });
+      await pumpEventQueue(times: 10);
+      expect(snaps(), hasLength(2));
+      expect((snaps().last['params'] as Map)['data'], {
+        'rows': ['ws-1', 'new'],
+      });
+    });
+
+    test('a resubscribe always receives its initial snapshot', () async {
+      final mgr = _harness();
+      addTearDown(mgr.dispose);
+      const params = {
+        'query': 'scoped.watch',
+        'args': {'workspace_id': 'ws-1'},
+      };
+      final first = mgr.subscribe(id: 1, params: params);
+      await pumpEventQueue(times: 10);
+      mgr.unsubscribe(
+        id: 2,
+        params: {'subscriptionId': (first['result'] as Map)['subscriptionId']},
+      );
+      mgr.sent.clear();
+
+      final second = mgr.subscribe(id: 3, params: params);
+      await pumpEventQueue(times: 10);
+      final snaps = mgr.sent
+          .where((f) => f['method'] == RpcMethods.subSnapshot)
+          .toList();
+      expect(snaps, hasLength(1));
+      expect(
+        (snaps.single['params'] as Map)['subscriptionId'],
+        (second['result'] as Map)['subscriptionId'],
+      );
+    });
+
     test('a handler that throws synchronously returns internalError', () {
       final mgr = _harness();
       addTearDown(mgr.dispose);
@@ -197,6 +258,27 @@ void main() {
         // internalError) so the client's retry policy does NOT resubscribe.
         expect(errParams['code'], RpcErrorCodes.rateLimited);
         expect((errParams['data'] as Map)['kind'], 'stream_error');
+      },
+    );
+
+    test(
+      'a forge auth failure is unauthorized, tagged as upstream, not a denial',
+      () async {
+        final mgr = _harness();
+        addTearDown(mgr.dispose);
+        final res = mgr.subscribe(id: 1, params: const {'query': 'forge_auth'});
+        expect(res['error'], isNull);
+        await pumpEventQueue(times: 15);
+
+        final err = mgr.sent.lastWhere(
+          (f) => f['method'] == RpcMethods.subError,
+        );
+        final errParams = err['params'] as Map<String, dynamic>;
+        // Still unrecoverable (no resubscribe storm against GitHub)…
+        expect(errParams['code'], RpcErrorCodes.unauthorized);
+        // …but marked as the forge refusing the server's credential, so the
+        // client does not mistake it for losing the workspace.
+        expect((errParams['data'] as Map)['kind'], kSubErrorUpstreamAuthKind);
       },
     );
 
@@ -593,6 +675,13 @@ _Harness _harness({
       workspaceScoped: false,
       handler: (ctx) => _ErrorStream(
         error: const NetworkException('rate limited', code: 'rate_limited'),
+      ).stream,
+    ),
+    WatchQuery(
+      name: 'forge_auth',
+      workspaceScoped: false,
+      handler: (ctx) => _ErrorStream(
+        error: const NetworkException('Bad credentials', code: 'auth_error'),
       ).stream,
     ),
     WatchQuery(

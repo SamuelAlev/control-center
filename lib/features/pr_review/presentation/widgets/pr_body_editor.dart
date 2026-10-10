@@ -12,6 +12,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'pr_body_editor_empty_affordance.dart';
+
 /// The PR description block: renders [readChild] (the collapsible markdown) in
 /// read mode with an edit pencil shown on hover or keyboard focus (when
 /// [canEdit]) and the shared
@@ -28,6 +30,7 @@ class PrBodyEditor extends ConsumerStatefulWidget {
     required this.canEdit,
     required this.readChild,
     this.bodyHtml,
+    this.pending = false,
   });
 
   /// The PR's identity key (for the edit notifier).
@@ -49,6 +52,11 @@ class PrBodyEditor extends ConsumerStatefulWidget {
 
   /// GitHub-rendered HTML for the body (passed through to the preview).
   final String? bodyHtml;
+
+  /// True while the body is merely unfetched (the page is on its list-row
+  /// seed). [readChild] then shows the description skeleton, and the empty-body
+  /// "Add a description" affordance must not claim there is none.
+  final bool pending;
 
   @override
   ConsumerState<PrBodyEditor> createState() => _PrBodyEditorState();
@@ -165,90 +173,61 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
   }
 
   Widget _buildRead(BuildContext context) {
-    if (!widget.canEdit) {
-      return widget.readChild;
-    }
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final canEdit = widget.canEdit && !widget.pending;
     // An empty body renders as a single faint line ("No description
     // provided."), which gives the hover-revealed pencil almost no surface to
     // appear over — in practice it's unreachable, so there's no way to add a
     // first description. Swap in an explicit, always-visible affordance that
     // opens the editor on tap.
-    if (isMarkdownBodyEffectivelyEmpty(widget.initialMarkdown)) {
+    if (canEdit && isMarkdownBodyEffectivelyEmpty(widget.initialMarkdown)) {
       return _buildEmptyAffordance(context, t);
     }
     final l10n = AppLocalizations.of(context);
+    // ONE tree shape whether or not the viewer may edit. Edit access resolves
+    // a round trip after the body paints (and a provider reload can blink
+    // it), and returning the bare [readChild] for "no access" moved it to a
+    // different depth than the Stack below — remounting the whole rendered
+    // description, its markdown deferral and its images, on every flip. Only
+    // the pencil comes and goes now. `passthrough` hands [readChild] the same
+    // constraints it gets without the Stack.
     return HoverFocusReveal(
       builder: (context, revealed) => Stack(
+        fit: StackFit.passthrough,
         children: [
           widget.readChild,
-          // Always mounted so Tab and screen readers reach it; painted only on
-          // hover or while it has keyboard focus.
-          PositionedDirectional(
-            top: 0,
-            end: 0,
-            child: HoverFocusReveal.fade(
-              revealed: revealed,
-              child: CcTooltip(
-                message: l10n.editDescription,
-                child: CcTappable(
-                  focusNode: _editButtonFocus,
-                  onPressed: _startEdit,
-                  semanticLabel: l10n.editDescription,
-                  builder: (context, states) => Container(
-                    decoration: BoxDecoration(
-                      color: t.bgPrimary,
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: t.borderSecondary),
-                    ),
-                    padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      AppIcons.pencil,
-                      size: 14,
-                      color: t.fgQuaternary,
+          // Always mounted (while editable) so Tab and screen readers reach
+          // it; painted only on hover or while it has keyboard focus.
+          if (canEdit)
+            PositionedDirectional(
+              top: 0,
+              end: 0,
+              child: HoverFocusReveal.fade(
+                revealed: revealed,
+                child: CcTooltip(
+                  message: l10n.editDescription,
+                  child: CcTappable(
+                    focusNode: _editButtonFocus,
+                    onPressed: _startEdit,
+                    semanticLabel: l10n.editDescription,
+                    builder: (context, states) => Container(
+                      decoration: BoxDecoration(
+                        color: t.bgPrimary,
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: t.borderSecondary),
+                      ),
+                      padding: const EdgeInsets.all(5),
+                      child: Icon(
+                        AppIcons.pencil,
+                        size: 14,
+                        color: t.fgQuaternary,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
-      ),
-    );
-  }
-
-  /// The empty-body read state when the user may edit: the
-  /// "No description provided." placeholder paired with an always-visible
-  /// "Add a description" action. Tapping anywhere opens the editor.
-  Widget _buildEmptyAffordance(BuildContext context, DesignSystemTokens t) {
-    final l10n = AppLocalizations.of(context);
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: CcTappable(
-        focusNode: _editButtonFocus,
-        onPressed: _startEdit,
-        builder: (context, states) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.noDescriptionProvided,
-                style: CcTypography.body.copyWith(color: t.textTertiary),
-              ),
-              const SizedBox(width: 12),
-              Icon(AppIcons.pencil, size: 13, color: t.textBrandPrimary),
-              const SizedBox(width: 5),
-              Text(
-                l10n.addDescription,
-                style: CcTypography.body.copyWith(
-                  color: t.textBrandPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

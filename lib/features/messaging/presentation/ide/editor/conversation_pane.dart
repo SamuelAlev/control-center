@@ -66,15 +66,29 @@ class ConversationPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final spacesAsync = workspaceId != null
-        ? ref.watch(workspaceSpacesProvider(workspaceId))
-        : ref.watch(spacesProvider);
+    // Only THIS space, selected out of the list: any other space's edit (a
+    // rename, an unread bump, a status flip) re-emits the whole list, and
+    // watching it rebuilt the pane — header, banners, composer, feed — for a
+    // change it never shows. The spinner is first-load only: in Riverpod 3 a
+    // refresh keeps `isLoading` true beside the previous value, and keying the
+    // spinner off it unmounted the feed on every space re-emission.
+    final spaceState = ref.watch(
+      (workspaceId != null
+              ? workspaceSpacesProvider(workspaceId)
+              : spacesProvider)
+          .select(
+            (async) => (
+              pending: async.isLoading && !async.hasValue,
+              space: async.value?.where((c) => c.id == spaceId).firstOrNull,
+            ),
+          ),
+    );
 
-    if (spacesAsync.isLoading) {
+    if (spaceState.pending) {
       return const Center(child: CcSpinner());
     }
 
-    final space = spacesAsync.value?.where((c) => c.id == spaceId).firstOrNull;
+    final space = spaceState.space;
 
     if (space == null) {
       return const _NoConversationState();
@@ -105,11 +119,13 @@ class ConversationPane extends ConsumerWidget {
       );
     }
 
-    final conversation =
-        (ref.watch(spaceConversationsProvider(spaceId)).value ??
-                const <Conversation>[])
+    final conversation = ref.watch(
+      spaceConversationsProvider(spaceId).select(
+        (async) => (async.value ?? const <Conversation>[])
             .where((c) => c.id == convId)
-            .firstOrNull;
+            .firstOrNull,
+      ),
+    );
 
     return VisibleConversationRegistrar(
       spaceId: spaceId,

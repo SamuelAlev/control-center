@@ -2,7 +2,7 @@
 title: Instalacja
 description: Korzystaj z Control Center w przeglądarce albo zainstaluj aplikację desktopową, skonfiguruj backend agenta i wybierz, gdzie działa jego serwer.
 slug: pl-PL/podrecznik/instalacja
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center działa na dwa sposoby: jako **aplikacja webowa** pod adresem
@@ -65,7 +65,7 @@ Aby hostować serwer, postępuj zgodnie z
 | Wymaganie       | macOS                                                 | Windows     | Linux                                                      |
 | --------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Wersja systemu  | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ lub inna dystrybucja z glibc 2.35+ i GTK 3   |
-| Architektura    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architektura    | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git             | Wymagany                                              | Wymagany    | Wymagany                                                   |
 | Miejsce na dysku | ~200 MB dla aplikacji plus katalog danych serwera   | ~200 MB     | ~200 MB                                                    |
 
@@ -99,10 +99,12 @@ Pobierz `Control-Center-<version>-arm64.dmg`, otwórz go i przeciągnij Control 
 do folderu Aplikacje. Build jest podpisany Developer ID i notaryzowany przez Apple,
 więc otwiera się normalnie.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: instalator dla użytkownika.
 - `Control-Center-<version>-windows-x64.zip`: przenośny plik zip.
+- `Control-Center-<version>-arm64-setup.exe`: instalator dla użytkownika.
+- `Control-Center-<version>-windows-arm64.zip`: przenośny plik zip.
 
 Windows używa `git worktree` do checkoutów przestrzeni (bez copy-on-write).
 
@@ -128,8 +130,8 @@ startuje z tymi elementami sterującymi ukrytymi.
 ### Samodzielny serwer
 
 Każde wydanie zawiera też sam serwer headless osobno —
-`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip` — obok obrazów `cc-server`, `cc-webapp`
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip` — obok obrazów `cc-server`, `cc-webapp`
 i `cc-remote` w GHCR. Zobacz
 [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/).
 

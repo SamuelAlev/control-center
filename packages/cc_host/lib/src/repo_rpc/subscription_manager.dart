@@ -7,6 +7,7 @@ import 'package:cc_host/src/repo_rpc/repo_op.dart';
 import 'package:cc_host/src/repo_rpc/repo_op_dispatcher.dart'
     show ServerOwnerResolver, WorkspaceRoleResolver;
 import 'package:cc_host/src/repo_rpc/watch_query.dart';
+import 'package:cc_rpc/cc_rpc.dart' show kSubErrorUpstreamAuthKind;
 
 /// Session live subscriptions → `sub/snapshot` pushes (snapshot-only v1).
 ///
@@ -99,6 +100,24 @@ class SubscriptionManager {
   final Map<String, ({int rev, Map<String, dynamic> data})> _pendingSnapshots =
       {};
   bool _snapshotFlushScheduled = false;
+
+  /// The data of the last snapshot actually SENT per subscription.
+  ///
+  /// A drift watch re-emits on any write to the tables it reads — a tool
+  /// flush in another conversation, a reaction, an unrelated row — and most of
+  /// those re-emissions are value-identical to what the client already
+  /// renders. Each one was a full encode here, a transfer, a decode, a
+  /// snapshot-cache write and a provider rebuild there. An identical snapshot
+  /// is now dropped. Entries die with their subscription, so a resubscribe
+  /// (including every reconnect, which mints a fresh id) always gets its
+  /// initial snapshot.
+  ///
+  /// Holding the sent map (rather than its encoding, which would mean
+  /// encoding every snapshot twice) relies on emitted snapshots never being
+  /// mutated afterwards — the assumption the batching above and the
+  /// in-process channel, which hands the map itself to the client, already
+  /// make.
+  final Map<String, Map<String, dynamic>> _lastSent = {};
 
   /// Handles `sub/subscribe`. A workspace-scoped query carries its target
   /// `workspace_id` in `params['args']` (the server is stateless — no session
@@ -315,9 +334,13 @@ class SubscriptionManager {
               // former — a fresh subscription just re-issues the same
               // doomed upstream call, which is exactly the resubscribe
               // storm that trips the rate limit.
+              final mapped = mapException?.call(e);
               _sendStreamError(
                 subId,
-                mapException?.call(e)?.code ?? _streamErrorCode(e),
+                mapped?.code ?? _streamErrorCode(e),
+                kind: mapped == null && _isUpstreamAuthError(e)
+                    ? kSubErrorUpstreamAuthKind
+                    : 'stream_error',
               );
               _cancel(subId);
             },
@@ -355,14 +378,18 @@ class SubscriptionManager {
 
   /// Pushes a `sub/error` notification for [subId] (see the classification
   /// contract on [mapException]).
-  void _sendStreamError(String subId, int code) {
+  void _sendStreamError(
+    String subId,
+    int code, {
+    String kind = 'stream_error',
+  }) {
     send({
       'jsonrpc': '2.0',
       'method': RpcMethods.subError,
       'params': {
         'subscriptionId': subId,
         'code': code,
-        'data': {'kind': 'stream_error'},
+        'data': {'kind': kind},
       },
     });
   }
@@ -466,6 +493,11 @@ class SubscriptionManager {
         continue;
       }
       final snap = entry.value;
+      final previous = _lastSent[entry.key];
+      if (previous != null && _jsonEquals(previous, snap.data)) {
+        continue;
+      }
+      _lastSent[entry.key] = snap.data;
       send({
         'jsonrpc': '2.0',
         'method': RpcMethods.subSnapshot,
@@ -481,12 +513,14 @@ class SubscriptionManager {
 
   void _cancel(String subId) {
     _pendingSnapshots.remove(subId);
+    _lastSent.remove(subId);
     final sub = _subs.remove(subId);
     sub?.cancel();
   }
 
   void _cancelAll() {
     _pendingSnapshots.clear();
+    _lastSent.clear();
     for (final sub in _subs.values) {
       sub.cancel();
     }
@@ -498,6 +532,13 @@ class SubscriptionManager {
     'id': id,
     'error': {'code': code, 'message': message},
   };
+
+  /// Whether [e] is the upstream forge rejecting the server's credential —
+  /// reported as [RpcErrorCodes.unauthorized] (unrecoverable by a retry) but
+  /// tagged [kSubErrorUpstreamAuthKind], so the client does not read it as
+  /// this session losing its workspace.
+  static bool _isUpstreamAuthError(Object e) =>
+      e is NetworkException && e.code == 'auth_error';
 
   /// Maps a watch-stream failure to the RPC error code the client sees, the
   /// fallback behind [mapException]. A [NetworkException] carries the upstream
@@ -520,6 +561,42 @@ class SubscriptionManager {
     }
     return RpcErrorCodes.internalError;
   }
+}
+
+/// Structural equality over JSON-shaped values (maps, lists, scalars), with
+/// an identity fast path at every level. Doubles compare by `==`, so `1` and
+/// `1.0` are equal — exactly as they are once both are encoded.
+bool _jsonEquals(Object? a, Object? b) {
+  if (identical(a, b)) {
+    return true;
+  }
+  if (a is Map) {
+    if (b is! Map || a.length != b.length) {
+      return false;
+    }
+    for (final entry in a.entries) {
+      final other = b[entry.key];
+      if (other == null && !b.containsKey(entry.key)) {
+        return false;
+      }
+      if (!_jsonEquals(entry.value, other)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (a is List) {
+    if (b is! List || a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (!_jsonEquals(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return a == b;
 }
 
 class _Subscription {

@@ -8056,6 +8056,53 @@ class AppLocalizationsDe extends AppLocalizations {
       'Es gibt noch kein Transkript zum Zusammenfassen.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Erstelle sie aus dem Transkript oder schreib deine eigenen.';
+
+  @override
+  String get meetingNotesGenerate => 'Notizen erstellen';
+
+  @override
+  String get meetingNotesWriteOwn => 'Eigene schreiben';
+
+  @override
+  String get meetingNothingTranscribed => 'Es wurde nichts transkribiert.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Es gibt kein Transkript zum Zusammenfassen, aber du kannst trotzdem eigene Notizen führen.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Sprecher';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Die Redezeit pro Sprecher erscheint, sobald ein Transkript vorliegt.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count weitere';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share der Redezeit, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Alle Aufgaben sind erledigt.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Alle $count anzeigen';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notizen als Markdown in die Zwischenablage kopiert.';
 
@@ -15389,4 +15436,50 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Ein Agent hängt an Zugangsdaten fest';
+
+  @override
+  String get killTerminal => 'Terminal beenden';
+
+  @override
+  String get stopAgentCommand => 'Befehl stoppen';
+
+  @override
+  String get agentCommandStopping => 'Wird gestoppt…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count Sek.';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Agent-Befehl $command, läuft seit $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Verbindung zum Server verloren';
+
+  @override
+  String get serverLostBody =>
+      'Control Center versucht im Hintergrund weiter, die Verbindung wiederherzustellen. Versuche es jetzt erneut oder wechsle zur Anmeldung, um einen Server auszuwählen.';
+
+  @override
+  String get serverLostRetrying => 'Verbindung wird wiederhergestellt…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Nächster Versuch in $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Erneut verbinden';
+
+  @override
+  String get serverLostSignIn => 'Zur Anmeldung';
+
+  @override
+  String get serverEndedTitle => 'Keine erneute Verbindung zum Server möglich';
+
+  @override
+  String get shutdownSubtitleServer => 'Der Server wird beendet';
 }

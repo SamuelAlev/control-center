@@ -12,6 +12,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_infra/src/sandboxing/stdin_pipe.dart';
 
 /// `SandboxPort` implementation that intentionally provides no isolation —
 /// `exec` is a direct `Process.start` on the host. Users opt into this from
@@ -87,12 +88,20 @@ class NoSandboxAdapter implements SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async {
     if (argv.isEmpty) {
       throw ArgumentError('argv must not be empty');
     }
     _updateState(handle.sessionId, SandboxState.active);
     final controller = _streams[handle.sessionId];
+    // `destroy` can close the stream while the child is still flushing.
+    void emit(SandboxEvent event) {
+      if (controller != null && !controller.isClosed) {
+        controller.add(event);
+      }
+    }
+
     final workingDirectory =
         workdir ??
         _handles[handle.sessionId]?.details['workingDirectory'] as String?;
@@ -112,10 +121,7 @@ class NoSandboxAdapter implements SandboxPort {
     _processes[handle.sessionId] = process;
     onPid?.call(process.pid);
 
-    if (stdinInput != null) {
-      process.stdin.write(stdinInput);
-    }
-    unawaited(process.stdin.close());
+    settleStdin(process, input: stdinInput, stream: stdinStream);
 
     Future<void> forward(Stream<List<int>> stream, SandboxEventType type) {
       final done = Completer<void>();
@@ -126,7 +132,7 @@ class NoSandboxAdapter implements SandboxPort {
           .transform(const LineSplitter())
           .listen(
             (line) {
-              controller?.add(SandboxEvent(type: type, content: line));
+              emit(SandboxEvent(type: type, content: line));
             },
             onDone: done.complete,
             onError: (_, _) {
@@ -145,18 +151,15 @@ class NoSandboxAdapter implements SandboxPort {
     final exitCode = await _awaitExitWithTimeout(
       process,
       timeout,
-      (message) => controller?.add(
-        SandboxEvent(type: SandboxEventType.stderr, content: message),
-      ),
+      (message) =>
+          emit(SandboxEvent(type: SandboxEventType.stderr, content: message)),
     );
     // Drain stdio before the exit event: a short-lived `echo` can exit before
     // the event loop delivers the stdout listen callback and consumers that
     // stop on `exit` would miss the output.
     await Future.wait<void>([stdoutDone, stderrDone]);
     _processes.remove(handle.sessionId);
-    controller?.add(
-      SandboxEvent(type: SandboxEventType.exit, exitCode: exitCode),
-    );
+    emit(SandboxEvent(type: SandboxEventType.exit, exitCode: exitCode));
     _updateState(handle.sessionId, SandboxState.warm);
     return exitCode;
   }

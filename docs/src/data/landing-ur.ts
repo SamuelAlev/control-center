@@ -330,7 +330,7 @@ export const ur: LandingCopy = {
     description:
       "آپ کا اگلا ڈویلپر دن یہاں سے شروع ہو سکتا ہے۔ مفت اور اوپن سورس۔",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "ریلیز دیکھیں",
     web: "ویب ایپ کھولیں",

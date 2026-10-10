@@ -2,7 +2,7 @@
 title: Installer
 description: Utilisez Control Center dans le navigateur ou installez l’application de bureau, configurez un backend d’agent et choisissez où s’exécute son serveur.
 slug: fr-CA/manuel/installer
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center s’exécute de deux façons : comme **application Web** à l’adresse
@@ -65,7 +65,7 @@ suivez [Exécuter un serveur sans interface](/fr-CA/manuel/guides/executer-serve
 | Exigence      | macOS                                                 | Windows     | Linux                                                      |
 | ------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Version du système | macOS 13+ (Ventura)                              | Windows 10+ | Ubuntu 22.04+ ou une autre distribution avec glibc 2.35+ et GTK 3 |
-| Architecture  | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architecture  | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git           | Requis                                                | Requis      | Requis                                                     |
 | Espace disque | ~200 MB pour l’application, plus le répertoire de données du serveur | ~200 MB | ~200 MB                                             |
 
@@ -97,10 +97,12 @@ Téléchargez `Control-Center-<version>-arm64.dmg`, ouvrez-le et glissez Control
 Applications. La version est signée avec un Developer ID et notarisée par Apple ; elle
 s’ouvre donc normalement.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe` : un programme d’installation par utilisateur.
 - `Control-Center-<version>-windows-x64.zip` : une archive ZIP portable.
+- `Control-Center-<version>-arm64-setup.exe` : un programme d’installation par utilisateur.
+- `Control-Center-<version>-windows-arm64.zip` : une archive ZIP portable.
 
 Windows utilise `git worktree` pour les extractions d’espaces (aucune copie sur écriture).
 
@@ -123,8 +125,8 @@ démarre avec ces commandes masquées.
 ### Serveur autonome
 
 Chaque version comprend aussi le serveur sans interface livré séparément —
-`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip` — en plus des images `cc-server`, `cc-webapp` et
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip` — en plus des images `cc-server`, `cc-webapp` et
 `cc-remote` sur GHCR. Consultez [Exécuter un serveur sans interface](/fr-CA/manuel/guides/executer-serveur-sans-interface/).
 
 L’archive Linux est compilée sur Ubuntu 22.04 et ses bibliothèques natives incluses se

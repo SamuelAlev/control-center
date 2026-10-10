@@ -13,14 +13,14 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../../../helpers/test_wrap.dart';
 
-PrFile _file(String name) => PrFile(
+PrFile _file(String name, {int lines = 8}) => PrFile(
   filename: name,
   status: PrFileStatus.modified,
   additions: 5,
   deletions: 2,
   patch:
-      '@@ -1,8 +1,9 @@\n'
-      '${List.generate(8, (i) => ' line $i\n').join()}'
+      '@@ -1,$lines +1,${lines + 1} @@\n'
+      '${List.generate(lines, (i) => ' line $i\n').join()}'
       '+added\n',
 );
 
@@ -28,6 +28,8 @@ Widget _host(
   GlobalKey<UnifiedDiffViewState> key, {
   bool reduceMotion = false,
   void Function({required String path, required bool viewed})? onToggleViewed,
+  ScrollController? controller,
+  int lines = 8,
 }) {
   return ProviderScope(
     overrides: [
@@ -41,10 +43,14 @@ Widget _host(
             context,
           ).copyWith(disableAnimations: reduceMotion),
           child: CustomScrollView(
+            controller: controller,
             slivers: [
               UnifiedDiffView(
                 key: key,
-                files: [_file('lib/a.dart'), _file('lib/b.dart')],
+                files: [
+                  _file('lib/a.dart', lines: lines),
+                  _file('lib/b.dart', lines: lines),
+                ],
                 onToggleViewed: onToggleViewed,
               ),
             ],
@@ -158,6 +164,38 @@ void main() {
       await tester.pump(CcMotion.moderateExit);
       expect(doc.isRevealing(0), isFalse);
       expect(doc.heightOfFile(0), _collapsedHeight(doc));
+    });
+
+    testWidgets('folding a docked file lands on the next file\'s top', (
+      tester,
+    ) async {
+      final key = GlobalKey<UnifiedDiffViewState>();
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _host(
+          key,
+          controller: controller,
+          lines: 80,
+          onToggleViewed: ({required path, required viewed}) {},
+        ),
+      );
+      await tester.pump();
+      final doc = key.currentState!.debugDocument;
+
+      // Fifteen-odd rows into file 0, its header docked at the top.
+      controller.jumpTo(doc.headerHeight + 300);
+      await tester.pump();
+
+      // The docked header is laid out at its pin, but the finder judges
+      // onstage by the file's own top, now scrolled away.
+      await tester.tap(find.byIcon(AppIcons.circle, skipOffstage: false));
+      await tester.pump();
+      await tester.pump(CcMotion.moderateExit);
+
+      expect(doc.isExpanded(0), isFalse);
+      expect(doc.isRevealing(0), isFalse);
+      expect(controller.offset, doc.offsetOfFile(1));
     });
 
     testWidgets('reduced motion snaps a click', (tester) async {

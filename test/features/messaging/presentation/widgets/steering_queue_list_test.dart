@@ -183,6 +183,60 @@ void main() {
     ], reason: 'queued only, ascending steerOrder regardless of createdAt');
   });
 
+  test(
+    'steeringQueueProvider stays quiet while the queue is unchanged',
+    () async {
+      final windows =
+          StreamController<({List<Message> messages, bool hasMore})>();
+      final container = ProviderContainer(
+        overrides: [
+          spaceFeedWindowedProvider(
+            _kRef,
+          ).overrideWith((ref) => windows.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(windows.close);
+      var notified = 0;
+      final sub = container.listen(
+        steeringQueueProvider(_kRef),
+        (_, _) => notified++,
+      );
+      addTearDown(sub.close);
+
+      windows.add((messages: const <Message>[], hasMore: false));
+      await settle(container);
+      // Nothing queued: the shared const empty list, before and after.
+      expect(notified, 0);
+
+      windows.add((
+        messages: [_queued('a', 'typed', order: 1)],
+        hasMore: false,
+      ));
+      await settle(container);
+      expect(notified, 1);
+
+      // The window re-emits per streaming flush with fresh-but-equal rows.
+      windows.add((
+        messages: [_queued('a', 'typed', order: 1)],
+        hasMore: false,
+      ));
+      await settle(container);
+      expect(notified, 1);
+
+      windows.add((
+        messages: [_queued('a', 'edited', order: 1)],
+        hasMore: false,
+      ));
+      await settle(container);
+      expect(notified, 2);
+      expect(
+        container.read(steeringQueueProvider(_kRef)).single.content,
+        'edited',
+      );
+    },
+  );
+
   testWidgets('renders nothing when the queue is empty', (tester) async {
     await _pump(tester, windowMessages: const []);
     expect(find.byType(SteeringQueueList), findsOneWidget);
@@ -346,4 +400,12 @@ void main() {
     expect(find.textContaining('@[file:'), findsNothing);
     expect(find.byIcon(AppIcons.image), findsNWidgets(2));
   });
+}
+
+/// Lets a stream event reach its provider, then flushes the container: one
+/// `pump` alone can run before the event is delivered, which would make a
+/// "nothing notified" assertion pass for the wrong reason.
+Future<void> settle(ProviderContainer container) async {
+  await Future<void>.delayed(Duration.zero);
+  await container.pump();
 }

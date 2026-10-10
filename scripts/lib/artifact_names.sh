@@ -11,12 +11,15 @@ release_asset_name() { # kind version
     dmg)             printf 'Control-Center-%s-arm64.dmg\n' "$v" ;;
     win-setup)       printf 'Control-Center-%s-x64-setup.exe\n' "$v" ;;
     win-portable)    printf 'Control-Center-%s-windows-x64.zip\n' "$v" ;;
+    win-arm64-setup)    printf 'Control-Center-%s-arm64-setup.exe\n' "$v" ;;
+    win-arm64-portable) printf 'Control-Center-%s-windows-arm64.zip\n' "$v" ;;
     appimage)        printf 'Control-Center-%s-x86_64.AppImage\n' "$v" ;;
     appimage-zsync)  printf 'Control-Center-%s-x86_64.AppImage.zsync\n' "$v" ;;
     linux-tarball)   printf 'Control-Center-%s-linux-x64.tar.gz\n' "$v" ;;
     server-macos)    printf 'cc_server-%s-macos-arm64.tar.gz\n' "$v" ;;
     server-linux)    printf 'cc_server-%s-linux-x64.tar.gz\n' "$v" ;;
     server-windows)  printf 'cc_server-%s-windows-x64.zip\n' "$v" ;;
+    server-windows-arm64) printf 'cc_server-%s-windows-arm64.zip\n' "$v" ;;
     *) printf 'release_asset_name: unknown kind %s\n' "$kind" >&2; return 1 ;;
   esac
 }
@@ -27,24 +30,33 @@ release_asset_name() { # kind version
 # make_release.sh, the Sparkle feeds, the release notes and the drift tests.
 # Adding or dropping a platform is this line and the matching build job in
 # .github/workflows/release.yml — nothing else needs editing.
-RELEASE_PLATFORMS="${RELEASE_PLATFORMS:-macos linux windows}"
+#
+# `windows` is the x64 build and `windows-arm64` the native Arm64 one. They are
+# separate platforms, not one platform with two arches, because each has its
+# own Sparkle feed: WinSparkle 0.8.1 cannot pick an appcast item by
+# architecture, so an Arm64 install reads appcast-windows-arm64.xml while
+# every x64 install (including one emulated on Arm64) keeps reading the
+# appcast-windows.xml it has always read.
+RELEASE_PLATFORMS="${RELEASE_PLATFORMS:-macos linux windows windows-arm64}"
 
 # The artifact kinds each platform contributes, in release-notes order.
-release_platform_kinds() { # macos|linux|windows
+release_platform_kinds() { # macos|linux|windows|windows-arm64
   case "$1" in
     macos)   printf 'dmg\nserver-macos\n' ;;
     linux)   printf 'appimage\nappimage-zsync\nlinux-tarball\nserver-linux\n' ;;
     windows) printf 'win-setup\nwin-portable\nserver-windows\n' ;;
+    windows-arm64) printf 'win-arm64-setup\nwin-arm64-portable\nserver-windows-arm64\n' ;;
     *) printf 'release_platform_kinds: unknown platform %s\n' "$1" >&2; return 1 ;;
   esac
 }
 
 # The Sparkle feed a platform's updater reads, if it has one. Linux is
 # notify-only (no Sparkle backend), so it contributes none.
-release_platform_feed() { # macos|linux|windows
+release_platform_feed() { # macos|linux|windows|windows-arm64
   case "$1" in
     macos)   printf 'appcast.xml\n' ;;
     windows) printf 'appcast-windows.xml\n' ;;
+    windows-arm64) printf 'appcast-windows-arm64.xml\n' ;;
   esac
 }
 
@@ -64,7 +76,7 @@ release_asset_names() { # version
 }
 
 # True when a platform is part of this release.
-release_ships_platform() { # macos|linux|windows
+release_ships_platform() { # macos|linux|windows|windows-arm64
   case " $RELEASE_PLATFORMS " in *" $1 "*) return 0 ;; *) return 1 ;; esac
 }
 

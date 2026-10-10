@@ -2,7 +2,7 @@
 title: 安裝
 description: 在瀏覽器中使用 Control Center，或安裝桌面應用程式、設定代理後端，並選擇伺服器的執行位置。
 slug: zh-TW/手冊/安裝
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center 有兩種使用方式：在
@@ -56,7 +56,7 @@ pull request 審查、管線、工單、記憶與會議錄製本身——行為�
 | 需求         | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | 作業系統版本 | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+，或其他搭載 glibc 2.35+ 與 GTK 3 的發行版   |
-| 架構         | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| 架構         | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | 必要                                                  | 必要        | 必要                                                       |
 | 磁碟空間     | 應用程式約 200 MB，另加伺服器的資料目錄               | 約 200 MB   | 約 200 MB                                                  |
 
@@ -85,10 +85,12 @@ Linux 上為 `$XDG_DATA_HOME/control-center`（或 `~/.local/share/control-cente
 下載 `Control-Center-<version>-arm64.dmg`，開啟它，然後將 Control Center 拖曳到「應用程式」資料夾。這個組建以
 Developer ID 簽署並經 Apple 公證，因此可正常開啟。
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`：每位使用者的安裝程式。
 - `Control-Center-<version>-windows-x64.zip`：可攜式 zip。
+- `Control-Center-<version>-arm64-setup.exe`：每位使用者的安裝程式。
+- `Control-Center-<version>-windows-arm64.zip`：可攜式 zip。
 
 Windows 使用 `git worktree` 處理空間的檢出（不採用寫入時複製）。
 
@@ -103,7 +105,7 @@ AppImage 內含更新資訊，因此 [AppImageUpdate](https://github.com/AppImag
 
 ### 獨立伺服器
 
-每個版本也單獨提供無介面伺服器——`cc_server-<version>-macos-arm64.tar.gz`、`cc_server-<version>-linux-x64.tar.gz`、`cc_server-<version>-windows-x64.zip`——以及 GHCR 上的 `cc-server`、`cc-webapp` 與 `cc-remote` 映像。參見[執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)。
+每個版本也單獨提供無介面伺服器——`cc_server-<version>-macos-arm64.tar.gz`、`cc_server-<version>-linux-x64.tar.gz`、`cc_server-<version>-windows-x64.zip`、`cc_server-<version>-windows-arm64.zip`——以及 GHCR 上的 `cc-server`、`cc-webapp` 與 `cc-remote` 映像。參見[執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)。
 
 Linux 封存檔建置於 Ubuntu 22.04，其隨附的原生程式庫連結 glibc 2.35 與 GCC 12 的 libstdc++，因此需要至少同樣新的主機（Ubuntu 22.04、Debian 12、Fedora 36 或後續版本）。在較舊的發行版上，請改為執行 `cc-server` 映像——容器自帶使用者空間，因此只有核心需要由你提供。
 

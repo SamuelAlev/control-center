@@ -77,11 +77,12 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final routerState = GoRouterState.of(context);
-    final location = routerState.matchedLocation;
-    // The shell only renders for `/workspaces/:workspaceId/…` routes, so the
-    // workspace id is always present here.
-    final workspaceId = routerState.pathParameters['workspaceId']!;
+    // The shell builder runs on every navigation anyway (it hands this
+    // layout the new routed child), so reading the route here costs nothing
+    // extra. What matters is that the chrome below is const: the sidebar
+    // derives its highlight from the router itself, so a route change does
+    // not rebuild it.
+    final location = GoRouterState.of(context).matchedLocation;
     // Feed the *logical* route (with the `/workspaces/:id` prefix stripped) to
     // the keybinding dispatcher so `route == '/inbox'` when-clauses gate
     // screen-scoped shortcuts correctly (e.g. the PR list's bare-key shortcuts
@@ -138,12 +139,7 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                     child: Row(
                       children: [
                         // Primary navigation.
-                        RepaintBoundary(
-                          child: AppSidebar(
-                            location: location,
-                            workspaceId: workspaceId,
-                          ),
-                        ),
+                        const RepaintBoundary(child: AppSidebar()),
                         if (showSpacesSubSidebar)
                           const RepaintBoundary(child: SpacesSubSidebar()),
                         Expanded(child: RepaintBoundary(child: widget.child)),

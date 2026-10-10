@@ -2,7 +2,7 @@
 title: Kurulum
 description: Control Center'ı tarayıcıda kullanın ya da masaüstü uygulamasını kurun, bir ajan arka ucunu ayarlayın ve sunucusunun nerede çalışacağını seçin.
 slug: tr-TR/kilavuz/kurulum
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center iki şekilde çalışır: [app.usectrl.dev](https://app.usectrl.dev)
@@ -73,7 +73,7 @@ sayfasını izleyin.
 | Gereksinim             | macOS                                                 | Windows     | Linux                                                      |
 | ---------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | İşletim sistemi sürümü | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ ya da glibc 2.35+ ve GTK 3 içeren başka bir dağıtım |
-| Mimari                 | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Mimari                 | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git                    | Gerekli                                               | Gerekli     | Gerekli                                                    |
 | Disk alanı             | Uygulama için ~200 MB, artı sunucunun veri dizini     | ~200 MB     | ~200 MB                                                    |
 
@@ -109,10 +109,12 @@ sayfasından gelir.
 Applications klasörüne sürükleyin. Derleme bir Developer ID ile imzalanmış ve
 Apple tarafından noterlenmiştir, bu yüzden normal şekilde açılır.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: kullanıcı başına bir yükleyici.
 - `Control-Center-<version>-windows-x64.zip`: taşınabilir bir zip.
+- `Control-Center-<version>-arm64-setup.exe`: kullanıcı başına bir yükleyici.
+- `Control-Center-<version>-windows-arm64.zip`: taşınabilir bir zip.
 
 Windows, alanların checkout'ları için `git worktree` kullanır (copy-on-write
 yoktur).
@@ -138,8 +140,8 @@ denetimler gizli olarak başlar.
 ### Tek başına sunucu
 
 Her sürüm, headless sunucuyu ayrıca tek başına da taşır —
-`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip` — GHCR'deki `cc-server`, `cc-webapp` ve
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip` — GHCR'deki `cc-server`, `cc-webapp` ve
 `cc-remote` imajlarının yanı sıra. Bkz.
 [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/).
 

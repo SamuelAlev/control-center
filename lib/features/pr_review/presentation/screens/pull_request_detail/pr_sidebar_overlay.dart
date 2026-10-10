@@ -171,7 +171,7 @@ class _SearchHostState extends ConsumerState<_SearchHost> {
     final Set<String>? prTouchedPaths = prFilesAsync.hasValue
         ? {for (final f in prFilesAsync.value!) f.filename}
         : null;
-    final spaceAsync = ref.watch(prSpaceProvider(widget.pr));
+    final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(widget.pr)));
     return spaceAsync.when(
       loading: () => ColoredBox(
         color: tokens.bgPrimary,

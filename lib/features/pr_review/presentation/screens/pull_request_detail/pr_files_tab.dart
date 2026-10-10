@@ -174,7 +174,7 @@ class FilesTab extends ConsumerWidget {
     // from an unmounted element throws.
     final scopeNotifier = ref.read(prDiffScopeProvider.notifier);
     final repoId = prRepoIdFor(ref, pr);
-    final spaceId = ref.watch(prSpaceProvider(pr)).value;
+    final spaceId = ref.watch(prSpaceProvider(PrSpaceKey.of(pr))).value;
 
     return PrDiffView(
       key: diffKey,

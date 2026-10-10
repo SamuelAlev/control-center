@@ -468,7 +468,7 @@ void main() {
       },
     };
 
-    test('chunks smaller than the list query', () async {
+    test('one repo per request, in small pages', () async {
       final b = build((_) => _json(rollup('SUCCESS')));
       await b.client.fetchOpenPullRequestsChecks(const [
         (owner: 'o', name: 'a'),
@@ -477,14 +477,52 @@ void main() {
       ]);
       expect(
         b.fake.requests,
-        hasLength(2),
+        hasLength(3),
         reason:
-            'statusCheckRollup is the query GitHub 504s on, so it is '
-            'chunked tighter than the list it enriches',
+            'statusCheckRollup is the query GitHub 502s/504s on, so each '
+            'repo is its own request',
       );
+      final query =
+          (b.fake.requests.first.data as Map<String, dynamic>)['query']
+              as String;
+      expect(query, contains('first: 25'));
+      expect(query, isNot(contains('r1:')));
     });
 
-    test('one chunk timing out keeps the chunks that answered', () async {
+    test('follows the cursor until the list page is covered', () async {
+      Map<String, Object?> page(int number, {String? cursor}) => {
+        'data': {
+          'r0': {
+            'pullRequests': {
+              'pageInfo': {'hasNextPage': cursor != null, 'endCursor': cursor},
+              'nodes': [
+                {'number': number, 'reviewDecision': 'APPROVED'},
+              ],
+            },
+          },
+        },
+      };
+      var call = 0;
+      final b = build(
+        (_) => _json(switch (call++) {
+          0 => page(1, cursor: 'c1'),
+          1 => page(2, cursor: 'c2'),
+          _ => page(3),
+        }),
+      );
+      final res = await b.client.fetchOpenPullRequestsChecks(const [
+        (owner: 'o', name: 'a'),
+      ]);
+
+      expect(b.fake.requests, hasLength(3));
+      expect(
+        (b.fake.requests[1].data as Map<String, dynamic>)['query'] as String,
+        contains('after: "c1"'),
+      );
+      expect(res[0]!.keys, unorderedEquals([1, 2, 3]));
+    });
+
+    test('a page failing leaves only its own repo unread', () async {
       var call = 0;
       final b = build(
         (_) => call++ == 0 ? _dioError(504) : _json(rollup('FAILURE')),
@@ -495,9 +533,9 @@ void main() {
         (owner: 'o', name: 'c'),
       ]);
 
-      // Indices stay the caller's: the failed chunk is absent, not shifted.
+      // Indices stay the caller's: the failed repo is absent, not shifted.
       expect(res.containsKey(0), isFalse);
-      expect(res.containsKey(1), isFalse);
+      expect(res[1]![1]!.checksRollup, 'FAILURE');
       expect(res[2]![1]!.checksRollup, 'FAILURE');
     });
 

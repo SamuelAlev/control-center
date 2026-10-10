@@ -339,7 +339,7 @@ export const es: LandingCopy = {
     description:
       "Tu próximo día de desarrollo puede empezar aquí. Gratuito y de código abierto.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Ver las versiones",
     web: "Abrir la aplicación web",

@@ -156,8 +156,13 @@ class SpaceRowLayout extends StatelessWidget {
     // Fixed columns. The rail is narrower than these mid-animation.
     final minRowWidth =
         markSlot + markGap + (hasMenu ? kSpaceSidebarOverflowSlot : 0);
+    // Selecting snaps — the pressed row reads as current on the next frame —
+    // while the row being left and hover keep the CcMotion.fast fade. The
+    // hover wash under an opaque fill is invisible, so it snaps along.
+    final fade = CcMotion.resolve(context, CcMotion.fast);
+    final selection = filled ? Duration.zero : fade;
     return AnimatedContainer(
-      duration: CcMotion.resolve(context, CcMotion.fast),
+      duration: selection,
       curve: CcMotion.standard,
       height: _twoLine ? null : extent + cardInset.vertical,
       decoration: BoxDecoration(color: hoverColor, borderRadius: AppRadii.brSm),
@@ -176,7 +181,7 @@ class SpaceRowLayout extends StatelessWidget {
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: filled ? 1 : 0,
-                duration: CcMotion.fast,
+                duration: selection,
                 curve: CcMotion.standard,
                 child: ColoredBox(color: t.bgBrandSolid),
               ),
@@ -251,12 +256,16 @@ class SpaceRowLayout extends StatelessWidget {
               bottom: cardInset.bottom,
               end: kSpaceSidebarPad,
               child: Center(
-                child: SpaceRowOverflowMenu(
-                  items: menuItems!,
-                  semanticLabel: menuSemanticLabel!,
-                  color: contentColor,
-                  revealed: showMenu,
-                  selected: filled,
+                // Reads the enclosing card's reveal here, at the trigger, so
+                // the card's hover rebuilds this and not the row.
+                child: Builder(
+                  builder: (context) => SpaceRowOverflowMenu(
+                    items: menuItems!,
+                    semanticLabel: menuSemanticLabel!,
+                    color: contentColor,
+                    revealed: showMenu || SpaceMenuReveal.of(context),
+                    selected: filled,
+                  ),
                 ),
               ),
             ),

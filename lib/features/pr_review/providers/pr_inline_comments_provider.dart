@@ -95,23 +95,43 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
     // switch.
     final repo = ref.watch(prRepoRowProvider(pr));
     final repository = ref.watch(prRepositoryProvider(pr));
-    final prAsync = ref.watch(prDetailProvider(pr));
-    final prEntity = prAsync.value;
+    // Rebuild (which resets the local threads) only when a head SHA first
+    // becomes available — not on every detail snapshot: the detail stream
+    // emits each title/body/label edit, and a rebuild per emission would
+    // drop the threads being written. A later push only re-points the
+    // posting context, below.
+    final hasHead = ref.watch(
+      prDetailProvider(pr).select((d) => d.value?.headSha.isNotEmpty ?? false),
+    );
+    final headSha = ref.read(prDetailProvider(pr)).value?.headSha ?? '';
 
     if (repo != null &&
         repository != null &&
-        prEntity != null &&
+        hasHead &&
         repo.remoteOwner.isNotEmpty &&
         repo.remoteName.isNotEmpty &&
-        prEntity.headSha.isNotEmpty) {
+        headSha.isNotEmpty) {
       _context = PrPostingContext(
         repository: repository,
         prNumber: pr.number,
-        commitSha: prEntity.headSha,
+        commitSha: headSha,
       );
     } else {
       _context = null;
     }
+    ref.listen(prDetailProvider(pr).select((d) => d.value?.headSha), (_, sha) {
+      final ctx = _context;
+      if (ctx != null &&
+          sha != null &&
+          sha.isNotEmpty &&
+          sha != ctx.commitSha) {
+        _context = PrPostingContext(
+          repository: ctx.repository,
+          prNumber: ctx.prNumber,
+          commitSha: sha,
+        );
+      }
+    });
 
     return PrInlineCommentsState();
   }

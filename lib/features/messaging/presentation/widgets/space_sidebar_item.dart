@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folder_picker_dialog.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -18,25 +19,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+export 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 export 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 
-/// Extracts the selected space id from the current [location] path, or null
-/// when not on a `/workspaces/<ws>/spaces/<id>` location. Parses the location
-/// rather than `pathParameters` because the sidebar sits in the shell, above
-/// the space route, so its `:spaceId` is not in `GoRouterState` scope here.
-String? selectedSpaceIdFromLocation(String location, String? workspaceId) {
-  if (workspaceId == null) {
-    return null;
-  }
-  final prefix = '${spacesRoute(workspaceId)}/';
-  if (!location.startsWith(prefix)) {
-    return null;
-  }
-  final rest = location.substring(prefix.length);
-  final slash = rest.indexOf('/');
-  final id = slash == -1 ? rest : rest.substring(0, slash);
-  return id.isEmpty ? null : id;
-}
+part 'space_sidebar_item_route.dart';
 
 /// A space row with its live status, unread signal and archive affordances,
 /// shared by the global sidebar's inline space list

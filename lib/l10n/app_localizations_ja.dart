@@ -7834,6 +7834,50 @@ class AppLocalizationsJa extends AppLocalizations {
   String get meetingReRunNoTranscript => '要約できる文字起こしがまだありません。';
 
   @override
+  String get meetingNotesEmptyDescription => '文字起こしから生成するか、自分で書いてください。';
+
+  @override
+  String get meetingNotesGenerate => 'メモを生成';
+
+  @override
+  String get meetingNotesWriteOwn => '自分で書く';
+
+  @override
+  String get meetingNothingTranscribed => '文字起こしされた内容はありません。';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      '要約できる文字起こしはありませんが、自分のメモは残せます。';
+
+  @override
+  String get meetingOverviewSpeakers => '話者';
+
+  @override
+  String get meetingOverviewSpeakersEmpty => '文字起こしができると、話者ごとの発言時間が表示されます。';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return 'ほか$count人';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: 発言時間の$share、$duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => 'すべてのアクションアイテムが完了しました。';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'すべて表示（$count）';
+  }
+
+  @override
   String get meetingExportCopied => 'メモをMarkdownとしてクリップボードにコピーしました。';
 
   @override
@@ -14960,4 +15004,50 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'エージェントが認証情報の問題で停止しています';
+
+  @override
+  String get killTerminal => 'ターミナルを終了';
+
+  @override
+  String get stopAgentCommand => 'コマンドを停止';
+
+  @override
+  String get agentCommandStopping => '停止中…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count秒';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'エージェントのコマンド $command、$elapsed実行中';
+  }
+
+  @override
+  String get serverLostTitle => 'サーバーとの接続が切れました';
+
+  @override
+  String get serverLostBody =>
+      'Control Center はバックグラウンドで再接続を試行し続けています。今すぐ再試行するか、サインイン画面に移動してサーバーを選択してください。';
+
+  @override
+  String get serverLostRetrying => '再接続しています…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return '$seconds 秒後に次の試行';
+  }
+
+  @override
+  String get serverLostReconnect => '再接続を試す';
+
+  @override
+  String get serverLostSignIn => 'サインイン画面へ';
+
+  @override
+  String get serverEndedTitle => 'サーバーに再接続できません';
+
+  @override
+  String get shutdownSubtitleServer => 'サーバーを停止しています';
 }

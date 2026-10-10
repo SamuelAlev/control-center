@@ -2,7 +2,7 @@
 title: ติดตั้ง
 description: ใช้ Control Center ในเบราว์เซอร์หรือติดตั้งแอปเดสก์ท็อป ตั้งค่าแบ็กเอนด์ของเอเจนต์ และเลือกตำแหน่งที่เซิร์ฟเวอร์ทำงาน
 slug: th-TH/คู่มือ/ติดตั้ง
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center ทำงานได้สองแบบ: เป็น **แอปเว็บ** ที่
@@ -61,7 +61,7 @@ Control Center ทำงานได้สองแบบ: เป็น **แอ
 | ความต้องการ          | macOS                                                 | Windows     | Linux                                                      |
 | -------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | เวอร์ชันระบบปฏิบัติการ | macOS 13+ (Ventura)                                 | Windows 10+ | Ubuntu 22.04+ หรือดิสโทรอื่นที่มี glibc 2.35+ และ GTK 3    |
-| สถาปัตยกรรม          | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| สถาปัตยกรรม          | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git                  | จำเป็น                                                | จำเป็น      | จำเป็น                                                     |
 | พื้นที่ดิสก์          | ~200 MB สำหรับแอป บวกไดเรกทอรีข้อมูลของเซิร์ฟเวอร์     | ~200 MB     | ~200 MB                                                    |
 
@@ -79,10 +79,12 @@ Mac ที่ใช้ Intel ไม่มีไฟล์ให้ดาวน์
 
 ดาวน์โหลด `Control-Center-<version>-arm64.dmg` เปิดขึ้นมา แล้วลาก Control Center ไปยัง Applications บิลด์นี้ลงชื่อด้วย Developer ID และผ่านการ notarize จาก Apple จึงเปิดได้ตามปกติ
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: ตัวติดตั้งแบบต่อผู้ใช้
 - `Control-Center-<version>-windows-x64.zip`: ไฟล์ zip แบบพกพา
+- `Control-Center-<version>-arm64-setup.exe`: ตัวติดตั้งแบบต่อผู้ใช้
+- `Control-Center-<version>-windows-arm64.zip`: ไฟล์ zip แบบพกพา
 
 Windows ใช้ `git worktree` สำหรับการเช็กเอาต์ของสเปซ (ไม่มี copy-on-write)
 
@@ -97,7 +99,7 @@ AppImage มีข้อมูลการอัปเดตในตัว ด�
 
 ### เซิร์ฟเวอร์แบบสแตนด์อโลน
 
-แต่ละรีลีสยังมีเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อแยกต่างหาก — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — พร้อมกับอิมเมจ `cc-server`, `cc-webapp` และ `cc-remote` บน GHCR ดู[รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
+แต่ละรีลีสยังมีเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อแยกต่างหาก — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — พร้อมกับอิมเมจ `cc-server`, `cc-webapp` และ `cc-remote` บน GHCR ดู[รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
 
 ไฟล์ archive สำหรับ Linux สร้างบน Ubuntu 22.04 และไลบรารีเนทีฟที่มาด้วยลิงก์กับ glibc 2.35 และ libstdc++ ของ GCC 12 จึงต้องใช้โฮสต์ที่ใหม่พอ ๆ กันเป็นอย่างน้อย (Ubuntu 22.04, Debian 12, Fedora 36 หรือใหม่กว่า) บนดิสทริบิวชันที่เก่ากว่า ให้รันอิมเมจ `cc-server` แทน — คอนเทนเนอร์นำ userland ของตัวเองมาด้วย จึงต้องเป็นเคอร์เนลของคุณเท่านั้น
 

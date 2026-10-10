@@ -4,7 +4,10 @@
 # REQUIRED natives into the OS-specific resolver path (macOS Frameworks, Linux
 # bin/lib, Windows beside exe), macOS Developer-ID sign + notarize, archive +
 # SHA-256. Credentials come from builtin_credentials.sh inject (not here).
-# Usage: scripts/release/cc_server_package.sh <version> [macos|linux|windows]
+# Usage: scripts/release/cc_server_package.sh <version> [macos|linux|windows] [x64|arm64]
+# (the architecture is Windows-only: x64 by default, arm64 for the native
+# Windows-on-Arm build, which must run on an Arm64 host — `dart build cli`
+# compiles for the host and its bundle lands in build/cli/windows_<arch>.)
 #
 set -euo pipefail
 
@@ -29,9 +32,14 @@ fi
 case "$OS" in
   macos)   ARCH=arm64; CLI_DIR=macos_arm64;   LIBEXT=dylib; STAGE_REL=Frameworks; FMT=tar ;;
   linux)   ARCH=x64;   CLI_DIR=linux_x64;     LIBEXT=so;    STAGE_REL=bin/lib;    FMT=tar ;;
-  windows) ARCH=x64;   CLI_DIR=windows_x64;   LIBEXT=dll;   STAGE_REL=bin;        FMT=zip ;;
+  windows)
+    ARCH="$(cc_windows_arch "${3:-x64}")"
+    CLI_DIR="$(cc_cli_dir windows "$ARCH")"; LIBEXT=dll; STAGE_REL=bin; FMT=zip ;;
   *) echo "ERROR: unknown OS '$OS' (expected macos|linux|windows)"; exit 2 ;;
 esac
+if [ "$OS" != windows ] && [ -n "${3:-}" ]; then
+  die "cc_server_package.sh: an architecture argument is only meaningful for windows"
+fi
 
 NATIVES="${NATIVES:-build/natives}"
 BUNDLE="apps/cc_server/build/cli/$CLI_DIR/bundle"
@@ -90,6 +98,11 @@ done
 # staged dir, so both are searched and missing from both means this archive
 # cannot boot.
 bash scripts/release/verify_natives.sh --dir "$DIST/lib" --dir "$STAGE" "$OS" server
+# Windows on Arm: every PE image in the archive (cc_server.exe, the bundled and
+# the staged natives) must be an Arm64 image — see pe_machine in common.sh.
+if [ "$OS" = windows ] && [ "$ARCH" = arm64 ]; then
+  assert_pe_machine "$ARCH" "$DIST"
+fi
 
 # Linux: drop the duplicate natives in bundle lib/ (keep staged bin/lib/ —
 # CC_NATIVE_LIB_DIR, queries, env resolvers). Byte-identical only; macOS/Windows
@@ -115,7 +128,7 @@ fi
 case "$OS" in
   macos)   CS_PLATFORM="darwin-arm64" ;;
   linux)   CS_PLATFORM="linux-x64" ;;
-  windows) CS_PLATFORM="windows-x64" ;;
+  windows) CS_PLATFORM="windows-$ARCH" ;;
 esac
 CS_SRC="build/code-server/$CS_PLATFORM"
 if [ -d "$CS_SRC" ]; then

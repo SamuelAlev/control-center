@@ -1083,6 +1083,7 @@ class _TestSandboxPort implements SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async => 0;
 
   @override

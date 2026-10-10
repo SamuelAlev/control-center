@@ -7308,6 +7308,49 @@
   "meetingDecisionContentHint": "What was decided?",
   "meetingReRunStarted": "Re-running the summarizer on the transcript…",
   "meetingReRunNoTranscript": "There's no transcript to summarize yet.",
+  "meetingNotesEmptyDescription": "Generate them from the transcript, or write your own.",
+  "meetingNotesGenerate": "Generate notes",
+  "meetingNotesWriteOwn": "Write your own",
+  "meetingNothingTranscribed": "Nothing was transcribed.",
+  "meetingNothingTranscribedDescription": "There's no transcript to summarize, but you can still keep your own notes.",
+  "meetingOverviewSpeakers": "Speakers",
+  "meetingOverviewSpeakersEmpty": "Talk time per speaker appears once there's a transcript.",
+  "meetingOverviewMoreSpeakers": "+{count} more",
+  "@meetingOverviewMoreSpeakers": {
+    "description": "Overflow line under the speaker talk-time list.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "meetingOverviewSpeakerShare": "{name}: {share} of talk time, {duration}",
+  "@meetingOverviewSpeakerShare": {
+    "description": "Screen-reader label for one speaker's talk-time bar.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "share": {
+        "type": "String",
+        "example": "62%"
+      },
+      "duration": {
+        "type": "String",
+        "example": "12:04"
+      }
+    }
+  },
+  "meetingOverviewActionItemsAllDone": "All action items are done.",
+  "meetingOverviewViewAll": "View all {count}",
+  "@meetingOverviewViewAll": {
+    "description": "Link from an overview section to its full tab.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "meetingExportCopied": "Notes copied to the clipboard as Markdown.",
   "meetingExportSaved": "Meeting exported.",
   "meetingExportFailed": "Export failed: {error}",
@@ -13864,5 +13907,31 @@
   "notificationAgentAskedQuestionUnnamed": "An agent has a question",
   "notificationAgentBlockedOnCredential": "{agent} is blocked on a credential",
   "@notificationAgentBlockedOnCredential": {"placeholders": {"agent": {"type": "String"}}},
-  "notificationAgentBlockedOnCredentialUnnamed": "An agent is blocked on a credential"
+  "notificationAgentBlockedOnCredentialUnnamed": "An agent is blocked on a credential",
+  "killTerminal": "Kill terminal",
+  "@killTerminal": {"description": "Tooltip on a sidebar TERMINALS row's trash button that ends the shell."},
+  "stopAgentCommand": "Stop command",
+  "@stopAgentCommand": {"description": "Tooltip on the stop button of a running agent shell command in the sidebar."},
+  "agentCommandStopping": "Stopping…",
+  "@agentCommandStopping": {"description": "Status shown on an agent command row after Stop, until the process exits."},
+  "sidebarAgeSeconds": "{count}s",
+  "@sidebarAgeSeconds": {"description": "Compact sidebar age in seconds", "placeholders": {"count": {"type": "int"}}},
+  "agentCommandSemantics": "Agent command {command}, running for {elapsed}",
+  "@agentCommandSemantics": {"description": "Screen reader label for a running agent shell command row.", "placeholders": {"command": {"type": "String"}, "elapsed": {"type": "String"}}},
+  "serverLostTitle": "Lost connection to the server",
+  "@serverLostTitle": {"description": "Title of the dialog shown while the app has lost its server connection and is retrying."},
+  "serverLostBody": "Control Center keeps trying to reconnect in the background. Try again now, or go to the sign-in screen to pick a server.",
+  "@serverLostBody": {"description": "Body of the lost-connection dialog."},
+  "serverLostRetrying": "Reconnecting…",
+  "@serverLostRetrying": {"description": "Status line while a reconnect attempt is in flight."},
+  "serverLostNextAttempt": "Next attempt in {seconds}s",
+  "@serverLostNextAttempt": {"description": "Countdown to the next automatic reconnect attempt.", "placeholders": {"seconds": {"type": "int"}}},
+  "serverLostReconnect": "Try to reconnect",
+  "@serverLostReconnect": {"description": "Button that retries the server connection immediately."},
+  "serverLostSignIn": "Go to sign-in",
+  "@serverLostSignIn": {"description": "Button that leaves the app for the server sign-in screen."},
+  "serverEndedTitle": "Can't reconnect to the server",
+  "@serverEndedTitle": {"description": "Title of the dialog shown when the server rejected this device or changed identity, so retrying cannot help."},
+  "shutdownSubtitleServer": "The server is stopping",
+  "@shutdownSubtitleServer": {"description": "Shutdown dialog subtitle when the server itself is stopping (not stopped by this app)."}
 }

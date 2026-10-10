@@ -144,19 +144,41 @@ void main() {
     });
 
     test('reports each posted question so the operator can be told', () async {
-      final asked = <AgentQuestionRequest>[];
+      final asked = <(AgentQuestionRequest, String)>[];
+      final closed = <String>[];
       service = AgentQuestionService(
         messaging,
         timeout: const Duration(milliseconds: 10),
-        onAsked: asked.add,
+        onAsked: (request, messageId) => asked.add((request, messageId)),
+        onClosed: closed.add,
       );
       messaging.nextMessageId = 'm-reported';
       await service.ask(request());
-      expect(asked.single.question, 'Pick one');
+      expect(asked.single.$1.question, 'Pick one');
+      expect(asked.single.$2, 'm-reported');
+      // Timed out unanswered: the wait still ends.
+      expect(closed, ['m-reported']);
 
       // Nothing is posted without a space, so nothing is reported either.
       await service.ask(request(spaceId: ''));
       expect(asked, hasLength(1));
+      expect(closed, hasLength(1));
+    });
+
+    test('reports an answered question as closed', () async {
+      final closed = <String>[];
+      service = AgentQuestionService(messaging, onClosed: closed.add);
+      messaging.nextMessageId = 'm-answered';
+      final future = service.ask(request());
+      await Future<void>.delayed(Duration.zero);
+      expect(closed, isEmpty);
+
+      service.resolveFromMetadata('m-answered', {
+        kQuestionAnsweredKey: true,
+        kQuestionAnswerKey: const AgentQuestionAnswer().toJson(),
+      });
+      await future;
+      expect(closed, ['m-answered']);
     });
 
     test('closes the form when the asker stops waiting', () async {

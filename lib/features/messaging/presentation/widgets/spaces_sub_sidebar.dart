@@ -11,7 +11,6 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 /// The spaces directory's contextual sub-sidebar: a title row plus a name
 /// filter on top, listing every space of the active workspace, shown next to
@@ -62,12 +61,6 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
     // is the watcher that stamps the read cursor on selection.
     ref.watch(selectedSpaceReadCursorEffectProvider);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    // The URL is the source of truth for the open space (same derivation as
-    // the global sidebar's list — the shell sits above the space route).
-    final routeSpaceId = selectedSpaceIdFromLocation(
-      GoRouterState.of(context).uri.path,
-      workspaceId,
-    );
     final spaces = workspaceId != null
         ? ref.watch(workspaceVisibleSpacesProvider(workspaceId))
         : ref.watch(visibleSpacesProvider);
@@ -90,13 +83,6 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
     final agentSpaces = spaces
         .where((c) => c.kind.isAgentPeer && matches(c))
         .toList();
-
-    void open(String spaceId) {
-      final wsId = workspaceId;
-      if (wsId != null) {
-        GoRouter.of(context).go(spaceRoute(wsId, spaceId));
-      }
-    }
 
     return CcSidebar(
       width: 240,
@@ -128,23 +114,18 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
                 SpaceFoldersList(
                   workspaceId: workspaceId,
                   spaces: humanSpaces,
-                  routeSpaceId: routeSpaceId,
                   filter: _filter,
-                  spaceBuilder: (space) => SpaceSidebarItem(
+                  // Each row reads its own highlight from the route (the URL
+                  // is the source of truth for the open space), so a
+                  // navigation rebuilds the two rows whose answer flipped.
+                  spaceBuilder: (space) => RouteSpaceSidebarItem(
                     key: ValueKey(space.id),
                     space: space,
-                    selected: space.id == routeSpaceId,
-                    onPress: () => open(space.id),
                   ),
                 ),
               if (workspaceId == null)
                 for (final space in humanSpaces)
-                  SpaceSidebarItem(
-                    key: ValueKey(space.id),
-                    space: space,
-                    selected: space.id == routeSpaceId,
-                    onPress: () => open(space.id),
-                  ),
+                  RouteSpaceSidebarItem(key: ValueKey(space.id), space: space),
             ],
           ),
           if (agentSpaces.isNotEmpty)
@@ -152,11 +133,10 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
               label: l10n.agentsSectionLabel,
               children: [
                 for (final space in agentSpaces)
-                  SpaceSidebarItem(
+                  RouteSpaceSidebarItem(
+                    key: ValueKey(space.id),
                     space: space,
-                    selected: space.id == routeSpaceId,
                     muted: true,
-                    onPress: () => open(space.id),
                   ),
               ],
             ),

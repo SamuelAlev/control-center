@@ -2,7 +2,7 @@
 title: نصب
 description: Control Center را در مرورگر به کار ببرید یا برنامهٔ رومیزی را نصب کنید، یک بک‌اند عامل راه‌اندازی کنید و انتخاب کنید سرور آن کجا اجرا شود.
 slug: fa-IR/راهنمای-کاربر/نصب
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center به دو شکل اجرا می‌شود: به‌صورت یک **برنامهٔ وب** در
@@ -61,7 +61,7 @@ Control Center به دو شکل اجرا می‌شود: به‌صورت یک **�
 | نیازمندی     | macOS                                                 | Windows            | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ------------------ | ---------------------------------------------------------- |
 | نسخهٔ سیستم‌عامل | macOS 13+ (Ventura)                                   | Windows 10+        | Ubuntu 22.04+ یا توزیع دیگری با glibc 2.35+ و GTK 3        |
-| معماری       | Apple Silicon (arm64)                                 | x64                | x86_64                                                     |
+| معماری       | Apple Silicon (arm64)                                 | x64, ARM64         | x86_64                                                     |
 | Git          | لازم                                                  | لازم               | لازم                                                       |
 | فضای دیسک    | حدود ۲۰۰ مگابایت برای برنامه، به‌علاوهٔ پوشهٔ دادهٔ سرور | حدود ۲۰۰ مگابایت  | حدود ۲۰۰ مگابایت                                           |
 
@@ -90,10 +90,12 @@ Control Center به دو شکل اجرا می‌شود: به‌صورت یک **�
 
 `Control-Center-<version>-arm64.dmg` را دانلود کنید، بازش کنید و Control Center را به Applications بکشید. ساخت با یک Developer ID امضا و توسط Apple تأیید شده است، پس به‌طور عادی باز می‌شود.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: یک نصب‌کنندهٔ هر کاربر.
 - `Control-Center-<version>-windows-x64.zip`: یک zip قابل حمل.
+- `Control-Center-<version>-arm64-setup.exe`: یک نصب‌کنندهٔ هر کاربر.
+- `Control-Center-<version>-windows-arm64.zip`: یک zip قابل حمل.
 
 Windows برای واکشی‌های فضا از `git worktree` استفاده می‌کند (بدون copy-on-write).
 
@@ -108,7 +110,7 @@ AppImage اطلاعات به‌روزرسانی را همراه دارد، پس 
 
 ### سرور مستقل
 
-هر انتشار سرور بدون رابط را هم جداگانه همراه دارد — `cc_server-<version>-macos-arm64.tar.gz`، `cc_server-<version>-linux-x64.tar.gz`، `cc_server-<version>-windows-x64.zip` — در کنار ایمیج‌های `cc-server`، `cc-webapp` و `cc-remote` روی GHCR. به [اجرای سرور بدون رابط](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/) نگاه کنید.
+هر انتشار سرور بدون رابط را هم جداگانه همراه دارد — `cc_server-<version>-macos-arm64.tar.gz`، `cc_server-<version>-linux-x64.tar.gz`، `cc_server-<version>-windows-x64.zip`، `cc_server-<version>-windows-arm64.zip` — در کنار ایمیج‌های `cc-server`، `cc-webapp` و `cc-remote` روی GHCR. به [اجرای سرور بدون رابط](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/) نگاه کنید.
 
 بایگانی Linux روی Ubuntu 22.04 ساخته شده و کتابخانه‌های بومیِ همراه آن به glibc 2.35 و libstdc++ مربوط به GCC 12 پیوند می‌خورند، پس به میزبانی دست‌کم به همان تازگی نیاز دارد (Ubuntu 22.04، Debian 12، Fedora 36 یا بعدتر). روی یک توزیع قدیمی‌تر به‌جایش ایمیج `cc-server` را اجرا کنید — یک کانتینر فضای کاربر خودش را همراه می‌آورد، پس فقط کرنل باید از آنِ شما باشد.
 

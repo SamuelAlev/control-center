@@ -54,6 +54,7 @@ class _RecordingSandbox implements SandboxPort {
     Duration? timeout,
     void Function(int pid)? onPid,
     String? stdinInput,
+    Stream<String>? stdinStream,
   }) async {
     final attempt = execArgs.length;
     execArgs.add(argv);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,7 +15,10 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 // ignore: implementation_imports
 import 'package:cc_infra/src/git/process_session_diff_adapter.dart';
 import 'package:cc_natives/cc_natives.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
+
+part 'repo_ide_change_gate.dart';
 
 /// Options for [RepoIdeDataService.searchContent], mirroring VS Code's search
 /// controls. Defaults (`caseSensitive: false`, `regex: false`, `wholeWord:
@@ -107,11 +111,23 @@ class WorktreeRevertResult {
   final List<String> skipped;
 }
 
+/// A repo's changes split into staged and unstaged buckets, plus how its
+/// branch sits against its upstream (see
+/// [RepoIdeDataService.repoChangesGrouped]).
+typedef RepoChangeGroups = ({
+  List<PrFile> staged,
+  List<PrFile> unstaged,
+  bool hasUpstream,
+  int ahead,
+  int behind,
+  int aheadOfBase,
+});
+
 /// Server-side data for the messaging IDE (Explorer, Source Control, file viewer) over `repos.*` /
 /// `conversation.changes`. Clients are thin; the server owns checkouts and CoW worktrees.
 ///
 /// Every method requires `workspaceId`; unlinked repos/worktrees are not found (no cross-workspace leak).
-class RepoIdeDataService {
+class RepoIdeDataService with _WorktreeChangeGate {
   /// Creates a [RepoIdeDataService].
   ///
   /// [_fileSearch] is REQUIRED: the server injects its shared [FffFileSearch] so
@@ -122,6 +138,10 @@ class RepoIdeDataService {
   ///
   /// [diff] defaults to the pure-Dart `git`-shelling adapter and is injectable
   /// for tests.
+  ///
+  /// [_autoFetchInterval] is how often [repoChangesGrouped] refreshes a
+  /// published worktree branch from its remote in the background. Null turns
+  /// that off, and behind then only moves when Sync fetches.
   RepoIdeDataService({
     required RepoRepository repoRepository,
     required WorkspaceRepository workspaceRepository,
@@ -130,6 +150,7 @@ class RepoIdeDataService {
     SessionDiffPort? diff,
     this._githubToken,
     this._publishedBranchHead,
+    this._autoFetchInterval,
   }) : _repos = repoRepository,
        _workspaces = workspaceRepository,
        _isolated = isolatedRepoRepository,
@@ -153,6 +174,18 @@ class RepoIdeDataService {
   /// Open pull request head for a branch this checkout has never fetched.
   /// Null leaves publication entirely to local git refs.
   final PublishedBranchHead? _publishedBranchHead;
+
+  final Duration? _autoFetchInterval;
+
+  /// When each worktree root last started a background fetch, and the fetch
+  /// still running there. Keyed by normalized root, so every client polling
+  /// the same worktree shares one schedule.
+  final _autoFetchedAt = <String, DateTime>{};
+  final _autoFetches = <String, Future<void>>{};
+
+  /// A background fetch that has not finished by then is killed. The next
+  /// interval tries again.
+  static const _autoFetchTimeout = Duration(seconds: 60);
 
   /// Reads no more than this many bytes when sniffing a file for a NUL byte.
   static const _binarySniffBytes = 8000;
@@ -203,12 +236,8 @@ class RepoIdeDataService {
   /// unbounded bytes into a conversation worktree.
   static const _writeMaxBytes = 4 * 1024 * 1024;
 
-  /// Working-tree diff vs HEAD (incl. untracked) for Source Control.
-  ///
-  /// With [spaceId]: only the conversation's CoW worktree — never fall back to the linked checkout
-  /// (that would disagree with what commit stages). Missing worktree → empty. Without [spaceId]: linked checkout.
-  /// Unlinked repo → empty.
-  Future<List<PrFile>> repoChanges(
+  @override
+  Future<List<PrFile>> _repoChanges(
     String workspaceId,
     String repoId, {
     String? spaceId,
@@ -227,30 +256,8 @@ class RepoIdeDataService {
     return _diff.changedFiles(repo.path, 'HEAD');
   }
 
-  /// The worktree's changes split into staged (index vs HEAD) and unstaged
-  /// (worktree vs index + untracked) buckets — the VS Code Source Control model.
-  /// Same workspace/space scoping as [repoChanges]; empty buckets when the
-  /// space has no worktree for [repoId].
-  ///
-  /// Also reports how the branch sits against its upstream (local refs only,
-  /// no fetch): ahead is commits to push, behind is commits to pull. A branch
-  /// with no tracking ref and no `origin/<branch>` is still published when an
-  /// open pull request names it — the head commit from that snapshot stands
-  /// in for the missing remote-tracking ref, so a pull request opened outside
-  /// this worktree is not offered as "Publish branch". With neither, ahead is
-  /// commits the remote default does not contain, so a local conversation
-  /// commit is still visible.
-  Future<
-    ({
-      List<PrFile> staged,
-      List<PrFile> unstaged,
-      bool hasUpstream,
-      int ahead,
-      int behind,
-      int aheadOfBase,
-    })
-  >
-  repoChangesGrouped(
+  @override
+  Future<RepoChangeGroups> _repoChangesGrouped(
     String workspaceId,
     String repoId, {
     String? spaceId,
@@ -265,19 +272,28 @@ class RepoIdeDataService {
         int aheadOfBase,
       })
     >
-    pack(String root) async {
-      final grouped = await _diff.groupedChanges(root);
+    pack(String root, {bool autoFetch = false}) async {
       final published = _publishedBranchHead;
-      final sync = await _branchSync(
-        p.normalize(root),
-        publishedHeadSha: published == null
-            ? null
-            : (branch) => published(
-                workspaceId: workspaceId,
-                repoId: repoId,
-                branch: branch,
-              ),
-      );
+      // Independent reads of one worktree; the panel polls this, so run them
+      // side by side.
+      final (grouped, sync) = await (
+        _diff.groupedChanges(root),
+        _branchSync(
+          p.normalize(root),
+          publishedHeadSha: published == null
+              ? null
+              : (branch) => published(
+                  workspaceId: workspaceId,
+                  repoId: repoId,
+                  branch: branch,
+                ),
+        ),
+      ).wait;
+      // Behind is counted against local refs, which only a fetch moves. A
+      // branch that was never published has nothing upstream to fetch.
+      if (autoFetch && sync.hasUpstream) {
+        _scheduleAutoFetch(p.normalize(root), workspaceId);
+      }
       return (
         staged: grouped.staged,
         unstaged: grouped.unstaged,
@@ -293,7 +309,7 @@ class RepoIdeDataService {
       if (worktree == null) {
         return _emptyGrouped();
       }
-      return pack(worktree.path);
+      return pack(worktree.path, autoFetch: true);
     }
     final repo = await _linkedRepo(workspaceId, repoId);
     if (repo == null) {
@@ -488,15 +504,129 @@ class RepoIdeDataService {
     );
   }
 
+  /// Starts [_fetchUpstream] for [root] unless one is running or the last one
+  /// started within [_autoFetchInterval]. A failed fetch still waits out the
+  /// interval, so an unreachable remote is not retried on every poll.
+  void _scheduleAutoFetch(String root, String workspaceId) {
+    final interval = _autoFetchInterval;
+    if (interval == null || _autoFetches.containsKey(root)) {
+      return;
+    }
+    final now = DateTime.now();
+    final last = _autoFetchedAt[root];
+    if (last != null && now.difference(last) < interval) {
+      return;
+    }
+    if (_autoFetchedAt.length >= 512) {
+      _autoFetchedAt.removeWhere((_, at) => now.difference(at) >= interval);
+    }
+    _autoFetchedAt[root] = now;
+    final run = _fetchUpstream(root, workspaceId).catchError((Object _) {});
+    _autoFetches[root] = run;
+    unawaited(run.whenComplete(() => _autoFetches.remove(root)));
+  }
+
+  /// Completes once every background fetch that is running now has finished.
+  @visibleForTesting
+  Future<void> autoFetchesSettled() =>
+      Future.wait(_autoFetches.values.toList());
+
+  /// Fetches the branch [_branchSync] compares HEAD against into its
+  /// remote-tracking ref: the configured upstream, else `origin/<branch>`.
+  /// The explicit refspec writes that ref even when the remote's configured
+  /// fetch refspec does not cover the branch. Only that one branch, no tags.
+  Future<void> _fetchUpstream(String root, String workspaceId) async {
+    const env = {
+      'GIT_TERMINAL_PROMPT': '0',
+      'GIT_ASKPASS': 'echo',
+      'GIT_CONFIG_NOSYSTEM': '1',
+    };
+    Future<String> read(List<String> args) async {
+      final res = await Process.run(
+        'git',
+        args,
+        workingDirectory: root,
+        environment: env,
+      );
+      return res.exitCode == 0 ? (res.stdout as String).trim() : '';
+    }
+
+    final branch = await read(['symbolic-ref', '--quiet', '--short', 'HEAD']);
+    if (branch.isEmpty) {
+      return;
+    }
+    var remote = 'origin';
+    var remoteBranch = branch;
+    final trackedRemote = await read([
+      'config',
+      '--get',
+      'branch.$branch.remote',
+    ]);
+    final trackedMerge = await read([
+      'config',
+      '--get',
+      'branch.$branch.merge',
+    ]);
+    if (trackedRemote.isNotEmpty && trackedMerge.startsWith('refs/heads/')) {
+      remote = trackedRemote;
+      remoteBranch = trackedMerge.substring('refs/heads/'.length);
+    }
+    // `.` tracks a local branch; a remote that is not a plain name (a URL
+    // pasted into `branch.<name>.remote`) has no remote-tracking namespace.
+    if (!_remoteName.hasMatch(remote)) {
+      return;
+    }
+    final url = await read(['config', '--get', 'remote.$remote.url']);
+    if (url.isEmpty) {
+      return;
+    }
+
+    var authEnv = const <String, String>{};
+    if (url.startsWith('https://github.com/')) {
+      final token = await _githubToken?.call(workspaceId: workspaceId);
+      if (token != null && token.isNotEmpty) {
+        final b64 = base64Encode(utf8.encode('x-access-token:$token'));
+        authEnv = {
+          'GIT_CONFIG_PARAMETERS':
+              "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
+        };
+      }
+    }
+
+    final process = await Process.start(
+      'git',
+      [
+        '-c',
+        'credential.helper=',
+        'fetch',
+        '--quiet',
+        '--no-tags',
+        '--no-write-fetch-head',
+        remote,
+        '+refs/heads/$remoteBranch:refs/remotes/$remote/$remoteBranch',
+      ],
+      workingDirectory: root,
+      environment: {...env, ...authEnv},
+    );
+    unawaited(process.stdout.drain<void>());
+    unawaited(process.stderr.drain<void>());
+    await process.exitCode.timeout(
+      _autoFetchTimeout,
+      onTimeout: () {
+        process.kill();
+        return -1;
+      },
+    );
+  }
+
+  static final RegExp _remoteName = RegExp(r'^[A-Za-z0-9_][A-Za-z0-9._-]*$');
+
   static final RegExp _commitSha = RegExp(r'^[0-9a-fA-F]{7,64}$');
 
   static bool _isCommitSha(String sha) => _commitSha.hasMatch(sha);
 
-  /// Stages [paths] (empty ⇒ all changes) into the git index of the
-  /// conversation's isolated worktree for [repoId] via `git add`. Paths are
-  /// confined to the worktree root. Returns false when the space has no
-  /// worktree for [repoId].
-  Future<bool> stageFiles(
+  @override
+  Future<bool> _stageFiles(
     String workspaceId,
     String spaceId,
     String repoId,
@@ -524,11 +654,8 @@ class RepoIdeDataService {
     return res.exitCode == 0;
   }
 
-  /// Unstages [paths] (empty ⇒ all) from the git index of the conversation's
-  /// isolated worktree for [repoId] via `git reset HEAD`. The working-tree
-  /// content is untouched — only the index entry reverts. Returns false when the
-  /// space has no worktree for [repoId].
-  Future<bool> unstageFiles(
+  @override
+  Future<bool> _unstageFiles(
     String workspaceId,
     String spaceId,
     String repoId,
@@ -1390,15 +1517,8 @@ class RepoIdeDataService {
     );
   }
 
-  /// Writes a draft file into the conversation's isolated copy-on-write
-  /// worktree. Backs the IDE's "untitled" draft save (⌘S). The worktree is
-  /// resolved through [IsolatedRepoRepository.forSpace] (the worktree
-  /// isolation boundary), so a space the caller's workspace does not own is
-  /// simply not found — no cross-workspace leak. The [path] is confined to the
-  /// worktree root (rejecting `..`/absolute escapes) and the payload is capped
-  /// at [_writeMaxBytes]. Returns the resolved path, or null when the space
-  /// has no worktree for [repoId] / the path escapes / the payload is too big.
-  Future<WorktreeWriteResult?> writeFile(
+  @override
+  Future<WorktreeWriteResult?> _writeFile(
     String workspaceId,
     String spaceId,
     String repoId,
@@ -1431,14 +1551,8 @@ class RepoIdeDataService {
     );
   }
 
-  /// Reverts one or more working-tree files in the conversation's isolated
-  /// worktree to HEAD via `git checkout-index -f` (matches the snapshot-restore
-  /// path in `ProcessGitSnapshotAdapter`). Tracked modified/deleted files are
-  /// restored; untracked/new files are skipped (`checkout-index` cannot remove
-  /// them — the client surfaces them as `skipped`). Paths outside the worktree
-  /// root are rejected. Returns null when the space has no worktree for
-  /// [repoId].
-  Future<WorktreeRevertResult?> revertFiles(
+  @override
+  Future<WorktreeRevertResult?> _revertFiles(
     String workspaceId,
     String spaceId,
     String repoId,
@@ -1545,10 +1659,8 @@ class RepoIdeDataService {
     }
   }
 
-  /// Stage/commit/(optional) push in the conversation worktree. Token via `GIT_CONFIG_PARAMETERS` (not argv).
-  /// Push authenticates as [actingUserId]; commit authored by [authorName]/[authorEmail] or Control Center.
-  /// [amend] rewrites HEAD; [sync] fetch+rebase before push (conflict returns git error).
-  Future<Map<String, dynamic>?> commitAndPush({
+  @override
+  Future<Map<String, dynamic>?> _commitAndPush({
     required String workspaceId,
     required String spaceId,
     required String repoId,
@@ -1717,9 +1829,8 @@ class RepoIdeDataService {
     return {'committed': true, 'pushed': true, 'headSha': headSha};
   }
 
-  /// Push-only publish of the conversation worktree branch to `origin` (needed before forge PR creation).
-  /// Never stages/commits/amends/rebases; token via `GIT_CONFIG_PARAMETERS`. Null if no worktree.
-  Future<Map<String, dynamic>?> publishBranch({
+  @override
+  Future<Map<String, dynamic>?> _publishBranch({
     required String workspaceId,
     required String spaceId,
     required String repoId,
@@ -1806,18 +1917,8 @@ class RepoIdeDataService {
     };
   }
 
-  /// VS Code's Sync for the conversation worktree: fetch the branch, rebase when
-  /// the remote has commits this side does not, then push when this side is
-  /// ahead or the branch has never been published. Never commits.
-  ///
-  /// A dirty tree that still needs the rebase is refused (`dirty: true`) so
-  /// uncommitted edits are not clobbered. A rebase conflict aborts and returns
-  /// git's message. A rejected push — branch protection, a pre-push or
-  /// pre-receive hook, a non-fast-forward — returns `pushRefused: true` with
-  /// the hook or remote's own text, and does not report the sync as done. A
-  /// pull that already landed stays landed. Null when the space has no
-  /// worktree for [repoId].
-  Future<Map<String, dynamic>?> syncBranch({
+  @override
+  Future<Map<String, dynamic>?> _syncBranch({
     required String workspaceId,
     required String spaceId,
     required String repoId,
@@ -1828,6 +1929,10 @@ class RepoIdeDataService {
       return null;
     }
     final root = p.normalize(worktree.path);
+    // Two fetches in one repository race for the ref locks. Sync fetches
+    // itself, so the background one is not due again for a full interval.
+    await _autoFetches[root];
+    _autoFetchedAt[root] = DateTime.now();
     const baseEnv = {
       'GIT_TERMINAL_PROMPT': '0',
       'GIT_ASKPASS': 'echo',
@@ -2015,20 +2120,8 @@ class RepoIdeDataService {
     return {'current': head, 'detached': head == 'HEAD', 'refs': refs};
   }
 
-  /// Checks [branch] out in the conversation worktree, or creates it.
-  ///
-  /// Stays inside the isolated copy: local refs and remote-tracking refs
-  /// already in the worktree, never a fetch and never a write into the
-  /// source checkout. A dirty tree is left for git to accept or refuse —
-  /// creating a branch at HEAD keeps uncommitted work, switching to another
-  /// commit does not overwrite files.
-  ///
-  /// On success the isolated-repo row's branch is updated to the checked-out
-  /// name, because commit and push publish that stored name. A detached
-  /// checkout stores an empty branch so a later push cannot invent
-  /// `refs/heads/HEAD`. If recording the row fails, the checkout is rolled
-  /// back. Null when the space has no worktree for [repoId].
-  Future<Map<String, dynamic>?> checkoutBranch({
+  @override
+  Future<Map<String, dynamic>?> _checkoutBranch({
     required String workspaceId,
     required String spaceId,
     required String repoId,
@@ -2210,20 +2303,8 @@ class RepoIdeDataService {
     return {'ok': false, 'dirty': dirty, 'error': dirty ? null : err};
   }
 
-  /// Re-syncs the conversation worktree for [repoId] to the current PR head.
-  ///
-  /// A PR-review worktree is checked out at the PR head **when it is
-  /// provisioned** and never moves after that — so commits pushed to the PR
-  /// later don't show up. This re-fetches [headRef] (e.g. `refs/pull/42/head`)
-  /// and, when the worktree is CLEAN, hard-resets it to those commits ([branch]
-  /// recreated at `FETCH_HEAD`) then scrubs untracked cruft (`git clean -ffdx`),
-  /// so the review tree tracks the latest PR commits.
-  ///
-  /// When the worktree is DIRTY it no-ops and returns `{dirty: true}` — it never
-  /// clobbers uncommitted edits; the client asks the user to commit/discard
-  /// first. Returns null when the space has no worktree for [repoId]; a map
-  /// with `ok:false` + `error` on fetch/checkout failure.
-  Future<Map<String, dynamic>?> syncToPrHead(
+  @override
+  Future<Map<String, dynamic>?> _syncToPrHead(
     String workspaceId,
     String spaceId,
     String repoId, {

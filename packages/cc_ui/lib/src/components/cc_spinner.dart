@@ -79,31 +79,33 @@ class _CcSpinnerState extends State<CcSpinner>
     final reduced = CcMotion.reduced(context);
     _syncAnimation();
 
-    Widget paint(double rotation) {
-      return CustomPaint(
-        painter: _SpinnerPainter(
-          color: color,
-          strokeWidth: widget.strokeWidth,
-          rotation: rotation,
-        ),
-      );
-    }
-
     final Widget spinner = SizedBox(
       width: widget.size,
       height: widget.size,
       child: reduced
-          ? paint(0)
+          ? CustomPaint(
+              painter: _SpinnerPainter(
+                color: color,
+                strokeWidth: widget.strokeWidth,
+              ),
+            )
           // RepaintBoundary is load-bearing, not decoration. `CustomPaint`
           // creates no layer of its own, so without one the 60 fps repaint
           // propagates to the nearest ancestor boundary — which for a spinner
           // mounted as an image placeholder or an attachment badge is the
           // whole chat viewport or PR panel. One loading badge re-rasterized
           // every visible pixel, every frame.
+          //
+          // The controller drives the painter directly (`repaint:`), so a
+          // frame is a repaint of this layer alone: no widget rebuild and no
+          // new painter per tick.
           : RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, _) => paint(_controller.value * 2 * math.pi),
+              child: CustomPaint(
+                painter: _SpinnerPainter(
+                  color: color,
+                  strokeWidth: widget.strokeWidth,
+                  turns: _controller,
+                ),
               ),
             ),
     );
@@ -119,15 +121,15 @@ class _CcSpinnerState extends State<CcSpinner>
 }
 
 class _SpinnerPainter extends CustomPainter {
-  _SpinnerPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.rotation,
-  });
+  _SpinnerPainter({required this.color, required this.strokeWidth, this.turns})
+    : super(repaint: turns);
 
   final Color color;
   final double strokeWidth;
-  final double rotation;
+
+  /// The rotation in full turns, repainting as it ticks. Null paints the
+  /// static (reduced-motion) ring.
+  final Animation<double>? turns;
 
   /// The visible fraction of the full circle (roughly three-quarters).
   static const double _sweep = math.pi * 1.5;
@@ -147,6 +149,7 @@ class _SpinnerPainter extends CustomPainter {
       size.height - strokeWidth,
     );
     // Start at the top, sweep clockwise; rotation animates the whole arc.
+    final rotation = (turns?.value ?? 0) * 2 * math.pi;
     final start = rotation - math.pi / 2;
     canvas.drawArc(rect, start, _sweep, false, paint);
   }
@@ -155,5 +158,5 @@ class _SpinnerPainter extends CustomPainter {
   bool shouldRepaint(_SpinnerPainter oldDelegate) =>
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth ||
-      oldDelegate.rotation != rotation;
+      oldDelegate.turns != turns;
 }

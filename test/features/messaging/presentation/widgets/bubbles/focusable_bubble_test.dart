@@ -38,8 +38,9 @@ Future<TestGesture> _hover(WidgetTester tester, Finder target) async {
   return gesture;
 }
 
-/// The rail's current opacity. The rail is ALWAYS mounted — that is what
-/// reserves its space — so "is it showing" is a question about opacity, never
+/// The rail's current opacity. The rail's BOX is always mounted — that is what
+/// reserves its space — and its icons are built on the first reveal and kept,
+/// so once a rail has shown, "is it showing" is a question about opacity, not
 /// about whether the icons are in the tree.
 double _railOpacity(WidgetTester tester, {Finder? of}) {
   final fade = find.ancestor(
@@ -73,17 +74,47 @@ void main() {
       );
 
       final bubbleBefore = tester.getRect(find.byKey(_bubbleKey));
-      final railBefore = tester.getRect(find.byIcon(AppIcons.trash2));
       final rowBefore = tester.getSize(find.byType(FocusableBubble));
       expect(bubbleBefore.width, 300);
-      expect(_railOpacity(tester), 0);
+      // Never revealed: the strip's box is laid out, its icons are not built.
+      expect(find.byIcon(AppIcons.trash2), findsNothing);
 
-      await _hover(tester, find.byKey(_bubbleKey));
+      final gesture = await _hover(tester, find.byKey(_bubbleKey));
 
       expect(_railOpacity(tester), 1);
       expect(tester.getRect(find.byKey(_bubbleKey)), bubbleBefore);
-      expect(tester.getRect(find.byIcon(AppIcons.trash2)), railBefore);
       expect(tester.getSize(find.byType(FocusableBubble)), rowBefore);
+      final railShown = tester.getRect(find.byIcon(AppIcons.trash2));
+
+      // Hidden again, the built icons stay put and so does every box.
+      await gesture.moveTo(const Offset(400, 400));
+      await tester.pumpAndSettle();
+      expect(_railOpacity(tester), 0);
+      expect(tester.getRect(find.byIcon(AppIcons.trash2)), railShown);
+      expect(tester.getSize(find.byType(FocusableBubble)), rowBefore);
+    });
+
+    testWidgets('the first reveal fades the icons in', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          FocusableBubble(
+            onDelete: () {},
+            child: const SizedBox(key: _bubbleKey, width: 200, height: 40),
+          ),
+        ),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.byKey(_bubbleKey)));
+      await tester.pump();
+
+      // Laid down transparent on the frame they are built…
+      expect(_railOpacity(tester), 0);
+      await tester.pumpAndSettle();
+      // …then animated in, exactly like a later reveal.
+      expect(_railOpacity(tester), 1);
     });
 
     testWidgets('the rail sits under the message, in one horizontal row', (
@@ -224,9 +255,9 @@ void main() {
     testWidgets('a hidden rail is inert: no clicks, no tab stops', (
       tester,
     ) async {
-      // The rail is mounted at all times, so it has to be actively neutralised
-      // while invisible — otherwise every message would contribute a handful of
-      // invisible buttons to the pointer and focus trees.
+      // Once built, the rail stays mounted, so it has to be actively
+      // neutralised while invisible — otherwise every message would contribute
+      // a handful of invisible buttons to the pointer and focus trees.
       var deleted = false;
 
       await tester.pumpWidget(
@@ -238,6 +269,13 @@ void main() {
         ),
       );
 
+      // Never revealed: nothing is built to click or focus.
+      expect(find.byIcon(AppIcons.trash2), findsNothing);
+
+      // Reveal once (building the icons), then hide again.
+      final away = await _hover(tester, find.byKey(_bubbleKey));
+      await away.moveTo(const Offset(400, 400));
+      await tester.pumpAndSettle();
       expect(_railOpacity(tester), 0);
 
       // `FocusNode.canRequestFocus` folds in every ancestor's
@@ -259,7 +297,8 @@ void main() {
       expect(deleted, isFalse);
 
       // Revealed, it is a real control again.
-      await _hover(tester, find.byKey(_bubbleKey));
+      await away.moveTo(tester.getCenter(find.byKey(_bubbleKey)));
+      await tester.pumpAndSettle();
       expect(buttonIsFocusable(), isTrue);
       await tester.tap(find.byIcon(AppIcons.trash2));
       await tester.pumpAndSettle();
@@ -325,7 +364,8 @@ void main() {
 
       final gesture = await _hover(tester, find.byKey(const Key('first')));
       expect(_railOpacity(tester, of: railOf('first')), 1);
-      expect(_railOpacity(tester, of: railOf('second')), 0);
+      // Never revealed yet, so its rail is not even built.
+      expect(railOf('second'), findsNothing);
 
       await gesture.moveTo(tester.getCenter(find.byKey(const Key('second'))));
       await tester.pumpAndSettle();

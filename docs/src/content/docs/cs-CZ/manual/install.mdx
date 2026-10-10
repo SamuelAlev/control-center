@@ -2,7 +2,7 @@
 title: Instalace
 description: Použij Control Center v prohlížeči nebo nainstaluj aplikaci pro počítač, nastav backend agenta a vyber, kde poběží jeho server.
 slug: cs-CZ/prirucka/instalace
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center běží dvěma způsoby: jako **webová aplikace** na
@@ -65,7 +65,7 @@ Jak server hostovat, popisuje
 | Požadavek    | macOS                                                         | Windows      | Linux                                                              |
 | ------------ | ------------------------------------------------------------- | ------------ | ------------------------------------------------------------------ |
 | Verze systému | macOS 13+ (Ventura)                                          | Windows 10+  | Ubuntu 22.04+ nebo jiná distribuce s glibc 2.35+ a GTK 3           |
-| Architektura | Apple Silicon (arm64)                                         | x64          | x86_64                                                             |
+| Architektura | Apple Silicon (arm64)                                         | x64, ARM64   | x86_64                                                             |
 | Git          | Povinné                                                       | Povinné      | Povinné                                                            |
 | Místo na disku | ~200 MB pro aplikaci a k tomu datový adresář serveru        | ~200 MB      | ~200 MB                                                            |
 
@@ -97,10 +97,12 @@ Stáhni `Control-Center-<version>-arm64.dmg`, otevři ho a přetáhni Control Ce
 do Applications. Sestavení je podepsané Developer ID a notarizované Applem,
 takže se otevírá normálně.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: instalátor pro jednoho uživatele.
 - `Control-Center-<version>-windows-x64.zip`: přenosný zip.
+- `Control-Center-<version>-arm64-setup.exe`: instalátor pro jednoho uživatele.
+- `Control-Center-<version>-windows-arm64.zip`: přenosný zip.
 
 Windows pro checkouty prostorů používá `git worktree` (bez copy-on-write).
 
@@ -126,8 +128,8 @@ se aplikace spustí s těmi ovládacími prvky schovanými.
 
 Každé vydání veze i samotný headless server:
 `cc_server-<version>-macos-arm64.tar.gz`,
-`cc_server-<version>-linux-x64.tar.gz`,
-`cc_server-<version>-windows-x64.zip`, a vedle toho obrazy `cc-server`,
+`cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`,
+`cc_server-<version>-windows-arm64.zip`, a vedle toho obrazy `cc-server`,
 `cc-webapp` a `cc-remote` na GHCR. Viz
 [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
 

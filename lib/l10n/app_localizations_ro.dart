@@ -8079,6 +8079,53 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există încă o transcriere de rezumat.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Generează-le din transcriere sau scrie-le pe ale tale.';
+
+  @override
+  String get meetingNotesGenerate => 'Generează notițe';
+
+  @override
+  String get meetingNotesWriteOwn => 'Scrie-le pe ale tale';
+
+  @override
+  String get meetingNothingTranscribed => 'Nu s-a transcris nimic.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Nu există o transcriere de rezumat, dar îți poți păstra propriile notițe.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Vorbitori';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Timpul de vorbire al fiecărui vorbitor apare când există o transcriere.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return 'Încă $count';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share din timpul de vorbire, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone =>
+      'Toate elementele de acțiune sunt finalizate.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Vezi toate ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notele au fost copiate în clipboard ca Markdown.';
 
@@ -15458,4 +15505,50 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'Un agent este blocat de credențiale';
+
+  @override
+  String get killTerminal => 'Închide terminalul';
+
+  @override
+  String get stopAgentCommand => 'Oprește comanda';
+
+  @override
+  String get agentCommandStopping => 'Se oprește…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Comanda agentului $command, rulează de $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Conexiunea cu serverul s-a pierdut';
+
+  @override
+  String get serverLostBody =>
+      'Control Center continuă să încerce reconectarea în fundal. Încercați din nou acum sau accesați ecranul de autentificare pentru a alege un server.';
+
+  @override
+  String get serverLostRetrying => 'Se reconectează…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Următoarea încercare în $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Încercați reconectarea';
+
+  @override
+  String get serverLostSignIn => 'Mergeți la autentificare';
+
+  @override
+  String get serverEndedTitle => 'Nu se poate realiza reconectarea la server';
+
+  @override
+  String get shutdownSubtitleServer => 'Serverul se oprește';
 }

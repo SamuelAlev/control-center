@@ -82,7 +82,7 @@ void main() {
 
         // Fixture node id (`PR_412`) ≠ seeder key (`4120001`). Matching on
         // externalId would miss and the chat tab would stay empty.
-        final spaceId = await container.read(prSpaceProvider(_pr()).future);
+        final spaceId = await container.read(prSpaceProvider(PrSpaceKey.of(_pr())).future);
         expect(spaceId, 'eval-review-space');
         expect(calls, isEmpty, reason: 'a demo must not call pr.ensureSpace');
       },
@@ -103,7 +103,7 @@ void main() {
       addTearDown(container.dispose);
 
       Object? error;
-      final sub = container.listen(prSpaceProvider(pr), (_, next) {
+      final sub = container.listen(prSpaceProvider(PrSpaceKey.of(pr)), (_, next) {
         if (next.hasError) {
           error = next.error;
         }
@@ -134,7 +134,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final spaceId = await container.read(prSpaceProvider(_pr()).future);
+      final spaceId = await container.read(prSpaceProvider(PrSpaceKey.of(_pr())).future);
       expect(spaceId, 'minted-space');
       expect(calls, ['pr.ensureSpace']);
     });

@@ -1104,6 +1104,133 @@ void main() {
       );
     });
   });
+
+  group('sidebar value stability', () {
+    const ws = 'ws-1';
+
+    Space space(String id, {String? name, DateTime? updatedAt}) => Space(
+      id: id,
+      name: name ?? id,
+      workspaceId: ws,
+      createdAt: DateTime(2024),
+      updatedAt: updatedAt ?? DateTime(2024),
+    );
+
+    test('visible spaces ignore an emission that only bumps updatedAt, but '
+        'follow a rename and a reorder', () async {
+      final spaces = StreamController<List<Space>>();
+      addTearDown(spaces.close);
+      final container = ProviderContainer(
+        overrides: [
+          workspaceSpacesProvider(ws).overrideWith((ref) => spaces.stream),
+          workspaceSpaceActivityProvider(
+            ws,
+          ).overrideWithValue(const AsyncData({})),
+        ],
+      );
+      addTearDown(container.dispose);
+      var notifications = 0;
+      final sub = container.listen(
+        workspaceVisibleSpacesProvider(ws),
+        (_, _) => notifications++,
+      );
+      addTearDown(sub.close);
+
+      spaces.add([space('a'), space('b')]);
+      await settle(container);
+      final first = container.read(workspaceVisibleSpacesProvider(ws));
+      expect(first.map((s) => s.id), ['a', 'b']);
+      final afterLoad = notifications;
+
+      // A message in `a`: same rows, newer timestamp.
+      spaces.add([space('a', updatedAt: DateTime(2025)), space('b')]);
+      await settle(container);
+      expect(notifications, afterLoad);
+      expect(container.read(workspaceVisibleSpacesProvider(ws)), same(first));
+
+      // A message in `b` makes it the most recent: a real reorder.
+      spaces.add([space('b', updatedAt: DateTime(2026)), space('a')]);
+      await settle(container);
+      expect(notifications, afterLoad + 1);
+      expect(
+        container.read(workspaceVisibleSpacesProvider(ws)).map((s) => s.id),
+        ['b', 'a'],
+      );
+
+      spaces.add([space('b', name: 'renamed'), space('a')]);
+      await settle(container);
+      expect(notifications, afterLoad + 2);
+      expect(
+        container.read(workspaceVisibleSpacesProvider(ws)).first.name,
+        'renamed',
+      );
+    });
+
+    test('run starts and busy ids ignore output stamps', () async {
+      final runs = StreamController<List<AgentRunLog>>();
+      addTearDown(runs.close);
+      final container = ProviderContainer(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(_StubActiveWorkspaceId.new),
+          workspaceSpacesProvider(
+            ws,
+          ).overrideWithValue(AsyncData([space('ch-1')])),
+          spaceActiveRunsProvider((
+            workspaceId: ws,
+            spaceId: 'ch-1',
+          )).overrideWith((ref) => runs.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      var starts = 0;
+      var busy = 0;
+      final startsSub = container.listen(
+        spaceRunStartedAtProvider('ch-1'),
+        (_, _) => starts++,
+      );
+      final busySub = container.listen(
+        spaceBusyConversationIdsProvider('ch-1'),
+        (_, _) => busy++,
+      );
+      addTearDown(startsSub.close);
+      addTearDown(busySub.close);
+
+      AgentRunLog run({String id = 'r1', DateTime? lastOutputAt}) =>
+          AgentRunLog(
+            id: id,
+            agentId: 'agent-1',
+            workspaceId: ws,
+            spaceId: 'ch-1',
+            conversationId: 'conv-a',
+            startedAt: DateTime(2024),
+            lastOutputAt: lastOutputAt,
+            status: RunStatus.running,
+          );
+
+      runs.add([run()]);
+      await container.pump();
+      expect(container.read(spaceBusyConversationIdsProvider('ch-1')), {
+        'conv-a',
+      });
+      final startsAfterRun = starts;
+      final busyAfterRun = busy;
+
+      // The server rewrites the running agent's output stamp every second.
+      for (var second = 1; second <= 3; second++) {
+        runs.add([run(lastOutputAt: DateTime(2024, 1, 1, 0, 0, second))]);
+        await container.pump();
+      }
+      expect(starts, startsAfterRun);
+      expect(busy, busyAfterRun);
+
+      runs.add(const []);
+      await container.pump();
+      expect(container.read(spaceRunStartedAtProvider('ch-1')), isEmpty);
+      expect(container.read(spaceBusyConversationIdsProvider('ch-1')), isEmpty);
+      expect(starts, startsAfterRun + 1);
+      expect(busy, busyAfterRun + 1);
+    });
+  });
 }
 
 /// Pins the active workspace to `ws-1` without touching preferences/database.
@@ -1119,4 +1246,12 @@ class _MutableActiveWorkspaceId extends ActiveWorkspaceIdNotifier {
   String? build() => 'ws-1';
 
   void switchTo(String id) => state = id;
+}
+
+/// Lets a stream event reach its provider, then flushes the container: one
+/// `pump` alone can run before the event is delivered, which would make a
+/// "nothing notified" assertion pass for the wrong reason.
+Future<void> settle(ProviderContainer container) async {
+  await Future<void>.delayed(Duration.zero);
+  await container.pump();
 }

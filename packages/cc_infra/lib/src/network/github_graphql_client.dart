@@ -813,10 +813,13 @@ class GitHubGraphQLClient {
   /// 5 keeps each request inside budget. Chunks run sequentially.
   static const int _prBatchChunkSize = 5;
 
-  /// Repos per checks/review enrichment request — smaller than
-  /// [_prBatchChunkSize] because `statusCheckRollup` is heavier; at 5×100 PRs
-  /// gateway 502/504 was routine. Failure then costs two repos' checks, not five.
-  static const int _prChecksChunkSize = 2;
+  /// Open PRs per checks/review enrichment request. One repo per request,
+  /// paged: `statusCheckRollup` is resolved per PR on GitHub's side, and on a
+  /// busy repo even two repos × 100 PRs in one query ran past the gateway
+  /// budget on every single poll (HTTP 502/504, then three identical retries),
+  /// so the checks pills never refreshed at all. A small page answers well
+  /// inside it, and a page that does fail costs only its own repo this pass.
+  static const int _prChecksPageSize = 25;
 
   /// Open PRs fetched per repo on the first page. Matches the REST list's
   /// `per_page`, so REST pagination (`loadMore`) continues cleanly.
@@ -844,30 +847,30 @@ class GitHubGraphQLClient {
     return b.toString();
   }
 
-  String _buildChecksQuery(List<({String owner, String name})> chunk) {
-    final b = StringBuffer('query {\n');
-    for (var i = 0; i < chunk.length; i++) {
-      final owner = _escapeGraphqlString(chunk[i].owner);
-      final name = _escapeGraphqlString(chunk[i].name);
-      b
-        ..writeln('  r$i: repository(owner: "$owner", name: "$name") {')
-        ..writeln(
-          '    pullRequests(states: OPEN, first: $_prBatchPageSize, '
-          'orderBy: {field: CREATED_AT, direction: DESC}) {',
-        )
-        ..writeln('      nodes { ...PrChecksFields }')
-        ..writeln('    }')
-        ..writeln('  }');
+  String _buildChecksQuery(
+    ({String owner, String name}) repo, {
+    String? after,
+  }) {
+    final owner = _escapeGraphqlString(repo.owner);
+    final name = _escapeGraphqlString(repo.name);
+    final cursor = after == null
+        ? ''
+        : ', after: "${_escapeGraphqlString(after)}"';
+    return '''
+query {
+  r0: repository(owner: "$owner", name: "$name") {
+    pullRequests(states: OPEN, first: $_prChecksPageSize$cursor, orderBy: {field: CREATED_AT, direction: DESC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes { ...PrChecksFields }
     }
-    b
-      ..writeln('}')
-      ..writeln(_prChecksFragment);
-    return b.toString();
+  }
+}
+$_prChecksFragment''';
   }
 
   /// `statusCheckRollup` + `reviewDecision` for open PRs ([_prBatchPageSize] per
-  /// repo, [_prChecksChunkSize] per request). Phase 2 after
-  /// [fetchOpenPullRequestsBatch]. Absent repo index = unread this pass (keep
+  /// repo; one repo per request, [_prChecksPageSize] PRs per page). Phase 2
+  /// after [fetchOpenPullRequestsBatch]. Absent repo index = unread this pass (keep
   /// prior state); empty map = answered with no open PRs. Treating absent as
   /// "no checks" turns gateway timeouts into repeat notifications.
   Future<Map<int, Map<int, GitHubPrStatusOverlay>>> fetchOpenPullRequestsChecks(
@@ -879,34 +882,38 @@ class GitHubGraphQLClient {
     }
 
     final result = <int, Map<int, GitHubPrStatusOverlay>>{};
-    // Chunks are independent requests, so one gateway timeout must not throw
-    // away the chunks that DID answer: the caller overlays what it got and
-    // keeps its previous value for the rest. Only a sweep where every chunk
-    // failed rethrows, so "GitHub could not answer at all" still reaches the
-    // caller's log instead of looking like a workspace with no checks.
+    // Repos are independent requests, so one gateway timeout must not throw
+    // away the repos that DID answer: the caller overlays what it got and
+    // keeps its previous value for the rest. A repo whose pages did not ALL
+    // answer stays absent (a partial overlay would read its unread PRs as
+    // checkless). Only a sweep where every repo failed rethrows, so "GitHub
+    // could not answer at all" still reaches the caller's log instead of
+    // looking like a workspace with no checks.
     Object? failure;
 
-    for (var start = 0; start < repos.length; start += _prChecksChunkSize) {
-      final end = (start + _prChecksChunkSize) > repos.length
-          ? repos.length
-          : start + _prChecksChunkSize;
-      final chunk = repos.sublist(start, end);
-      final Map<String, dynamic>? data;
-      try {
-        data = await _postTolerant(_buildChecksQuery(chunk), cancelToken);
-      } on Object catch (e) {
-        failure = e;
-        continue;
-      }
-      final root = data?['data'] as Map<String, dynamic>?;
-      if (root == null) {
-        continue;
-      }
-
-      for (var i = 0; i < chunk.length; i++) {
-        final repository = root['r$i'] as Map<String, dynamic>?;
+    repos:
+    for (var index = 0; index < repos.length; index++) {
+      final checksForRepo = <int, GitHubPrStatusOverlay>{};
+      String? after;
+      var fetched = 0;
+      while (true) {
+        final Map<String, dynamic>? data;
+        try {
+          data = await _postTolerant(
+            _buildChecksQuery(repos[index], after: after),
+            cancelToken,
+          );
+        } on Object catch (e) {
+          failure = e;
+          continue repos;
+        }
+        final root = data?['data'] as Map<String, dynamic>?;
+        if (root == null) {
+          continue repos;
+        }
+        final repository = root['r0'] as Map<String, dynamic>?;
         if (repository == null) {
-          continue;
+          continue repos;
         }
         final pulls = repository['pullRequests'] as Map<String, dynamic>?;
         final nodes =
@@ -914,8 +921,6 @@ class GitHubGraphQLClient {
                 ?.whereType<Map<String, dynamic>>()
                 .toList(growable: false) ??
             const <Map<String, dynamic>>[];
-
-        final checksForRepo = <int, GitHubPrStatusOverlay>{};
         for (final node in nodes) {
           final number = (node['number'] as num?)?.toInt() ?? 0;
           if (number <= 0) {
@@ -934,8 +939,20 @@ class GitHubGraphQLClient {
             reviewDecision: node['reviewDecision'] as String?,
           );
         }
-        result[start + i] = checksForRepo;
+        fetched += nodes.length;
+        final pageInfo = pulls?['pageInfo'] as Map<String, dynamic>?;
+        final next = pageInfo?['endCursor'] as String?;
+        // The same first [_prBatchPageSize] PRs the list query covers; the
+        // checks of older ones load with the list's own pagination.
+        if (pageInfo?['hasNextPage'] != true ||
+            next == null ||
+            nodes.isEmpty ||
+            fetched >= _prBatchPageSize) {
+          break;
+        }
+        after = next;
       }
+      result[index] = checksForRepo;
     }
 
     if (result.isEmpty && failure != null) {

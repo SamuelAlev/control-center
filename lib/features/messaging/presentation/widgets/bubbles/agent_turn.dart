@@ -20,6 +20,8 @@ import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'agent_turn_badges.dart';
+
 /// Renders an agent turn as a flat, full-column block: a small name-only
 /// header (no avatar, no bubble chrome), then a continuous body — the
 /// collapsible process transcript (reasoning / tools / errors) flowing into
@@ -68,6 +70,11 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
   Widget? _structureSlot;
   String? _slotMessageId;
   String? _slotFont;
+
+  /// The message a non-live slot was built from (null for a live slot). A
+  /// settled turn's slot is reused while the feed re-emits an equal message,
+  /// so a parent rebuild does not walk its whole transcript again.
+  Message? _slotMessage;
 
   /// Latest message and font. The slot's builder reads these when the segment
   /// list actually changes, including after a flush that did not rebuild it.
@@ -136,14 +143,21 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     final message = _shown;
     final liveProjection =
         _live.isLive && message.metadata?['streamComplete'] != true;
-    if (_structureSlot != null &&
-        liveProjection &&
+    final slot = _structureSlot;
+    if (slot != null &&
         _slotMessageId == message.id &&
         _slotFont == _shownFont) {
-      return _structureSlot!;
+      if (liveProjection) {
+        return slot;
+      }
+      final settled = _slotMessage;
+      if (settled != null && settled == message) {
+        return slot;
+      }
     }
     _slotMessageId = message.id;
     _slotFont = _shownFont;
+    _slotMessage = liveProjection ? null : message;
     return _structureSlot = ValueListenableBuilder<int>(
       valueListenable: _live.structure,
       builder: (context, _, _) =>
@@ -485,72 +499,5 @@ class _AgentTrailer extends StatelessWidget {
     }
     final k = tokens / 1000;
     return '${k.toStringAsFixed(k % 1 == 0 ? 0 : 1)}k tok';
-  }
-}
-
-/// A quiet badge for a turn that stopped at the loop's turn ceiling: warns
-/// that the run is unfinished and that a plain reply keeps it going. Distinct
-/// from [_FailedBadge] — nothing errored, so no retry affordance and the
-/// warning (not error) color keeps it informational rather than alarming.
-class _TurnLimitBadge extends StatelessWidget {
-  const _TurnLimitBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = resolveTokens(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(AppIcons.octagonAlert, size: 14, color: tokens.fgWarningPrimary),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            AppLocalizations.of(context).turnLimitReached,
-            style: CcTypography.caption.copyWith(
-              color: tokens.textWarningPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A quiet failed-run badge with a scoped Retry action.
-class _FailedBadge extends StatelessWidget {
-  const _FailedBadge({required this.errorFamily, required this.onRetry});
-
-  final String? errorFamily;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = resolveTokens(context);
-    final l10n = AppLocalizations.of(context);
-    final label = errorFamily == null
-        ? l10n.messageFailed
-        : '${l10n.messageFailed} · $errorFamily';
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(AppIcons.circleAlert, size: 14, color: tokens.textErrorPrimary),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            label,
-            style: CcTypography.caption.copyWith(
-              color: tokens.textErrorPrimary,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        CcButton(
-          onPressed: onRetry,
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          child: Text(l10n.retry),
-        ),
-      ],
-    );
   }
 }

@@ -338,7 +338,7 @@ export const pl: LandingCopy = {
     description:
       "Twój następny dzień dewelopera może zacząć się tutaj. Za darmo i open source.",
     mac: "Apple Silicon · macOS 13+",
-    windows: "x64 · Windows 10+",
+    windows: "x64 · ARM64 · Windows 10+",
     linux: "x86_64 · AppImage",
     release: "Zobacz wydania",
     web: "Otwórz aplikację webową",

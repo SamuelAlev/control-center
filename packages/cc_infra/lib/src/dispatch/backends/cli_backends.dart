@@ -43,6 +43,12 @@ class ClaudeCliBackend implements AgentBackend {
   /// as `--settings` (the action-policy hooks); [skipPermissions] adds
   /// `--dangerously-skip-permissions` for non-interactive automation.
   /// [bashDescriptionInstruction] always rides as `--append-system-prompt`.
+  ///
+  /// Input is always `--input-format stream-json`: the prompt is the first
+  /// NDJSON user message on stdin, and stdin stays open for the run so queued
+  /// steering reaches the turn in flight (Claude Code injects a mid-turn user
+  /// message at its next tool boundary). The session closes stdin at the
+  /// turn's `result`, which is what lets the process exit.
   static List<String> buildClaudeArgs({
     String? modelId,
     String? permissionMode,
@@ -52,6 +58,8 @@ class ClaudeCliBackend implements AgentBackend {
   }) {
     final args = <String>[
       '-p',
+      '--input-format',
+      'stream-json',
       '--output-format',
       'stream-json',
       '--verbose',

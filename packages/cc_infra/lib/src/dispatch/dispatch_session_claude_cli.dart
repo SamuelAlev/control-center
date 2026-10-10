@@ -1,5 +1,13 @@
 part of 'dispatch_session.dart';
 
+/// One stream-json user message, as `claude -p --input-format stream-json`
+/// reads it from stdin.
+String _claudeUserLine(String text) =>
+    '${jsonEncode({
+      'type': 'user',
+      'message': {'role': 'user', 'content': text},
+    })}\n';
+
 String? _claudePermissionMode(Mode mode) {
   switch (mode) {
     case Mode.plan:
@@ -15,8 +23,10 @@ extension _ClaudeCliMethods on DispatchSession {
   /// Runs Claude Code directly via `claude -p --output-format stream-json`,
   /// spawned inside the OS sandbox exactly like a structured-CLI adapter
   /// (Pi). Stdout NDJSON is parsed by [ClaudeStreamJsonParser] into
-  /// [AgentProcessEvent]s; the prompt is fed via stdin. `claude -p` draws
-  /// from the same Claude Code subscription quota as interactive mode.
+  /// [AgentProcessEvent]s. Stdin is a stream-json lane: the prompt first,
+  /// then queued steering as it arrives, closed at the turn's `result`.
+  /// `claude -p` draws from the same Claude Code subscription quota as
+  /// interactive mode.
   Future<void> _runClaudeCli({
     required ScopedCredentials scoped,
     required String sandboxSessionId,
@@ -190,6 +200,9 @@ extension _ClaudeCliMethods on DispatchSession {
     // credential that 401s again after a login cannot relaunch forever.
     var reauthParks = 0;
     _claudeSubagents = _openClaudeSubagents();
+    _claudeSteered.clear();
+    _steering.onEnqueued = _scheduleClaudeSteeringPump;
+    var steeringAnnounced = false;
     var i = 0;
     while (i < attempts.length) {
       final attempt = attempts[i];
@@ -285,23 +298,37 @@ extension _ClaudeCliMethods on DispatchSession {
           // something to show as an error, and the decision needs the exit code
           // that has not arrived yet.
           onTerminalError: (e) => terminal = e,
+          onResult: () => _onClaudeTurnEnded(failed: terminal != null),
         ),
       );
 
+      // Closed by `_closeClaudeStdin`, at the turn's result or after exec.
+      // ignore: close_sinks
+      final stdin = _openClaudeStdin();
+      if (!steeringAnnounced) {
+        steeringAnnounced = true;
+        onHarnessStarted?.call();
+      }
+      _pumpClaudeSteering();
+
       addEvent(DebugEvent(content: '[claude] launching claude -p…'));
       _sawProcessStderr = false;
-      exitCode = await deps.sandbox.exec(
-        handle,
-        argv,
-        env: _envForClaudeAccount(mergedEnv, attempt.configDir),
-        onPid: (forkedPid) {
-          _onPidAvailable(forkedPid);
-          addEvent(
-            DebugEvent(content: '[claude] claude running (pid $forkedPid)'),
-          );
-        },
-        stdinInput: prompt,
-      );
+      try {
+        exitCode = await deps.sandbox.exec(
+          handle,
+          argv,
+          env: _envForClaudeAccount(mergedEnv, attempt.configDir),
+          onPid: (forkedPid) {
+            _onPidAvailable(forkedPid);
+            addEvent(
+              DebugEvent(content: '[claude] claude running (pid $forkedPid)'),
+            );
+          },
+          stdinStream: stdin.stream,
+        );
+      } finally {
+        _closeClaudeStdin();
+      }
       _claudeParser = null;
 
       final failure = terminal;
@@ -368,6 +395,8 @@ extension _ClaudeCliMethods on DispatchSession {
       break;
     }
 
+    // What is still queued now converts to a follow-up message at run end.
+    _steering.onEnqueued = null;
     await _closeClaudeSubagents();
     unawaited(_closeRunLog(exitCode: exitCode));
 
@@ -391,6 +420,100 @@ extension _ClaudeCliMethods on DispatchSession {
     }
     addEvent(DoneEvent());
     _completeRun();
+  }
+
+  /// Opens the stdin lane for one `claude -p` attempt: the prompt as the first
+  /// stream-json user message, then everything this run already steered (a
+  /// failover attempt replays the turn as the operator last shaped it).
+  StreamController<String> _openClaudeStdin() {
+    final stdin = StreamController<String>()..add(_claudeUserLine(prompt));
+    for (final text in _claudeSteered) {
+      stdin.add(_claudeUserLine(text));
+    }
+    _claudeStdin = stdin;
+    return stdin;
+  }
+
+  /// Closes the open stdin lane, which lets `claude` exit once it has answered
+  /// what it was already sent. Steering from here on stays queued.
+  void _closeClaudeStdin() {
+    final stdin = _claudeStdin;
+    _claudeStdin = null;
+    if (stdin != null) {
+      unawaited(stdin.close());
+    }
+  }
+
+  /// Drains on the next microtask rather than inside the push: the steering
+  /// queue service pushes several rows in a row (reorder, run-start flush),
+  /// and queue surgery mid-push would interleave with it.
+  void _scheduleClaudeSteeringPump() {
+    if (_claudeSteeringPumpScheduled) {
+      return;
+    }
+    _claudeSteeringPumpScheduled = true;
+    scheduleMicrotask(() {
+      _claudeSteeringPumpScheduled = false;
+      _pumpClaudeSteering();
+    });
+  }
+
+  /// Writes the steering and aside lanes to the open stdin. Claude Code
+  /// injects a user message that arrives mid-turn at its next tool boundary.
+  /// Follow-ups wait for [_onClaudeTurnEnded]: they are for once the agent
+  /// would otherwise stop.
+  void _pumpClaudeSteering() {
+    final stdin = _claudeStdin;
+    if (stdin == null) {
+      return;
+    }
+    _writeClaudeSteering(stdin, [
+      ..._steering.drainSteering(),
+      ..._steering.drainAside(),
+    ]);
+  }
+
+  void _writeClaudeSteering(
+    StreamController<String> stdin,
+    List<SteeringMessage> messages,
+  ) {
+    if (messages.isEmpty) {
+      return;
+    }
+    for (final message in messages) {
+      _claudeSteered.add(message.content);
+      stdin.add(_claudeUserLine(message.content));
+    }
+    addEvent(
+      DebugEvent(
+        content:
+            '[claude] steered the running turn with ${messages.length} '
+            'queued message${messages.length == 1 ? '' : 's'}',
+      ),
+    );
+  }
+
+  /// The turn's `result`. Anything still queued — follow-ups included — starts
+  /// the next turn on this same process, context intact. Otherwise stdin
+  /// closes and the process exits; a failed turn always closes, since the
+  /// failover and sign-in handling need the exit.
+  void _onClaudeTurnEnded({required bool failed}) {
+    final stdin = _claudeStdin;
+    if (stdin == null) {
+      return;
+    }
+    if (!failed) {
+      final pending = [
+        ..._steering.drainSteering(),
+        ..._steering.drainAside(),
+        ..._steering.drainFollowUp(),
+      ];
+      if (pending.isNotEmpty) {
+        _writeClaudeSteering(stdin, pending);
+        return;
+      }
+    }
+    _closeClaudeStdin();
   }
 
   /// Child-run recording for the subagents this run spawns. Null when the run

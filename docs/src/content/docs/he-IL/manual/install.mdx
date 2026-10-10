@@ -2,7 +2,7 @@
 title: התקנה
 description: השתמשו ב-Control Center בדפדפן או התקינו את אפליקציית שולחן העבודה, הגדירו backend של סוכנים ובחרו היכן רץ השרת שלו.
 slug: he-IL/מדריך-למשתמש/התקנה
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center פועל בשתי דרכים: כ**אפליקציית ווב** בכתובת
@@ -59,7 +59,7 @@ Control Center פועל בשתי דרכים: כ**אפליקציית ווב** ב�
 | דרישה                | macOS                                                 | Windows     | Linux                                                      |
 | -------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | גרסת מערכת ההפעלה    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ או הפצה אחרת עם glibc 2.35+ ו-GTK 3          |
-| ארכיטקטורה           | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| ארכיטקטורה           | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git                  | נדרש                                                  | נדרש        | נדרש                                                       |
 | מקום בדיסק           | ~200 MB לאפליקציה, בתוספת תיקיית הנתונים של השרת      | ~200 MB     | ~200 MB                                                    |
 
@@ -89,10 +89,12 @@ data>/control-center` — `~/Library/Application Support/control-center` ב-macO
 Applications. ה-build חתום ב-Developer ID ומאושר ב-notarization של Apple, ולכן הוא נפתח
 כרגיל.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: מתקין לפי משתמש.
 - `Control-Center-<version>-windows-x64.zip`: קובץ zip נייד.
+- `Control-Center-<version>-arm64-setup.exe`: מתקין לפי משתמש.
+- `Control-Center-<version>-windows-arm64.zip`: קובץ zip נייד.
 
 Windows משתמש ב-`git worktree` עבור checkout של מרחבים (בלי העתקה בעת כתיבה).
 
@@ -107,7 +109,7 @@ Windows משתמש ב-`git worktree` עבור checkout של מרחבים (בלי
 
 ### שרת עצמאי
 
-כל גרסה כוללת גם את השרת ללא ממשק בנפרד — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — לצד images של `cc-server`, `cc-webapp` ו-`cc-remote` ב-GHCR. ראו [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
+כל גרסה כוללת גם את השרת ללא ממשק בנפרד — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — לצד images של `cc-server`, `cc-webapp` ו-`cc-remote` ב-GHCR. ראו [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
 
 הארכיון של Linux נבנה על Ubuntu 22.04 והספריות הנייטיביות המצורפות אליו מקושרות ל-glibc 2.35 ול-libstdc++ של GCC 12, ולכן הוא דורש מארח חדש לפחות כזה (Ubuntu 22.04, Debian 12, Fedora 36 ואילך). בהפצה ישנה יותר הריצו במקום זאת את ה-image של `cc-server` — מכולה מביאה איתה userland משלה, כך שרק הקרנל צריך להיות שלכם.
 

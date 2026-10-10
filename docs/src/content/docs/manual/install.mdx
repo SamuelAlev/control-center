@@ -57,7 +57,7 @@ follow [Run a headless server](/manual/guides/run-headless-server/).
 | Requirement  | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Architecture | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git          | Required                                              | Required    | Required                                                   |
 | Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
 
@@ -75,10 +75,12 @@ Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/
 
 Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: a per-user installer.
 - `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-arm64-setup.exe`: a per-user installer.
+- `Control-Center-<version>-windows-arm64.zip`: a portable zip.
 
 Windows uses `git worktree` for space checkouts (no copy-on-write).
 
@@ -93,7 +95,7 @@ Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedor
 
 ### Standalone server
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/manual/guides/run-headless-server/).
+Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/manual/guides/run-headless-server/).
 
 The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
 

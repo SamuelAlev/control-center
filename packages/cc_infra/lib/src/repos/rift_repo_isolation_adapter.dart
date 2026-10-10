@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/ports/git_command_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_natives/cc_natives.dart';
 import 'package:path/path.dart' as p;
@@ -833,6 +834,9 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
           await _git.run(['branch', '-D', name], workdir: sourcePath);
         }
     }
+    // The review diff's warm index for this worktree lives outside it, in
+    // the temp dir, so removing the worktree does not take it along.
+    await discardWorkingTreeCapture(path);
   }
 
   /// Read-only capture of uncommitted work at [path] before GC — no `add`,

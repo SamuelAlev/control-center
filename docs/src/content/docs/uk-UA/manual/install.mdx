@@ -2,7 +2,7 @@
 title: Встановлення
 description: Використовуйте Control Center у браузері або встановіть настільний застосунок, налаштуйте бекенд агента й виберіть, де запускається його сервер.
 slug: uk-UA/керівництво/встановлення
-sourceHash: 868e72bb888542054086efaf7bed8ddc8e3a8464
+sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
 ---
 
 Control Center працює двома способами: як **вебзастосунок** за адресою
@@ -63,7 +63,7 @@ pull requests, конвеєри, тікети, пам’ять і сам зап�
 | Вимога         | macOS                                                 | Windows     | Linux                                                      |
 | -------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
 | Версія ОС      | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ або інший дистрибутив із glibc 2.35+ і GTK 3 |
-| Архітектура    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Архітектура    | Apple Silicon (arm64)                                 | x64, ARM64  | x86_64                                                     |
 | Git            | Обов’язково                                           | Обов’язково | Обов’язково                                                |
 | Місце на диску | ~200 MB для застосунку плюс каталог даних сервера     | ~200 MB     | ~200 MB                                                    |
 
@@ -81,10 +81,12 @@ pull requests, конвеєри, тікети, пам’ять і сам зап�
 
 Завантажте `Control-Center-<version>-arm64.dmg`, відкрийте його й перетягніть Control Center до теки Applications. Збірка підписана Developer ID і нотаризована Apple, тож відкривається звичайно.
 
-### Windows (x64)
+### Windows (x64, ARM64)
 
 - `Control-Center-<version>-x64-setup.exe`: інсталятор для окремого користувача.
 - `Control-Center-<version>-windows-x64.zip`: портативний zip-архів.
+- `Control-Center-<version>-arm64-setup.exe`: інсталятор для окремого користувача.
+- `Control-Center-<version>-windows-arm64.zip`: портативний zip-архів.
 
 Windows використовує `git worktree` для checkout просторів (без copy-on-write).
 
@@ -99,7 +101,7 @@ AppImage містить інформацію для оновлення, тож [
 
 ### Окремий сервер
 
-Кожен випуск також містить headless-сервер окремо — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — поряд з образами `cc-server`, `cc-webapp` і `cc-remote` на GHCR. Див. [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/).
+Кожен випуск також містить headless-сервер окремо — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip`, `cc_server-<version>-windows-arm64.zip` — поряд з образами `cc-server`, `cc-webapp` і `cc-remote` на GHCR. Див. [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/).
 
 Архів для Linux зібрано на Ubuntu 22.04, і його вбудовані нативні бібліотеки лінкуються з glibc 2.35 і libstdc++ від GCC 12, тож потрібен хост щонайменше такої ж свіжості (Ubuntu 22.04, Debian 12, Fedora 36 або пізніші). На старішому дистрибутиві запускайте натомість образ `cc-server` — контейнер приносить власний userland, тож вашим має бути лише ядро.
 

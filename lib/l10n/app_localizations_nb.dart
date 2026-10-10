@@ -7998,6 +7998,52 @@ class AppLocalizationsNb extends AppLocalizations {
       'Det er ingen transkript å oppsummere ennå.';
 
   @override
+  String get meetingNotesEmptyDescription =>
+      'Lag dem fra transkriptet, eller skriv dine egne.';
+
+  @override
+  String get meetingNotesGenerate => 'Lag notater';
+
+  @override
+  String get meetingNotesWriteOwn => 'Skriv dine egne';
+
+  @override
+  String get meetingNothingTranscribed => 'Ingenting ble transkribert.';
+
+  @override
+  String get meetingNothingTranscribedDescription =>
+      'Det er ingen transkript å oppsummere, men du kan fortsatt føre dine egne notater.';
+
+  @override
+  String get meetingOverviewSpeakers => 'Talere';
+
+  @override
+  String get meetingOverviewSpeakersEmpty =>
+      'Taletid per taler vises når det finnes et transkript.';
+
+  @override
+  String meetingOverviewMoreSpeakers(int count) {
+    return '+$count til';
+  }
+
+  @override
+  String meetingOverviewSpeakerShare(
+    String name,
+    String share,
+    String duration,
+  ) {
+    return '$name: $share av taletiden, $duration';
+  }
+
+  @override
+  String get meetingOverviewActionItemsAllDone => 'Alle tiltak er fullført.';
+
+  @override
+  String meetingOverviewViewAll(int count) {
+    return 'Vis alle ($count)';
+  }
+
+  @override
   String get meetingExportCopied =>
       'Notater kopiert til utklippstavlen som Markdown.';
 
@@ -15295,4 +15341,50 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get notificationAgentBlockedOnCredentialUnnamed =>
       'En agent er blokkert av påloggingsinformasjon';
+
+  @override
+  String get killTerminal => 'Avslutt terminal';
+
+  @override
+  String get stopAgentCommand => 'Stopp kommando';
+
+  @override
+  String get agentCommandStopping => 'Stopper…';
+
+  @override
+  String sidebarAgeSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String agentCommandSemantics(String command, String elapsed) {
+    return 'Agentkommando $command, har kjørt i $elapsed';
+  }
+
+  @override
+  String get serverLostTitle => 'Mistet forbindelsen til serveren';
+
+  @override
+  String get serverLostBody =>
+      'Control Center fortsetter å prøve å koble til på nytt i bakgrunnen. Prøv igjen nå, eller gå til påloggingsskjermen for å velge en server.';
+
+  @override
+  String get serverLostRetrying => 'Kobler til på nytt…';
+
+  @override
+  String serverLostNextAttempt(int seconds) {
+    return 'Neste forsøk om $seconds s';
+  }
+
+  @override
+  String get serverLostReconnect => 'Prøv å koble til på nytt';
+
+  @override
+  String get serverLostSignIn => 'Gå til pålogging';
+
+  @override
+  String get serverEndedTitle => 'Kan ikke koble til serveren på nytt';
+
+  @override
+  String get shutdownSubtitleServer => 'Serveren stopper';
 }

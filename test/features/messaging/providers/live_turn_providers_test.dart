@@ -45,6 +45,12 @@ void main() {
   }
 
   group('TranscriptLruCache', () {
+    test('defaults hold a scrolled-through conversation', () {
+      final cache = TranscriptLruCache();
+      expect(cache.capacity, 128);
+      expect(cache.maxChars, 4 * 1024 * 1024);
+    });
+
     test('evicts least-recently-used beyond capacity', () {
       final cache = TranscriptLruCache(capacity: 2);
       final seg = [TextSegment(text: 'x', startedAt: ts)];

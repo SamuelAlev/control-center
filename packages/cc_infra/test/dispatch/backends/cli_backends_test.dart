@@ -28,6 +28,9 @@ void main() {
         expect(args, contains('--output-format'));
         final i = args.indexOf('--output-format');
         expect(args[i + 1], 'stream-json');
+        // Stdin is the steering lane, so input is stream-json too.
+        final j = args.indexOf('--input-format');
+        expect(args[j + 1], 'stream-json');
         expect(args, contains('--verbose'));
         expect(args, contains('--include-partial-messages'));
       });
