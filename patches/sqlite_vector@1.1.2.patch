@@ -1,5 +1,5 @@
 diff --git a/hook/build.dart b/hook/build.dart
-index 34ce21f16aea9d0c0b772c4122583258ed21eaab..594e99240678b6940070d7345317bcfb4b653feb 100644
+index 277d903fccd6c62d6179f9f0b9849ade3bb21457..fe521a3de4de541b0e528b8736fcbb733b8e1427 100644
 --- a/hook/build.dart
 +++ b/hook/build.dart
 @@ -15,6 +15,23 @@ void main(List<String> args) async {

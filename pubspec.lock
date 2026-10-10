@@ -1699,10 +1699,10 @@ packages:
   sqlite_vector:
     dependency: "direct overridden"
     description:
-      path: ".dart_tool/patchwork/sqlite_vector@1.0.0"
+      path: ".dart_tool/patchwork/sqlite_vector@1.1.2"
       relative: true
     source: path
-    version: "1.0.0"
+    version: "1.1.2"
   sqlparser:
     dependency: transitive
     description:

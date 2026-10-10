@@ -18,7 +18,12 @@ dependencies:
   # libsqlite3 — no Flutter, no manual scripts/natives step. `openServerDatabase`
   # registers it as a process-global auto-extension. (Pins hooks to ^1.x, which
   # is why apps/cc_server's build-hook deps stay on the 1.x line too.)
-  sqlite_vector: ^1.0.0
+  # Exact: patches/sqlite_vector@1.1.2.patch adds Windows ARM64 (no upstream
+  # prebuilt) and only applies to this version. CI's first `pub get` runs
+  # without patchwork's overrides, so a caret range re-resolves to the newest
+  # release and the patch no longer matches. Bump with `patchwork carry` and
+  # SQLITE_VECTOR_REF (scripts/lib/native_pins.env) together.
+  sqlite_vector: 1.1.2
   # The schema + DAOs map rows to/from shared-kernel domain types (pure Dart).
   cc_domain:
     path: ../cc_domain

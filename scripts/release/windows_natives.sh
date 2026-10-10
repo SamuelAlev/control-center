@@ -433,7 +433,7 @@ build_grammar ada        https://github.com/briot/tree-sitter-ada.git           
 
 # --- sqlite-vector (arm64 only) ----------------------------------------------
 # pub's sqlite_vector bundles its extension for every target except Windows
-# ARM64, and its build hook throws there. patches/sqlite_vector@1.0.0.patch
+# ARM64, and its build hook throws there. patches/sqlite_vector@1.1.2.patch
 # points that one target at the DLL built here. It goes in a subdirectory so
 # the cc_server hook and stage_natives, which take build/natives/*.dll, never
 # bundle a second copy; the package's own hook ships it.
