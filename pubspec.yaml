@@ -138,7 +138,14 @@ dependencies:
   # Unified native surface: window control, multi-window, plain (NSUserDefaults/
   # registry/GSettings) storage, URL opening. Replaces window_manager +
   # desktop_multi_window + url_launcher + shared_preferences.
-  nativeapi: ^0.5.2
+  # Exact, like every package under patches/: CI's first `pub get` runs
+  # without patchwork's overrides, so a range floats to the newest release
+  # and the version-specific patch stops matching (`patchwork doctor` fails).
+  # A patched TRANSITIVE package is pinned by declaring it here; a
+  # dependency_override would make `patchwork apply` refuse to patch it.
+  # Bump a pin and its patch together (`patchwork carry`).
+  nativeapi: 0.5.2
+  cnativeapi: 0.5.2 # transitive via nativeapi; pinned for its patch
   # Flutter-side half of nativeapi since 0.4: the drag/drop/context-menu
   # widgets, windowing helpers and dart:ui conversions of its value types.
   nativeapi_flutter: ^0.5.2
@@ -205,9 +212,10 @@ dependencies:
   # bundle (UI + embedded cc_server + natives); the check cadence and the
   # drain rule (never prompt mid-recording) live in desktop_update_controller.
   auto_updater: ^1.0.0
+  auto_updater_windows: 1.0.0 # transitive via auto_updater; pinned for its patch
   media_kit: ^1.2.6
   media_kit_libs_macos_audio: ^1.1.4
-  media_kit_libs_windows_audio: ^1.0.9
+  media_kit_libs_windows_audio: 1.0.9 # exact: patched (see nativeapi above)
   media_kit_libs_linux: ^1.2.1
   # Device position for soundscape weather on desktop and web. The host still
   # fetches the forecast; this only reads the OS or browser location.
