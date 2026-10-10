@@ -186,4 +186,27 @@ void main() {
       );
     }
   });
+
+  test('the Windows ARM64 sqlite-vector build matches the pub package', () {
+    // Every other target loads the prebuilt the sqlite_vector package ships;
+    // Windows ARM64 loads one compiled from SQLITE_VECTOR_REF. Bumping either
+    // without the other would ship two different extensions behind one API.
+    final lock = File('$root/pubspec.lock').readAsStringSync();
+    final locked = RegExp(
+      r'\n  sqlite_vector:\n(?:    .*\n)*?    version: "([^"]+)"',
+    ).firstMatch(lock);
+    expect(locked, isNotNull, reason: 'sqlite_vector is not in pubspec.lock');
+    final pinned = RegExp(
+      r'^SQLITE_VECTOR_REF=[0-9a-f]{40} # v(\S+)',
+      multiLine: true,
+    ).firstMatch(pins.join('\n'));
+    expect(pinned, isNotNull, reason: 'SQLITE_VECTOR_REF is not pinned');
+    expect(
+      pinned!.group(1),
+      locked!.group(1),
+      reason:
+          'bump SQLITE_VECTOR_REF to the sqlite-vector release tagged '
+          '${locked.group(1)} (and the sqlite_vector patch, if its hook moved)',
+    );
+  });
 }

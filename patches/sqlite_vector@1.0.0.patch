@@ -1,0 +1,75 @@
+diff --git a/hook/build.dart b/hook/build.dart
+index 34ce21f16aea9d0c0b772c4122583258ed21eaab..594e99240678b6940070d7345317bcfb4b653feb 100644
+--- a/hook/build.dart
++++ b/hook/build.dart
+@@ -15,6 +15,23 @@ void main(List<String> args) async {
+     final os = codeConfig.targetOS;
+     final arch = codeConfig.targetArchitecture;
+ 
++    // Control Center patch: the package ships no Windows ARM64 binary, so that
++    // target bundles the one scripts/release/windows_natives.sh compiles from
++    // the same sqlite-vector release (SQLITE_VECTOR_REF in native_pins.env).
++    if (os == OS.windows && arch == Architecture.arm64) {
++      final file = _controlCenterWindowsArm64Binary(input);
++      output.dependencies.add(file.uri);
++      output.assets.code.add(
++        CodeAsset(
++          package: input.packageName,
++          name: 'src/native/sqlite_vector_extension.dart',
++          linkMode: DynamicLoadingBundled(),
++          file: file.uri,
++        ),
++      );
++      return;
++    }
++
+     final binaryPath = _resolveBinaryPath(os, arch, codeConfig);
+     if (binaryPath == null) {
+       throw UnsupportedError('sqlite_vector does not support $os $arch.');
+@@ -94,6 +111,46 @@ Future<File> _prepareAssetFile({
+   return outputFile;
+ }
+ 
++/// Control Center patch: the Windows ARM64 DLL staged in the natives directory
++/// the cc_server hook also reads (the repo-root `.cc_natives_prebuilt_dir`
++/// pointer, else `build/natives`), under `sqlite_vector/` so that hook's
++/// top-level `*.dll` sweep never bundles a second copy.
++File _controlCenterWindowsArm64Binary(BuildInput input) {
++  // patchwork applies this copy under <repo>/.dart_tool/patchwork/; walk up to
++  // the checkout rather than hard-coding the depth.
++  var repo = Directory.fromUri(input.packageRoot).absolute;
++  while (!File(
++    p.join(repo.path, 'scripts', 'lib', 'native_pins.env'),
++  ).existsSync()) {
++    final parent = repo.parent;
++    if (parent.path == repo.path) {
++      throw StateError(
++        'sqlite_vector (Control Center patch): no Control Center checkout '
++        'above ${input.packageRoot.toFilePath()}.',
++      );
++    }
++    repo = parent;
++  }
++  var staging = p.join(repo.path, 'build', 'natives');
++  final pointer = File(p.join(repo.path, '.cc_natives_prebuilt_dir'));
++  if (pointer.existsSync()) {
++    final target = pointer.readAsStringSync().trim();
++    if (target.isNotEmpty) {
++      staging = target;
++    }
++  }
++  final file = File(
++    p.join(staging, 'sqlite_vector', 'vector_windows_arm64.dll'),
++  );
++  if (!file.existsSync()) {
++    throw StateError(
++      'sqlite_vector: ${file.path} is missing. Windows ARM64 has no prebuilt '
++      'extension; run scripts/release/windows_natives.sh arm64 first.',
++    );
++  }
++  return file;
++}
++
+ String? _resolveBinaryPath(OS os, Architecture arch, CodeConfig config) {
+   if (os == OS.android) {
+     return switch (arch) {

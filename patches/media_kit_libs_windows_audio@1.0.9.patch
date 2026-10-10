@@ -1,0 +1,62 @@
+diff --git a/windows/CMakeLists.txt b/windows/CMakeLists.txt
+index 049741d72cd3fa652789407a5db6a595c3b233dc..1098b4b97c31c2d80745c6e51b39257a3dd6c35b 100644
+--- a/windows/CMakeLists.txt
++++ b/windows/CMakeLists.txt
+@@ -13,10 +13,10 @@ set(PROJECT_NAME "media_kit_libs_windows_audio")
+ project(${PROJECT_NAME} LANGUAGES CXX)
+ 
+ # ------------------------------------------------------------------------------
+-function(download_and_verify url md5 locationForArchive)
++function(download_and_verify url algo md5 locationForArchive)
+   # Check if the archive exists.
+   if(EXISTS "${locationForArchive}")
+-    file(MD5 "${locationForArchive}" ARCHIVE_MD5)
++    file(${algo} "${locationForArchive}" ARCHIVE_MD5)
+ 
+     # If MD5 doesn't match, delete the archive to download again.
+     if(NOT md5 STREQUAL ARCHIVE_MD5)
+@@ -32,7 +32,7 @@ function(download_and_verify url md5 locationForArchive)
+     message(STATUS "Downloaded archive to ${locationForArchive}.")
+ 
+     # Verify MD5 of the newly downloaded file.
+-    file(MD5 "${locationForArchive}" ARCHIVE_MD5)
++    file(${algo} "${locationForArchive}" ARCHIVE_MD5)
+ 
+     if(md5 STREQUAL ARCHIVE_MD5)
+       message(STATUS "${locationForArchive} Verification successful.")
+@@ -62,12 +62,27 @@ endfunction()
+ 
+ # Thanks to Mitchel Stewart (https://github.com/Quackdoc) for providing patches to generate minimal libmpv & FFmpeg audio specific builds.
+ 
++# Control Center patch: pick libmpv for the target architecture. The minimal
++# audio build exists for x86_64 only, and an Arm64 process cannot load an x64
++# DLL, so a native Windows on Arm build takes media-kit's aarch64 build from
++# libmpv-win32-video-cmake instead (LGPL: mpv -Dgpl=false, FFmpeg
++# --disable-gpl --enable-version3; see scripts/lib/third_party.sh). Same
++# archive layout (include/mpv/, libmpv-2.dll); pinned by SHA-256.
++# FLUTTER_TARGET_PLATFORM is what `flutter build windows` passes to CMake.
++if(FLUTTER_TARGET_PLATFORM STREQUAL "windows-arm64")
++  set(LIBMPV "mpv-dev-aarch64-20241021-git-0f78584.7z")
++  set(LIBMPV_URL "https://github.com/media-kit/libmpv-win32-video-cmake/releases/download/20241021/${LIBMPV}")
++  set(LIBMPV_HASH_ALGO "SHA256")
++  set(LIBMPV_MD5 "d445d02ab2ee60b1b5988f08ce4d2394cdcc594e98321b746a313313e96133ae")
++else()
+ # libmpv archive containing the pre-built shared libraries & headers.
+ set(LIBMPV "mpv-dev-x86_64-20230924-git-652a1dd.7z")
+ 
+ # Download URL & MD5 hash of the libmpv archive.
+ set(LIBMPV_URL "https://github.com/media-kit/libmpv-win32-audio-build/releases/download/2023-09-24/${LIBMPV}")
++set(LIBMPV_HASH_ALGO "MD5")
+ set(LIBMPV_MD5 "cd738e16e2a19626d7cfa48801524f8c")
++endif()
+ 
+ # Download location of the libmpv archive.
+ set(LIBMPV_ARCHIVE "${CMAKE_BINARY_DIR}/${LIBMPV}")
+@@ -75,6 +90,7 @@ set(LIBMPV_SRC "${CMAKE_BINARY_DIR}/libmpv")
+ 
+ download_and_verify(
+   ${LIBMPV_URL}
++  ${LIBMPV_HASH_ALGO}
+   ${LIBMPV_MD5}
+   ${LIBMPV_ARCHIVE}
+ )

@@ -88,6 +88,25 @@ while IFS='|' read -r base desc; do
   fi
 done < <(cc_natives_for "$ROLE" "$OS")
 
+# Windows ARM64 also needs the sqlite-vector extension windows_natives.sh
+# builds. It is not in the matrix: package:sqlite_vector's patched build hook
+# bundles it (from a subdirectory), and that hook fails the build without it.
+if [ "$ARCH" = arm64 ]; then
+  sv=""
+  for d in "${DIRS[@]}"; do
+    [ -f "$d/sqlite_vector/vector_windows_arm64.dll" ] && { sv="$d/sqlite_vector/vector_windows_arm64.dll"; break; }
+  done
+  if [ -z "$sv" ]; then
+    echo "ERROR: required native missing: vector search (sqlite_vector/vector_windows_arm64.dll)" >&2
+    missing=1
+  elif [ "$(pe_machine "$sv")" != arm64 ]; then
+    echo "ERROR: required native is the wrong architecture: vector search (vector_windows_arm64.dll is $(pe_machine "$sv"), not arm64)" >&2
+    missing=1
+  else
+    printf '  ok vector search (vector_windows_arm64.dll, arm64)\n'
+  fi
+fi
+
 # The runtime ABI floor (Linux). Presence is not loadability: a library built
 # against a newer glibc/libstdc++ than the runtime provides fails `dlopen`, and
 # the boot preflight — which probes BY LOADING — then reports it missing with

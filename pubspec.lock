@@ -1697,12 +1697,11 @@ packages:
     source: hosted
     version: "3.5.1"
   sqlite_vector:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: sqlite_vector
-      sha256: "794e1d06bdbf14c51386405dbdd5ac679443a99575a889ae289972f154b40e36"
-      url: "https://pub.dev"
-    source: hosted
+      path: ".dart_tool/patchwork/sqlite_vector@1.0.0"
+      relative: true
+    source: path
     version: "1.0.0"
   sqlparser:
     dependency: transitive

@@ -301,6 +301,18 @@
       "registryUrlTemplate": "https://gitlab.freedesktop.org"
     },
     {
+      "description": "sqlite-vector Windows ARM64 source pin (SQLITE_VECTOR_REF); upstream tags have no v, so it sits outside the capture",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "SQLITE_VECTOR_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?v(?<currentValue>[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "sqliteai/sqlite-vector",
+      "datasourceTemplate": "github-tags"
+    },
+    {
       "description": "sherpa-onnx archive pin (SHERPA_ONNX_VERSION)",
       "customType": "regex",
       "managerFilePatterns": [

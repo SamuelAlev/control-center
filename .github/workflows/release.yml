@@ -94,11 +94,11 @@ jobs:
         background: true
         run: brew install create-dmg meson ninja
 
+      # Leave Swift Package Manager on (Flutter's default): sentry_flutter 10
+      # ships only as a Swift package. Plugins without one still come through
+      # CocoaPods (macos/Podfile).
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
-
-      - name: Use CocoaPods (disable Swift Package Manager for a reliable clean build)
-        run: flutter config --no-enable-swift-package-manager
 
       # meson/ninja build natives on a cache miss.
       - name: Wait for build tools

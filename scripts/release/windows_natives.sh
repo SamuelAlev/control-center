@@ -431,6 +431,41 @@ build_grammar ada        https://github.com/briot/tree-sitter-ada.git           
   log "Built lame_ffi.dll"
 )
 
+# --- sqlite-vector (arm64 only) ----------------------------------------------
+# pub's sqlite_vector bundles its extension for every target except Windows
+# ARM64, and its build hook throws there. patches/sqlite_vector@1.0.0.patch
+# points that one target at the DLL built here. It goes in a subdirectory so
+# the cc_server hook and stage_natives, which take build/natives/*.dll, never
+# bundle a second copy; the package's own hook ships it.
+# Built with clang (as the grammars are) because the source uses GCC builtins
+# MSVC lacks. The UCRT has no strcasecmp; upstream's MinGW build gets it from
+# MinGW. /MT (-fms-runtime-lib=static), like ccpty: no VC++ runtime needed.
+if [ "$WIN_ARCH" = arm64 ]; then
+(
+  trap '[ $? -eq 0 ] || echo "ERROR: sqlite_vector/vector_windows_arm64.dll not built — the ARM64 build hook of package:sqlite_vector fails without it" >&2' EXIT
+  command -v clang >/dev/null 2>&1 || { echo "clang not on PATH"; exit 1; }
+  SV_SRC="$RUNNER_TEMP/sqlite-vector"
+  git_clone_pinned "${SQLITE_VECTOR_REPO:?SQLITE_VECTOR_REPO unset}" \
+    "${SQLITE_VECTOR_REF:?SQLITE_VECTOR_REF unset}" "$SV_SRC"
+  mkdir -p build/natives/sqlite_vector
+  # shellcheck disable=SC2046 # one word per source file
+  clang --target="$CLANG_TARGET" -shared -O3 -fms-runtime-lib=static \
+    -Dstrcasecmp=_stricmp -Dstrncasecmp=_strnicmp \
+    -I "$SV_SRC/src" -I "$SV_SRC/libs" \
+    $(find "$SV_SRC/src" -maxdepth 1 -name '*.c' | sort) \
+    -o build/natives/sqlite_vector/vector_windows_arm64.dll \
+    || { echo "sqlite-vector compile failed"; exit 1; }
+
+  # The package resolves sqlite3_vector_init through @Native, so a DLL that
+  # does not export it would load and then fail at the first query.
+  SV_EXPORTS="$(dumpbin //nologo //exports "$(cygpath -w build/natives/sqlite_vector/vector_windows_arm64.dll)")" \
+    || { echo "dumpbin failed on vector_windows_arm64.dll"; exit 1; }
+  grep -qw sqlite3_vector_init <<<"$SV_EXPORTS" \
+    || { echo "built vector_windows_arm64.dll is missing the sqlite3_vector_init export"; exit 1; }
+  log "Built sqlite_vector/vector_windows_arm64.dll"
+)
+fi
+
 # --- tree-sitter .scm queries ----------------------------------------------
 # The hand-authored queries travel beside the grammar DLLs — GrammarManager
 # resolves a language's query from the same dir as its lib (beside the .exe on
