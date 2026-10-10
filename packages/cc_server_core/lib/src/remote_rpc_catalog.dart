@@ -175,6 +175,7 @@ import 'package:cc_persistence/database/daos/paired_device_dao.dart'
     show PairedDeviceDao, PairedDeviceStatus;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart';
+import 'package:cc_server_core/src/catalog/agent_shell_ops.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 import 'package:cc_server_core/src/catalog/code_server_file_ops.dart';
 import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
@@ -4316,63 +4317,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // A space's running agent shell commands, and the stop for one. Both read
-    // the space's worktree surface (command lines name its paths), so they
-    // carry the same per-repo grant check a terminal does; a stop is
-    // privileged, so both are fullClient-only like the terminal ops.
-    if (shells != null) ...[
-      RepoOp(
-        name: 'process.agentShells',
-        kind: RepoOpKind.read,
-        requiredArgs: ['space_id'],
-        requiredCapability: SessionCapability.fullClient,
-        repoAccess: RepoGrantLevel.read,
-        repoAccessVia: reposExposedBySpaceArg,
-        // Polled while the TERMINALS section is open.
-        audited: false,
-        handler: (ctx) async {
-          final found = await shells.list(
-            workspaceId: ctx.workspaceId!,
-            spaceId: ctx.args['space_id'] as String,
-          );
-          return {
-            'processes': [
-              for (final p in found)
-                {
-                  'pid': p.pid,
-                  'agent_id': p.agentId,
-                  'run_id': ?p.runId,
-                  'command': p.command,
-                  'started_at': p.startedAt.toUtc().toIso8601String(),
-                  'origin': p.origin.name,
-                },
-            ],
-          };
-        },
-      ),
-      RepoOp(
-        name: 'process.killAgentShell',
-        kind: RepoOpKind.mutate,
-        actionClasses: const {ActionClass.processSpawn},
-        requiredArgs: ['space_id', 'pid'],
-        requiredCapability: SessionCapability.fullClient,
-        repoAccess: RepoGrantLevel.read,
-        repoAccessVia: reposExposedBySpaceArg,
-        handler: (ctx) async {
-          final killed = await shells.kill(
-            workspaceId: ctx.workspaceId!,
-            spaceId: ctx.args['space_id'] as String,
-            pid: (ctx.args['pid'] as num).toInt(),
-          );
-          if (!killed) {
-            throw const NotFoundException(
-              'No running agent command with that pid in this space',
-            );
-          }
-          return {'killed': true};
-        },
-      ),
-    ],
+    ...buildAgentShellOps(
+      shells: shells,
+      reposExposedBySpace: reposExposedBySpaceArg,
+    ),
     // Resolves the PR's space worktree (creating + provisioning it if needed)
     // and opens it in the chosen editor on the host's display. Returns the
     // server-side worktree path (opaque to the client).

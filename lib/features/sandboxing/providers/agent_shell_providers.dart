@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_data/cc_data.dart' show RpcAgentShellProcessPort;
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
@@ -29,8 +31,22 @@ final spaceAgentShellsProvider = StreamProvider.autoDispose
         return;
       }
       final port = ref.watch(agentShellProcessPortProvider);
+      // The wait between polls is cancelled on dispose: a bare
+      // `Future.delayed` would outlive the provider and fire one more read
+      // after nothing watches it.
+      var disposed = false;
+      Timer? wait;
+      Completer<void>? woke;
+      ref.onDispose(() {
+        disposed = true;
+        wait?.cancel();
+        final pending = woke;
+        if (pending != null && !pending.isCompleted) {
+          pending.complete();
+        }
+      });
       var first = true;
-      while (true) {
+      while (!disposed) {
         try {
           yield await port.list(
             workspaceId: key.workspaceId,
@@ -42,6 +58,8 @@ final spaceAgentShellsProvider = StreamProvider.autoDispose
           }
         }
         first = false;
-        await Future<void>.delayed(kAgentShellPollInterval);
+        final next = woke = Completer<void>();
+        wait = Timer(kAgentShellPollInterval, next.complete);
+        await next.future;
       }
     });

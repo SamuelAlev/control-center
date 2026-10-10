@@ -13,7 +13,6 @@
 library;
 
 import 'dart:async';
-import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:auto_updater/auto_updater.dart' as au;
@@ -84,12 +83,13 @@ Future<void> initDesktopUpdater() async {
 
 /// The feed for this build's own architecture: an x64 build running under
 /// emulation on Windows on Arm keeps updating to x64, a native ARM64 build to
-/// ARM64.
+/// ARM64. `Platform.version` ends with the VM's own ABI (`on "windows_arm64"`),
+/// so this needs no `dart:ffi`.
 String _platformFeedUrl() {
   if (!Platform.isWindows) {
     return kMacAppcastUrl;
   }
-  return Abi.current() == Abi.windowsArm64
+  return Platform.version.contains('"windows_arm64"')
       ? kWindowsArm64AppcastUrl
       : kWindowsAppcastUrl;
 }

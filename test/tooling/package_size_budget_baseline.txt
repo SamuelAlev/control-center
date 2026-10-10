@@ -12,14 +12,17 @@
 # dispatch_session parts; account_pools.*, conversation.suggestTitle and the
 # Claude token ops moved to catalog packs; review/link-preview wiring moved to
 # runtime/server_review_wiring.dart.
+# Raised 2026-10-10: steering attachments, notification read-through, PR
+# integration and IDE data changes grew the server files; the agent shell
+# process ops moved to catalog/agent_shell_ops.dart.
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
 packages/cc_domain/lib/src/dtos/dtos.dart  4173
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2396
-packages/cc_infra/lib/src/messaging/messaging_service.dart  1693
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2430
+packages/cc_infra/lib/src/messaging/messaging_service.dart  1696
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1586
-packages/cc_infra/lib/src/network/github_graphql_client.dart  2351
+packages/cc_infra/lib/src/network/github_graphql_client.dart  2368
 packages/cc_infra/lib/src/network/github_pr_client.dart  2195
 packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1782
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
@@ -28,8 +31,8 @@ packages/cc_infra/lib/src/rigs/rig_service.dart  2976
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2889
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3326
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7894
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7928
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2435
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16041
-packages/cc_server_core/lib/src/repo_ide_data_service.dart  2563
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16071
+packages/cc_server_core/lib/src/repo_ide_data_service.dart  2644

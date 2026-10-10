@@ -52,6 +52,12 @@ const _ps =
     '  300   101      00:01 /bin/zsh -c eval \'ls\'\n'
     '  900     1   10:00:00 /bin/bash -c sleep 1000\n';
 
+// The service walks no `ps` tree on Windows: CLI commands are listed and
+// killed on POSIX hosts only.
+final Object _noPsWalk = Platform.isWindows
+    ? 'the CLI command walk reads ps, which Windows does not have'
+    : false;
+
 void main() {
   group('parseEtime', () {
     test('reads every ps elapsed shape', () {
@@ -150,7 +156,7 @@ void main() {
         p.startedAt,
         now.subtract(const Duration(minutes: 4, seconds: 12)),
       );
-    });
+    }, skip: _noPsWalk);
 
     test('another space sees nothing of this run', () async {
       final found = await service(
@@ -188,7 +194,7 @@ void main() {
         },
         {200, 201, 202, 203},
       );
-    });
+    }, skip: _noPsWalk);
 
     test('kill refuses a pid the space does not own', () async {
       final signals = <(int, ProcessSignal)>[];
