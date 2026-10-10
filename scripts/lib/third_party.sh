@@ -44,15 +44,26 @@ CC_THIRD_PARTY=(
   "Fira Code (font)|6.2|OFL-1.1|https://github.com/tonsky/FiraCode|firacode-font-LICENSE.txt|bundled|desktop"
   "Phosphor Icons (font)|2.0.8|MIT|https://github.com/phosphor-icons/core|phosphor-font-LICENSE.txt|bundled|desktop"
   "WebDriverAgent|v16.14.2|BSD-3-Clause|https://github.com/appium/WebDriverAgent|webdriveragent-BSD-3-Clause.txt|bundled|desktop"
+  # Windows ARM64 desktop only (role windows-arm64): media-kit's minimal
+  # audio libmpv is x86_64-only, so patches/media_kit_libs_windows_audio@*.patch
+  # bundles media-kit's aarch64 build from libmpv-win32-video-cmake (mpv
+  # -Dgpl=false, FFmpeg --disable-gpl --enable-version3). Keep the version in
+  # step with that patch's LIBMPV archive name.
+  "libmpv (mpv + FFmpeg)|20241021-git-0f78584|LGPL-2.1-or-later AND LGPL-3.0-or-later|https://github.com/media-kit/libmpv-win32-video-cmake/releases/tag/20241021|libmpv-LGPL.txt|bundled|windows-arm64"
 )
 
-# Prints `name|version|spdx|homepage|license_file|linkage` for one role
-# (desktop|server), versions already resolved.
-cc_third_party_for() { # role
-  local role="$1" row name version spdx home file linkage roles
+# Prints `name|version|spdx|homepage|license_file|linkage` for the rows tagged
+# with any of the given roles (desktop|server|windows-arm64), versions already
+# resolved.
+cc_third_party_for() { # role...
+  local row name version spdx home file linkage roles role match
   for row in "${CC_THIRD_PARTY[@]}"; do
     IFS='|' read -r name version spdx home file linkage roles <<<"$row"
-    case ",$roles," in *",$role,"*) ;; *) continue ;; esac
+    match=0
+    for role in "$@"; do
+      case ",$roles," in *",$role,"*) match=1 ;; esac
+    done
+    [ "$match" = 1 ] || continue
     printf '%s|%s|%s|%s|%s|%s\n' \
       "$name" "$(cc_third_party_version "$version")" "$spdx" "$home" "$file" "$linkage"
   done

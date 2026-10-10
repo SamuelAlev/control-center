@@ -73,8 +73,12 @@ fi
 
 # 3b. Legal notices beside the executable, so both the installer (which copies
 # this tree) and the portable zip carry them.
+# The ARM64 build bundles a libmpv build the x64 one does not (see the
+# windows-arm64 rows in scripts/lib/third_party.sh), so it has its own set.
 install -m644 LICENSE "$OUT/LICENSE"
-bash scripts/release/gen_third_party_licenses.sh desktop \
+LICENSE_ROLE=desktop
+[ "$ARCH" = arm64 ] && LICENSE_ROLE=desktop-windows-arm64
+bash scripts/release/gen_third_party_licenses.sh "$LICENSE_ROLE" \
   "$OUT/THIRD-PARTY-LICENSES.txt"
 
 # 4. Inno Setup installer.

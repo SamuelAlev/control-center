@@ -148,7 +148,7 @@ void main() {
     );
   });
 
-  test('both roles generate, and the LGPL notice survives', () {
+  test('every role generates, and the LGPL notice survives', () {
     // Regression: the notice was gated on `cc_third_party_for | grep -q LGPL`.
     // `-q` exits on the first match, the producer takes SIGPIPE, and under
     // `set -o pipefail` the condition evaluated FALSE — so the one legally
@@ -157,7 +157,13 @@ void main() {
     final tmp = Directory.systemTemp.createTempSync('cc-tpl');
     addTearDown(() => tmp.deleteSync(recursive: true));
 
-    for (final role in const ['desktop', 'server']) {
+    // Artifact role → the component-table roles it ships.
+    const artifactRoles = {
+      'desktop': ['desktop'],
+      'desktop-windows-arm64': ['desktop', 'windows-arm64'],
+      'server': ['server'],
+    };
+    for (final MapEntry(key: role, value: rowRoles) in artifactRoles.entries) {
       final out = '${tmp.path}/$role.txt';
       final result = Process.runSync('bash', [
         'scripts/release/gen_third_party_licenses.sh',
@@ -172,13 +178,13 @@ void main() {
 
       final text = File(out).readAsStringSync();
       for (final row in parseComponents()) {
-        if (!row[6].split(',').contains(role)) {
-          continue;
-        }
+        final shipped = row[6].split(',').any(rowRoles.contains);
         expect(
-          text,
-          contains(row[0]),
-          reason: '$role output never names ${row[0]}',
+          text.contains(row[0]),
+          shipped,
+          reason: shipped
+              ? '$role output never names ${row[0]}'
+              : '$role output names ${row[0]}, which it does not ship',
         );
       }
       // Both artifacts embed a cc_server, so both carry libmp3lame.

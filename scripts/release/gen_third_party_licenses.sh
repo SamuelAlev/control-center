@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Writes THIRD-PARTY-LICENSES.txt from scripts/lib/third_party.sh.
-# Usage: scripts/release/gen_third_party_licenses.sh
+# Usage: scripts/release/gen_third_party_licenses.sh <desktop|desktop-windows-arm64|server> <out-file>
 #
 set -euo pipefail
 
@@ -16,15 +16,18 @@ export REPO_ROOT
 
 ROLE="${1:-}"
 OUT="${2:-}"
+# desktop-windows-arm64 is the desktop set plus what only the native Windows
+# ARM64 build bundles (its libmpv).
 case "$ROLE" in
-  desktop | server) ;;
+  desktop | server) ROLES=("$ROLE") ;;
+  desktop-windows-arm64) ROLES=(desktop windows-arm64) ;;
   *)
-    echo "usage: $0 <desktop|server> <out-file>" >&2
+    echo "usage: $0 <desktop|desktop-windows-arm64|server> <out-file>" >&2
     exit 2
     ;;
 esac
 [ -n "$OUT" ] || {
-  echo "usage: $0 <desktop|server> <out-file>" >&2
+  echo "usage: $0 <desktop|desktop-windows-arm64|server> <out-file>" >&2
   exit 2
 }
 
@@ -51,7 +54,7 @@ trap 'rm -f "$tmp"' EXIT
   echo "This artifact additionally redistributes the components listed below."
   echo "Each one's full license text is reproduced in this file."
   echo
-  if [ "$ROLE" = desktop ]; then
+  if [ "$ROLE" != server ]; then
     echo "Dart and Flutter package dependencies, and the Flutter engine's own"
     echo "third-party code, are covered by the engine-generated NOTICES file"
     echo "inside the application bundle (flutter_assets/NOTICES)."
@@ -62,7 +65,7 @@ trap 'rm -f "$tmp"' EXIT
   printf '%-26s %-12s %-20s %s\n' COMPONENT VERSION LICENSE LINKAGE
   while IFS='|' read -r name version spdx _home _file linkage; do
     printf '%-26s %-12s %-20s %s\n' "$name" "$version" "$spdx" "$linkage"
-  done < <(cc_third_party_for "$ROLE")
+  done < <(cc_third_party_for "${ROLES[@]}")
   echo
 } >"$tmp"
 
@@ -72,7 +75,7 @@ trap 'rm -f "$tmp"' EXIT
 # `grep -c`, never `grep -q`: -q closes the pipe on the first match, the
 # producer takes SIGPIPE, and under `set -o pipefail` the whole condition then
 # evaluates FALSE. The notice silently never printed.
-lgpl_components="$(cc_third_party_for "$ROLE" | grep -c 'LGPL' || true)"
+lgpl_components="$(cc_third_party_for "${ROLES[@]}" | grep -c 'LGPL' || true)"
 if [ "${lgpl_components:-0}" -gt 0 ]; then
   {
     echo "NOTICE — LGPL COMPONENTS AND RELINKING"
@@ -109,7 +112,7 @@ while IFS='|' read -r name version spdx home file _linkage; do
     echo
     cat "$text"
   } >>"$tmp"
-done < <(cc_third_party_for "$ROLE")
+done < <(cc_third_party_for "${ROLES[@]}")
 
 mkdir -p "$(dirname "$OUT")"
 command mv "$tmp" "$OUT"
