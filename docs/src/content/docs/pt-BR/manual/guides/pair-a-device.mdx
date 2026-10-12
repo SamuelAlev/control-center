@@ -2,7 +2,7 @@
 title: Emparelhar um dispositivo
 description: Emparelhe seu telefone (ou um segundo navegador ou app de desktop) com o seu servidor do Control Center para acompanhar a frota remotamente.
 slug: pt-BR/manual/guias/emparelhar-dispositivo
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Este guia mostra como emparelhar um telefone com o Control Center, para você ler
@@ -22,9 +22,10 @@ repositório: o app do telefone (`apps/cc_remote`, uma PWA web em Flutter que vo
 pode implantar no Cloudflare Pages pelo seu `wrangler.jsonc`, na imagem nginx
 `docker/cc_remote`, ou em qualquer host estático com HTTPS — service workers e
 IndexedDB dependem de contexto seguro) e o relay (`apps/cc_signaling_server`, um
-único binário Dart sem estado que não guarda dados do app e nunca vê o segredo do
-emparelhamento — ele encaminha apenas frames selados de ponta a ponta). Consulte
-os READMEs deles para as etapas de build e execução.
+único binário Dart sem estado que não guarda dados do app e não consegue
+descriptografar registros cifrados nem ver o segredo do emparelhamento). Ele ainda
+vê IPs, identificadores de roteamento, tamanhos e tempos, e pode descartar tráfego.
+Consulte os READMEs deles para as etapas de build e execução.
 
 ## Etapa 1: Abrir o painel de emparelhamento
 
@@ -50,14 +51,19 @@ Remote.
 
 No lado do telefone, abrir um link de emparelhamento não emparelha
 silenciosamente. O Remote mostra o nome anunciado pelo servidor e pede que você
-confirme antes de armazenar qualquer coisa, então um link forjado não pode
-sequestrar o app para o servidor de outra pessoa.
+confirme antes de armazenar qualquer coisa. Verifique a impressão digital do QR
+contra uma fonte confiável: confirmar um nome não verificado ou um QR forjado não
+prova que o servidor é o seu. O cliente fixa a identidade assinada e rejeita uma
+impressão digital alterada nas conexões seguintes.
 
 :::caution[Um QR lido concede acesso imediatamente]
 Não há uma etapa de pendência seguida de aprovação: um dispositivo emitido fica
 ativo a partir do momento em que é criado e a verificação de conexão confere
 apenas se a credencial está ativa e não expirou. Trate o QR e a chave de
 emparelhamento como uma senha e revogue tudo o que você não pretendia entregar.
+Tanto as sessões de cliente diretas como as que passam pelo relay exigem
+criptografia de ponta a ponta; clientes mais antigos não podem recorrer a RPC em
+texto claro.
 :::
 
 ## Gerenciar dispositivos emparelhados

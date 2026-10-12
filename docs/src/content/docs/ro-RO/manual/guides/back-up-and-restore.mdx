@@ -2,7 +2,7 @@
 title: Backup și restaurare
 description: Fă un snapshot al instalării, mută un spațiu de lucru între mașini, restaurează un spațiu de lucru sau toate, și păstrează copii în altă parte.
 slug: ro-RO/manual/ghiduri-practice/backup-si-restaurare
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Acest ghid acoperă cele cinci lucruri pe care oamenii le fac de fapt cu backup-urile:
@@ -17,7 +17,7 @@ Tot ce este aici se află în **Setări → Server → Backup și restaurare**.
 - Un **client complet** — aplicația desktop sau cea web. Un telefon asociat nu poate declanșa nimic din toate acestea, prin design.
 - Pentru a face, lista, descărca sau șterge un **snapshot de instalare**: **proprietarul** instalării.
 - Pentru acțiunile pe spațiu de lucru: **admin** al acelui spațiu de lucru pentru export, **proprietar** pentru import sau ștergere.
-- Pentru descărcări și încărcări: o conexiune **directă** la server. Releul intermediat transportă cadre RPC, nu transferuri de fișiere, iar controalele de transfer se dezactivează cu o notă când ești pe una.
+- Pentru descărcări și încărcări: un client complet asociat, pe o conexiune directă sau prin releul intermediat. Ambele căi cară octeții fișierului prin același tunel de resurse autentificat și criptat cap la cap; releul nu îi poate citi.
 
 :::caution[Snapshot-urile de instalare sunt manuale]
 **Fă backup acum** creează în continuare un snapshot al întregii instalări doar la cerere.
@@ -25,7 +25,15 @@ Pipeline-ul integrat **Workspace backup** poate în schimb să facă o copie de 
 bazei de date a unui spațiu de lucru o dată pe săptămână și să elimine backup-urile acelui
 spațiu de lucru mai vechi de 30 de zile. Nu copiază `global.db`, alte spații de lucru sau
 fișierele de lângă baza de date. Păstrează copiile din afara mașinii separat.
-:::
+::::
+
+::::caution[Backup-urile nu sunt criptate în repaus]
+Transferul criptat se termină la clientul tău și la `cc_server`. Directoarele de
+snapshoturi, exporturile de spații de lucru, fișierele descărcate și bazele de date ale
+serverului nu sunt criptate în repaus de Control Center. Protejează gazda serverului,
+descărcările tale și copiile din afara mașinii cu propria criptare de stocare și propriile
+controale de acces.
+::::
 
 ## Ce acoperă un backup
 
@@ -325,7 +333,7 @@ sunt stocate.
 
 | Simptom                                                                  | Cauză și soluție                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Controalele de descărcare și încărcare sunt dezactivate cu o notă despre un releu | Ești conectat prin releul intermediat, care nu transportă fișiere. Conectează-te direct                          |
+| Descărcarea sau încărcarea eșuează după o schimbare de conexiune | Reîncearcă pe conexiunea asociată activă. Atât conexiunea directă, cât și cea prin releu acceptă transfer de fișiere criptat; niciuna nu expune o variantă de rezervă HTTP în clar |
 | „Serverul a refuzat”                                                     | Rol. Crearea sau listarea unui snapshot de instalare necesită operatorul instalării. Descărcarea unui spațiu de lucru necesită admin, restaurarea unuia necesită proprietar, un zip cu snapshot complet necesită operatorul instalării |
 | „Acest server nu are o suprafață de backup”                              | Hostul nu are conectat niciun port de backup — un server demo. Operațiunile lipsesc, în loc să fie refuzate                          |
 | „Fișierul e mai mare decât acceptă serverul”                             | Încărcările sunt limitate la 8 GiB. Pune fișierul pe hostul serverului și folosește în schimb **Importă** → **Alege fișier**                 |
@@ -339,7 +347,7 @@ sunt stocate.
 
 - [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): de unde vine directorul de date
 - [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/): conexiuni directe versus prin releu
-- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): acreditarea cu care semnează rutele de transfer
+- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): acreditarea dispozitivului asociat folosită de transferul criptat și de cererile sale de resurse semnate
 
 ## Concepte și referință conexe
 

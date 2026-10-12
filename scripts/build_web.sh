@@ -33,17 +33,22 @@ DART="$(resolve_dart)"
 # shellcheck disable=SC2086  # `fvm dart` must word-split into two argv entries.
 $DART run tool/gen_build_info.dart
 
-# 2. Web Workers. Only the root app has annotated workers; regenerating
-# guarantees the shipped bundle carries current off-main-thread web/*.js.
+# 2. Generate the target's web build inputs.
 if [ "$TARGET" = "client" ]; then
   ./tool/gen_workers.sh
+elif [ "$TARGET" = "gallery" ]; then
+  # shellcheck disable=SC2086
+  ( cd "$DIR" && $DART run build_runner build )
 fi
 
-# 3. The build itself.
+# 3. Honor deferred grammar packs in Wasm as well as the JavaScript fallback.
 # shellcheck disable=SC2086
-( cd "$DIR" && $FLUTTER build web --release --wasm "$@" )
+( cd "$DIR" && $FLUTTER build web --release --wasm --enable-wasm-deferred-loading "$@" )
 
 BUILD_DIR="$DIR/build/web"
+if [ "$TARGET" = "client" ] || [ "$TARGET" = "remote" ]; then
+  node tool/stage_resource_assets.mjs "$BUILD_DIR"
+fi
 
 # 4. The deploy manifest the clients poll to offer a consent-driven refresh.
 # deploy.json, NOT version.json: `flutter build web` writes its own

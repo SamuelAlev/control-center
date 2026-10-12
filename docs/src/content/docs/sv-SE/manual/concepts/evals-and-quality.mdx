@@ -1,9 +1,15 @@
 ---
 title: Utvärderingar och kvalitet
-description: Eval-sviter, startpaketet som sås in i varje arbetsyta och var de visas i Observability.
+description: Eval-sviter och revisionsfästa skillkampanjer, och hur du tolkar deras bevis.
 slug: sv-SE/handbok/koncept/utvarderingar-och-kvalitet
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observability → Kvalitet** innehåller både eval-sviter för enskilda uppgifter
+och parade skillkampanjer. En skillkampanj mäter ett paket så som det används av
+en viss modell och en viss harness, inte kvaliteten på dess Markdown i sig.
+
+## Eval-sviter
 
 En **eval-svit** är en arbetsytsbunden definition av en uppgift som ska köras
 mot en agent: en prompt, en målagent och ett läge, valfri uppsättning, en
@@ -18,7 +24,7 @@ retur för ett ärende. Inplanteringen lyssnar på `WorkspaceCreated`
 (`workspace.upsert` eller `workspace.create`), hoppar över ett namn som redan
 finns och fyller inte på äldre arbetsytor i efterhand.
 
-## Var de visas
+### Var de visas
 
 **Observability → Kvalitet** (`/workspaces/<id>/observability`) listar varje
 svit i arbetsytan.
@@ -27,10 +33,120 @@ Skapa, lista, redigera och ta bort sviter via `evals.upsertSuite`,
 `evals.deleteSuite` och `evals.watchSuites`. Fliken Kvalitet är listan; de
 åtgärderna är redigeraren.
 
+## Skillkampanjer
+
+En kampanj jämför två varianter under samma uppgift och exekveringskonfiguration.
+Kandidaten saknas, är normalt tillgänglig, läses in explicit eller jämförs med en
+tidigare revision eller en fast omgivande skillsuppsättning. Dessa svarar på
+olika frågor; tvingad inläsning är en diagnostik, inte en poäng för vanlig
+upptäckt. [Skillguiden](/sv-SE/handbok/how-to-guider/hantera-skills/#utvärdera-en-skill)
+förklarar hur du väljer en jämförelse och godkänner en budgeterad körning.
+
+Bevis tillhör en exakt **hash för hela paketet**: `SKILL.md`, metadata, skript,
+referenser och resurser. Servern fångar skannade oföränderliga paket och fäster
+uppgiftsmängden, adaptern, leverantörens och den inbyggda modellens
+identifierare, protokollet, verktygsscheman och den omgivande uppsättningen.
+Kampanjer med nativ Claude fäster även det hanterade kontot och den observerade
+CLI-versionen. Att redigera en referens ogiltigförklarar aktuella bevis även om
+`SKILL.md` är oförändrad. Ett
+modellalias registrerar vad som begärdes, inte leverantörens oföränderliga
+vikter.
+
+Varje försök får färskt kontext-, hem- och fixture-tillstånd. Parade varianter
+använder samma policy och uppgiftsvillkor utom den deklarerade
+skillinterventionen. Målet saknas betyder att kandidatens metadata och filer är
+otillgängliga, inte att alla bakgrundsinstruktioner eller skills har tagits bort.
+Uppgiftsprompter får inte namnge kandidaten i en jämförelse för vanlig upptäckt.
+
+Servern äger auktorisering, exekvering, budgetar och arbetsytans persistens.
+Klienter väljer inställningar och renderar bevis. Förloppet överlever
+återanslutningar; en avbrott behåller partiella resultat, och en omstart märker
+oavslutat arbete som avbrutet i stället för att tyst upprepa betalda anrop. Dessa
+kampanjer tillhandahåller inte det separata exekvatorkontraktet för godtyckliga
+eval-sviter.
+
+## Läs bevisen konservativt
+
+- **Utfallen avgör korrekthet.** Oberoende typade verifierare kontrollerar
+  artefakter och resulterande beteende, inte agentens påstående att den
+  lyckades. Förväntade svar ligger kvar utanför kandidatens inhägnad; genererad
+  kod bedöms i en separat inhägnad kopia.
+- **Inläsning och användbarhet är olika saker.** Tillgänglighet, inläsning av
+  brödtext och referenser samt observerad skriptanvändning förklarar
+  exekveringen. En filinläsning bevisar inte att modellen följde dess
+  instruktioner; oobserverbar åtkomst förblir okänd.
+- **Behåll den matchade baslinjen.** En enstaka lyckad kandidatkörning
+  fastställer ingen nytta. Ta med försök där en tillgänglig skill ignorerades,
+  misslyckade försök och deras kostnader; behåll inte bara det bästa omförsöket.
+- **Upprepningar är inte nya uppgifter.** Rapporter klustrar osäkerhet per
+  uppgift. Små urval, saknad täckning, identitetsdrift och okända utgifter kan
+  inte motivera en rekommendation om införande. En slutförd kampanj kan ändå vara
+  inte entydig; att inte visa en förbättring är inget bevis för likvärdighet
+  eller regression.
+- **Granska enskilda regressioner.** Aggregerade vinster får inte dölja en
+  skadad uppgift eller en obehörig sidoeffekt. Säkerhetsskanningar, observationer
+  av körtidssäkerhet och användbarhet förblir åtskilda; billigare exekvering kan
+  inte kompensera för saknade bevis om kvalitet eller säkerhet.
+- **Slå inte ihop oförenliga resultat.** En annan modell, harness, policy,
+  fixture eller skillkombination är en annan konfiguration. Håll bevis om
+  överföring och sammansättning på undanhållna uppsättningar åtskilda från
+  utvecklingsfall.
+
+De nio lokalt författade pilotuppgiftsmängderna innehåller 108 uppgifter inom
+nytta, familjespecifik routing/säkerhet samt överföring och sammansättning på
+undanhållna uppsättningar. Välj en familj som matchar skillens syfte.
+Referenslösningar och kända dåliga utdata kontrollerar verifierarna; dessa
+fixturer är inte en reproduktion av ett offentligt benchmark och inte heller
+bevis för att någon installerad skill är användbar. Röktester av
+implementationen med skriptade leverantörssvar är inte mätningar av
+skillkvalitet på en levande modell.
+
+## Gränser för exekvering och bevis
+
+De kontrollerade adaptrarna **inbyggd harness** och **Claude Code** stöds.
+Inhägnad och aktiva autentiseringsuppgifter måste passera före exekvering.
+Inbyggda leverantörer kräver dokumenterat verktygsstöd, tokenbegränsningar och
+prissättning; Codex OAuth autentiserar sitt eget konto i stället för att kräva en
+separat OpenAI-API-nyckel. Claude Code använder det förvalda hanterade kontot, ett
+konkret modell-ID och sin nativa kostnadsrapport för API-ekvivalent användning.
+
+Claude Code och Codex OAuth använder en **tröskel för stopp av användning**: ett
+anrop i flykten kan överskrida budgeten, sedan stoppas vidare anrop. Detta är inte
+fakturerad prenumerationsutgift eller ett hårt fakturatak. Leverantörer med
+API-nycklar behåller konservativa reservationer före anropet. Okända observerade
+utgifter stoppar vidare anrop för varje adapter; ofullständig täckning förblir
+ofullständig eller inte entydig.
+
+Claude kör sin nativa modellloop i en privat kontrollkatalog, med inbyggda
+verktyg och omgivande skills inaktiverade. Dess enda verktyg är den
+autentiserade, serverägda MCP-bron till samma inhägnade gäst som den inbyggda
+harnessen använder. Autentiseringsuppgifter förblir utanför den gästen. En
+ändrad CLI-identitet eller verktygsyta ogiltigförklarar försöket i stället för
+att tyst byta exekverare. Flottutvärdering och Windows stöds inte; en lyckad
+Git-probe från workern eller en prompt-eko räknas inte som utvärdering.
+
+Inhägnaden på macOS nekar gästens nätverk och extern filsystemåtkomst, blockerar
+processdetachning, begränsar CPU/filer/utdata och städar upp ägda
+underprocesser, men **tillämpar ingen hård minneskvot**. Linux kräver bubblewrap
+och tillämpar en adressrymdsgräns. Den inledande valideringen av inhägnaden
+prövade macOS, inte Linux. Saknad inhägnad faller aldrig tillbaka på ett
+värdskal. Leverantörens autentiseringsuppgifter stannar på servern, utanför
+gästverktygen.
+
+Bevis för försök maskeras och begränsas till 256 KiB; en export begränsas till
+16 MiB. Stora exporter behåller kompakta sammanfattningar av utfall och kostnad
+för alla godkända försök och rapporterar uttryckligen utelämnat eller
+sammanfattat spårinnehåll. Varken en export eller en rapport innehåller ett
+fullständigt återuppspelningspaket för privata källor. Syntetiska
+säkerhetskontroller fastställer inte faktisk motståndskraft mot exfiltrering,
+åsidosätter inte karantän och intygar inte att en skill är säker.
+
 ## Relaterade koncept
 
 - [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): konfigurationen en svit
   låser fast
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): inhägnad och
+  myndighetsgränser
 - [Räcken](/sv-SE/handbok/koncept/racken/): autonomireglaget
 - [Hantera kostnader och budgetar](/sv-SE/handbok/how-to-guider/hantera-kostnader/): utgifter som
   registreras tillsammans med en körning

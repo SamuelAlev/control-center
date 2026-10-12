@@ -50,7 +50,8 @@ const List<DemoPickedFile> kDemoPickerFiles = [
   ),
   DemoPickedFile(
     name: 'comparables-q3.xlsx',
-    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    mimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     sizeBytes: 91_204,
   ),
   DemoPickedFile(
@@ -78,6 +79,7 @@ final Uint8List kDemoPickerImageBytes = Uint8List.fromList(
 Future<List<DemoPickedFile>> showDemoFilePicker(BuildContext context) async {
   final picked = await showCcDialog<Set<int>>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (ctx) => const _DemoFilePickerDialog(),
   );
   if (picked == null || picked.isEmpty) {
@@ -189,9 +191,7 @@ class _DemoFileRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: CcButton(
-        variant: selected
-            ? CcButtonVariant.secondary
-            : CcButtonVariant.ghost,
+        variant: selected ? CcButtonVariant.secondary : CcButtonVariant.ghost,
         fullWidth: true,
         onPressed: onTap,
         child: Row(

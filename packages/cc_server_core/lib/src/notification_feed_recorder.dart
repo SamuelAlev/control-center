@@ -135,6 +135,13 @@ class NotificationFeedRecorder {
           (e) => _record(agentAwaitingInputFrame(e)),
         ),
       )
+      // A hard refusal has no end to wait for: one row, recorded like any
+      // other history the operator reads back.
+      ..add(
+        _eventBus.on<AgentActionBlocked>().listen(
+          (e) => _record(agentActionBlockedFrame(e)),
+        ),
+      )
       ..add(
         _eventBus.on<AgentInputResolved>().listen(
           (e) => _write(

@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/repositories/workspace_invite_repository.d
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
@@ -100,6 +101,14 @@ class WorkspaceInviteService {
     );
     await _invites.upsert(invite);
     return CreatedInvite(invite: invite, code: code);
+  }
+
+  /// Only active, unexpired invites yield a Noise secret. The caller knows a
+  /// public *second* digest; the stored hash itself never appears on the wire.
+  Future<String?> resolveInvitePsk(String routeId) async {
+    final invite = await _invites.getByRouteId(routeId);
+    if (invite == null || !invite.isRedeemableAt(_now())) return null;
+    return InvitePairingProof.pskFromHash(invite.codeHash);
   }
 
   /// Revokes the open invite [inviteId] in [workspaceId].

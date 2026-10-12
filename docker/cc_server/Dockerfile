@@ -92,7 +92,7 @@ RUN groupadd --gid 10001 ccserver \
 
 # The standalone Linux bundle (CI-extracted to ./bundle): binary at bin/cc_server,
 # the code assets `dart build cli` resolves BY ASSET ID (sqlite3, the vector
-# extension, the AOT snapshot) in lib/, and ALL FFI natives — rift, fff,
+# extension, the AOT snapshot) in lib/, and ALL FFI natives — rhttp, rift, fff,
 # tree-sitter + grammars, pty, watcher, saml, inference (which statically links
 # sherpa-onnx and its ONNX Runtime) — in bin/lib/, exactly where
 # native_library.dart's `bundledLibraryCandidates` probes (`<exeDir>/lib`) and

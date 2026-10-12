@@ -13,18 +13,15 @@ enum RemoteChannelState {
 }
 
 /// A bidirectional, framed-JSON transport that carries JSON-RPC traffic
-/// between the desktop and one paired phone.
+/// between a first-party client and its server.
 ///
 /// This is the transport seam: the `RemoteRpcSession` is agnostic of *how*
-/// frames move — it only consumes [incoming] and calls [send]. Concrete
-/// implementations include `WebRtcRemoteTransport` (over a WebRTC
-/// `RTCDataChannel`), `WsRemoteTransport` (over a WebSocket) and
-/// `InProcessRpcChannel` (in-memory, for the desktop-LOCAL path and tests).
-/// Keeping the seam narrow is what lets the session be unit-tested without a
-/// real peer connection.
+/// frames move — it only consumes [incoming] and calls [send]. Direct WebSocket
+/// and broker-relayed channels share this contract, so sessions can be tested
+/// without a live network connection.
 abstract interface class RemoteRpcChannelPort {
   /// A stream of decoded JSON-RPC frames (each a decoded [Map]) received from
-  /// the remote peer. Emits once per inbound DataChannel message.
+  /// the remote peer. Emits once per inbound transport message.
   Stream<Map<String, dynamic>> get incoming;
 
   /// The current connection [RemoteChannelState], plus subsequent changes.
@@ -35,8 +32,8 @@ abstract interface class RemoteRpcChannelPort {
 
   /// Sends a single JSON-RPC frame ([frame]) to the remote peer.
   ///
-  /// Returns `true` when the frame was handed to the transport. Throws when
-  /// the channel is not open.
+  /// Completes when the frame was handed to the transport. Throws when the
+  /// channel is not open.
   Future<void> send(Map<String, dynamic> frame);
 
   /// Closes the transport. Idempotent. After this returns, [state] emits

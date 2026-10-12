@@ -3,7 +3,7 @@ title: 架構
 description: Control Center 如何以精簡用戶端伺服器模型、以功能為先的整潔架構，以及埠與配接器來組織。
 dateModified: 2026-09-19
 slug: zh-TW/手冊/概念/架構
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## 概述
@@ -26,7 +26,7 @@ RPC 層本身是**無狀態的**：工作階段經過驗證，但不會繫結至
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **領域層**：純 Dart 的實體、值物件、儲存庫介面、埠與領域服務。對基礎設施的匯入為零（不使用 dio、drift 或網路模型）。
+- **領域層**：純 Dart 的實體、值物件、儲存庫介面、埠與領域服務。對基礎設施的匯入為零（不使用 rhttp、drift 或網路模型）。
 - **呈現層**：畫面、widget、notifier。不得直接存取 drift/DAO/資料層；一切都經過 Riverpod provider → 儲存庫。
 - **基礎設施層**：領域埠與儲存庫介面的具體實作。相依於領域層，絕不反向相依。
 
@@ -122,7 +122,7 @@ Control Center 是多人使用的：人類與代理是地位對等的行為者�
 
 所有對外的 HTTP 都位於伺服器。用戶端絕不直接連上 GitHub、Linear 或 Google——它們呼叫伺服器 RPC 操作，甚至遠端媒體也是透過伺服器的 `/proxy/media` 端點取得，而不是向上游來源取得。
 
-- `packages/cc_infra/lib/src/` 中的 **dio** 用戶端：`GitHubApiClient`、`GitHubPrClient`、`GitHubContentClient`、`GitHubGraphQLClient`、`GitLabApiClient`、`BitbucketApiClient`、`LinearGraphQlClient` 與 `GoogleCalendarApiClient`
+- `packages/cc_infra/lib/src/` 中的 **rhttp** 用戶端：`GitHubApiClient`、`GitHubPrClient`、`GitHubContentClient`、`GitHubGraphQLClient`、`GitLabApiClient`、`BitbucketApiClient`、`LinearGraphQlClient` 與 `GoogleCalendarApiClient`
 - 透過攔截器注入驗證權杖，其中包括 `cc_server_core` 中會於 401 時重新整理權杖的個別帳號 Google OAuth 攔截器
 - 所有錯誤都會經過 `packages/cc_infra/lib/src/network/error_mapper.dart` 對應 → 對應到 `cc_domain` 中定義的具型別 `AppException` 子類別
 

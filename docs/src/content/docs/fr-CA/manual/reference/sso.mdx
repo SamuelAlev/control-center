@@ -2,7 +2,7 @@
 title: Référence de configuration SSO
 description: Tous les paramètres, points de terminaison, opérations et codes d’erreur de l’ouverture de session unique.
 slug: fr-CA/manuel/reference/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Tout ce qui est configurable au sujet de l’ouverture de session unique, au même
@@ -25,7 +25,7 @@ des paramètres peut être en désaccord).
 | `displayNameAttribute` | SAML         | `displayName`     | attribut du nom d’affichage                                                                                                                                      |
 | `groupsAttribute`      | SAML         | `groups`          | attribut des noms de groupes                                                                                                                                     |
 | `clockSkewSeconds`     | SAML         | 90                | tolérance de décalage pour la validation de la durée de vie                                                                                                      |
-| `allowIdpInitiated`    | SAML         | désactivé         | accepter les Response non sollicitées (sans `InResponseTo`)                                                                                                       |
+| `allowIdpInitiated`    | SAML         | désactivé         | accepter les Response non sollicitées valides (sans `InResponseTo`) ; le navigateur doit réclamer une autorisation de courte durée avant de recevoir un justificatif scellé pour le destinataire |
 | `wantResponseSigned`   | SAML         | désactivé         | exiger une signature à la racine de l’élément Response (les signatures d’assertion sont toujours exigées)                                                         |
 | `issuer`               | OIDC         | —                 | URL de base de l’émetteur (requise pour l’activer)                                                                                                               |
 | `clientId`             | OIDC         | —                 | identifiant de client public (requis pour l’activer)                                                                                                             |
@@ -39,28 +39,62 @@ des paramètres peut être en désaccord).
 ## Configuration du processus
 
 Les connexions SSO ne sont pas amorcées à partir de l’environnement. Il reste un
-paramètre du processus qui concerne la **transmission au navigateur**, et non la
-ligne de connexion :
+paramètre du processus qui choisit où le navigateur ouvre le client web après un
+rappel SSO :
 
 | Variable / option                                | Signification                                                                                                                                                   |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | origine vers laquelle les rappels d’ouverture de session unique font rebondir le navigateur (l’identifiant voyage dans le fragment de l’URL). Non définie, la transmission reste de même origine. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | URL du client web pour une transmission de justificatif scellé ; non définie, la transmission reste de même origine (utile seulement si le client web y est servi). Pour une ouverture de session `web-popup`, un `client_origin` autorisé provenant de l’onglet initiateur a préséance. |
 
 L’URL de l’émetteur elle-même doit être `https` (`http` n’est accepté que pour
-les émetteurs de bouclage `localhost`, `127.0.0.1` et `::1`).
+les émetteurs de bouclage `localhost`, `127.0.0.1` et `::1`). Utilisez un TLS
+fiable pour le rappel de l’IdP et l’hôte du client web : la page qui génère la clé
+du destinataire et son JavaScript livré font partie de la frontière de confiance.
+HTTPS protège cet amorçage ; après l’appairage, les sessions `/rpc` directes comme
+relayées exigent toutes deux le chiffrement Noise et une identité de serveur
+épinglée.
 
 ## Points de terminaison HTTP
 
 | Point de terminaison                             | Authentification    | Objet                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | aucune (redirection) | démarrer une ouverture de session amorcée par le SP ; `relay=desktop` transmet la main à l’application, `relay=web-popup` envoie un postMessage à l’onglet de connexion en attente (qui déclare son `client_origin`, pris en compte seulement lorsque la liste d’origines autorisées lui fait confiance) |
-| `POST /saml/acs`                                 | aucune (POST de l’IdP) | le consommateur d’assertions — vérifie, provisionne, émet                                                                                                                                                     |
+| `GET /saml/login?relay=…&handoff_key=…`          | aucune (redirection) | démarrer une ouverture de session amorcée par le SP avec une clé de destinataire X25519 détenue par le client ; `relay=desktop` transmet la main à l’application, `relay=web-popup` envoie un postMessage à l’onglet de connexion en attente (son `client_origin` n’est pris en compte que lorsque la liste d’origines autorisées lui fait confiance) |
+| `POST /saml/acs`                                 | aucune (POST de l’IdP) | vérifie l’assertion et provisionne l’utilisateur ; l’ouverture de session amorcée par le SP scelle le justificatif d’appareil émis avec la clé du destinataire initiateur ; le SAML non sollicité autorisé produit plutôt une réclamation liée au navigateur |
+| `POST /saml/claim`                               | autorisation de navigateur de même origine | échanger une autorisation SAML non sollicitée à usage unique avec son témoin et une nouvelle `handoff_key` ; renvoie un justificatif scellé pour le destinataire, jamais une clé d’appairage en clair |
 | `GET /saml/metadata`                             | aucune              | notre `EntityDescriptor` de SP                                                                                                                                                                                    |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | aucune              | l’aller-retour OIDC ; `relay=desktop` transmet la main à l’application, `relay=web-popup` à l’onglet de connexion en attente (même convention `client_origin`)                                                     |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | aucune | l’aller-retour OIDC ; l’ouverture de session exige la clé de destinataire détenue par le client ; `relay=desktop` transmet la main à l’application, `relay=web-popup` à l’onglet de connexion en attente (même convention `client_origin`) |
 | `GET /auth/providers`                            | aucune, CORS `*`    | la sonde de l’écran de connexion : les connexions SSO proposées (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                          |
 | `/scim/v2/Users…`                                | Bearer (jeton SCIM) | Users : création, lecture, liste et filtre, PUT, PATCH, DELETE                                                                                                                                                     |
 | `/scim/v2/Groups`                                | Bearer              | en lecture seule ; la poussée de groupes répond 501 par conception                                                                                                                                                |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | document de capacités                                                                                                                                                                                             |
+
+Pour SAML et OIDC amorcés par le SP, l’URL de démarrage de session exige un
+`handoff_key` valide (la clé publique X25519 du client initiateur). Le serveur
+conserve cette clé avec l’ouverture de session en attente et scelle le
+justificatif d’appareil émis au rappel au moyen de X25519 éphémère, HKDF-SHA256
+et AES-256-GCM liés à l’origine du serveur. La transmission au bureau utilise
+`control-center://pair`, la transmission web dans le même onglet utilise un
+fragment d’URL, et `web-popup` envoie un postMessage au `client_origin` autorisé
+s’il est fourni (sinon à l’URL configurée du client web ou à l’origine du rappel).
+L’enveloppe scellée, et non une clé d’appairage en clair, voyage dans ce fragment
+ou ce message contextuel. Le client initiateur conserve la clé privée
+correspondante pour l’ouvrir. Cette enveloppe se distingue de la session Noise
+obligatoire établie après l’appairage.
+
+Une Response SAML amorcée par l’IdP (lorsque l’option est active) n’a aucun
+destinataire initiateur. À la place, l’ACS dépose un témoin de navigateur de cinq
+minutes, HttpOnly et SameSite=Strict, et présente le choix **Ouvrir le client
+web** / **Ouvrir l’application de bureau**. Cette page génère une nouvelle clé de
+destinataire et publie sa moitié publique et le descripteur de l’autorisation sur
+`POST /saml/claim` depuis la même origine. Claim exige le témoin et l’origine
+correspondants (une frontière CSRF), consomme l’autorisation une fois et ne
+renvoie qu’une enveloppe scellée pour le destinataire. Le fragment web/bureau
+subséquent porte cette enveloppe et le matériel de clé privée du destinataire afin
+que le client de destination puisse l’ouvrir, **et non** un justificatif
+d’appareil en clair. Un autre navigateur ou une autorisation expirée ne peut pas
+l’échanger. L’origine du client web de destination peut accéder au fragment et le
+déchiffrer ; une page de rappel ou une origine de client web compromises peuvent
+voler des justificatifs. Le chiffrement ne rend pas sûr du code servi non fiable.
 
 ## Opérations RPC
 

@@ -3,7 +3,7 @@ title: "Архитектура"
 description: "Как устроен Control Center: модель тонкого клиента с сервером, Clean Architecture с приоритетом функций и порты и адаптеры."
 dateModified: 2026-09-19
 slug: ru-RU/руководство/понятия/архитектура
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Обзор
@@ -26,7 +26,7 @@ Control Center построен по **архитектуре тонкого к�
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Доменный слой**: сущности на чистом Dart, объекты-значения, интерфейсы репозиториев, порты и доменные сервисы. Ноль импортов инфраструктуры (никаких dio, drift или сетевых моделей).
+- **Доменный слой**: сущности на чистом Dart, объекты-значения, интерфейсы репозиториев, порты и доменные сервисы. Ноль импортов инфраструктуры (никаких rhttp, drift или сетевых моделей).
 - **Слой представления**: экраны, виджеты, нотификаторы. Никакого прямого доступа к drift/DAO/слою данных; всё идёт через провайдеры Riverpod → репозитории.
 - **Инфраструктурный слой**: конкретные реализации доменных портов и интерфейсов репозиториев. Зависит от домена и никогда наоборот.
 
@@ -122,7 +122,7 @@ Control Center многопользовательский: люди и аген�
 
 Весь внешний HTTP живёт на сервере. Клиенты никогда не обращаются к GitHub, Linear или Google напрямую — они вызывают RPC-операции сервера, и даже удалённые медиафайлы загружаются через эндпоинт сервера `/proxy/media`, а не из исходного источника.
 
-- **dio**-клиенты в `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` и `GoogleCalendarApiClient`
+- **rhttp**-клиенты в `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` и `GoogleCalendarApiClient`
 - Внедрение токена аутентификации через перехватчики, включая перехватчик Google OAuth для каждого аккаунта в `cc_server_core`, который обновляет токены при 401
 - Все ошибки отображаются через `packages/cc_infra/lib/src/network/error_mapper.dart` → типизированные подклассы `AppException`, определённые в `cc_domain`
 

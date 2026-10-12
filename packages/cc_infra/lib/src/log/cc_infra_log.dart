@@ -1,6 +1,6 @@
 /// Severity of a [CcInfraLog] record.
 enum CcInfraLogLevel {
-  /// Detailed trace (a dio request/response line, a no-op index sweep).
+  /// Detailed trace (an HTTP request/response line, a no-op index sweep).
   debug,
 
   /// Informational diagnostic (a resolved binary, a lifecycle event).
@@ -40,7 +40,7 @@ class CcInfraLog {
   static CcInfraLogSink? sink;
 
   /// The minimum level emitted. Records below it are suppressed — the
-  /// debug-tier call sites (the dio network client's per-request/response
+  /// debug-tier call sites (the HTTP client's per-request/response
   /// logging) check [isEnabled] before doing any formatting work. Defaults to
   /// [CcInfraLogLevel.info] so a release/server build is quiet about traces.
   static CcInfraLogLevel level = CcInfraLogLevel.info;

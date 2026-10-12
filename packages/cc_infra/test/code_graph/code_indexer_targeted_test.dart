@@ -9,8 +9,8 @@ import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_rep
 import 'package:cc_infra/src/code_graph/code_extractor.dart';
 import 'package:cc_infra/src/code_graph/code_indexer.dart';
 import 'package:cc_natives/cc_natives.dart';
-import 'package:dio/dio.dart' show CancelToken;
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart' show CancelToken;
 import 'package:test/test.dart';
 
 /// Targeted index runs: cost the change, not the checkout (full discovery was

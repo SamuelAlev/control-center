@@ -2,7 +2,7 @@
 title: Sambung ke pelayan jauh
 description: Halakan apl desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antara pelayan tanpa memulakan semula.
 slug: ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Setiap klien ialah pemapar kepada `cc_server` yang memiliki data. Desktop boleh
@@ -14,7 +14,7 @@ pelayan yang berjalan di tempat lain — kotak kecil, VM awan, pelayan binaan.
 ## Prasyarat
 
 - `cc_server` yang sedang berjalan. Jika anda belum mempunyainya, lihat [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
-- Sama ada tiga nilai penggandingan yang ditempa oleh pelayan — **URL pelayan** (`ws://…/rpc` atau `wss://…/rpc`), **id peranti** dan **kunci penggandingan** — **atau** **kod jemputan** sekali guna daripada pentadbir ruang kerja. Menebus jemputan akan memperuntukkan pengguna anda, merekodkan keahlian anda dan menempa kelayakan klien ini untuk anda, jadi anda tidak pernah mengendalikan id peranti atau kunci.
+- Sama ada tiga nilai penggandingan yang ditempa oleh pelayan — **URL pelayan** (`ws://…/rpc` atau `wss://…/rpc`), **id peranti** dan **kunci penggandingan** — **atau** **kod jemputan** sekali guna daripada pentadbir ruang kerja. Menebus jemputan akan memperuntukkan pengguna anda, merekodkan keahlian anda dan menempa kelayakan klien ini untuk anda, jadi anda tidak pernah mengendalikan id peranti atau kunci. Dapatkan nilai-nilai ini melalui saluran dipercayai dan semak cap jari pelayan terhadap kod QR dipercayai atau sematan yang diketahui pada sambungan pertama.
 
 ### Pastikan pelayan boleh dicapai
 
@@ -28,7 +28,7 @@ dipercayainya — dan `cc_server` memang enggan mengikat alamat bukan loopback
 tanpa TLS sejak awal. Berikan salah satu daripadanya:
 
 - sijil secara terus, dengan `--tls-cert` dan `--tls-key`
-- proksi terbalik penamat TLS di hadapan, dengan pelayan dimulakan `--insecure` (teks biasa di belakang proksi, pada rangkaian yang dipercayai sahaja)
+- proksi terbalik penamat TLS di hadapan, dengan pelayan dimulakan `--insecure` (teks biasa antara proksi dan pelayan pada pendengar luar, pada rangkaian yang dipercayai sahaja; ini tidak melumpuhkan sesi klien tersulit yang diwajibkan)
 - terowong atau VPN yang membekalkan sijil itu — Tailscale, cloudflared atau seumpamanya. **Tetapan → Pelayan → Sambungan & status** mempunyai pilihan menyertai terowong terbina dalam di bawah **Kongsi pelayan ini**.
 
 Dua tetapan pada sisi pelayan mudah terlepas pandang. Di belakang proksi, NAT
@@ -59,7 +59,9 @@ semasa dan melihat ralat itu. Baris untuk pelayan yang anda gunakan tiada tindak
 ini**.
 
 Sebaik sahaja bertukar, desktop tidak memiliki pangkalan data. Setiap skrin
-membaca dan menulis melalui pelayan jauh itu melalui WebSocket.
+membaca dan menulis melalui pelayan jauh itu melalui sesi WebSocket
+bertandatangan dan disulitkan hujung ke hujung; perlindungan yang sama terpakai
+pada loopback dan melalui geganti.
 
 ## Sambungkan klien web
 
@@ -70,15 +72,19 @@ Binaan web sentiasa jauh.
 3. Klien mendail pelayan dan memaparkan antara muka yang sama seperti desktop.
 
 Jika URL mengandungi pautan mendalam penggandingan, medan-medan itu telah diisi
-terlebih dahulu. Kunci penggandingan menunggang dalam **serpihan** URL, yang
-tidak pernah dihantar oleh penyemak imbas kepada pelayan yang menghoskan halaman
-itu, jadi hos statik tidak pernah melihatnya.
+terlebih dahulu. Kunci penggandingan menunggang dalam **serpihan** URL, yang tidak
+dihantar oleh penyemak imbas kepada hos halaman itu. Anggap pautan itu sebagai
+rahsia dan percayai halaman yang menyajikan klien web: serpihan itu tidak
+melindungi daripada kod halaman yang berniat jahat.
 
-:::note[Media dan keselamatan]
-Media (avatar, imej suapan, tangkapan skrin PR) diproksikan melalui pelayan yang
-bersambung, jadi penyemak imbas tidak pernah mengambil hos huluan secara langsung.
-Content-Security Policy bagi setiap permintaan, dicop daripada kuki yang tidak
-sensitif, membenarkan asalan pelayan yang bersambung sahaja.
+:::note[Media, editor dan keselamatan]
+Media (avatar, imej suapan, tangkapan skrin PR), pemindahan sandaran dan trafik
+editor terbenam menggunakan terowong sumber tersulit, bukan laluan HTTP awam yang
+boleh dibaca. Editor penyemak imbas yang dipercayai berjalan pada asalan aplikasi web
+itu sendiri; Service Worker-nya membawa permintaan melalui sesi tersulit yang disahkan
+ke backend code-server pada `cc_server`. Hoskan klien web melalui HTTPS atau loopback
+selamat supaya Service Worker tersedia. Klien natif menggunakan fasad loopback yang
+dihadkan oleh keupayaan.
 :::
 
 ### Apa yang tidak dilakukan oleh penyemak imbas
@@ -101,6 +107,7 @@ terhadap hos tanpa kepala yang tiada editor dipasang.
 
 - **Sambungan tamat masa**: pelayan mesti boleh dicapai daripada klien. Semak ikatan (`--bind any`), bahawa port terbuka dan bahawa `--public-url` menamakan alamat yang benar-benar boleh didail oleh klien. Di internet terbuka, TLS adalah wajib — ikatan bukan loopback teks biasa ditolak semasa permulaan melainkan pelayan dimulakan `--insecure` di belakang proksi.
 - **Penyemak imbas enggan bersambung tetapi klien natif berfungsi**: asalan penyemak imbas tiada dalam senarai `--allowed-origins` pelayan. Lalai hanya membenarkan `https://app.usectrl.dev` (serta loopback).
+- **Identiti pelayan berubah**: klien menolak cap jari yang berbeza daripada sematan yang disimpannya. Sahkan identiti pelayan di luar jalur dan gandingkan semula melalui saluran dipercayai; jangan abaikan amaran itu atau bertukar kepada klien lama atau teks biasa.
 - **Kunci penggandingan ditolak**: jalankan semula `cc_server pair` pada pelayan untuk memutar kunci peranti itu, kemudian masukkan kunci baharu. Peranti yang ditarik balik mendapati kelayakannya sudah hilang dan gagal secara tertutup; penarikan balik menggugurkan sesi langsung dalam beberapa saat.
 - **Ruang kerja salah**: ruang kerja ialah sebahagian daripada URL (`/workspaces/:workspaceId/…`) dan bergerak bersama setiap panggilan, jadi bertukar ruang kerja dalam satu klien hanya mengubah paparan anda sendiri. Anda hanya boleh mencapai ruang kerja yang anda menjadi ahli — selain itu ditolak dengan "Not a member of this workspace". Lihat [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
 

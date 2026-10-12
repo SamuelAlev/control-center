@@ -2,7 +2,7 @@
 title: Referanse for SSO-konfigurasjon
 description: Alle innstillinger, endepunkter, operasjoner og feilkoder for enkel pålogging.
 slug: nb-NO/handbok/referanse/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Alt som kan konfigureres for enkel pålogging, på ett sted. Verdiene ligger i
@@ -24,7 +24,7 @@ innstillingsskjermen kan være uenig i).
 | `displayNameAttribute` | SAML        | `displayName`   | attributt for visningsnavn                                                                                                                           |
 | `groupsAttribute`      | SAML        | `groups`        | attributt for gruppenavn                                                                                                                             |
 | `clockSkewSeconds`     | SAML        | 90              | tillatt skjevhet i levetidsvalideringen                                                                                                              |
-| `allowIdpInitiated`    | SAML        | av              | godta uoppfordrede Responses (uten `InResponseTo`)                                                                                                   |
+| `allowIdpInitiated`    | SAML        | av              | godta gyldige uoppfordrede Responses (uten `InResponseTo`); nettleseren må gjøre krav på en kortlevd grant før den mottar en legitimasjon forseglet for mottakeren |
 | `wantResponseSigned`   | SAML        | av              | krev signatur på Response-roten (signaturer på assertions kreves alltid)                                                                             |
 | `issuer`               | OIDC        | —               | utstederens basis-URL (må være satt for å kunne slås på)                                                                                             |
 | `clientId`             | OIDC        | —               | ID for offentlig klient (må være satt for å kunne slås på)                                                                                           |
@@ -37,28 +37,61 @@ innstillingsskjermen kan være uenig i).
 
 ## Prosesskonfigurasjon
 
-SSO-tilkoblinger blir ikke sådd fra miljøet. Ett gjenstående prosessflagg
-handler om **overleveringen til nettleseren**, ikke om tilkoblingsraden:
+SSO-tilkoblinger blir ikke sådd fra miljøet. Ett gjenstående prosessflagg velger
+hvor nettleseren åpner nettklienten etter en SSO-callback:
 
 | Variabel / flagg                                 | Betydning                                                                                                            |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | origin som SSO-callbacker sender nettleseren tilbake til (legitimasjonen følger URL-fragmentet). Hvis den ikke er satt, holder overleveringen seg på samme origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | nettklient-URL for en forseglet overlevering av legitimasjon; hvis den ikke er satt, holder overleveringen seg på samme origin (bare nyttig hvis nettklienten betjenes der). For en `web-popup`-innlogging har en tillatt `client_origin` fra fanen som startet den, forrang. |
 
 Selve utsteder-URL-en må være `https` (`http` godtas bare for
-loopback-utstedere som `localhost`, `127.0.0.1` og `::1`).
+loopback-utstedere som `localhost`, `127.0.0.1` og `::1`). Bruk klarert TLS for
+IdP-callbacken og nettklientverten: siden som genererer mottakernøkkelen, og
+JavaScriptet den leverer, er en del av tillitsgrensen. HTTPS beskytter den
+oppstarten; etter paring krever både direkte og reléerte `/rpc`-økter
+Noise-kryptering og en festet serveridentitet.
 
 ## HTTP-endepunkter
 
 | Endepunkt                                        | Autentisering       | Formål                                                                                                                                                                                                          |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | ingen (omdirigering) | start en SP-initiert innlogging; `relay=desktop` overlater til appen, `relay=web-popup` sender en postMessage til koble-fanen som venter (den oppgir sin `client_origin`, som bare godtas når origin-tillatelseslisten stoler på den) |
-| `POST /saml/acs`                                 | ingen (IdP-POST)    | assertion-forbrukeren — verifiserer, provisjonerer, utsteder                                                                                                                                                    |
+| `GET /saml/login?relay=…&handoff_key=…`         | ingen (omdirigering) | start en SP-initiert innlogging med en mottakernøkkel (X25519) klienten holder; `relay=desktop` overlater til appen, `relay=web-popup` sender en postMessage til koble-fanen som venter (dens `client_origin` godtas bare når origin-tillatelseslisten stoler på den) |
+| `POST /saml/acs`                                 | ingen (IdP-POST)    | verifiser assertion-en og provisjoner brukeren; SP-initiert innlogging forsegler den utstedte enhetslegitimasjonen for mottakernøkkelen som startet den; tillatt uoppfordret SAML gir i stedet et krav bundet til nettleseren |
+| `POST /saml/claim`                               | nettleser-grant på samme origin | løs inn en engangs uoppfordret SAML-grant med informasjonskapselen sin og en fersk `handoff_key`; returnerer en legitimasjon forseglet for mottakeren, aldri en klartekst-paringsnøkkel |
 | `GET /saml/metadata`                             | ingen               | vår SP-`EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | ingen               | OIDC-rundturen; `relay=desktop` overlater til appen, `relay=web-popup` til koble-fanen som venter (samme `client_origin`-konvensjon)                                                                           |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | ingen | OIDC-rundturen; innloggingen krever mottakernøkkelen klienten holder; `relay=desktop` overlater til appen, `relay=web-popup` til koble-fanen som venter (samme `client_origin`-konvensjon) |
 | `GET /auth/providers`                            | ingen, CORS `*`     | sonden i koble-skjermen: tilbudte SSO-tilkoblinger (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
 | `/scim/v2/Users…`                                | Bearer (SCIM-token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
 | `/scim/v2/Groups`                                | Bearer              | skrivebeskyttet; gruppepush svarer 501 med vilje                                                                                                                                                                |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | kapabilitetsdokument                                                                                                                                                                                            |
+
+For SP-initiert SAML og OIDC krever innloggingsstart-URL-en en gyldig
+`handoff_key` (den startende klientens offentlige X25519-nøkkel). Serveren
+beholder den nøkkelen sammen med den ventende innloggingen og forsegler den
+utstedte enhetslegitimasjonen ved callbacken ved hjelp av efemær X25519,
+HKDF-SHA256 og AES-256-GCM bundet til serverens origin. Overlevering til
+skrivebordet bruker `control-center://pair`, overlevering til nett i samme fane
+bruker et URL-fragment, og `web-popup` sender postMessage til den tillatte
+`client_origin` hvis oppgitt (ellers den konfigurerte nettklient-URL-en eller
+callback-originen). Den forseglede konvolutten, ikke en klartekst-paringsnøkkel,
+følger i det fragmentet eller popup-meldingen. Den startende klienten beholder
+den tilhørende private nøkkelen for å åpne den. Denne konvolutten er forskjellig
+fra den obligatoriske Noise-økten som etableres etter paring.
+
+En IdP-initiert SAML-respons (når aktivert) har ingen mottaker som startet den.
+I stedet setter ACS en fem minutter lang, HttpOnly, SameSite=Strict
+nettleserinformasjonskapsel og viser valget **Åpne nettklient** / **Åpne
+skrivebordsapp**. Den siden genererer en fersk mottakernøkkel og sender dens
+offentlige halvdel og grant-håndtaket til `POST /saml/claim` fra samme origin.
+Innløsing krever den samsvarende informasjonskapselen og originen (en
+CSRF-grense), forbruker granten én gang og returnerer bare en konvolutt forseglet
+for mottakeren. Det påfølgende nett-/skrivebordsfragmentet frakter den
+konvolutten og mottakerens private nøkkelmateriale, slik at målklienten kan åpne
+den, **ikke** en klartekst-enhetslegitimasjon. En annen nettleser eller en utløpt
+grant kan ikke løse den inn. Målets nettklient-origin kan få tilgang til
+fragmentet og dekryptere det; en kompromittert callback-side eller
+nettklient-origin kan stjele legitimasjon. Kryptering gjør ikke ikke-klarert
+levert kode trygg.
 
 ## RPC-operasjoner
 

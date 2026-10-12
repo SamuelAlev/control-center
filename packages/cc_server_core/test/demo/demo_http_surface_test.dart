@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:test/test.dart';
 
@@ -57,8 +58,10 @@ void main() {
     return req.close();
   }
 
-  /// Redeems the public code, optionally forging an `X-Forwarded-For`.
+  /// Redeems the public code to a fresh client-held recipient, optionally
+  /// forging an `X-Forwarded-For`.
   Future<int> redeemStatus({String? forwardedFor}) async {
+    final recipient = await CredentialSeal.newRecipient();
     final req = await http.postUrl(
       Uri.parse('http://127.0.0.1:${server.rpc.boundPort}/invites/redeem'),
     );
@@ -66,7 +69,10 @@ void main() {
     if (forwardedFor != null) {
       req.headers.set('x-forwarded-for', forwardedFor);
     }
-    req.write(jsonEncode({'code': 'demo'}));
+    req.write(jsonEncode({
+      'code': 'demo',
+      'handoff_key': recipient.publicKey,
+    }));
     final resp = await req.close();
     await resp.drain<void>();
     return resp.statusCode;
@@ -232,7 +238,32 @@ void main() {
     );
   }, timeout: const Timeout(Duration(minutes: 2)));
 
-  test('POST /invites/redeem carries CORS on the real response too', () async {
+  test('POST /invites/redeem seals the PSK and preserves CORS', () async {
+    final recipient = await CredentialSeal.newRecipient();
+    final req = await http.postUrl(
+      Uri.parse('http://127.0.0.1:${server.rpc.boundPort}/invites/redeem'),
+    );
+    req.headers.contentType = ContentType.json;
+    req.write(jsonEncode({
+      'code': 'demo',
+      'handoff_key': recipient.publicKey,
+    }));
+    final resp = await req.close();
+    final wire = await resp.transform(utf8.decoder).join();
+    expect(resp.statusCode, 200);
+    expect(resp.headers.value('access-control-allow-origin'), '*');
+    expect(wire, isNot(contains('\"psk\"')));
+    final body = jsonDecode(wire) as Map<String, dynamic>;
+    final credential = await CredentialSeal.open(
+      recipientPrivateKey: recipient.privateKey,
+      envelope: (body['box'] as Map).cast<String, dynamic>(),
+      context: 'cc-public-demo-v1',
+    );
+    expect(credential['psk'], isA<String>());
+    expect(credential['device_id'], isA<String>());
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
+  test('demo refuses a missing client-held recipient', () async {
     final req = await http.postUrl(
       Uri.parse('http://127.0.0.1:${server.rpc.boundPort}/invites/redeem'),
     );
@@ -240,7 +271,6 @@ void main() {
     req.write(jsonEncode({'code': 'demo'}));
     final resp = await req.close();
     await resp.drain<void>();
-    expect(resp.statusCode, 200);
-    expect(resp.headers.value('access-control-allow-origin'), '*');
-  }, timeout: const Timeout(Duration(minutes: 2)));
+    expect(resp.statusCode, HttpStatus.forbidden);
+  });
 }

@@ -3,7 +3,7 @@ title: Architektura
 description: "Jak je Control Center složený: tenký klient nad serverem, Clean Architecture podle domén a porty s adaptéry."
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/koncepty/architektura
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Přehled
@@ -26,7 +26,7 @@ Je to jedno **Dart workspace** s vyřešeným lockfilem a jednadvaceti členy, p
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Doménová vrstva**: entity v čistém Dartu, hodnotové objekty, rozhraní repozitářů, porty a doménové služby. Žádné importy infrastruktury (žádné dio, drift ani síťové modely).
+- **Doménová vrstva**: entity v čistém Dartu, hodnotové objekty, rozhraní repozitářů, porty a doménové služby. Žádné importy infrastruktury (žádné rhttp, drift ani síťové modely).
 - **Prezentační vrstva**: obrazovky, widgety, notifiery. Žádný přímý přístup k Driftu, DAO ani datové vrstvě; všechno jde přes providery Riverpodu → repozitáře.
 - **Infrastrukturní vrstva**: konkrétní implementace doménových portů a rozhraní repozitářů. Závisí na doméně, a jen tímto směrem.
 
@@ -122,7 +122,7 @@ Obě databáze vlastní `cc_persistence` a otevírá je jen `cc_server`. Žádn�
 
 Veškeré vnější HTTP žije na serveru. Klienti se na GitHub, Linear ani Google neobracejí přímo. Volají RPC operace serveru a i vzdálená média se berou z koncového bodu serveru `/proxy/media`, ne z původního zdroje.
 
-- Klienti **dio** v `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` a `GoogleCalendarApiClient`
+- Klienti **rhttp** v `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` a `GoogleCalendarApiClient`
 - Auth token se vkládá přes interceptory, včetně Google OAuth interceptoru po účtech v `cc_server_core`, který při 401 tokeny obnoví
 - Všechny chyby se mapují přes `packages/cc_infra/lib/src/network/error_mapper.dart` → typované podtřídy `AppException` definované v `cc_domain`
 

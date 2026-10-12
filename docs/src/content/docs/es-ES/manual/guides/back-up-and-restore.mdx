@@ -2,7 +2,7 @@
 title: Hacer copia de seguridad y restaurar
 description: Crea una instantánea de la instalación, mueve un espacio de trabajo entre máquinas, restaura un espacio de trabajo o todos ellos y guarda copias en otro sitio.
 slug: es-ES/manual/guias/copia-de-seguridad-y-restauracion
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Esta guía cubre las cinco cosas que la gente hace de verdad con las copias de
@@ -18,7 +18,7 @@ Todo lo que hay aquí está en **Ajustes → Servidor → Copia de seguridad y r
 - Un **cliente completo** — la aplicación de escritorio o la web. Un teléfono emparejado no puede desencadenar nada de esto, por diseño.
 - Para crear, listar, descargar o eliminar una **instantánea de la instalación**: el **propietario** de la instalación.
 - Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportar, **propietario** para importarlo o eliminarlo.
-- Para las descargas y las subidas: una conexión **directa** al servidor. El relé intermediado transporta tramas RPC, no transferencias de archivos, y los controles de transferencia se desactivan con una nota cuando estás en una.
+- Para las descargas y las subidas: un cliente completo emparejado, ya sea por una conexión directa o por el relé intermediado. Ambas rutas transportan los bytes del archivo por el mismo túnel de recursos autenticado y cifrado de extremo a extremo; el relé no puede leerlos.
 
 :::caution[Las instantáneas de la instalación son manuales]
 **Crear copia ahora** sigue creando una instantánea de toda la instalación solo cuando
@@ -27,7 +27,15 @@ copia de seguridad de la base de datos de un espacio de trabajo una vez a la sem
 eliminar las copias de ese espacio de trabajo con más de 30 días. No copia `global.db`,
 ni otros espacios de trabajo, ni los archivos que están junto a la base de datos. Guarda
 las copias fuera de la máquina por separado.
-:::
+::::
+
+::::caution[Las copias de seguridad no están cifradas en reposo]
+La transferencia cifrada termina en tu cliente y en `cc_server`. Los directorios de
+instantáneas, las exportaciones de espacios de trabajo, los archivos descargados y las
+bases de datos del servidor no están cifrados en reposo por Control Center. Protege el
+host del servidor, tus descargas y las copias fuera de la máquina con tu propio cifrado
+de almacenamiento y tus controles de acceso.
+::::
 
 ## Qué cubre una copia de seguridad
 
@@ -331,7 +339,7 @@ dónde se almacenan.
 
 | Síntoma                                                                  | Causa y solución                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Los controles de descarga y subida están desactivados con una nota sobre un relé | Estás conectado a través del relé intermediado, que no transporta transferencias de archivos. Conéctate directamente                          |
+| La descarga o la subida falla tras cambiar de conexión | Vuelve a intentarlo en la conexión emparejada activa. Tanto la conexión directa como la del relé admiten transferencia de archivos cifrada; ninguna expone una alternativa HTTP en texto plano |
 | «El servidor lo rechazó»                                                 | Rol. Crear o listar una instantánea de la instalación necesita el operador de la instalación. Descargar un espacio de trabajo necesita administrador, restaurar uno necesita propietario, un zip de instantánea completa necesita el operador de la instalación |
 | «Este servidor no expone ninguna superficie de copia de seguridad»       | El host no tiene ningún puerto de copia de seguridad conectado — un servidor de demostración. Las operaciones están ausentes en lugar de rechazadas                          |
 | «El archivo supera el tamaño que acepta el servidor»                     | Las subidas tienen un límite de 8 GiB. Pon el archivo en el host del servidor y usa mejor **Importar** → **Elegir archivo**                 |
@@ -345,7 +353,7 @@ dónde se almacenan.
 
 - [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/): de dónde viene el directorio de datos
 - [Conectar a un servidor remoto](/es-ES/manual/guias/conectar-servidor-remoto/): conexiones directas frente a las que pasan por el relé
-- [Emparejar un dispositivo](/es-ES/manual/guias/emparejar-dispositivo/): la credencial con la que firman las rutas de transferencia
+- [Emparejar un dispositivo](/es-ES/manual/guias/emparejar-dispositivo/): la credencial del dispositivo emparejado que usa la transferencia cifrada y sus peticiones de recursos firmadas
 
 ## Conceptos y referencia relacionados
 

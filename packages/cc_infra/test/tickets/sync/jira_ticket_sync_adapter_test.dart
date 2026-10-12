@@ -1,26 +1,38 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart';
 import 'package:cc_infra/src/tickets/sync/jira_ticket_sync_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
+/// The decoded JSON body of a captured request.
+Map<String, dynamic> jsonBody(HttpRequest request) =>
+    ((request.body! as HttpBodyJson).json as Map).cast<String, dynamic>();
+
 /// Exercises [JiraTicketSyncAdapter] — pure vendor translation over an
-/// injectable [Dio]. Pins the JQL search, the ADF wrapping on create, the
-/// transition workflow for status changes and the ADF→text flattening on pull.
+/// injectable [RhttpClient]. Pins the JQL search, the ADF wrapping on create,
+/// the transition workflow for status changes and the ADF→text flattening on
+/// pull.
 void main() {
-  late RecordingAdapter adapter;
-  late Dio dio;
+  late TestHttpClient httpClient;
   late JiraTicketSyncAdapter sync;
+  var queued = <Object?>[];
+
+  // Enqueues a canned response body. Multiple calls queue multiple bodies,
+  // consumed FIFO (one per request).
+  void nextJson(Object body) => queued.add(body);
 
   setUp(() {
-    adapter = RecordingAdapter();
-    dio = Dio()..httpClientAdapter = adapter;
-    sync = JiraTicketSyncAdapter(dio);
+    queued = <Object?>[];
+    httpClient = TestHttpClient(
+      handler: (request) => httpTextResponse(
+        request,
+        queued.isEmpty ? const <String, dynamic>{} : queued.removeAt(0),
+      ),
+    );
+    sync = JiraTicketSyncAdapter(httpClient);
   });
 
   Ticket ticket({
@@ -46,9 +58,9 @@ void main() {
     });
 
     test('issueTypeName defaults to Task and is overridable', () {
-      expect(JiraTicketSyncAdapter(dio).issueTypeName, 'Task');
+      expect(JiraTicketSyncAdapter(httpClient).issueTypeName, 'Task');
       expect(
-        JiraTicketSyncAdapter(dio, issueTypeName: 'Story').issueTypeName,
+        JiraTicketSyncAdapter(httpClient, issueTypeName: 'Story').issueTypeName,
         'Story',
       );
     });
@@ -86,7 +98,7 @@ void main() {
 
   group('pullChanges', () {
     test('GETs the search endpoint and flattens issues', () async {
-      adapter.nextJson({
+      nextJson({
         'issues': [
           {
             'id': '10001',
@@ -119,13 +131,10 @@ void main() {
         workspaceId: 'ws',
         vendorProjectId: 'PROJ',
       );
-      final req = adapter.requests.single;
-      expect(req.path, '/rest/api/3/search');
-      expect(
-        req.queryParameters['jql'],
-        'project = "PROJ" ORDER BY updated DESC',
-      );
-      expect(req.queryParameters['maxResults'], 100);
+      final req = httpClient.requests.single;
+      expect(req.url, '/rest/api/3/search');
+      expect(req.query!['jql'], 'project = "PROJ" ORDER BY updated DESC');
+      expect(req.query!['maxResults'], '100');
       expect(deltas, hasLength(1));
       final d = deltas.single;
       expect(d.externalId, '10001');
@@ -142,7 +151,7 @@ void main() {
     });
 
     test('a plain-string description is passed through', () async {
-      adapter.nextJson({
+      nextJson({
         'issues': [
           {
             'id': '1',
@@ -161,7 +170,7 @@ void main() {
 
     test('priority mapping covers all branches', () async {
       Future<TicketPriority?> pri(String name) async {
-        adapter.nextJson({
+        nextJson({
           'issues': [
             {
               'id': 'x',
@@ -191,7 +200,7 @@ void main() {
     test(
       'POSTs with project/summary/adf description/issuetype/priority',
       () async {
-        adapter.nextJson({
+        nextJson({
           'id': '10002',
           'key': 'PROJ-2',
           'self': 'https://x/rest/api/3/issue/10002',
@@ -206,9 +215,9 @@ void main() {
           changeType: TicketChangeType.created,
           vendorProjectId: 'PROJ',
         );
-        expect(adapter.requests.single.method, 'POST');
-        expect(adapter.requests.single.path, '/rest/api/3/issue');
-        final fields = (adapter.requests.single.data as Map)['fields'] as Map;
+        expect(httpClient.requests.single.method.value, 'POST');
+        expect(httpClient.requests.single.url, '/rest/api/3/issue');
+        final fields = jsonBody(httpClient.requests.single)['fields'] as Map;
         expect((fields['project'] as Map)['key'], 'PROJ');
         expect(fields['summary'], 'New issue');
         // Description wrapped in ADF.
@@ -226,14 +235,14 @@ void main() {
     );
 
     test('omits description + priority when absent', () async {
-      adapter.nextJson({'id': '1', 'key': 'P-1'});
+      nextJson({'id': '1', 'key': 'P-1'});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(),
         changeType: TicketChangeType.created,
         vendorProjectId: 'P',
       );
-      final fields = (adapter.requests.single.data as Map)['fields'] as Map;
+      final fields = jsonBody(httpClient.requests.single)['fields'] as Map;
       expect(fields.containsKey('description'), isFalse);
       expect(fields.containsKey('priority'), isFalse);
     });
@@ -244,7 +253,7 @@ void main() {
       'statusChanged transitions through the matching workflow id',
       () async {
         // First call returns the transitions list; second POSTs the transition.
-        adapter.nextJson({
+        nextJson({
           'transitions': [
             {
               'id': '11',
@@ -260,7 +269,7 @@ void main() {
             },
           ],
         });
-        adapter.nextJson(const {});
+        nextJson(const {});
         await sync.pushChange(
           workspaceId: 'ws',
           ticket: ticket(status: TicketStatus.done),
@@ -268,25 +277,25 @@ void main() {
           externalId: 'PROJ-2',
           vendorProjectId: 'P',
         );
-        expect(adapter.requests, hasLength(2));
-        expect(adapter.requests[0].method, 'GET');
+        expect(httpClient.requests, hasLength(2));
+        expect(httpClient.requests[0].method.value, 'GET');
         expect(
-          adapter.requests[0].path,
+          httpClient.requests[0].url,
           '/rest/api/3/issue/PROJ-2/transitions',
         );
-        expect(adapter.requests[1].method, 'POST');
+        expect(httpClient.requests[1].method.value, 'POST');
         expect(
-          adapter.requests[1].path,
+          httpClient.requests[1].url,
           '/rest/api/3/issue/PROJ-2/transitions',
         );
-        expect(adapter.requests[1].data, {
+        expect(jsonBody(httpClient.requests[1]), {
           'transition': {'id': '21'},
         });
       },
     );
 
     test('statusChanged with no matching transition issues no POST', () async {
-      adapter.nextJson({
+      nextJson({
         'transitions': [
           {
             'id': '11',
@@ -302,7 +311,7 @@ void main() {
         vendorProjectId: 'P',
       );
       // Only the GET — no POST.
-      expect(adapter.requests.single.method, 'GET');
+      expect(httpClient.requests.single.method.value, 'GET');
     });
 
     test('updated PUTs summary + adf description', () async {
@@ -313,10 +322,10 @@ void main() {
         externalId: 'PROJ-2',
         vendorProjectId: 'P',
       );
-      final req = adapter.requests.single;
-      expect(req.method, 'PUT');
-      expect(req.path, '/rest/api/3/issue/PROJ-2');
-      final fields = (req.data as Map)['fields'] as Map;
+      final req = httpClient.requests.single;
+      expect(req.method.value, 'PUT');
+      expect(req.url, '/rest/api/3/issue/PROJ-2');
+      final fields = jsonBody(req)['fields'] as Map;
       expect(fields['summary'], 'T2');
       expect((fields['description'] as Map)['type'], 'doc');
     });
@@ -335,38 +344,7 @@ void main() {
           vendorProjectId: 'P',
         );
       }
-      expect(adapter.requests, isEmpty);
+      expect(httpClient.requests, isEmpty);
     });
   });
-}
-
-class RecordingAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-  final List<Object> _queue = [];
-
-  /// Enqueues a canned response body. Multiple calls queue multiple bodies,
-  /// consumed FIFO (one per request).
-  void nextJson(Object body) => _queue.add(body);
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    final body = _queue.isEmpty
-        ? const <String, dynamic>{}
-        : _queue.removeAt(0);
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

@@ -9,6 +9,8 @@ import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// An [AgentRunLogRepository] backed by the RPC client — the thin-client data
@@ -52,6 +54,8 @@ class RpcAgentRunLogRepository
       cachedReadTokens: d.cachedReadTokens,
       cachedWriteTokens: d.cachedWriteTokens,
       estimatedCostCents: d.estimatedCostCents,
+      costMicros: d.costMicros,
+      costBasis: CostBasis.fromWire(d.costBasis),
       durationMs: d.durationMs,
       timeToFirstTokenMs: d.timeToFirstTokenMs,
     ),
@@ -74,6 +78,13 @@ class RpcAgentRunLogRepository
     retry: RetryMeta(parentRunId: d.retryOfRunId, attempt: d.retryAttempt),
     role: AgentRunRole.tryParse(d.agentRole),
     childCostCents: d.childCostCents,
+    childCostMicros: d.childCostMicros,
+    effort: d.effort,
+    taskFamily: d.taskFamily,
+    latency: RunLatencyProfile.fromJson(d.latency),
+    verification: RunVerification.fromJson(d.verification),
+    nativeSessionId: d.nativeSessionId,
+    resumedNativeSession: d.resumedNativeSession,
     parentRunId: d.parentRunId,
     spawnToolCallId: d.spawnToolCallId,
   );
@@ -99,6 +110,8 @@ class RpcAgentRunLogRepository
     cachedReadTokens: l.cost.cachedReadTokens,
     cachedWriteTokens: l.cost.cachedWriteTokens,
     estimatedCostCents: l.cost.estimatedCostCents,
+    costMicros: l.cost.costMicros,
+    costBasis: l.cost.costBasis.name,
     durationMs: l.cost.durationMs,
     timeToFirstTokenMs: l.cost.timeToFirstTokenMs,
     liveness: l.liveness?.name,
@@ -117,6 +130,17 @@ class RpcAgentRunLogRepository
     retryAttempt: l.retry.attempt,
     agentRole: l.role.name,
     childCostCents: l.childCostCents,
+    childCostMicros: l.childCostMicros,
+    effort: l.effort,
+    taskFamily: l.taskFamily,
+    // Emit the structured observability payloads only when set, so a run that
+    // recorded neither stays byte-identical to a historical payload.
+    latency: l.latency.isEmpty ? null : l.latency.toJson(),
+    verification: l.verification.status == VerificationStatus.unverified
+        ? null
+        : l.verification.toJson(),
+    nativeSessionId: l.nativeSessionId,
+    resumedNativeSession: l.resumedNativeSession,
     parentRunId: l.parentRunId,
     spawnToolCallId: l.spawnToolCallId,
   );
@@ -219,6 +243,54 @@ class RpcAgentRunLogRepository
 
   @override
   Future<void> upsert(AgentRunLog log) => _remote.upsert(_toDto(log));
+
+  @override
+  Future<void> updateCost(String workspaceId, String runId, RunCost cost) =>
+      _remote.updateCost(workspaceId, runId, cost);
+
+  @override
+  Future<void> addChildCostMicros(
+    String workspaceId,
+    String runId,
+    int amountMicros,
+  ) => _remote.addChildCostMicros(workspaceId, runId, amountMicros);
+
+  @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) => _remote.updateRuntime(
+    workspaceId,
+    runId,
+    pid: pid,
+    markRunning: markRunning,
+    logPath: logPath,
+    contextSnapshotJson: contextSnapshotJson,
+    lastOutputAt: lastOutputAt,
+    liveness: liveness,
+    errorFamily: errorFamily,
+    summary: summary,
+    modelId: modelId,
+    effort: effort,
+    taskFamily: taskFamily,
+  );
+
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) => _remote.completeIfActive(_toDto(completed), writeCost: writeCost);
 
   // ---- RunTranscriptRelayPort ----
   //

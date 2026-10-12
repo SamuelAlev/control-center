@@ -166,7 +166,7 @@ void main() {
   });
 
   group('QuotaCalculator.report — metric counting', () {
-    test('tokens unit sums all five token axes', () {
+    test('token quota counts the reasoning subset only once', () {
       final runs = [
         _run(
           startedAt: _now.subtract(const Duration(hours: 1)),
@@ -189,7 +189,7 @@ void main() {
           limit: 1000,
         ),
       );
-      expect(r.used, 40); // 10+20+5+3+2
+      expect(r.used, 35); // 10 + 20 + 3 + 2; thinking is part of output.
     });
 
     test('requests unit counts runs regardless of tokens/cost', () {

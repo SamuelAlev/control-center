@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 
 /// Maps database agent run log rows to domain [AgentRunLog] entities.
@@ -36,11 +38,28 @@ class AgentRunLogMapper {
         cachedReadTokens: row.cachedReadTokens,
         cachedWriteTokens: row.cachedWriteTokens,
         estimatedCostCents: row.estimatedCostCents,
+        costMicros: row.costMicros,
+        // A legacy row (null basis) reads as `estimated`, which is what a
+        // locally-priced figure is — never as a reported or billed one.
+        costBasis: CostBasis.fromWire(row.costBasis),
         durationMs: row.durationMs,
         timeToFirstTokenMs: row.timeToFirstTokenMs,
       ),
       role: AgentRunRole.tryParse(row.agentRole),
       childCostCents: row.childCostCents,
+      childCostMicros: row.childCostMicros,
+      effort: row.effort,
+      taskFamily: row.taskFamily,
+      nativeSessionId: row.nativeSessionId,
+      resumedNativeSession: row.resumedNativeSession,
+      latency: RunLatencyProfile.fromJson(_decodeJsonOrNull(row.latencyJson)),
+      verification: row.verificationJson == null
+          ? (row.verificationStatus == null
+                ? RunVerification.none
+                : RunVerification(
+                    status: VerificationStatus.fromWire(row.verificationStatus),
+                  ))
+          : RunVerification.fromJson(_decodeJsonOrNull(row.verificationJson)),
       lastOutputAt: row.lastOutputAt,
       continuationSummary: row.continuationSummary,
       contextSnapshotJson: row.contextSnapshotJson,
@@ -78,6 +97,24 @@ class AgentRunLogMapper {
   /// Converts a list of database rows into a list of [AgentRunLog] domain entities.
   List<AgentRunLog> toDomainList(List<AgentRunLogsTableData> rows) =>
       rows.map(toDomain).toList(growable: false);
+
+  /// Decodes a nullable JSON column to its Dart value, or null when the column
+  /// is null/corrupt.
+  ///
+  /// A malformed blob must degrade to "unknown" rather than throwing and
+  /// taking down the whole row read: latency/verification columns are written
+  /// by this process, so corruption there means an interrupted write, not a
+  /// reason to lose the run.
+  static Object? _decodeJsonOrNull(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    try {
+      return jsonDecode(raw);
+    } on FormatException {
+      return null;
+    }
+  }
 
   static RunStatus _parseRunStatus(String value) {
     return switch (value) {

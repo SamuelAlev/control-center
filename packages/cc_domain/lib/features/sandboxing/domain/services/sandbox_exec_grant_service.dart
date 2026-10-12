@@ -10,6 +10,16 @@ import 'package:cc_domain/features/sandboxing/domain/repositories/sandbox_exec_g
 /// [approvedRoots] asks before the Seatbelt profile is written (fixed for the
 /// process). [recordDeniedExec] asks after a surprise denial; applies on the
 /// next command (harness) or next dispatch (CLI).
+///
+/// SERVER-created disposable trees are the exception, not a second rule:
+/// `managedRoots` (see [approvedRoots]) are the provisioner's per-space
+/// worktrees and per-conversation overlays, and exec under one is granted
+/// without asking. Those roots are per conversation, so keying the prompt on
+/// them made every new conversation — and every directory under one — ask
+/// again about a copy the server had just made for the agent; a stored
+/// decision still wins, and an explicit deny on a subtree beneath a managed
+/// root withholds that whole root, because a profile cannot express the
+/// subtraction.
 class SandboxExecGrantService {
   /// Creates a [SandboxExecGrantService].
   SandboxExecGrantService({
@@ -33,23 +43,61 @@ class SandboxExecGrantService {
   /// `SandboxSpec.execGrantRoots`, so an approval is already in the profile
   /// that is about to be written.
   ///
-  /// With no [ConfirmationPort] wired this grants nothing and asks nothing —
-  /// fail-closed, matching the action guard's "prompt with no approver ⇒ deny".
+  /// [managedRoots] are SERVER-created disposable trees — the provisioner's
+  /// per-space worktrees and the per-conversation overlays under them. A
+  /// candidate covered by one is granted WITHOUT asking, and without a row:
+  /// the server made that throwaway copy for the agent to work in, so there is
+  /// nothing here for the operator to weigh, and the overlay's
+  /// per-conversation name would otherwise re-ask on every new conversation.
+  /// Never list a durable or operator-chosen path (an original checkout,
+  /// `$HOME`, an agent's own config dir, a read-only mount): those stay a
+  /// decision, exactly as before.
+  ///
+  /// A stored decision still decides first, for every candidate including a
+  /// managed one, so an explicit `deny` — or a broader covering deny — keeps
+  /// the tree blocked and is never overridden by the implicit grant. An
+  /// explicit `allow` likewise answers without the implicit path.
+  ///
+  /// An explicit deny on a DESCENDANT of an approved candidate withholds that
+  /// candidate too. A profile carries exec-roots as one allow list, so it
+  /// cannot express "everything under this tree except that subtree" — reaching
+  /// for the root would silently re-open the path the operator refused, and
+  /// asking again would nag about a tree they already answered. Withholding the
+  /// root fails closed instead, and the operator's refusal survives.
+  ///
+  /// A [ConfirmationPort] is only needed for the ASK. With none wired, an
+  /// unmanaged candidate is withheld and nothing is recorded — fail-closed,
+  /// matching the action guard's "prompt with no approver ⇒ deny" — while a
+  /// managed candidate is still granted, because it never needed an answer.
   Future<List<String>> approvedRoots({
     required String workspaceId,
     required List<String> candidateRoots,
+    List<String> managedRoots = const [],
     String? spaceId,
     String? principalId,
     String? label,
   }) async {
     final approved = <String>[];
+    // Read lazily: a denied or undecided unmanaged candidate needs no full scan.
+    List<SandboxExecGrant>? decisions;
     for (final root in candidateRoots.toSet()) {
       if (root.isEmpty) {
         continue;
       }
       final existing = await _repo.decisionFor(workspaceId, root);
       if (existing != null) {
-        if (existing.decision == SandboxExecGrantDecision.allow) {
+        if (existing.decision == SandboxExecGrantDecision.allow &&
+            !_hasDeniedDescendant(
+              decisions ??= await _repo.grants(workspaceId),
+              root,
+            )) {
+          approved.add(root);
+        }
+        continue;
+      }
+      if (_isManaged(root, managedRoots)) {
+        final all = decisions ??= await _repo.grants(workspaceId);
+        if (!_hasDeniedDescendant(all, root)) {
           approved.add(root);
         }
         continue;
@@ -80,10 +128,18 @@ class SandboxExecGrantService {
   /// candidate root, which is deliberately NOT offered as a grant: a denial
   /// under `/nix/store` or `/usr` is a profile bug to fix, not a tree the
   /// operator should be talked into opening.
+  ///
+  /// [managedRoots] follows [approvedRoots]: a denial inside a server-created
+  /// disposable tree is already covered, so the enclosing root comes back as
+  /// granted and no prompt is raised for a tree the operator was never asked
+  /// about. A stored decision — including a deny, and including one on a
+  /// descendant, which [approvedRoots] answers by withholding the root — still
+  /// wins; a tree held closed that way has nothing to announce.
   Future<String?> recordDeniedExec({
     required String workspaceId,
     required String deniedPath,
     required List<String> candidateRoots,
+    List<String> managedRoots = const [],
     String? spaceId,
     String? principalId,
   }) async {
@@ -93,9 +149,17 @@ class SandboxExecGrantService {
     }
     final existing = await _repo.decisionFor(workspaceId, root);
     if (existing != null) {
-      // Already answered — an allow that still produced a denial means the
-      // profile predates the grant, and re-asking would not change that.
-      return existing.decision == SandboxExecGrantDecision.allow ? root : null;
+      if (existing.decision == SandboxExecGrantDecision.deny) {
+        return null;
+      }
+      final decisions = await _repo.grants(workspaceId);
+      return _hasDeniedDescendant(decisions, root) ? null : root;
+    }
+    if (_isManaged(root, managedRoots)) {
+      // Covered beyond question: do not ask about, or record a decision for, a
+      // tree the server created for this run alone.
+      final decisions = await _repo.grants(workspaceId);
+      return _hasDeniedDescendant(decisions, root) ? null : root;
     }
     final granted = await _ask(
       workspaceId: workspaceId,
@@ -160,6 +224,31 @@ class SandboxExecGrantService {
       ),
     );
     return approved;
+  }
+
+  /// Whether [path] is at or beneath one of [managedRoots], on segment
+  /// boundaries so a managed `/a/space` cannot cover an unmanaged
+  /// `/a/space-secrets`.
+  static bool _isManaged(String path, List<String> managedRoots) =>
+      _enclosingRoot(path, managedRoots) != null;
+
+  /// Whether any explicit deny sits at or beneath [root].
+  ///
+  /// A profile's exec grants are a single allow list, so a grant on
+  /// [root] would swallow such a deny — the whole tree has to stay closed
+  /// instead of re-opening the subtree the operator refused.
+  static bool _hasDeniedDescendant(
+    List<SandboxExecGrant> decisions,
+    String root,
+  ) {
+    final prefix = root.endsWith('/') ? root : '$root/';
+    for (final decision in decisions) {
+      if (decision.decision == SandboxExecGrantDecision.deny &&
+          (decision.path == root || decision.path.startsWith(prefix))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// The longest candidate root containing [path], or null.

@@ -2,7 +2,7 @@
 title: Mentés és visszaállítás
 description: Készítsen pillanatképet a telepítésről, mozgasson munkaterületet gépek között, állítson vissza egy vagy az összes munkaterületet, és tartson másolatokat máshol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Ez az útmutató az öt dolgot járja körül, amit az emberek valójában csinálni szoktak a
@@ -19,7 +19,7 @@ alatt található.
 - **Teljes kliens** — az asztali vagy a webes alkalmazás. Egy párosított telefon szándékosan egyiket sem tudja elindítani.
 - **Telepítési pillanatkép** készítéséhez, listázásához, letöltéséhez vagy törléséhez: a telepítés **tulajdonosa**.
 - Munkaterületenkénti műveletekhez: a munkaterület **adminja** az exportáláshoz, **tulajdonosa** az importáláshoz vagy a törléshez.
-- Letöltésekhez és feltöltésekhez: **közvetlen** kapcsolat a szerverrel. A közvetített relé RPC-kereteket visz, nem fájlátvitelt, és az átvitelvezérlők egy megjegyzéssel letiltják magukat, amikor ilyenen van.
+- Letöltésekhez és feltöltésekhez: egy párosított teljes kliens, akár közvetlen, akár közvetített relés kapcsolaton. Mindkét útvonal ugyanazon a hitelesített, végponttól végpontig titkosított erőforrás-alagúton viszi a fájlbájtokat; a relé nem tudja elolvasni őket.
 
 :::caution[A telepítési pillanatképek manuálisak]
 A **Biztonsági mentés most** továbbra is csak kérésre készít teljes telepítési
@@ -28,7 +28,15 @@ készíthet biztonsági mentést egy munkaterület adatbázisáról, és eltávo
 annak a munkaterületnek a 30 napnál régebbi mentéseit. Nem másolja a `global.db`-t,
 a többi munkaterületet, sem az adatbázis melletti fájlokat. A gépen kívüli
 másolatokat külön tárolja.
-:::
+::::
+
+::::caution[A biztonsági mentések nyugalmi állapotban nincsenek titkosítva]
+A titkosított átvitel az Ön kliense és a `cc_server` között ér véget. A
+pillanatkép-könyvtárakat, a munkaterület-exportokat, a letöltött fájlokat és a
+szerver adatbázisait a Control Center nem titkosítja nyugalmi állapotban. Védje a
+szervergépet, a letöltéseit és a gépen kívüli másolatokat a saját
+tárolótitkosításával és hozzáférés-szabályozásaival.
+::::
 
 ## Mit fed le egy biztonsági mentés
 
@@ -333,7 +341,7 @@ hogy hol tárolódnak.
 
 | Tünet | Ok és megoldás |
 | --- | --- |
-| A letöltési és feltöltési vezérlők le vannak tiltva, egy relére vonatkozó megjegyzéssel | A közvetített relén keresztül csatlakozik, amely nem visz fájlátvitelt. Csatlakozzon közvetlenül |
+| A letöltés vagy feltöltés egy kapcsolatváltás után meghiúsul | Próbálja újra az aktív párosított kapcsolaton. A közvetlen és a relés átvitel egyaránt támogatja a titkosított fájlátvitelt; egyik sem kínál nyílt szöveges HTTP-tartalékot |
 | „A szerver elutasította” | Szerep. Egy telepítési pillanatkép készítéséhez vagy listázásához a telepítés üzemeltetője kell. Egy munkaterület letöltéséhez admin, a visszaállításához tulajdonos, egy teljes pillanatkép-ziphez a telepítés üzemeltetője kell |
 | „Ennek a szervernek nincs biztonsági mentési felülete” | A gazdagépen nincs bekötve mentési port — ez egy demószerver. A műveletek hiányoznak, nem pedig megtagadottak |
 | „A fájl nagyobb, mint amit a szerver elfogad” | A feltöltéseket 8 GiB-re korlátozzuk. Tegye a fájlt a szervergépre, és használja helyette az **Importálás** → **Fájl kiválasztása** lehetőséget |
@@ -347,7 +355,7 @@ hogy hol tárolódnak.
 
 - [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): honnan származik az adatkönyvtár
 - [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/): közvetlen és relén keresztüli kapcsolatok
-- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): az a hitelesítő adat, amellyel az átviteli útvonalak aláírnak
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): a párosított eszköz hitelesítő adata, amelyet a titkosított átvitel és annak aláírt erőforráskérései használnak
 
 ## Kapcsolódó fogalmak és referencia
 

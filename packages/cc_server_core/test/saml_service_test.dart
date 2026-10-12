@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
@@ -9,6 +10,7 @@ import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_natives/cc_natives.dart'
     show SamlAuthnRequest, SamlIdpMetadata, SamlIdentity;
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/src/identity/saml_service.dart';
 import 'package:cc_server_core/src/identity/sso_provisioner.dart';
 import 'package:test/test.dart';
@@ -19,7 +21,6 @@ const _idpEntityId = 'https://idp.example.com';
 const _idpSsoUrl = 'https://idp.example.com/sso';
 
 void main() {
-
   group('SamlService.testConnection', () {
     test('parses metadata and builds an AuthnRequest short of login', () async {
       final service = _makeService(
@@ -102,13 +103,166 @@ void main() {
         origin: _origin,
         relayState: 'web-popup',
         clientOrigin: 'https://app.example.com',
+        recipientPublicKey: 'A' * 43,
       );
       final result = await service.handleAcs(
         origin: _origin,
         responseXml: _responseXml(inResponseTo: backend.lastRequestId),
       );
       expect(result.clientOrigin, 'https://app.example.com');
+      expect(result.recipientPublicKey, 'A' * 43);
     });
+
+    test(
+      'direct device mint refuses unsolicited SSO without a recipient',
+      () async {
+        final backend = _FakeBackend();
+        final service = _makeService(
+          _enabledConfig(allowIdpInitiated: true),
+          fakes: _Fakes(),
+          backend: backend,
+        );
+        await expectLater(
+          service.handleAcs(
+            origin: _origin,
+            responseXml: _responseXml(inResponseTo: null),
+            requireRecipientKey: true,
+          ),
+          throwsA(isA<AuthException>()),
+        );
+      },
+    );
+
+    test(
+      'browser ACS preserves requested recipient for solicited SAML',
+      () async {
+        var minted = 0;
+        final backend = _FakeBackend();
+        final service = _makeService(
+          _enabledConfig(allowIdpInitiated: true),
+          fakes: _Fakes(),
+          backend: backend,
+          onMint: () => minted++,
+        );
+        final recipient = await CredentialSeal.newRecipient();
+        service.beginLogin(
+          origin: _origin,
+          recipientPublicKey: recipient.publicKey,
+        );
+        final outcome = await service.handleBrowserAcs(
+          origin: _origin,
+          responseXml: _responseXml(inResponseTo: backend.lastRequestId),
+        );
+        expect(outcome.login?.recipientPublicKey, recipient.publicKey);
+        expect(outcome.cookie, isNull);
+        expect(outcome.handle, isNull);
+        expect(minted, 1);
+      },
+    );
+
+    test(
+      'IdP-initiated browser assertion grants one sealed recipient claim',
+      () async {
+        var minted = 0;
+        final service = _makeService(
+          _enabledConfig(allowIdpInitiated: true),
+          fakes: _Fakes(),
+          backend: _FakeBackend(),
+          onMint: () => minted++,
+        );
+        final xml = _responseXml(inResponseTo: null);
+        final grant = await service.handleBrowserAcs(
+          origin: _origin,
+          responseXml: xml,
+        );
+        expect(grant.login, isNull);
+        expect(grant.handle, isNotEmpty);
+        expect(grant.cookie, isNotEmpty);
+        expect(grant.handle, isNot(grant.cookie));
+        expect(minted, 0);
+        final recipient = await CredentialSeal.newRecipient();
+        await expectLater(
+          service.redeemBrowserGrant(
+            handle: grant.handle!,
+            cookie: 'wrong browser cookie',
+            recipientPublicKey: recipient.publicKey,
+          ),
+          throwsA(isA<AuthException>()),
+        );
+        expect(minted, 0);
+        await expectLater(
+          service.redeemBrowserGrant(
+            handle: grant.handle!,
+            cookie: grant.cookie!,
+            recipientPublicKey: 'not-an-x25519-key',
+          ),
+          throwsA(isA<AuthException>()),
+        );
+        expect(minted, 0);
+        final mintedCredential = await service.redeemBrowserGrant(
+          handle: grant.handle!,
+          cookie: grant.cookie!,
+          recipientPublicKey: recipient.publicKey,
+        );
+        expect(mintedCredential.psk, startsWith('psk-'));
+        expect(minted, 1);
+        await expectLater(
+          service.redeemBrowserGrant(
+            handle: grant.handle!,
+            cookie: grant.cookie!,
+            recipientPublicKey: recipient.publicKey,
+          ),
+          throwsA(isA<AuthException>()),
+        );
+        await expectLater(
+          service.handleBrowserAcs(origin: _origin, responseXml: xml),
+          throwsA(isA<AuthException>()),
+        );
+        expect(minted, 1);
+      },
+    );
+
+    for (final updateConfig in [false, true]) {
+      test(
+        updateConfig
+            ? 'config changes invalidate IdP browser grants'
+            : 'IdP browser grants expire after five minutes',
+        () async {
+          var now = DateTime.utc(2026, 1, 1);
+          var minted = 0;
+          final service = _makeService(
+            _enabledConfig(allowIdpInitiated: true),
+            fakes: _Fakes(),
+            backend: _FakeBackend(
+              identity: _identity(
+                notOnOrAfter: now.add(const Duration(minutes: 10)),
+              ),
+            ),
+            now: () => now,
+            onMint: () => minted++,
+          );
+          final recipient = await CredentialSeal.newRecipient();
+          final grant = await service.handleBrowserAcs(
+            origin: _origin,
+            responseXml: _responseXml(inResponseTo: null),
+          );
+          if (updateConfig) {
+            service.updateConfig(_enabledConfig(allowIdpInitiated: true));
+          } else {
+            now = now.add(const Duration(minutes: 5));
+          }
+          await expectLater(
+            service.redeemBrowserGrant(
+              handle: grant.handle!,
+              cookie: grant.cookie!,
+              recipientPublicKey: recipient.publicKey,
+            ),
+            throwsA(isA<AuthException>()),
+          );
+          expect(minted, 0);
+        },
+      );
+    }
 
     test('stores the CANONICAL client origin, never the raw input', () async {
       final backend = _FakeBackend();
@@ -401,7 +555,10 @@ void main() {
         final xml =
             "<samlp:Response xmlns:samlp='urn:oasis:names:tc:SAML:2.0:protocol' "
             "InResponseTo='${backend.lastRequestId}'></samlp:Response>";
-        final result = await service.handleAcs(origin: _origin, responseXml: xml);
+        final result = await service.handleAcs(
+          origin: _origin,
+          responseXml: xml,
+        );
         expect(result.user.email, 'alice@example.com');
         // The cached tracker was found and handed to the native.
         expect(backend.lastTrackerJson, backend.builtTrackerJson);
@@ -544,6 +701,8 @@ SamlService _makeService(
   SamlConfig config, {
   _Fakes? fakes,
   SamlBackend? backend,
+  void Function()? onMint,
+  DateTime Function()? now,
 }) {
   final f = fakes ?? _Fakes();
   return SamlService(
@@ -551,9 +710,12 @@ SamlService _makeService(
     users: f.users,
     members: f.members,
     workspaces: f.workspaces,
-    mintDevice: (userId, label) async =>
-        (deviceId: 'device-$userId', psk: 'psk-$userId'),
+    mintDevice: (userId, label) async {
+      onMint?.call();
+      return (deviceId: 'device-$userId', psk: 'psk-$userId');
+    },
     backend: backend ?? _FakeBackend(),
+    now: now,
   );
 }
 

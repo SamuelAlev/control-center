@@ -6,11 +6,12 @@ import 'package:cc_domain/core/domain/entities/github_team_profile.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:cc_infra/src/network/github/github_http.dart';
 import 'package:cc_infra/src/network/models/github_pr_review_state.dart';
 import 'package:cc_infra/src/network/models/github_team.dart';
 import 'package:cc_infra/src/network/models/github_user_profile.dart';
 import 'package:cc_infra/src/network/models/github_viewer_activity.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Raw open-pull-request nodes for a single repo, as returned by the batched
 /// GraphQL query. Holds undecoded GraphQL `PullRequest` maps so this network
@@ -166,10 +167,10 @@ class GitHubPrTemplate {
 
 /// Client for GitHub GraphQL API mutations and queries.
 class GitHubGraphQLClient {
-  /// Creates a [GitHubGraphQLClient] backed by [Dio].
-  GitHubGraphQLClient(this._dio);
+  /// Creates a [GitHubGraphQLClient] backed by [RhttpClient].
+  GitHubGraphQLClient(RhttpClient httpClient) : _httpClient = httpClient;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Marks a file as viewed in a pull request.
   Future<void> markFileAsViewed({
@@ -185,20 +186,20 @@ class GitHubGraphQLClient {
       }
     ''';
     try {
-      await _dio.post(
+      await _httpClient.post(
         '/graphql',
-        data: {
+        body: HttpBody.json({
           'query': mutation,
           'variables': {'pullRequestId': pullRequestId, 'path': path},
-        },
+        }),
         cancelToken: cancelToken,
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -687,8 +688,8 @@ class GitHubGraphQLClient {
         'owner': owner,
         'repo': repo,
       }, cancelToken);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       return const [];
@@ -1107,11 +1108,6 @@ fragment PrChecksFields on PullRequest {
   /// [fetchOpenPullRequestsBatch] (diff size, checks, requested reviewers) plus
   /// `repository.nameWithOwner` for grouping, so results decode through the same
   /// `pullRequestFromGraphQlNode` mapper.
-  ///
-  /// Replaces the old per-repo REST `/search/issues` + `fetchPullRequestMetrics`
-  /// pair (2×N calls, with metrics fetched for 100 PRs/repo *including* the
-  /// expensive `mergeStateStatus` mergeability computation) — here the fields
-  /// are fetched only for the PRs that actually matched.
   Future<List<Map<String, dynamic>>> searchPullRequestNodes({
     required String searchQualifiers,
     required List<({String owner, String name})> repos,
@@ -1129,8 +1125,8 @@ fragment PrChecksFields on PullRequest {
   }
 
   /// One sweep of viewer PR activity in a single request (four aliased
-  /// searches). Replaces `GET /notifications` — App tokens cannot read that
-  /// endpoint; no PAT fallback. Not scoped by `repo:` (caller filters). [since]
+  /// searches). App tokens cannot read `GET /notifications`; there is no PAT
+  /// fallback. Not scoped by `repo:` (caller filters). [since]
   /// bounds activity lanes only; pending-review is an unbounded set. Overlap
   /// [since] — search index lags. User-to-server tokens only see App-installed
   /// repos (silent empty, not error).
@@ -1331,8 +1327,8 @@ fragment viewerPr on PullRequest {
           'q': q.toString(),
           'first': _reviewSearchPageSize,
         }, cancelToken);
-      } on DioException catch (e) {
-        if (e.type == DioExceptionType.cancel) {
+      } on RhttpException catch (e) {
+        if (e is RhttpCancelException) {
           return const [];
         }
         rethrow;
@@ -1458,8 +1454,8 @@ fragment viewerPr on PullRequest {
             'merged': 'is:pr is:merged$base',
             'closed': 'is:pr is:closed is:unmerged$base',
           }, cancelToken);
-        } on DioException catch (e) {
-          if (e.type == DioExceptionType.cancel) {
+        } on RhttpException catch (e) {
+          if (e is RhttpCancelException) {
             return (open: open, draft: draft, merged: merged, closed: closed);
           }
           rethrow;
@@ -1484,34 +1480,33 @@ fragment viewerPr on PullRequest {
   /// queries routinely return data for the accessible repos plus errors for the
   /// rest, and a single-entity query can have one sub-field forbidden by the
   /// credential while every other field resolved. Transport/auth failures still
-  /// throw via [mapDioException].
+  /// throw via [mapHttpException].
   Future<Map<String, dynamic>?> _postTolerant(
     String query,
     CancelToken? cancelToken, {
     Map<String, dynamic>? variables,
   }) async {
     try {
-      final response = await _dio.post(
+      final response = await _httpClient.post(
         '/graphql',
-        data: {'query': query, 'variables': ?variables},
+        body: HttpBody.json({'query': query, 'variables': ?variables}),
         cancelToken: cancelToken,
       );
-      return response.data is Map<String, dynamic>
-          ? response.data as Map<String, dynamic>
-          : null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+      final body = httpJsonBody(response);
+      return body is Map<String, dynamic> ? body : null;
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         // Cancellation is the normal teardown path: `prsByRepoProvider` cancels
         // this request via its `onDispose` whenever the provider rebuilds (a
         // watched repo/auth/workspace stream re-emitting at startup, or a
         // workspace switch). That is not an error — returning null lets the
         // (already-superseded) build settle quietly instead of throwing a raw,
-        // unmapped DioException into Riverpod, which would surface as a spurious
-        // error and churn the loading state. The fresh build's request is what
-        // actually populates the list.
+        // unmapped RhttpException into Riverpod, which would surface as a
+        // spurious error and churn the loading state. The fresh build's request
+        // is what actually populates the list.
         return null;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -1529,20 +1524,20 @@ fragment viewerPr on PullRequest {
       }
     ''';
     try {
-      await _dio.post(
+      await _httpClient.post(
         '/graphql',
-        data: {
+        body: HttpBody.json({
           'query': mutation,
           'variables': {'pullRequestId': pullRequestId, 'path': path},
-        },
+        }),
         cancelToken: cancelToken,
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -1828,8 +1823,8 @@ fragment viewerPr on PullRequest {
               'first': _reviewSearchPageSize,
               'after': cursor,
             }, cancelToken);
-          } on DioException catch (e) {
-            if (e.type == DioExceptionType.cancel) {
+          } on RhttpException catch (e) {
+            if (e is RhttpCancelException) {
               return (nodes: byKey.values.toList(), truncated: truncated);
             }
             rethrow;
@@ -2192,14 +2187,13 @@ fragment viewerPr on PullRequest {
     CancelToken? cancelToken,
   ) async {
     try {
-      final response = await _dio.post(
+      final response = await _httpClient.post(
         '/graphql',
-        data: {'query': query, 'variables': variables},
+        body: HttpBody.json({'query': query, 'variables': variables}),
         cancelToken: cancelToken,
       );
-      final data = response.data is Map<String, dynamic>
-          ? response.data as Map<String, dynamic>
-          : null;
+      final body = httpJsonBody(response);
+      final data = body is Map<String, dynamic> ? body : null;
       if (data == null) {
         return null;
       }
@@ -2213,11 +2207,11 @@ fragment viewerPr on PullRequest {
       return data;
     } on NetworkException {
       rethrow;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -2255,23 +2249,23 @@ fragment viewerPr on PullRequest {
     CancelToken? cancelToken,
   ) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/apps/${Uri.encodeComponent(login)}',
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is! Map<String, dynamic>) {
         return null;
       }
       return _profileFromGitHubApp(data, fallbackLogin: login);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         return null;
       }
-      if (e.response?.statusCode == 404) {
+      if (isHttpStatus(e, 404)) {
         return null;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 }

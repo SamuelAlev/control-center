@@ -1573,6 +1573,15 @@ class AgentRunLogDto {
     this.cachedWriteTokens = 0,
     this.estimatedCostCents = 0,
     this.childCostCents = 0,
+    this.costMicros = 0,
+    this.costBasis,
+    this.childCostMicros = 0,
+    this.effort,
+    this.taskFamily,
+    this.latency,
+    this.verification,
+    this.nativeSessionId,
+    this.resumedNativeSession = false,
     this.agentRole,
     this.durationMs,
     this.timeToFirstTokenMs,
@@ -1616,6 +1625,21 @@ class AgentRunLogDto {
     cachedWriteTokens: (json['cached_write_tokens'] as num?)?.toInt() ?? 0,
     estimatedCostCents: (json['estimated_cost_cents'] as num?)?.toInt() ?? 0,
     childCostCents: (json['child_cost_cents'] as num?)?.toInt() ?? 0,
+    costMicros: (json['cost_micros'] as num?)?.toInt() ?? 0,
+    costBasis: json['cost_basis'] as String?,
+    childCostMicros: (json['child_cost_micros'] as num?)?.toInt() ?? 0,
+    effort: json['effort'] as String?,
+    taskFamily: json['task_family'] as String?,
+    latency: json['latency'] is List
+        ? (json['latency'] as List)
+              .map((e) => (e as Map).cast<String, dynamic>())
+              .toList()
+        : null,
+    verification: json['verification'] is Map
+        ? (json['verification'] as Map).cast<String, dynamic>()
+        : null,
+    nativeSessionId: json['native_session_id'] as String?,
+    resumedNativeSession: json['resumed_native_session'] as bool? ?? false,
     agentRole: json['agent_role'] as String?,
     durationMs: (json['duration_ms'] as num?)?.toInt(),
     timeToFirstTokenMs: (json['time_to_first_token_ms'] as num?)?.toInt(),
@@ -1662,6 +1686,35 @@ class AgentRunLogDto {
   final int cachedWriteTokens;
   final int estimatedCostCents;
   final int childCostCents;
+
+  /// Exact cost in micro-USD when a provider reported one; 0 when unknown.
+  final int costMicros;
+
+  /// Wire spelling of `CostBasis`
+  /// (`estimated` | `providerReported` | `subscription` | `mixed`).
+  final String? costBasis;
+
+  /// Exact cost of the child (subagent) runs in micro-USD.
+  final int childCostMicros;
+
+  /// Reasoning-effort tier the run requested, e.g. `low` | `medium` | `high`.
+  final String? effort;
+
+  /// Task family the run was classified into (for per-family analytics).
+  final String? taskFamily;
+
+  /// `RunLatencyProfile.toJson()` — null/empty when no stage was observed.
+  final List<Map<String, dynamic>>? latency;
+
+  /// `RunVerification.toJson()` — null when no verifier ran.
+  final Map<String, dynamic>? verification;
+
+  /// The provider/CLI's own session (thread) id this run was bound to; null
+  /// when the adapter exposes no native session.
+  final String? nativeSessionId;
+
+  /// Whether this run RESUMED [nativeSessionId] rather than starting fresh.
+  final bool resumedNativeSession;
 
   /// Run role for per-role cost attribution: `main` | `sub` | `advisor`.
   final String? agentRole;
@@ -1710,6 +1763,15 @@ class AgentRunLogDto {
     'cached_write_tokens': cachedWriteTokens,
     'estimated_cost_cents': estimatedCostCents,
     'child_cost_cents': childCostCents,
+    'cost_micros': costMicros,
+    'cost_basis': ?costBasis,
+    'child_cost_micros': childCostMicros,
+    'effort': ?effort,
+    'task_family': ?taskFamily,
+    'latency': ?latency,
+    'verification': ?verification,
+    'native_session_id': ?nativeSessionId,
+    if (resumedNativeSession) 'resumed_native_session': true,
     'agent_role': ?agentRole,
     'duration_ms': ?durationMs,
     'time_to_first_token_ms': ?timeToFirstTokenMs,

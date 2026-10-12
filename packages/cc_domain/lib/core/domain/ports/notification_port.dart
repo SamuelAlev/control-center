@@ -7,8 +7,8 @@ import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 abstract interface class NotificationPort {
   /// Displays a native desktop notification.
   ///
-  /// The notification is only shown if `category` is enabled in preferences
-  /// and the user is not already viewing the target `route`.
+  /// Respects category preferences and, when
+  /// [AppNotification.suppressWhenViewingTarget] is set, active-route visibility.
   void show(AppNotification notification);
 
   /// Disposes any native resources.

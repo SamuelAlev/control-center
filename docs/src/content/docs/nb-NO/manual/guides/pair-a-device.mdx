@@ -2,7 +2,7 @@
 title: Koble til en enhet
 description: Koble telefonen din (eller en ekstra nettleser eller skrivebordsapp) til Control Center-serveren din, slik at du kan følge flåten eksternt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-enhet
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Denne guiden viser deg hvordan du parer en telefon med Control Center, slik at
@@ -22,9 +22,10 @@ telefonappen (`apps/cc_remote`, en Flutter-nett-PWA du kan distribuere til
 Cloudflare Pages via `wrangler.jsonc`, til nginx-imaget `docker/cc_remote`,
 eller til en hvilken som helst statisk vert med HTTPS — service workere og
 IndexedDB krever sikker kontekst) og reléet (`apps/cc_signaling_server`, en
-enkelt tilstandsløs Dart-binær som ikke lagrer appdata og aldri ser
-paringshemmeligheten — den videresender bare ende-til-ende-forseglede rammer).
-Se README-filene deres for bygge- og kjøretrinn.
+enkelt tilstandsløs Dart-binær som ikke lagrer appdata og ikke kan dekryptere
+krypterte poster eller se paringshemmeligheten). Den ser likevel IP-er,
+ruteidentifikatorer, størrelser og timing, og kan droppe trafikk. Se
+README-filene deres for bygge- og kjøretrinn.
 
 ## Trinn 1: Åpne paringspanelet
 
@@ -48,14 +49,19 @@ inneholder serverens fulle tilkoblingsbeskrivelse og identitetsfingeravtrykk for
 Remote-PWA-en.
 
 På telefonsiden parer det ikke i det stille å åpne en paringslenke. Remote viser
-serverens annonserte navn og ber deg bekrefte før den lagrer noe, så en
-forfalsket lenke kan ikke kapre appen over til noen andres server.
+serverens annonserte navn og ber deg bekrefte før den lagrer noe. Kontroller
+fingeravtrykket i QR-koden mot en klarert kilde: å bekrefte et uverifisert navn
+eller en forfalsket QR-kode fastslår ikke at serveren er din. Klienten fester
+den signerte identiteten og avviser et endret fingeravtrykk ved senere
+tilkoblinger.
 
 :::caution[En skannet QR-kode gir umiddelbar tilgang]
 Det finnes ikke noe trinn med vent-til-godkjenning: en utstedt enhet er aktiv fra
 det øyeblikket den opprettes, og tilkoblingssperren sjekker bare at
 legitimasjonen er aktiv og ikke utløpt. Behandle QR-koden og paringsnøkkelen som
-et passord, og tilbakekall alt du ikke mente å dele ut.
+et passord, og tilbakekall alt du ikke mente å dele ut. Både direkte og reléerte
+klientøkter krever ende-til-ende-kryptering; eldre klienter kan ikke falle
+tilbake på klartekst-RPC.
 :::
 
 ## Administrer parede enheter

@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_classes_with_only_static_members
 
+import 'dart:math' as math;
+
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_provider.dart';
 import 'package:cc_harness/provider.dart';
@@ -85,15 +87,11 @@ abstract final class ModelsDevParser {
         : const ModelLimits();
 
     final costRaw = raw['cost'];
-    final cost = costRaw is Map
-        ? ModelCost(
-            input: (costRaw['input'] as num?)?.toDouble() ?? 0,
-            output: (costRaw['output'] as num?)?.toDouble() ?? 0,
-            cacheRead: (costRaw['cache_read'] as num?)?.toDouble() ?? 0,
-            cacheWrite: (costRaw['cache_write'] as num?)?.toDouble() ?? 0,
-          )
-        : null;
+    final cost = costRaw is Map ? _cost(costRaw.cast<String, dynamic>()) : null;
 
+    // Catalog prices can rise when the request crosses a context threshold.
+    // Keep the base rate for ordinary estimates and a separate ceiling for
+    // strict per-call admission. Never silently discard an unparseable tier.
     final reasoning = raw['reasoning'] == true;
     final thinking = reasoning
         ? _thinking(providerId, raw['reasoning_options'])
@@ -116,6 +114,98 @@ abstract final class ModelsDevParser {
       lastUpdatedAt: _date(raw['last_updated']),
       knowledgeCutoff: _date(raw['knowledge']),
       thinking: thinking,
+    );
+  }
+
+  static ModelCost _cost(Map<String, dynamic> raw) {
+    final input = (raw['input'] as num?)?.toDouble() ?? 0;
+    final output = (raw['output'] as num?)?.toDouble() ?? 0;
+    final cacheRead = (raw['cache_read'] as num?)?.toDouble() ?? 0;
+    final cacheWrite = (raw['cache_write'] as num?)?.toDouble() ?? 0;
+    var maxInput = input;
+    var maxOutput = output;
+    var maxCacheRead = cacheRead;
+    var maxCacheWrite = cacheWrite;
+    var complete = true;
+    final contextTiers = <ModelContextCostTier>[];
+
+    void include(Object? tier, int? threshold) {
+      if (tier is! Map ||
+          threshold == null ||
+          threshold <= 0 ||
+          tier['input'] is! num ||
+          tier['output'] is! num ||
+          (tier.containsKey('cache_read') && tier['cache_read'] is! num) ||
+          (tier.containsKey('cache_write') && tier['cache_write'] is! num)) {
+        complete = false;
+        return;
+      }
+      final rate = ModelCost(
+        input: (tier['input'] as num).toDouble(),
+        output: (tier['output'] as num).toDouble(),
+        cacheRead: (tier['cache_read'] as num?)?.toDouble() ?? cacheRead,
+        cacheWrite: (tier['cache_write'] as num?)?.toDouble() ?? cacheWrite,
+      );
+      if (!rate.input.isFinite ||
+          rate.input <= 0 ||
+          !rate.output.isFinite ||
+          rate.output <= 0 ||
+          !rate.cacheRead.isFinite ||
+          rate.cacheRead < 0 ||
+          !rate.cacheWrite.isFinite ||
+          rate.cacheWrite < 0) {
+        complete = false;
+        return;
+      }
+      contextTiers.add(
+        ModelContextCostTier(thresholdTokens: threshold, cost: rate),
+      );
+      maxInput = math.max(maxInput, rate.input);
+      maxOutput = math.max(maxOutput, rate.output);
+      maxCacheRead = math.max(maxCacheRead, rate.cacheRead);
+      maxCacheWrite = math.max(maxCacheWrite, rate.cacheWrite);
+    }
+
+    if (raw.containsKey('tiers')) {
+      final tiers = raw['tiers'];
+      if (tiers is List) {
+        for (final tier in tiers) {
+          final rule = tier is Map ? tier['tier'] : null;
+          final threshold =
+              rule is Map && rule['type'] == 'context' && rule['size'] is num
+              ? (rule['size'] as num).toInt()
+              : null;
+          include(tier, threshold);
+        }
+      } else {
+        complete = false;
+      }
+    } else if (raw.containsKey('context_over_200k')) {
+      // Structured tiers supersede the legacy shorthand, including its
+      // imprecise threshold for newer models.
+      include(raw['context_over_200k'], 200000);
+    }
+    contextTiers.sort((a, b) => a.thresholdTokens.compareTo(b.thresholdTokens));
+    final elevated =
+        maxInput != input ||
+        maxOutput != output ||
+        maxCacheRead != cacheRead ||
+        maxCacheWrite != cacheWrite;
+    return ModelCost(
+      input: input,
+      output: output,
+      cacheRead: cacheRead,
+      cacheWrite: cacheWrite,
+      contextTiers: contextTiers,
+      pricingComplete: complete,
+      reservationCeiling: elevated
+          ? ModelCost(
+              input: maxInput,
+              output: maxOutput,
+              cacheRead: maxCacheRead,
+              cacheWrite: maxCacheWrite,
+            )
+          : null,
     );
   }
 

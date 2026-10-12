@@ -446,17 +446,25 @@ class _CcTextFieldState extends State<CcTextField>
       child: box,
     );
 
-    final fieldWithMouse = MouseRegion(
-      cursor: enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
-      onEnter: (_) {
-        _hovered = true;
-        _syncBrowserMenu();
-      },
-      onExit: (_) {
-        _hovered = false;
-        _syncBrowserMenu();
-      },
-      child: box,
+    // EditableText needs its host to declare enabled semantics. Without this,
+    // Flutter web creates a disabled accessibility input even for an editable
+    // field, and may merge the field with the surrounding dialog.
+    final fieldWithMouse = Semantics(
+      container: true,
+      enabled: enabled,
+      readOnly: !enabled || widget.readOnly,
+      child: MouseRegion(
+        cursor: enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
+        onEnter: (_) {
+          _hovered = true;
+          _syncBrowserMenu();
+        },
+        onExit: (_) {
+          _hovered = false;
+          _syncBrowserMenu();
+        },
+        child: box,
+      ),
     );
 
     // Field anatomy: an optional persistent label above the box and a

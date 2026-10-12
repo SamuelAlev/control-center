@@ -1,10 +1,14 @@
+import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_detail_pane.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters_settings.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/claude_accounts_section.dart';
+import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
@@ -39,6 +43,7 @@ Future<void> _pump(
   Size size = const Size(1200, 900),
   List<Override> extraOverrides = const [],
   String? initialAdapterId,
+  Future<List<ClaudeAccountView>> Function(Ref)? loadAccounts,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -56,7 +61,12 @@ Future<void> _pump(
         ),
         detectedAdaptersProvider.overrideWith(() => _TestNotifier(adapters)),
         claudeAccountsProvider.overrideWith(
-          (ref) async => const <ClaudeAccountView>[],
+          loadAccounts ?? (ref) async => const <ClaudeAccountView>[],
+        ),
+        accountPoolProvider(
+          const AccountPoolScope(lane: AccountPoolLanes.claudeCode),
+        ).overrideWith(
+          (ref) async => (pool: const AccountPool(), inherited: null),
         ),
       ],
       child: _wrap(AdaptersSettings(initialAdapterId: initialAdapterId)),
@@ -89,6 +99,21 @@ const _aider = DetectedAdapter(
   status: DetectionStatus.found,
   version: '0.9.0',
   path: '/usr/bin/aider',
+);
+
+CcStatusDot _railDot(WidgetTester tester, String runner) =>
+    tester.widget<CcStatusDot>(
+      find.descendant(
+        of: find.widgetWithText(SettingsRailItem, runner),
+        matching: find.byType(CcStatusDot),
+      ),
+    );
+
+CcStatusTag _runnerStatus(WidgetTester tester) => tester.widget<CcStatusTag>(
+  find.descendant(
+    of: find.byType(AdapterDetailPane),
+    matching: find.byType(CcStatusTag),
+  ),
 );
 
 void main() {
@@ -315,6 +340,104 @@ void main() {
 
       // Detail pane now shows Aider's path.
       expect(find.text('/usr/bin/aider'), findsOneWidget);
+    });
+
+    testWidgets('expired non-default login warns until credentials refresh', (
+      tester,
+    ) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      var accounts = [
+        const ClaudeAccountView(
+          account: ClaudeAccount(
+            id: 'default',
+            label: 'Default account',
+            isDefault: true,
+            loggedIn: true,
+            usesLongLivedToken: true,
+          ),
+        ),
+        ClaudeAccountView(
+          account: ClaudeAccount(
+            id: 'expired',
+            label: 'Expired account',
+            loggedIn: true,
+            credentialExpiresAt: DateTime.utc(2000),
+          ),
+        ),
+      ];
+      late VoidCallback refreshAccounts;
+      await _pump(
+        tester,
+        const [_aider, _claudeCode],
+        loadAccounts: (ref) async {
+          refreshAccounts = ref.invalidateSelf;
+          return accounts;
+        },
+      );
+
+      expect(_railDot(tester, 'Claude Code').tone, CcStatusTone.caution);
+      expect(_railDot(tester, 'Aider').tone, CcStatusTone.positive);
+      expect(_runnerStatus(tester).label, l10n.available);
+
+      await tester.tap(find.text('Claude Code').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(_runnerStatus(tester).tone, CcStatusTone.caution);
+      expect(_runnerStatus(tester).label, l10n.claudeAccountExpired);
+      expect(
+        find.widgetWithText(CcBadge, l10n.claudeAccountExpired),
+        findsOneWidget,
+      );
+
+      accounts = [
+        accounts.first,
+        ClaudeAccountView(
+          account: accounts.last.account.copyWith(
+            credentialExpiresAt: DateTime.utc(2100),
+          ),
+        ),
+      ];
+      refreshAccounts();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(_railDot(tester, 'Claude Code').tone, CcStatusTone.positive);
+      expect(_runnerStatus(tester).tone, CcStatusTone.positive);
+      expect(_runnerStatus(tester).label, l10n.available);
+      expect(
+        find.widgetWithText(CcBadge, l10n.claudeAccountExpired),
+        findsNothing,
+      );
+    });
+
+    testWidgets('missing CLI keeps detection status ahead of account expiry', (
+      tester,
+    ) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _pump(
+        tester,
+        [
+          DetectedAdapter(
+            adapter: _claudeCode.adapter,
+            status: DetectionStatus.notFound,
+          ),
+        ],
+        loadAccounts: (ref) async => [
+          ClaudeAccountView(
+            account: ClaudeAccount(
+              id: 'expired',
+              label: 'Expired account',
+              loggedIn: true,
+              credentialExpiresAt: DateTime.utc(2000),
+            ),
+          ),
+        ],
+      );
+
+      expect(_railDot(tester, 'Claude Code').tone, CcStatusTone.neutral);
+      expect(_runnerStatus(tester).tone, CcStatusTone.neutral);
+      expect(_runnerStatus(tester).label, l10n.unavailable);
     });
 
     testWidgets('Claude Code detail pane owns the accounts group', (

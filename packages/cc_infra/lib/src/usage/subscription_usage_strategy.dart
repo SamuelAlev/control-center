@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Fetches live subscription usage for ONE AI coding plan.
 ///
@@ -46,6 +47,49 @@ abstract class SubscriptionUsageStrategy {
       (account == null ? fetch() : fetchAccount(account)).catchError(
         (Object e) => error(shortError(e)),
       );
+
+  /// Runs one outbound request with the shared 10-second bound, cancelling the
+  /// transport when it elapses so a hung provider cannot stall the whole poll.
+  ///
+  /// rhttp has no per-request timeout on the client's convenience methods, so
+  /// the bound is applied to the returned future and the in-flight request is
+  /// cancelled through [send]'s token.
+  Future<HttpResponse> boundedRequest(
+    Future<HttpResponse> Function(CancelToken token) send,
+  ) async {
+    final token = CancelToken();
+    final request = send(token);
+    // The timeout below abandons this future; mark its late error as observed
+    // so an already-cancelled transport does not surface as an unhandled
+    // asynchronous error.
+    request.ignore();
+    try {
+      return await request.timeout(
+        requestTimeout,
+        onTimeout: () {
+          unawaited(token.cancel());
+          throw TimeoutException('Usage request timed out', requestTimeout);
+        },
+      );
+    } on RhttpCancelException {
+      // Only our own timeout cancels a strategy's request; report it as the
+      // timeout it is.
+      throw TimeoutException('Usage request timed out', requestTimeout);
+    }
+  }
+
+  /// The response body decoded as a JSON object, or null when it is empty or
+  /// not an object.
+  Map<String, dynamic>? jsonObject(HttpResponse response) {
+    final body = httpJsonBody(response);
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
+    if (body is Map) {
+      return body.cast<String, dynamic>();
+    }
+    return null;
+  }
 
   /// A successful reading.
   SubscriptionUsage ok(
@@ -98,18 +142,17 @@ abstract class SubscriptionUsageStrategy {
 
   /// A short, credential-free reason for a failed fetch.
   String shortError(Object e) {
-    if (e is DioException) {
-      final code = e.response?.statusCode;
-      if (code != null) {
-        return 'HTTP $code';
-      }
-      return switch (e.type) {
-        DioExceptionType.connectionTimeout ||
-        DioExceptionType.sendTimeout ||
-        DioExceptionType.receiveTimeout => 'Timed out',
-        DioExceptionType.connectionError => 'Network error',
-        _ => 'Request failed',
-      };
+    if (e is RhttpStatusCodeException) {
+      return 'HTTP ${e.statusCode}';
+    }
+    if (e is RhttpTimeoutException) {
+      return 'Timed out';
+    }
+    if (e is RhttpConnectionException) {
+      return 'Network error';
+    }
+    if (e is RhttpException) {
+      return 'Request failed';
     }
     if (e is TimeoutException) {
       return 'Timed out';

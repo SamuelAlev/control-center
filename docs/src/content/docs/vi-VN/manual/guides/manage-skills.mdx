@@ -1,21 +1,23 @@
 ---
 title: Cài đặt và quản lý kỹ năng
-description: Thêm kho mã GitHub làm nguồn kỹ năng, duyệt danh mục của chúng và cài đặt, cập nhật hoặc gỡ cài đặt kỹ năng qua cổng quét antivirus.
+description: Cài đặt và cập nhật kỹ năng của không gian làm việc qua cổng quét, rồi so sánh các bản sửa đổi đã lưu bằng những lượt đánh giá kỹ năng có ngân sách.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-skill
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Hướng dẫn này chỉ cho bạn cách lấp đầy một không gian làm việc bằng các kỹ năng
 từ GitHub: thêm một kho mã làm nguồn, cài đặt những kỹ năng bạn muốn từ đó và
-giữ chúng luôn mới theo thời gian.
+giữ chúng luôn mới theo thời gian. Bạn cũng có thể đánh giá một bản sửa đổi đã
+lưu so với một đường cơ sở tương ứng trước khi quyết định có giữ nó hay không.
 
 Điều quan trọng cần biết trước khi bắt đầu: **một kho mã nguồn là thứ không
-đáng tin.** Tên, mô tả và số sao của nó do người sở hữu viết ra. Tín hiệu an
-toàn duy nhất mà Control Center tin tưởng là kết luận quét antivirus, thứ mà
-mọi lượt cài đặt đều đi qua trước khi bất cứ thứ gì chạm tới đĩa hoặc prompt
-của agent. Nếu bạn muốn hiểu lý do, hãy đọc
-[mục kỹ năng trong mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/); trang
-này chỉ tập trung vào việc thực hiện.
+đáng tin.** Tên, mô tả và số sao của nó do người sở hữu viết ra. Mọi lượt cài
+đặt đều đi qua cổng quét antivirus trước khi bất cứ thứ gì chạm tới đĩa hoặc
+prompt của agent. Kết luận đó là một bước kiểm tra để nhận vào, không phải bằng
+chứng rằng một kỹ năng an toàn hay hữu ích. Hãy đọc
+[mục kỹ năng trong mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/) để hiểu
+mô hình cài đặt và [Đánh giá và chất lượng](/vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong/)
+để biết bằng chứng hành vi khác với một lượt quét ở chỗ nào.
 
 Kỹ năng nằm tại **Cài đặt → Không gian làm việc → Kỹ năng**
 (`/workspaces/<id>/settings/workspace/skills`). Chúng có phạm vi theo không gian
@@ -82,6 +84,85 @@ như một lượt cài đặt — kỹ năng có phiên bản mới bị cách 
 phiên bản bạn đang có vẫn giữ nguyên. Hash của phiên bản cũ được giữ làm tham
 chiếu khôi phục trong tệp lock.
 
+## Đánh giá một kỹ năng
+
+1. Mở **Cài đặt → Không gian làm việc → Kỹ năng**, chọn kỹ năng đã cài và lưu
+   mọi chỉnh sửa. Trong **Đánh giá kỹ năng**, hãy kiểm tra hash của gói.
+2. Chọn **Bắt đầu đánh giá**. Chọn một **Tập tác vụ** khớp với mục đích của kỹ
+   năng và một **Bộ điều hợp**. Harness tích hợp dùng một nhà cung cấp đã cấu
+   hình và một mô hình có khả năng dùng công cụ. **Claude Code** dùng tài khoản
+   Claude được quản lý mặc định và một mã định danh mô hình cụ thể; hãy đăng
+   nhập trong **Cài đặt → Bộ điều hợp** trước. Nó không mượn đăng nhập cá nhân
+   của người vận hành máy chủ.
+3. Chọn một **So sánh** từ bảng bên dưới.
+4. Đặt **Số lần lặp lại mỗi tác vụ** (1–20) và **Ngân sách (US cents)**. Ví dụ,
+   `100` nghĩa là 1 đô la Mỹ. Chọn **Bắt đầu đánh giá** để cho phép công việc
+   tính phí của nhà cung cấp.
+5. Theo dõi chiến dịch trong **Quan sát → Chất lượng**, hoặc quay lại qua
+   **Mở Chất lượng** trong bảng kỹ năng.
+
+Với các gói đăng ký Claude Code và Codex OAuth, ngân sách là một **ngưỡng dừng
+mức sử dụng tương đương API**, không phải giới hạn hóa đơn và cũng không phải
+thước đo hạn mức của gói đăng ký. `100` chấp nhận một ngưỡng 1 đô la Mỹ: một
+lượt gọi đang chạy có thể vượt ngưỡng, nhưng không lượt gọi mới nào bắt đầu khi
+mức sử dụng được báo cáo đạt ngưỡng đó. Mức sử dụng chưa biết cũng dừng các lượt
+gọi tiếp theo. Ngân sách nhỏ có thể khiến phép so sánh dang dở; nó không bảo đảm
+hoàn tất tập tác vụ đã chọn.
+
+Các nhà cung cấp dùng khóa API vẫn giữ khoản đặt trước thận trọng cho từng lượt
+gọi, dựa trên giới hạn token và giá đã được ghi lại. Họ có thể từ chối `100`
+trước khi chi tiêu nếu một lượt gọi được đặt trước an toàn cần nhiều hơn. Lỗi
+nêu rõ mô hình đã chọn và khoản đặt trước tối thiểu; hãy chọn mô hình rẻ hơn
+hoặc tăng ngân sách đó.
+
+| So sánh | Dùng để trả lời |
+| --- | --- |
+| **Không có so với có sẵn** | Việc phát hiện và sử dụng thông thường kỹ năng này có cải thiện kết quả so với khi không có nó không? |
+| **Bản trước so với bản hiện tại** | Bản cập nhật có giữ nguyên hay cải thiện hành vi so với một bản sửa đổi đã ghi lại trước đó không? |
+| **Buộc tải so với không có** | Nội dung có thể giúp ích khi được tải rõ ràng không? Phép so sánh này chẩn đoán các vấn đề tải; nó không chứng minh khả năng phát hiện thông thường. |
+| **Thành phần** | Việc thêm ứng viên có giúp ích hay xung đột với các kỹ năng nền đã chọn không? Đường cơ sở giữ nguyên bộ kỹ năng nền đó mà không có ứng viên. |
+
+**Bản trước so với bản hiện tại** cần một hash gói từ lịch sử chiến dịch. Hãy
+đánh giá một bản sửa đổi trước khi thay thế nó nếu bạn muốn dùng nó làm đường cơ
+sở; lịch sử Git tùy ý không được nhập vào.
+
+Các chỉnh sửa chưa lưu, một hash không khả dụng và chế độ demo chỉ đọc sẽ vô
+hiệu hóa việc khởi chạy. Máy chủ cũng kiểm tra quyền truy cập không gian làm
+việc/kho mã, cách ly khi quét, chính sách hành động, mức hỗ trợ mô hình, giá cả
+và mức bao bọc khi thực thi. Hãy khắc phục một kiểm tra thất bại thay vì lách
+qua nó. Danh tính nhà cung cấp và mô hình được ghi lại, nhưng một bí danh mô
+hình từ xa không cố định trọng số bên dưới của nhà cung cấp.
+
+### Kiểm tra, hủy và xuất
+
+Đọc độ bao phủ và chi phí song song với các kết quả theo từng tác vụ và các hồi
+quy. Mở từng lượt thử để xem các lần tải kỹ năng quan sát được, sự kiện công cụ,
+lỗi và bằng chứng của bộ xác minh. Kết quả **một phần**, **đã lỗi thời** và
+**chưa thể kết luận** không phải là khuyến nghị áp dụng một bản sửa đổi. Hash
+của một báo cáo nhận diện gói đã ghi lại, không nhất thiết là gói đang được cài
+hiện tại.
+
+Dùng **Hủy lượt chạy** cho công việc đang chờ hoặc đang chạy. Những lượt thử đã
+hoàn tất vẫn hiển thị; việc hủy không hoàn tiền cho công việc nhà cung cấp đã
+thực hiện. **Sao chép JSON đã ẩn dữ liệu nhạy cảm** sao chép vào clipboard một
+bản xuất bằng chứng có giới hạn, không phải một gói phát lại đầy đủ của nguồn
+riêng tư. Xem [Đánh giá và chất lượng](/vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong/)
+để biết các giới hạn về bằng chứng và nền tảng.
+
+### Đánh giá lại sau khi cập nhật
+
+Việc tự động đánh giá lại có tính phí **mặc định tắt**. Sau khi đánh giá bản sửa
+đổi hiện tại, hãy chọn một chiến dịch trong **Cấu hình chính sách cập nhật** và
+chọn **Bật đánh giá khi cập nhật**. Thay đổi chính sách này cần quyền quản trị
+viên không gian làm việc. Chiến dịch đã chọn cung cấp tập tác vụ, bộ điều hợp, nhà cung
+cấp/mô hình, phép so sánh, số lần lặp lại và ngân sách.
+
+Những thay đổi nội dung được chấp nhận sau đó sẽ lên lịch công việc có ngân
+sách; các hash không đổi được khử trùng lặp. **Tắt đánh giá khi cập nhật** ngăn
+các lượt chấp nhận tự động trong tương lai. Dùng **Hủy lượt chạy** cho một chiến
+dịch đã được chấp nhận. Các báo cáo lịch sử vẫn gắn với hash gói gốc của chúng;
+việc đánh giá lại không công bố, không bật và không viết lại một kỹ năng.
+
 ## Gỡ cài đặt một kỹ năng, xóa một kho mã
 
 **Gỡ cài đặt** (trong chế độ xem chi tiết của kỹ năng đã cài, hoặc xóa trong thẻ
@@ -121,7 +202,7 @@ Kỹ năng của kho mã đi qua đúng đợt quét fail-closed (`pass` / `warn
 chấp nhận; `quarantine` bị giữ lại, không có quyền ghi đè của người vận hành
 trên đường đó.
 
-Xem [Kỹ năng theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills)
+Xem [Kỹ năng theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#kỹ-năng-theo-phạm-vi-kho-mã)
 và [Lệnh slash](/vi-VN/so-tay/tham-chieu/lenh-slash/).
 
 ## Hướng dẫn liên quan
@@ -132,3 +213,4 @@ và [Lệnh slash](/vi-VN/so-tay/tham-chieu/lenh-slash/).
 ## Khái niệm liên quan
 
 - [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
+- [Đánh giá và chất lượng](/vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong/)

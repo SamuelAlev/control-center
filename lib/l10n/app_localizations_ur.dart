@@ -14089,6 +14089,31 @@ class AppLocalizationsUr extends AppLocalizations {
   String get composerDropToAttach => 'منسلک کرنے کے لیے چھوڑیں';
 
   @override
+  String get composerAttachmentUploading => 'اپ لوڈ ہو رہا ہے…';
+
+  @override
+  String get composerAttachmentReady => 'تیار';
+
+  @override
+  String get composerAttachmentUploadFailed => 'اپ لوڈ ناکام ہو گیا';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'فائل کا حجم $limit کی حد سے زیادہ ہے';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'یہ فائل پڑھی نہیں جا سکی';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'منسلکات کا اپ لوڈ مکمل ہونے کا انتظار کریں';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'بھیجنے سے پہلے ناکام منسلکات دوبارہ اپ لوڈ کریں یا ہٹا دیں';
+
+  @override
   String get attachmentUnavailable => 'منسلکہ دستیاب نہیں';
 
   @override
@@ -15249,11 +15274,11 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'ایجنٹ آپ کا منتظر ہے';
+  String get notificationAgentAwaitingInput => 'ایجنٹ کو توجہ درکار ہے';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'جب ایجنٹ کو آپ کی منظوری، جواب یا درست اسناد درکار ہوں';
+      'جب ایجنٹ کو منظوری، جواب یا درست اسناد درکار ہوں، یا پالیسی کسی کارروائی کو روک دے';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15326,4 +15351,385 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'سرور بند ہو رہا ہے';
+
+  @override
+  String get skillEvalAbsent => 'غیر موجود بمقابلہ دستیاب';
+
+  @override
+  String get skillEvalAmbient => 'پس منظر کی اسکلز';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'آرٹیفیکٹ کا حوالہ: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · تکرار $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'کوششیں';
+
+  @override
+  String get skillEvalAvailableEvent => 'دستیاب';
+
+  @override
+  String get skillEvalBaseline => 'پچھلی ترمیم کا ہیش';
+
+  @override
+  String get skillEvalBodyLoad => 'متن لوڈ ہوا';
+
+  @override
+  String get skillEvalBudgetCents => 'بجٹ (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'ادائیگی والی جانچ منتخب فراہم کنندہ اور بجٹ استعمال کرتی ہے۔ سیکیورٹی اسکین کے نتائج الگ ہیں۔';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'سبسکرپشن کا بجٹ بلوں کے بجائے API کی مساوی شرحوں کے مطابق استعمال کو ٹریک کرتا ہے۔ جاری کال بجٹ سے تجاوز کر سکتی ہے؛ حد تک پہنچنے کے بعد نئی کال شروع نہیں ہوتی۔ سیکیورٹی اسکین الگ ہیں۔';
+
+  @override
+  String get skillEvalCancel => 'جانچ منسوخ کریں';
+
+  @override
+  String get skillEvalCancelled => 'منسوخ ہو گئی';
+
+  @override
+  String get skillEvalCancelling => 'منسوخ ہو رہی ہے';
+
+  @override
+  String get skillEvalComparison => 'موازنہ';
+
+  @override
+  String get skillEvalCompleted => 'مکمل';
+
+  @override
+  String get skillEvalComposition => 'ترکیب';
+
+  @override
+  String get skillEvalCorpus => 'کاموں کا مجموعہ';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString تکراریں';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'تمام طے شدہ آزمائشوں کے نتائج مل گئے';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'موجودہ پیکیج کا ہیش: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'اپ ڈیٹ کی جانچ بند کریں';
+
+  @override
+  String get skillEvalEnableUpdates => 'اپ ڈیٹ کی جانچ چالو کریں';
+
+  @override
+  String get skillEvalExport => 'حذف شدہ حساس معلومات والا JSON کاپی کریں';
+
+  @override
+  String get skillEvalFailed => 'ناکام';
+
+  @override
+  String get skillEvalForced => 'زبردستی لوڈ بمقابلہ غیر موجود';
+
+  @override
+  String get skillEvalForcedEvent => 'زبردستی لوڈ';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'اس سرور پر پیکیج کا ہیش دستیاب نہیں۔ جانچ بند ہے۔';
+
+  @override
+  String get skillEvalHistory => 'ترمیمات کی تاریخ';
+
+  @override
+  String get skillEvalImproved => 'بہتری آئی';
+
+  @override
+  String get skillEvalIncomplete => 'نامکمل';
+
+  @override
+  String get skillEvalInconclusive => 'غیر فیصلہ کن';
+
+  @override
+  String get skillEvalInferred => 'اخذ کردہ';
+
+  @override
+  String get skillEvalInterrupted => 'درمیان میں رک گئی';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'اسکل لوڈ ہونے کی تصدیق ممکن نہیں؛ واقعہ درج نہ ہونے سے یہ ثابت نہیں ہوتا کہ اسے نظرانداز کیا گیا۔';
+
+  @override
+  String get skillEvalModel => 'منتخب ماڈل';
+
+  @override
+  String get skillEvalNoAttempts => 'ابھی کوئی کوشش نہیں ہوئی۔';
+
+  @override
+  String get skillEvalNoModels =>
+      'کوئی منسلک ماڈل دستیاب نہیں۔ پہلے ترتیبات میں فراہم کنندہ منسلک کریں۔';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'مہم کی تاریخ میں پچھلا ہیش موجود نہیں۔ اسے بدلنے سے پہلے پچھلی ترمیم کی جانچ کریں۔';
+
+  @override
+  String get skillEvalNoReport =>
+      'ابھی کوئی رپورٹ نہیں؛ جزوی کوششیں دستیاب ہیں۔';
+
+  @override
+  String get skillEvalNoWorkspace => 'کوئی ورک اسپیس منتخب نہیں۔';
+
+  @override
+  String get skillEvalNoTasks => 'ابھی کوئی کام رپورٹ نہیں ہوا۔';
+
+  @override
+  String get skillEvalNoVerifiers => 'تصدیق کا کوئی ثبوت درج نہیں۔';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'ان عین بائٹس کی جانچ نہیں ہوئی۔ اسکین رویے کا ثبوت نہیں ہے۔';
+
+  @override
+  String get skillEvalNotVerified => 'تصدیق نہیں ہوئی';
+
+  @override
+  String get skillEvalObserved => 'مشاہدہ کیا گیا';
+
+  @override
+  String get skillEvalOpenQuality => 'معیار کھولیں';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'پہلے سے طے شدہ حالت میں اسکل محفوظ کرنے سے ادائیگی والی جانچ شروع نہیں ہوتی۔ اگر آپ اپ ڈیٹ پر خودکار دوبارہ جانچ واضح طور پر فعال کریں تو محفوظ کرنے سے مقررہ بجٹ کے اندر ادائیگی والی دوبارہ جانچ شروع ہوگی۔';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'اپ ڈیٹ پالیسی ترتیب دینے سے پہلے کسی ترمیم کی جانچ کریں۔';
+
+  @override
+  String get skillEvalPolicyTemplate => 'اپ ڈیٹ پالیسی کی ترتیب';
+
+  @override
+  String get skillEvalPartial => 'جزوی ثبوت؛ اپنانے کا کوئی فیصلہ نہیں';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$plannedString میں سے $completedString کوششیں';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'فراہم کنندہ: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'ورک اسپیس اسکل کی مہمات اور ہر ترمیم کے مخصوص ثبوت۔';
+
+  @override
+  String get skillEvalQueued => 'قطار میں';
+
+  @override
+  String get skillEvalReconnecting =>
+      'مہم کے اسنیپ شاٹس سے دوبارہ منسلک ہو رہا ہے…';
+
+  @override
+  String get skillEvalRefresh => 'تازہ کریں';
+
+  @override
+  String get skillEvalReferenceLoad => 'حوالہ لوڈ ہوا';
+
+  @override
+  String get skillEvalRepetitions => 'فی کام تکراریں';
+
+  @override
+  String get skillEvalReport => 'ثبوت کی رپورٹ';
+
+  @override
+  String get skillEvalRunning => 'جاری ہے';
+
+  @override
+  String get skillEvalScriptExecution => 'اسکرپٹ چلایا گیا';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'خرچ: $spent / بجٹ $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'جانچ شروع کریں';
+
+  @override
+  String get skillEvalStartTitle => 'اسکل کی ترمیمات کا موازنہ کریں';
+
+  @override
+  String get skillEvalStale => 'پرانا';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'پرانا: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'الگ الگ کاموں کے گروپ: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes کی تصدیق ہوئی) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'گروپ کے لحاظ سے کام';
+
+  @override
+  String get skillEvalToolError => 'ٹول کی خرابی';
+
+  @override
+  String get skillEvalTools => 'ٹول کے واقعات';
+
+  @override
+  String get skillEvalTitle => 'اسکل کی جانچ';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'دستیاب نہیں: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'نامعلوم';
+
+  @override
+  String get skillEvalUnsaved =>
+      'غیر محفوظ شدہ تبدیلیاں شامل نہیں۔ جانچ سے پہلے محفوظ کریں۔';
+
+  @override
+  String get skillEvalUncertainty => 'غیر یقینی کی حد';
+
+  @override
+  String get skillEvalVerified => 'تصدیق شدہ';
+
+  @override
+  String get skillEvalVerifiers => 'تصدیق';
+
+  @override
+  String get skillEvalVerdict => 'فیصلہ';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'کاپی مکمل: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'منصوبے کی خلاف ورزی';
+
+  @override
+  String get skillEvalPreserved => 'معیار برقرار رہا';
+
+  @override
+  String get skillEvalPrevious => 'پچھلی بمقابلہ موجودہ';
+
+  @override
+  String get skillEvalRegressed => 'کارکردگی میں کمی ثابت ہوئی';
+
+  @override
+  String get skillEvalCostRegression => 'لاگت میں اضافہ';
+
+  @override
+  String get skillEvalHarnessError => 'ہارنس کی خرابی';
+
+  @override
+  String get skillBehaviorRouting => 'مہارت کی راہ بندی';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive متوقع استعمال · $falsePositive غیر متوقع استعمال · $falseNegative چھوٹے ہوئے استعمال · $trueNegative درست نظر انداز';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive غیر یقینی استعمال · $negative غیر یقینی نظر انداز · $notOffered پیش نہیں کیے گئے';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'مشاہدہ شدہ درستی $precision · بازیافت $recall · غلط مثبت کی شرح $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'جبری گروہ · صرف تشخیص کے لیے';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'شرحیں صرف قابل مشاہدہ رسائی پر مبنی ہیں۔ شیل یا تلاش کے ذریعے رسائی نامعلوم رہ سکتی ہے؛ مہارت لوڈ ہونا اس کے اطلاق کا ثبوت نہیں۔';
+
+  @override
+  String get skillBehaviorSafety => 'مصنوعی حفاظت';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts کامیاب نمونہ جاتی جانچیں · $denials پالیسی کی تردیدیں · $violations محفوظ فائلوں کی خلاف ورزیاں';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'نمونہ جاتی جانچیں مصنوعی ہیں اور حقیقی دنیا میں حملوں کی شرح کو ظاہر نہیں کرتیں؛ حقیقی ضمنی اثرات کی نگرانی نہیں ہوتی۔';
+
+  @override
+  String get skillBehaviorUtility => 'خاندان کے لحاظ سے افادیت';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts تصدیق شدہ کامیابیاں';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'تمام کوششیں افادیت کے مخرج میں شمار ہوتی ہیں، بشمول ناکام اور نامکمل کوششیں۔';
 }

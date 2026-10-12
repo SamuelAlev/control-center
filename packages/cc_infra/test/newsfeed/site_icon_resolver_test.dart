@@ -1,37 +1,41 @@
-import 'dart:typed_data';
-
 import 'package:cc_infra/src/newsfeed/site_icon_resolver.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises [SiteIconResolver]: the pure HTML candidate scoring
 /// ([SiteIconResolver.pickBestIcon]) and the fail-silent network behaviour of
-/// [SiteIconResolver.resolve] over a stubbed [HttpClientAdapter].
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => handler(options);
-
-  @override
-  void close({bool force = false}) {}
+/// [SiteIconResolver.resolve] over a stubbed [TestHttpClient].
+({SiteIconResolver resolver, TestHttpClient fake}) resolverReturning(
+  String body, {
+  int status = 200,
+}) {
+  final fake = TestHttpClient(
+    handler: (request) => httpTextResponse(
+      request,
+      body,
+      statusCode: status,
+      headers: {'content-type': 'text/html'},
+    ),
+  );
+  return (
+    resolver: SiteIconResolver(fake, redirectlessHttpClient: fake),
+    fake: fake,
+  );
 }
 
-SiteIconResolver resolverReturning(String body, {int status = 200}) {
-  final dio = Dio()
-    ..httpClientAdapter = _FakeAdapter(
-      (_) => ResponseBody.fromString(
-        body,
-        status,
-        headers: {Headers.contentTypeHeader: ['text/html']},
-      ),
-    );
-  return SiteIconResolver(dio);
+/// The value of [name] on a captured request, matched case-insensitively.
+String? _header(HttpRequest request, String name) {
+  final headers = request.headers?.toMapList();
+  if (headers == null) {
+    return null;
+  }
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == name.toLowerCase()) {
+      return entry.value.first;
+    }
+  }
+  return null;
 }
 
 void main() {
@@ -96,7 +100,10 @@ void main() {
 
     test('a page without icon links yields null', () {
       expect(
-        SiteIconResolver.pickBestIcon('<html><body>hi</body></html>', base: base),
+        SiteIconResolver.pickBestIcon(
+          '<html><body>hi</body></html>',
+          base: base,
+        ),
         isNull,
       );
     });
@@ -155,39 +162,102 @@ void main() {
 
   group('SiteIconResolver.resolve', () {
     test('fetches the site and returns the resolved icon URL', () async {
-      final resolver = resolverReturning('''
+      final built = resolverReturning('''
         <html><head>
           <link rel="apple-touch-icon" href="/icon-180.png">
         </head></html>''');
       expect(
-        await resolver.resolve('https://lea.verou.me'),
+        await built.resolver.resolve('https://lea.verou.me'),
         'https://lea.verou.me/icon-180.png',
       );
+      final request = built.fake.requests.single;
+      expect(httpRequestUri(request), Uri.parse('https://lea.verou.me'));
+      expect(_header(request, 'User-Agent'), startsWith('ControlCenter/'));
+      expect(_header(request, 'Accept'), contains('text/html'));
     });
 
     test('returns null for a non-http(s) or hostless URL', () async {
-      final resolver = resolverReturning('<link rel="icon" href="/x.png">');
-      expect(await resolver.resolve('ftp://example.com'), isNull);
-      expect(await resolver.resolve('not a url'), isNull);
+      final built = resolverReturning('<link rel="icon" href="/x.png">');
+      expect(await built.resolver.resolve('ftp://example.com'), isNull);
+      expect(await built.resolver.resolve('not a url'), isNull);
+      // Neither URL is dialable, so nothing hits the transport.
+      expect(built.fake.requests, isEmpty);
     });
 
     test('returns null on a network error (never throws)', () async {
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter(
-          (_) => throw DioException(
-            requestOptions: RequestOptions(),
-            type: DioExceptionType.connectionError,
-          ),
-        );
+      final fake = TestHttpClient(
+        handler: (request) =>
+            throw RhttpConnectionException(request, 'unreachable'),
+      );
       expect(
-        await SiteIconResolver(dio).resolve('https://down.example.com'),
+        await SiteIconResolver(
+          fake,
+          redirectlessHttpClient: fake,
+        ).resolve('https://down.example.com'),
         isNull,
       );
     });
 
+    test(
+      'resolves a relative icon against the page after a redirect',
+      () async {
+        final fake = TestHttpClient(
+          handler: (request) {
+            final uri = httpRequestUri(request);
+            if (uri.path == '/old') {
+              // A relative Location, resolved against the URL that answered.
+              return httpTextResponse(
+                request,
+                '',
+                statusCode: 302,
+                headers: {'location': '/new/page'},
+              );
+            }
+            return httpTextResponse(
+              request,
+              '<html><head><link rel="icon" href="icon.png"></head></html>',
+              headers: {'content-type': 'text/html'},
+            );
+          },
+        );
+
+        expect(
+          await SiteIconResolver(
+            fake,
+            redirectlessHttpClient: fake,
+          ).resolve('https://lea.verou.me/old'),
+          'https://lea.verou.me/new/icon.png',
+          reason: 'icon.png belongs to the page the redirect served',
+        );
+        expect(fake.requests, hasLength(2));
+        expect(
+          httpRequestUri(fake.requests[0]).toString(),
+          'https://lea.verou.me/old',
+        );
+        expect(
+          httpRequestUri(fake.requests[1]).toString(),
+          'https://lea.verou.me/new/page',
+        );
+      },
+    );
+
+    test(
+      'a redirect without a Location falls back to the served body',
+      () async {
+        final built = resolverReturning(
+          '<html><head><link rel="icon" href="/icon.png"></head></html>',
+          status: 302,
+        );
+        expect(
+          await built.resolver.resolve('https://lea.verou.me'),
+          'https://lea.verou.me/icon.png',
+        );
+      },
+    );
+
     test('returns null when the site serves no icon links', () async {
-      final resolver = resolverReturning('<html><body>no icons</body></html>');
-      expect(await resolver.resolve('https://plain.example.com'), isNull);
+      final built = resolverReturning('<html><body>no icons</body></html>');
+      expect(await built.resolver.resolve('https://plain.example.com'), isNull);
     });
   });
 }

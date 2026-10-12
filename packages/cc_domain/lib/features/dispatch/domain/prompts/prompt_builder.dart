@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -14,18 +16,330 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context
 import 'package:cc_domain/features/dispatch/domain/value_objects/plan_mode_contract.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/teammate_brief.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart'
+    show AdapterTransport;
+import 'package:crypto/crypto.dart';
+
+/// Whether a prompt span is standing — stable across the turns of a
+/// conversation, so it can be sent once and cached — or belongs to the turn
+/// being dispatched, so it is rebuilt (and only it is sent again) on a native
+/// session resume.
+///
+/// The scope is a property of the span's *label*, not of the position it
+/// happens to occupy in the flattened prompt, so the split can never disagree
+/// with the whole: [PromptBuilder.sections] tags every span from
+/// [PromptBuilder.scopeForLabel] while slicing the buffer [PromptBuilder.build] returns.
+enum PromptPartScope {
+  /// Identity, protocols, persona, skills, contract, mode, language.
+  standing,
+
+  /// Wake reason, mentions, memory and the injected conversation window.
+  turn,
+}
 
 /// One named span of a built prompt: everything written between the point the
 /// span was opened and the point the next one was.
 class PromptSection {
   /// Creates a [PromptSection].
-  const PromptSection({required this.label, required this.text});
+  const PromptSection({
+    required this.label,
+    required this.text,
+    required this.scope,
+  });
 
   /// What this span is (`Identity`, `Persona`, `Conversation`, …).
   final String label;
 
   /// The verbatim slice of the assembled prompt.
   final String text;
+
+  /// Whether this span is standing context or per-turn context.
+  final PromptPartScope scope;
+}
+
+/// Who authored one conversation entry, from the resuming agent's point of
+/// view.
+///
+/// Provenance is what lets a resumed native session skip the messages IT
+/// produced: those are already in its own transcript, so re-sending them would
+/// duplicate the window on every ordinary turn. It is recorded here — from the
+/// message's own sender id — rather than inferred by matching text.
+enum PromptConversationProvenance {
+  /// This agent wrote it (its own prior native output).
+  self,
+
+  /// Another participant wrote it (the user, another agent, a ticket).
+  other,
+
+  /// Harness-generated framing (a run digest, a summary block).
+  system,
+}
+
+/// ONE conversation entry the agent may need to be told about.
+///
+/// [key] is stable and revision-bearing: a message's id plus a digest of its
+/// text, so an EDIT produces a different key (and is therefore re-delivered)
+/// while an untouched message keeps its key forever.
+class PromptConversationEntry {
+  /// Creates a [PromptConversationEntry].
+  const PromptConversationEntry({
+    required this.key,
+    required this.text,
+    required this.provenance,
+    this.runId,
+  });
+
+  /// Stable revision-bearing identity of this entry.
+  final String key;
+
+  /// How the entry renders inside the conversation block.
+  final String text;
+
+  /// Who authored it.
+  final PromptConversationProvenance provenance;
+
+  /// The RUN that produced this message, from its own metadata — the lineage
+  /// that proves a session produced it. Null when a message carries none.
+  final String? runId;
+}
+
+/// ONE per-turn context section (wake reason, @-mention summons, retrieved
+/// memory), keyed so an UNCHANGED section is not re-sent on a resume.
+class PromptTurnSection {
+  /// Creates a [PromptTurnSection].
+  const PromptTurnSection({
+    required this.key,
+    required this.text,
+    this.alwaysDeliver = false,
+  });
+
+  /// Stable revision-bearing identity: label + digest of the rendered text.
+  final String key;
+
+  /// The rendered section.
+  final String text;
+
+  /// Whether this section is sent on every resumed turn regardless of its key —
+  /// the wake reason, which is the run's cause and must always be present.
+  final bool alwaysDeliver;
+}
+
+/// What a native session has ALREADY been delivered.
+///
+/// [revision] empty means continuity was never established (the previous run
+/// did not exit cleanly), so no delta may be built from it.
+class DeliveredPromptContext {
+  /// Creates a [DeliveredPromptContext].
+  const DeliveredPromptContext({
+    required this.revision,
+    this.conversationKeys = const [],
+    this.sectionKeys = const [],
+    this.producedRunIds = const [],
+  });
+
+  /// [AgentPromptParts.conversationRevision] at the last delivery. Empty means
+  /// continuity was never established.
+  final String revision;
+
+  /// Keys of the conversation entries delivered then.
+  final List<String> conversationKeys;
+
+  /// Keys of the per-turn SECTIONS delivered then.
+  final List<String> sectionKeys;
+
+  /// Run ids this exact native session is known to have produced.
+  ///
+  /// This — not the sender id — is what proves a self-authored message is
+  /// already in this session's transcript.
+  final List<String> producedRunIds;
+}
+
+/// The structured parts of one assembled agent prompt.
+///
+/// A dispatch can send the whole thing ([fullPrompt], a first turn) or only
+/// the delta a resumed native session needs ([resumePrompt]). Splitting here —
+/// off the same single assembly that produces [fullPrompt] — is what lets a
+/// native resume keep its standing brief and conversation in the session
+/// history instead of replaying a second textual copy of them.
+class AgentPromptParts {
+  /// Creates [AgentPromptParts].
+  const AgentPromptParts({
+    required this.userText,
+    required this.standing,
+    required this.turnContext,
+    required this.conversationContext,
+    required this.fullPrompt,
+    required this.standingRevision,
+    required this.conversationEntries,
+    required this.turnSections,
+  });
+
+  /// Conversation entries in assembly order, each with a stable
+  /// revision-bearing key and its provenance. [conversationRevision] is the
+  /// digest of this list's keys, so an edit or a new message changes it.
+  final List<PromptConversationEntry> conversationEntries;
+
+  /// The user's message verbatim, before any context layering.
+  final String userText;
+
+  /// Standing instructions (identity, tool catalogue, protocols, workspace
+  /// layout, agent instructions, persona, team, skills, execution contract and
+  /// procedure, mode, language) — stable across the turns of a conversation.
+  final String standing;
+
+  /// Per-turn context that is NOT a replay of the conversation: the wake
+  /// reason, @-mention summons and freshly retrieved memory. Empty when a
+  /// dispatch carries none.
+  final String turnContext;
+
+  /// The injected conversation window, verbatim. This is the block a native
+  /// resume must NOT replay — the session already holds the conversation.
+  final String conversationContext;
+
+  /// A revision fingerprint of the delivered conversation ENTRIES.
+  ///
+  /// It is the digest of [conversationEntries]' keys in order, so it changes
+  /// when a message is added or edited and never when nothing moved. Empty
+  /// entries yield a non-empty digest (the digest of nothing), which is why the
+  /// persisted CURSOR — not this value — carries "unknown continuity" as the
+  /// empty string.
+  String get conversationRevision => PromptBuilder.promptRevisionOf(
+    conversationEntries.map((e) => e.key).join('\u0000'),
+  );
+
+  /// Exactly what a first (non-resumed) turn sends: every span, `<context>`-
+  /// wrapped around [userText]. Byte-for-byte what [PromptBuilder.build]
+  /// returns for the same inputs.
+  final String fullPrompt;
+
+  /// Whether any context at all was assembled (false when a dispatch has no
+  /// agent to build one for).
+  bool get hasContext => standing.isNotEmpty || turnContext.isNotEmpty;
+
+  /// The focused delta a native-resumed turn sends: the genuinely new per-turn
+  /// context plus the user's message — never the standing brief and never the
+  /// conversation, both of which live in the session's own history.
+  ///
+  /// Falls back to the bare message when there is no new context to add, so a
+  /// resume never emits an empty `<context>` block.
+  String get resumePrompt {
+    final content = turnContext.trim();
+    if (content.isEmpty) {
+      return userText;
+    }
+    return '<context>\n$content\n</context>\n\n$userText';
+  }
+
+  /// A revision fingerprint of the standing brief.
+  ///
+  /// A resumed native session keeps whatever standing instructions the process
+  /// that created it was given, so a CHANGE here must fork to a fresh session
+  /// rather than resume under a brief the model no longer holds — this value
+  /// belongs in the resume policy key.
+  final String standingRevision;
+
+  /// Per-turn sections in assembly order (wake, summons, memory), each keyed.
+  final List<PromptTurnSection> turnSections;
+
+  /// Whether the rendered conversation window is fully tracked by
+  /// [conversationEntries].
+  ///
+  /// False only when a caller supplied a rendered window WITHOUT entries: such
+  /// a window cannot be cursor-tracked, so no delta may be built from it (a
+  /// synthesized whole-window entry would defeat the point of the cursor).
+  bool get conversationTracked =>
+      conversationEntries.isNotEmpty || conversationContext.trim().isEmpty;
+
+  bool _selfProduced(PromptConversationEntry entry, DeliveredPromptContext d) =>
+      entry.provenance == PromptConversationProvenance.self &&
+      entry.runId != null &&
+      d.producedRunIds.contains(entry.runId);
+
+  /// Entries this session has NOT been delivered, in assembly order.
+  ///
+  /// An entry is skipped only when it is PROVEN to be in the session already:
+  /// either its key was delivered before, or it is this agent's own output AND
+  /// its run id is one this exact native session produced. Sender identity
+  /// alone is NOT proof — the same agent can produce messages on another
+  /// account/model/session while this one is parked, and those must be
+  /// delivered. When the lineage is unavailable the entry is SENT (one
+  /// duplicated output beats lost context).
+  ///
+  /// [delivered] null (or with an empty revision) means continuity was never
+  /// established: this returns every entry, and [deltaPromptFor] returns null so
+  /// the caller starts a FRESH session with [fullPrompt].
+  List<PromptConversationEntry> undeliveredEntries(
+    DeliveredPromptContext? delivered,
+  ) {
+    if (delivered == null || delivered.revision.isEmpty) {
+      return conversationEntries;
+    }
+    final seen = delivered.conversationKeys.toSet();
+    return [
+      for (final entry in conversationEntries)
+        if (!seen.contains(entry.key) && !_selfProduced(entry, delivered))
+          entry,
+    ];
+  }
+
+  /// Per-turn sections this session has NOT been delivered.
+  ///
+  /// [PromptTurnSection.alwaysDeliver] sections (the wake reason) are always
+  /// included; everything else is skipped while its key was delivered.
+  List<PromptTurnSection> undeliveredSections(
+    DeliveredPromptContext? delivered,
+  ) {
+    if (delivered == null || delivered.revision.isEmpty) {
+      return turnSections;
+    }
+    final seen = delivered.sectionKeys.toSet();
+    return [
+      for (final section in turnSections)
+        if (section.alwaysDeliver || !seen.contains(section.key)) section,
+    ];
+  }
+
+  /// The delta to send on a resumed turn, given what that session has already
+  /// been delivered, or null when continuity cannot be established or the
+  /// rendered window is untracked.
+  ///
+  /// Sends ONLY the genuinely new or edited conversation entries and the
+  /// changed turn sections, plus the user's message — never the whole window.
+  String? deltaPromptFor(DeliveredPromptContext? delivered) {
+    if (delivered == null || delivered.revision.isEmpty) {
+      return null;
+    }
+    if (!conversationTracked) {
+      // A rendered window with no entries cannot be cursor-tracked: send the
+      // full prompt in a fresh session rather than an opaque re-send.
+      return null;
+    }
+    final blocks = <String>[
+      for (final entry in undeliveredEntries(delivered)) entry.text,
+      for (final section in undeliveredSections(delivered)) section.text,
+    ];
+    if (blocks.isEmpty) {
+      return userText;
+    }
+    return '<context>\n${blocks.join('\n\n')}\n</context>\n\n$userText';
+  }
+
+  /// Whether anything at all must be re-delivered to a session last given
+  /// [delivered].
+  bool hasUndeliveredContext(DeliveredPromptContext? delivered) =>
+      undeliveredEntries(delivered).isNotEmpty ||
+      undeliveredSections(delivered).isNotEmpty;
+
+  /// The keys to persist as delivered for a session given this prompt.
+  List<String> deliveredConversationKeysFor() => [
+    for (final e in conversationEntries) e.key,
+  ];
+
+  /// The section keys to persist as delivered.
+  List<String> deliveredSectionKeysFor() => [
+    for (final s in turnSections)
+      if (!s.alwaysDeliver) s.key,
+  ];
 }
 
 /// Builds the system prompt context block sent to an agent before the user prompt.
@@ -73,7 +387,14 @@ class PromptBuilder {
   /// an external MCP client is shown the complete list. "Callable by name"
   /// holds either way — which is the property that lets one paragraph serve
   /// both without the prompt having to know which one it is talking to.
-  PromptBuilder toolCatalog() {
+  ///
+  /// The discovery sentence names the verb the *adapter* actually has
+  /// [transport], because naming the wrong one sends the model after a tool it
+  /// cannot call: the built-in harness owns `search_tools`, an external MCP
+  /// client owns `search_tool_bm25`, and Claude Code defers and discovers tools
+  /// through its OWN host tool search — there is no Control Center search verb
+  /// to call there. Null keeps the built-in harness wording.
+  PromptBuilder toolCatalog({AdapterTransport? transport}) {
     _section(toolCatalogLabel);
     _buf.writeln(
       'All Control Center capabilities (tickets, todos, memory, messaging, '
@@ -81,14 +402,28 @@ class PromptBuilder {
       '`control-center` server. Every catalogued tool is directly callable by '
       'name. Some are listed by name without their arguments until you first '
       'use one — call it anyway; its schema loads on that first call. If you '
-      'are unsure which tool fits a task, search for it by intent '
-      '(`search_tools` in the built-in harness, `search_tool_bm25` on an MCP '
-      'client): it returns matching names with their arguments. If a tool '
-      'call fails with "tool not found", search or re-list once before '
-      'concluding the capability is missing.',
+      'are unsure which tool fits a task, ${_toolDiscoverySentence(transport)} '
+      'If a tool call fails with "tool not found", search or re-list once '
+      'before concluding the capability is missing.',
     );
     return this;
   }
+
+  /// The tool-discovery sentence for [transport], naming only verbs the
+  /// adapter actually exposes.
+  static String _toolDiscoverySentence(AdapterTransport? transport) =>
+      switch (transport) {
+        AdapterTransport.claudeCli =>
+          'use your own tool search — your host withholds the definitions it '
+              'can defer and loads the ones you ask for on demand, returning '
+              'matching names with their arguments.',
+        AdapterTransport.acp =>
+          'search for it by intent (`search_tool_bm25`): it returns '
+              'matching names with their arguments.',
+        AdapterTransport.harness || null =>
+          'search for it by intent (`search_tools`): it returns matching '
+              'names with their arguments.',
+      };
 
   /// Injects resource protocol documentation and search discipline instructions.
   PromptBuilder resourceProtocols({Mode mode = Mode.chat}) {
@@ -561,7 +896,9 @@ class PromptBuilder {
     void add(String label, int start, int end) {
       final slice = text.substring(start, end).trim();
       if (slice.isNotEmpty) {
-        out.add(PromptSection(label: label, text: slice));
+        out.add(
+          PromptSection(label: label, text: slice, scope: scopeForLabel(label)),
+        );
       }
     }
 
@@ -576,6 +913,99 @@ class PromptBuilder {
     }
     return out;
   }
+
+  /// The structured parts of this assembly around [prompt].
+  ///
+  /// Derived from the SAME [sections] slice of the SAME buffer [build] wraps,
+  /// so [AgentPromptParts.fullPrompt] is byte-for-byte [build] and the split
+  /// can never disagree with it. `standing` re-joins the standing spans in
+  /// assembly order and `turnContext` the per-turn ones (with the injected
+  /// conversation window pulled out separately, because a native resume must
+  /// drop exactly that block and keep the rest).
+  AgentPromptParts parts(String prompt) {
+    final standing = StringBuffer();
+    final turn = StringBuffer();
+    final conversation = StringBuffer();
+    final turnSections = <PromptTurnSection>[];
+    for (final section in sections()) {
+      if (section.scope == PromptPartScope.turn &&
+          section.label != conversationLabel) {
+        turnSections.add(
+          PromptTurnSection(
+            key:
+                'turn:${section.label}#'
+                '${promptRevisionOf(section.text)}',
+            text: section.text,
+            // The wake reason is the run's CAUSE: a resumed turn must always
+            // carry it, even when the text is unchanged.
+            alwaysDeliver: section.label == wakeContextLabel,
+          ),
+        );
+      }
+      if (section.scope == PromptPartScope.standing) {
+        if (standing.isNotEmpty) {
+          standing.write('\n\n');
+        }
+        standing.write(section.text);
+      } else if (section.label == conversationLabel) {
+        if (conversation.isNotEmpty) {
+          conversation.write('\n\n');
+        }
+        conversation.write(section.text);
+      } else {
+        if (turn.isNotEmpty) {
+          turn.write('\n\n');
+        }
+        turn.write(section.text);
+      }
+    }
+    return AgentPromptParts(
+      userText: prompt,
+      standing: standing.toString(),
+      turnContext: turn.toString(),
+      conversationContext: conversation.toString(),
+      fullPrompt: build(prompt),
+      standingRevision: promptRevisionOf(standing.toString()),
+      // Entries are passed through as the caller supplied them. Nothing is
+      // synthesized: a rendered window with no entries is UNTRACKED, and
+      // [AgentPromptParts.deltaPromptFor] refuses to build a delta from it.
+      conversationEntries: _conversationEntries,
+      turnSections: turnSections,
+    );
+  }
+
+  /// The structured conversation entries behind [conversationContext].
+  ///
+  /// Set by the use case that renders them, so each entry keeps a stable
+  /// identity and its provenance instead of being re-derived from text.
+  List<PromptConversationEntry> _conversationEntries = const [];
+
+  /// Supplies the per-entry conversation parts for [parts].
+  PromptBuilder conversationEntries(List<PromptConversationEntry> entries) {
+    _conversationEntries = entries;
+    return this;
+  }
+
+  /// A stable revision fingerprint of a prompt span.
+  ///
+  /// Used as the resume policy's standing-brief revision and as the
+  /// per-session conversation cursor: both are "has this exact text already
+  /// reached the session", so a digest is enough and never needs to be secret.
+  static String promptRevisionOf(String text) =>
+      sha256.convert(utf8.encode(text)).toString();
+
+  /// Whether the span [label] is standing context or per-turn context.
+  ///
+  /// The labels in the per-turn set are exactly the ones a concrete dispatch
+  /// supplies — the wake reason, the @-mention summons, retrieved memory and
+  /// the injected conversation window. Everything else is standing framing.
+  static PromptPartScope scopeForLabel(String label) => switch (label) {
+    wakeContextLabel ||
+    summonsLabel ||
+    memoryLabel ||
+    conversationLabel => PromptPartScope.turn,
+    _ => PromptPartScope.standing,
+  };
 
   /// Label for content written before any section was opened.
   static const String preambleLabel = 'Preamble';

@@ -1,18 +1,17 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// A 2048-bit test key, generated for this test and used nowhere else. The
@@ -48,36 +47,19 @@ SVgaUK2148/jd/aKIcXn3k4Hc17BYRgsoeMdfe3jrjOw4SknWBjC5g==
 -----END RSA PRIVATE KEY-----
 ''';
 
-/// A Dio adapter that answers from a fixed table, so the GitHub App lane can
-/// be driven without a network.
-class _FakeGitHubAdapter implements HttpClientAdapter {
-  _FakeGitHubAdapter(this.responses);
-
-  final Map<String, Object> responses;
-  final List<String> requested = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requested.add(options.path);
-    final body = responses[options.path];
-    if (body == null) {
-      return ResponseBody.fromString('{}', 404);
-    }
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
-      headers: {
-        HttpHeaders.contentTypeHeader: ['application/json'],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
+/// A canned GitHub App transport keyed by request path, so the GitHub App lane
+/// can be driven without a network.
+TestHttpClient _fakeGitHubClient(Map<String, Object> routes) {
+  return TestHttpClient(
+    settings: const ClientSettings(baseUrl: 'https://api.github.com'),
+    handler: (request) {
+      final body = routes[httpRequestUri(request).path];
+      if (body == null) {
+        return httpTextResponse(request, '{}', statusCode: 404);
+      }
+      return httpTextResponse(request, body);
+    },
+  );
 }
 
 void main() {
@@ -121,7 +103,7 @@ void main() {
       },
     ],
   }) {
-    final adapter = _FakeGitHubAdapter({
+    final client = _fakeGitHubClient({
       '/app/installations': installations,
       '/app/installations/42/access_tokens': {
         'token': token,
@@ -131,12 +113,10 @@ void main() {
             .toIso8601String(),
       },
     });
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-      ..httpClientAdapter = adapter;
     return ProviderAppSettings(
       secrets: secrets,
       githubAppFactory: ({required String appId, required String pem}) =>
-          GitHubAppClient(appId: appId, privateKeyPem: pem, dio: dio),
+          GitHubAppClient(appId: appId, privateKeyPem: pem, httpClient: client),
     );
   }
 
@@ -212,10 +192,7 @@ void main() {
       // The same server, the same moment: background work stays on the app,
       // Alice's own click goes out as Alice.
       expect(await creds.tokenFor(ForgeHost.github), 'ghs_installation');
-      expect(
-        await creds.tokenForActor(ForgeHost.github, alice),
-        'alice-token',
-      );
+      expect(await creds.tokenForActor(ForgeHost.github, alice), 'alice-token');
       expect(await creds.actsAsSelf(ForgeHost.github, alice), isTrue);
     });
 
@@ -259,10 +236,7 @@ void main() {
       // no client to rebuild and no cached token to outlive the sign-out.
       final creds = build(ownerUserId: bob, env: {'GITHUB_TOKEN': 'env'});
       await creds.setToken(ForgeHost.github, 'alice-token', userId: alice);
-      expect(
-        await creds.tokenForActor(ForgeHost.github, alice),
-        'alice-token',
-      );
+      expect(await creds.tokenForActor(ForgeHost.github, alice), 'alice-token');
 
       await creds.clearToken(ForgeHost.github, userId: alice);
       expect(await creds.tokenForActor(ForgeHost.github, alice), 'env');
@@ -272,7 +246,11 @@ void main() {
   group('the server lane (no calling user)', () {
     test('the app identity answers first', () async {
       final apps = appSettingsWith(token: 'ghs_installation');
-      await apps.save(ProviderApp.github, appId: '123', privateKeyPem: _testPrivateKeyPem);
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
       final creds = build(
         apps: apps,
         env: {'GITHUB_TOKEN': 'from-env'},
@@ -311,7 +289,11 @@ void main() {
     test('the app identity is GitHub-only', () async {
       // A configured GitHub App must not make GitLab look connected.
       final apps = appSettingsWith(token: 'ghs_installation');
-      await apps.save(ProviderApp.github, appId: '123', privateKeyPem: _testPrivateKeyPem);
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
       final creds = build(apps: apps);
       expect(await creds.tokenFor(ForgeHost.gitlab), isNull);
       expect(await creds.tokenFor(ForgeHost.bitbucket), isNull);
@@ -428,11 +410,11 @@ void main() {
       );
       creds.refreshUserToken = (userId, forge, expired, {workspaceId}) async =>
           ProviderToken(
-        accessToken: 'fresh',
-        refreshToken: expired.refreshToken,
-        expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
-        source: ForgeCredentialSource.oauth,
-      );
+            accessToken: 'fresh',
+            refreshToken: expired.refreshToken,
+            expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
+            source: ForgeCredentialSource.oauth,
+          );
 
       expect(await creds.tokenFor(ForgeHost.github, userId: alice), 'fresh');
       // Persisted, not just returned: the next call must not refresh again.
@@ -442,23 +424,27 @@ void main() {
       );
     });
 
-    test('a credential that cannot be refreshed is dropped, not served',
-        () async {
-      // Serving it would fail every call with a 401 the UI cannot explain;
-      // dropping it makes the row say "not connected" and offer a sign-in.
-      final creds = build();
-      await users.setForgeToken(
-        alice,
-        ForgeHost.github,
-        ProviderToken(
-          accessToken: 'stale',
-          expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
-        ),
-      );
+    test(
+      'a credential that cannot be refreshed is dropped, not served',
+      () async {
+        // Serving it would fail every call with a 401 the UI cannot explain;
+        // dropping it makes the row say "not connected" and offer a sign-in.
+        final creds = build();
+        await users.setForgeToken(
+          alice,
+          ForgeHost.github,
+          ProviderToken(
+            accessToken: 'stale',
+            expiresAt: DateTime.now().toUtc().subtract(
+              const Duration(hours: 1),
+            ),
+          ),
+        );
 
-      expect(await creds.tokenFor(ForgeHost.github, userId: alice), isNull);
-      expect(await users.forgeToken(alice, ForgeHost.github), isNull);
-    });
+        expect(await creds.tokenFor(ForgeHost.github, userId: alice), isNull);
+        expect(await users.forgeToken(alice, ForgeHost.github), isNull);
+      },
+    );
 
     test('a failed refresh drops the credential', () async {
       final creds = build();
@@ -488,15 +474,10 @@ void main() {
 
     test('never carries a token', () async {
       final creds = build();
-      await creds.setToken(
-        ForgeHost.github,
-        'super-secret',
+      await creds.setToken(ForgeHost.github, 'super-secret', userId: alice);
+      final json = (await creds.connections(
         userId: alice,
-      );
-      final json = (await creds.connections(userId: alice))
-          .firstWhere((c) => c.forge == ForgeHost.github)
-          .toJson()
-          .toString();
+      )).firstWhere((c) => c.forge == ForgeHost.github).toJson().toString();
       expect(json, isNot(contains('super-secret')));
     });
 
@@ -541,7 +522,11 @@ void main() {
 
     test('the server lane reports the app as the source', () async {
       final apps = appSettingsWith(token: 'ghs_installation');
-      await apps.save(ProviderApp.github, appId: '123', privateKeyPem: _testPrivateKeyPem);
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
       final creds = build(apps: apps);
 
       final gh = (await creds.connections()).firstWhere(
@@ -578,27 +563,26 @@ void main() {
       expect(probes, 1);
     });
 
-    test('a rejected credential reports unauthenticated with a reason',
-        () async {
-      final creds = build(viewerProbe: (forge, token) async => null);
-      await creds.setToken(ForgeHost.gitlab, 'bad', userId: alice);
+    test(
+      'a rejected credential reports unauthenticated with a reason',
+      () async {
+        final creds = build(viewerProbe: (forge, token) async => null);
+        await creds.setToken(ForgeHost.gitlab, 'bad', userId: alice);
 
-      final result = await creds.testConnection(
-        ForgeHost.gitlab,
-        userId: alice,
-      );
-      expect(result.authenticated, isFalse);
-      expect(result.error, contains('GitLab'));
-    });
+        final result = await creds.testConnection(
+          ForgeHost.gitlab,
+          userId: alice,
+        );
+        expect(result.authenticated, isFalse);
+        expect(result.error, contains('GitLab'));
+      },
+    );
 
     test('changing a token invalidates the cached identity', () async {
       var next = 'first';
       final creds = build(viewerProbe: (forge, token) async => next);
       await creds.setToken(ForgeHost.gitlab, 'a', userId: alice);
-      expect(
-        await creds.viewerLogin(ForgeHost.gitlab, userId: alice),
-        'first',
-      );
+      expect(await creds.viewerLogin(ForgeHost.gitlab, userId: alice), 'first');
 
       next = 'second';
       await creds.setToken(ForgeHost.gitlab, 'b', userId: alice);
@@ -625,13 +609,15 @@ void main() {
   });
 
   group('clearing', () {
-    test('an empty token clears rather than storing an empty credential',
-        () async {
-      final creds = build();
-      await creds.setToken(ForgeHost.github, 'x', userId: alice);
-      await creds.setToken(ForgeHost.github, '', userId: alice);
-      expect(await creds.tokenFor(ForgeHost.github, userId: alice), isNull);
-    });
+    test(
+      'an empty token clears rather than storing an empty credential',
+      () async {
+        final creds = build();
+        await creds.setToken(ForgeHost.github, 'x', userId: alice);
+        await creds.setToken(ForgeHost.github, '', userId: alice);
+        expect(await creds.tokenFor(ForgeHost.github, userId: alice), isNull);
+      },
+    );
 
     test('the revision bumps on every credential change', () async {
       final creds = build();
@@ -679,7 +665,7 @@ void main() {
         secrets: secrets,
         install: apps ?? ProviderAppSettings(secrets: secrets),
         githubAppFactory: ({required String appId, required String pem}) {
-          final adapter = _FakeGitHubAdapter({
+          final client = _fakeGitHubClient({
             '/app/installations': [
               {
                 'id': 7,
@@ -695,12 +681,10 @@ void main() {
                   .toIso8601String(),
             },
           });
-          final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-            ..httpClientAdapter = adapter;
           return GitHubAppClient(
             appId: appId,
             privateKeyPem: pem,
-            dio: dio,
+            httpClient: client,
           );
         },
       );
@@ -720,7 +704,11 @@ void main() {
         apps: apps,
       );
       expect(
-        await creds.tokenForRepoOwner(ForgeHost.github, 'acme', workspaceId: 'ws-a'),
+        await creds.tokenForRepoOwner(
+          ForgeHost.github,
+          'acme',
+          workspaceId: 'ws-a',
+        ),
         'ghs_install',
       );
     });
@@ -838,51 +826,46 @@ void main() {
       },
     );
 
-    test('a PAT saved in workspace B does not clear A or the global slot',
-        () async {
-      final creds = build();
-      await creds.setToken(
-        ForgeHost.github,
-        'global-oauth',
-        userId: alice,
-      );
-      await creds.setToken(
-        ForgeHost.github,
-        'ws-a-token',
-        userId: alice,
-        workspaceId: 'ws-a',
-      );
-      await creds.setToken(
-        ForgeHost.github,
-        'ws-b-token',
-        userId: alice,
-        workspaceId: 'ws-b',
-      );
-
-      expect(
-        await users.forgeToken(alice, ForgeHost.github),
-        isNotNull,
-      );
-      expect(
-        (await users.forgeToken(
-          alice,
+    test(
+      'a PAT saved in workspace B does not clear A or the global slot',
+      () async {
+        final creds = build();
+        await creds.setToken(ForgeHost.github, 'global-oauth', userId: alice);
+        await creds.setToken(
           ForgeHost.github,
+          'ws-a-token',
+          userId: alice,
           workspaceId: 'ws-a',
-        ))!.accessToken,
-        'ws-a-token',
-      );
-      expect(
-        (await users.forgeToken(
-          alice,
+        );
+        await creds.setToken(
           ForgeHost.github,
+          'ws-b-token',
+          userId: alice,
           workspaceId: 'ws-b',
-        ))!.accessToken,
-        'ws-b-token',
-      );
-      expect(
-        (await users.forgeToken(alice, ForgeHost.github))!.accessToken,
-        'global-oauth',
-      );
-    });
+        );
+
+        expect(await users.forgeToken(alice, ForgeHost.github), isNotNull);
+        expect(
+          (await users.forgeToken(
+            alice,
+            ForgeHost.github,
+            workspaceId: 'ws-a',
+          ))!.accessToken,
+          'ws-a-token',
+        );
+        expect(
+          (await users.forgeToken(
+            alice,
+            ForgeHost.github,
+            workspaceId: 'ws-b',
+          ))!.accessToken,
+          'ws-b-token',
+        );
+        expect(
+          (await users.forgeToken(alice, ForgeHost.github))!.accessToken,
+          'global-oauth',
+        );
+      },
+    );
   });
 }

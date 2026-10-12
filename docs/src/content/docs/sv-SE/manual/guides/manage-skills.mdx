@@ -1,21 +1,23 @@
 ---
 title: Installera och hantera skills
-description: Lägg till GitHub-repos som skillkällor, bläddra i deras kataloger och installera, uppdatera eller avinstallera skills genom antivirusgrinden.
+description: Installera och uppdatera arbetsytans skills genom scangrinden och jämför sedan sparade revisioner med budgeterade skillutvärderingar.
 slug: sv-SE/handbok/how-to-guider/hantera-skills
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Den här guiden visar hur du fyller en arbetsyta med skills från GitHub: lägg
 till ett repo som källa, installera de skills du vill ha från det och håll dem
-uppdaterade över tid.
+uppdaterade över tid. Du kan också utvärdera en sparad revision mot en matchad
+baslinje innan du avgör om du behåller den.
 
 Det viktiga att känna till innan du börjar: **ett källrepo är inte pålitligt.**
-Dess namn, beskrivning och antal stjärnor skrivs av den som äger det. Den enda
-säkerhetssignal som Control Center litar på är antivirusskanningens utslag, som
-varje installation passerar innan något når disken eller en agentprompt. Om du
-vill ha resonemanget kan du läsa
-[avsnittet om skills i agentmodellen](/sv-SE/handbok/koncept/agentmodell/); den här sidan
-håller sig till praktiken.
+Dess namn, beskrivning och antal stjärnor skrivs av den som äger det. Varje
+installation passerar antivirusskanningens grind innan något når disken eller en
+agentprompt. Det utslaget är en insläppskontroll, inte ett bevis på att en skill
+är säker eller användbar. Läs
+[avsnittet om skills i agentmodellen](/sv-SE/handbok/koncept/agentmodell/) för
+installationsmodellen och [Utvärderingar och kvalitet](/sv-SE/handbok/koncept/utvarderingar-och-kvalitet/)
+för hur beteendebelägg skiljer sig från en skanning.
 
 Skills finns under **Inställningar → Arbetsyta → Färdigheter**
 (`/workspaces/<id>/settings/workspace/skills`). De är arbetsytespecifika: de
@@ -86,6 +88,87 @@ uppdatering passerar samma scangrind som en installation — en skill vars nya
 version hamnar i karantän avvisas och versionen du hade ligger kvar. Den gamla
 versionens hash behålls som referens för återställning i låset.
 
+## Utvärdera en skill
+
+1. Öppna **Inställningar → Arbetsyta → Färdigheter**, välj den installerade
+   skillen och spara eventuella ändringar. Under **Utvärdering av färdighet**,
+   kontrollera pakethashen.
+2. Välj **Starta utvärdering**. Välj en **Uppgiftsmängd** som matchar skillens
+   syfte och en **Adapter**. Den inbyggda harnessen använder en konfigurerad
+   leverantör och en verktygskompetent modell. **Claude Code** använder det
+   förvalda hanterade Claude-kontot och en konkret modellidentifierare; logga in
+   under **Inställningar → Adaptrar** först. Det lånar inte serveroperatörens
+   personliga inloggning.
+3. Välj en **Jämförelse** i tabellen nedan.
+4. Ställ in **Upprepningar per uppgift** (1–20) och **Budget (US-cent)**. Till
+   exempel betyder `100` 1 US-dollar. Välj **Starta utvärdering** för att
+   godkänna betalt leverantörsarbete.
+5. Följ kampanjen under **Observability → Kvalitet**, eller gå tillbaka via
+   **Öppna kvalitet** i skillpanelen.
+
+För Claude Code- och Codex OAuth-prenumerationer är budgeten en **tröskel för
+stopp av API-ekvivalent användning**, inte en faktureringsgräns och inte ett mått
+på prenumerationskvot. `100` medger en tröskel på 1 US-dollar: ett anrop i
+flykten kan överskrida den, men inga nya anrop startar när den rapporterade
+användningen når den. Okänd användning stoppar också vidare anrop. En liten
+budget kan lämna jämförelsen ofullständig; den lovar inte att den valda
+uppgiftsmängden slutförs.
+
+Leverantörer med API-nycklar behåller konservativa reservationer per anrop
+utifrån dokumenterade tokenbegränsningar och priser. De kan avvisa `100` innan
+något spenderas om ett säkert reserverat anrop behöver mer. Felet anger den
+valda modellen och minimireservationen; välj en billigare modell eller öka den
+budgeten.
+
+| Jämförelse | Vad den svarar på |
+| --- | --- |
+| **Saknas jämfört med tillgänglig** | Förbättrar vanlig upptäckt och användning av skillen resultatet jämfört med att inte ha den? |
+| **Föregående jämfört med aktuell** | Bevarar eller förbättrar uppdateringen beteendet mot en tidigare fångad revision? |
+| **Tvingad inläsning jämfört med frånvaro** | Kan innehållet hjälpa när det läses in explicit? Detta diagnostiserar inläsningsproblem; det visar inte vanlig upptäckt. |
+| **Sammansättning** | Hjälper tillägget av kandidaten de valda omgivande skillarna eller krockar det med dem? Baslinjen behåller samma omgivande uppsättning utan kandidaten. |
+
+**Föregående jämfört med aktuell** kräver en pakethash från kampanjhistoriken.
+Utvärdera en revision innan du ersätter den om du vill använda den som baslinje;
+godtycklig Git-historik importeras inte.
+
+Osparade ändringar, en otillgänglig hash och skrivskyddat demoläge inaktiverar
+start. Servern kontrollerar också åtkomst till arbetsyta och repo,
+skanningskarantän, åtgärdspolicy, modellstöd, prissättning och
+exekveringsinhägnad. Lös en misslyckad kontroll i stället för att kringgå den.
+Leverantörens och modellens identitet registreras, men ett fjärralias för en
+modell fryser inte leverantörens underliggande vikter.
+
+### Granska, avbryt och exportera
+
+Läs täckning och utgifter tillsammans med utfall och regressioner per uppgift.
+Öppna enskilda försök för att granska observerade skillinläsningar,
+verktygshändelser, fel och verifierarbevis. **Ofullständiga**, **inaktuella** och
+**inte entydiga** resultat är inte rekommendationer att införa en revision. En
+rapports hash identifierar det fångade paketet, inte nödvändigtvis det paket som
+är installerat nu.
+
+Använd **Avbryt körning** för köat eller aktivt arbete. Slutförda försök förblir
+synliga; en avbrytning återbetalar inte redan utfört leverantörsarbete.
+**Kopiera maskerad JSON** kopierar en avgränsad bevisexport till urklipp, inte
+ett fullständigt återuppspelningspaket för privata källor. Se
+[Utvärderingar och kvalitet](/sv-SE/handbok/koncept/utvarderingar-och-kvalitet/)
+för bevis- och plattformsgränser.
+
+### Omvärdera efter uppdateringar
+
+Automatisk betald omvärdering är **avstängd som standard**. När du har utvärderat
+den aktuella revisionen väljer du en kampanj under **Konfiguration av
+uppdateringspolicy** och väljer **Aktivera uppdateringsutvärderingar**. Att
+ändra denna policy kräver behörighet som arbetsytsadministratör. Den valda
+kampanjen tillhandahåller uppgiftsmängd, adapter, leverantör/modell, jämförelse,
+upprepningar och budget.
+
+Efterföljande godkända innehållsändringar schemalägger budgeterat arbete;
+oförändrade hashvärden avdubbleringas. **Inaktivera uppdateringsutvärderingar**
+förhindrar framtida automatiska insläpp. Använd **Avbryt körning** för en redan
+godkänd kampanj. Historiska rapporter förblir kopplade till sina ursprungliga
+pakethashar; omvärdering publicerar, aktiverar eller skriver inte om en skill.
+
 ## Avinstallera en skill, ta bort ett repo
 
 **Avinstallera** (i en installerad skills detaljvy, eller ta bort i fliken
@@ -124,7 +207,7 @@ Repo-skills genomgår samma fail-closed-scan (`pass` / `warn` / `quarantine`)
 innan deras frontmatter når en prompt. `warn` släpps in; `quarantine` hålls
 tillbaka, och den vägen har ingen operatörsöverstyrning.
 
-Se [Reposcopade skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills) och
+Se [Reposcopade skills](/sv-SE/handbok/koncept/agentmodell/#reposcopade-skills) och
 [Slash-kommandon](/sv-SE/handbok/referens/slash-kommandon/).
 
 ## Relaterade guider
@@ -135,3 +218,4 @@ Se [Reposcopade skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills) 
 ## Relaterade koncept
 
 - [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/)
+- [Utvärderingar och kvalitet](/sv-SE/handbok/koncept/utvarderingar-och-kvalitet/)

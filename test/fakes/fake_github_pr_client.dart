@@ -5,7 +5,7 @@ import 'package:cc_infra/src/network/models/github_pull_request.dart';
 import 'package:cc_infra/src/network/models/github_pull_request_file.dart';
 import 'package:cc_infra/src/network/models/github_review.dart';
 import 'package:cc_infra/src/network/models/github_review_comment.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// In-memory fake [GitHubPrClient] for testing protocol handlers.
 ///
@@ -13,9 +13,9 @@ import 'package:dio/dio.dart';
 /// defaults (null / empty list / empty string) so tests only need to set
 /// the data they care about.
 class FakeGitHubPrClient extends GitHubPrClient {
-  FakeGitHubPrClient() : super(_fakeDio);
+  FakeGitHubPrClient() : super(_fakeHttpClient);
 
-  static final _fakeDio = _NullDio();
+  static final _fakeHttpClient = _NullHttpClient();
 
   /// PR lookup by "$owner/$repo/$number".
   final Map<String, GitHubPullRequest> pullRequests = {};
@@ -121,9 +121,10 @@ class FakeGitHubPrClient extends GitHubPrClient {
   }
 }
 
-/// A Dio instance that never gets called — all methods are overridden.
-class _NullDio implements Dio {
+/// An rhttp client that is never reached — every networked method is
+/// overridden.
+class _NullHttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
-      throw StateError('FakeGitHubPrClient should not reach Dio');
+      throw StateError('FakeGitHubPrClient should not reach the network');
 }

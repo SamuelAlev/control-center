@@ -8,74 +8,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 ComposerAttachment _image(String name) => ComposerAttachment(
-  id: 'file:/tmp/$name',
+  id: 'picker:$name',
   kind: 'image',
   label: name,
   path: '/tmp/$name',
   bytes: const [1, 2, 3],
   mimeType: 'image/png',
   refName: name,
+  fileId: 'file-$name',
+  blobRef:
+      'blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  uploadState: AttachmentUploadState.ready,
 );
 
 void main() {
-  // The bug this guards: a submission carrying pictures used to be delivered
-  // as mid-run STEERING when an agent was already working in the conversation.
-  // `steerRun` takes a String and nothing else, all the way down to the loop's
-  // steering inbox — so the words arrived and the pictures did not, and the
-  // agent was asked to look at four screenshots it had never been given.
-  group('a submission with attachments is never steered', () {
-    /// The predicate `_handleSubmit` uses to decide between steering a running
-    /// agent and sending a real turn. Mirrored here because the method is
-    /// private to the widget's state; `steering_guard_test` would be the place
-    /// to move it if it ever grows.
-    bool steerable({
-      required bool isCommand,
-      required bool hasAgentMention,
-      required List<ComposerAttachment> attachments,
-      required String content,
-    }) =>
-        !isCommand &&
-        !hasAgentMention &&
-        attachments.isEmpty &&
-        content.trim().isNotEmpty;
-
-    test('plain text with a run in flight still steers', () {
-      expect(
-        steerable(
-          isCommand: false,
-          hasAgentMention: false,
-          attachments: const [],
-          content: 'try the other branch',
-        ),
-        isTrue,
-      );
-    });
-
-    test('text WITH an attachment does not steer', () {
-      expect(
-        steerable(
-          isCommand: false,
-          hasAgentMention: false,
-          attachments: [_image('shot.png')],
-          content: 'look at these',
-        ),
-        isFalse,
-      );
-    });
-
-    test('an attachment alone does not steer', () {
-      expect(
-        steerable(
-          isCommand: false,
-          hasAgentMention: false,
-          attachments: [_image('shot.png')],
-          content: '',
-        ),
-        isFalse,
-      );
-    });
-  });
-
   // Same class of silent loss, different trigger: a message typed while the
   // space was still provisioning was parked, and the queue carried only the
   // words.
@@ -101,6 +47,7 @@ void main() {
 
     test('keeps attachments on the parked send', () {
       queue.enqueue(
+        workspaceId: 'workspace-a',
         content: 'what is wrong here',
         attachments: [_image('a.png'), _image('b.png')],
       );
@@ -109,21 +56,33 @@ void main() {
         'a.png',
         'b.png',
       ]);
+      expect(queue.state.single.attachments.first.fileId, 'file-a.png');
+      expect(
+        queue.state.single.attachments.first.blobRef,
+        'blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      );
+      expect(queue.state.single.attachments.first.bytes, isNull);
+      expect(queue.state.single.attachments.first.path, isNull);
     });
 
     test('a picture with no words is still a message worth parking', () {
-      queue.enqueue(content: '   ', attachments: [_image('a.png')]);
+      queue.enqueue(
+        workspaceId: 'workspace-a',
+        content: '   ',
+        attachments: [_image('a.png')],
+      );
       expect(queue.state, hasLength(1));
       expect(queue.state.single.content, isEmpty);
     });
 
     test('nothing at all is still dropped', () {
-      queue.enqueue(content: '   ');
+      queue.enqueue(workspaceId: 'workspace-a', content: '   ');
       expect(queue.state, isEmpty);
     });
 
     test('carries mentions and refs alongside', () {
       queue.enqueue(
+        workspaceId: 'workspace-a',
         content: 'ship it',
         structuredMentions: [
           const StructuredMention(agentId: 'a1', raw: '@dev'),

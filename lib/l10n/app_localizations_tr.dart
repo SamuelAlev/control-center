@@ -14144,6 +14144,31 @@ class AppLocalizationsTr extends AppLocalizations {
   String get composerDropToAttach => 'Eklemek için bırak';
 
   @override
+  String get composerAttachmentUploading => 'Yükleniyor…';
+
+  @override
+  String get composerAttachmentReady => 'Hazır';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Yükleme başarısız';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Dosya $limit sınırını aşıyor';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Bu dosya okunamadı';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Eklerin yüklenmesi bitene kadar bekleyin';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Göndermeden önce yüklenemeyen ekleri yeniden deneyin veya kaldırın';
+
+  @override
   String get attachmentUnavailable => 'Ek kullanılamıyor';
 
   @override
@@ -15305,11 +15330,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Bir ajan sizi bekliyor';
+  String get notificationAgentAwaitingInput => 'Bir ajan ilginizi bekliyor';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Bir ajanın onayınıza, yanıtınıza veya çalışan bir kimlik bilgisine ihtiyacı olduğunda';
+      'Bir ajanın onaya, yanıta veya geçerli kimlik bilgilerine ihtiyacı olduğunda ya da bir ilke bir eylemi engellediğinde';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15382,4 +15407,386 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Sunucu durduruluyor';
+
+  @override
+  String get skillEvalAbsent => 'Yok ve mevcut karşılaştırması';
+
+  @override
+  String get skillEvalAmbient => 'Ortam becerileri';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Çıktı referansı: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · tekrar $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Denemeler';
+
+  @override
+  String get skillEvalAvailableEvent => 'Mevcut';
+
+  @override
+  String get skillEvalBaseline => 'Önceki sürüm hash\'i';
+
+  @override
+  String get skillEvalBodyLoad => 'Gövde yüklendi';
+
+  @override
+  String get skillEvalBudgetCents => 'Bütçe (ABD senti)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Ücretli değerlendirme, seçilen sağlayıcıyı ve bütçeyi kullanır. Güvenlik taraması sonuçları ayrıdır.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Abonelik bütçeleri faturaları değil, API eşdeğeri kullanımı izler. Devam eden bir çağrı bütçeyi aşabilir; sınıra ulaşıldıktan sonra yeni çağrı başlatılmaz. Güvenlik taramaları ayrıdır.';
+
+  @override
+  String get skillEvalCancel => 'Çalıştırmayı iptal et';
+
+  @override
+  String get skillEvalCancelled => 'İptal edildi';
+
+  @override
+  String get skillEvalCancelling => 'İptal ediliyor';
+
+  @override
+  String get skillEvalComparison => 'Karşılaştırma';
+
+  @override
+  String get skillEvalCompleted => 'Tamamlandı';
+
+  @override
+  String get skillEvalComposition => 'Bileşim';
+
+  @override
+  String get skillEvalCorpus => 'Görev kümesi';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString tekrar';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => 'Planlanan tüm denemeler gözlemlendi';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Mevcut paket hash\'i: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates =>
+      'Güncelleme değerlendirmelerini devre dışı bırak';
+
+  @override
+  String get skillEvalEnableUpdates =>
+      'Güncelleme değerlendirmelerini etkinleştir';
+
+  @override
+  String get skillEvalExport => 'Gizlenmiş JSON\'u kopyala';
+
+  @override
+  String get skillEvalFailed => 'Başarısız';
+
+  @override
+  String get skillEvalForced => 'Zorunlu yükleme ve yokluk karşılaştırması';
+
+  @override
+  String get skillEvalForcedEvent => 'Zorunlu yükleme';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Bu sunucuda paket hash\'i kullanılamıyor. Değerlendirme devre dışı.';
+
+  @override
+  String get skillEvalHistory => 'Sürüm geçmişi';
+
+  @override
+  String get skillEvalImproved => 'İyileşti';
+
+  @override
+  String get skillEvalIncomplete => 'Eksik';
+
+  @override
+  String get skillEvalInconclusive => 'Sonuç belirsiz';
+
+  @override
+  String get skillEvalInferred => 'Çıkarımla belirlendi';
+
+  @override
+  String get skillEvalInterrupted => 'Kesintiye uğradı';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Becerinin yüklenip yüklenmediği gözlemlenemiyor; olay kaydı olmaması, becerinin yok sayıldığını kanıtlamaz.';
+
+  @override
+  String get skillEvalModel => 'Seçilen model';
+
+  @override
+  String get skillEvalNoAttempts => 'Henüz deneme yok.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Bağlı model yok. Önce Ayarlar\'dan bir sağlayıcı bağlayın.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Kampanya geçmişinde önceki hash yok. Değiştirmeden önce önceki sürümü değerlendirin.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Henüz rapor yok; kısmi denemeler kullanılabilir.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Çalışma alanı seçilmedi.';
+
+  @override
+  String get skillEvalNoTasks => 'Henüz bildirilen görev yok.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Doğrulayıcı kanıtı kaydedilmedi.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Bu baytların tam olarak bu hâli değerlendirilmedi. Tarama, davranışa ilişkin kanıt değildir.';
+
+  @override
+  String get skillEvalNotVerified => 'Doğrulanmadı';
+
+  @override
+  String get skillEvalObserved => 'Gözlemlendi';
+
+  @override
+  String get skillEvalOpenQuality => 'Kaliteyi aç';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Varsayılan olarak bir beceriyi kaydetmek ücretli değerlendirme başlatmaz. Güncellemelerde otomatik yeniden değerlendirmeyi açıkça etkinleştirirseniz kaydetme, belirlenen bütçe dahilinde ücretli bir yeniden değerlendirme başlatır.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Güncelleme ilkesini yapılandırmak için önce bir sürümü değerlendirin.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Güncelleme ilkesi yapılandırması';
+
+  @override
+  String get skillEvalPartial => 'Kısmi kanıt; benimseme kararı yok';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$plannedString denemeden $completedString tanesi';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Sağlayıcı: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Çalışma alanı beceri kampanyaları ve sürüme özgü kanıtlar.';
+
+  @override
+  String get skillEvalQueued => 'Sıraya alındı';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Kampanya anlık görüntülerine yeniden bağlanılıyor…';
+
+  @override
+  String get skillEvalRefresh => 'Yenile';
+
+  @override
+  String get skillEvalReferenceLoad => 'Referans yüklendi';
+
+  @override
+  String get skillEvalRepetitions => 'Görev başına tekrar';
+
+  @override
+  String get skillEvalReport => 'Kanıt raporu';
+
+  @override
+  String get skillEvalRunning => 'Çalışıyor';
+
+  @override
+  String get skillEvalScriptExecution => 'Betik çalıştırıldı';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Harcama: $spent / bütçe $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Değerlendirmeyi başlat';
+
+  @override
+  String get skillEvalStartTitle => 'Beceri sürümlerini karşılaştır';
+
+  @override
+  String get skillEvalStale => 'Güncel değil';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Güncel değil: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Farklı görev kümeleri: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes doğrulandı) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Kola göre görevler';
+
+  @override
+  String get skillEvalToolError => 'Araç hatası';
+
+  @override
+  String get skillEvalTools => 'Araç olayları';
+
+  @override
+  String get skillEvalTitle => 'Beceri değerlendirmesi';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Kullanılamıyor: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Bilinmiyor';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Kaydedilmemiş değişiklikler dahil edilmez. Değerlendirmeden önce kaydedin.';
+
+  @override
+  String get skillEvalUncertainty => 'Belirsizlik aralığı';
+
+  @override
+  String get skillEvalVerified => 'Doğrulandı';
+
+  @override
+  String get skillEvalVerifiers => 'Doğrulama';
+
+  @override
+  String get skillEvalVerdict => 'Karar';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Kopyalama tamamlandı: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Plan ihlali';
+
+  @override
+  String get skillEvalPreserved => 'Kalite korundu';
+
+  @override
+  String get skillEvalPrevious => 'Önceki ve mevcut karşılaştırması';
+
+  @override
+  String get skillEvalRegressed => 'Gerileme kanıtlandı';
+
+  @override
+  String get skillEvalCostRegression => 'Maliyet regresyonu';
+
+  @override
+  String get skillEvalHarnessError => 'Test altyapısı hatası';
+
+  @override
+  String get skillBehaviorRouting => 'Beceri yönlendirmesi';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive beklenen kullanım · $falsePositive beklenmeyen kullanım · $falseNegative kaçırılan kullanım · $trueNegative doğru atlama';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive belirsiz kullanım · $negative belirsiz atlama · $notOffered sunulmadı';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Gözlemlenen kesinlik $precision · duyarlılık $recall · yanlış pozitif oranı $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Zorlanmış kol · yalnızca tanı amaçlı';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Oranlar yalnızca gözlemlenebilir erişimi kapsar. Kabuk veya arama erişimi bilinmeyebilir; becerinin yüklenmesi uygulandığını kanıtlamaz.';
+
+  @override
+  String get skillBehaviorSafety => 'Sentetik güvenlik';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts başarılı yapıt denetimi · $denials ilke reddi · $violations korumalı dosya ihlali';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Yapıt denetimleri sentetiktir ve gerçek dünyadaki saldırı oranlarını yansıtmaz; gerçek yan etkiler izlenmez.';
+
+  @override
+  String get skillBehaviorUtility => 'Aileye göre yarar';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts doğrulanmış başarı';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Başarısız ve tamamlanmamış olanlar dahil tüm denemeler yararın paydasına katılır.';
 }

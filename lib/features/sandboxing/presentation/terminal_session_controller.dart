@@ -11,6 +11,7 @@
 library;
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:cc_data/cc_data.dart' show RemoteTerminalRepository;
@@ -98,7 +99,103 @@ class TerminalSessionController extends ChangeNotifier {
 
   RemoteTerminalRepository? _repo;
   String? _sessionId;
-  StreamSubscription<List<int>>? _outputSub;
+  StreamSubscription<String>? _outputSub;
+  final Queue<Object> _pendingOutput = Queue<Object>();
+  int _pendingCharacters = 0;
+  int _outputOffset = 0;
+  Timer? _drainTimer;
+  Timer? _reattachTimer;
+  int _outputGeneration = 0;
+
+  // One xterm.write (and thus one synchronous xterm listener notification)
+  // per event-loop turn. A single decoded RPC emission can exceed the budget,
+  // so split it at the drain boundary rather than monopolizing the UI isolate.
+  static const _drainCharacters = 16 * 1024;
+  // A decoded emission can exceed this high-water mark by one RPC chunk.
+  // Pausing bounds this controller's decoded queue; the shared RPC fan-out
+  // does not propagate pause to its network source, so it can buffer upstream.
+  static const _pauseCharacters = 64 * 1024;
+
+  void _queueOutput(Object item) {
+    _pendingOutput.add(item);
+    if (item is String) {
+      _pendingCharacters += item.length;
+      if (_pendingCharacters >= _pauseCharacters &&
+          _outputSub?.isPaused == false) {
+        _outputSub?.pause();
+      }
+    }
+    _drainTimer ??= Timer(Duration.zero, _drainOutput);
+  }
+
+  void _drainOutput() {
+    _drainTimer = null;
+    String? single;
+    StringBuffer? combined;
+    var remaining = _drainCharacters;
+    while (_pendingOutput.isNotEmpty && remaining > 0) {
+      final first = _pendingOutput.first;
+      if (first is! String) {
+        // Write preceding bytes before displaying an error/exit notice.
+        if (single != null) {
+          break;
+        }
+        _pendingOutput.removeFirst();
+        (first as void Function())();
+        break;
+      }
+      var count = (first.length - _outputOffset).clamp(0, remaining);
+      // xterm parses each write as a separate Dart string: never cut a UTF-16
+      // surrogate pair when a non-BMP code point lands on the drain boundary.
+      if (_outputOffset + count < first.length &&
+          (first.codeUnitAt(_outputOffset + count - 1) & 0xfc00) == 0xd800 &&
+          (first.codeUnitAt(_outputOffset + count) & 0xfc00) == 0xdc00) {
+        count--;
+      }
+      if (count == 0) {
+        break;
+      }
+      final part = count == first.length && _outputOffset == 0
+          ? first
+          : first.substring(_outputOffset, _outputOffset + count);
+      if (single == null) {
+        single = part;
+      } else {
+        (combined ??= StringBuffer(single)).write(part);
+      }
+      _outputOffset += count;
+      _pendingCharacters -= count;
+      remaining -= count;
+      if (_outputOffset == first.length) {
+        _pendingOutput.removeFirst();
+        _outputOffset = 0;
+      }
+    }
+    if (single != null) {
+      terminal.write(combined?.toString() ?? single);
+    }
+    if (_pendingCharacters < _pauseCharacters && _outputSub?.isPaused == true) {
+      _outputSub?.resume();
+    }
+    if (_pendingOutput.isNotEmpty) {
+      _drainTimer ??= Timer(Duration.zero, _drainOutput);
+    }
+  }
+
+  Future<void>? _stopOutput() {
+    _outputGeneration++;
+    _drainTimer?.cancel();
+    _drainTimer = null;
+    _reattachTimer?.cancel();
+    _reattachTimer = null;
+    _pendingOutput.clear();
+    _pendingCharacters = 0;
+    _outputOffset = 0;
+    final previous = _outputSub;
+    _outputSub = null;
+    return previous?.cancel();
+  }
+
   StreamSubscription<String>? _titleSub;
 
   /// Latest OSC 0/2 title the shell/program emitted ('' = none).
@@ -347,7 +444,8 @@ class TerminalSessionController extends ChangeNotifier {
 
   void _attach(RemoteTerminalRepository repo, String sessionId) {
     _reattaching = false;
-    _outputSub?.cancel();
+    unawaited(_stopOutput());
+    final generation = _outputGeneration;
     _titleSub?.cancel();
     // Foreground-process titles ride a separate lane from the byte stream. A
     // server that predates `terminal.titles` errors the stream — swallowed:
@@ -355,59 +453,94 @@ class TerminalSessionController extends ChangeNotifier {
     _titleSub = repo
         .titles(sessionId)
         .listen(_onProcessTitle, onError: (Object _) {});
+    // One decoder per stream preserves split UTF-8 code points and replaces
+    // an incomplete tail on completion without carrying it into a reconnect.
+    var lostSession = false;
     _outputSub = repo
         .output(sessionId)
-        .listen(
-          (bytes) {
+        .map((bytes) {
+          if (!_disposed && generation == _outputGeneration) {
             _attachRetries = 0;
-            terminal.write(utf8.decode(bytes, allowMalformed: true));
+          }
+          return bytes;
+        })
+        .transform(const Utf8Decoder(allowMalformed: true))
+        .listen(
+          (text) {
+            if (_disposed || generation != _outputGeneration) {
+              return;
+            }
+            if (text.isNotEmpty) {
+              _queueOutput(text);
+            }
           },
           onError: (Object e) {
-            if (_disposed) {
+            if (_disposed || generation != _outputGeneration) {
               return;
             }
-            // `notFound` = the server does not know this session id. A cc_server
-            // restart kills every PTY and the subscription the client replays on
-            // reconnect names a session the new process never minted. The shell
-            // is genuinely gone (nothing to lose), so spawn a fresh one in place
-            // rather than close the tab out from under the user.
+            // The RPC client closes a notFound subscription after its error.
+            // Wait for decoder completion so a truncated final code point is
+            // delivered before the notice and before the fresh shell starts.
             if (e is RemoteRpcException && e.code == RpcErrorCodes.notFound) {
-              _sessionLost = true;
-              terminal.write(
-                '\r\n[session ended with the server — starting a fresh shell]\r\n',
-              );
-              unawaited(_respawn());
+              lostSession = true;
               return;
             }
-            // A TIMEOUT establishing the stream is transient — typically the
-            // reconnect window after a server restart, when every pending
-            // sub/subscribe expires at once. The session may be perfectly
-            // alive; re-attach rather than dead-ending the tab on a race.
-            if (e is TimeoutException && _attachRetries < 3) {
-              _attachRetries++;
-              _reattaching = true;
-              terminal.write('\r\n[${notices.reconnecting}]\r\n');
-              final id = _sessionId;
-              final repo = _repo;
-              Future<void>.delayed(const Duration(seconds: 3), () {
-                if (!_disposed && repo != null && id == _sessionId) {
-                  _attach(repo, id!);
-                }
-              });
-              return;
-            }
-            terminal.write('\r\n[${notices.streamError} $e]\r\n');
+            _queueOutput(() {
+              if (_disposed || generation != _outputGeneration) {
+                return;
+              }
+              // A TIMEOUT establishing the stream is transient — typically the
+              // reconnect window after a server restart, when every pending
+              // sub/subscribe expires at once. The session may be perfectly
+              // alive; re-attach rather than dead-ending the tab on a race.
+              if (e is TimeoutException && _attachRetries < 3) {
+                _attachRetries++;
+                _reattaching = true;
+                terminal.write('\r\n[${notices.reconnecting}]\r\n');
+                final id = _sessionId;
+                final currentRepo = _repo;
+                _reattachTimer = Timer(const Duration(seconds: 3), () {
+                  _reattachTimer = null;
+                  // Complete decoded output from the old subscription before
+                  // replacing its decoder, even if a large burst is draining.
+                  _queueOutput(() {
+                    if (!_disposed &&
+                        generation == _outputGeneration &&
+                        currentRepo != null &&
+                        id == _sessionId) {
+                      _attach(currentRepo, id!);
+                    }
+                  });
+                });
+                return;
+              }
+              terminal.write('\r\n[${notices.streamError} $e]\r\n');
+            });
           },
           onDone: () {
-            if (_disposed || _sessionLost || _reattaching) {
-              // A lost session already reported itself above and is
-              // respawning, and a scheduled re-attach means this stream died
-              // of a transient failure — neither is the SHELL exiting, and
-              // saying so would close the tab out from under a live session.
+            if (_disposed || generation != _outputGeneration) {
               return;
             }
-            terminal.write('\r\n[${notices.shellExited}]\r\n');
-            onShellExit?.call();
+            _queueOutput(() {
+              if (_disposed || generation != _outputGeneration) {
+                return;
+              }
+              if (lostSession) {
+                _sessionLost = true;
+                terminal.write(
+                  '\r\n[session ended with the server — starting a fresh shell]\r\n',
+                );
+                unawaited(_respawn());
+                return;
+              }
+              if (_sessionLost || _reattaching) {
+                // A scheduled re-attach means this stream died of a transient
+                // failure; reporting shell exit would close a live tab.
+                return;
+              }
+              terminal.write('\r\n[${notices.shellExited}]\r\n');
+              onShellExit?.call();
+            });
           },
         );
   }
@@ -417,13 +550,10 @@ class TerminalSessionController extends ChangeNotifier {
   /// kill or clear anything: there is nothing left to kill and the buffer is
   /// the user's history.
   Future<void> _respawn() async {
-    // Drop the dead streams WITHOUT awaiting their cancels. This runs from
-    // inside the output stream's own error callback, where a `cancel()` future
-    // does not complete until that delivery finishes — awaiting it here would
-    // stall the respawn indefinitely. Nothing is lost: the server already ended
-    // both streams.
-    unawaited(_outputSub?.cancel());
-    _outputSub = null;
+    // Never await cancellation inside output delivery: it can depend on the
+    // callback completing. The old subscription has already ended, so
+    // cancelling asynchronously does not interrupt live output.
+    unawaited(_stopOutput());
     unawaited(_titleSub?.cancel());
     _titleSub = null;
     _repo = null;
@@ -443,8 +573,7 @@ class TerminalSessionController extends ChangeNotifier {
   /// Kills the server session, clears the buffer + cursor + titles and boots
   /// a fresh shell — the old header button's "Restart shell".
   Future<void> restart() async {
-    await _outputSub?.cancel();
-    _outputSub = null;
+    await _stopOutput();
     await _titleSub?.cancel();
     _titleSub = null;
     final repo = _repo;
@@ -477,8 +606,7 @@ class TerminalSessionController extends ChangeNotifier {
       return;
     }
     _disposed = true;
-    await _outputSub?.cancel();
-    _outputSub = null;
+    await _stopOutput();
     await _titleSub?.cancel();
     _titleSub = null;
     final repo = _repo;

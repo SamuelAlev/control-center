@@ -2,7 +2,7 @@
 title: Déploiement et clients
 description: Comment l’architecture à client léger de Control Center sépare un serveur sans interface de ses clients de bureau, web et mobiles.
 slug: fr-FR/manuel/concepts/deploiement
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center n’est pas un seul programme. C’est une **architecture à client léger** : un serveur sans interface qui détient vos données et un ensemble de clients qui affichent une interface par une seule connexion RPC à ce serveur. Comprendre ce découpage explique pourquoi certaines choses s’exécutent là où elles le font et ce que chaque client peut ou non atteindre.
@@ -11,7 +11,7 @@ Control Center n’est pas un seul programme. C’est une **architecture à clie
 
 Un processus appelé **`cc_server`** détient les bases de données — un petit `global.db` pour l’état à l’échelle du serveur, plus un fichier SQLite par [espace de travail](/fr-FR/manuel/concepts/espaces-de-travail/), ouverts à la demande — et exécute le travail de longue durée : les moteurs de pipeline, les réconciliateurs, la surface d’outils MCP et l’écouteur d’orchestration. Tout ce qui doit survivre à une fenêtre, ou que deux clients doivent voir à l’identique, réside là.
 
-Aucun client n’ouvre lui-même un fichier de base de données. Chaque client détient plutôt un **`RemoteRpcClient`** unique et émet, par son intermédiaire, les opérations sur les dépôts et les abonnements. Le serveur authentifie la connexion à l’aide d’une clé pré-partagée d’appareil associé, puis cesse de se soucier de la connexion. **Une session n’est pas liée à un espace de travail.** Le répartiteur est sans état : chaque appel propre à un espace de travail porte son propre `workspace_id` dans ses arguments, et tout appel qui en omet un est refusé.
+Aucun client n’ouvre lui-même un fichier de base de données. Chaque client détient plutôt un **`RemoteRpcClient`** unique et émet, par son intermédiaire, les opérations sur les dépôts et les abonnements. Les sessions directes comme relayées exigent une poignée de main Noise signée : la clé pré-partagée de l’appareil associé authentifie l’échange, tandis que de nouvelles clés de trafic chiffrent chaque session. **Une session n’est pas liée à un espace de travail.** Le répartiteur est sans état : chaque appel propre à un espace de travail porte son propre `workspace_id` dans ses arguments, et tout appel qui en omet un est refusé.
 
 C’est délibéré, et c’est ce qui permet à deux clients d’un même serveur de se trouver dans des espaces de travail différents sans qu’un « espace de travail courant » détenu par le serveur leur fasse diverger. L’isolation est plutôt appliquée à chaque appel, en quatre étapes :
 
@@ -47,19 +47,19 @@ Dans les deux cas, le client RPC obtenu remplace le fournisseur de données de l
 
 ### Client web
 
-La version web est la même application Flutter compilée pour s’exécuter dans un navigateur, hébergée à [app.usectrl.dev](https://app.usectrl.dev), si bien qu’il n’y a rien à installer. Un navigateur ne peut pas lancer de sous-processus : le client web est donc **toujours** distant. Il se connecte à un `cc_server` par `wss://` et affiche l’interface de bureau complète. Une fois connecté, il présente les mêmes écrans face à la même flotte, parce que c’est le même code sur le même RPC. Les lacunes sont la poignée d’endroits qui nécessitent une capacité native qu’un navigateur n’a pas — la couche de qualité de la capture de réunion ci-dessous est la principale, et les notifications du système d’exploitation en sont une autre.
+La version web est la même application Flutter compilée pour s’exécuter dans un navigateur, hébergée à [app.usectrl.dev](https://app.usectrl.dev), si bien qu’il n’y a rien à installer. Un navigateur ne peut pas lancer de sous-processus : le client web est donc **toujours** distant. Il se connecte à un `cc_server` par une session WebSocket chiffrée et affiche l’interface de bureau complète. Une fois connecté, il présente les mêmes écrans face à la même flotte, parce qu’il utilise le même code sur le même RPC. Les lacunes sont la poignée d’endroits qui nécessitent une capacité native qu’un navigateur n’a pas — la couche de qualité de la capture de réunion ci-dessous est la principale, et les notifications du système d’exploitation en sont une autre.
 
 C’est pourquoi « aucun téléchargement » et « aucun serveur » sont deux affirmations distinctes. Le client web supprime l’installation ; il ne supprime pas le serveur. Ce à quoi il se connecte peut être un `cc_server` sur le même ordinateur portable — `ws://localhost:9030`, qui n’exige aucun certificat puisque les navigateurs considèrent la boucle locale comme fiable — ou un serveur sur une autre machine, qui doit être joignable par `wss://` avec un certificat auquel le navigateur fait confiance. `cc_server` refuse de se lier à une adresse autre que la boucle locale sans TLS ; un serveur distant suppose donc soit son propre certificat, soit un proxy qui termine le TLS, soit un tunnel ou un VPN qui en fournit un.
 
 Le paquet lui-même est hébergé séparément du serveur auquel il parle. Un `cc_server` autonome sert le point de terminaison RPC, la surface MCP et ses proxys, mais **pas** de paquet web — le chemin des fichiers statiques existe dans le serveur, mais aucune racine web n’est configurée sur le binaire autonome, qui n’a donc rien à servir à `/`. L’image de conteneur `cc-webapp` publiée est ce qui héberge le paquet, et `scripts/build_web.sh` est ce qui le construit. Un serveur n’accepte les origines de navigateur que sur sa liste `--allowed-origins`, qui vaut par défaut `https://app.usectrl.dev` ; héberger le paquet soi-même suppose donc d’y ajouter son origine.
 
-Les médias (avatars, images du fil, captures d’écran de PR) passent par le point de terminaison proxy du serveur plutôt que de joindre directement les hôtes en amont, si bien qu’un navigateur ne récupère jamais une origine arbitraire. Le client déployé appose une Content-Security Policy par requête à partir d’un cookie non sensible, de sorte que seule l’origine du serveur connecté est autorisée.
+Les médias (avatars, images du fil, captures d’écran de PR), les téléversements, les sauvegardes et les HTTP/WebSocket de l’éditeur intégré passent par le tunnel de ressources chiffré, et non par des routes HTTP publiques lisibles ; les chemins signés exigent tout de même une autorisation. Le frontend de l’éditeur de confiance s’exécute sur l’origine propre à l’application web. Son service worker achemine les requêtes de l’éditeur par la session chiffrée existante vers `cc_server`, qui détient les fichiers et le backend code-server. Le navigateur a besoin de HTTPS ou d’un contexte de boucle locale sécurisé pour les service workers. Les clients natifs utilisent une façade en boucle locale à portée de capacités.
 
 ### Compagnon téléphonique (cc_remote)
 
-L’application **Remote** est un client distinct et plus léger — une PWA web Flutter à [remote.usectrl.dev](https://remote.usectrl.dev/). Elle n’est délibérément **pas** l’application complète. Elle s’associe par l’intermédiaire d’un relais WebSocket à courtage, scellé de bout en bout, et parle une tranche essentiellement en lecture de la surface d’outils : lire les tickets, les messages et le fil d’actualités ; envoyer une réponse ou mettre à jour un ticket.
+L’application **Remote** est un client distinct et plus léger — une PWA web Flutter à [remote.usectrl.dev](https://remote.usectrl.dev/). Elle n’est délibérément **pas** l’application complète. Elle se connecte directement lorsque c’est possible ou par un relais à courtage ; les deux chemins exigent le chiffrement de bout en bout. Elle parle une tranche essentiellement en lecture de la surface d’outils : lire les tickets, les messages et le fil d’actualités ; envoyer une réponse ou mettre à jour un ticket.
 
-Un téléphone est un **principal moins privilégié** qu’un agent local. Une politique d’outils en refus par défaut, une clé pré-partagée scellant chaque trame, une capacité de session qui exclut les opérations privilégiées (l’appairage, par exemple) d’un client compagnon, les vérifications de rôle et d’autorisation par dépôt à chaque appel décrites ci-dessus et la limitation de débit empêchent un appairage approuvé (ou divulgué) de devenir un contrôle à distance complet. Voir [Contrôle à distance et mobile](/fr-FR/manuel/concepts/controle-a-distance/) pour le modèle de sécurité complet.
+Un téléphone est un **principal moins privilégié** qu’un agent local. Une politique d’outils en refus par défaut, une capacité de session qui exclut les opérations privilégiées (l’appairage, par exemple) d’un client compagnon, les vérifications de rôle et d’autorisation par dépôt à chaque appel décrites ci-dessus et la limitation de débit empêchent un appairage approuvé (ou divulgué) de devenir un contrôle à distance complet. Le chiffrement du transport n’accorde aucune autorisation. Voir [Contrôle à distance et mobile](/fr-FR/manuel/concepts/controle-a-distance/) pour le modèle de sécurité complet.
 
 ### Clients MCP
 
@@ -96,14 +96,16 @@ Le client web enregistre lui aussi, ce que la forme du tableau peut masquer : i
 
 ## Appairage et confiance
 
-Chaque client prouve son identité au moyen d’une **clé pré-partagée** provisionnée une seule fois :
+Chaque client utilise une **clé pré-partagée** provisionnée une seule fois pour authentifier sa poignée de main Noise signée avec `cc_server`, y compris par la boucle locale et le relais :
 
 - L’application de bureau en mode local génère une nouvelle clé à chaque démarrage et la remet au serveur lancé par l’environnement, si bien qu’aucun secret n’est persisté sur le poste de bureau.
-- Les clients distants (bureau distant, web, téléphone) utilisent une clé émise par la commande `pair` du serveur et stockée dans le trousseau du système d’exploitation (ou, sur le téléphone, localement).
+- Les clients distants (bureau distant, web, téléphone) utilisent une clé émise par le flux d’appairage du serveur ou par la commande `pair`. Les clients natifs utilisent le trousseau du système d’exploitation ; les clients de navigateur conservent leur appairage en local.
+
+Le client vérifie l’identité signée du serveur par rapport à son épinglure d’empreinte enregistrée. À la première connexion, vérifiez cette empreinte par un QR code fiable ou un autre canal fiable : un premier contact signé ne peut pas, à lui seul, authentifier qui a fourni la clé. Si l’identité change, le client échoue en mode fermé ; associez de nouveau par un canal fiable au lieu d’ignorer l’écart. Les anciens clients et le RPC en clair ne peuvent pas se connecter. TLS reste nécessaire pour les origines de navigateur, l’amorçage et les métadonnées publiques ; `--insecure` touche l’écouteur externe du serveur, et non la session chiffrée obligatoire.
 
 La révocation est **immédiate**, et non différée. Le serveur surveille sa table des appareils associés et coupe, en quelques secondes, toute session ouverte dont l’appareil a quitté l’ensemble actif — sur le chemin WebSocket direct comme sur le chemin relais. Vous n’avez pas à attendre que l’appareil se reconnecte pour le couper.
 
-La clé ne transite jamais par une URL qu’un hôte statique peut voir. Lorsqu’elle arrive par un lien — sur le téléphone ou dans un navigateur — elle voyage dans le **fragment d’URL**, la partie après `#`, que le navigateur n’envoie jamais au serveur qui héberge la page. C’est l’invariant à retenir, et il s’applique aux deux. Le client web dispose de deux autres points d’entrée : le formulaire de connexion, où vous collez directement un serveur et une clé, et un code d’invitation, qu’il échange contre un identifiant émis pour ce navigateur uniquement.
+Lorsque la clé arrive par un lien — sur le téléphone ou dans un navigateur — elle voyage dans le **fragment d’URL**, la partie après `#` que les navigateurs n’envoient pas dans la requête vers l’hôte de la page. Le JavaScript de la page peut tout de même le lire, alors fiez-vous à cet hôte et gardez le lien secret. Le client web dispose aussi d’un formulaire de connexion, où vous collez directement un serveur et une clé, et d’un code d’invitation, qu’il échange contre un identifiant émis pour ce navigateur uniquement.
 
 ## Concepts connexes
 

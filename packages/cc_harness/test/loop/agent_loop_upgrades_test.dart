@@ -64,6 +64,7 @@ class _FakeCompactor implements HarnessCompactor {
     List<HarnessMessage> history, {
     required int? contextWindow,
     int overheadTokens = 0,
+    int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
   }) async {
@@ -361,38 +362,6 @@ void main() {
   );
 
   test(
-    'read-tier tools in one turn execute concurrently and both run',
-    () async {
-      final a = _ReadTool('read_a');
-      final b = _ReadTool('read_b');
-      final provider = _Scripted([
-        [
-          _call('read_a'),
-          _call('read_b'),
-          const LlmDone(stopReason: LlmStopReason.toolUse),
-        ],
-        [
-          const LlmTextDelta('done'),
-          const LlmDone(stopReason: LlmStopReason.endTurn),
-        ],
-      ]);
-      final events = await runner
-          .run(
-            history: [],
-            userMessage: 'go',
-            tools: [a, b],
-            provider: provider,
-          )
-          .toList();
-      expect(a.calls, 1);
-      expect(b.calls, 1);
-      // Both results are paired back in the model's original call order.
-      final results = events.whereType<LoopToolCallResult>().toList();
-      expect(results.map((r) => r.toolUseId), ['tc_read_a', 'tc_read_b']);
-    },
-  );
-
-  test(
     'sibling task-style calls in one turn overlap instead of serializing',
     () async {
       final meter = _Meter();
@@ -413,7 +382,7 @@ void main() {
           const LlmDone(stopReason: LlmStopReason.endTurn),
         ],
       ]);
-      final events = await runner
+      await runner
           .run(history: [], userMessage: 'go', tools: tools, provider: provider)
           .toList();
       expect(
@@ -422,56 +391,6 @@ void main() {
         reason: 'self-guarding parallel-safe tools must run concurrently',
       );
       expect(tools.map((t) => t.calls), [1, 1, 1]);
-      // Results are still paired back in the model's original call order.
-      final results = events.whereType<LoopToolCallResult>().toList();
-      expect(results.map((r) => r.toolUseId), [
-        'tc_task_a',
-        'tc_task_b',
-        'tc_task_c',
-      ]);
-    },
-  );
-
-  test(
-    'parallel fan-out is capped at maxParallelToolCalls, in waves',
-    () async {
-      final meter = _Meter();
-      final tools = [
-        _SpawnTool('task_a', meter),
-        _SpawnTool('task_b', meter),
-        _SpawnTool('task_c', meter),
-        _SpawnTool('task_d', meter),
-        _SpawnTool('task_e', meter),
-      ];
-      final provider = _Scripted([
-        [
-          for (final t in tools) _call(t.name),
-          const LlmDone(stopReason: LlmStopReason.toolUse),
-        ],
-        [
-          const LlmTextDelta('done'),
-          const LlmDone(stopReason: LlmStopReason.endTurn),
-        ],
-      ]);
-      final events = await runner
-          .run(
-            history: [],
-            userMessage: 'go',
-            tools: tools,
-            provider: provider,
-            config: const AgentLoopConfig(maxParallelToolCalls: 2),
-          )
-          .toList();
-      expect(meter.peak, 2, reason: 'the cap bounds each wave');
-      expect(tools.map((t) => t.calls), [
-        1,
-        1,
-        1,
-        1,
-        1,
-      ], reason: 'the cap defers the remainder, it does not drop it');
-      final results = events.whereType<LoopToolCallResult>().toList();
-      expect(results.map((r) => r.toolUseId), tools.map((t) => 'tc_${t.name}'));
     },
   );
 

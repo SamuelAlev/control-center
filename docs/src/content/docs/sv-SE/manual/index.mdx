@@ -2,7 +2,7 @@
 title: Introduktion
 description: Control Center är cockpit för programvaruutveckling med flera agenter.
 slug: sv-SE/handbok
-sourceHash: 77561c3d61668603e953379e85b192b9b5440635
+sourceHash: 23a8e4fad783961ca840345b87b52d56fa793945
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
@@ -25,7 +25,7 @@ Control Center ger dig kommandot över en flotta av AI-kodningsagenter. Starta a
 - **Följ arbetet** med leverantörsneutrala ärenden, projekt och delegering
 - **Spela in möten** med inspelning på enheten, transkribering och diarisering, som sedan sammanfattas till anteckningar, åtgärdspunkter och beslut
 - **Se din dag** med synk mot Google Calendar, RSVP, mötesaviseringar och spela in och länka
-- **Följ flottan från telefonen**: parkoppla en enhet med din server och läs meddelanden, svara och triagea ärenden. Telefonen tar den bästa vägen den når — loopback, LAN, tailnet eller TLS — och faller tillbaka på en änd-till-änd-förseglad relay som vidarebefordrar ramar den inte kan läsa
+- **Följ flottan från telefonen**: parkoppla en enhet med din server och läs meddelanden, svara och triagea ärenden. Telefonen tar den bästa vägen den når — loopback, LAN, tailnet eller TLS — och faller vid behov tillbaka på ett relä. Både direkta och reläade anslutningar använder änd-till-änd-kryptering; reläet vidarebefordrar trafik det inte kan dekryptera
 - **Styr agenter från Slack**: brygga en arbetsyta till en chattapp och nämn boten, svara i en Slack-tråd eller registrera ett ärende med ett slash-kommando — över en utgående anslutning, så ingen publik ändpunkt behövs
 - **Integrera** med GitHub, Linear, Slack, Google Calendar och över 100 MCP-verktyg
 

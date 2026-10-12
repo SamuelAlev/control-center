@@ -20,16 +20,24 @@ import 'package:flutter/widgets.dart';
 /// reading before the runner ever turns up on the filesystem.
 class AdapterDetailPane extends StatelessWidget {
   /// Creates an [AdapterDetailPane].
-  const AdapterDetailPane({super.key, required this.detected});
+  const AdapterDetailPane({
+    super.key,
+    required this.detected,
+    required this.signInExpired,
+  });
 
   /// The runner shown.
   final DetectedAdapter detected;
+
+  /// Whether this runner has an expired account sign-in.
+  final bool signInExpired;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final status = detected.status;
+    final hasExpiredSignIn = detected.isFound && signInExpired;
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -48,16 +56,20 @@ class AdapterDetailPane extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               CcStatusTag(
-                tone: switch (status) {
-                  DetectionStatus.found => CcStatusTone.positive,
-                  DetectionStatus.checking => CcStatusTone.neutral,
-                  DetectionStatus.notFound => CcStatusTone.neutral,
-                },
-                label: switch (status) {
-                  DetectionStatus.found => l10n.available,
-                  DetectionStatus.checking => l10n.checking,
-                  DetectionStatus.notFound => l10n.unavailable,
-                },
+                tone: hasExpiredSignIn
+                    ? CcStatusTone.caution
+                    : switch (status) {
+                        DetectionStatus.found => CcStatusTone.positive,
+                        DetectionStatus.checking => CcStatusTone.neutral,
+                        DetectionStatus.notFound => CcStatusTone.neutral,
+                      },
+                label: hasExpiredSignIn
+                    ? l10n.claudeAccountExpired
+                    : switch (status) {
+                        DetectionStatus.found => l10n.available,
+                        DetectionStatus.checking => l10n.checking,
+                        DetectionStatus.notFound => l10n.unavailable,
+                      },
               ),
             ],
           ),

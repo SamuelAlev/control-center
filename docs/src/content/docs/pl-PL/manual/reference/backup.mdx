@@ -2,7 +2,7 @@
 title: Kopia zapasowa, eksport i import
 description: Układ migawki, manifest, każda operacja kopii zapasowej i trasa transferu oraz dokładnie to, które pliki kopia zapasowa zawiera, a których nie.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Wszystko, co Control Center potrafi skopiować, przekazać lub przejąć, oraz dokładny kształt
@@ -24,6 +24,12 @@ Istnieją trzy artefakty kopiowania bazy danych, o różnych zakresach i zasadac
 Wszystkie są zapisywane za pomocą SQLite `VACUUM INTO`, co jest bezpieczne wobec działającej
 bazy danych w trybie WAL: operacja bierze transakcję odczytu, tworzy zdefragmentowaną i spójną
 transakcyjnie kopię i nigdy nie wymaga zatrzymywania serwera.
+
+Te pliki i pobrane kopie **nie są szyfrowane w spoczynku** przez Control Center.
+Szyfrowany end-to-end transfer chroni bajty w tranzycie między sparowanym
+klientem a jego `cc_server`, zarówno w połączeniach bezpośrednich, jak i przez
+przekaźnik. Chroń lokalną pamięć i kopie poza maszyną osobno; serwer i każdy
+upoważniony odbiorca mogą odczytać pliki baz danych.
 
 ## Układ migawki
 
@@ -201,10 +207,15 @@ wypełnione, ale jego indeks może być nieaktualny.
 
 ## Trasy transferu
 
-Każda z powyższych operacji mówi ścieżkami po stronie serwera, co jest pełną odpowiedzią tylko
-wtedy, gdy serwerem jest Twoja własna maszyna. Te trzy trasy przenoszą bajty, tym samym torem
-podpisywanym kluczem PSK, którego używają proxy multimediów i magazyn blobów. Wywołujący podpisuje
-ciąg docelowy kluczem wstępnie współdzielonym swojego urządzenia i przekazuje podpis jako `s`.
+Operacje eksportu/importu i wyświetlania migawek powyżej mówią ścieżkami po stronie serwera,
+co jest pełną odpowiedzią tylko wtedy, gdy serwerem jest Twoja własna maszyna. Te trasy
+o kształcie HTTP przenoszą bajty kopii zapasowej **wewnątrz tego samego uwierzytelnionego,
+szyfrowanego end-to-end tunelu zasobów** co inne wrażliwe zasoby, niezależnie od tego, czy
+połączenie RPC jest bezpośrednie, czy przez przekaźnik. Nie są to publiczne punkty końcowe
+transferu plików HTTP: żądanie do jednego z nich na publicznym nasłuchu zwraca
+`426 Upgrade Required`, także z loopbacku. W szyfrowanym tunelu urządzenie uwierzytelnione
+przez Noise musi zgadzać się z `d`; handler dodatkowo sprawdza podpis urządzenia nad jego
+ciągiem docelowym przy użyciu jego PSK parowania oraz rolę poniżej.
 
 | Trasa                   | Metoda | Zapytanie       | Podpisany cel                  | Wymaga                  |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -224,6 +235,7 @@ lista by nie pokazała.
 | `404`  | Brak portu kopii zapasowych na tym hoście albo wskazana migawka/plik obszaru roboczego nie istnieje |
 | `405`  | `/backup/restore` wywołane czymkolwiek innym niż `POST`                             |
 | `413`  | Treść wysyłki przekracza 8 GiB — według zadeklarowanej długości treści albo według faktycznie odczytanych bajtów |
+| `426`  | Każde bezpośrednie żądanie do ścieżki transferu na publicznym nasłuchu HTTP; użyj szyfrowanego tunelu zasobów sparowanego klienta |
 | `500`  | Eksport albo archiwizacja nie powiodły się po stronie serwera                       |
 
 Oba pobierania odpowiadają `Cache-Control: no-store` z `Accept-Ranges: none`. Każde żądanie
@@ -240,11 +252,13 @@ archiwum.
 ogranicza ją przed odczytem i w jego trakcie oraz usuwa odłożony plik na **każdej** drodze
 wyjścia, także przy odmowie.
 
-:::caution[Połączenie przez relay nie ma źródła HTTP]
-Pośredniczony relay przenosi ramki RPC, a nie transfery plików. Wszystko, co mówi ścieżkami
-po stronie serwera, działa przez niego dalej; trzy trasy transferu wymagają bezpośredniego
-połączenia, a interfejs wyłącza je z odpowiednią notką, zamiast zawieść w połowie pobierania.
-:::
+::::caution[Połączenie bezpośrednie i przez przekaźnik używają tego samego szyfrowanego transferu]
+Przekaźnik przenosi żądania zasobów, strumieniowane odpowiedzi i bajty wysyłki jako
+szyfrogram; nie może odczytać zawartości kopii zapasowej. Ścieżka po stronie serwera
+pozostaje ścieżką na hoście serwera, a nie plikiem na przekaźniku. Dostęp nadal wymaga
+sparowanego urządzenia, podpisu celu i właściwej roli obszaru roboczego lub instalacji.
+Żaden z transportów nie szyfruje powstałych plików kopii zapasowej w spoczynku.
+::::
 
 ## Ścieżki i limity
 
@@ -255,7 +269,7 @@ połączenia, a interfejs wyłącza je z odpowiednią notką, zamiast zawieść 
 | Eksporty obszarów roboczych    | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Obszar tymczasowy transferu    | `<dataDir>/backups/transfer/` — miejsce robocze, czyszczone przez trasę, która do niego pisze |
 | Nazwa archiwum migawki         | `<snapshot directory name>.zip`                              |
-| Limit wysyłki                  | 8 GiB na `POST /backup/restore`                              |
+| Limit wysyłki                  | 8 GiB na szyfrowaną wysyłkę `/backup/restore`               |
 | Retencja                       | Migawki instalacji: ręczne usuwanie. Kopie zapasowe obszarów roboczych: cotygodniowy potok, domyślnie 30 dni |
 
 Katalogi `exports/`, `transfer/` i `workspace-backups/` nie są migawkami instalacji i są

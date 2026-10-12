@@ -48,6 +48,37 @@ Duration? parseRetryAfter(String? value) {
   }
 }
 
+/// Signals the first non-empty BODY chunk of a response, before any decoding.
+///
+/// **Which boundary this is.** `HttpClientResponse` completes on the response
+/// HEADERS, and `dart:io` never surfaces the first TCP segment or TLS record, so
+/// the earliest transport event a client can actually observe is the first byte
+/// of the response BODY. It is a body-byte boundary, not a wire first-byte one:
+/// the gap between them covers the server's own time-to-first-output and any
+/// intermediary's buffering. This timestamp therefore must not be read as
+/// network latency, and it cannot on its own separate a slow network from a slow
+/// model — it is the earliest point that is genuinely measured rather than
+/// inferred.
+///
+/// Fires at most once per response, never for an empty chunk, and never at all
+/// when the response carries no body.
+Stream<List<int>> signalFirstBodyByte(
+  Stream<List<int>> body,
+  void Function()? onFirstByte,
+) {
+  if (onFirstByte == null) {
+    return body;
+  }
+  var signalled = false;
+  return body.map((chunk) {
+    if (!signalled && chunk.isNotEmpty) {
+      signalled = true;
+      onFirstByte();
+    }
+    return chunk;
+  });
+}
+
 /// Idle-timeouts [source] without arming a fresh [Timer] per event.
 ///
 /// `Stream.timeout` cancels and re-creates its timer on EVERY event. An SSE
@@ -117,9 +148,8 @@ Stream<T> idleGuarded<T>(Stream<T> source, Duration idle) {
   return controller.stream;
 }
 
-/// Thin streaming HTTP client for LLM providers, built on `dart:io` so it works
-/// in the pure-Dart server binary (no Flutter, no dio interceptors that would
-/// buffer or retry a streaming response).
+/// Streaming HTTP client for LLM providers, built on `dart:io` for the
+/// pure-Dart server. Responses are streamed without buffering or retrying.
 class ProviderHttp {
   /// Creates a [ProviderHttp] with an optional connection and idle timeout.
   ///
@@ -148,21 +178,32 @@ class ProviderHttp {
   /// POSTs [body] as JSON to [uri] and parses the response as Server-Sent
   /// Events. Throws [ProviderHttpException] on a non-2xx response (after
   /// reading the error body) and propagates socket errors.
+  ///
+  /// [onFirstBodyByte] fires on the first NON-EMPTY response BODY chunk —
+  /// including a non-2xx response's error body — before any UTF-8 or SSE
+  /// decoding. A server that never sends a body never fires it.
   Stream<SseMessage> postSse(
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     final request = await _client.postUrl(uri).timeout(_connectTimeout);
     request.headers.contentType = ContentType.json;
     request.headers.set(HttpHeaders.acceptHeader, 'text/event-stream');
     headers.forEach(request.headers.set);
-    request.add(utf8.encode(jsonEncode(body)));
+    final encoded = utf8.encode(jsonEncode(body));
+    onRequestSent?.call();
+    request.add(encoded);
     // Bound the wait for response headers as well as the initial connect.
     final response = await request.close().timeout(_idleTimeout);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final errorBody = await response.transform(utf8.decoder).join();
+      final errorBody = await signalFirstBodyByte(
+        response,
+        onFirstBodyByte,
+      ).transform(utf8.decoder).join();
       throw ProviderHttpException(
         response.statusCode,
         errorBody,
@@ -173,7 +214,9 @@ class ProviderHttp {
     // Idle-timeout the body: resets on every chunk, so a slow-but-progressing
     // stream is fine and only a wedged connection trips it. The error surfaces
     // through parseSse's onError and is mapped to a retryable LlmError upstream.
-    yield* parseSse(idleGuarded(response, _idleTimeout));
+    yield* parseSse(
+      idleGuarded(signalFirstBodyByte(response, onFirstBodyByte), _idleTimeout),
+    );
   }
 
   /// POSTs [body] as JSON to [uri] and returns the decoded JSON response (no
@@ -276,6 +319,8 @@ extension ProviderHttpAuthRetry on ProviderHttp {
     required Future<Map<String, String>> Function({bool force}) headers,
     required Map<String, dynamic> body,
     bool retryOnUnauthorized = true,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async {
     var forced = false;
     while (true) {
@@ -284,6 +329,8 @@ extension ProviderHttpAuthRetry on ProviderHttp {
           uri,
           headers: await headers(force: forced),
           body: body,
+          onRequestSent: onRequestSent,
+          onFirstBodyByte: onFirstBodyByte,
         ),
       );
       try {

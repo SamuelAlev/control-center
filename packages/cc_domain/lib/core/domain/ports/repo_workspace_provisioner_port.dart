@@ -128,6 +128,36 @@ abstract interface class RepoWorkspaceProvisionerPort {
 /// has no ticket and is not checking out a pull request.
 const String kSpaceScratchBranchPrefix = 'space/';
 
+/// The directory the provisioner creates per-agent overlays under:
+/// `<spaceRoot>/agents/<agentOverlayDirName(…)>`.
+const String kAgentOverlaysDirName = 'agents';
+
+/// The space root owning [overlayDir] — `spaces/<spaceId>` — or null when
+/// [overlayDir] is not one of its per-agent overlays (`<spaceRoot>/agents/…`).
+///
+/// Read by the sandbox exec-grant provenance: a tree the provisioner made for
+/// a run alone carries implicit exec authority, and that has to be read off the
+/// CREATOR's layout (this file names it) rather than off a path an operator or
+/// an agent could happen to point at.
+String? spaceRootForOverlay(String overlayDir) {
+  if (overlayDir.isEmpty) {
+    return null;
+  }
+  final trimmed = overlayDir.endsWith('/')
+      ? overlayDir.substring(0, overlayDir.length - 1)
+      : overlayDir;
+  final cut = trimmed.lastIndexOf('/');
+  if (cut <= 0) {
+    return null;
+  }
+  final agentsDir = trimmed.substring(0, cut);
+  if (!agentsDir.endsWith('/$kAgentOverlaysDirName')) {
+    return null;
+  }
+  final rootEnd = agentsDir.length - kAgentOverlaysDirName.length - 1;
+  return rootEnd <= 0 ? null : agentsDir.substring(0, rootEnd);
+}
+
 /// That branch for [spaceId]: `space/` plus the first eight characters of the
 /// space id (`space/12345678`).
 String spaceScratchBranch(String spaceId) {

@@ -8,8 +8,10 @@ import 'package:cc_domain/core/domain/ports/git_snapshot_port.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
+import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
@@ -91,8 +93,27 @@ class _StreamContext {
   /// unfinished (e.g. the harness hit its turn ceiling). Takes precedence over
   /// the plain `sawDone → completed` mapping.
   TurnOutcome? doneOutcome;
-  DateTime? firstTokenAt;
+
+  /// Observed stage boundaries, earliest-per-stage. `submitted` is stamped when
+  /// the stream opens; everything else is folded from [StageTimingEvent]s or
+  /// from the first event the processor itself can see.
+  RunLatencyProfile latency = RunLatencyProfile.empty;
+
+  /// Additive usage totals (each reported delta summed).
   RunCost accumulatedCost = RunCost.zero;
+
+  /// The LAST absolute whole-run snapshot, when the adapter reports cumulative
+  /// totals (a CLI whose ledger covers the whole process, resumed runs
+  /// included). When present it SUPERSEDES [accumulatedCost]: adding an absolute
+  /// total to the deltas that produced it is how a resumed run's spend doubled
+  /// on every turn.
+  RunCost? cumulativeCost;
+
+  /// The adapter's native session id for this run, when it reported one.
+  String? nativeSessionId;
+
+  /// Whether the run resumed the native session rather than starting fresh.
+  bool resumedNativeSession = false;
 
   /// The newest provider-reported context reading, persisted on the turn as
   /// `metadata['context']` so the meter shows what the model actually holds.
@@ -197,6 +218,15 @@ class AgentStreamProcessor {
         _markDirty(ctx, structural: structural);
       },
     );
+    // The run's own start is the only boundary the processor knows exactly, so
+    // stamp it: every other stage's offset is measured from here.
+    ctx.latency = ctx.latency.merge(
+      const RunStageTiming(
+        stage: RunStage.submitted,
+        offsetMs: 0,
+        source: RunTimingSource.harness,
+      ),
+    );
 
     stream.listen(
       (event) => _onEvent(ctx, event),
@@ -209,22 +239,47 @@ class AgentStreamProcessor {
 
   void _onEvent(_StreamContext ctx, AgentProcessEvent event) {
     switch (event) {
+      case StageTimingEvent():
+        // An adapter/transport-observed boundary. Folded, never derived: the
+        // earliest observation of a stage wins, so the processor's own coarse
+        // text-derived boundary never overwrites a real provider measurement.
+        ctx.latency = ctx.latency.merge(event.toTiming());
+        return;
       case TextEvent():
-        ctx.firstTokenAt ??= event.timestamp;
+        _noteStage(
+          ctx,
+          RunStage.firstModelDelta,
+          event,
+          RunTimingSource.adapter,
+        );
+        if (event.content.trim().isNotEmpty) {
+          _noteStage(
+            ctx,
+            RunStage.firstUsefulText,
+            event,
+            RunTimingSource.harness,
+          );
+        }
+      case ThinkingEvent():
+        // Reasoning output IS a model delta: a thinking-first run has started
+        // producing while "time to first text" is still unset.
+        _noteStage(
+          ctx,
+          RunStage.firstModelDelta,
+          event,
+          RunTimingSource.adapter,
+        );
+      case ToolCallEvent():
+        // A tool call is useful work. Waiting for assistant prose to call a run
+        // "started" is what made a tool-first turn look like it had not begun.
+        _noteStage(
+          ctx,
+          RunStage.firstUsefulText,
+          event,
+          RunTimingSource.harness,
+        );
       case UsageEvent():
-        ctx.accumulatedCost =
-            ctx.accumulatedCost +
-            event.usage.toCost(
-              durationMs: event.durationMs,
-              timeToFirstTokenMs: ctx.firstTokenAt == null
-                  ? null
-                  : ctx.firstTokenAt!.millisecondsSinceEpoch -
-                        ctx
-                            .dispatchResult
-                            .runLog
-                            .startedAt
-                            .millisecondsSinceEpoch,
-            );
+        _applyUsage(ctx, event);
         return;
       case ContextWindowEvent():
         ctx.contextReading = event;
@@ -243,6 +298,92 @@ class AgentStreamProcessor {
         break;
     }
     ctx.folder.add(event);
+  }
+
+  /// Folds a boundary the PROCESSOR observed (as opposed to one an adapter
+  /// reported), keeping the earliest offset per stage.
+  void _noteStage(
+    _StreamContext ctx,
+    RunStage stage,
+    AgentProcessEvent event,
+    RunTimingSource source,
+  ) {
+    ctx.latency = ctx.latency.merge(
+      RunStageTiming(
+        stage: stage,
+        offsetMs: _offsetMs(ctx, event.timestamp),
+        source: source,
+      ),
+    );
+  }
+
+  /// Milliseconds from run start to [at]. Negative is clamped to 0: a clock
+  /// step or an out-of-order event must not produce a negative latency that
+  /// then drags a percentile below zero.
+  static int _offsetMs(_StreamContext ctx, DateTime at) {
+    final delta = at
+        .difference(ctx.dispatchResult.runLog.startedAt)
+        .inMilliseconds;
+    return delta < 0 ? 0 : delta;
+  }
+
+  /// Folds a usage report into the turn's totals.
+  ///
+  /// The SCOPE decides how: an additive report ([UsageScope.request] /
+  /// [UsageScope.turn]) sums, while an absolute [UsageScope.runCumulative]
+  /// snapshot REPLACES the cumulative total (last reading wins). Treating the
+  /// latter as additive inflated a resumed CLI run's cost on every turn —
+  /// exactly the accounting bug that made the harness look cheap.
+  void _applyUsage(_StreamContext ctx, UsageEvent event) {
+    // Lineage travels on the usage report because that is what the adapter
+    // already emits per result; it is persisted on the RUN, where the
+    // evaluation's resume-vs-fresh stratum can query it.
+    if (event.nativeSessionId != null) {
+      ctx.nativeSessionId = event.nativeSessionId;
+    }
+    if (event.resumedNativeSession) {
+      ctx.resumedNativeSession = true;
+    }
+    final reported = event.usage.toCost(durationMs: event.durationMs);
+    if (event.scope == UsageScope.runCumulative) {
+      // Keep the last absolute snapshot. A cumulative reading that arrives with
+      // no duration leaves the earlier one's duration in place.
+      final previous = ctx.cumulativeCost;
+      ctx.cumulativeCost = reported.copyWith(
+        durationMs: reported.durationMs ?? previous?.durationMs,
+      );
+      return;
+    }
+    ctx.accumulatedCost = ctx.accumulatedCost + reported;
+  }
+
+  /// The turn's authoritative cost: the absolute snapshot when the adapter
+  /// reported one, else the summed deltas — with the provider latencies attached
+  /// only where they were actually observed.
+  RunCost _effectiveCost(_StreamContext ctx) {
+    final base = ctx.cumulativeCost ?? ctx.accumulatedCost;
+    return RunCost(
+      inputTokens: base.inputTokens,
+      outputTokens: base.outputTokens,
+      thoughtTokens: base.thoughtTokens,
+      cachedReadTokens: base.cachedReadTokens,
+      cachedWriteTokens: base.cachedWriteTokens,
+      // The cents field is the legacy projection of the exact figure: for a
+      // cumulative snapshot the adapter leaves it 0 (its cents are a whole-tree
+      // total a cents-summing consumer must not add), so project from micros
+      // when they exist and keep the reported cents otherwise.
+      estimatedCostCents: base.costMicros != 0
+          ? (base.costMicros / 10000).round()
+          : base.estimatedCostCents,
+      costMicros: base.costMicros,
+      costBasis: base.costBasis,
+      durationMs: base.durationMs,
+      // Provider TTFT/TTFB ONLY when a transport or provider actually observed
+      // it. The old value was derived from the first text event and labelled a
+      // latency it never measured.
+      timeToFirstTokenMs:
+          ctx.latency.transportTtfbMs ?? ctx.latency.providerTtftMs,
+    );
   }
 
   void _markDirty(_StreamContext ctx, {required bool structural}) {
@@ -334,7 +475,10 @@ class AgentStreamProcessor {
       await ctx.agentDispatchService.completeRun(
         runLog,
         content.isNotEmpty ? content.split('\n').first : null,
-        cost: ctx.accumulatedCost,
+        cost: _effectiveCost(ctx),
+        latency: ctx.latency,
+        nativeSessionId: ctx.nativeSessionId,
+        resumedNativeSession: ctx.resumedNativeSession,
       );
     }
 
@@ -347,7 +491,12 @@ class AgentStreamProcessor {
       ctx,
       content: content.isNotEmpty ? content : (failure ?? ''),
     );
-    _notifyTurnCompleted(ctx, outcome: outcome, failure: failure, content: content);
+    _notifyTurnCompleted(
+      ctx,
+      outcome: outcome,
+      failure: failure,
+      content: content,
+    );
   }
 
   /// Hands a cleanly-finished turn's text to the owner (see
@@ -453,6 +602,9 @@ class AgentStreamProcessor {
     final durationMs = now
         .difference(ctx.dispatchResult.runLog.startedAt)
         .inMilliseconds;
+    final cost = _effectiveCost(ctx);
+    final usefulWorkMs = ctx.latency.timeToFirstUsefulWorkMs;
+    final ttfbMs = ctx.latency.transportTtfbMs;
     return {
       'agentName': ctx.agentName,
       'streamComplete': true,
@@ -464,8 +616,18 @@ class AgentStreamProcessor {
       'context': ?_contextMetadata(ctx),
       'turn': {
         'durationMs': durationMs,
-        'totalTokens': ctx.accumulatedCost.totalTokens,
-        'costCents': ctx.accumulatedCost.estimatedCostCents,
+        'totalTokens': cost.totalTokens,
+        'costCents': cost.estimatedCostCents,
+        // Exact precision + provenance: without these the turn's cost is only
+        // available rounded to a cent and with no way to tell an estimate from
+        // a billed, provider-reported figure.
+        if (cost.costMicros != 0) 'costMicros': cost.costMicros,
+        if (cost.costBasis != CostBasis.estimated)
+          'costBasis': cost.costBasis.name,
+        // Latency boundaries that were actually observed. A stage that never
+        // reported is absent rather than zero.
+        'ttfbMs': ?ttfbMs,
+        'timeToFirstUsefulWorkMs': ?usefulWorkMs,
       },
       if (ctx.snapshotStart != null || ctx.snapshotEnd != null)
         'snapshot': {

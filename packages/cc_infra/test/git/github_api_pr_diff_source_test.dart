@@ -1,34 +1,8 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_infra/src/git/github_api_pr_diff_source.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:test/test.dart';
-
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => handler(options);
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(Object? body, {int status = 200}) => ResponseBody.fromString(
-  body == null ? '' : jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
 
 PrSourceRequest _req() => const PrSourceRequest(
   prNumber: 42,
@@ -62,16 +36,20 @@ void main() {
   group('GitHubApiPrDiffSource.watchFiles', () {
     test('streams pages as a growing accumulator', () async {
       var call = 0;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((_) {
+      final fake = TestHttpClient(
+        handler: (request) {
           call++;
           // Two small pages (< 100 each) then nothing.
           if (call == 1) {
-            return _json([_file('a.dart'), _file('b.dart')]);
+            return httpTextResponse(request, [
+              _file('a.dart'),
+              _file('b.dart'),
+            ]);
           }
-          return _json(<Map<String, dynamic>>[]);
-        });
-      final source = GitHubApiPrDiffSource(GitHubApiClient(dio));
+          return httpTextResponse(request, <Map<String, dynamic>>[]);
+        },
+      );
+      final source = GitHubApiPrDiffSource(GitHubApiClient(fake));
 
       final loads = await source.watchFiles(_req()).toList();
 
@@ -85,18 +63,21 @@ void main() {
 
     test('accumulates across multiple non-empty pages', () async {
       var call = 0;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((_) {
+      final fake = TestHttpClient(
+        handler: (request) {
           call++;
           if (call == 1) {
-            return _json(List.generate(100, (i) => _file('f$i.dart')));
+            return httpTextResponse(request, [
+              for (var i = 0; i < 100; i++) _file('f$i.dart'),
+            ]);
           }
           if (call == 2) {
-            return _json([_file('last.dart')]);
+            return httpTextResponse(request, [_file('last.dart')]);
           }
-          return _json(<Map<String, dynamic>>[]);
-        });
-      final source = GitHubApiPrDiffSource(GitHubApiClient(dio));
+          return httpTextResponse(request, <Map<String, dynamic>>[]);
+        },
+      );
+      final source = GitHubApiPrDiffSource(GitHubApiClient(fake));
 
       final loads = await source.watchFiles(_req()).toList();
 
@@ -108,11 +89,11 @@ void main() {
     });
 
     test('emits a single complete load when there are no files', () async {
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter(
-          (_) => _json(<Map<String, dynamic>>[]),
-        );
-      final source = GitHubApiPrDiffSource(GitHubApiClient(dio));
+      final fake = TestHttpClient(
+        handler: (request) =>
+            httpTextResponse(request, <Map<String, dynamic>>[]),
+      );
+      final source = GitHubApiPrDiffSource(GitHubApiClient(fake));
 
       final loads = await source.watchFiles(_req()).toList();
 
@@ -125,11 +106,11 @@ void main() {
 
   group('GitHubApiPrDiffSource.watchCommits', () {
     test('emits a single list of commits', () async {
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter(
-          (_) => _json([_commit('sha1'), _commit('sha2')]),
-        );
-      final source = GitHubApiPrDiffSource(GitHubApiClient(dio));
+      final fake = TestHttpClient(
+        handler: (request) =>
+            httpTextResponse(request, [_commit('sha1'), _commit('sha2')]),
+      );
+      final source = GitHubApiPrDiffSource(GitHubApiClient(fake));
 
       final emissions = await source.watchCommits(_req()).toList();
 
@@ -140,13 +121,12 @@ void main() {
 
   group('GitHubApiPrDiffSource.watchCommitFiles', () {
     test('emits the files for the given sha', () async {
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter(
-          (_) => _json({
-            'files': [_file('x.dart')],
-          }),
-        );
-      final source = GitHubApiPrDiffSource(GitHubApiClient(dio));
+      final fake = TestHttpClient(
+        handler: (request) => httpTextResponse(request, {
+          'files': [_file('x.dart')],
+        }),
+      );
+      final source = GitHubApiPrDiffSource(GitHubApiClient(fake));
 
       final emissions = await source
           .watchCommitFiles(_req(), 'abc123')

@@ -1,36 +1,37 @@
 ---
 title: Controllo remoto e mobile
-description: Come il telefono raggiunge il tuo server attraverso un relay intermediato e sigillato end-to-end invece che un collegamento peer-to-peer, e il modello di accesso a livelli che mantiene quella portata ristretta.
+description: Come il telefono raggiunge il tuo server attraverso connessioni dirette o intermediarie cifrate end-to-end, e il modello di accesso a livelli che mantiene quella portata ristretta.
 slug: it-IT/manuale/concetti/controllo-remoto
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center è un'app desktop, ma il lavoro che segue non si ferma quando ti
 allontani dalla scrivania. Il **controllo remoto** associa il tuo telefono al
 tuo `cc_server`, tramite **[Remote](https://remote.usectrl.dev/)**, l'app
 complementare su remote.usectrl.dev, così puoi seguire la flotta da lì: leggere
-messaggi e ticket, rispondere a un agente, gestire le tue notizie, senza che
-l'audio, la trascrizione, il codice sorgente o le credenziali che risiedono sul
-server lo lascino mai.
+messaggi e ticket, rispondere a un agente e gestire le tue notizie su una
+connessione cifrata end-to-end. Il telefono e `cc_server` sono endpoint in testo
+in chiaro attendibili; un relay trasporta solo record cifrati dell'app.
 
 Consideralo un compagno prevalentemente di lettura del deck. Non intende
 sostituire il client desktop completo.
 
-:::note[Due percorsi remoti diversi]
-L'app complementare per telefono si associa a un `cc_server` tramite un **relay
-WebSocket intermediato da un broker** che trasporta frame JSON-RPC sigillati
-end-to-end. La **build web** completa (e un desktop collegato a un server
-remoto) è l'altro percorso remoto; contatta `cc_server` via WebSocket e mostra
-l'app completa. Vedi
-[Deployment e client](/it-IT/manuale/concetti/deployment/) per le differenze tra i due.
+:::note[Due client remoti diversi]
+L'app complementare per telefono e la **build web** completa (o un desktop
+collegato a un server remoto) possono connettersi direttamente a `cc_server` o
+usare un relay WebSocket intermediato da un broker. Entrambi i percorsi
+richiedono la stessa sessione cifrata; il telefono espone un insieme di
+operazioni più ristretto rispetto al client completo. Vedi
+[Deployment e client](/it-IT/manuale/concetti/deployment/) per le differenze tra i client.
 :::
 
 ## Trasporto
 
 Il telefono raggiunge `cc_server` tramite un WebSocket: una connessione diretta
 (loopback, LAN, tailnet o `wss://`) oppure una stanza ad accesso su invito su un
-broker di segnalazione che inoltra frame sigillati. Non esiste alcun canale dati
-peer-to-peer.
+broker di segnalazione. Entrambi i percorsi richiedono una sessione autenticata e
+cifrata end-to-end; il broker inoltra soltanto i relativi record cifrati. Non
+esiste alcun canale dati peer-to-peer.
 
 ## Cosa può fare il telefono
 
@@ -53,23 +54,27 @@ e non solo inteso.
 
 ## Come si costruisce il collegamento
 
-La connessione viaggia su un **relay intermediato da un broker**: il server
-entra in una stanza ad accesso su invito su un broker `wss://` come
-proprietario e ogni client associato — desktop, web, telefono — entra nella
-stessa stanza con un token di ammissione a scadenza. Tre pezzi concorrono:
+Quando il telefono non riesce a raggiungere il server direttamente, la
+connessione usa un **relay intermediato da un broker**: il server entra in una
+stanza ad accesso su invito su un broker `wss://` come proprietario e i client
+associati vi entrano con token di ammissione a scadenza. Tre pezzi concorrono:
 
 | Pezzo                       | Ruolo                                                                                                                                                                                                                                                                          |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (app per telefono)** | L'app web complementare, ospitata per impostazione predefinita su `remote.usectrl.dev`, oppure self-hosted. Si carica in un browser e conserva il record di associazione in IndexedDB.                                                                                        |
-| **Broker di relay**         | Un relay `wss://` senza stato (`cc_signaling_server`) che ospita stanze a N vie. Trasporta **solo frame opachi**: ogni payload è sigillato end-to-end tra telefono e server, quindi il broker non vede mai i dati dell'app né il segreto di associazione e non interpreta mai ciò che inoltra. |
+| **Broker di relay**         | Un relay `wss://` senza stato (`cc_signaling_server`) che ospita stanze a N vie. Inoltra record cifrati senza il segreto di associazione né il testo in chiaro dell'app, ma vede identificatori di instradamento, IP, dimensioni dei record e tempistiche. |
 | **`cc_server`**             | Il proprietario della stanza. Risponde alle chiamate del telefono attraverso lo stesso dispatcher usato da ogni altro client.                                                                                                                                                  |
 
 Un'offerta di associazione contiene un **descrittore di connessione** che
 elenca ogni percorso verso il server (LAN, tailnet, `wss://` pubblico, relay)
 insieme alla sua impronta di identità. Il resolver del telefono sceglie il
-percorso raggiungibile migliore e fissa l'impronta alla prima connessione
-(TOFU); il relay garantisce la connettività anche quando non esiste alcun
-percorso diretto, senza poter mai leggere il traffico.
+percorso raggiungibile migliore. Il server firma l'handshake cifrato e il client
+fissa la sua impronta. Alla prima connessione, verifica l'impronta rispetto a un
+QR o a un'altra fonte attendibile: una prima identità firmata, da sola, non
+dimostra a quale server sei arrivato. Un pin modificato viene rifiutato invece di
+essere di nuovo accettato in silenzio. Il relay trasporta testo cifrato quando non
+esiste alcun percorso diretto, ma può comunque interrompere o ritardare la
+connessione.
 
 ## Che cos'è il payload di associazione
 
@@ -82,25 +87,32 @@ https://<pwa-host>/#<payload>
 ```
 
 Il payload viaggia nel **frammento** dell'URL, la parte dopo `#` che i browser
-non inviano mai al server, quindi l'host HTTPS della PWA non lo vede mai.
-Contiene tutto ciò che serve al telefono per raggiungere il server e dimostrare
-chi è: il descrittore di connessione (ogni percorso più l'impronta di identità),
-un id del dispositivo appena generato, una chiave precondivisa di 32 byte e un
-timbro di scadenza. Il telefono lo decodifica, archivia localmente un record di
-associazione e rimuove il frammento, così il segreto esce dall'URL.
+non inviano nella richiesta HTTP all'host della PWA. Contiene tutto ciò che serve
+al telefono per raggiungere il server e dimostrare chi è: il descrittore di
+connessione (ogni percorso più l'impronta di identità), un id del dispositivo
+appena generato, una chiave precondivisa di 32 byte e un timbro di scadenza. Il
+telefono lo decodifica, archivia localmente un record di associazione e rimuove
+il frammento dall'URL. Il codice dell'app web può leggere il frammento, quindi usa
+un host dell'app attendibile e tratta il link come un segreto.
 
 Esistono due forme di payload e **non sono intercambiabili**. Il QR per telefono
 generato dal pannello di associazione nell'app è il `PairingPayload` v2
 descritto sopra, puntato all'host della PWA Remote. `cc_server pair --client-url`
-emette un link v1 diverso e più vecchio (`{s, i, k}` — URL del server, id del
-dispositivo, chiave) destinato solo al client **web**.
+emette un link v1 (`{s, i, k}` — URL del server, id del dispositivo, chiave)
+destinato solo al client **web**. Sono formati di dati di associazione, non
+fallback di trasporto: entrambi i client devono supportare l'attuale protocollo
+di sessione cifrata.
 
 Differiscono anche per durata, cosa su cui è facile sbagliarsi:
 
 | Generata da                           | Scadenza della credenziale                |
 | ------------------------------------- | ----------------------------------------- |
 | Pannello di associazione nell'app (`pairing.mint`) | 30 giorni, sempre             |
-| `cc_server pair` dalla riga di comando | **Nessuna** — la credenziale non scade   |
+| `cc_server pair` dalla riga di comando | Nessuna scadenza codificata; le politiche del server si applicano comunque |
+
+Le politiche a livello di server sull'età massima dei dispositivi e sul timeout
+di inattività possono rifiutare prima l'una o l'altra credenziale. Nessuno dei
+due formati di associazione aggira queste politiche.
 
 ## Il modello di accesso
 
@@ -161,13 +173,15 @@ applica comunque. È lo stesso invariante di
 [isolamento degli spazi di lavoro](/it-IT/manuale/concetti/spazi-di-lavoro/) che il resto del
 prodotto applica.
 
-### 5. Frame sigillati end-to-end con la chiave precondivisa
+### 5. Crittografia end-to-end su connessioni dirette e intermediarie
 
-Ogni frame tra telefono e server è sigillato con la chiave di associazione; il
-token di ammissione serve solo a far entrare un client nella stanza, non
-decifra nulla. Il broker inoltra testo cifrato e non vede mai la chiave. Un
-dispositivo revocato trova la propria credenziale già rimossa, quindi
-**fallisce in modo restrittivo** alla riconnessione.
+Ogni sessione client, diretta o intermediaria, richiede un handshake Noise
+firmato. La chiave di associazione autentica quell'handshake; chiavi effimere
+nuove derivano le chiavi di traffico, invece di usare la chiave di associazione
+per sigillare ogni frame. Il server firma la propria identità nello scambio e il
+client verifica il pin dell'impronta salvato. Non esistono testo in chiaro né
+fallback per client più vecchi. Un token di ammissione del relay serve solo a far
+entrare un client in una stanza; non può decifrare i record.
 
 Una credenziale generata dall'app ha una scadenza di 30 giorni; superata quella,
 il gate di connessione la rifiuta e il telefono deve essere riassociato. La
@@ -184,21 +198,24 @@ tuoi dispositivi attingono a un'unica quota, quindi un client dirottato non può
 comprarsi margine aprendo più sessioni e un membro rumoroso non può affamare
 gli altri.
 
-### 7. Un broker che non apprende nulla
+### 7. Un broker che non può leggere il contenuto dell'app
 
-Il broker di relay è deliberatamente stupido: ospita stanze, inoltra frame
-sigillati e non conserva account, dati dell'app né chiavi. Le stanze sono ad
-accesso su invito e transitorie. I dati dell'app, l'audio, la trascrizione, il
-codice sorgente e le credenziali restano tutti sul server.
+Il broker di relay ospita stanze transitorie ad accesso su invito e inoltra
+record cifrati senza il testo in chiaro dell'app né le chiavi di associazione.
+Vede comunque indirizzi IP, identificatori di stanza e di peer, dimensioni dei
+record, tempistiche e durata della connessione, e può scartare o ritardare il
+traffico. Gli endpoint in chiaro sono il client associato e il `cc_server`
+scelto; l'operatore del server e i servizi a cui invia contenuti possono vedere
+quei contenuti. La crittografia in transito non cifra i dati del server a riposo.
 
 ## Aggiornamenti in tempo reale
 
 Una volta associato, il telefono riceve **aggiornamenti in tempo reale** come
 frame di notifica — nuovi messaggi degli agenti, ticket assegnati a te, cambi di
-stato — che rispecchiano le notifiche del desktop. Il server trasmette quei
-frame a ogni sessione connessa e il filtro dello spazio di lavoro viene
-applicato lato client, quindi ciò che vedi è limitato allo spazio di lavoro che
-stai guardando.
+stato — che rispecchiano le notifiche del desktop. Il server verifica
+l'appartenenza allo spazio di lavoro prima di inoltrare un evento a una sessione.
+Il client filtra poi quegli eventi già autorizzati allo spazio di lavoro che stai
+guardando; quel filtro di visualizzazione non è il confine di accesso.
 
 ## Dove si trova
 
@@ -212,8 +229,8 @@ diretto.
 
 ::::note
 Il controllo remoto è lato server e **non** è esposto tramite MCP. Il telefono
-parla con il dispatcher del server attraverso il relay; non è un client MCP di
-un server esterno.
+parla con il dispatcher del server attraverso la propria connessione cifrata
+diretta o intermediaria; non è un client MCP di un server esterno.
 ::::
 
 ## Vedi anche

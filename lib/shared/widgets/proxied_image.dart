@@ -1,14 +1,15 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// A remote image that loads through the host media proxy and cross-fades in: a
-/// server-downscaled lightweight preview fills the box almost instantly, then the
-/// full-resolution image fades in over it as its bytes arrive.
-/// Each `(url, w)` is a distinct proxy cache key, so the lightweight fetch does not evict
+/// A remote image that loads through the host media proxy and cross-fades in.
+/// The tiny preview loads when built, including in a scroll viewport's bounded
+/// cache region. The full image starts only after the tile is first painted.
+/// Each `(url, w)` is a distinct proxy cache key, so the preview does not evict
 /// or thrash the full one — see `MediaProxyConfig.resolve`.
-class ProxiedImage extends StatelessWidget {
+class ProxiedImage extends StatefulWidget {
   /// Creates a [ProxiedImage].
   const ProxiedImage({
     super.key,
@@ -53,24 +54,104 @@ class ProxiedImage extends StatelessWidget {
   final Duration duration;
 
   @override
-  Widget build(BuildContext context) {
-    final full = MediaProxyScope.urlOf(context, url, maxWidth: maxWidth);
-    final previewWidth = previewMaxWidth ?? (maxWidth < 96 ? maxWidth : 48);
-    final preview = MediaProxyScope.urlOf(context, url, maxWidth: previewWidth);
+  State<ProxiedImage> createState() => _ProxiedImageState();
+}
 
-    return CcImageFade(
-      // Wrap in ResizeImage so the decode (not just the proxy fetch) is capped
-      // to the displayed size — a belt-and-suspenders to the server downscale.
-      image: ResizeImage(DiskCachedNetworkImage(full), width: maxWidth),
-      preview: ResizeImage(
-        DiskCachedNetworkImage(preview),
-        width: previewWidth,
+class _ProxiedImageState extends State<ProxiedImage> {
+  bool _loadFullImage = false;
+
+  @override
+  void didUpdateWidget(ProxiedImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url ||
+        oldWidget.maxWidth != widget.maxWidth ||
+        oldWidget.previewMaxWidth != widget.previewMaxWidth) {
+      _loadFullImage = false;
+    }
+  }
+
+  void _onFirstPaint() {
+    // Slivers lay out their cache region but paint only visible children.
+    // Wait until paint completes before rebuilding to resolve the full image.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_loadFullImage) {
+        setState(() => _loadFullImage = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final previewWidth =
+        widget.previewMaxWidth ?? (widget.maxWidth < 96 ? widget.maxWidth : 48);
+    final preview = ResizeImage(
+      DiskCachedNetworkImage(
+        MediaProxyScope.urlOf(context, widget.url, maxWidth: previewWidth),
       ),
-      placeholder: placeholder,
-      errorBuilder: errorBuilder,
-      fit: fit,
-      alignment: alignment,
-      duration: duration,
+      width: previewWidth,
     );
+    final image = _loadFullImage
+        ? ResizeImage(
+            DiskCachedNetworkImage(
+              MediaProxyScope.urlOf(
+                context,
+                widget.url,
+                maxWidth: widget.maxWidth,
+              ),
+            ),
+            width: widget.maxWidth,
+          )
+        : preview;
+
+    return _FirstPaint(
+      onPaint: _loadFullImage ? null : _onFirstPaint,
+      child: CcImageFade(
+        // Proxy requests and decoded frames are both capped to the tile size.
+        image: image,
+        preview: _loadFullImage ? preview : null,
+        placeholder: widget.placeholder,
+        errorBuilder: widget.errorBuilder,
+        fit: widget.fit,
+        alignment: widget.alignment,
+        duration: widget.duration,
+      ),
+    );
+  }
+}
+
+/// Uses the sliver's existing paint culling instead of per-image scroll listeners.
+class _FirstPaint extends SingleChildRenderObjectWidget {
+  const _FirstPaint({required this.onPaint, required super.child});
+
+  final VoidCallback? onPaint;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderFirstPaint(onPaint);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderFirstPaint renderObject,
+  ) {
+    if (renderObject.onPaint != onPaint) {
+      renderObject
+        ..onPaint = onPaint
+        ..markNeedsPaint();
+    }
+  }
+}
+
+class _RenderFirstPaint extends RenderProxyBox {
+  _RenderFirstPaint(this.onPaint);
+
+  VoidCallback? onPaint;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final callback = onPaint;
+    onPaint = null;
+    callback?.call();
+    super.paint(context, offset);
   }
 }

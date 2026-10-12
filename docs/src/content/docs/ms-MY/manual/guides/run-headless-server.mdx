@@ -1,9 +1,9 @@
 ---
 title: Jalankan pelayan tanpa kepala
 description: Jalankan binari tanpa kepala cc_server atau imej Docker-nya, gandingkan klien dengannya dan konfigurasikannya dengan keseluruhan permukaan bendera CLI dan pemboleh ubah persekitaran.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Jalankan `cc_server` pada mesin yang sentiasa hidup, kemudian sambung kepadanya
@@ -25,7 +25,7 @@ pengehosan sendiri tidak memerlukan semakan keluar sumber. Sematkan tag versi
 | `ghcr.io/samuelalev/cc-server`                    | Bahagian belakang: pangkalan data, ejen, MCP, webhook | `-p 9030:9030`  |
 | `ghcr.io/samuelalev/cc-webapp`           | Klien web (nginx statik)                      | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | PWA pendamping telefon (nginx statik)         | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Geganti penggandingan WebRTC (pilihan)        | `-p 8788:8788`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Geganti sambungan tersulit (pilihan)         | `-p 8788:8788`  |
 
 Keseluruhan tindanan sebagai fail compose:
 
@@ -57,12 +57,15 @@ Perkara yang wajar diketahui sebelum anda mendedahkan mana-mana daripada ini
 melebihi loopback:
 
 - **Imej `cc-server` membawa `CC_SERVER_INSECURE=1`** (ia mesti mengikat `0.0.0.0`
-  untuk menerima trafik port yang diterbitkan), yang hanya selamat di belakang
-  proksi songsang penamat TLS — Caddy, Traefik, nginx atau Cloudflare Tunnel —
-  pada rangkaian yang dipercayai. Untuk menamatkan TLS dalam proses sebagai
-  gantinya, lekapkan sijil dan tetapkan `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` (kemudian nyahset `CC_SERVER_INSECURE`). Semuanya boleh
-  ditimpa dengan `docker run -e …` atau blok `environment:` compose.
+  untuk menerima trafik port yang diterbitkan). Gunakan proksi songsang penamat
+  TLS — Caddy, Traefik, nginx atau Cloudflare Tunnel — pada rangkaian yang
+  dipercayai, atau lekapkan sijil dan tetapkan `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (kemudian nyahset `CC_SERVER_INSECURE`). Tetapan ini hanya
+  mengawal pendengar HTTP/WebSocket luar pelayan. Ia tidak pernah melumpuhkan
+  sesi klien tersulit hujung ke hujung yang diwajibkan. TLS masih melindungi
+  trafik log masuk/butstrap, metadata sambungan, titik akhir awam dan
+  penyampaian klien web. Semuanya boleh ditimpa dengan `docker run -e …` atau
+  blok `environment:` compose.
 - **`/data` ialah satu-satunya keadaan.** Pangkalan data SQLite, rahsia peranti
   berganding, model yang dimuat turun dan audio mesyuarat semuanya tinggal di
   dalam volum itu — sandarkannya dan kontena itu menjadi boleh buang.
@@ -74,14 +77,18 @@ melebihi loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Dua imej klien itu ialah hos nginx statik** — tiada apa untuk
-  dikonfigurasikan pada masa jalan; borang sambungan setiap klien menerima URL
-  pelayan, id peranti dan kunci penggandingan anda. Geganti isyarat juga hanya
-  memerlukan portnya (`SIGNALING_HOST` / `SIGNALING_PORT` boleh ditimpa); ia
-  tanpa keadaan, tidak menyimpan rahsia dan merupakan **pilihan terakhir** —
-  telefon menggunakan loopback, LAN, tailnet atau laluan `wss://` terus apabila
-  salah satunya boleh dicapai, dan hanya berpaling kepada geganti apabila tiada
-  satu pun. Langkau ia jika klien anda sentiasa mencapai pelayan secara terus.
+- **Dua imej klien itu ialah hos nginx statik.** Editor penyemak imbas terbenam
+  menggunakan asalan aplikasi yang sama dan sambungan tersulit, seperti yang
+  diterangkan [di bawah](#sumber-editor-penyemak-imbas). Borang sambungan setiap
+  klien menerima URL pelayan, id peranti dan kunci penggandingan anda. Geganti
+  isyarat hanya memerlukan portnya (`SIGNALING_HOST` / `SIGNALING_PORT` boleh
+  ditimpa); ia tanpa keadaan, tidak menyimpan kunci penggandingan dan merupakan
+  **pilihan terakhir** — telefon menggunakan loopback, LAN, tailnet atau laluan
+  `wss://` terus apabila salah satunya boleh dicapai, dan hanya berpaling kepada
+  geganti apabila tiada satu pun. Langkau ia jika klien anda sentiasa mencapai
+  pelayan secara terus. Broker boleh melihat pengecam penghalaan, alamat IP, saiz
+  dan masa, serta boleh memutuskan trafik; ia tidak boleh menyahsulit aliran
+  sumber antara klien dan pelayan.
 
 Selebihnya panduan ini membina pelayan daripada sumber; bendera dan tingkah laku
 yang diliputinya ialah yang sama yang disuapkan oleh pemboleh ubah persekitaran
@@ -182,6 +189,15 @@ dalam aplikasi sentiasa tamat tempoh selepas 30 hari. Tarik balik peranti yang
 ditempa melalui CLI daripada **Tetapan → Anda → Peranti anda** apabila anda
 sudah selesai dengannya.
 
+Kunci penggandingan mengesahkan jabat tangan Noise yang diwajibkan; setiap sesi
+menerbitkan kunci trafik baharu dan memeriksa identiti bertandatangan pelayan.
+Lindungi kunci penggandingan dan dapatkannya daripada sumber dipercayai (termasuk
+kod QR dipercayai), kemudian sahkan cap jari pelayan baharu melalui saluran
+dipercayai yang berasingan atau terhadap sematan yang diketahui. Jangan terima
+sematan yang berubah secara senyap: gandingkan semula melalui saluran dipercayai
+jika anda sengaja menggantikan identiti pelayan. TLS sahaja tidak dapat menetapkan
+sematan identiti hujung ke hujung itu.
+
 ## Langkah 4: Mulakan pelayan
 
 Pada loopback — lalai dan semua yang anda perlukan untuk klien pada mesin yang
@@ -210,9 +226,14 @@ dipercayai dan pilih ikatan teks biasa di belakangnya:
 ```
 
 `--insecure` diabaikan apabila `--tls-cert` dan `--tls-key` kedua-duanya
-ditetapkan — TLS sentiasa menang. Pelayan mengiklankan keadaan teks biasa itu
-sebagai `insecure: true` dalam `GET /healthz` dan klien memberi lencana tidak
-selamat pada sambungan sedemikian.
+ditetapkan — TLS sentiasa menang. Pelayan mengiklankan keadaan teks biasa bagi
+pendengar luarnya sebagai `insecure: true` dalam `GET /healthz`. Ini tidak
+mematikan penyulitan Noise pada `/rpc`, sama ada klien bersambung terus atau
+melalui geganti. Naik taraf pelayan, geganti dan klien bersama-sama: klien RPC
+teks biasa lama ditolak, tanpa sandaran keserasian. Permintaan awam ke laluan
+sumber sensitif (termasuk pemindahan sandaran) mendapat HTTP `426`, walaupun
+daripada loopback; klien yang digandingkan menggunakan terowong tersulit itu
+sebagai gantinya.
 
 Pelayan berjalan sehingga `SIGINT`/`SIGTERM`, kemudian menutup dengan bersih.
 
@@ -233,6 +254,34 @@ loopback mesti tersenarai dalam `--allowed-origins` atau peningkatan WebSocket
 ke `/rpc` ditolak; senarai lalainya ialah `https://app.usectrl.dev` dan
 `localhost` / `127.0.0.1` sentiasa dibenarkan.
 :::
+
+### Sumber editor penyemak imbas
+
+Bahagian hadapan editor ialah kod aplikasi yang dipercayai dan berjalan pada asalan
+aplikasi web itu sendiri. Service Worker-nya menyalurkan trafik HTTP dan WebSocket
+melalui sesi tersulit yang disahkan yang sama seperti seluruh klien yang lain.
+`cc_server` menyahsulit setiap permintaan, memajukannya kepada backend code-server
+tempatannya, lalu menyulitkan respons kembali kepada klien. Fail kekal dimiliki
+pelayan.
+
+Hoskan klien web melalui HTTPS atau asalan loopback yang selamat supaya Service
+Worker boleh berjalan. Skrip binaan dan pelepasan web biasa sudah menyertakan aset
+sumber yang dikongsi. Jika anda membina bundel sendiri, sediakan aset itu selepas
+itu daripada akar repo:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Untuk binaan web telefon, gantikan dengan `apps/cc_remote/build/web`. Ini menyalin
+`cc_resource_bridge.js`, `cc_resource_worker.js` dan `cc_resource_ws_shim.js` ke
+dalam bundel aplikasi.
+
+Trafik editor natif menggunakan fasad loopback yang dihadkan oleh keupayaan sebagai
+gantinya. Jangan dedahkan gerbang laporan/perintah loopback peribadi bagi sambungan
+editor yang dilancarkan pelayan melalui proksi awam. Permintaan HTTP awam yang
+sensitif ditolak; sumber memerlukan sesi tersulit yang disahkan.
+
 
 ## Langkah 6: Sambungkan Google Calendar (pilihan)
 
@@ -295,7 +344,8 @@ ditentukan oleh keahlian dan peranan ruang kerja pemanggil — bukan dengan
 memegang kunci penggandingan.
 
 Dua perkara yang wajar diketahui sebelum anda mendedahkan port itu melebihi
-loopback:
+loopback (TLS sahaja tidak menyediakan penyulitan hujung ke hujung klien yang
+digandingkan atau memberi kebenaran kepada sumber):
 
 - **MCP gagal secara tertutup di luar hos.** Permukaan MCP tanpa token hanya menjawab loopback. Mengikat `any` tidak meluaskannya — permintaan dari luar hos ditolak dengan "MCP requires a bearer token to answer non-loopback clients" sehingga anda mengkonfigurasikan satu (`mcp.setToken`, atau **Tetapan → Pelayan → Pelayan MCP**).
 - **`GET /healthz` tidak disahkan secara reka bentuk**, dengan CORS kad bebas dan menerbitkan id, nama, cap jari identiti serta versi binaan pelayan. Klien memerlukan cap jari itu untuk menyematkan pelayan, jadi ini memang disengajakan — tetapi ia bermakna mana-mana `cc_server` yang boleh dicapai mendedahkan sebanyak itu kepada sesiapa yang bertanya.

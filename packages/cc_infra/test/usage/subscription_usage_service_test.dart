@@ -1,60 +1,52 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/usage/subscription_usage_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-/// Dio adapter that routes every request through [handler]. The handler can
-/// inspect `RequestOptions` (path, headers) and return a [ResponseBody], or
-/// throw a [DioException] to simulate a network/HTTP failure.
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
+/// [TestHttpClient] routes every request through `handler`. The handler can
+/// inspect the captured [HttpRequest] (url, method, headers, additionalData)
+/// and return an [HttpResponse], or throw an rhttp exception to simulate a
+/// transport failure. Simulate an HTTP failure by returning a response with
+/// that status: [TestHttpClient] throws `RhttpStatusCodeException` itself for
+/// `statusCode >= 400`.
+typedef Handler = FutureOr<HttpResponse> Function(HttpRequest request);
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
+/// The first value of the header named [name] (case-insensitive), or null when
+/// the request carries no such header.
+String? header(HttpRequest request, String name) {
+  final headers = request.headers?.toMapList();
+  if (headers == null) {
+    return null;
   }
-
-  @override
-  void close({bool force = false}) {}
+  final lower = name.toLowerCase();
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == lower) {
+      return entry.value.first;
+    }
+  }
+  return null;
 }
 
-ResponseBody _json(Object body, {int status = 200}) => ResponseBody.fromString(
-  jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
-
-typedef Handler = ResponseBody Function(RequestOptions options);
-
-(SubscriptionUsageService, _FakeAdapter) build(
+(SubscriptionUsageService, TestHttpClient) build(
   Handler handler, {
   String? homeDir,
   Map<String, String>? environment,
   bool readClaudeKeychain = false,
 }) {
-  final adapter = _FakeAdapter(handler);
-  final dio = Dio()..httpClientAdapter = adapter;
+  final client = TestHttpClient(handler: handler);
   final service = SubscriptionUsageService(
-    dio: dio,
+    httpClient: client,
     homeDir: homeDir,
     environment: environment ?? const <String, String>{},
     readClaudeKeychain: readClaudeKeychain,
   );
-  return (service, adapter);
+  return (service, client);
 }
 
 void main() {
@@ -65,7 +57,7 @@ void main() {
         // Empty environment + null home → no Claude token, no Codex auth dir,
         // no z.ai key, no Kimi Code token, no Cursor token.
         final (service, _) = build(
-          (_) => _json(const {}),
+          (request) => httpTextResponse(request, const {}),
           homeDir: null,
           environment: const {},
         );
@@ -111,10 +103,10 @@ void main() {
           }),
         );
 
-        ResponseBody handler(RequestOptions options) {
-          expect(options.path, contains('api.anthropic.com'));
-          expect(options.headers['Authorization'], 'Bearer tok-123');
-          return _json({
+        HttpResponse handler(HttpRequest request) {
+          expect(request.url, contains('api.anthropic.com'));
+          expect(header(request, 'authorization'), 'Bearer tok-123');
+          return httpTextResponse(request, {
             'five_hour': {
               'utilization': 42,
               'resets_at': '2024-01-02T00:00:00Z',
@@ -154,7 +146,7 @@ void main() {
         }),
       );
 
-      ResponseBody handler(RequestOptions options) => _json({
+      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
         'five_hour': null,
         'seven_day': null,
         'spend': {
@@ -191,7 +183,7 @@ void main() {
         }),
       );
 
-      ResponseBody handler(RequestOptions options) => _json({
+      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
         'five_hour': {'utilization': 42},
         'spend': {'used': null, 'limit': null, 'percent': 0},
       });
@@ -212,8 +204,8 @@ void main() {
           'claudeAiOauth': {'accessToken': 'tok-123'},
         }),
       );
-      ResponseBody handler(RequestOptions options) =>
-          _json({'five_hour': null, 'seven_day': null});
+      HttpResponse handler(HttpRequest request) =>
+          httpTextResponse(request, {'five_hour': null, 'seven_day': null});
       final (service, _) = build(handler, homeDir: tmpHome.path);
       final results = await service.fetchAll(zaiApiKey: '');
       final claude = results.firstWhere((u) => u.providerId == 'claude');
@@ -231,7 +223,7 @@ void main() {
       );
 
       final (service, _) = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'five_hour': {'utilization': 250},
         }),
         homeDir: tmpHome.path,
@@ -255,7 +247,7 @@ void main() {
 
         // Both windows present but missing utilization → none parsed.
         final (service, _) = build(
-          (_) => _json({
+          (request) => httpTextResponse(request, {
             'five_hour': {'resets_at': 'x'},
             'seven_day': <String, dynamic>{},
           }),
@@ -279,10 +271,8 @@ void main() {
         }),
       );
 
-      ResponseBody handler(_) => throw DioException(
-        requestOptions: RequestOptions(),
-        response: Response(requestOptions: RequestOptions(), statusCode: 500),
-      );
+      HttpResponse handler(HttpRequest request) =>
+          httpTextResponse(request, const {}, statusCode: 500);
       final (service, _) = build(handler, homeDir: tmpHome.path);
       final claude = (await service.fetchAll(
         zaiApiKey: '',
@@ -301,7 +291,7 @@ void main() {
       );
 
       final (service, _) = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'five_hour': {'utilization': 10},
         }),
         environment: {'CLAUDE_CONFIG_DIR': cfgDir.path},
@@ -321,7 +311,10 @@ void main() {
         '${tmpHome.path}/.claude/.credentials.json',
       ).writeAsStringSync(jsonEncode({'claudeAiOauth': <String, dynamic>{}}));
 
-      final (service, _) = build((_) => _json(const {}), homeDir: tmpHome.path);
+      final (service, _) = build(
+        (request) => httpTextResponse(request, const {}),
+        homeDir: tmpHome.path,
+      );
       final claude = (await service.fetchAll(
         zaiApiKey: '',
       )).firstWhere((u) => u.providerId == 'claude');
@@ -331,13 +324,13 @@ void main() {
 
   group('Kimi Code', () {
     test('parses the plan windows and their reset times', () async {
-      ResponseBody handler(RequestOptions options) {
-        expect(options.path, endsWith('/usages'));
-        expect(options.headers['Authorization'], 'Bearer plan-token');
+      HttpResponse handler(HttpRequest request) {
+        expect(request.url, endsWith('/usages'));
+        expect(header(request, 'authorization'), 'Bearer plan-token');
         // The device identity the token was issued to rides along, exactly as
         // it does on every other Kimi call.
-        expect(options.headers['X-Msh-Device-Id'], 'device-abc');
-        return _json({
+        expect(header(request, 'x-msh-device-id'), 'device-abc');
+        return httpTextResponse(request, {
           'usage': {'used': 40, 'limit': 200},
           'limits': [
             {
@@ -376,12 +369,12 @@ void main() {
     // integration — into the fact they can act on.
     test('a 429 resource_exhausted reports the plan as spent, with the '
         "provider's own wording", () async {
-      ResponseBody handler(RequestOptions options) {
+      HttpResponse handler(HttpRequest request) {
         // The 429 is declared expected, so the shared error interceptor keeps
         // it out of the error log — a spent plan is state, not a fault, and it
         // is re-read on every poll.
-        expect(options.extra[expectedStatusesExtra], contains(429));
-        return _json({
+        expect(request.additionalData[expectedStatusesExtra], contains(429));
+        return httpTextResponse(request, {
           'code': 'resource_exhausted',
           'message': 'insufficient balance',
           'details': [
@@ -396,7 +389,7 @@ void main() {
               },
             },
           ],
-        }, status: 429);
+        }, statusCode: 429);
       }
 
       final (service, _) = build(handler);
@@ -411,10 +404,10 @@ void main() {
 
     test('an exhaustion envelope with no localized detail falls back to the '
         'top-level message', () async {
-      ResponseBody handler(RequestOptions options) => _json({
+      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
         'code': 'resource_exhausted',
         'message': 'insufficient balance',
-      }, status: 429);
+      }, statusCode: 429);
 
       final (service, _) = build(handler);
       final kimi = (await service.fetchAll(
@@ -428,8 +421,11 @@ void main() {
     test('a bare 429 stays an error — throttling is not exhaustion', () async {
       // Guessing "you are out of credits" at a plan that is merely being
       // rate-limited is a worse answer than admitting the reading failed.
-      ResponseBody handler(RequestOptions options) =>
-          _json(const {'message': 'slow down'}, status: 429);
+      HttpResponse handler(HttpRequest request) => httpTextResponse(
+        request,
+        const {'message': 'slow down'},
+        statusCode: 429,
+      );
 
       final (service, _) = build(handler);
       final kimi = (await service.fetchAll(
@@ -441,7 +437,7 @@ void main() {
     });
 
     test('a relative reset is resolved against now', () async {
-      ResponseBody handler(RequestOptions options) => _json({
+      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
         'limits': [
           {
             'window': {'duration': 5, 'timeUnit': 'HOURS'},
@@ -464,30 +460,36 @@ void main() {
     test(
       'without a token it reports unconfigured and makes no request',
       () async {
-        final (service, adapter) = build((_) => _json(const {}));
+        final (service, client) = build(
+          (request) => httpTextResponse(request, const {}),
+        );
         final kimi = (await service.fetchAll()).firstWhere(
           (u) => u.providerId == 'kimi-code',
         );
         expect(kimi.status, SubscriptionStatus.unconfigured);
         expect(kimi.error, contains('Settings'));
-        expect(adapter.requests.where((r) => r.path.contains('kimi')), isEmpty);
+        expect(client.requests.where((r) => r.url.contains('kimi')), isEmpty);
       },
     );
 
     test('the plan token is never sent to a non-Kimi host', () async {
       // A tampered base URL must not exfiltrate the credential.
-      final (service, adapter) = build((_) => _json(const {}));
+      final (service, client) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final kimi = (await service.fetchAll(
         kimiAccessToken: 'plan-token',
         kimiBaseUrl: 'https://evil.example/v1',
       )).firstWhere((u) => u.providerId == 'kimi-code');
       expect(kimi.status, SubscriptionStatus.error);
       expect(kimi.error, contains('Invalid'));
-      expect(adapter.requests.where((r) => r.path.contains('evil')), isEmpty);
+      expect(client.requests.where((r) => r.url.contains('evil')), isEmpty);
     });
 
     test('an unreadable payload degrades to an error, not a throw', () async {
-      final (service, _) = build((_) => _json({'limits': <Object>[]}));
+      final (service, _) = build(
+        (request) => httpTextResponse(request, {'limits': <Object>[]}),
+      );
       final kimi = (await service.fetchAll(
         kimiAccessToken: 'k',
       )).firstWhere((u) => u.providerId == 'kimi-code');
@@ -495,14 +497,11 @@ void main() {
     });
 
     test('an HTTP failure degrades that provider only', () async {
-      final (service, _) = build((options) {
-        if (options.path.contains('kimi')) {
-          throw DioException(
-            requestOptions: options,
-            response: Response<void>(requestOptions: options, statusCode: 500),
-          );
+      final (service, _) = build((request) {
+        if (request.url.contains('kimi')) {
+          return httpTextResponse(request, const {}, statusCode: 500);
         }
-        return _json(const {});
+        return httpTextResponse(request, const {});
       });
       final results = await service.fetchAll(kimiAccessToken: 'k');
       expect(
@@ -521,12 +520,12 @@ void main() {
     test(
       'parses period usage percentages, spend and billing-cycle reset',
       () async {
-        ResponseBody handler(RequestOptions options) {
-          expect(options.method, 'POST');
-          expect(options.path, contains('GetCurrentPeriodUsage'));
-          expect(options.headers['Authorization'], 'Bearer cursor-tok');
-          expect(options.headers['Connect-Protocol-Version'], '1');
-          return _json({
+        HttpResponse handler(HttpRequest request) {
+          expect(request.method, HttpMethod.post);
+          expect(request.url, contains('GetCurrentPeriodUsage'));
+          expect(header(request, 'authorization'), 'Bearer cursor-tok');
+          expect(header(request, 'connect-protocol-version'), '1');
+          return httpTextResponse(request, {
             'billingCycleEnd': '2030-02-01T00:00:00Z',
             'planUsage': {
               'totalSpend': 141,
@@ -563,7 +562,7 @@ void main() {
     test(
       'reads percentages from individualUsage.plan when planUsage is absent',
       () async {
-        ResponseBody handler(RequestOptions options) => _json({
+        HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
           'billingCycleEnd': 1893456000,
           'individualUsage': {
             'plan': {
@@ -596,14 +595,16 @@ void main() {
     test(
       'falls back to GET /auth/usage when the period RPC has no quota',
       () async {
-        ResponseBody handler(RequestOptions options) {
-          if (options.path.contains('GetCurrentPeriodUsage')) {
-            return _json({'billingCycleEnd': '2030-02-01T00:00:00Z'});
+        HttpResponse handler(HttpRequest request) {
+          if (request.url.contains('GetCurrentPeriodUsage')) {
+            return httpTextResponse(request, {
+              'billingCycleEnd': '2030-02-01T00:00:00Z',
+            });
           }
-          expect(options.method, 'GET');
-          expect(options.path, endsWith('/auth/usage'));
-          expect(options.headers['Authorization'], 'Bearer cursor-tok');
-          return _json({
+          expect(request.method, HttpMethod.get);
+          expect(request.url, endsWith('/auth/usage'));
+          expect(header(request, 'authorization'), 'Bearer cursor-tok');
+          return httpTextResponse(request, {
             'gpt-4': {'numRequests': 150, 'maxRequestUsage': 500},
             'startOfMonth': '2030-03-01T00:00:00.000Z',
           });
@@ -623,11 +624,13 @@ void main() {
     );
 
     test('falls back to request usage when the period RPC 404s', () async {
-      ResponseBody handler(RequestOptions options) {
-        if (options.path.contains('GetCurrentPeriodUsage')) {
-          return _json(const {'message': 'not found'}, status: 404);
+      HttpResponse handler(HttpRequest request) {
+        if (request.url.contains('GetCurrentPeriodUsage')) {
+          return httpTextResponse(request, const {
+            'message': 'not found',
+          }, statusCode: 404);
         }
-        return _json({
+        return httpTextResponse(request, {
           'gpt-4': {'numRequests': 1, 'maxRequestUsage': 10},
         });
       }
@@ -642,11 +645,13 @@ void main() {
 
     test('a 401 on the period RPC is an error, not a second probe', () async {
       var gets = 0;
-      ResponseBody handler(RequestOptions options) {
-        if (options.path.contains('/auth/usage')) {
+      HttpResponse handler(HttpRequest request) {
+        if (request.url.contains('/auth/usage')) {
           gets++;
         }
-        return _json(const {'message': 'unauthorized'}, status: 401);
+        return httpTextResponse(request, const {
+          'message': 'unauthorized',
+        }, statusCode: 401);
       }
 
       final (service, _) = build(handler);
@@ -659,7 +664,7 @@ void main() {
     });
 
     test('spend-only period usage still reports a reading', () async {
-      ResponseBody handler(RequestOptions options) => _json({
+      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
         'billingCycleEnd': '2030-02-01T00:00:00Z',
         'planUsage': {'includedSpend': 141, 'limit': 2000},
       });
@@ -678,38 +683,39 @@ void main() {
     test(
       'without a token it reports unconfigured and makes no request',
       () async {
-        final (service, adapter) = build((_) => _json(const {}));
+        final (service, client) = build(
+          (request) => httpTextResponse(request, const {}),
+        );
         final cursor = (await service.fetchAll()).firstWhere(
           (u) => u.providerId == 'cursor',
         );
         expect(cursor.status, SubscriptionStatus.unconfigured);
         expect(cursor.error, contains('Settings'));
-        expect(
-          adapter.requests.where((r) => r.path.contains('cursor')),
-          isEmpty,
-        );
+        expect(client.requests.where((r) => r.url.contains('cursor')), isEmpty);
       },
     );
 
     test('the session token is never sent to a non-Cursor host', () async {
-      final (service, adapter) = build((_) => _json(const {}));
+      final (service, client) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final cursor = (await service.fetchAll(
         cursorAccessToken: 'secret',
         cursorBaseUrl: 'https://evil.example',
       )).firstWhere((u) => u.providerId == 'cursor');
       expect(cursor.status, SubscriptionStatus.error);
       expect(cursor.error, contains('Invalid'));
-      expect(adapter.requests, isEmpty);
+      expect(client.requests, isEmpty);
     });
   });
 
   group('z.ai', () {
     test('parses TOKENS_LIMIT windows keyed by unit discriminator', () async {
-      ResponseBody handler(RequestOptions options) {
-        expect(options.path, endsWith('/api/monitor/usage/quota/limit'));
+      HttpResponse handler(HttpRequest request) {
+        expect(request.url, endsWith('/api/monitor/usage/quota/limit'));
         // Raw key in the Authorization header (tried first).
-        expect(options.headers['Authorization'], 'sekret');
-        return _json({
+        expect(header(request, 'authorization'), 'sekret');
+        return httpTextResponse(request, {
           'data': {
             'limits': [
               {
@@ -744,7 +750,7 @@ void main() {
 
     test('falls back to array position when unit is unrecognised', () async {
       final (service, _) = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'data': {
             'limits': [
               {'type': 'TOKENS_LIMIT', 'percentage': 10},
@@ -763,8 +769,8 @@ void main() {
     });
 
     test('uses the default base URL when none is supplied', () async {
-      final (service, adapter) = build(
-        (_) => _json({
+      final (service, client) = build(
+        (request) => httpTextResponse(request, {
           'data': {
             'limits': [
               {'type': 'TOKENS_LIMIT', 'percentage': 5, 'unit': 3},
@@ -776,12 +782,12 @@ void main() {
         zaiApiKey: 'k',
       )).firstWhere((u) => u.providerId == 'zai');
       expect(zai.status, SubscriptionStatus.ok);
-      expect(adapter.requests.single.path, startsWith('https://api.z.ai/'));
+      expect(client.requests.single.url, startsWith('https://api.z.ai/'));
     });
 
     test('accepts bigmodel.cn hosts and strips trailing slashes', () async {
-      final (service, adapter) = build(
-        (_) => _json({
+      final (service, client) = build(
+        (request) => httpTextResponse(request, {
           'data': {
             'limits': [
               {'type': 'TOKENS_LIMIT', 'percentage': 5, 'unit': 3},
@@ -794,26 +800,20 @@ void main() {
         zaiBaseUrl: 'https://open.bigmodel.cn///',
       );
       expect(
-        adapter.requests.single.path,
+        client.requests.single.url,
         startsWith('https://open.bigmodel.cn/api/monitor/'),
       );
     });
 
     test('retries with a Bearer prefix on a 401', () async {
       var call = 0;
-      ResponseBody handler(RequestOptions options) {
+      HttpResponse handler(HttpRequest request) {
         call++;
         if (call == 1) {
-          throw DioException(
-            requestOptions: RequestOptions(),
-            response: Response(
-              requestOptions: RequestOptions(),
-              statusCode: 401,
-            ),
-          );
+          return httpTextResponse(request, const {}, statusCode: 401);
         }
-        expect(options.headers['Authorization'], 'Bearer k');
-        return _json({
+        expect(header(request, 'authorization'), 'Bearer k');
+        return httpTextResponse(request, {
           'data': {
             'limits': [
               {'type': 'TOKENS_LIMIT', 'percentage': 1, 'unit': 3},
@@ -832,7 +832,9 @@ void main() {
     });
 
     test('returns an error when the base URL is not a z.ai host', () async {
-      final (service, _) = build((_) => _json(const {}));
+      final (service, _) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final zai = (await service.fetchAll(
         zaiApiKey: 'k',
         zaiBaseUrl: 'https://evil.example.com',
@@ -842,7 +844,9 @@ void main() {
     });
 
     test('returns an error when the base URL is not https', () async {
-      final (service, _) = build((_) => _json(const {}));
+      final (service, _) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final zai = (await service.fetchAll(
         zaiApiKey: 'k',
         zaiBaseUrl: 'http://z.ai',
@@ -853,7 +857,7 @@ void main() {
 
     test('returns an error when no windows could be parsed', () async {
       final (service, _) = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'data': {'limits': <Map<String, dynamic>>[]},
         }),
       );
@@ -866,10 +870,8 @@ void main() {
     });
 
     test('returns an error on a network failure', () async {
-      ResponseBody handler(_) => throw DioException(
-        type: DioExceptionType.connectionError,
-        requestOptions: RequestOptions(),
-      );
+      HttpResponse handler(HttpRequest request) =>
+          throw RhttpConnectionException(request, 'boom');
       final (service, _) = build(handler);
       final zai = (await service.fetchAll(
         zaiApiKey: 'k',
@@ -880,7 +882,9 @@ void main() {
     });
 
     test('parses a response with no data map as no windows', () async {
-      final (service, _) = build((_) => _json(const <String, dynamic>{}));
+      final (service, _) = build(
+        (request) => httpTextResponse(request, const <String, dynamic>{}),
+      );
       final zai = (await service.fetchAll(
         zaiApiKey: 'k',
         zaiBaseUrl: 'https://api.z.ai',
@@ -891,37 +895,38 @@ void main() {
 
   group('OpenAI Codex', () {
     test('reports unconfigured when no OAuth token is supplied', () async {
-      final (service, adapter) = build((_) => _json(const {}));
+      final (service, client) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final codex = (await service.fetchAll()).firstWhere(
         (u) => u.providerId == 'codex',
       );
       expect(codex.status, SubscriptionStatus.unconfigured);
-      expect(adapter.requests, isEmpty);
+      expect(client.requests, isEmpty);
     });
 
     test('refuses to send the token to a non-ChatGPT host', () async {
-      final (service, adapter) = build((_) => _json(const {}));
+      final (service, client) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final codex = (await service.fetchAll(
         codexAccessToken: 'tok',
         codexBaseUrl: 'https://evil.example/backend-api',
       )).firstWhere((u) => u.providerId == 'codex');
       expect(codex.status, SubscriptionStatus.error);
       expect(codex.error, 'Invalid Codex base URL.');
-      expect(adapter.requests, isEmpty);
+      expect(client.requests, isEmpty);
     });
 
     test('parses primary/secondary windows from /wham/usage', () async {
-      final (service, adapter) = build((options) {
-        expect(options.uri.toString(), contains('/wham/usage'));
-        expect(options.headers['Authorization'], 'Bearer plan-token');
-        expect(options.headers['ChatGPT-Account-Id'], 'acct-1');
-        return _json({
+      final (service, client) = build((request) {
+        expect(httpRequestUri(request).toString(), contains('/wham/usage'));
+        expect(header(request, 'authorization'), 'Bearer plan-token');
+        expect(header(request, 'chatgpt-account-id'), 'acct-1');
+        return httpTextResponse(request, {
           'plan_type': 'plus',
           'rate_limit': {
-            'primary_window': {
-              'used_percent': 55,
-              'reset_at': 1700000000,
-            },
+            'primary_window': {'used_percent': 55, 'reset_at': 1700000000},
             'secondary_window': {
               'used_percent': 20,
               'reset_after_seconds': 86400,
@@ -942,12 +947,12 @@ void main() {
       final seven = codex.windows.firstWhere((w) => w.id == '7d');
       expect(seven.usedFraction, closeTo(0.2, 1e-9));
       expect(seven.resetsAt, isNotNull);
-      expect(adapter.requests, hasLength(1));
+      expect(client.requests, hasLength(1));
     });
 
     test('labels windows from limit_window_seconds when present', () async {
       final (service, _) = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'rate_limit': {
             'primary_window': {
               'used_percent': 10,
@@ -969,7 +974,7 @@ void main() {
 
     test('accepts camelCase usedPercent / resetsAt fields', () async {
       final (service, _) = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'rate_limit': {
             'primaryWindow': {'usedPercent': 80, 'resetsAt': 1700000000},
           },
@@ -983,7 +988,9 @@ void main() {
     });
 
     test('reports error when the payload has no windows', () async {
-      final (service, _) = build((_) => _json(const <String, dynamic>{}));
+      final (service, _) = build(
+        (request) => httpTextResponse(request, const <String, dynamic>{}),
+      );
       final codex = (await service.fetchAll(
         codexAccessToken: 't',
       )).firstWhere((u) => u.providerId == 'codex');
@@ -995,10 +1002,10 @@ void main() {
   group('multi-account fan-out', () {
     test('two Kimi logins return two stamped snapshots', () async {
       var n = 0;
-      final (service, adapter) = build((options) {
+      final (service, client) = build((request) {
         n += 1;
-        expect(options.path, endsWith('/usages'));
-        return _json({
+        expect(request.url, endsWith('/usages'));
+        return httpTextResponse(request, {
           'usage': {'used': n * 10, 'limit': 100},
         });
       });
@@ -1034,7 +1041,7 @@ void main() {
         'two@example.com',
       ]);
       expect(kimi.every((u) => u.status == SubscriptionStatus.ok), isTrue);
-      expect(adapter.requests, hasLength(2));
+      expect(client.requests, hasLength(2));
       expect(
         results.map((u) => u.providerId),
         containsAll(<String>['claude', 'codex', 'zai', 'cursor']),
@@ -1042,7 +1049,9 @@ void main() {
     });
 
     test('a knownStatus Claude account is not fetched', () async {
-      final (service, adapter) = build((_) => _json(const {}));
+      final (service, client) = build(
+        (request) => httpTextResponse(request, const {}),
+      );
       final results = await service.fetchAll(
         accounts: const [
           SubscriptionUsageAccount(
@@ -1059,18 +1068,16 @@ void main() {
       expect(claude.accountId, 'signed-out');
       expect(claude.error, 'Sign in again.');
       expect(
-        adapter.requests.where((r) => r.path.contains('anthropic')),
+        client.requests.where((r) => r.url.contains('anthropic')),
         isEmpty,
       );
     });
   });
 
   group('z.ai error shape', () {
-    test('maps a connectionTimeout DioException to "Timed out"', () async {
-      ResponseBody handler(_) => throw DioException(
-        type: DioExceptionType.connectionTimeout,
-        requestOptions: RequestOptions(),
-      );
+    test('maps a request timeout to "Timed out"', () async {
+      HttpResponse handler(HttpRequest request) =>
+          throw RhttpTimeoutException(request);
       final (service, _) = build(handler);
       final zai = (await service.fetchAll(
         zaiApiKey: 'k',

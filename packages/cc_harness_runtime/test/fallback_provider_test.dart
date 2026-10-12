@@ -8,6 +8,7 @@ class _ScriptProvider implements LlmProviderPort {
   final String name;
   final List<LlmEvent> events;
   int calls = 0;
+  LlmCompleteConfig? lastConfig;
 
   @override
   String get displayName => name;
@@ -22,8 +23,19 @@ class _ScriptProvider implements LlmProviderPort {
     LlmCompleteConfig config = const LlmCompleteConfig(),
   }) async* {
     calls++;
+    lastConfig = config;
     yield* Stream.fromIterable(events);
   }
+}
+
+/// A provider whose native-deferral capability depends on the model it is asked
+/// about, mirroring `AnthropicProvider`.
+class _ModelGatedProvider extends _ScriptProvider
+    implements LlmDeferredToolSupport {
+  _ModelGatedProvider(super.name, super.events);
+
+  @override
+  bool supportsDeferredTools({String? model}) => model == 'new-model';
 }
 
 void main() {
@@ -214,4 +226,192 @@ void main() {
       expect(e1.calls, 2);
     },
   );
+
+  group('per-entry model and accounting', () {
+    test('asks each target for its OWN model, not the primary', () async {
+      final spent = _ScriptProvider('spent', const [
+        LlmError('Invalid API key', code: 'authentication_error'),
+        LlmDone(),
+      ]);
+      final crossProvider = _ScriptProvider('cross', const [
+        LlmTextDelta('ok'),
+        LlmDone(),
+      ]);
+      final fb = FallbackProvider([
+        FallbackEntry(
+          providerId: 'anthropic',
+          model: 'claude-opus-4-8',
+          build: () => spent,
+        ),
+        FallbackEntry(
+          providerId: 'openai',
+          model: 'gpt-x',
+          build: () => crossProvider,
+        ),
+      ]);
+
+      await fb
+          .complete(
+            messages: [HarnessMessage.user('x')],
+            config: const LlmCompleteConfig(model: 'claude-opus-4-8'),
+          )
+          .toList();
+
+      expect(spent.lastConfig?.model, 'claude-opus-4-8');
+      expect(
+        crossProvider.lastConfig?.model,
+        'gpt-x',
+        reason: 'forwarding the primary model to the fallback target would 404',
+      );
+      // Everything else is carried through untouched.
+      expect(
+        crossProvider.lastConfig?.maxTokens,
+        const LlmCompleteConfig().maxTokens,
+      );
+    });
+
+    test(
+      'an entry that declares no model keeps the provider default',
+      () async {
+        final provider = _ScriptProvider('p', const [
+          LlmTextDelta('ok'),
+          LlmDone(),
+        ]);
+        final fb = FallbackProvider([
+          FallbackEntry(providerId: 'a', model: '', build: () => provider),
+        ]);
+        await fb
+            .complete(
+              messages: [HarnessMessage.user('x')],
+              config: const LlmCompleteConfig(model: 'caller-model'),
+            )
+            .toList();
+        expect(provider.lastConfig?.model, 'm');
+        expect(fb.defaultModel, 'm');
+      },
+    );
+
+    test('accounts each physical attempt to the target that ran it', () async {
+      final ledger = ProviderCallLedger(runId: 'run-1');
+      final primary = _ScriptProvider('primary', const [
+        LlmError('bad key', code: 'authentication_error'),
+        LlmDone(),
+      ]);
+      final secondary = _ScriptProvider('secondary', const [
+        LlmTextDelta('ok'),
+        LlmUsage(inputTokens: 30, outputTokens: 4),
+        LlmDone(stopReason: LlmStopReason.endTurn),
+      ]);
+      final fb = FallbackProvider([
+        FallbackEntry(
+          providerId: 'anthropic',
+          model: 'claude-opus-4-8',
+          build: () => ObservedLlmProvider(
+            primary,
+            observer: ledger,
+            identity: ledger.identity,
+            runId: 'run-1',
+          ),
+        ),
+        FallbackEntry(
+          providerId: 'openai',
+          model: 'gpt-x',
+          build: () => ObservedLlmProvider(
+            secondary,
+            observer: ledger,
+            identity: ledger.identity,
+            runId: 'run-1',
+          ),
+        ),
+      ]);
+
+      await fb
+          .complete(
+            messages: [HarnessMessage.user('x')],
+            config: const LlmCompleteConfig(
+              model: 'claude-opus-4-8',
+              callId: 'turn-1',
+              purpose: LlmCallPurpose.main,
+            ),
+          )
+          .toList();
+
+      expect(
+        ledger.records,
+        hasLength(2),
+        reason: 'the failed target is spend too — one record per physical call',
+      );
+      expect(ledger.duplicatesIgnored, 0);
+      expect(ledger.records.map((r) => r.model), [
+        'claude-opus-4-8',
+        'gpt-x',
+      ], reason: 'each record names the model its target was asked for');
+      expect(ledger.records.map((r) => r.providerId), ['primary', 'secondary']);
+      expect(ledger.records.first.outcome, ProviderCallOutcome.failure);
+      expect(ledger.records.last.outcome, ProviderCallOutcome.success);
+      expect(ledger.total.inputTokens, 30);
+      expect(ledger.billableTokens, 34);
+    });
+
+    test('deferral capability is refused when ANY target cannot defer', () {
+      final newTarget = _ModelGatedProvider('new', const [LlmDone()]);
+      final oldTarget = _ModelGatedProvider('old', const [LlmDone()]);
+      final incapable = _ScriptProvider('plain', const [LlmDone()]);
+
+      final bothNew = FallbackProvider([
+        FallbackEntry(
+          providerId: 'a',
+          model: 'new-model',
+          build: () => newTarget,
+        ),
+        FallbackEntry(
+          providerId: 'b',
+          model: 'new-model',
+          build: () => oldTarget,
+        ),
+      ]);
+      expect(
+        providerSupportsDeferredTools(bothNew, model: 'new-model'),
+        isTrue,
+      );
+
+      final mixedModel = FallbackProvider([
+        FallbackEntry(
+          providerId: 'a',
+          model: 'new-model',
+          build: () => newTarget,
+        ),
+        FallbackEntry(
+          providerId: 'b',
+          model: 'old-model',
+          build: () => oldTarget,
+        ),
+      ]);
+      expect(
+        providerSupportsDeferredTools(mixedModel, model: 'new-model'),
+        isFalse,
+        reason:
+            'the second entry is checked with ITS OWN model, not the '
+            'caller\'s primary — deferring here would break the failover',
+      );
+
+      final mixedProvider = FallbackProvider([
+        FallbackEntry(
+          providerId: 'a',
+          model: 'new-model',
+          build: () => newTarget,
+        ),
+        FallbackEntry(
+          providerId: 'b',
+          model: 'new-model',
+          build: () => incapable,
+        ),
+      ]);
+      expect(
+        providerSupportsDeferredTools(mixedProvider, model: 'new-model'),
+        isFalse,
+        reason: 'a target with no native deferral must veto the whole chain',
+      );
+    });
+  });
 }

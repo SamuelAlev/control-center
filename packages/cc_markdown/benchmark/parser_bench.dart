@@ -149,7 +149,7 @@ final String renovateFixture = _buildRenovateFixture();
 
 String _buildRenovateFixture() {
   const deps = <(String, String, String)>[
-    ('dio', '5.4.0', '5.7.2'),
+    ('rhttp', '0.17.0', '0.18.0'),
     ('riverpod', '2.5.1', '2.6.3'),
     ('go_router', '14.2.0', '14.8.1'),
     ('drift', '2.20.2', '2.28.0'),

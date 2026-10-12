@@ -14153,6 +14153,31 @@ class AppLocalizationsSv extends AppLocalizations {
   String get composerDropToAttach => 'Släpp för att bifoga';
 
   @override
+  String get composerAttachmentUploading => 'Laddar upp…';
+
+  @override
+  String get composerAttachmentReady => 'Klar';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Uppladdningen misslyckades';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Filen överskrider gränsen på $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Kunde inte läsa den här filen';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Vänta tills bilagorna har laddats upp';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Försök ladda upp misslyckade bilagor igen eller ta bort dem innan du skickar';
+
+  @override
   String get attachmentUnavailable => 'Bilaga otillgänglig';
 
   @override
@@ -15319,11 +15344,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'En agent väntar på dig';
+  String get notificationAgentAwaitingInput => 'En agent behöver uppmärksamhet';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'När en agent behöver ditt godkännande, ett svar eller fungerande inloggningsuppgifter';
+      'När en agent behöver godkännande, ett svar eller giltiga inloggningsuppgifter, eller en regel blockerar en åtgärd';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15396,4 +15421,385 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Servern stoppas';
+
+  @override
+  String get skillEvalAbsent => 'Saknas jämfört med tillgänglig';
+
+  @override
+  String get skillEvalAmbient => 'Tillgängliga färdigheter';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Artefaktreferens: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · upprepning $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Försök';
+
+  @override
+  String get skillEvalAvailableEvent => 'Tillgänglig';
+
+  @override
+  String get skillEvalBaseline => 'Föregående revisionshash';
+
+  @override
+  String get skillEvalBodyLoad => 'Innehåll inläst';
+
+  @override
+  String get skillEvalBudgetCents => 'Budget (US-cent)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Betald utvärdering använder vald leverantör och budget. Resultat från säkerhetsskanning redovisas separat.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Abonnemangsbudgetar följer användning beräknad till API-priser, inte fakturor. Ett pågående anrop kan överskrida budgeten; inga nya anrop startar när gränsen är nådd. Säkerhetsskanningar är separata.';
+
+  @override
+  String get skillEvalCancel => 'Avbryt körning';
+
+  @override
+  String get skillEvalCancelled => 'Avbruten';
+
+  @override
+  String get skillEvalCancelling => 'Avbryter';
+
+  @override
+  String get skillEvalComparison => 'Jämförelse';
+
+  @override
+  String get skillEvalCompleted => 'Slutförd';
+
+  @override
+  String get skillEvalComposition => 'Sammansättning';
+
+  @override
+  String get skillEvalCorpus => 'Uppgiftsmängd';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString upprepningar';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Alla planerade försök har observerats';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Aktuell pakethash: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Inaktivera uppdateringsutvärderingar';
+
+  @override
+  String get skillEvalEnableUpdates => 'Aktivera uppdateringsutvärderingar';
+
+  @override
+  String get skillEvalExport => 'Kopiera maskerad JSON';
+
+  @override
+  String get skillEvalFailed => 'Misslyckades';
+
+  @override
+  String get skillEvalForced => 'Tvingad inläsning jämfört med frånvaro';
+
+  @override
+  String get skillEvalForcedEvent => 'Tvingad inläsning';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Pakethash är inte tillgänglig på den här servern. Utvärdering är inaktiverad.';
+
+  @override
+  String get skillEvalHistory => 'Revisionshistorik';
+
+  @override
+  String get skillEvalImproved => 'Förbättrad';
+
+  @override
+  String get skillEvalIncomplete => 'Ofullständig';
+
+  @override
+  String get skillEvalInconclusive => 'Inget entydigt resultat';
+
+  @override
+  String get skillEvalInferred => 'Härledd';
+
+  @override
+  String get skillEvalInterrupted => 'Avbruten';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Inläsning av färdigheten kan inte observeras; att en händelse saknas bevisar inte att den ignorerades.';
+
+  @override
+  String get skillEvalModel => 'Vald modell';
+
+  @override
+  String get skillEvalNoAttempts => 'Inga försök ännu.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Inga anslutna modeller tillgängliga. Anslut först en leverantör i Inställningar.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Ingen föregående hash finns i kampanjhistoriken. Utvärdera den föregående revisionen innan du ersätter den.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Ingen rapport ännu; delresultat från försök finns tillgängliga.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Ingen arbetsyta vald.';
+
+  @override
+  String get skillEvalNoTasks => 'Inga uppgifter rapporterade ännu.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Inga verifieringsbevis registrerade.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Inte utvärderad för exakt dessa byte. En skanning är inte ett bevis på beteendet.';
+
+  @override
+  String get skillEvalNotVerified => 'Inte verifierad';
+
+  @override
+  String get skillEvalObserved => 'Observerad';
+
+  @override
+  String get skillEvalOpenQuality => 'Öppna kvalitet';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Som standard startar ingen betald utvärdering när du sparar en färdighet. Om du uttryckligen aktiverar automatisk omutvärdering vid uppdateringar startar sparandet en betald omutvärdering inom den angivna budgeten.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Utvärdera först en revision för att konfigurera uppdateringspolicyn.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Konfiguration av uppdateringspolicy';
+
+  @override
+  String get skillEvalPartial => 'Delvis underlag; inget beslut om införande';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString av $plannedString försök';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Leverantör: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Kampanjer för arbetsytans färdigheter och revisionsspecifika belägg.';
+
+  @override
+  String get skillEvalQueued => 'I kö';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Återansluter till kampanjens ögonblicksbilder…';
+
+  @override
+  String get skillEvalRefresh => 'Uppdatera';
+
+  @override
+  String get skillEvalReferenceLoad => 'Referens inläst';
+
+  @override
+  String get skillEvalRepetitions => 'Upprepningar per uppgift';
+
+  @override
+  String get skillEvalReport => 'Evidensrapport';
+
+  @override
+  String get skillEvalRunning => 'Körs';
+
+  @override
+  String get skillEvalScriptExecution => 'Skript kört';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Kostnad: $spent / budget $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Starta utvärdering';
+
+  @override
+  String get skillEvalStartTitle => 'Jämför färdighetsrevisioner';
+
+  @override
+  String get skillEvalStale => 'Inaktuell';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Inaktuell: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Unika uppgiftskluster: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes verifierade) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Uppgifter per variant';
+
+  @override
+  String get skillEvalToolError => 'Verktygsfel';
+
+  @override
+  String get skillEvalTools => 'Verktygshändelser';
+
+  @override
+  String get skillEvalTitle => 'Utvärdering av färdighet';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Otillgänglig: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Okänd';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Osparade ändringar ingår inte. Spara före utvärdering.';
+
+  @override
+  String get skillEvalUncertainty => 'Osäkerhetsintervall';
+
+  @override
+  String get skillEvalVerified => 'Verifierad';
+
+  @override
+  String get skillEvalVerifiers => 'Verifiering';
+
+  @override
+  String get skillEvalVerdict => 'Bedömning';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Kopiering klar: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Planbrott';
+
+  @override
+  String get skillEvalPreserved => 'Kvaliteten bibehållen';
+
+  @override
+  String get skillEvalPrevious => 'Föregående jämfört med aktuell';
+
+  @override
+  String get skillEvalRegressed => 'Försämring påvisad';
+
+  @override
+  String get skillEvalCostRegression => 'Kostnadsregression';
+
+  @override
+  String get skillEvalHarnessError => 'Fel i testmiljön';
+
+  @override
+  String get skillBehaviorRouting => 'Färdighetsdirigering';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive förväntade användningar · $falsePositive oväntade användningar · $falseNegative missade användningar · $trueNegative korrekta överhopp';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive osäkra användningar · $negative osäkra överhopp · $notOffered inte erbjuden';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Observerad precision $precision · recall $recall · andel falska positiva $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Tvingad arm · endast diagnostik';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Andelarna bygger bara på observerbar åtkomst. Åtkomst via skal eller sökning kan förbli okänd; att läsa in en färdighet bevisar inte att den användes.';
+
+  @override
+  String get skillBehaviorSafety => 'Syntetisk säkerhet';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts godkända artefaktkontroller · $denials avslag enligt policy · $violations överträdelser mot skyddade filer';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Artefaktkontrollerna är syntetiska och visar inte angreppsfrekvensen i verkligheten; faktiska bieffekter registreras inte.';
+
+  @override
+  String get skillBehaviorUtility => 'Nytta per familj';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts verifierade framgångar';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Alla försök ingår i nämnaren för nytta, även misslyckade och ofullständiga.';
 }

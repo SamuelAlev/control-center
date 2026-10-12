@@ -43,168 +43,6 @@ Widget wrap(Widget child) {
 }
 
 void main() {
-  group('CommandItem', () {
-    test('constructor creates with required fields', () {
-      var executed = false;
-      final item = CommandItem(
-        id: 'cmd-1',
-        label: 'Open Dashboard',
-        icon: Icons.dashboard,
-        onExecute: () => executed = true,
-      );
-
-      expect(item.id, 'cmd-1');
-      expect(item.label, 'Open Dashboard');
-      expect(item.icon, Icons.dashboard);
-      expect(item.description, isNull);
-      expect(item.shortcut, isNull);
-      expect(item.category, isNull);
-
-      item.onExecute();
-      expect(executed, isTrue);
-    });
-
-    test('constructor with all fields', () {
-      final item = CommandItem(
-        id: 'cmd-2',
-        label: 'Search Files',
-        icon: Icons.search,
-        description: 'Search files in workspace',
-        shortcut: 'Cmd+P',
-        category: 'Navigation',
-        onExecute: () {},
-      );
-
-      expect(item.description, 'Search files in workspace');
-      expect(item.shortcut, 'Cmd+P');
-      expect(item.category, 'Navigation');
-    });
-
-    test('id is stable', () {
-      final item = CommandItem(
-        id: 'unique-id-123',
-        label: 'Test',
-        icon: Icons.star,
-        onExecute: () {},
-      );
-
-      expect(item.id, 'unique-id-123');
-    });
-
-    test('onExecute is called correctly', () {
-      var count = 0;
-      final item = CommandItem(
-        id: 'cmd',
-        label: 'Count',
-        icon: Icons.add,
-        onExecute: () => count++,
-      );
-
-      item.onExecute();
-      item.onExecute();
-      item.onExecute();
-
-      expect(count, 3);
-    });
-
-    test('category groups items', () {
-      final nav = CommandItem(
-        id: 'nav',
-        label: 'Nav',
-        icon: Icons.navigation,
-        category: 'Navigation',
-        onExecute: () {},
-      );
-      final file = CommandItem(
-        id: 'file',
-        label: 'File',
-        icon: Icons.folder,
-        category: 'Files',
-        onExecute: () {},
-      );
-
-      expect(nav.category, 'Navigation');
-      expect(file.category, 'Files');
-      expect(nav.category, isNot(file.category));
-    });
-
-    test('shortcut displays keyboard hint', () {
-      final item = CommandItem(
-        id: 'shortcut',
-        label: 'Test',
-        icon: Icons.keyboard,
-        shortcut: 'Ctrl+Shift+K',
-        onExecute: () {},
-      );
-
-      expect(item.shortcut, 'Ctrl+Shift+K');
-    });
-
-    test('description provides context', () {
-      final item = CommandItem(
-        id: 'desc',
-        label: 'Test',
-        icon: Icons.info,
-        description: 'This is a test command with a longer description',
-        onExecute: () {},
-      );
-
-      expect(item.description, contains('test command'));
-    });
-
-    test('item without category defaults to null', () {
-      final item = CommandItem(
-        id: 'no-cat',
-        label: 'No Category',
-        icon: Icons.help,
-        onExecute: () {},
-      );
-
-      expect(item.category, isNull);
-    });
-
-    test('multiple items can share same id for testing', () {
-      final a = CommandItem(
-        id: 'same',
-        label: 'A',
-        icon: Icons.abc,
-        onExecute: () {},
-      );
-      final b = CommandItem(
-        id: 'same',
-        label: 'B',
-        icon: Icons.abc,
-        onExecute: () {},
-      );
-
-      expect(a.id, b.id);
-    });
-
-    test('empty string shortcut is valid', () {
-      final item = CommandItem(
-        id: 'empty-shortcut',
-        label: 'Test',
-        icon: Icons.help,
-        shortcut: '',
-        onExecute: () {},
-      );
-
-      expect(item.shortcut, '');
-    });
-
-    test('empty string description is valid', () {
-      final item = CommandItem(
-        id: 'empty-desc',
-        label: 'Test',
-        icon: Icons.help,
-        description: '',
-        onExecute: () {},
-      );
-
-      expect(item.description, '');
-    });
-  });
-
   group('showCommandPalette', () {
     late AppPreferences prefs;
 
@@ -246,6 +84,46 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.text('Type a command or search…'), findsOneWidget);
+    });
+
+    testWidgets('first frame accepts a query and Escape restores opener', (
+      tester,
+    ) async {
+      final commands = _testCommands(5);
+      final trigger = FocusNode(debugLabel: 'palette opener');
+      addTearDown(trigger.dispose);
+      await tester.pumpWidget(
+        wrap(
+          Builder(
+            builder: (context) => Focus(
+              focusNode: trigger,
+              child: CcButton(
+                onPressed: () =>
+                    showCommandPalette(context, _builder(commands)),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      trigger.requestFocus();
+      await tester.pump();
+      expect(trigger.hasPrimaryFocus, isTrue);
+
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+      expect(find.text('Type a command or search…'), findsOneWidget);
+      await tester.enterText(find.byType(EditableText), '5');
+      await tester.pump();
+      expect(find.text('Command 5'), findsOneWidget);
+      expect(find.text('Command 1'), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Command 5'), findsNothing);
+      expect(trigger.hasFocus, isTrue);
     });
 
     testWidgets('dialog shows command labels', (tester) async {
@@ -330,27 +208,6 @@ void main() {
 
       expect(find.text('Ctrl+0'), findsOneWidget);
       expect(find.text('Ctrl+2'), findsOneWidget);
-    });
-
-    testWidgets('dialog has no footer chrome', (tester) async {
-      final commands = _testCommands(1);
-      await tester.pumpWidget(
-        wrap(
-          Builder(
-            builder: (context) => CcButton(
-              onPressed: () => showCommandPalette(context, _builder(commands)),
-              child: const Text('Open'),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.text('Navigate'), findsNothing);
-      expect(find.text('Select'), findsNothing);
-      expect(find.text('Close'), findsNothing);
     });
 
     testWidgets('search filters commands by label', (tester) async {
@@ -567,25 +424,6 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.text('No commands match'), findsOneWidget);
-    });
-
-    testWidgets('dialog has divider separators', (tester) async {
-      final commands = _testCommands(1);
-      await tester.pumpWidget(
-        wrap(
-          Builder(
-            builder: (context) => CcButton(
-              onPressed: () => showCommandPalette(context, _builder(commands)),
-              child: const Text('Open'),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.byType(CcDivider), findsWidgets);
     });
 
     testWidgets('keyboard return icon shown on selected row', (tester) async {

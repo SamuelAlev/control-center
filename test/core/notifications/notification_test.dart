@@ -2,9 +2,12 @@ import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/notifications/notification_sound.dart';
 import 'package:cc_domain/core/domain/ports/notification_preferences_port.dart';
 import 'package:control_center/core/notifications/desktop_notification_delivery.dart';
+import 'package:control_center/core/notifications/notification_frame_mapper.dart';
 import 'package:control_center/core/notifications/notification_service.dart';
 import 'package:control_center/core/notifications/notification_sound_service.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ── Fakes ──────────────────────────────────────────────────────────────
@@ -72,10 +75,7 @@ class _FakePreferences implements NotificationPreferencesPort {
   Future<Set<String>> getMutedRepos() async => _mutedRepos;
 
   @override
-  Future<void> setRepoMuted(
-    String repoFullName, {
-    required bool muted,
-  }) async {
+  Future<void> setRepoMuted(String repoFullName, {required bool muted}) async {
     if (muted) {
       _mutedRepos.add(repoFullName.toLowerCase());
     } else {
@@ -222,27 +222,29 @@ void main() {
       service.dispose();
     });
 
-    test('still notifies on the target route when the app is NOT focused',
-        () async {
-      // "I am already looking at it" requires actually looking. A conversation
-      // left open behind another app is not being read, so the message is
-      // exactly the news the banner exists to carry.
-      activeRoutes.add('/chat/123');
-      final service = createService(appFocused: false);
-      service.show(
-        const AppNotification(
-          category: NotificationCategory.newMessage,
-          title: 'Ada',
-          body: 'ping',
-          route: '/chat/123',
-          workspaceId: 'w1',
-          spaceId: 'sp-1',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
-      expect(delivery.shown, hasLength(1));
-      service.dispose();
-    });
+    test(
+      'still notifies on the target route when the app is NOT focused',
+      () async {
+        // "I am already looking at it" requires actually looking. A conversation
+        // left open behind another app is not being read, so the message is
+        // exactly the news the banner exists to carry.
+        activeRoutes.add('/chat/123');
+        final service = createService(appFocused: false);
+        service.show(
+          const AppNotification(
+            category: NotificationCategory.newMessage,
+            title: 'Ada',
+            body: 'ping',
+            route: '/chat/123',
+            workspaceId: 'w1',
+            spaceId: 'sp-1',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(delivery.shown, hasLength(1));
+        service.dispose();
+      },
+    );
 
     test('suppresses a message in the space I am focused on', () async {
       activeRoutes.add('/chat/123');
@@ -262,24 +264,65 @@ void main() {
       service.dispose();
     });
 
-    test('notifies for a message in a DIFFERENT space on the same route',
-        () async {
-      activeRoutes.add('/chat/123');
-      final service = createService(activeSpaceId: 'sp-other');
-      service.show(
-        const AppNotification(
-          category: NotificationCategory.newMessage,
-          title: 'Ada',
-          body: 'ping',
-          route: '/chat/123',
-          workspaceId: 'w1',
-          spaceId: 'sp-1',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
-      expect(delivery.shown, hasLength(1));
-      service.dispose();
-    });
+    test(
+      'a policy block notifies in the active space, unlike its approval card',
+      () async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        const params = {
+          'workspace_id': 'w1',
+          'space_id': 'sp-1',
+          'agent_name': 'Ada',
+          'summary': 'git push origin main',
+          'reason': 'A workspace rule denies this push.',
+        };
+        final blocked = mapNotificationFrame(
+          'notifications/agent_action_blocked',
+          params,
+          l10n: l10n,
+        )!;
+        activeRoutes.add(blocked.route);
+        final service = createService(activeSpaceId: 'sp-1');
+        service.show(blocked);
+        await Future<void>.delayed(Duration.zero);
+        expect(delivery.shown.single.route, blocked.route);
+        expect(delivery.shown.single.body, contains(params['reason']));
+
+        service.show(
+          mapNotificationFrame('notifications/agent_awaiting_input', {
+            ...params,
+            'kind': 'approval',
+          }, l10n: l10n)!,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          delivery.shown,
+          hasLength(1),
+          reason: 'The pending approval is already visible in this space.',
+        );
+        service.dispose();
+      },
+    );
+
+    test(
+      'notifies for a message in a DIFFERENT space on the same route',
+      () async {
+        activeRoutes.add('/chat/123');
+        final service = createService(activeSpaceId: 'sp-other');
+        service.show(
+          const AppNotification(
+            category: NotificationCategory.newMessage,
+            title: 'Ada',
+            body: 'ping',
+            route: '/chat/123',
+            workspaceId: 'w1',
+            spaceId: 'sp-1',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(delivery.shown, hasLength(1));
+        service.dispose();
+      },
+    );
   });
 
   group('MacOsChannelNotificationDelivery', () {

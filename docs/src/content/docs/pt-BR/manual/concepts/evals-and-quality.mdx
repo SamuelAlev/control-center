@@ -1,9 +1,16 @@
 ---
 title: Avaliações e qualidade
-description: Suítes de avaliação, o conjunto inicial semeado em cada espaço de trabalho e onde elas aparecem em Observabilidade.
+description: Suítes de avaliação e campanhas de skills fixadas a revisões, e como interpretar suas evidências.
 slug: pt-BR/manual/conceitos/avaliacoes-e-qualidade
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observabilidade → Qualidade** contém tanto suítes de avaliação de tarefa única
+quanto campanhas de skills pareadas. Uma campanha de skill mede um pacote conforme
+usado por um determinado modelo e harness, não a qualidade do Markdown dele
+isoladamente.
+
+## Suítes de avaliação
 
 Uma **suíte de avaliação** é uma definição, no escopo de um espaço de trabalho,
 de uma tarefa a ser executada contra um agente: um prompt, um agente de destino
@@ -19,7 +26,7 @@ ciclo completo de ticket. A semeadura escuta `WorkspaceCreated`
 (`workspace.upsert` ou `workspace.create`), ignora um nome que já existe e não
 preenche retroativamente espaços de trabalho mais antigos.
 
-## Onde elas aparecem
+### Onde elas aparecem
 
 **Observabilidade → Qualidade** (`/workspaces/<id>/observability`) lista cada
 suíte no espaço de trabalho.
@@ -28,10 +35,124 @@ Crie, liste, edite e exclua suítes por meio de `evals.upsertSuite`,
 `evals.deleteSuite` e `evals.watchSuites`. A aba Qualidade é a lista; essas
 operações são o editor.
 
+## Campanhas de skills
+
+Uma campanha compara dois braços sob a mesma tarefa e a mesma configuração de
+execução. O candidato está ausente, normalmente disponível, carregado
+explicitamente, ou é comparado com uma revisão anterior ou um inventário fixo de
+skills de ambiente. Essas opções respondem a perguntas diferentes; o
+carregamento forçado é um diagnóstico, não uma pontuação para a descoberta
+normal. O [guia de
+skills](/pt-BR/manual/guias/gerenciar-skills/#avaliar-uma-skill) explica como
+escolher uma comparação e autorizar uma execução com orçamento.
+
+As evidências pertencem a um **hash exato do pacote inteiro**: `SKILL.md`,
+metadados, scripts, referências e recursos. O servidor captura pacotes imutáveis
+já analisados e fixa o conjunto de tarefas, o adaptador, o identificador do
+provedor/modelo nativo, o protocolo, os esquemas de ferramentas e o inventário de
+ambiente. Campanhas nativas do Claude também fixam a conta gerenciada e a versão
+observada da CLI. Editar uma referência invalida as evidências atuais mesmo que o
+`SKILL.md` não tenha mudado. Um alias de modelo registra o que foi solicitado, não pesos
+imutáveis do provedor.
+
+Cada tentativa recebe contexto, home e estado de fixture novos. Os braços
+pareados usam a mesma política e as mesmas condições de tarefa, exceto pela
+intervenção de skill declarada. Alvo ausente significa que os metadados e
+arquivos do candidato não estão disponíveis, e não que todas as instruções ou
+skills de segundo plano foram removidas. Os prompts de tarefa não devem nomear o
+candidato em uma comparação de descoberta normal.
+
+O servidor detém autorização, execução, orçamentos e persistência do espaço de
+trabalho. Os clientes escolhem configurações e exibem evidências. O progresso
+sobrevive a reconexões; o cancelamento mantém resultados parciais, e um reinício
+marca o trabalho inacabado como interrompido em vez de repetir silenciosamente
+chamadas pagas. Essas campanhas não fornecem o contrato separado de executor
+para suítes de avaliação arbitrárias.
+
+## Ler as evidências com cautela
+
+- **Os resultados decidem a correção.** Verificadores tipados e independentes
+  checam artefatos e o comportamento resultante, não a afirmação do agente de que
+  teve sucesso. As respostas esperadas ficam fora do cerco do candidato; o código
+  gerado é avaliado em uma cópia contida separadamente.
+- **Carregamento e utilidade são coisas distintas.** Disponibilidade,
+  carregamentos de corpo e referências e uso observado de scripts explicam a
+  execução. Ler um arquivo não prova que o modelo seguiu suas instruções; acesso
+  não observável permanece desconhecido.
+- **Mantenha a linha de base pareada.** Uma execução bem-sucedida do candidato
+  sozinha não estabelece benefício. Inclua tentativas em que uma skill disponível
+  foi ignorada, tentativas malsucedidas e seus custos; não guarde apenas a melhor
+  retentativa.
+- **Repetições não são tarefas novas.** Os relatórios agrupam a incerteza por
+  tarefa. Amostras pequenas, cobertura ausente, deriva de identidade e gasto
+  desconhecido não podem justificar uma recomendação de adoção. Uma campanha
+  concluída ainda pode ser inconclusiva; não conseguir mostrar melhora não é
+  prova de equivalência ou regressão.
+- **Inspecione regressões individuais.** Ganhos agregados não devem esconder uma
+  tarefa prejudicada ou um efeito colateral não autorizado. Análises de
+  segurança, observações de segurança em tempo de execução e utilidade
+  permanecem separadas; execução mais barata não compensa evidências ausentes de
+  qualidade ou segurança.
+- **Não agrupe resultados incompatíveis.** Outro modelo, harness, política,
+  fixture ou combinação de skills é outra configuração. Mantenha as evidências de
+  transferência e composição separadas dos casos de desenvolvimento.
+
+Os nove corpora-piloto redigidos localmente contêm 108 entradas de tarefa entre
+utilidade, roteamento/segurança específicos de família e
+transferência/composição guardadas. Escolha uma família que corresponda ao
+propósito da skill. Soluções de referência e saídas sabidamente ruins testam os
+verificadores; essas fixtures não são uma reprodução de um benchmark público,
+nem evidência de que qualquer skill instalada seja útil. Execuções de fumaça da
+implementação com respostas roteirizadas do provedor não são medições de
+qualidade de skill em modelos reais.
+
+## Limites de execução e de evidências
+
+O **harness interno** controlado e o adaptador **Claude Code** são suportados.
+Isolamento e credenciais ativas precisam passar antes da execução. Provedores
+internos exigem suporte a ferramentas, limites de token e preços documentados; o
+**Codex OAuth** autentica a própria conta em vez de exigir uma chave de API da
+OpenAI separada. O **Claude Code** usa a conta gerenciada padrão, um ID de modelo
+concreto e o próprio relatório de custo equivalente à API.
+
+O **Claude Code** e o **Codex OAuth** usam um **limite de parada de uso**: uma
+chamada em andamento pode ultrapassar o orçamento, e então as chamadas seguintes
+param. Isso não é gasto de assinatura faturado nem um teto rígido de fatura.
+Provedores com chave de API mantêm reservas conservadoras antes da chamada. Gasto
+observado desconhecido interrompe novas chamadas em todos os adaptadores;
+cobertura incompleta permanece parcial ou inconclusiva.
+
+O **Claude** executa seu loop nativo de modelo em um diretório privado do
+controlador, com ferramentas internas e skills de ambiente desativadas. Suas
+únicas ferramentas são a ponte MCP autenticada e pertencente ao servidor para o
+mesmo convidado confinado usado pelo harness interno. As credenciais permanecem
+fora desse convidado. Uma identidade de CLI ou superfície de ferramentas alterada
+invalida a tentativa em vez de trocar de executor silenciosamente. Avaliação de
+frota e Windows não são suportados. Uma sonda Git bem-sucedida do worker ou um eco
+de prompt não conta como avaliação.
+
+O isolamento no macOS nega rede do convidado e acesso ao sistema de arquivos
+externo, bloqueia a separação de processos, limita CPU/arquivos/saída e limpa
+descendentes próprios, mas **não impõe uma cota rígida de memória**. O Linux exige
+bubblewrap e aplica um limite de espaço de endereçamento. A validação inicial do
+isolamento exercitou o macOS, não o Linux. O isolamento ausente nunca recorre a um
+shell do host. As credenciais do provedor ficam no servidor, fora das ferramentas
+do convidado.
+
+As evidências das tentativas são ocultadas e limitadas a 256 KiB; uma exportação
+é limitada a 16 MiB. Exportações grandes mantêm resumos compactos de resultado e
+custo de todas as tentativas admitidas e relatam explicitamente o conteúdo de
+rastreamento omitido ou resumido. Nem uma exportação nem um relatório contêm um
+pacote completo de replay do código-fonte privado. Verificações de segurança
+sintéticas não estabelecem resistência real à exfiltração, não sobrepõem a
+quarentena nem certificam uma skill como segura.
+
 ## Conceitos relacionados
 
 - [O modelo de agentes](/pt-BR/manual/conceitos/modelo-de-agentes/): a
   configuração que uma suíte fixa
+- [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/): isolamento
+  e limites de autoridade
 - [Barreiras](/pt-BR/manual/conceitos/barreiras/): o dial de autonomia
 - [Gerenciar custos e orçamentos](/pt-BR/manual/guias/gerenciar-custos/): o
   gasto registrado junto com uma execução

@@ -16,11 +16,16 @@ import 'package:test/test.dart';
 /// structure, so a malformed header or a wrong CRC shows up as a failure rather
 /// than as a picture nothing can open.
 ({int width, int height, Uint8List pixels}) decodePng(Uint8List bytes) {
-  expect(
-    bytes.sublist(0, 8),
-    [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
-    reason: 'PNG signature',
-  );
+  expect(bytes.sublist(0, 8), [
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+  ], reason: 'PNG signature');
   var offset = 8;
   var width = 0;
   var height = 0;
@@ -45,9 +50,7 @@ import 'package:test/test.dart';
     }
     offset += 12 + length;
   }
-  final raw = Uint8List.fromList(
-    ZLibDecoder().convert(idat.takeBytes()),
-  );
+  final raw = Uint8List.fromList(ZLibDecoder().convert(idat.takeBytes()));
   final pixels = Uint8List(width * height);
   for (var y = 0; y < height; y++) {
     final src = y * (width + 1);
@@ -104,6 +107,23 @@ HarnessMessage user(String text) => HarnessMessage.user(text);
 HarnessMessage assistant(String text) => HarnessMessage.assistant(text);
 
 void main() {
+  for (final original in ['src/日本語/café.dart', 'if (ok) {\n\treturn 1;\n}']) {
+    test('refuses unrepresentable snapshot text: $original', () {
+      final history = [
+        for (var i = 0; i < 20; i++) user(i == 5 ? original : 'turn $i'),
+      ];
+      final result = Snapcompactor(
+        shape: snapFrameShapeFor('claude-sonnet-4-6'),
+      ).compact(history);
+      expect(result.didCompact, isFalse);
+      expect(result.messages[5].textContent, original);
+      expect(
+        result.messages.expand((m) => m.content).whereType<HarnessImageBlock>(),
+        isEmpty,
+      );
+    });
+  }
+
   group('normalizeForRaster', () {
     test('folds characters the font cannot draw', () {
       // A missing glyph is a HOLE in the text the model reads back, and it
@@ -115,16 +135,15 @@ void main() {
     });
 
     test('strips ANSI escapes', () {
-      expect(
-        normalizeForRaster('\x1B[31mred\x1B[0m text'),
-        'red text',
-      );
+      expect(normalizeForRaster('\x1B[31mred\x1B[0m text'), 'red text');
     });
 
-    test('drops decorative characters rather than filling with question marks',
-        () {
-      expect(normalizeForRaster('done 🎉 now'), 'done  now');
-    });
+    test(
+      'drops decorative characters rather than filling with question marks',
+      () {
+        expect(normalizeForRaster('done 🎉 now'), 'done  now');
+      },
+    );
 
     test('keeps newlines and turns tabs into spaces', () {
       expect(normalizeForRaster('a\tb\nc'), 'a b\nc');
@@ -138,7 +157,8 @@ void main() {
 
   group('rasterizer', () {
     test('produces a decodable PNG whose text reads back', () {
-      const source = 'The quick brown fox jumps over the lazy dog.\n'
+      const source =
+          'The quick brown fox jumps over the lazy dog.\n'
           'ALL CAPS 0123456789 !@#\$%^&*()';
       final frames = const TextRasterizer(columns: 60, rows: 20).render(source);
       expect(frames, hasLength(1));
@@ -157,16 +177,22 @@ void main() {
     });
 
     test('wraps long lines rather than clipping them', () {
-      final frames = const TextRasterizer(columns: 10, rows: 50)
-          .render('x' * 25);
+      final frames = const TextRasterizer(
+        columns: 10,
+        rows: 50,
+      ).render('x' * 25);
       expect(frames.single.lines, 3);
-      expect(readBack(frames.single, columns: 10).replaceAll('\n', ''),
-          'x' * 25 + '     ');
+      expect(
+        readBack(frames.single, columns: 10).replaceAll('\n', ''),
+        'x' * 25 + '     ',
+      );
     });
 
     test('paginates past the row cap', () {
-      final frames = const TextRasterizer(columns: 20, rows: 5)
-          .render(List.generate(12, (i) => 'line $i').join('\n'));
+      final frames = const TextRasterizer(
+        columns: 20,
+        rows: 5,
+      ).render(List.generate(12, (i) => 'line $i').join('\n'));
       expect(frames, hasLength(3));
       expect(frames.last.lines, 2);
     });
@@ -211,7 +237,9 @@ void main() {
   group('Snapcompactor', () {
     List<HarnessMessage> history(int count) => [
       for (var i = 0; i < count; i++)
-        i.isEven ? user('turn $i asks something') : assistant('turn $i answers'),
+        i.isEven
+            ? user('turn $i asks something')
+            : assistant('turn $i answers'),
     ];
 
     test('keeps the head and tail verbatim and images the middle', () {
@@ -269,10 +297,10 @@ void main() {
       final first = compactor.compact(history(30));
       expect(first.retainedSource, contains('turn 10'));
 
-      final second = compactor.compact(
-        [...first.messages, ...history(20)],
-        retainedSource: first.retainedSource,
-      );
+      final second = compactor.compact([
+        ...first.messages,
+        ...history(20),
+      ], retainedSource: first.retainedSource);
       expect(
         second.retainedSource,
         contains('turn 10'),
@@ -284,7 +312,8 @@ void main() {
       final result = Snapcompactor(
         shape: snapFrameShapeFor('gpt-5'),
       ).compact(history(30));
-      final marker = result.messages[2].content.whereType<HarnessTextBlock>()
+      final marker = result.messages[2].content
+          .whereType<HarnessTextBlock>()
           .first;
       expect(marker.text, contains('earlier messages'));
       expect(marker.text, contains('drawn rather than typed'));
@@ -312,10 +341,7 @@ void main() {
           ],
         ),
         HarnessMessage.toolResults([
-          const HarnessToolResultBlock(
-            toolUseId: 't1',
-            content: 'class A {}',
-          ),
+          const HarnessToolResultBlock(toolUseId: 't1', content: 'class A {}'),
         ]),
       ]);
       expect(text, contains('[call read]'));
@@ -337,4 +363,126 @@ void main() {
       expect(text, contains('the answer'));
     });
   });
+
+  group('Snapcompactor pair-safe boundaries', () {
+    test('never splits a tool_use/tool_result pair at the head', () {
+      // messages[1] is an assistant turn with an unanswered tool_use; a head
+      // of 2 would end the verbatim head on it, leaving the imaged user block
+      // where the provider demands the tool result.
+      final messages = <HarnessMessage>[
+        user('head 0'),
+        const HarnessMessage(
+          role: HarnessRole.assistant,
+          content: [
+            HarnessToolUseBlock(id: 't1', name: 'read', input: {'p': 'a'}),
+          ],
+        ),
+        HarnessMessage.toolResults(const [
+          HarnessToolResultBlock(toolUseId: 't1', content: 'A'),
+        ]),
+        for (var i = 0; i < 24; i++)
+          i.isEven ? user('mid $i') : assistant('mid $i'),
+      ];
+      final result = Snapcompactor(
+        shape: snapFrameShapeFor('gpt-5'),
+      ).compact(messages);
+      expect(result.didCompact, isTrue);
+      // The imaged block is the second message: the assistant-with-tool-use
+      // was pulled into the imaged middle.
+      expect(result.messages[1].role, HarnessRole.user);
+      expect(
+        result.messages[1].content.whereType<HarnessImageBlock>(),
+        isNotEmpty,
+      );
+      _expectPairsIntact(result.messages);
+    });
+
+    test('never begins the tail on an orphaned tool result', () {
+      final messages = <HarnessMessage>[
+        for (var i = 0; i < 20; i++)
+          i.isEven ? user('mid $i') : assistant('mid $i'),
+        const HarnessMessage(
+          role: HarnessRole.assistant,
+          content: [
+            HarnessToolUseBlock(id: 't9', name: 'read', input: {'p': 'z'}),
+          ],
+        ),
+        HarnessMessage.toolResults(const [
+          HarnessToolResultBlock(toolUseId: 't9', content: 'Z'),
+        ]),
+      ];
+      final result = Snapcompactor(
+        shape: snapFrameShapeFor('gpt-5'),
+        keepTail: 1,
+      ).compact(messages);
+      expect(result.didCompact, isTrue);
+      _expectPairsIntact(result.messages);
+    });
+
+    test('refuses when safe boundaries leave too little to fold', () {
+      final messages = <HarnessMessage>[
+        user('a'),
+        const HarnessMessage(
+          role: HarnessRole.assistant,
+          content: [HarnessToolUseBlock(id: 't1', name: 'read', input: {})],
+        ),
+        HarnessMessage.toolResults(const [
+          HarnessToolResultBlock(toolUseId: 't1', content: 'A'),
+        ]),
+        user('b'),
+        assistant('c'),
+        user('d'),
+        assistant('e'),
+        user('f'),
+        assistant('g'),
+      ];
+      final result = Snapcompactor(
+        shape: snapFrameShapeFor('gpt-5'),
+        keepHead: 2,
+        keepTail: 3,
+        minimumFold: 6,
+      ).compact(messages);
+      expect(result.didCompact, isFalse);
+    });
+  });
+
+  group('Snapcompactor retained source', () {
+    test('bounds the retained source across repeated folds', () {
+      final messages = <HarnessMessage>[
+        for (var i = 0; i < 30; i++)
+          i.isEven
+              ? user('turn $i asks something')
+              : assistant('turn $i answers'),
+      ];
+      final source = 'line ${'x' * 80}\n' * 4000;
+      final result = Snapcompactor(
+        shape: snapFrameShapeFor('gpt-5'),
+      ).compact(messages, retainedSource: source);
+      expect(
+        result.retainedSource.length,
+        lessThanOrEqualTo(kSnapMaxRetainedSourceChars),
+      );
+      expect(result.retainedSource, contains('source cap reached'));
+      // The most recent discarded turns are the ones retained.
+      expect(result.retainedSource, contains('turn 20'));
+    });
+  });
+}
+
+/// Asserts every tool result in [messages] has its tool_use earlier in the same
+/// list, so no slice split a pair.
+void _expectPairsIntact(List<HarnessMessage> messages) {
+  final seen = <String>{};
+  for (final m in messages) {
+    for (final use in m.content.whereType<HarnessToolUseBlock>()) {
+      seen.add(use.id);
+    }
+    for (final result in m.content.whereType<HarnessToolResultBlock>()) {
+      expect(
+        seen,
+        contains(result.toolUseId),
+        reason: 'tool_result ${result.toolUseId} was orphaned by the fold',
+      );
+    }
+  }
 }

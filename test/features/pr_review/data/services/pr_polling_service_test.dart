@@ -4,13 +4,20 @@ import 'package:cc_infra/src/git/pr_polling_service.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
 import 'package:cc_infra/src/network/models/github_pull_request.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart';
 
 // ── Fakes ──────────────────────────────────────────────────────────────
 
+/// The fakes below override every method the service calls, so no request
+/// ever reaches the transport; this double only satisfies the constructors.
+TestHttpClient _unusedHttpClient() => TestHttpClient(
+  handler: (request) => throw StateError('unexpected request: ${request.url}'),
+);
+
 class _FakePrClient extends GitHubPrClient {
-  _FakePrClient(this._prs) : super(Dio());
+  _FakePrClient(this._prs) : super(_unusedHttpClient());
 
   final List<GitHubPullRequest> _prs;
 
@@ -26,7 +33,7 @@ class _FakePrClient extends GitHubPrClient {
 }
 
 class _ErrorPrClient extends GitHubPrClient {
-  _ErrorPrClient() : super(Dio());
+  _ErrorPrClient() : super(_unusedHttpClient());
 
   @override
   Future<PaginatedPullRequests> listOpenPullRequestsPage(
@@ -40,7 +47,7 @@ class _ErrorPrClient extends GitHubPrClient {
 }
 
 class _FakeGitHubClient extends GitHubApiClient {
-  _FakeGitHubClient(this._fakePr) : super(Dio());
+  _FakeGitHubClient(this._fakePr) : super(_unusedHttpClient());
 
   final GitHubPrClient _fakePr;
 

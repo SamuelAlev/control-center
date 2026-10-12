@@ -2,7 +2,7 @@
 title: Hubungkan ke server jarak jauh
 description: Arahkan aplikasi desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antar server tanpa memulai ulang.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Setiap klien adalah perender di atas `cc_server` yang memiliki data. Aplikasi
@@ -15,7 +15,7 @@ build.
 ## Prasyarat
 
 - `cc_server` yang berjalan. Jika Anda belum memilikinya, lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
-- Salah satu dari tiga nilai pairing yang dibuat server — **URL server** (`ws://…/rpc` atau `wss://…/rpc`), **ID perangkat**, dan **kunci pairing** — **atau** **kode undangan** sekali pakai dari admin ruang kerja. Menukarkan undangan akan memprovisikan pengguna Anda, mencatat keanggotaan Anda, dan membuat kredensial klien ini untuk Anda, sehingga Anda tidak pernah menangani ID perangkat atau kunci.
+- Salah satu dari tiga nilai pairing yang dibuat server — **URL server** (`ws://…/rpc` atau `wss://…/rpc`), **ID perangkat**, dan **kunci pairing** — **atau** **kode undangan** sekali pakai dari admin ruang kerja. Menukarkan undangan akan memprovisikan pengguna Anda, mencatat keanggotaan Anda, dan membuat kredensial klien ini untuk Anda, sehingga Anda tidak pernah menangani ID perangkat atau kunci. Dapatkan nilai-nilai ini melalui saluran tepercaya dan periksa sidik jari server terhadap QR tepercaya atau penyematan yang dikenal pada koneksi pertama.
 
 ### Pastikan server dapat dijangkau
 
@@ -29,7 +29,7 @@ dipercayainya — dan `cc_server` memang menolak mengikat alamat non-loopback ta
 TLS. Berikan salah satu dari:
 
 - sertifikat secara langsung, dengan `--tls-cert` dan `--tls-key`
-- proxy terbalik yang menterminasi TLS di depannya, dengan server dijalankan `--insecure` (teks polos di balik proxy, hanya pada jaringan yang tepercaya)
+- proxy terbalik yang menterminasi TLS di depannya, dengan server dijalankan `--insecure` (teks polos antara proxy dan server di listener luar, hanya pada jaringan yang tepercaya; ini tidak menonaktifkan sesi klien terenkripsi yang diwajibkan)
 - tunnel atau VPN yang menyediakan sertifikatnya — Tailscale, cloudflared, atau serupa. **Pengaturan → Server → Koneksi & status** memiliki opsi ikut serta tunnel bawaan di bawah **Bagikan server ini**.
 
 Ada dua pengaturan di sisi server yang mudah terlewat. Di balik proxy, NAT, atau
@@ -60,7 +60,9 @@ tidak memiliki tindakan **Alihkan**; server lokal adalah baris pertama, berlabel
 **Jalankan di aplikasi ini**.
 
 Setelah beralih, desktop tidak lagi memiliki basis data. Setiap layar membaca dan
-menulis melalui server jarak jauh lewat WebSocket.
+menulis melalui server jarak jauh lewat sesi WebSocket bertanda tangan dan
+terenkripsi ujung ke ujung; perlindungan yang sama berlaku pada loopback dan
+melalui relay.
 
 ## Hubungkan klien web
 
@@ -71,14 +73,19 @@ Build web selalu jarak jauh.
 3. Klien menghubungi server dan menampilkan antarmuka yang sama dengan desktop.
 
 Jika ada tautan mendalam pairing di URL, kolom-kolomnya sudah terisi otomatis.
-Kunci pairing berada di **fragmen** URL, yang tidak pernah dikirim peramban ke
-server yang menghosting halaman, sehingga host statis tidak pernah melihatnya.
+Kunci pairing berada di **fragmen** URL, yang tidak dikirim peramban ke server
+yang menghosting halaman. Perlakukan tautan itu sebagai rahasia dan percayai
+halaman yang menyajikan klien web: fragmen tidak melindungi dari kode halaman yang
+berbahaya.
 
-:::note[Media dan keamanan]
-Media (avatar, gambar feed, tangkapan layar PR) dirutekan melalui proxy server
-yang terhubung, sehingga peramban tidak pernah mengambil host hulu secara
-langsung. Content-Security Policy per permintaan, yang disematkan dari cookie
-non-sensitif, hanya mengizinkan origin server yang terhubung.
+:::note[Media, editor, dan keamanan]
+Media (avatar, gambar feed, tangkapan layar PR), transfer cadangan, dan lalu
+lintas editor tertanam memakai terowongan sumber daya terenkripsi, bukan rute HTTP
+publik yang dapat dibaca. Editor peramban tepercaya berjalan pada origin aplikasi web
+itu sendiri; Service Worker-nya membawa permintaan melalui sesi terenkripsi yang
+terautentikasi ke backend code-server pada `cc_server`. Hosting klien web melalui
+HTTPS atau loopback aman agar Service Worker tersedia. Klien native memakai fasad
+loopback yang dibatasi kapabilitas.
 :::
 
 ### Yang tidak dilakukan peramban
@@ -101,6 +108,7 @@ editor terpasang.
 
 - **Koneksi kehabisan waktu**: server harus dapat dijangkau dari klien. Periksa pengikatan (`--bind any`), bahwa port-nya terbuka, dan bahwa `--public-url` menyebutkan alamat yang benar-benar dapat dihubungi klien. Di internet terbuka, TLS bersifat wajib — pengikatan non-loopback dengan teks polos ditolak saat startup kecuali server dijalankan `--insecure` di balik proxy.
 - **Peramban menolak terhubung tetapi klien native berfungsi**: origin peramban tidak ada dalam daftar `--allowed-origins` server. Bawaannya hanya mengizinkan `https://app.usectrl.dev` (plus loopback).
+- **Identitas server berubah**: klien menolak sidik jari yang berbeda dari penyematan tersimpannya. Verifikasi identitas server di luar jalur dan lakukan pairing ulang melalui saluran tepercaya; jangan abaikan peringatannya atau beralih ke klien lama atau teks polos.
 - **Kunci pairing ditolak**: jalankan ulang `cc_server pair` di server untuk memutar kunci perangkat itu, lalu masukkan kunci baru. Perangkat yang dicabut mendapati kredensialnya sudah hilang dan gagal secara tertutup; pencabutan memutus sesi aktif dalam hitungan detik.
 - **Ruang kerja salah**: ruang kerja adalah bagian dari URL (`/workspaces/:workspaceId/…`) dan ikut serta di setiap panggilan, jadi beralih ruang kerja di satu klien hanya mengubah tampilan Anda sendiri. Anda hanya dapat menjangkau ruang kerja tempat Anda menjadi anggota — selain itu ditolak dengan "Not a member of this workspace". Lihat [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
 

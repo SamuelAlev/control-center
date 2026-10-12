@@ -14325,6 +14325,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get composerDropToAttach => 'Перетащите, чтобы прикрепить';
 
   @override
+  String get composerAttachmentUploading => 'Загрузка…';
+
+  @override
+  String get composerAttachmentReady => 'Готово';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Не удалось загрузить';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Размер файла превышает лимит $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Не удалось прочитать этот файл';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Дождитесь завершения загрузки вложений';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Перед отправкой повторите загрузку вложений с ошибкой или удалите их';
+
+  @override
   String get attachmentUnavailable => 'Вложение недоступно';
 
   @override
@@ -15505,11 +15530,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Агент ждёт вас';
+  String get notificationAgentAwaitingInput => 'Агенту требуется внимание';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Когда агенту нужно ваше одобрение, ответ или рабочие учётные данные';
+      'Когда агенту нужны одобрение, ответ или действующие учётные данные либо правило блокирует действие';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15582,4 +15607,386 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Сервер останавливается';
+
+  @override
+  String get skillEvalAbsent => 'Отсутствует или доступен';
+
+  @override
+  String get skillEvalAmbient => 'Фоновые навыки';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Ссылка на артефакт: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · повтор $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Попытки';
+
+  @override
+  String get skillEvalAvailableEvent => 'Доступен';
+
+  @override
+  String get skillEvalBaseline => 'Хеш предыдущей ревизии';
+
+  @override
+  String get skillEvalBodyLoad => 'Содержимое загружено';
+
+  @override
+  String get skillEvalBudgetCents => 'Бюджет (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Платная оценка использует выбранного провайдера и бюджет. Результаты проверки безопасности отображаются отдельно.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Бюджеты подписки учитывают потребление по эквивалентным тарифам API, а не суммы счетов. Уже выполняющийся вызов может превысить бюджет; после достижения лимита новые вызовы не запускаются. Проверки безопасности выполняются отдельно.';
+
+  @override
+  String get skillEvalCancel => 'Отменить запуск';
+
+  @override
+  String get skillEvalCancelled => 'Отменено';
+
+  @override
+  String get skillEvalCancelling => 'Отмена';
+
+  @override
+  String get skillEvalComparison => 'Сравнение';
+
+  @override
+  String get skillEvalCompleted => 'Завершено';
+
+  @override
+  String get skillEvalComposition => 'Состав';
+
+  @override
+  String get skillEvalCorpus => 'Набор задач';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString повторов';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Все запланированные испытания проведены';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Хеш текущего пакета: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Отключить оценки обновлений';
+
+  @override
+  String get skillEvalEnableUpdates => 'Включить оценки обновлений';
+
+  @override
+  String get skillEvalExport => 'Скопировать JSON со скрытыми данными';
+
+  @override
+  String get skillEvalFailed => 'Ошибка';
+
+  @override
+  String get skillEvalForced => 'Принудительная загрузка или отсутствие';
+
+  @override
+  String get skillEvalForcedEvent => 'Принудительная загрузка';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Хеш пакета недоступен на этом сервере. Оценка отключена.';
+
+  @override
+  String get skillEvalHistory => 'История ревизий';
+
+  @override
+  String get skillEvalImproved => 'Улучшено';
+
+  @override
+  String get skillEvalIncomplete => 'Не завершено';
+
+  @override
+  String get skillEvalInconclusive => 'Нет однозначного результата';
+
+  @override
+  String get skillEvalInferred => 'Выведено косвенно';
+
+  @override
+  String get skillEvalInterrupted => 'Прервано';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Загрузка навыка не отслеживается; отсутствие события не доказывает, что навык был проигнорирован.';
+
+  @override
+  String get skillEvalModel => 'Выбранная модель';
+
+  @override
+  String get skillEvalNoAttempts => 'Попыток пока нет.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Нет доступных подключённых моделей. Сначала подключите провайдера в настройках.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'В истории кампании нет предыдущего хеша. Оцените предыдущую ревизию перед её заменой.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Отчёта пока нет; данные частичных попыток доступны.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Рабочее пространство не выбрано.';
+
+  @override
+  String get skillEvalNoTasks => 'Данных о задачах пока нет.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Данные проверок не зафиксированы.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Эта точная версия не оценивалась. Сканирование не подтверждает поведение.';
+
+  @override
+  String get skillEvalNotVerified => 'Не проверено';
+
+  @override
+  String get skillEvalObserved => 'Наблюдалось';
+
+  @override
+  String get skillEvalOpenQuality => 'Открыть раздел «Качество»';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'По умолчанию сохранение навыка не запускает платную оценку. Если вы явно включите автоматическую переоценку при обновлении, сохранение запустит платную переоценку в пределах заданного бюджета.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Сначала оцените ревизию, чтобы настроить политику обновлений.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Настройка политики обновлений';
+
+  @override
+  String get skillEvalPartial => 'Неполные данные; решения о принятии нет';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString из $plannedString попыток';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Провайдер: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Кампании навыков рабочего пространства и данные по отдельным ревизиям.';
+
+  @override
+  String get skillEvalQueued => 'В очереди';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Повторное подключение к снимкам кампании…';
+
+  @override
+  String get skillEvalRefresh => 'Обновить';
+
+  @override
+  String get skillEvalReferenceLoad => 'Эталон загружен';
+
+  @override
+  String get skillEvalRepetitions => 'Повторов на задачу';
+
+  @override
+  String get skillEvalReport => 'Отчёт с результатами';
+
+  @override
+  String get skillEvalRunning => 'Выполняется';
+
+  @override
+  String get skillEvalScriptExecution => 'Скрипт выполнен';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Расходы: $spent / бюджет $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Начать оценку';
+
+  @override
+  String get skillEvalStartTitle => 'Сравнить ревизии навыка';
+
+  @override
+  String get skillEvalStale => 'Устарело';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Устарело: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Различные кластеры задач: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes подтверждено) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Задачи по вариантам';
+
+  @override
+  String get skillEvalToolError => 'Ошибка инструмента';
+
+  @override
+  String get skillEvalTools => 'События инструментов';
+
+  @override
+  String get skillEvalTitle => 'Оценка навыка';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Недоступно: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Неизвестно';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Несохранённые изменения не учитываются. Сохраните их перед оценкой.';
+
+  @override
+  String get skillEvalUncertainty => 'Интервал неопределённости';
+
+  @override
+  String get skillEvalVerified => 'Подтверждено';
+
+  @override
+  String get skillEvalVerifiers => 'Проверка';
+
+  @override
+  String get skillEvalVerdict => 'Заключение';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Копирование завершено: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Нарушение плана';
+
+  @override
+  String get skillEvalPreserved => 'Качество сохранено';
+
+  @override
+  String get skillEvalPrevious => 'Предыдущая и текущая версии';
+
+  @override
+  String get skillEvalRegressed => 'Регрессия подтверждена';
+
+  @override
+  String get skillEvalCostRegression => 'Регрессия стоимости';
+
+  @override
+  String get skillEvalHarnessError => 'Ошибка тестового окружения';
+
+  @override
+  String get skillBehaviorRouting => 'Маршрутизация навыка';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive ожидаемых применений · $falsePositive неожиданных применений · $falseNegative пропущенных применений · $trueNegative верных пропусков';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive неясных применений · $negative неясных пропусков · $notOffered не предлагался';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Наблюдаемая точность $precision · полнота $recall · доля ложноположительных $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced =>
+      'Принудительная группа · только диагностика';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Показатели учитывают только наблюдаемый доступ. Доступ через оболочку или поиск может остаться неизвестным; загрузка навыка не доказывает его применение.';
+
+  @override
+  String get skillBehaviorSafety => 'Синтетическая безопасность';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts успешных проверок артефактов · $denials отказов по правилам · $violations нарушений защиты файлов';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Проверки артефактов синтетические и не отражают частоту атак в реальных условиях; фактические побочные эффекты не отслеживаются.';
+
+  @override
+  String get skillBehaviorUtility => 'Польза по семействам';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts подтверждённых успехов';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'В знаменатель пользы входят все попытки, включая неудачные и незавершённые.';
 }

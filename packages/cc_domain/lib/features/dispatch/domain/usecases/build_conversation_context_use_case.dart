@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/services/cosine_similarity.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
+    show PromptBuilder, PromptConversationEntry, PromptConversationProvenance;
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
@@ -48,6 +50,28 @@ class BuildConversationContextUseCase {
   /// fetched rows, one seed line is prepended; the parent stream's history is
   /// never copied.
   Future<String> execute({
+    required String workspaceId,
+    required String spaceId,
+    required String selfAgentId,
+    required String selfAgentName,
+    required String taskDescription,
+    required int characterBudget,
+    String? conversationId,
+  }) async => (await executeStructured(
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    selfAgentId: selfAgentId,
+    selfAgentName: selfAgentName,
+    taskDescription: taskDescription,
+    characterBudget: characterBudget,
+    conversationId: conversationId,
+  )).text;
+
+  /// [execute], returning the structured entries as well as the rendered text.
+  ///
+  /// The entries carry stable keys and provenance so a native-resumed turn can
+  /// be told only what is genuinely new or edited.
+  Future<ConversationContextParts> executeStructured({
     required String workspaceId,
     required String spaceId,
     required String selfAgentId,
@@ -103,7 +127,19 @@ class BuildConversationContextUseCase {
     // older than the tail. The full scan collects them while it walks.
     final summaries = <Message>[...?history?.summaries];
     if (allMessages.isEmpty && summaries.isEmpty) {
-      return threadSeed;
+      if (threadSeed.isEmpty) {
+        return ConversationContextParts.empty;
+      }
+      return ConversationContextParts(
+        text: threadSeed,
+        entries: [
+          PromptConversationEntry(
+            key: 'thread:${PromptBuilder.promptRevisionOf(threadSeed)}',
+            text: threadSeed,
+            provenance: PromptConversationProvenance.system,
+          ),
+        ],
+      );
     }
 
     final verbatimCandidates = <Message>[];
@@ -175,7 +211,7 @@ class BuildConversationContextUseCase {
       }
     }
 
-    final built = buildConversationContextPure(
+    final built = buildConversationContextParts(
       spaceId: spaceId,
       selfAgentId: selfAgentId,
       selfAgentName: selfAgentName,
@@ -183,15 +219,27 @@ class BuildConversationContextUseCase {
       verbatimWindow: verbatimWindow,
       summaries: summaries,
       semanticHits: semanticHits,
-      lastRunDigest: buildLastRunDigest(
-        switch (history) {
-          null => allMessages,
-          ConversationContextHistory(:final lastAgentTurn?) => [lastAgentTurn],
-          _ => const <Message>[],
-        },
-      ),
+      lastRunDigest: buildLastRunDigest(switch (history) {
+        null => allMessages,
+        ConversationContextHistory(:final lastAgentTurn?) => [lastAgentTurn],
+        _ => const <Message>[],
+      }),
     );
-    return threadSeed.isEmpty ? built : '$threadSeed\n\n$built';
+    if (threadSeed.isEmpty) {
+      return built;
+    }
+    // The thread seed is harness framing, not a participant message.
+    return ConversationContextParts(
+      text: '$threadSeed\n\n${built.text}',
+      entries: [
+        PromptConversationEntry(
+          key: 'thread:${PromptBuilder.promptRevisionOf(threadSeed)}',
+          text: threadSeed,
+          provenance: PromptConversationProvenance.system,
+        ),
+        ...built.entries,
+      ],
+    );
   }
 }
 
@@ -243,6 +291,26 @@ String buildLastRunDigest(List<Message> messages) {
   return digest.length > 700 ? digest.substring(0, 700) : digest;
 }
 
+/// The assembled conversation context: its rendered window plus the structured
+/// entries it was rendered from.
+///
+/// The entries are what a native resume needs — stable revision-bearing keys and
+/// provenance — so a resuming agent can be told only what is genuinely new or
+/// edited instead of the whole window.
+class ConversationContextParts {
+  /// Creates a [ConversationContextParts].
+  const ConversationContextParts({required this.text, required this.entries});
+
+  /// The rendered window, exactly what [buildConversationContextPure] returns.
+  final String text;
+
+  /// The entries [text] was rendered from, in order.
+  final List<PromptConversationEntry> entries;
+
+  /// Empty parts.
+  static const empty = ConversationContextParts(text: '', entries: []);
+}
+
 /// Pure-function version of conversation context building for testability.
 String buildConversationContextPure({
   required String spaceId,
@@ -253,17 +321,72 @@ String buildConversationContextPure({
   required List<Message> summaries,
   required List<Message> semanticHits,
   String lastRunDigest = '',
+}) => buildConversationContextParts(
+  spaceId: spaceId,
+  selfAgentId: selfAgentId,
+  selfAgentName: selfAgentName,
+  messages: messages,
+  verbatimWindow: verbatimWindow,
+  summaries: summaries,
+  semanticHits: semanticHits,
+  lastRunDigest: lastRunDigest,
+).text;
+
+/// The structured form of [buildConversationContextPure]: the same rendered
+/// text, plus one entry per message/section with a stable key and provenance.
+///
+/// Keys are `"<kind>:<message id>#<digest of the rendered line>"`: an edit
+/// changes the digest (so the entry is re-delivered) while an untouched message
+/// keeps its key forever (so it is not).
+ConversationContextParts buildConversationContextParts({
+  required String spaceId,
+  required String selfAgentId,
+  required String selfAgentName,
+  required List<Message> messages,
+  required List<Message> verbatimWindow,
+  required List<Message> summaries,
+  required List<Message> semanticHits,
+  String lastRunDigest = '',
 }) {
   final blocks = <String>[];
+  final entries = <PromptConversationEntry>[];
+
+  PromptConversationProvenance provenanceOf(Message m) =>
+      m.senderId == selfAgentId
+      ? PromptConversationProvenance.self
+      : PromptConversationProvenance.other;
+
+  // The run that produced a message, from its own metadata: the lineage that
+  // proves a session produced it (sender identity alone does not).
+  String? runIdOf(Message m) {
+    final runId = (m.metadata ?? const <String, dynamic>{})['runId'];
+    return runId is String && runId.isNotEmpty ? runId : null;
+  }
 
   if (lastRunDigest.isNotEmpty) {
     blocks.add('### Previous run\n$lastRunDigest');
+    entries.add(
+      PromptConversationEntry(
+        key: 'run:${PromptBuilder.promptRevisionOf(lastRunDigest)}',
+        text: '### Previous run\n$lastRunDigest',
+        provenance: PromptConversationProvenance.system,
+      ),
+    );
   }
 
   if (summaries.isNotEmpty) {
     final buf = StringBuffer('### Earlier (summary)\n');
     for (final m in summaries) {
-      buf.writeln(m.content.trimRight());
+      final line = m.content.trimRight();
+      buf.writeln(line);
+      entries.add(
+        PromptConversationEntry(
+          key: 'summary:${m.id}#${PromptBuilder.promptRevisionOf(line)}',
+          text: line,
+          provenance: provenanceOf(m),
+          runId: runIdOf(m),
+        ),
+      );
     }
     blocks.add(buf.toString().trimRight());
   }
@@ -271,8 +394,16 @@ String buildConversationContextPure({
   if (semanticHits.isNotEmpty) {
     final buf = StringBuffer('### Possibly relevant earlier messages\n');
     for (final m in semanticHits) {
-      buf.writeln(
-        '- [${_senderLabel(m, selfAgentId, selfAgentName)} · ${_fmtTime(m.createdAt)}] ${m.content.trimRight()}',
+      final line =
+          '- [${_senderLabel(m, selfAgentId, selfAgentName)} · ${_fmtTime(m.createdAt)}] ${m.content.trimRight()}';
+      buf.writeln(line);
+      entries.add(
+        PromptConversationEntry(
+          key: 'semantic:${m.id}#${PromptBuilder.promptRevisionOf(line)}',
+          text: line,
+          provenance: provenanceOf(m),
+          runId: runIdOf(m),
+        ),
       );
     }
     blocks.add(buf.toString().trimRight());
@@ -281,17 +412,28 @@ String buildConversationContextPure({
   if (verbatimWindow.isNotEmpty) {
     final buf = StringBuffer('### Recent messages\n');
     for (final m in verbatimWindow) {
-      buf.writeln(
-        '- [${_senderLabel(m, selfAgentId, selfAgentName)} · ${_fmtTime(m.createdAt)}] ${m.content.trimRight()}',
+      final line =
+          '- [${_senderLabel(m, selfAgentId, selfAgentName)} · ${_fmtTime(m.createdAt)}] ${m.content.trimRight()}';
+      buf.writeln(line);
+      entries.add(
+        PromptConversationEntry(
+          key: 'recent:${m.id}#${PromptBuilder.promptRevisionOf(line)}',
+          text: line,
+          provenance: provenanceOf(m),
+          runId: runIdOf(m),
+        ),
       );
     }
     blocks.add(buf.toString().trimRight());
   }
 
   if (blocks.isEmpty) {
-    return '';
+    return ConversationContextParts.empty;
   }
-  return '## Conversation History\n\n${blocks.join('\n\n')}';
+  return ConversationContextParts(
+    text: '## Conversation History\n\n${blocks.join('\n\n')}',
+    entries: entries,
+  );
 }
 
 /// The name to put in a thread's anchor seed line.

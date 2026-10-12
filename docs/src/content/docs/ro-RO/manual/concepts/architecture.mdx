@@ -3,7 +3,7 @@ title: Arhitectură
 description: Cum este structurat Control Center cu un model de server pentru client subțire, Clean Architecture orientată pe funcționalități și modelul porturi și adaptoare.
 dateModified: 2026-09-19
 slug: ro-RO/manual/concepte/arhitectura
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Prezentare generală
@@ -26,7 +26,7 @@ Acesta este un singur **spațiu de lucru Dart** cu lockfile rezolvat, de douăze
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Stratul de domeniu**: entități, obiecte-valoare, interfețe de repository, porturi și servicii de domeniu în Dart pur. Zero importuri de infrastructură (fără dio, drift sau modele de rețea).
+- **Stratul de domeniu**: entități, obiecte-valoare, interfețe de repository, porturi și servicii de domeniu în Dart pur. Zero importuri de infrastructură (fără rhttp, drift sau modele de rețea).
 - **Stratul de prezentare**: ecrane, widgeturi, notifiers. Fără acces direct la drift/DAO/stratul de date; totul trece prin furnizorii Riverpod → repository-uri.
 - **Stratul de infrastructură**: implementări concrete ale porturilor de domeniu și ale interfețelor de repository. Depinde de domeniu, niciodată invers.
 
@@ -122,7 +122,7 @@ Ambele baze de date sunt deținute de `cc_persistence` și deschise doar de `cc_
 
 Tot HTTP-ul extern se află pe server. Clienții nu apelează niciodată direct GitHub, Linear sau Google — ei apelează operațiuni RPC de pe server, iar chiar și conținutul media remote este adus prin endpointul `/proxy/media` al serverului, nu de la originea din amonte.
 
-- Clienți **dio** în `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` și `GoogleCalendarApiClient`
+- Clienți **rhttp** în `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` și `GoogleCalendarApiClient`
 - Injectarea tokenului de autentificare prin interceptori, inclusiv un interceptor Google OAuth per cont în `cc_server_core`, care reîmprospătează tokenurile la 401
 - Toate erorile sunt mapate prin `packages/cc_infra/lib/src/network/error_mapper.dart` → subclase tipizate `AppException` definite în `cc_domain`
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_rpc/cc_rpc.dart';
@@ -5,60 +6,99 @@ import 'package:cc_server_core/src/relay/relay_remote_transport.dart';
 import 'package:cc_signaling_server/cc_signaling_server.dart';
 import 'package:test/test.dart';
 
-/// Exercises the full N-way relay mechanism through the REAL broker, running
-/// in-process: server owner space + [RelayRemoteTransport] ⇄ signaling
-/// broker ⇄ a real [RelayClientChannel] (the client class every platform
-/// uses). This proves the invite-gated room protocol, the hello→PSK binding,
-/// the E2E seal/open and the chunked data plane all interoperate — no app
-/// or UI required.
+/// Captures the exact records handed to the broker without modifying routing.
+/// A raw relay adapter is deliberately not encrypted; only the secure wrapper is.
+final class _WireTap implements RemoteRpcChannelPort {
+  _WireTap(this.raw);
+
+  final RemoteRpcChannelPort raw;
+  final sent = <Map<String, dynamic>>[];
+  final received = <Map<String, dynamic>>[];
+
+  @override
+  Stream<Map<String, dynamic>> get incoming => raw.incoming.map((frame) {
+    received.add(frame);
+    return frame;
+  });
+
+  @override
+  Stream<RemoteChannelState> get state => raw.state;
+
+  @override
+  bool get isOpen => raw.isOpen;
+
+  @override
+  Future<void> send(Map<String, dynamic> frame) {
+    sent.add(frame);
+    return raw.send(frame);
+  }
+
+  @override
+  Future<void> close() => raw.close();
+}
+
+/// Real N-way signaling broker, real client/server relay adapters and the
+/// production Noise handshake when a test expects confidentiality.
 void main() {
   late SignalingServerHandle broker;
   late String url;
+  late String seed;
+  late String publicKey;
 
-  const psk = 'relay-test-psk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  final psk = base64Url.encode(List<int>.generate(32, (i) => i + 1));
+  final psk2 = base64Url.encode(List<int>.generate(32, (i) => 255 - i));
   const room = 'server-room-code-abc';
   const deviceId = 'device-1';
   const ownerToken = 'owner-secret';
 
-  String admissionHash() => RemoteControlCrypto.relayAdmissionHash(
-    RemoteControlCrypto.relayAdmissionToken(psk: psk, room: room),
-  );
+  String admissionHash(String credential) =>
+      RemoteControlCrypto.relayAdmissionHash(
+        RemoteControlCrypto.relayAdmissionToken(psk: credential, room: room),
+      );
 
   setUp(() async {
     broker = await serveSignaling(host: 'localhost', port: 0);
     url = 'ws://localhost:${broker.port}/signal';
+    seed = await ServerIdentityCrypto.generateSeed();
+    publicKey = await ServerIdentityCrypto.publicKeyFromSeed(seed);
   });
 
-  tearDown(() async {
-    await broker.close();
-  });
+  tearDown(() async => broker.close());
 
-  /// Joins the room as the server, waits for one client hello and returns
-  /// the peer-scoped transport for it.
   Future<
     ({RelaySignalingChannel signaling, Future<RelayRemoteTransport> transport})
-  >
-  serverSide() async {
+  > serverSide({List<String>? admit}) async {
     final signaling = await RelaySignalingChannel.joinAsOwner(
       signalingUrl: url,
       room: room,
       ownerToken: ownerToken,
-      admit: [admissionHash()],
+      admit: admit ?? [admissionHash(psk)],
     );
+    addTearDown(signaling.close);
     final transport = signaling.incoming
         .firstWhere((f) => f['type'] == 'signal' && f['kind'] == 'hello')
-        .then(
-          (hello) => RelayRemoteTransport(
+        .timeout(const Duration(seconds: 5))
+        .then((hello) {
+          final raw = RelayRemoteTransport(
             signaling: signaling,
             peer: hello['from'] as String,
-            psk: psk,
-          ),
-        );
+          );
+          addTearDown(raw.close);
+          return raw;
+        });
     return (signaling: signaling, transport: transport);
   }
 
-  test('client frames round-trip E2E-encrypted and chunked through the '
-      'broker', () async {
+  Future<
+    ({
+      RelayClientChannel client,
+      RelayRemoteTransport transport,
+      _WireTap clientWire,
+      _WireTap serverWire,
+      SecureChannelConnection clientSecure,
+      SecureChannelConnection serverSecure,
+    })
+  > securePair() async {
     final server = await serverSide();
     final client = await RelayClientChannel.connect(
       signalingUrl: url,
@@ -66,198 +106,321 @@ void main() {
       deviceId: deviceId,
       psk: psk,
     );
+    addTearDown(client.close);
     final transport = await server.transport;
+    final clientWire = _WireTap(client);
+    final serverWire = _WireTap(transport);
+    final accepted = acceptSecureChannel(
+      channel: serverWire,
+      readPsk: (device) async => device == deviceId ? psk : null,
+      serverPublicKey: publicKey,
+      signIdentity: (challenge) =>
+          ServerIdentityCrypto.signChallenge(seedB64: seed, nonce: challenge),
+    );
+    final connected = await connectSecureChannel(
+      channel: clientWire,
+      deviceId: deviceId,
+      psk: psk,
+      pinnedFingerprint: ServerIdentityCrypto.fingerprintOf(publicKey),
+    );
+    final serverSecure = await accepted;
+    addTearDown(serverSecure.channel.close);
+    addTearDown(connected.channel.close);
+    return (
+      client: client,
+      transport: transport,
+      clientWire: clientWire,
+      serverWire: serverWire,
+      clientSecure: connected,
+      serverSecure: serverSecure,
+    );
+  }
 
-    // Client → server.
-    final serverGot = transport.incoming.first;
-    await client.send({'jsonrpc': '2.0', 'id': 7, 'method': 'ping'});
-    expect(await serverGot, {'jsonrpc': '2.0', 'id': 7, 'method': 'ping'});
+  test('raw broker routes both directions and a peer leaving closes its '
+      'own transport', () async {
+    final server = await serverSide();
+    final client = await RelayClientChannel.connect(
+      signalingUrl: url,
+      room: room,
+      deviceId: deviceId,
+      psk: psk,
+    );
+    addTearDown(client.close);
+    final transport = await server.transport;
+    final serverGot = transport.incoming.first.timeout(
+      const Duration(seconds: 5),
+    );
+    const request = {'jsonrpc': '2.0', 'id': 7, 'method': 'ping'};
+    await client.send(request);
+    expect(await serverGot, request);
 
-    // Server → client.
-    final clientGot = client.incoming.first;
-    await transport.send({'jsonrpc': '2.0', 'id': 7, 'result': 'pong'});
-    expect(await clientGot, {'jsonrpc': '2.0', 'id': 7, 'result': 'pong'});
+    final clientGot = client.incoming.first.timeout(const Duration(seconds: 5));
+    const response = {'jsonrpc': '2.0', 'id': 7, 'result': 'pong'};
+    await transport.send(response);
+    expect(await clientGot, response);
 
-    // A frame far larger than one broker frame cap must arrive intact
-    // (chunked + credited both ways).
-    final bigGot = transport.incoming.first;
-    final blob = 'x' * (300 * 1024);
-    await client.send({'id': 8, 'blob': blob});
-    expect(((await bigGot)['blob'] as String).length, blob.length);
-
+    final closed = transport.state
+        .firstWhere((state) => state == RemoteChannelState.closed)
+        .timeout(const Duration(seconds: 5));
     await client.close();
-    await transport.close();
-    await server.signaling.close();
+    await closed;
+    expect(transport.isOpen, isFalse);
+    expect(server.signaling.isOpen, isTrue,
+        reason: 'a peer departure must not close the shared owner room');
   });
 
-  test('the broker never sees plaintext — only ciphertext payloads', () async {
-    // Tap every frame the broker relays by joining a second admitted
-    // observer? No — the room protocol prevents that. Instead assert at the
-    // client's own signaling layer: outbound payloads are sealed.
+  test('peer EOF preserves a bounded record buffered before listening', () async {
     final server = await serverSide();
-    final observed = <String>[];
-    final signaling = await RelaySignalingChannel.joinAsClient(
+    final client = await RelayClientChannel.connect(
       signalingUrl: url,
       room: room,
-      token: RemoteControlCrypto.relayAdmissionToken(psk: psk, room: room),
+      deviceId: deviceId,
+      psk: psk,
     );
-    signaling.incoming.listen((f) {
-      if (f['type'] == 'signal') {
-        observed.add(jsonEncode(f['payload']));
-      }
+    addTearDown(client.close);
+    final transport = await server.transport;
+    final closed = transport.state
+        .firstWhere((state) => state == RemoteChannelState.closed)
+        .timeout(const Duration(seconds: 5));
+    const record = {'type': 'secure', 'c': 'queued-record'};
+    await client.send(record);
+    await client.close();
+    await closed;
+    expect(await transport.incoming.first.timeout(const Duration(seconds: 5)),
+        record);
+  });
+
+  test('relay delivers a final encrypted response before server close', () async {
+    final pair = await securePair();
+    final received = pair.clientSecure.channel.incoming.toList();
+    const response = {'id': 8, 'result': 'final relay reply'};
+    await pair.serverSecure.channel.send(response);
+    await pair.serverSecure.channel.close();
+    expect(await received.timeout(const Duration(seconds: 5)), [response]);
+    expect(pair.clientSecure.channel.failure, isNull);
+  });
+
+  test('secure handshake seals both directions and fragments large frames '
+      'without leaking application text onto the broker wire', () async {
+    final pair = await securePair();
+    const secret = 'top-secret-ticket-title';
+    final serverGot = pair.serverSecure.channel.incoming.first.timeout(
+      const Duration(seconds: 10),
+    );
+    await pair.clientSecure.channel.send({
+      'jsonrpc': '2.0',
+      'id': 7,
+      'method': 'tickets/read',
+      'params': {'title': secret},
     });
-    signaling.sendSignal(
-      to: server.signaling.peerId,
-      kind: 'hello',
-      payload: {'d': deviceId},
+    expect((await serverGot)['params'], {'title': secret});
+
+    final clientGot = pair.clientSecure.channel.incoming.first.timeout(
+      const Duration(seconds: 10),
     );
-    final transport = await server.transport;
-    await transport.send({'secret': 'top-secret-ticket-title'});
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    expect(observed, isNotEmpty);
-    for (final payload in observed) {
-      expect(payload, isNot(contains('top-secret-ticket-title')));
+    await pair.serverSecure.channel.send({
+      'jsonrpc': '2.0',
+      'id': 7,
+      'result': secret,
+    });
+    expect((await clientGot)['result'], secret);
+
+    // A relay signal is capped at 64 KiB. The secure channel must split the
+    // JSON into credited, bounded records, in either direction.
+    final blob = 'x' * (300 * 1024);
+    final largeOnServer = pair.serverSecure.channel.incoming.first.timeout(
+      const Duration(seconds: 20),
+    );
+    await pair.clientSecure.channel.send({'id': 8, 'blob': blob});
+    expect((await largeOnServer)['blob'], blob);
+    final largeOnClient = pair.clientSecure.channel.incoming.first.timeout(
+      const Duration(seconds: 20),
+    );
+    await pair.serverSecure.channel.send({'id': 9, 'blob': blob});
+    expect((await largeOnClient)['blob'], blob);
+
+    final records = [...pair.clientWire.sent, ...pair.serverWire.sent];
+    expect(records.where((frame) => frame['type'] == 'secure').length,
+        greaterThan(2));
+    for (final record in records) {
+      expect(jsonEncode(record), isNot(contains(secret)));
+      expect(jsonEncode(record), isNot(contains('"blob":"xxx')));
     }
-    await transport.close();
-    await signaling.close();
-    await server.signaling.close();
   });
 
-  test('a wrong-PSK frame is dropped, not surfaced to the session', () async {
+  test('plaintext sent through a raw relay after Noise is rejected', () async {
+    final pair = await securePair();
+    final surfaced = <Map<String, dynamic>>[];
+    pair.serverSecure.channel.incoming.listen(surfaced.add);
+    final closed = pair.serverSecure.channel.state
+        .firstWhere((state) => state == RemoteChannelState.closed)
+        .timeout(const Duration(seconds: 5));
+    await pair.client.send({'jsonrpc': '2.0', 'method': 'plaintext/injection'});
+    await closed;
+    expect(surfaced, isEmpty);
+    expect(pair.serverSecure.channel.failure, isA<NoiseProtocolException>());
+  });
+
+  test('an admitted peer with the wrong Noise PSK is denied, not promoted '
+      'to an application session', () async {
     final server = await serverSide();
-    final signaling = await RelaySignalingChannel.joinAsClient(
+    // Broker admission uses the valid token; the subsequent Noise proof does
+    // not. This isolates actual PSK authentication from admission enforcement.
+    final client = await RelayClientChannel.connect(
       signalingUrl: url,
       room: room,
-      token: RemoteControlCrypto.relayAdmissionToken(psk: psk, room: room),
+      deviceId: deviceId,
+      psk: psk,
     );
-    signaling.sendSignal(
-      to: server.signaling.peerId,
-      kind: 'hello',
-      payload: {'d': deviceId},
-    );
+    addTearDown(client.close);
     final transport = await server.transport;
-
-    var surfaced = 0;
-    final sub = transport.incoming.listen((_) => surfaced++);
-
-    // A frame sealed with the WRONG psk must fail the MAC and be dropped.
-    signaling.sendSignal(
-      to: server.signaling.peerId,
-      payload: {'e': RelayFrameCrypto.seal('{"x":1}', 'the-wrong-psk')},
+    final denied = expectLater(
+      acceptSecureChannel(
+        channel: transport,
+        readPsk: (device) async => device == deviceId ? psk : null,
+        serverPublicKey: publicKey,
+        signIdentity: (challenge) =>
+            ServerIdentityCrypto.signChallenge(seedB64: seed, nonce: challenge),
+        timeout: const Duration(seconds: 5),
+      ),
+      throwsA(isA<SecureHandshakeException>()),
     );
-    // Then a valid one, to have a deterministic point to assert after.
-    final good = transport.incoming.first;
-    signaling.sendSignal(
-      to: server.signaling.peerId,
-      payload: {'e': RelayFrameCrypto.seal('{"x":2}', psk)},
+    await expectLater(
+      connectSecureChannel(
+        channel: client,
+        deviceId: deviceId,
+        psk: psk2,
+        timeout: const Duration(seconds: 5),
+      ),
+      throwsA(isA<SecureHandshakeException>()),
     );
-    expect(await good, {'x': 2});
-    expect(surfaced, 1, reason: 'only the valid frame surfaced');
-
-    await sub.cancel();
-    await transport.close();
-    await signaling.close();
-    await server.signaling.close();
+    await denied;
+    expect(transport.isOpen, isFalse);
   });
 
-  test('an unadmitted client cannot join; a revoked admission evicts the '
-      'live client', () async {
+  test('broker refuses unadmitted peers and revocation evicts a live peer',
+      () async {
     final server = await serverSide();
-
-    // No token → refused before any relaying.
     await expectLater(
       RelayClientChannel.connect(
         signalingUrl: url,
         room: room,
         deviceId: deviceId,
-        psk: 'some-other-psk',
+        psk: psk2,
       ),
       throwsA(isA<RelaySignalingException>()),
     );
-
-    // Admitted client connects, then the server revokes its hash — the
-    // broker evicts it and the client's space closes.
     final client = await RelayClientChannel.connect(
       signalingUrl: url,
       room: room,
       deviceId: deviceId,
       psk: psk,
     );
-    // `connect` returns as soon as the hello is SENT; wait for the owner to
-    // actually RECEIVE it before revoking, or the eviction can close the
-    // client socket while the hello is still in flight (dropping it and
-    // leaving the owner-side firstWhere below dangling).
-    final serverTransport = await server.transport;
-    final closed = client.state.firstWhere(
-      (s) => s == RemoteChannelState.closed,
-    );
-    server.signaling.admit(remove: [admissionHash()]);
-    await closed;
-    await serverTransport.close();
-
-    await client.close();
-    await server.signaling.close();
+    addTearDown(client.close);
+    final transport = await server.transport;
+    final closed = client.state
+        .firstWhere((state) => state == RemoteChannelState.closed)
+        .timeout(const Duration(seconds: 5));
+    final serverClosed = transport.state
+        .firstWhere((state) => state == RemoteChannelState.closed)
+        .timeout(const Duration(seconds: 5));
+    server.signaling.admit(remove: [admissionHash(psk)]);
+    await Future.wait([closed, serverClosed]);
+    expect(client.isOpen, isFalse);
+    expect(transport.isOpen, isFalse);
   });
 
-  test('two clients get independent peer-scoped transports (N-way)', () async {
-    const psk2 = 'second-device-psk';
+  test('two paired clients have independent authenticated peer-scoped '
+      'transports and cannot read each other’s records', () async {
     const device2 = 'device-2';
-    final hash2 = RemoteControlCrypto.relayAdmissionHash(
-      RemoteControlCrypto.relayAdmissionToken(psk: psk2, room: room),
-    );
     final signaling = await RelaySignalingChannel.joinAsOwner(
       signalingUrl: url,
       room: room,
       ownerToken: ownerToken,
-      admit: [admissionHash(), hash2],
+      admit: [admissionHash(psk), admissionHash(psk2)],
     );
-    final transports = <String, RelayRemoteTransport>{};
-    signaling.incoming.listen((f) {
-      if (f['type'] == 'signal' && f['kind'] == 'hello') {
-        final peer = f['from'] as String;
-        final device = (f['payload'] as Map)['d'] as String;
-        transports[device] = RelayRemoteTransport(
-          signaling: signaling,
-          peer: peer,
-          psk: device == deviceId ? psk : psk2,
-        );
+    addTearDown(signaling.close);
+    final first = Completer<RelayRemoteTransport>();
+    final second = Completer<RelayRemoteTransport>();
+    signaling.incoming.listen((frame) {
+      if (frame['type'] != 'signal' || frame['kind'] != 'hello') return;
+      final device = (frame['payload'] as Map)['d'];
+      final transport = RelayRemoteTransport(
+        signaling: signaling,
+        peer: frame['from'] as String,
+      );
+      addTearDown(transport.close);
+      if (device == deviceId) {
+        first.complete(transport);
+      } else if (device == device2) {
+        second.complete(transport);
       }
     });
 
-    final c1 = await RelayClientChannel.connect(
-      signalingUrl: url,
-      room: room,
-      deviceId: deviceId,
-      psk: psk,
-    );
-    final c2 = await RelayClientChannel.connect(
-      signalingUrl: url,
-      room: room,
-      deviceId: device2,
-      psk: psk2,
-    );
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    expect(transports.keys, containsAll([deviceId, device2]));
-
-    // Server → each client individually; the other never sees it.
-    final got1 = c1.incoming.first;
-    await transports[deviceId]!.send({'to': 1});
-    expect(await got1, {'to': 1});
-
-    final got2 = c2.incoming.first;
-    await transports[device2]!.send({'to': 2});
-    expect(await got2, {'to': 2});
-
-    // Client → server lands on the right transport.
-    final fromC2 = transports[device2]!.incoming.first;
-    await c2.send({'from': 2});
-    expect(await fromC2, {'from': 2});
-
-    await c1.close();
-    await c2.close();
-    for (final t in transports.values) {
-      await t.close();
+    Future<({SecureChannelConnection client, SecureChannelConnection server,
+             _WireTap clientWire, _WireTap serverWire})> join(
+      String device, String credential, Future<RelayRemoteTransport> peer,
+    ) async {
+      final raw = await RelayClientChannel.connect(
+        signalingUrl: url,
+        room: room,
+        deviceId: device,
+        psk: credential,
+      );
+      addTearDown(raw.close);
+      final transport = await peer.timeout(const Duration(seconds: 5));
+      final clientWire = _WireTap(raw);
+      final serverWire = _WireTap(transport);
+      final accepted = acceptSecureChannel(
+        channel: serverWire,
+        readPsk: (id) async => id == device ? credential : null,
+        serverPublicKey: publicKey,
+        signIdentity: (challenge) =>
+            ServerIdentityCrypto.signChallenge(seedB64: seed, nonce: challenge),
+      );
+      final connected = await connectSecureChannel(
+        channel: clientWire,
+        deviceId: device,
+        psk: credential,
+        pinnedFingerprint: ServerIdentityCrypto.fingerprintOf(publicKey),
+      );
+      final server = await accepted;
+      addTearDown(connected.channel.close);
+      addTearDown(server.channel.close);
+      return (client: connected, server: server,
+              clientWire: clientWire, serverWire: serverWire);
     }
-    await signaling.close();
+
+    final one = await join(deviceId, psk, first.future);
+    final two = await join(device2, psk2, second.future);
+    final twoBeforeFirst = two.clientWire.received.length;
+    final gotOne = one.client.channel.incoming.first.timeout(
+      const Duration(seconds: 5),
+    );
+    await one.server.channel.send({'secret': 'only-for-device-one'});
+    expect(await gotOne, {'secret': 'only-for-device-one'});
+    expect(two.clientWire.received.length, twoBeforeFirst,
+        reason: 'the broker must not forward device one’s record to device two');
+    final oneBeforeSecond = one.clientWire.received.length;
+    final gotTwo = two.client.channel.incoming.first.timeout(
+      const Duration(seconds: 5),
+    );
+    await two.server.channel.send({'secret': 'only-for-device-two'});
+    expect(await gotTwo, {'secret': 'only-for-device-two'});
+    expect(one.clientWire.received.length, oneBeforeSecond,
+        reason: 'the broker must not forward device two’s record to device one');
+
+    final fromTwo = two.server.channel.incoming.first.timeout(
+      const Duration(seconds: 5),
+    );
+    await two.client.channel.send({'from': device2});
+    expect(await fromTwo, {'from': device2});
+    final fromOne = one.server.channel.incoming.first.timeout(
+      const Duration(seconds: 5),
+    );
+    await one.client.channel.send({'from': deviceId});
+    expect(await fromOne, {'from': deviceId});
+    expect(one.serverWire.received.length, greaterThan(1));
+    expect(two.serverWire.received.length, greaterThan(1));
   });
 }

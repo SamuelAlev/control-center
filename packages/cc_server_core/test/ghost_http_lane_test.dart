@@ -6,6 +6,7 @@ import 'package:cc_server_core/cc_server_core.dart';
 import 'package:test/test.dart';
 
 import 'helpers/best_effort_delete.dart';
+import 'helpers/booted_rpc.dart';
 import 'helpers/native_staging.dart';
 import 'helpers/test_database.dart';
 
@@ -26,7 +27,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'logo-device';
-    const psk = 'test-psk-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
 
     final seed = openSeedDatabases(tmp.path);
     await seed.global.pairedDeviceDao.upsert(
@@ -53,14 +54,28 @@ void main() {
       psk,
     );
 
-    final client = HttpClient();
-    addTearDown(client.close);
-    final uri = Uri.parse(
-      'http://127.0.0.1:${server.rpc.boundPort}/workspace/logo'
-      '?w=$ghostId&d=$deviceId&s=${Uri.encodeQueryComponent(sig)}',
+    final client = await connectBootedServer(
+      uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
+      deviceId: deviceId,
+      psk: psk,
     );
-    final response = await (await client.getUrl(uri)).close();
-    await response.drain<void>();
+    addTearDown(client.close);
+    final uri = Uri(
+      path: '/workspace/logo',
+      queryParameters: {'w': ghostId, 'd': deviceId, 's': sig},
+    );
+    final response = await client.resources.request('GET', uri);
+    await response.body.drain<void>();
+    expect(response.statusCode, HttpStatus.forbidden);
+
+    // A raw HTTP request must not bypass the authenticated resource tunnel.
+    final publicHttp = HttpClient();
+    addTearDown(() => publicHttp.close(force: true));
+    final publicResponse = await (await publicHttp.getUrl(
+      Uri.parse('http://127.0.0.1:${server.rpc.boundPort}').resolveUri(uri),
+    )).close();
+    await publicResponse.drain<void>();
+    expect(publicResponse.statusCode, HttpStatus.upgradeRequired);
 
     expect(
       Directory('${tmp.path}/$ghostId').existsSync(),

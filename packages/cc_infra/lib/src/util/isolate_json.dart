@@ -1,8 +1,8 @@
 /// JSON helpers that offload large payloads to a background isolate.
 ///
-/// Covers on-disk SWR cache (de)serialize (Dio already offloads large network
-/// bodies). Below ~50 KB runs inline — isolate spawn costs more than a small
-/// parse ([Isolate.run] above the threshold).
+/// Covers on-disk SWR cache (de)serialization. Below ~50 KB runs inline —
+/// isolate spawn costs more than a small parse ([Isolate.run] above the
+/// threshold). HTTP response decoding is handled separately by the clients.
 library;
 
 import 'dart:convert';

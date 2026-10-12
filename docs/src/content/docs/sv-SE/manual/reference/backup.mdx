@@ -2,7 +2,7 @@
 title: Säkerhetskopia, export och import
 description: Ögonblicksbildens struktur, manifestet, varje säkerhetskopieringsåtgärd och överföringsväg, och exakt vilka filer en säkerhetskopia innehåller och inte innehåller.
 slug: sv-SE/handbok/referens/sakerhetskopia
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Allt som Control Center kan kopiera, lämna över eller ta över, och den exakta formen på
@@ -24,6 +24,12 @@ borttagning.
 Alla skrivs med SQLite `VACUUM INTO`, som är säkert mot en levande WAL-databas:
 det tar en lästransaktion, producerar en defragmenterad och transaktionellt konsekvent
 kopia och kräver aldrig att servern stoppas.
+
+De här filerna och hämtade kopior **krypteras inte i vila** av Control Center.
+Den end-to-end-krypterade överföringen skyddar byten under vägen mellan en
+parkopplad klient och dess `cc_server`, på direkta eller reläförmedlade
+anslutningar. Skydda lokal lagring och kopior utanför maskinen separat; servern
+och varje auktoriserad mottagare kan läsa databasfilerna.
 
 ## Ögonblicksbildens struktur
 
@@ -205,10 +211,15 @@ vara inaktuellt.
 
 ## Överföringsvägar
 
-Varje åtgärd ovan talar i sökvägar på serversidan, vilket bara är ett fullständigt svar
-när servern är din egen maskin. Dessa tre bär själva byten, på samma PSK-signerade kanal
-som medieproxyn och blob-lagret använder. Anroparen signerar en målsträng med sin enhets
-i förväg delade nyckel och skickar signaturen som `s`.
+Export-/import- och listningsåtgärderna för ögonblicksbilder ovan talar i sökvägar på
+serversidan, vilket bara är ett fullständigt svar när servern är din egen maskin. De här
+HTTP-formade vägarna bär säkerhetskopiebyten **inuti samma autentiserade,
+end-to-end-krypterade resurstunnel** som andra känsliga resurser, oavsett om
+RPC-anslutningen är direkt eller förmedlad. De är inte publika
+HTTP-filöverföringsändpunkter: en begäran till en av dem på den publika lyssnaren
+returnerar `426 Upgrade Required`, även från loopback. I den krypterade tunneln måste
+enheten som autentiserats med Noise matcha `d`; hanteraren kontrollerar dessutom enhetens
+signatur över dess målsträng med dess parkopplings-PSK och rollen nedan.
 
 | Väg                     | Metod  | Fråga           | Signerat mål                   | Kräver                  |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -228,6 +239,7 @@ inte skulle ha visat.
 | `404`  | Ingen port för säkerhetskopiering på den här värden, eller så finns inte den namngivna ögonblicksbilden/arbetsytefilen |
 | `405`  | `/backup/restore` anropad med något annat än `POST`                                  |
 | `413`  | Uppladdningskroppen överstiger 8 GiB, antingen enligt angiven content-length eller enligt antalet faktiskt lästa byten |
+| `426`  | Varje direkt begäran till en överföringsväg på den publika HTTP-lyssnaren; använd en parkopplad klients krypterade resurstunnel |
 | `500`  | Exporten eller arkiveringen misslyckades på serversidan                               |
 
 Båda hämtningarna svarar med `Cache-Control: no-store` och `Accept-Ranges: none`. Varje
@@ -244,12 +256,14 @@ rot så att uppackning återskapar `manifest.json` + `global.db` +
 buffra den, begränsar den före och under läsningen och raderar den mellanlagrade filen på
 **varje** väg ut, även vid en avvisning.
 
-:::caution[En förmedlad anslutning har inget HTTP-ursprung]
-Det förmedlade reläet transporterar RPC-ramar, inte filöverföringar. Allt som talar i
-sökvägar på serversidan fortsätter fungera över det; de tre överföringsvägarna kräver en
-direkt anslutning, och gränssnittet inaktiverar dem med en notis i stället för att
-misslyckas mitt i en hämtning.
-:::
+::::caution[Direkt och relä använder samma krypterade överföring]
+Reläet bär resursbegäranden, strömmade svar och uppladdningsbyten som chiffertext;
+det kan inte läsa säkerhetskopians innehåll. En sökväg på serversidan förblir en
+sökväg på servervärden, inte en fil på reläet. Åtkomst kräver fortfarande den
+parkopplade enheten, målsignaturen och den tillämpliga arbetsyte- eller
+installationsrollen. Ingen av transporterna krypterar de resulterande
+säkerhetskopiefilerna i vila.
+::::
 
 ## Sökvägar och gränser
 
@@ -260,7 +274,7 @@ misslyckas mitt i en hämtning.
 | Arbetsytaexporter              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Mellanlagring för överföringar | `<dataDir>/backups/transfer/` – en arbetsbänk som städas av vägen som skriver till den |
 | Ögonblicksbildens arkivnamn    | `<snapshot directory name>.zip`                              |
-| Övre gräns för uppladdning     | 8 GiB per `POST /backup/restore`                             |
+| Övre gräns för uppladdning     | 8 GiB per krypterad `/backup/restore`-uppladdning            |
 | Bevarande                      | Installationsögonblicksbilder: manuell borttagning. Säkerhetskopior av arbetsytor: veckopipeline, 30 dagar som standard |
 
 Katalogerna `exports/`, `transfer/` och `workspace-backups/` är inte

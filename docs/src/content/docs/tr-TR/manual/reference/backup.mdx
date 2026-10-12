@@ -2,7 +2,7 @@
 title: Yedekleme, dışa ve içe aktarma
 description: Anlık görüntü düzeni, manifest, her yedekleme işlemi ve aktarım rotası ile bir yedeğin hangi dosyaları içerdiği ve içermediği.
 slug: tr-TR/kilavuz/referans/yedekleme
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Control Center'ın kopyalayabileceği, devredebileceği ya da devralabileceği her şey ve
@@ -24,6 +24,12 @@ Farklı kapsamlara ve silme politikalarına sahip üç veritabanı kopyası yap�
 Hepsi SQLite `VACUUM INTO` ile yazılır; bu, canlı bir WAL veritabanına karşı güvenlidir:
 bir okuma işlemi alır, parçalanması giderilmiş ve işlemsel olarak tutarlı bir kopya
 üretir ve sunucunun durdurulmasını hiçbir zaman gerektirmez.
+
+Bu dosyalar ve indirilen kopyalar Control Center tarafından **durağan hâlde
+şifrelenmez**. Uçtan uca şifrelenmiş aktarım, eşleştirilmiş bir istemci ile onun
+`cc_server`'ı arasındaki baytları yol boyunca korur; ister doğrudan ister aracılı
+aktarıcı üzerinden bir bağlantıda. Yerel depolamayı ve makine dışı kopyaları ayrıca
+koruyun; sunucu ve yetkili herhangi bir alıcı veritabanı dosyalarını okuyabilir.
 
 ## Anlık görüntü düzeni
 
@@ -203,10 +209,15 @@ dosyanın içerik tabloları doludur ama dizini eskimiş olabilir.
 
 ## Aktarım rotaları
 
-Yukarıdaki her işlem sunucu tarafındaki yollarla konuşur; bu da yalnızca sunucu kendi
-makinenizse eksiksiz bir yanıttır. Aşağıdaki üç rota, medya proxy'sinin ve blob
-deposunun zaten kullandığı aynı PSK imzalı hat üzerinden baytları taşır. Çağıran, hedef
-dizeyi cihazının ön paylaşımlı anahtarıyla imzalar ve imzayı `s` olarak geçirir.
+Yukarıdaki dışa aktarma/içe aktarma ve anlık görüntü listeleme işlemleri sunucu
+tarafındaki yollarla konuşur; bu da yalnızca sunucu kendi makinenizse eksiksiz bir
+yanıttır. HTTP biçimli bu rotalar, yedek baytlarını diğer hassas kaynaklarla **aynı
+kimliği doğrulanmış ve uçtan uca şifrelenmiş kaynak tünelinin içinde** taşır; RPC
+bağlantısı ister doğrudan ister aracılı olsun. Bunlar genel HTTP dosya aktarımı uç
+noktaları değildir: genel dinleyicide bunlardan birine yapılan istek, loopback'ten
+bile `426 Upgrade Required` döndürür. Şifrelenmiş tünelde, Noise ile doğrulanmış
+cihaz `d` ile eşleşmelidir; işleyici ayrıca cihazın hedef dizesi üzerindeki imzasını
+eşleştirme PSK'si ve aşağıdaki rolle denetler.
 
 | Rota                | Yöntem | Sorgu         | İmzalanan hedef                | Gerektirdiği              |
 | ------------------- | ------ | ------------- | ------------------------------ | ------------------------- |
@@ -225,6 +236,7 @@ kimliği, `s` ise imzadır. `n`, yedekleme köküne eklenmek yerine yedekleme li
 | `404` | Bu makinede yedekleme portu yok ya da adı geçen anlık görüntü/çalışma alanı dosyası mevcut değil |
 | `405` | `/backup/restore` rotasının `POST` dışında bir yöntemle çağrılması                   |
 | `413` | Yükleme gövdesinin, bildirilen content-length'e göre ya da gerçekte okunan baytlara göre 8 GiB'ı aşması |
+| `426` | Genel HTTP dinleyicisindeki bir aktarım rotasına yapılan her doğrudan istek; eşleştirilmiş bir istemcinin şifrelenmiş kaynak tünelini kullanın |
 | `500` | Dışa aktarma ya da arşivleme sunucu tarafında başarısız oldu                        |
 
 Her iki indirme de `Cache-Control: no-store` ve `Accept-Ranges: none` ile yanıt verir.
@@ -241,12 +253,13 @@ böylece aynı anlık görüntünün iki arşivi aynı arşivdir.
 akıtır, okuma öncesinde ve sırasında boyutunu sınırlar ve hazırlanan dosyayı bir ret
 dahil **her** çıkış yolunda siler.
 
-:::caution[Aktarılan bir bağlantının HTTP kaynağı yoktur]
-Aracılı aktarım hattı dosya transferlerini değil, RPC çerçevelerini taşır. Sunucu tarafı
-yollarla konuşan her şey onun üzerinden çalışmaya devam eder; üç aktarım rotası doğrudan
-bir bağlantı gerektirir ve arayüz, indirmenin ortasında başarısız olmak yerine onları
-nedenini söyleyen bir notla devre dışı bırakır.
-:::
+::::caution[Doğrudan bağlantı ve aktarıcı aynı şifrelenmiş aktarımı kullanır]
+Aktarıcı kaynak isteklerini, akıtılan yanıtları ve yükleme baytlarını şifreli metin
+olarak taşır; yedek içeriğini okuyamaz. Sunucu tarafındaki bir yol, ana makinede bir
+yol olarak kalır; aktarıcıdaki bir dosya değildir. Erişim yine de eşleştirilmiş
+cihazı, hedef imzasını ve geçerli çalışma alanı ya da kurulum rolünü gerektirir.
+İki taşıma da ortaya çıkan yedek dosyalarını durağan hâlde şifrelemez.
+::::
 
 ## Yollar ve sınırlar
 
@@ -257,7 +270,7 @@ nedenini söyleyen bir notla devre dışı bırakır.
 | Çalışma alanı dışa aktarımları | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db` |
 | Aktarım hazırlama          | `<dataDir>/backups/transfer/` — bir çalışma tezgâhı; onu yazan rota tarafından süpürülür |
 | Anlık görüntü arşiv adı    | `<snapshot directory name>.zip`                              |
-| Yükleme üst sınırı         | `POST /backup/restore` başına 8 GiB                          |
+| Yükleme üst sınırı         | `/backup/restore` rotasına yapılan her şifrelenmiş yükleme başına 8 GiB |
 | Saklama                    | Kurulum anlık görüntüleri: elle silme. Çalışma alanı yedekleri: haftalık pipeline, varsayılan 30 gün |
 
 `exports/`, `transfer/` ve `workspace-backups/` dizinleri kurulum anlık görüntüsü

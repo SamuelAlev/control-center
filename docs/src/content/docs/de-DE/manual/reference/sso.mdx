@@ -2,7 +2,7 @@
 title: SSO-Konfiguration
 description: Jede Stellschraube, jeder Endpunkt, jede Operation und jeder Fehlercode von Single Sign-on.
 slug: de-DE/handbuch/referenz/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Alles, was sich an Single Sign-on konfigurieren lässt, an einer Stelle. Die
@@ -24,7 +24,7 @@ Einstellungsbildschirm uneins sein kann).
 | `displayNameAttribute` | SAML     | `displayName`   | Attribut für den Anzeigenamen                                                                                                                                |
 | `groupsAttribute`      | SAML     | `groups`        | Attribut für die Gruppennamen                                                                                                                                |
 | `clockSkewSeconds`     | SAML     | 90              | Toleranz der Zeitabweichung bei der Gültigkeitsprüfung                                                                                                       |
-| `allowIdpInitiated`    | SAML     | aus             | unaufgeforderte Responses akzeptieren (kein `InResponseTo`)                                                                                                  |
+| `allowIdpInitiated`    | SAML     | aus             | gültige unaufgeforderte Responses akzeptieren (kein `InResponseTo`); der Browser muss einen kurzlebigen Grant beanspruchen, bevor er ein an den Empfänger versiegeltes Zugangsdatum erhält |
 | `wantResponseSigned`   | SAML     | aus             | eine Signatur an der Response-Wurzel verlangen (Signaturen der Assertion sind immer erforderlich)                                                            |
 | `issuer`               | OIDC     | —               | Basis-URL des Issuers (erforderlich zum Aktivieren)                                                                                                          |
 | `clientId`             | OIDC     | —               | ID des öffentlichen Clients (erforderlich zum Aktivieren)                                                                                                    |
@@ -38,27 +38,64 @@ Einstellungsbildschirm uneins sein kann).
 ## Prozesskonfiguration
 
 SSO-Verbindungen werden nicht aus der Umgebung vorbelegt. Ein verbleibendes
-Prozess-Flag betrifft die **Browser-Übergabe**, nicht die Verbindungszeile:
+Prozess-Flag bestimmt, wo der Browser den Web-Client nach einem SSO-Callback
+öffnet:
 
 | Variable / Flag                             | Bedeutung                                                                                                                                      |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | Origin, zu dem die Callbacks für Single Sign-on den Browser zurückschicken (das Credential liegt im URL-Fragment). Nicht gesetzt bleibt die Übergabe auf demselben Origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | Web-Client-URL für eine versiegelte Zugangsdaten-Übergabe; nicht gesetzt bleibt die Übergabe auf demselben Origin (nur nützlich, wenn der Web-Client dort ausgeliefert wird). Bei einer `web-popup`-Anmeldung hat ein erlaubtes `client_origin` aus dem initiierenden Tab Vorrang. |
 
 Die Issuer-URL selbst muss `https` sein (`http` ist nur für Loopback-Issuer
-`localhost`, `127.0.0.1` und `::1` zulässig).
+`localhost`, `127.0.0.1` und `::1` zulässig). Nutze vertrauenswürdiges TLS für
+den IdP-Callback und den Host des Web-Clients: Die Seite, die den
+Empfängerschlüssel erzeugt, und das von ihr ausgelieferte JavaScript sind Teil
+der Vertrauensgrenze. HTTPS schützt diesen Bootstrap; nach der Kopplung
+erfordern direkte und über das Relay laufende `/rpc`-Sitzungen beide
+Noise-Verschlüsselung und eine festgelegte Serveridentität.
 
 ## HTTP-Endpunkte
 
 | Endpunkt                                         | Auth                    | Zweck                                                                                                                                                                          |
 | ------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /saml/login?relay=…`                        | keine (Redirect)        | startet die vom SP initiierte Anmeldung; `relay=desktop` übergibt an die App, `relay=web-popup` schickt ein postMessage an den wartenden Verbindungs-Tab (der sein `client_origin` meldet; das gilt nur, wenn die erlaubten Origins ihm vertrauen) |
-| `POST /saml/acs`                                 | keine (IdP-POST)        | der Assertion Consumer — prüft, provisioniert, stellt Anmeldedaten aus                                                                                                         |
+| `GET /saml/login?relay=…&handoff_key=…`         | keine (Redirect)        | startet die vom SP initiierte Anmeldung mit einem vom Client gehaltenen X25519-Empfängerschlüssel; `relay=desktop` übergibt an die App, `relay=web-popup` schickt ein postMessage an den wartenden Verbindungs-Tab (sein `client_origin` gilt nur, wenn die Liste der erlaubten Origins ihm vertraut) |
+| `POST /saml/acs`                                 | keine (IdP-POST)        | die Assertion prüfen und den Benutzer provisionieren; die vom SP initiierte Anmeldung versiegelt das ausgestellte Geräte-Zugangsdatum an den initiierenden Empfängerschlüssel; erlaubtes unaufgefordertes SAML liefert stattdessen einen an den Browser gebundenen Claim |
+| `POST /saml/claim`                               | Browser-Grant desselben Origin | einen einmaligen unaufgeforderten SAML-Grant mit seinem Cookie und einem frischen `handoff_key` einlösen; gibt ein an den Empfänger versiegeltes Zugangsdatum zurück, nie einen Klartext-Kopplungsschlüssel |
 | `GET /saml/metadata`                             | keine                   | unser SP-`EntityDescriptor`                                                                                                                                                    |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | keine                   | der OIDC-Roundtrip; `relay=desktop` übergibt an die App, `relay=web-popup` an den wartenden Verbindungs-Tab (dieselbe Konvention für `client_origin`)                          |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | keine                   | der OIDC-Roundtrip; die Anmeldung erfordert den vom Client gehaltenen Empfängerschlüssel; `relay=desktop` übergibt an die App, `relay=web-popup` an den wartenden Verbindungs-Tab (dieselbe Konvention für `client_origin`)                          |
 | `GET /auth/providers`                            | keine, CORS `*`         | die Abfrage des Verbindungsbildschirms: angebotene SSO-Verbindungen (`id`/`kind`/`label`) plus `pairingEnabled`                                                                |
 | `/scim/v2/Users…`                                | Bearer (SCIM-Token)     | Users anlegen/abrufen/listen und filtern/PUT/PATCH/DELETE                                                                                                                      |
 | `/scim/v2/Groups`                                | Bearer                  | nur lesend; ein Gruppen-Push antwortet absichtlich mit 501                                                                                                                     |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer                  | Dokument der unterstützten Fähigkeiten                                                                                                                                         |
+
+Für vom SP initiiertes SAML und OIDC erfordert die Login-Start-URL einen
+gültigen `handoff_key` (den X25519-Public-Key des initiierenden Clients). Der
+Server behält diesen Schlüssel bei der ausstehenden Anmeldung und versiegelt
+das ausgestellte Geräte-Zugangsdatum beim Callback unter Verwendung von
+ephemerem X25519, HKDF-SHA256 und AES-256-GCM, gebunden an den Server-Origin.
+Die Desktop-Übergabe nutzt `control-center://pair`, die Web-Übergabe im selben
+Tab nutzt ein URL-Fragment, und `web-popup` schickt ein postMessage an das
+erlaubte `client_origin`, falls angegeben (sonst an die konfigurierte
+Web-Client-URL oder den Callback-Origin). Das versiegelte Envelope, kein
+Klartext-Kopplungsschlüssel, reist in diesem Fragment oder der
+Popup-Nachricht. Der initiierende Client behält den zugehörigen privaten
+Schlüssel, um es zu öffnen. Dieses Envelope ist verschieden von der
+verpflichtenden Noise-Sitzung, die nach der Kopplung aufgebaut wird.
+
+Eine vom IdP initiierte SAML-Response (wenn aktiviert) hat keinen
+initiierenden Empfänger. Stattdessen setzt der ACS ein fünf Minuten gültiges,
+HttpOnly, SameSite=Strict-Browser-Cookie und zeigt die Wahl **Web-Client
+öffnen** / **Desktop-App öffnen**. Diese Seite erzeugt einen frischen
+Empfängerschlüssel und sendet seinen öffentlichen Teil und den Grant-Handle per
+`POST /saml/claim` vom selben Origin. Das Beanspruchen erfordert das passende
+Cookie und Origin (eine CSRF-Grenze), verbraucht den Grant einmal und gibt nur
+ein an den Empfänger versiegeltes Envelope zurück. Das nachfolgende
+Web-/Desktop-Fragment trägt dieses Envelope und das private Schlüsselmaterial
+des Empfängers, damit der Zielclient es öffnen kann, **nicht** ein
+Klartext-Geräte-Zugangsdatum. Ein anderer Browser oder ein abgelaufener Grant
+kann es nicht einlösen. Der Web-Client-Origin des Ziels kann auf das Fragment
+zugreifen und es entschlüsseln; eine kompromittierte Callback-Seite oder ein
+kompromittierter Web-Client-Origin kann Zugangsdaten stehlen. Verschlüsselung
+macht nicht vertrauenswürdigen ausgelieferten Code nicht sicher.
 
 ## RPC-Operationen
 

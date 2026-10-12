@@ -2,7 +2,7 @@
 title: Anslut till en fjärrserver
 description: Rikta skrivbordsappen eller webbklienten mot en cc_server som körs någon annanstans och byt mellan servrar utan att starta om.
 slug: sv-SE/handbok/how-to-guider/anslut-fjarrserver
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Varje klient är en renderare över en `cc_server` som äger datan. Skrivbordsappen
@@ -14,7 +14,7 @@ liten burk, en moln-VM, en byggserver.
 ## Förutsättningar
 
 - En `cc_server` som körs. Har du ingen, se [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
-- Antingen de tre parkopplingsvärden som servern har skapat — **server-URL:en** (`ws://…/rpc` eller `wss://…/rpc`), ett **enhets-ID** och en **parkopplingsnyckel** — **eller** en engångs-**inbjudningskod** från en admin för arbetsytan. Att lösa in en inbjudan skapar din användare, registrerar ditt medlemskap och utfärdar den här klientens autentiseringsuppgift åt dig, så du hanterar aldrig ett enhets-ID eller en nyckel.
+- Antingen de tre parkopplingsvärden som servern har skapat — **server-URL:en** (`ws://…/rpc` eller `wss://…/rpc`), ett **enhets-ID** och en **parkopplingsnyckel** — **eller** en engångs-**inbjudningskod** från en admin för arbetsytan. Att lösa in en inbjudan skapar din användare, registrerar ditt medlemskap och utfärdar den här klientens autentiseringsuppgift åt dig, så du hanterar aldrig ett enhets-ID eller en nyckel. Skaffa dessa via en betrodd kanal och kontrollera serverns fingeravtryck mot en betrodd QR-kod eller en känd pin vid första anslutningen.
 
 ### Se till att servern är nåbar
 
@@ -28,7 +28,7 @@ redan litar på — och `cc_server` vägrar binda en adress utanför loopback ut
 Ge den något av:
 
 - ett certifikat direkt, med `--tls-cert` och `--tls-key`
-- en TLS-avslutande proxy framför, med servern startad `--insecure` (klartext bakom proxyn, endast i ett betrott nätverk)
+- en TLS-avslutande proxy framför, med servern startad `--insecure` (klartext mellan proxyn och servern på den yttre lyssnaren, endast i ett betrott nätverk; detta inaktiverar inte den obligatoriska krypterade klientsessionen)
 - en tunnel eller ett VPN som bidrar med certifikatet — Tailscale, cloudflared eller liknande. **Inställningar → Server → Anslutning och status** har den inbyggda tunnel-opt-in under **Dela den här servern**.
 
 Två inställningar på serversidan är lätta att missa. Bakom en proxy, NAT eller
@@ -58,7 +58,8 @@ felet. Raden för servern du är på har ingen **Byt**-åtgärd; den lokala serv
 den första raden, märkt **Kör i den här appen**.
 
 När du har bytt äger skrivbordsappen ingen databas. Varje skärm läser och skriver
-via fjärrservern över en WebSocket.
+via fjärrservern över en signerad, end-to-end-krypterad WebSocket-session; samma
+skydd gäller över loopback och över reläet.
 
 ## Anslut webbklienten
 
@@ -70,13 +71,18 @@ Webbbygget är alltid fjärranslutet.
 
 Om en parkopplings-deep-link finns i URL:en är fälten förifyllda.
 Parkopplingsnyckeln färdas i URL-**fragmentet**, som webbläsare aldrig skickar
-till servern som hostar sidan, så den statiska värden ser den aldrig.
+till servern som hostar sidan. Behandla länken som en hemlighet och lita på sidan
+som betjänar webbklienten: fragmentet skyddar inte mot skadlig sidkod.
 
-:::note[Media och säkerhet]
-Media (avatars, flödesbilder, PR-skärmbilder) dirigeras via den anslutna servern,
-så webbläsaren hämtar aldrig en uppströmsvärd direkt. En Content-Security Policy
-per begäran, satt utifrån en icke-känslig cookie, tillåter bara den anslutna
-serverns origin.
+:::note[Media, redigerare och säkerhet]
+Media (avatars, flödesbilder, PR-skärmbilder), säkerhetskopieöverföringar och
+trafik från den inbäddade redigeraren använder den krypterade resurstunneln, inte
+läsbara publika HTTP-rutter. Den betrodda webbläsarredigeraren körs på webbappens
+egen origin; dess Service Worker för vidare förfrågningar genom den autentiserade
+krypterade sessionen till code-server-backenden på `cc_server`. Hosta
+webbklienten över HTTPS eller säker loopback så att Service Workers finns
+tillgängliga. Inbyggda klienter använder en kapabilitetsavgränsad
+loopback-fasad.
 :::
 
 ### Vad webbläsaren inte gör
@@ -99,6 +105,7 @@ redigerare.
 
 - **Anslutningen tar timeout**: servern måste vara nåbar från klienten. Kontrollera bindningen (`--bind any`), att porten är öppen och att `--public-url` anger den adress klienten faktiskt kan ringa. Över det öppna internet är TLS obligatoriskt — en klartextbindning utanför loopback avvisas vid start om inte servern startades `--insecure` bakom en proxy.
 - **Webbläsaren vägrar ansluta men en inbyggd klient fungerar**: webbläsarens origin finns inte i serverns `--allowed-origins`-lista. Standardvärdet tillåter bara `https://app.usectrl.dev` (plus loopback).
+- **Serveridentiteten har ändrats**: klienten avvisar ett fingeravtryck som skiljer sig från dess sparade pin. Verifiera serverns identitet utanför bandet och parkoppla om genom en betrodd kanal; ignorera inte varningen och byt inte till en äldre eller klartext-klient.
 - **Parkopplingsnyckeln avvisas**: kör `cc_server pair` igen på servern för att rotera den enhetens nyckel och ange sedan den nya. En återkallad enhet upptäcker att dess autentiseringsuppgift är borta och faller stängt; en återkallning släpper en live-session inom några sekunder.
 - **Fel arbetsyta**: arbetsytan är en del av URL:en (`/workspaces/:workspaceId/…`) och följer med varje anrop, så att byta arbetsyta i en klient ändrar bara din egen vy. Du kan bara nå arbetsytor där du är medlem — allt annat avvisas med "Not a member of this workspace". Se [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/).
 

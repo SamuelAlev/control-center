@@ -153,6 +153,11 @@ class OpenAiProvider implements LlmProviderPort {
     // transcript. Released verbatim when nothing is recovered.
     final textGate = _ToolTextGate();
     final knownToolNames = {for (final t in tools) t.name};
+    // Per-call instrumentation from the usage ledger: the first response body
+    // byte (the earliest boundary this client can observe) and the model the
+    // router actually served.
+    final trace = config.trace;
+    var sawServedModel = false;
 
     try {
       final stream = await _http.postSseReauthorizing(
@@ -160,6 +165,8 @@ class OpenAiProvider implements LlmProviderPort {
         headers: _authHeaders,
         body: body,
         retryOnUnauthorized: _tokenResolver != null,
+        onFirstBodyByte: trace?.transportFirstByte,
+        onRequestSent: trace?.requestSent,
       );
       await for (final sse in stream) {
         final data = sse.data.trim();
@@ -174,6 +181,17 @@ class OpenAiProvider implements LlmProviderPort {
           json = jsonDecode(data) as Map<String, dynamic>;
         } on FormatException {
           continue;
+        }
+
+        if (!sawServedModel) {
+          // OpenAI-compatible routers (OpenRouter, a gateway with its own
+          // routing) report the model that actually served the request, which
+          // can differ from the one asked for.
+          final served = json['model'] as String?;
+          if (served != null && served.isNotEmpty) {
+            sawServedModel = true;
+            trace?.servedModel(served);
+          }
         }
 
         final usage = json['usage'] as Map<String, dynamic>?;
@@ -399,7 +417,11 @@ class OpenAiProvider implements LlmProviderPort {
               wire.add({
                 'role': 'tool',
                 'tool_call_id': block.toolUseId,
-                'content': block.content,
+                // A Chat Completions `tool` message carries a string and has no
+                // tool-reference slot, so an activated tool must be named in
+                // the text — dropping it would tell the model about a tool the
+                // history claims is callable while nothing introduced it.
+                'content': block.portableContent,
               });
               trailingImages.addAll(block.images);
             }

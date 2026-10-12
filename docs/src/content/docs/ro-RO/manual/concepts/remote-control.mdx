@@ -1,36 +1,37 @@
 ---
 title: Control remote și mobil
-description: Cum ajunge telefonul la serverul tău printr-un releu intermediat, sigilat cap la cap, în loc de o legătură de la egal la egal, și modelul de acces pe straturi care ține această accesare restrânsă.
+description: Cum ajunge telefonul la serverul tău prin conexiuni directe sau intermediate, criptate cap la cap, și modelul de acces pe straturi care ține această accesare restrânsă.
 slug: ro-RO/manual/concepte/control-remote
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center este o aplicație de desktop, dar munca pe care o urmărește nu se
 oprește când te ridici de la birou. **Controlul remote** îți asociază telefonul
 cu `cc_server`, folosind **[Remote](https://remote.usectrl.dev/)**, aplicația
 companion de la remote.usectrl.dev, ca să urmărești flota de acolo: să citești
-mesaje și tichete, să răspunzi unui agent, să triezi fluxul de știri, fără ca
-audio-ul, transcrierea, codul sursă sau credențialele care există pe server să îl
-părăsească vreodată.
+mesaje și tichete, să răspunzi unui agent și să triezi fluxul de știri printr-o
+conexiune criptată cap la cap. Telefonul și `cc_server` sunt capete de text clar
+de încredere; un releu transportă doar înregistrări criptate ale aplicației.
 
 Gândește-te la el ca la un companion al biroului, folosit mai ales pentru
 citire. Nu este menit să înlocuiască clientul complet de desktop.
 
-:::note[Două căi remote diferite]
-Companionul de pe telefon se asociază cu un `cc_server` printr-un **releu
-WebSocket intermediat** care transportă cadre JSON-RPC sigilate cap la cap.
-**Versiunea web** completă (și un desktop îndreptat spre un server remote) este
-cealaltă cale remote; ea se conectează la `cc_server` prin WebSocket și redă
-aplicația completă. Vezi
-[Implementare și clienți](/ro-RO/manual/concepte/implementare/) pentru diferențele dintre cele două.
+:::note[Doi clienți remote diferiți]
+Companionul de pe telefon și **versiunea web** completă (sau un desktop
+îndreptat spre un server remote) se pot conecta direct la `cc_server` sau pot
+folosi un releu WebSocket intermediat. Ambele căi necesită aceeași sesiune
+criptată; telefonul expune un set mai mic de operațiuni decât clientul complet.
+Vezi [Implementare și clienți](/ro-RO/manual/concepte/implementare/) pentru
+diferențele dintre clienți.
 :::
 
 ## Transport
 
 Telefonul ajunge la `cc_server` printr-un WebSocket: fie o conexiune directă
 (loopback, LAN, Tailnet sau `wss://`), fie o cameră cu acces pe bază de
-invitație pe un broker de semnalizare care retransmite cadre sigilate. Nu există
-niciun canal de date de la egal la egal.
+invitație pe un broker de semnalizare. Ambele căi necesită o sesiune
+autentificată și criptată cap la cap; brokerul nu retransmite decât înregistrările
+ei criptate. Nu există niciun canal de date de la egal la egal.
 
 ## Ce poate face telefonul
 
@@ -53,22 +54,26 @@ nu doar intenționat.
 
 ## Cum se construiește legătura
 
-Conexiunea merge pe un **releu intermediat**: serverul se alătură unei camere cu
-acces pe bază de invitație pe un broker `wss://`, în calitate de proprietar, iar
-fiecare client asociat — desktop, web, telefon — se alătură aceleiași camere cu
-un token de admitere cu durată limitată. Trei piese se întâlnesc aici:
+Când telefonul nu poate ajunge direct la server, conexiunea folosește un **releu
+intermediat**: serverul se alătură unei camere cu acces pe bază de invitație pe un
+broker `wss://`, în calitate de proprietar, iar clienții asociați se alătură cu
+tokenuri de admitere cu durată limitată. Trei piese se întâlnesc aici:
 
 | Piesă | Rol |
 | ----- | --- |
 | **Remote (aplicația de telefon)** | Aplicația web companion, găzduită implicit la `remote.usectrl.dev` sau auto-găzduită. Se încarcă într-un browser și păstrează înregistrarea de asociere în IndexedDB. |
-| **Broker de releu** | Un releu `wss://` fără stare (`cc_signaling_server`) care găzduiește camere cu N căi. Transportă **numai cadre opace**: fiecare payload este sigilat cap la cap între telefon și server, astfel încât brokerul nu vede niciodată datele aplicației sau secretul de asociere și nu interpretează niciodată ce retransmite. |
+| **Broker de releu** | Un releu `wss://` fără stare (`cc_signaling_server`) care găzduiește camere cu N căi. Retransmite înregistrări criptate fără secretul de asociere și fără textul clar al aplicației, dar vede identificatorii de rutare, IP-urile, dimensiunile înregistrărilor și temporizarea. |
 | **`cc_server`** | Proprietarul camerei. Răspunde apelurilor telefonului prin același dispatcher pe care îl folosesc toți ceilalți clienți. |
 
 O ofertă de asociere conține un **descriptor de conexiune** care enumeră fiecare
 cale către server (LAN, Tailnet, `wss://` public, releu) plus amprenta lui de
-identitate. Rezolvitorul telefonului alege cea mai bună cale accesibilă și
-fixează amprenta la prima conectare (TOFU); releul garantează conectivitatea chiar
-și atunci când nu există nicio cale directă, fără a putea citi vreodată traficul.
+identitate. Rezolvitorul telefonului alege cea mai bună cale accesibilă. Serverul
+semnează handshake-ul criptat, iar clientul îi fixează amprenta. La prima
+conectare, verifică amprenta față de un cod QR sau o altă sursă de încredere: o
+primă identitate semnată, singură, nu dovedește la ce server ai ajuns. O fixare
+modificată este respinsă, în loc să fie din nou acceptată în tăcere. Releul
+transportă text cifrat atunci când nu există nicio cale directă, dar poate totuși
+întrerupe sau întârzia conexiunea.
 
 ## Ce este payload-ul de asociere
 
@@ -81,26 +86,32 @@ https://<pwa-host>/#<payload>
 ```
 
 Payload-ul călătorește în **fragmentul** URL-ului, partea de după `#` pe care
-browserele nu o trimit niciodată serverului, așa că gazda HTTPS a PWA nu îl vede
-niciodată. El conține tot ce îi trebuie telefonului ca să ajungă la server și să
-dovedească cine este: descriptorul de conexiune (fiecare cale plus amprenta de
-identitate), un ID de dispozitiv emis proaspăt, o cheie prepartajată de 32 de
-octeți și un marcaj de expirare. Telefonul îl decodează, stochează local o
-înregistrare de asociere și elimină fragmentul, astfel încât secretul părăsește
-URL-ul.
+browserele nu o trimit în cererea HTTP către gazda PWA. El conține tot ce îi
+trebuie telefonului ca să ajungă la server și să dovedească cine este:
+descriptorul de conexiune (fiecare cale plus amprenta de identitate), un ID de
+dispozitiv emis proaspăt, o cheie prepartajată de 32 de octeți și un marcaj de
+expirare. Telefonul îl decodează, stochează local o înregistrare de asociere și
+elimină fragmentul din URL. Codul aplicației web poate citi fragmentul, așa că
+folosește o gazdă de aplicație de încredere și tratează linkul ca pe un secret.
 
 Există două forme de payload și ele **nu sunt interschimbabile**. Codul QR al
 telefonului, emis din panoul de asociere din aplicație, este `PairingPayload` v2
 de mai sus, îndreptat spre gazda PWA Remote. `cc_server pair --client-url` emite
-un link v1 diferit, mai vechi (`{s, i, k}` — URL de server, ID de dispozitiv,
-cheie), destinat exclusiv clientului **web**.
+un link v1 (`{s, i, k}` — URL de server, ID de dispozitiv, cheie), destinat
+exclusiv clientului **web**. Sunt formate de date de asociere, nu variante de
+rezervă pentru transport: ambii clienți trebuie să accepte protocolul actual de
+sesiune criptată.
 
 Ele diferă și prin durata de viață, lucru ușor de greșit:
 
 | Emis de | Expirarea credențialului |
 | ------- | ------------------------ |
 | Panoul de asociere din aplicație (`pairing.mint`) | 30 de zile, întotdeauna |
-| `cc_server pair` din linia de comandă | **Niciuna** — credențialul nu expiră |
+| `cc_server pair` din linia de comandă | Fără expirare codificată; politicile serverului se aplică în continuare |
+
+Politicile la nivel de server privind vechimea maximă a dispozitivelor și
+expirarea din inactivitate pot respinge mai devreme oricare dintre credențiale.
+Niciunul dintre cele două formate de asociere nu ocolește aceste politici.
 
 ## Modelul de acces
 
@@ -160,12 +171,15 @@ aceeași invariantă de
 [izolare a spațiilor de lucru](/ro-RO/manual/concepte/spatii-de-lucru/) pe care o impune restul
 produsului.
 
-### 5. Cadre sigilate cap la cap, cu cheia prepartajată
+### 5. Criptare cap la cap pe conexiuni directe și intermediate
 
-Fiecare cadru dintre telefon și server este sigilat cu cheia de asociere; tokenul
-de admitere doar aduce un client în cameră, nu decriptează nimic. Brokerul
-retransmite text cifrat și nu vede niciodată cheia. Un dispozitiv revocat își
-găsește credențialul deja dispărut, așa că **eșuează închis** la reconectare.
+Fiecare sesiune de client, directă sau intermediată, necesită un handshake Noise
+semnat. Cheia de asociere autentifică acel handshake; chei efemere noi derivă
+cheile de trafic, în loc să folosească cheia de asociere pentru a sigila fiecare
+cadru. Serverul își semnează identitatea în schimb, iar clientul verifică fixarea
+amprentei salvate. Nu există text clar și nici variantă de rezervă pentru clienți
+mai vechi. Un token de admitere al releului doar aduce un client într-o cameră;
+nu poate decripta înregistrările.
 
 Un credențial emis din aplicație este limitat la 30 de zile; după aceea, poarta
 de conectare îl respinge și telefonul trebuie să se asocieze din nou. Revocarea
@@ -182,21 +196,25 @@ dispozitivele tale trag dintr-o singură alocație, așa că un client deturnat 
 poate cumpăra spațiu suplimentar deschizând mai multe sesiuni, iar un membru
 gălăgios nu îi poate înfometa pe ceilalți.
 
-### 7. Un broker care nu află nimic
+### 7. Un broker care nu poate citi conținutul aplicației
 
-Brokerul de releu este deliberat simplu: găzduiește camere, retransmite cadre
-sigilate și nu deține conturi, date ale aplicației sau chei. Camerele sunt cu
-acces pe bază de invitație și efemere. Datele aplicației, audio-ul, transcrierea,
-sursa și credențialele rămân toate pe server.
+Brokerul de releu găzduiește camere efemere, cu acces pe bază de invitație, și
+retransmite înregistrări criptate fără textul clar al aplicației și fără cheile
+de asociere. Totuși vede adrese IP, identificatori de cameră și de partener,
+dimensiuni ale înregistrărilor, temporizare și durata de viață a conexiunii și
+poate elimina sau întârzia trafic. Capetele în text clar sunt clientul asociat și
+`cc_server`-ul ales; operatorul serverului și serviciile cărora le trimite conținut
+pot vedea acel conținut. Criptarea în tranzit nu criptează datele serverului în
+repaus.
 
 ## Actualizări în timp real
 
 Odată asociat, telefonul primește **actualizări în timp real** sub formă de cadre
 de notificare — mesaje noi de la agenți, tichete atribuite ție, schimbări de
-stare — în oglindă cu notificările desktopului. Serverul difuzează acele cadre
-către fiecare sesiune conectată, iar filtrul de spațiu de lucru este aplicat pe
-partea de client, așa că ceea ce vezi este delimitat la spațiul de lucru la care
-te uiți.
+stare — în oglindă cu notificările desktopului. Serverul verifică apartenența la
+spațiul de lucru înainte de a retransmite un eveniment către o sesiune. Apoi
+clientul filtrează acele evenimente deja autorizate către spațiul de lucru la
+care te uiți; acel filtru de afișare nu este granița de acces.
 
 ## Unde se află
 
@@ -210,8 +228,8 @@ profund diferă.
 
 ::::note
 Controlul remote este pe partea de server și **nu** este expus prin MCP. Telefonul
-vorbește cu dispatcherul propriu al serverului prin releu; nu este un client MCP
-al unui server extern.
+vorbește cu dispatcherul propriu al serverului prin conexiunea sa criptată
+directă sau intermediată; nu este un client MCP al unui server extern.
 ::::
 
 ## Vezi și

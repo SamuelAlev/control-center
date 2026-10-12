@@ -7,14 +7,15 @@ import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter/widgets.dart';
 
 /// The left rail of the detected-runners master-detail: every runner in the
-/// catalog, the ones found on this machine first, each with a detection-status
-/// dot. The catalog is fixed — runners are CLIs the host may or may not have,
-/// not things the user adds — so there is deliberately no "add" row.
+/// catalog, the ones found on this machine first, each with a detection or
+/// sign-in status dot. The catalog is fixed — runners are CLIs the host may or
+/// may not have, not things the user adds — so there is no "add" row.
 class AdapterRail extends StatelessWidget {
   /// Creates an [AdapterRail].
   const AdapterRail({
     super.key,
     required this.detected,
+    required this.claudeSignInExpired,
     required this.query,
     required this.onQueryChanged,
     required this.selectedId,
@@ -23,6 +24,9 @@ class AdapterRail extends StatelessWidget {
 
   /// Every catalog runner with its detection state, unsorted.
   final List<DetectedAdapter> detected;
+
+  /// Whether any managed Claude Code account has an expired sign-in.
+  final bool claudeSignInExpired;
 
   /// The live rail search text.
   final String query;
@@ -73,14 +77,23 @@ class AdapterRail extends StatelessWidget {
                 brand: AiBrand.forProvider(d.adapter.id),
                 color: tokens.textSecondary,
               ),
-              tone: _tone(d.status),
-              statusLabel: _statusLabel(l10n, d.status),
+              tone: _hasExpiredSignIn(d)
+                  ? CcStatusTone.caution
+                  : _tone(d.status),
+              statusLabel: _hasExpiredSignIn(d)
+                  ? l10n.claudeAccountExpired
+                  : _statusLabel(l10n, d.status),
               selected: selectedId == d.adapter.id,
               onPressed: () => onSelected(d.adapter.id),
             ),
       ],
     );
   }
+
+  bool _hasExpiredSignIn(DetectedAdapter detected) =>
+      detected.isFound &&
+      detected.adapter.transport == AdapterTransport.claudeCli &&
+      claudeSignInExpired;
 
   static int _rank(DetectionStatus status) => switch (status) {
     DetectionStatus.found => 0,

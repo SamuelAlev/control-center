@@ -6,12 +6,10 @@ import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/emoji_parser.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_emoji/flutter_emoji.dart';
-
-final _emojiParser = EmojiParser();
 
 /// Returns true if [status] has any visible content (emoji, message, or busy flag).
 bool statusHasContent(GitHubUserStatus status) =>
@@ -26,7 +24,7 @@ String? resolveStatusEmoji(GitHubUserStatus status) {
   if (raw == null || raw.isEmpty) {
     return null;
   }
-  final emojified = _emojiParser.emojify(raw);
+  final emojified = emojiParser.emojify(raw);
   return emojified.isEmpty ? null : emojified;
 }
 

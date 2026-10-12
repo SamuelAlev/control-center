@@ -2,7 +2,7 @@
 title: Ruang kerja dan pengasingan
 description: Mengapa ruang kerja ialah sempadan penyewa yang tegas, bagaimana pemisahan pangkalan data menjadikan sempadan itu bersifat struktur dan apa yang sengaja melintasinya.
 slug: ms-MY/manual-pengguna/konsep/ruang-kerja
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Apakah itu ruang kerja?
@@ -119,13 +119,15 @@ Apa yang tidak dibawa oleh mana-mana daripadanya ialah seluruh direktori ruang k
 
 ## Memindahkan sandaran antara pelayan dan peranti anda
 
-Setiap operasi di atas bercakap dalam laluan pada **pelayan**, yang merupakan jawapan lengkap hanya apabila pelayan itu mesin anda sendiri. Tiga laluan HTTP bertandatangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/ms-MY/manual-pengguna/rujukan/sandaran/#transfer-routes) — membawa bait untuk setiap topologi lain, pada lorong yang disahkan sama yang sudah digunakan oleh proksi media dan stor imej. Pada halaman, ini ialah butang **Muat turun** di sebelah setiap eksport dan setiap snapshot (anda pilih tempat ia disimpan), dan **Pilih fail dan muat naik** untuk memulihkan daripada fail yang berada pada mesin yang anda gunakan. Muat naik itulah yang berfungsi apabila pelayan bukan mesin anda: `workspace.import` memerlukan fail itu sudah berada pada hos, dan inilah caranya ia sampai ke sana.
+Setiap operasi di atas bercakap dalam laluan pada **pelayan**, yang merupakan jawapan lengkap hanya apabila pelayan itu mesin anda sendiri. Tiga laluan pemindahan bertandatangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/ms-MY/manual-pengguna/rujukan/sandaran/#laluan-pemindahan) — membawa bait untuk setiap topologi lain melalui terowong sumber yang disahkan dan disulitkan, pada sambungan langsung dan melalui geganti. Laluan HTTP awam tidak menyajikan bait sandaran yang boleh dibaca, dan laluan bertandatangan masih memerlukan kebenaran. Pada halaman, ini ialah butang **Muat turun** di sebelah setiap eksport dan setiap snapshot (anda pilih tempat ia disimpan), dan **Pilih fail dan muat naik** untuk memulihkan daripada fail yang berada pada mesin yang anda gunakan. Muat naik berfungsi apabila pelayan bukan mesin anda: `workspace.import` memerlukan fail itu sudah berada pada hos, dan inilah caranya ia sampai ke sana.
 
 Tiga sifat wajar diketahui:
 
 - **Muat turun menghasilkan salinan baharu dan pelayan tidak menyimpan satu pun daripadanya.** Memuat turun bukan "ambil fail yang dihasilkan butang eksport" — ia mengeksport semula, menstrim hasilnya dan memadamnya. Responsnya ialah `no-store` dengan `Accept-Ranges: none` atas sebab yang sama: julat yang disambung semula akan mencantumkan dua eksport berbeza menjadi satu fail yang kelihatan sah tetapi sebenarnya tidak.
 - **Muat naik distrim ke cakera, tidak pernah melalui penimbal**, pada kedua-dua hujung, dan salinan pentas dipadam pada setiap laluan keluar — termasuk penolakan. Pangkalan data ruang kerja bukan tangkapan skrin.
-- **Sambungan melalui geganti tiada asal HTTP**, jadi kawalan pemindahan dilumpuhkan di situ dengan nota yang menerangkan sebabnya. Segala yang bercakap dalam laluan sisi pelayan terus berfungsi melalui geganti; hanya lorong bait memerlukan sambungan langsung.
+- **Pemindahan turut berfungsi melalui geganti.** Muat turun dan muat naik menggunakan terowong sumber tersulit yang sama seperti sambungan langsung; asal HTTP langsung tidak diperlukan.
+
+Penyulitan melindungi pemindahan semasa transit, bukan pangkalan data sisi pelayan, direktori snapshot atau salinan yang dimuat turun semasa disimpan. Operator pelayan boleh mengakses data yang disimpan pada hos itu.
 
 :::note[Laluan siapa milik siapa]
 Laluan yang *ditunjukkan* oleh halaman — direktori snapshot, fail yang ditulis oleh eksport, sumber yang dibaca oleh import — berada pada mesin yang menjalankan `cc_server`. Laluan yang dilaporkan oleh **muat turun** berada pada mesin tempat anda duduk. Perbezaan itulah sebabnya kedua-duanya wujud: yang pertama ialah apa yang diperlukan oleh skrip penyelenggaraan atau sesi ssh, yang kedua ialah apa yang diperlukan oleh seseorang yang mengumpul sandaran.

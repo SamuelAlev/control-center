@@ -11,11 +11,7 @@ import 'package:path/path.dart' as p;
 /// skip the server-spawning tests instead of failing the job.
 bool get hostHasServerNatives {
   for (final dir in _nativeSourceDirs()) {
-    for (final name in const [
-      'libccpty.so',
-      'libccpty.dylib',
-      'ccpty.dll',
-    ]) {
+    for (final name in const ['libccpty.so', 'libccpty.dylib', 'ccpty.dll']) {
       if (File(p.join(dir.path, name)).existsSync()) {
         return true;
       }
@@ -38,7 +34,7 @@ bool get runningInCi =>
 /// app-support install (including its `grammars/` subdir), first source wins.
 Future<void> stageServerNatives(String dataDir) async {
   final wanted = RegExp(
-    r'^(lib)?(fff_c|ccpty|cc_watcher|rift_ffi|lame_ffi|aec_ffi|cc_inference'
+    r'^(lib)?(rhttp|fff_c|ccpty|cc_watcher|rift_ffi|lame_ffi|aec_ffi|cc_inference'
     r'|cc_saml|tree-sitter.*)'
     r'\.(dylib|so|dll)(\..+)?$|\.scm$',
   );

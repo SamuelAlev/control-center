@@ -42,6 +42,7 @@ class AttachmentStrip extends StatefulWidget {
     required this.attachments,
     required this.onRemove,
     this.onOpen,
+    this.onRetry,
   });
 
   /// Attachments to display as removable cards.
@@ -53,6 +54,9 @@ class AttachmentStrip extends StatefulWidget {
   /// Called when the user opens an attachment's preview. Null makes the cards
   /// non-interactive apart from their remove button.
   final void Function(ComposerAttachment)? onOpen;
+
+  /// Offered only when a transfer failed.
+  final void Function(ComposerAttachment)? onRetry;
 
   @override
   State<AttachmentStrip> createState() => _AttachmentStripState();
@@ -123,6 +127,9 @@ class _AttachmentStripState extends State<AttachmentStrip> {
                 attachment: attachments[i],
                 onRemove: () => widget.onRemove(attachments[i]),
                 onOpen: onOpen == null ? null : () => onOpen(attachments[i]),
+                onRetry: widget.onRetry == null
+                    ? null
+                    : () => widget.onRetry!(attachments[i]),
               ),
             ),
           ),
@@ -137,11 +144,13 @@ class _AttachmentCard extends StatefulWidget {
     required this.attachment,
     required this.onRemove,
     required this.onOpen,
+    required this.onRetry,
   });
 
   final ComposerAttachment attachment;
   final VoidCallback onRemove;
   final VoidCallback? onOpen;
+  final VoidCallback? onRetry;
 
   @override
   State<_AttachmentCard> createState() => _AttachmentCardState();
@@ -161,6 +170,20 @@ class _AttachmentCardState extends State<_AttachmentCard> {
         attachment.refName ?? ellipsizeFileRefName(attachment.label, max: 24);
     final size = formatAttachmentSize(attachment.sizeBytes);
     final open = widget.onOpen;
+    final l10n = AppLocalizations.of(context);
+    final status = attachment.uploadState;
+    final statusLabel = switch (status) {
+      AttachmentUploadState.uploading => l10n.composerAttachmentUploading,
+      AttachmentUploadState.ready => l10n.composerAttachmentReady,
+      AttachmentUploadState.failed => switch (attachment.uploadError) {
+        AttachmentUploadError.tooLarge => l10n.composerAttachmentTooLarge(
+          '24 MiB',
+        ),
+        AttachmentUploadError.unreadable => l10n.composerAttachmentUnreadable,
+        _ => l10n.composerAttachmentUploadFailed,
+      },
+      null => size,
+    };
 
     final card = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 232),
@@ -195,24 +218,58 @@ class _AttachmentCardState extends State<_AttachmentCard> {
                         decoration: TextDecoration.none,
                       ),
                     ),
-                    if (size != null)
-                      Text(
-                        size,
-                        maxLines: 1,
-                        style: CcTypography.caption.copyWith(
-                          color: t.textTertiary,
-                          fontSize: 10,
-                          decoration: TextDecoration.none,
-                        ),
+                    if (statusLabel != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (status != null) ...[
+                            Icon(
+                              switch (status) {
+                                AttachmentUploadState.uploading =>
+                                  AppIcons.loaderCircle,
+                                AttachmentUploadState.ready =>
+                                  AppIcons.circleCheck,
+                                AttachmentUploadState.failed =>
+                                  AppIcons.circleAlert,
+                              },
+                              size: 12,
+                              color: status == AttachmentUploadState.failed
+                                  ? t.fgErrorPrimary
+                                  : t.textSecondary,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                          ],
+                          Flexible(
+                            child: Text(
+                              statusLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: CcTypography.caption.copyWith(
+                                color: status == AttachmentUploadState.failed
+                                    ? t.fgErrorPrimary
+                                    : t.textSecondary,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                   ],
                 ),
               ),
               const SizedBox(width: 2),
+              if (status == AttachmentUploadState.failed &&
+                  widget.onRetry != null)
+                CcIconButton(
+                  icon: AppIcons.refreshCw,
+                  size: CcButtonSize.sm,
+                  tooltip: l10n.retry,
+                  onPressed: widget.onRetry,
+                ),
               CcIconButton(
                 icon: AppIcons.x,
                 size: CcButtonSize.sm,
-                tooltip: AppLocalizations.of(context).remove,
+                tooltip: l10n.remove,
                 onPressed: widget.onRemove,
               ),
             ],

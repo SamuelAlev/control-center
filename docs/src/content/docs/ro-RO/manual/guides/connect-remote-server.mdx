@@ -2,7 +2,7 @@
 title: Conectează-te la un server remote
 description: Îndreaptă aplicația desktop sau clientul web către un cc_server care rulează în altă parte și comută între servere fără repornire.
 slug: ro-RO/manual/ghiduri-practice/conectare-la-server-remote
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Fiecare client este un renderer peste un `cc_server` care deține datele. Aplicația
@@ -15,7 +15,7 @@ build.
 ## Cerințe preliminare
 
 - Un `cc_server` care rulează. Dacă nu ai unul, vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
-- Fie cele trei valori de asociere emise de server — **URL server** (`ws://…/rpc` sau `wss://…/rpc`), un **ID dispozitiv** și o **cheie de asociere** —, **fie** un **cod de invitație** de unică folosință de la un administrator al spațiului de lucru. Răscumpărarea unei invitații îți provisionează utilizatorul, înregistrează apartenența ta și emite acreditarea acestui client pentru tine, așa că nu ai de gestionat niciodată un ID de dispozitiv sau o cheie.
+- Fie cele trei valori de asociere emise de server — **URL server** (`ws://…/rpc` sau `wss://…/rpc`), un **ID dispozitiv** și o **cheie de asociere** —, **fie** un **cod de invitație** de unică folosință de la un administrator al spațiului de lucru. Răscumpărarea unei invitații îți provisionează utilizatorul, înregistrează apartenența ta și emite acreditarea acestui client pentru tine, așa că nu ai de gestionat niciodată un ID de dispozitiv sau o cheie. Obține aceste valori printr-un canal de încredere și verifică amprenta serverului față de un cod QR de încredere sau o fixare cunoscută la prima conectare.
 
 ### Asigură-te că serverul este accesibil
 
@@ -29,7 +29,7 @@ care are deja încredere — iar `cc_server` refuză de la bun început să se l
 o adresă care nu este loopback fără TLS. Dă-i una dintre:
 
 - un certificat direct, cu `--tls-cert` și `--tls-key`
-- un proxy invers care termină TLS în față, cu serverul pornit cu `--insecure` (text simplu în spatele proxy-ului, doar într-o rețea de încredere)
+- un proxy invers care termină TLS în față, cu serverul pornit cu `--insecure` (text simplu între proxy și server pe listenerul extern, doar într-o rețea de încredere; aceasta nu dezactivează sesiunea de client criptată obligatorie)
 - un tunel sau un VPN care furnizează certificatul — Tailscale, cloudflared sau similar. **Setări → Server → Conexiune și stare** are activarea tunelului integrat, sub **Partajează acest server**.
 
 Două setări din partea serverului sunt ușor de ratat. În spatele unui proxy, NAT
@@ -60,7 +60,8 @@ Rândul serverului pe care te afli nu are acțiunea **Comută**; serverul local 
 primul rând, etichetat **Rulează în această aplicație**.
 
 Odată comutat, desktopul nu mai deține nicio bază de date. Fiecare ecran citește
-și scrie prin serverul remote, peste un WebSocket.
+și scrie prin serverul remote, peste o sesiune WebSocket semnată și criptată cap la
+cap; aceeași protecție se aplică pe loopback și prin releu.
 
 ## Conectează clientul web
 
@@ -72,14 +73,19 @@ Versiunea web este întotdeauna remote.
 
 Dacă în URL se află un link profund de asociere, câmpurile sunt precompletate.
 Cheia de asociere călătorește în **fragmentul** URL-ului, pe care browserele nu îl
-trimit niciodată serverului care găzduiește pagina, așa că gazda statică nu o
-vede niciodată.
+trimit niciodată serverului care găzduiește pagina. Tratează linkul ca pe un
+secret și ai încredere în pagina care servește clientul web: fragmentul nu te
+protejează de cod malițios al paginii.
 
-:::note[Media și securitate]
-Media (avataruri, imagini din flux, capturi de ecran din PR-uri) trece prin proxy
-prin serverul conectat, așa că browserul nu accesează niciodată direct o gazdă
-din amonte. O politică Content-Security Policy pentru fiecare cerere, emisă
-dintr-un cookie nesensibil, permite doar originea serverului conectat.
+:::note[Media, editoare și securitate]
+Media (avataruri, imagini din flux, capturi de ecran din PR-uri), transferurile de
+backup și traficul editorului integrat folosesc tunelul de resurse criptat, nu
+rute HTTP publice care pot fi citite. Editorul de browser de încredere rulează pe
+propria origine a aplicației web; service worker-ul său duce cererile prin
+sesiunea criptată autentificată către backendul code-server de pe `cc_server`.
+Găzduiește clientul web prin HTTPS sau loopback securizat, ca service worker-ele
+să fie disponibile. Clienții nativi folosesc o fațadă de loopback cu arie de
+capabilitate.
 :::
 
 ### Ce nu face browserul
@@ -103,6 +109,7 @@ ascunde pe o gazdă headless fără editoare instalate.
 
 - **Conectarea expiră**: serverul trebuie să fie accesibil din client. Verifică legarea (`--bind any`), că portul este deschis și că `--public-url` indică adresa pe care clientul poate apela de fapt. Pe internetul deschis, TLS este obligatoriu — o legare non-loopback în text simplu este refuzată la pornire, cu excepția cazului în care serverul a fost pornit cu `--insecure` în spatele unui proxy.
 - **Browserul refuză să se conecteze, dar un client nativ funcționează**: originea browserului nu se află în lista `--allowed-origins` a serverului. Valoarea implicită permite doar `https://app.usectrl.dev` (plus loopback).
+- **Identitatea serverului s-a schimbat**: clientul respinge o amprentă diferită de fixarea salvată. Verifică identitatea serverului în afara canalului și asociază din nou printr-un canal de încredere; nu ignora avertismentul și nu trece la un client mai vechi sau în clar.
 - **Cheia de asociere a fost respinsă**: rulează din nou `cc_server pair` pe server pentru a roti cheia acelui dispozitiv, apoi introdu-o pe cea nouă. Un dispozitiv revocat își găsește acreditarea dispărută și eșuează închis; revocarea închide o sesiune activă în câteva secunde.
 - **Spațiu de lucru greșit**: spațiul de lucru face parte din URL (`/workspaces/:workspaceId/…`) și călătorește cu fiecare apel, așa că schimbarea spațiului de lucru într-un client schimbă doar vizualizarea ta. Poți accesa doar spațiile de lucru din care faci parte — orice altceva este refuzat cu „Not a member of this workspace”. Vezi [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
 

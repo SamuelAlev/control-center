@@ -69,10 +69,7 @@ CursorPackedHistory packCursorHistory(
   if (system.isNotEmpty) {
     pushJson({'role': 'system', 'content': system});
   } else {
-    pushJson({
-      'role': 'system',
-      'content': 'You are a helpful assistant.',
-    });
+    pushJson({'role': 'system', 'content': 'You are a helpful assistant.'});
   }
 
   final last = messages.isEmpty ? null : messages.last;
@@ -101,7 +98,8 @@ CursorPackedHistory packCursorHistory(
           pushJson({'role': 'assistant', 'content': content});
         }
       case HarnessRole.tool:
-        for (final block in message.content.whereType<HarnessToolResultBlock>()) {
+        for (final block
+            in message.content.whereType<HarnessToolResultBlock>()) {
           final toolCallId = normalizeCursorToolCallId(block.toolUseId);
           pushJson({
             'role': 'tool',
@@ -111,7 +109,10 @@ CursorPackedHistory packCursorHistory(
                 'type': 'tool-result',
                 'toolName': '',
                 'toolCallId': toolCallId,
-                'result': block.content,
+                // This history has no reference slot either; naming an
+                // activated tool in the result text keeps the activation
+                // visible to the model across a Cursor run.
+                'result': block.portableContent,
                 if (block.isError) 'isError': true,
               },
             ],

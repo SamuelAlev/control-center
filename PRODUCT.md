@@ -12,5 +12,6 @@ Solo use is the default. Team membership, roles, invites, presence, follow/steer
 - Show real state rather than decorative activity. Distinguish running, blocked, complete, recording and syncing; use motion only when it helps the operator read change.
 - Keep daily surfaces quiet, dense and consistent. Warmth belongs in direct language and a few earned thresholds, not persistent visual noise. Avoid generic metric-card dashboards and component-kit decoration; legibility of the underlying work is the distinction.
 - Preserve continuity across desktop, web and phone, and keep authorship/ownership legible as collaborators join. Do not treat a client as a degraded afterthought.
+- Remote session encryption is mandatory across desktop, web and phone, on both direct and relayed connections. The relay must not decrypt RPC, terminal/editor traffic or resource transfers. Keep the promise precise: the user's server and intended execution/model recipients remain trusted; this is not encryption at rest or protection from a compromised endpoint. Server identity changes fail closed, with no plaintext or older-client fallback.
 
 [DESIGN.md](DESIGN.md) owns visual tokens, contrast, focus, motion and responsive constraints; [SECURITY.md](SECURITY.md) owns trust and credential rules.

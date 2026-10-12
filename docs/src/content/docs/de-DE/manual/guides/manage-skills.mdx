@@ -1,21 +1,24 @@
 ---
 title: Skills installieren und verwalten
-description: Füge GitHub-Repositories als Skill-Quellen hinzu, durchsuche ihre Kataloge und installiere, aktualisiere oder deinstalliere Skills über das Tor des Virenscans.
+description: Installiere und aktualisiere Skills im Arbeitsbereich über das Scan-Tor und vergleiche dann gespeicherte Revisionen mit budgetierten Skill-Evaluierungen.
 slug: de-DE/handbuch/anleitungen/skills-verwalten
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Diese Anleitung zeigt dir, wie du einen Arbeitsbereich mit Skills von GitHub
 füllst: ein Repository als Quelle hinzufügen, die Skills daraus installieren,
-die du brauchst, und sie mit der Zeit aktuell halten.
+die du brauchst, und sie mit der Zeit aktuell halten. Du kannst außerdem eine
+gespeicherte Revision gegen eine passende Vergleichsbasis evaluieren, bevor du
+entscheidest, ob du sie behältst.
 
 Das Wichtigste, bevor du anfängst: **Ein Quell-Repository ist
-unvertrauenswürdig.** Name, Beschreibung und Sternzahl schreibt, wem es
-gehört. Das einzige Sicherheitssignal, dem Control Center vertraut, ist das
-Scan-Urteil des Virenscans. Jede Installation durchläuft es, bevor irgendetwas
-die Platte oder einen Agenten-Prompt erreicht. Die Begründung steht im
-[Abschnitt Skills des Agentenmodells](/de-DE/handbuch/konzepte/agentenmodell/);
-diese Seite bleibt bei den Schritten.
+unvertrauenswürdig.** Name, Beschreibung und Sternzahl schreibt, wem es gehört.
+Jede Installation durchläuft das Tor des Virenscans, bevor irgendetwas die
+Platte oder einen Agenten-Prompt erreicht. Dieses Urteil ist eine
+Zulassungsprüfung, kein Beweis, dass ein Skill sicher oder nützlich ist. Lies
+den [Abschnitt Skills des Agentenmodells](/de-DE/handbuch/konzepte/agentenmodell/)
+zum Installationsmodell und [Evals und Qualität](/de-DE/handbuch/konzepte/evals-und-qualitaet/)
+dazu, wie sich Verhaltensnachweise von einem Scan unterscheiden.
 
 Skills liegen unter **Einstellungen → Arbeitsbereich → Fähigkeiten**
 (`/workspaces/<id>/settings/workspace/skills`). Sie gelten für diesen
@@ -88,6 +91,91 @@ eine Installation — ein Skill, dessen neue Version unter Quarantäne fällt,
 wird abgelehnt, und die Version, die du hattest, bleibt. Der Hash der alten
 Version bleibt in der Lock-Datei als Referenz für ein Rollback.
 
+## Einen Skill evaluieren
+
+1. Öffne **Einstellungen → Arbeitsbereich → Fähigkeiten**, wähle den
+   installierten Skill und speichere alle Änderungen. Prüfe unter
+   **Skill-Evaluierung** den Paket-Hash.
+2. Wähle **Evaluierung starten**. Wähle einen **Aufgabenkorpus**, der zum
+   Zweck des Skills passt, und einen **Adapter**. Das eingebaute Harness nutzt
+   einen konfigurierten Anbieter und ein werkzeugfähiges Modell. **Claude Code**
+   nutzt das standardmäßig verwaltete Claude-Konto und eine konkrete
+   Modellkennung; melde dich zuerst unter **Einstellungen → Adapter** an. Es
+   borgt sich nicht die persönliche Anmeldung des Serverbetreibers.
+3. Wähle einen **Vergleich** aus der Tabelle unten.
+4. Setze **Wiederholungen pro Aufgabe** (1–20) und **Budget (US-Cent)**. Zum
+   Beispiel bedeutet `100` 1 US-Dollar. Wähle **Evaluierung starten**, um die
+   bezahlte Arbeit des Anbieters zu autorisieren.
+5. Verfolge die Kampagne unter **Observability → Qualität**, oder kehre über
+   **Qualität öffnen** im Skill-Panel zurück.
+
+Bei Claude-Code- und Codex-OAuth-Abos ist das Budget eine **Stoppschwelle für
+die API-äquivalente Nutzung**, kein Rechnungslimit und kein Maß für das
+Abo-Kontingent. `100` lässt eine Schwelle von 1 US-Dollar zu: Ein laufender
+Aufruf kann sie überschreiten, aber sobald die gemeldete Nutzung sie erreicht,
+starten keine weiteren Aufrufe mehr. Auch unbekannte Nutzung stoppt weitere
+Aufrufe. Ein kleines Budget kann den Vergleich unvollständig lassen; es
+verspricht nicht, den ausgewählten Korpus zu vollenden.
+
+Anbieter mit API-Schlüssel behalten konservative Reservierungen pro Aufruf auf
+Basis dokumentierter Tokenlimits und Preise. Sie können `100` schon vor der
+Ausgabe ablehnen, wenn ein sicher reservierter Aufruf mehr braucht. Der Fehler
+nennt das gewählte Modell und die Mindestreservierung; wähle ein günstigeres
+Modell oder erhöhe dieses Budget.
+
+| Vergleich | Damit beantwortest du |
+| --- | --- |
+| **Nicht vorhanden vs verfügbar** | Verbessert die normale Entdeckung und Nutzung dieses Skills das Ergebnis gegenüber dem Fehlen? |
+| **Vorherige vs aktuelle Revision** | Bewahrt oder verbessert das Update das Verhalten gegenüber einer früher erfassten Revision? |
+| **Erzwungenes Laden vs nicht vorhanden** | Kann der Inhalt helfen, wenn er ausdrücklich geladen wird? Das diagnostiziert Ladeprobleme; es belegt keine normale Entdeckung. |
+| **Zusammensetzung** | Hilft das Hinzufügen des Kandidaten oder kollidiert es mit den ausgewählten Umgebungs-Skills? Die Vergleichsbasis behält denselben Umgebungsbestand ohne den Kandidaten. |
+
+**Vorherige vs aktuelle Revision** braucht einen Paket-Hash aus der
+Kampagnenhistorie. Evaluiere eine Revision, bevor du sie ersetzt, wenn du sie
+als Vergleichsbasis nutzen willst; beliebige Git-Historie wird nicht
+importiert.
+
+Ungespeicherte Änderungen, ein nicht verfügbarer Hash und der schreibgeschützte
+Demo-Modus blockieren den Start. Der Server prüft zudem den Zugriff auf
+Arbeitsbereich und Repository, Scan-Quarantäne, Aktionsrichtlinie,
+Modellunterstützung, Preisgestaltung und Ausführungskapselung. Behebe eine
+fehlgeschlagene Prüfung, statt sie zu umgehen. Anbieter- und Modellidentität
+werden erfasst, aber ein Remote-Modellalias friert die zugrunde liegenden
+Gewichte des Anbieters nicht ein.
+
+### Prüfen, abbrechen und exportieren
+
+Lies Abdeckung und Ausgaben zusammen mit den Ergebnissen je Aufgabe und
+Regressionen. Öffne einzelne Versuche, um beobachtete Skill-Ladevorgänge,
+Werkzeugereignisse, Fehler und Prüfernachweise zu untersuchen. Ergebnisse
+**Teilweise**, **Veraltet** und **Nicht eindeutig** sind keine Empfehlungen,
+eine Revision zu übernehmen. Der Hash eines Berichts identifiziert das
+erfasste Paket, nicht unbedingt das aktuell installierte.
+
+Nutze **Durchlauf abbrechen** für eingeplante oder aktive Arbeit.
+Abgeschlossene Versuche bleiben sichtbar; ein Abbruch erstattet bereits
+erbrachte Anbieterarbeit nicht. **Bereinigtes JSON kopieren** kopiert einen
+begrenzten Nachweis-Export in die Zwischenablage, kein vollständiges
+Replay-Bundle privater Quellen. Siehe
+[Evals und Qualität](/de-DE/handbuch/konzepte/evals-und-qualitaet/) zu Nachweisen
+und Plattformgrenzen.
+
+### Nach Updates neu evaluieren
+
+Automatische bezahlte Neuevaluierung ist **standardmäßig aus**. Wähle nach der
+Evaluierung der aktuellen Revision eine Kampagne unter **Konfiguration der
+Update-Richtlinie** und aktiviere **Update-Evaluierungen aktivieren**. Diese
+Richtlinie zu ändern erfordert die Berechtigung eines
+Arbeitsbereichsadministrators. Die ausgewählte Kampagne liefert Korpus,
+Adapter, Anbieter/Modell, Vergleich, Wiederholungen und Budget.
+
+Nachfolgende zugelassene Inhaltsänderungen planen budgetierte Arbeit ein;
+unveränderte Hashes werden dedupliziert. **Update-Evaluierungen deaktivieren**
+verhindert künftige automatische Zulassungen. Nutze **Durchlauf abbrechen** für
+eine bereits zugelassene Kampagne. Historische Berichte bleiben an ihre
+ursprünglichen Paket-Hashes gebunden; die Neuevaluierung veröffentlicht,
+aktiviert oder überschreibt keinen Skill.
+
 ## Einen Skill deinstallieren, ein Repository entfernen
 
 **Deinstallieren** (in der Detailansicht eines installierten Skills, oder
@@ -139,3 +227,4 @@ und [Slash-Befehle](/de-DE/handbuch/referenz/slash-befehle/).
 ## Verwandte Konzepte
 
 - [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/)
+- [Evals und Qualität](/de-DE/handbuch/konzepte/evals-und-qualitaet/)

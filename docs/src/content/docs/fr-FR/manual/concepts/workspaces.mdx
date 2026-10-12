@@ -2,7 +2,7 @@
 title: Espaces de travail et isolation
 description: Pourquoi un espace de travail constitue une frontière de locataire stricte, comment la séparation des bases de données rend cette frontière structurelle et ce qui la franchit délibérément.
 slug: fr-FR/manuel/concepts/espaces-de-travail
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Qu’est-ce qu’un espace de travail ?
@@ -284,14 +284,16 @@ contient le tableau complet.
 
 Toutes les opérations ci-dessus s’expriment en chemins sur le **serveur**, ce qui
 n’est une réponse complète que lorsque le serveur est votre propre machine. Trois
-routes HTTP signées — [`/backup/workspace`, `/backup/snapshot` et `/backup/restore`](/fr-FR/manuel/reference/sauvegarde/#transfer-routes) —
-transportent les octets pour toutes les autres topologies, sur la même voie
-authentifiée que celle déjà utilisée par le proxy multimédia et le magasin
-d’images. Dans la page, il s’agit d’un bouton **Télécharger** à côté de chaque
+routes de transfert signées — [`/backup/workspace`, `/backup/snapshot` et `/backup/restore`](/fr-FR/manuel/reference/sauvegarde/#transfer-routes) —
+transportent les octets pour toutes les autres topologies par le tunnel de
+ressources authentifié et chiffré, sur les connexions directes comme via le
+relais. Les routes HTTP publiques ne servent pas d’octets de sauvegarde lisibles,
+et les chemins signés exigent tout de même une autorisation. Dans la page, il
+s’agit d’un bouton **Télécharger** à côté de chaque
 export et de chaque instantané (vous choisissez où il atterrit), et de **Choisir
 un fichier et l’envoyer** pour restaurer à partir d’un fichier présent sur la
-machine que vous utilisez. C’est l’envoi qui fonctionne lorsque le serveur n’est
-pas votre machine : `workspace.import` exige que le fichier soit déjà sur
+machine que vous utilisez. L’envoi fonctionne lorsque le serveur n’est
+pas votre machine : `workspace.import` exige que le fichier soit déjà sur
 l’hôte, et c’est ainsi qu’il y arrive.
 
 Trois propriétés méritent d’être connues :
@@ -306,10 +308,13 @@ Trois propriétés méritent d’être connues :
   aux deux extrémités, et la copie mise en attente est supprimée sur tous les
   chemins de sortie — y compris en cas de refus. Une base de données d’espace de
   travail n’est pas une capture d’écran.
-- **Une connexion relayée n’a pas d’origine HTTP**, c’est pourquoi les commandes de
-  transfert y sont désactivées, avec une note qui en explique la raison. Tout ce
-  qui s’exprime en chemins côté serveur continue de fonctionner via le
-  relais ; seules les voies d’octets exigent une connexion directe.
+- **Le transfert fonctionne aussi via le relais.** Les téléchargements et les envois
+  empruntent le même tunnel de ressources chiffré que les connexions directes ; une
+  origine HTTP directe n’est pas nécessaire.
+
+Le chiffrement protège le transfert en transit, et non la base de données côté
+serveur, le répertoire d’instantanés ni une copie téléchargée au repos.
+L’exploitant du serveur peut accéder aux données détenues sur cet hôte.
 
 :::note[À qui appartient chaque chemin]
 Les chemins que la page *affiche* — le répertoire d’instantanés, le fichier écrit

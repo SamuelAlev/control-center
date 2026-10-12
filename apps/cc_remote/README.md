@@ -4,7 +4,8 @@ Phone web PWA that renders server-owned state over JSON-RPC. It runs no database
 
 ```sh
 # from apps/cc_remote
-fvm flutter build web --release --wasm
+fvm flutter build web --release --wasm --enable-wasm-deferred-loading
+node ../../tool/stage_resource_assets.mjs build/web
 ```
 
 Run `fvm flutter test --concurrency=2` for the VM suite (including filesystem boundary checks). The folder interaction suites require a browser: `fvm flutter test --platform chrome test/space_folders_test.dart test/space_folders_widget_test.dart --concurrency=2`. The filesystem checks in `material_free_test.dart` cannot run on Chrome.
@@ -19,4 +20,4 @@ Deploy `build/web` to Cloudflare Pages using `wrangler.jsonc` (SPA fallback). HT
 
 Bottom tabs are Inbox, Tickets, Chat, PRs, Calendar and News. PR diffs reuse `cc_domain`'s `parseUnifiedDiff`; they are unified, collapsed by default and capped by `kDiffRowBudget` so a large lockfile does not eagerly build every row. They have no syntax highlighting or inline comments, though review decisions remain available. Calendar is an agenda, not a grid. Forge and calendar account connections stay server-side, not in the phone UI.
 
-Over a broker relay there is no HTTP origin (`RelayPath.probeUri` is null). Workspace logos therefore use the `workspace.logo` RPC (2 MB server cap, session cache); forge avatars use `/proxy/media` when direct HTTP is available and degrade to monograms on a relay. Every workspace-scoped stream must pass `workspace_id` explicitly **and** watch `activeWorkspaceIdProvider`: otherwise a subscription re-registers with its old captured workspace after switching. Phone-local presentation code (scroll-to-latest, avatars, transcript rows, markdown wiring and formatting) stays local; diff parsing is shared. See [ARCH.md](../../ARCH.md) for the cross-client data flow.
+The authenticated direct or relay session also supplies a local encrypted resource facade, so attachments, media and fonts do not require a reachable remote HTTP origin. Workspace logos retain their bounded `workspace.logo` RPC/session cache. Every workspace-scoped stream must pass `workspace_id` explicitly **and** watch `activeWorkspaceIdProvider`: otherwise a subscription re-registers with its old captured workspace after switching. Phone-local presentation code (scroll-to-latest, avatars, transcript rows, markdown wiring and formatting) stays local; diff parsing is shared. The shared worker/bridge/shim assets are linked from the root `web/` directory, not maintained as a separate implementation. See [ARCH.md](../../ARCH.md) for the cross-client data flow.

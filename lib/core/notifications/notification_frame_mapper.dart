@@ -122,6 +122,8 @@ AppNotification? mapNotificationFrame(
       return _rigClosed(p, l10n);
     case 'notifications/agent_awaiting_input':
       return _agentAwaitingInput(p, l10n);
+    case 'notifications/agent_action_blocked':
+      return _agentActionBlocked(p, l10n);
   }
   return null;
 }
@@ -259,10 +261,7 @@ String _commentLocation(Map<String, dynamic> p) {
 String _commentTab(Map<String, dynamic> p) =>
     p['is_review_comment'] == true ? 'pr.diff' : 'pr.overview';
 
-AppNotification _prReadyToMerge(
-  Map<String, dynamic> p,
-  AppLocalizations l10n,
-) {
+AppNotification _prReadyToMerge(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   return AppNotification(
     category: NotificationCategory.prMergeReadiness,
@@ -273,10 +272,7 @@ AppNotification _prReadyToMerge(
   );
 }
 
-AppNotification _prMergeBlocked(
-  Map<String, dynamic> p,
-  AppLocalizations l10n,
-) {
+AppNotification _prMergeBlocked(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   final title = p['pr_title'] as String? ?? '';
   // `reason` is `PrBlockReason.name` on the wire. An unrecognised value (an
@@ -352,10 +348,7 @@ AppNotification _prReviewDismissed(
   );
 }
 
-AppNotification _prChecksFailed(
-  Map<String, dynamic> p,
-  AppLocalizations l10n,
-) {
+AppNotification _prChecksFailed(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   final title = p['pr_title'] as String? ?? '';
   final check = p['check_name'] as String?;
@@ -812,6 +805,46 @@ AppNotification? _agentAwaitingInput(
     ),
     workspaceId: workspaceId,
     spaceId: spaceId,
+  );
+}
+
+/// Policy refused an action an agent tried to take.
+///
+/// Deliberately NOT the awaiting-input copy: nothing here can be approved, and
+/// "needs your approval" would send the operator hunting for a button that
+/// does not exist. The title states the refusal (the same "Blocked" the rest
+/// of the app uses for that state) and names the agent; the body carries the
+/// action and the rule's own terminal reason — the two things an operator
+/// opens a refusal to read. Tapping opens the space the agent was stopped in,
+/// where both the work and the rule live.
+///
+/// Still notifies while this space is open: unlike a pending approval, a
+/// refusal has no inline card to make the block visible.
+AppNotification? _agentActionBlocked(
+  Map<String, dynamic> p,
+  AppLocalizations l10n,
+) {
+  final workspaceId = p['workspace_id'] as String?;
+  final spaceId = p['space_id'] as String?;
+  final name = (p['agent_name'] as String? ?? '').trim();
+  final action = (p['summary'] as String? ?? '').trim();
+  final reason = (p['reason'] as String? ?? '').trim();
+  // What was refused, then why. Either half can be missing — an older server,
+  // or a guard with nothing to summarize — so the other still carries the row.
+  final body = action.isEmpty
+      ? reason
+      : reason.isEmpty
+      ? action
+      : '$action — $reason';
+  return AppNotification(
+    category: NotificationCategory.agentAwaitingInput,
+    title: name.isEmpty ? l10n.blocked : '$name: ${l10n.blocked}',
+    body: body,
+    route: _spaceDeepLink(workspaceId, spaceId),
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    presentation: NotificationPresentation.notification,
+    suppressWhenViewingTarget: false,
   );
 }
 

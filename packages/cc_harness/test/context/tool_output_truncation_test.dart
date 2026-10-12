@@ -75,6 +75,10 @@ void main() {
       expect(table.forTool('grep').direction, TruncateDirection.head);
       expect(table.forTool('mcp__cc__grep').direction, TruncateDirection.head);
       expect(table.forTool('Read').direction, TruncateDirection.head);
+      // CC's own search tool must share grep's head-preserving policy, or the
+      // observation formatter and the limit table would disagree.
+      expect(table.forTool('search').direction, TruncateDirection.head);
+      expect(table.forTool('mcp__fs__search').characterLimit, 30000);
     });
 
     test('falls back to the standard limits for unknown tools', () {

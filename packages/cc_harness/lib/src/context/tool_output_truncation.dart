@@ -95,7 +95,7 @@ class TruncatedOutput {
 /// shell, search) get tuned caps; everything else falls back to [ToolOutputLimits.standard].
 class ToolOutputLimitTable {
   /// Creates a [ToolOutputLimitTable] with an optional [overrides] map keyed by
-  /// a normalized tool name (see [_normalizeTool]).
+  /// a normalized tool name (see [normalizeToolName]).
   const ToolOutputLimitTable({Map<String, ToolOutputLimits>? overrides})
     : _overrides = overrides ?? const {};
 
@@ -112,6 +112,13 @@ class ToolOutputLimitTable {
       ),
       // Searches: the head (the matches) is what matters.
       'grep': ToolOutputLimits(
+        characterLimit: 30000,
+        lineLimit: 1000,
+        direction: TruncateDirection.head,
+      ),
+      // CC's own search tool: same economics as `grep`, and the observation
+      // formatter keys off the same policy, so the two must agree.
+      'search': ToolOutputLimits(
         characterLimit: 30000,
         lineLimit: 1000,
         direction: TruncateDirection.head,
@@ -137,7 +144,7 @@ class ToolOutputLimitTable {
 
   /// Limits for a tool by (case-insensitive, MCP-prefix-stripped) [toolName].
   ToolOutputLimits forTool(String toolName) =>
-      _overrides[_normalizeTool(toolName)] ?? ToolOutputLimits.standard;
+      _overrides[normalizeToolName(toolName)] ?? ToolOutputLimits.standard;
 }
 
 /// Applies [limits]' image budget to [images], keeping the earliest and
@@ -156,7 +163,11 @@ List<T> capToolImages<T>(List<T> images, ToolOutputLimits limits) {
 
 /// Normalizes a tool name for table lookup: lower-cased, with any
 /// `mcp__server__` prefix stripped (so `mcp__cc__read` matches `read`).
-String _normalizeTool(String toolName) {
+///
+/// Public because observation formatting keys off the same normalization as the
+/// limit table: a bridged `mcp__fs__read` must be recognized as a read
+/// observation, not fall through to the generic slice.
+String normalizeToolName(String toolName) {
   var name = toolName.toLowerCase();
   if (name.startsWith('mcp__')) {
     final lastSep = name.lastIndexOf('__');

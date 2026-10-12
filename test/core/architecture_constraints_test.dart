@@ -338,7 +338,7 @@ void main() {
   });
 
   group('Clean Architecture layer boundaries', () {
-    test('domain layer files do not import dio', () {
+    test('domain layer files do not import HTTP infrastructure', () {
       final violations = <String>[];
       var filesScanned = 0;
 
@@ -352,8 +352,7 @@ void main() {
         for (final rel in _dartFilesRelative(projectRoot, relDir)) {
           filesScanned++;
           final content = File('$projectRoot/$rel').readAsStringSync();
-          if (content.contains("import 'package:dio") ||
-              content.contains('import "package:dio')) {
+          if (RegExp(r'''import\s+['"]package:rhttp/''').hasMatch(content)) {
             violations.add('$projectRoot/$rel');
           }
         }
@@ -367,7 +366,7 @@ void main() {
         filesScanned,
         greaterThan(0),
         reason:
-            'Domain dio scan found no files under packages/cc_domain/lib. '
+            'Domain HTTP scan found no files under packages/cc_domain/lib. '
             'Re-aim this guard rather than letting it pass vacuously.',
       );
       expect(violations, isEmpty, reason: violations.join('\n'));
@@ -679,8 +678,8 @@ void main() {
             content.contains('import "package:cc_infra') ||
             content.contains("import 'package:drift") ||
             content.contains('import "package:drift') ||
-            content.contains("import 'package:dio") ||
-            content.contains('import "package:dio') ||
+            content.contains("import 'package:rhttp") ||
+            content.contains('import "package:rhttp') ||
             content.contains("import 'package:flutter") ||
             content.contains('import "package:flutter') ||
             content.contains("import 'package:media_kit") ||
@@ -922,9 +921,6 @@ void main() {
         const workerSources = <String>[
           'lib/features/pr_review/presentation/utils/diff_worker_core.dart',
           'lib/features/pr_review/presentation/utils/word_diff.dart',
-          'lib/shared/widgets/markdown/markdown_worker_core.dart',
-          'packages/cc_markdown/lib/parser.dart',
-          'packages/cc_markdown/lib/src/codec/markdown_ast_codec.dart',
           // The shiki tokenizer island the diff worker compiles in
           // (package:shiki_flutter/engine.dart itself is the package's
           // documented Flutter-free entrypoint).
@@ -974,7 +970,7 @@ void main() {
     test('cc_ui imports no forbidden infrastructure', () {
       // cc_ui must be a pure-Flutter UI package: widgets layer + tokens only.
       // It may NOT import Material/Cupertino, Riverpod, go_router, l10n,
-      // drift, dio, storage, or the host app. Hard rule from day one — cc_ui
+      // drift, HTTP clients, storage, or the host app. Hard rule from day one — cc_ui
       // starts empty, so a violation can only be newly introduced.
       const forbidden = <String>[
         'package:flutter/material.dart',
@@ -985,7 +981,7 @@ void main() {
         'package:riverpod',
         'package:go_router',
         'package:drift',
-        'package:dio',
+        'package:rhttp',
         // A prefix, so it also catches `package:nativeapi_flutter` (the
         // Flutter half since nativeapi 0.4); `cnativeapi` is its FFI core.
         'package:nativeapi',
@@ -1031,7 +1027,7 @@ void main() {
         'package:riverpod',
         'package:go_router',
         'package:drift',
-        'package:dio',
+        'package:rhttp',
         'package:highlight',
         'package:shiki_flutter',
         'package:cc_ui/',

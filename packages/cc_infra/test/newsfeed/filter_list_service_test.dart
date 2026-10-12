@@ -1,38 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
 import 'package:cc_infra/src/newsfeed/abp_parser.dart';
 import 'package:cc_infra/src/newsfeed/filter_list_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-/// Exercises the pure, package-visible static helpers and the
-/// `parseRemoveParams` instance method of [FilterListService], plus its
-/// `readState`/`readRemoveParams` cache readers and the 24h autoUpdate guard.
-/// The static rule builders drive the WKContentRuleList pipeline; this pins
-/// their chunking + domain-bucketing so a malformed selector can't tank the
-/// whole hide list.
-
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
+// Exercises the pure, package-visible static helpers and the
+// `parseRemoveParams` instance method of [FilterListService], plus its
+// `readState`/`readRemoveParams` cache readers and the 24h autoUpdate guard.
+// The static rule builders drive the WKContentRuleList pipeline; this pins
+// their chunking + domain-bucketing so a malformed selector can't tank the
+// whole hide list.
 
 /// Isolated per-test temp dir so refresh cache writes never touch a real
 /// data dir and clean up after the run.
@@ -46,20 +28,19 @@ String _newTempRoot() {
   return dir.path;
 }
 
-({FilterListService svc, _FakeAdapter adapter}) _build(
+({FilterListService svc, TestHttpClient client}) _build(
   Handler handler, {
   bool allowNetwork = true,
   String? cacheDir,
 }) {
-  final adapter = _FakeAdapter(handler);
-  final dio = Dio()..httpClientAdapter = adapter;
+  final client = TestHttpClient(handler: handler);
   return (
     svc: FilterListService(
       cacheDir: cacheDir ?? _newTempRoot(),
-      dio: dio,
+      httpClient: client,
       allowNetwork: allowNetwork,
     ),
-    adapter: adapter,
+    client: client,
   );
 }
 
@@ -98,7 +79,7 @@ FilterListUpdateState _meta({
   removeParamsCount: removeParamsCount,
 );
 
-typedef Handler = ResponseBody Function(RequestOptions o);
+typedef Handler = FutureOr<HttpResponse> Function(HttpRequest request);
 
 void main() {
   group('FilterListService.buildCssDisplayNoneRules', () {
@@ -193,7 +174,7 @@ void main() {
     late FilterListService svc;
 
     setUp(() {
-      svc = buildService((_) => _textBody(''));
+      svc = buildService((r) => _textBody(r, ''));
     });
 
     test('extracts removeparam= names, lowercased', () {
@@ -234,7 +215,7 @@ void main() {
 
   group('FilterListService.readRemoveParams / readState', () {
     test('readRemoveParams falls back to defaults when unset', () {
-      final svc = buildService((_) => _textBody(''));
+      final svc = buildService((r) => _textBody(r, ''));
       final params = svc.readRemoveParams();
       expect(params, isNotEmpty);
       expect(params, contains('utm_source'));
@@ -247,7 +228,7 @@ void main() {
         state: _meta(removeParamsCount: 3),
         removeParams: {'foo', 'bar', 'baz'},
       );
-      final svc = buildService((_) => _textBody(''), cacheDir: cacheDir);
+      final svc = buildService((r) => _textBody(r, ''), cacheDir: cacheDir);
       expect(svc.readRemoveParams(), {'foo', 'bar', 'baz'});
     });
 
@@ -263,7 +244,7 @@ void main() {
           removeParamsCount: 7,
         ),
       );
-      final svc = buildService((_) => _textBody(''), cacheDir: cacheDir);
+      final svc = buildService((r) => _textBody(r, ''), cacheDir: cacheDir);
       final state = svc.readState();
       expect(state.adHidingRules, 12);
       expect(state.networkBlockRules, 3);
@@ -279,9 +260,9 @@ void main() {
       final cacheDir = _newTempRoot();
       _seedState(cacheDir, state: _meta(lastCheck: DateTime.now()));
       var calls = 0;
-      final svc = buildService((_) {
+      final svc = buildService((r) {
         calls++;
-        return _textBody('! empty\n');
+        return _textBody(r, '! empty\n');
       }, cacheDir: cacheDir);
       await svc.autoUpdate();
       expect(calls, 0);
@@ -296,9 +277,9 @@ void main() {
         ),
       );
       var calls = 0;
-      final svc = buildService((_) {
+      final svc = buildService((r) {
         calls++;
-        return _textBody('! empty\n');
+        return _textBody(r, '! empty\n');
       }, cacheDir: cacheDir);
       await svc.autoUpdate();
       expect(calls, greaterThan(0));
@@ -307,7 +288,7 @@ void main() {
 
   group('FilterListService.readBlocklist', () {
     test('returns [] when no cache exists', () async {
-      final svc = buildService((_) => _textBody(''));
+      final svc = buildService((r) => _textBody(r, ''));
       expect(await svc.readBlocklist(), isEmpty);
     });
   });
@@ -316,7 +297,7 @@ void main() {
     test('writes blocklist and state under the cache dir', () async {
       final cacheDir = _newTempRoot();
       final svc = buildService(
-        (_) => _textBody('! empty\n'),
+        (r) => _textBody(r, '! empty\n'),
         cacheDir: cacheDir,
       );
       await svc.refresh(force: true);
@@ -327,9 +308,9 @@ void main() {
 
     test('allowNetwork: false never dials out', () async {
       var calls = 0;
-      final svc = buildService((_) {
+      final svc = buildService((r) {
         calls++;
-        return _textBody('! empty\n');
+        return _textBody(r, '! empty\n');
       }, allowNetwork: false);
       await svc.refresh(force: true);
       expect(calls, 0);
@@ -340,7 +321,7 @@ void main() {
       () async {
         final cacheDir = _newTempRoot();
         final built = _build(
-          (_) => _textBody('! empty\n', etag: '"abc"'),
+          (r) => _textBody(r, '! empty\n', etag: '"abc"'),
           cacheDir: cacheDir,
         );
         await built.svc.refresh(force: true);
@@ -350,12 +331,20 @@ void main() {
         expect(etags.keys, isNot(contains(r'$etagKey')));
         expect(etags['easylist'], '"abc"');
 
-        built.adapter.requests.clear();
+        built.client.requests.clear();
         await built.svc.refresh(force: true);
-        expect(built.adapter.requests, isNotEmpty);
+        expect(built.client.requests, isNotEmpty);
         expect(
-          built.adapter.requests.every(
-            (r) => r.headers['If-None-Match'] == '"abc"',
+          built.client.requests.map((r) => httpRequestUri(r).toString()),
+          contains('https://easylist.to/easylist/easylist.txt'),
+        );
+        expect(
+          _header(built.client.requests.first, 'User-Agent'),
+          startsWith('ControlCenter/'),
+        );
+        expect(
+          built.client.requests.every(
+            (r) => _header(r, 'If-None-Match') == '"abc"',
           ),
           isTrue,
         );
@@ -366,11 +355,23 @@ void main() {
 
 // Helpers -----------------------------------------------------------------
 
-ResponseBody _textBody(String text, {String? etag}) => ResponseBody.fromString(
-  text,
-  200,
-  headers: {
-    Headers.contentTypeHeader: ['text/plain'],
-    if (etag != null) 'etag': [etag],
-  },
-);
+HttpTextResponse _textBody(HttpRequest request, String text, {String? etag}) =>
+    httpTextResponse(
+      request,
+      text,
+      headers: {'content-type': 'text/plain', 'etag': ?etag},
+    );
+
+/// The value of [name] on a captured request, matched case-insensitively.
+String? _header(HttpRequest request, String name) {
+  final headers = request.headers?.toMapList();
+  if (headers == null) {
+    return null;
+  }
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == name.toLowerCase()) {
+      return entry.value.first;
+    }
+  }
+  return null;
+}

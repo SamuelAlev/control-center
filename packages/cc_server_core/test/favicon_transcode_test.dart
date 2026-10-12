@@ -47,4 +47,16 @@ void main() {
     expect(transcodeIcoToPng([1, 2, 3, 4, 5]), isNull);
     expect(transcodeIcoToPng(const []), isNull);
   });
+
+  test('refuses an icon whose largest frame is over an explicit budget', () {
+    final multiSize = img.Image(width: 16, height: 16)
+      ..addFrame(img.Image(width: 32, height: 32))
+      ..addFrame(img.Image(width: 48, height: 48));
+    final ico = img.encodeIco(multiSize);
+
+    // The transcode decodes only the largest bundled size, 48 x 48 = 2,304
+    // pixels. Over the budget it is passed through instead of decoded.
+    expect(transcodeIcoToPng(ico, maxDecodedPixels: 2303), isNull);
+    expect(transcodeIcoToPng(ico, maxDecodedPixels: 2304), isNotNull);
+  });
 }

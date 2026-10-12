@@ -20,7 +20,6 @@ import Default from '@astrojs/starlight/components/Head.astro';
 import StructuredData from '../shared/StructuredData.astro';
 import WebMcpScript from '../shared/WebMcpScript.astro';
 import AcquisitionScript from '../shared/AcquisitionScript.astro';
-import SiteLocaleScript from '../shared/SiteLocaleScript.astro';
 import { cdn } from '../../data/cdn';
 import { landingPath, localeFromPath, siteLocales } from '../../data/locales';
 import { localeManualPage, localizeSitePath, manualPath } from '../../data/manual-paths';
@@ -94,4 +93,3 @@ const schema = [
     404 page, where an agent most needs to find the right route. */}
 <WebMcpScript />
 <AcquisitionScript />
-<SiteLocaleScript />

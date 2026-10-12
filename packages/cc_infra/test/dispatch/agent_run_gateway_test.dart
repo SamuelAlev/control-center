@@ -121,6 +121,7 @@ void main() {
   late AgentRunGateway gateway;
   late AgentRunLease lease;
   late HttpClient client;
+  late List<GuardAudit> audits;
   var linked = <String>{};
 
   setUp(() async {
@@ -128,12 +129,17 @@ void main() {
     confirm = _Confirm();
     broker = _Broker();
     linked = {};
+    audits = [];
     upstream = _Upstream(
       await HttpServer.bind(InternetAddress.loopbackIPv4, 0),
     );
     host = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     gateway = AgentRunGateway(
-      guard: ActionGuardService(repository: rules, confirmationPort: confirm),
+      guard: ActionGuardService(
+        repository: rules,
+        confirmationPort: confirm,
+        onAudit: audits.add,
+      ),
       broker: broker,
       loopbackBase: () async => Uri.parse('http://127.0.0.1:${host.port}'),
       repoAllowed: (ws, owner, name) async => linked.contains('$owner/$name'),
@@ -328,6 +334,15 @@ void main() {
       expect(r.body, contains('Control Center policy'));
       expect(upstream.seen, isEmpty);
       expect(broker.scopes, isEmpty);
+      expect(confirm.asked, isEmpty);
+      final audit = audits.single;
+      expect(audit.decision, ActionDecision.deny);
+      expect(audit.prompted, isFalse);
+      expect(audit.workspaceId, 'w1');
+      expect(audit.spaceId, 's1');
+      expect(audit.agentId, 'a1');
+      expect(audit.actionClasses, ['gitPush']);
+      expect(audit.actionSummary, 'git push to acme/widgets');
     });
 
     test('discovery is forwarded with the service query', () async {

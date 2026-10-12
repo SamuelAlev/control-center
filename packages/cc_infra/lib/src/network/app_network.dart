@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/dedup_interceptor.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/retry_interceptor.dart';
-import 'package:dio/dio.dart';
+// rhttp ships an interceptor of its own with the same name as the cc_infra
+// one this file uses; hide it so the local class is unambiguous.
+import 'package:rhttp/rhttp.dart' hide RetryInterceptor;
 
-/// Request-extra key naming the HTTP statuses THIS caller reads as an answer
+/// Request-metadata key naming the HTTP statuses THIS caller reads as an answer
 /// rather than as a failure. Set it with [expectStatuses].
 ///
 /// Some endpoints report a fact through a status code the caller then turns
@@ -14,232 +19,423 @@ import 'package:dio/dio.dart';
 /// every poll for a condition nothing is wrong about, which trains the operator
 /// to ignore the lane where the real failures land.
 ///
-/// It suppresses only the LOG line: the [DioException] still travels the normal
-/// path, so the caller's own handling is untouched.
+/// It suppresses only the LOG line: the [RhttpStatusCodeException] still
+/// travels the normal path, so the caller's own handling is untouched.
 const String expectedStatusesExtra = '__ccExpectedStatuses';
 
-/// Request extras marking [statuses] as expected for one request, so a status
-/// the caller reads as an answer is not logged as an error.
+/// Request metadata ([BaseHttpRequest.additionalData]) marking [statuses] as
+/// expected for one request, so a status the caller reads as an answer is not
+/// logged as an error.
 ///
 /// ```dart
-/// options: Options(extra: expectStatuses(const [429]))
+/// final response = await client.send(
+///   BaseHttpRequest(
+///     method: HttpMethod.get,
+///     url: '/usages',
+///     headers: HttpHeaders.rawMap({'Authorization': 'Bearer $token'}),
+///     expectBody: HttpExpectBody.text,
+///   )..additionalData.addAll(expectStatuses(const [429])),
+/// );
 /// ```
 ///
-/// Merge it into extras you already pass: `{...expectStatuses(const [429]), …}`.
+/// The marker is request metadata, not a header: it never reaches the wire.
+/// It survives a retry (the re-issued request copies `additionalData`) and a
+/// coalesced waiter.
 Map<String, dynamic> expectStatuses(Iterable<int> statuses) => {
   expectedStatusesExtra: List<int>.unmodifiable(statuses),
 };
 
-/// Request-extra flag set once a failure has been logged, so a retried
-/// request's final error is not logged again by each attempt's chain.
-const String _errorLoggedKey = '__ccErrorLogged';
-
-/// Creates a configured [Dio] instance.
+/// The timeouts the shared clients apply when the caller configures none.
 ///
-/// `baseUrl` is optional and defaults to an empty string.
-/// Authentication headers should be added by callers via `dio.interceptors`.
-Dio createDio({String? baseUrl}) {
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: baseUrl ?? '',
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-      // Set Accept here, but never a default Content-Type. Content-Type
-      // describes a request *body*; forcing `application/json` onto bodiless
-      // GETs makes strict servers (e.g. Cloudflare-fronted feeds like Hacker
-      // News' RSS) reject the request with 415 Unsupported Media Type — a
-      // browser sends no Content-Type on a GET, which is why those URLs work
-      // in a browser but 415 here. Dio's transformer still sets
-      // `application/json` automatically for POST/PUT/PATCH requests that
-      // carry a Map/List body, so JSON APIs are unaffected; callers needing a
-      // different type (e.g. OAuth token endpoints) set `contentType` per
-      // request.
-      headers: {'Accept': 'application/json'},
-    ),
+/// Connection and total request deadlines are both 30 seconds. Callers can
+/// supply their own [TimeoutSettings], including no total deadline for large
+/// streaming downloads.
+const TimeoutSettings kDefaultHttpTimeoutSettings = TimeoutSettings(
+  connectTimeout: Duration(seconds: 30),
+  timeout: Duration(seconds: 30),
+);
+
+/// The trust store the shared clients use when the caller configures none.
+///
+/// Platform roots include locally trusted certificates, such as corporate
+/// certificate authorities. Certificate verification remains enabled.
+const TlsSettings kDefaultTlsSettings = TlsSettings(
+  rootCertSource: RootCertSource.platform,
+);
+
+/// Creates a configured [RhttpClient] — the shared transport every cc_infra
+/// HTTP client is built on.
+///
+/// The returned client is SYNCHRONOUS to construct (`RhttpClient.createSync`),
+/// so it can be built in a field initializer, but the native library must have
+/// been loaded first: call `await initializeRhttp()` (from `cc_natives`) once
+/// per isolate before the first client is created.
+///
+/// `baseUrl`, when given, is merged into [settings]; [settings] is therefore
+/// immutable and configured once, and `baseUrl` cannot be mutated afterwards.
+///
+/// The interceptor chain, in order:
+/// 1. [HttpRequestNormalizer] — absolute URLs win over `baseUrl`, and absent
+///    `Accept: application/json` is defaulted.
+/// 2. [interceptors] — the caller's own, e.g. the forge factory's auth, which
+///    therefore runs BEFORE deduplication and is part of the request identity.
+/// 3. [RetryInterceptor] — transient-failure retries plus the GitHub
+///    rate-limit circuit breaker.
+/// 4. [DedupInterceptor] — identity-sensitive coalescing of concurrent GETs.
+/// 5. [HttpLogInterceptor] — request/response traces at debug and one failure
+///    line per request at the level its status deserves.
+RhttpClient createHttpClient({
+  String? baseUrl,
+  ClientSettings settings = const ClientSettings(),
+  List<Interceptor> interceptors = const [],
+}) {
+  return RhttpClient.createSync(
+    settings: httpClientSettings(baseUrl: baseUrl, settings: settings),
+    interceptors: sharedHttpInterceptors(interceptors: interceptors),
   );
+}
 
-  // Decode large JSON responses on a background isolate so big GitHub payloads
-  // (PR file lists with patches, batched multi-repo PR queries, contribution
-  // calendars) are parsed off the UI thread and don't drop frames. Small
-  // responses stay on the fast main-isolate fused UTF8+JSON decoder, where
-  // spawning an isolate would cost more than the parse. 50 KB matches the
-  // threshold Flutter uses for the same trade-off. Set explicitly rather than
-  // relying on Dio's default so the behaviour is guaranteed across upgrades.
-  dio.transformer = FusedTransformer(contentLengthIsolateThreshold: 50 * 1024);
-
-  dio.interceptors.add(RetryInterceptor(dio: dio));
-  // Coalesce identical concurrent GETs so duplicate requests (e.g. the PR-list
-  // fan-out colliding with the background PR poller, or several widgets
-  // watching the same PR) become a single network call.
-  dio.interceptors.add(DedupInterceptor(dio));
-
-  if (CcInfraLog.isEnabled(CcInfraLogLevel.debug)) {
-    // Debug-tier request/response logging with TRUNCATED bodies. The request
-    // body is the payload we send — for GraphQL that's the actual query, so an
-    // over-expensive batch query is visible at a glance; the response body is
-    // GitHub's payload. Bodies are capped (see `_bodyForLog`) so large PR/file
-    // payloads can't stall the UI isolate — the reason the previous
-    // `LogInterceptor` kept bodies off entirely. Auth headers are never logged.
-    // Errors are logged by the wrapper below (at every level).
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final body = _bodyForLog(options.data);
-          CcInfraLog.debug(
-            'HTTP → ${options.method} ${options.uri}'
-            '${body.isNotEmpty ? ' | request: $body' : ''}',
-          );
-          handler.next(options);
-        },
-        onResponse: (response, handler) {
-          CcInfraLog.debug(
-            'HTTP ← ${response.statusCode} ${response.requestOptions.uri}'
-            ' | response: ${_bodyForLog(response.data)}',
-          );
-          handler.next(response);
-        },
-      ),
+/// [settings] plus the cc_infra defaults for whatever it leaves unset.
+///
+/// Only UNSET fields are filled, so a caller's [ClientSettings] is never
+/// second-guessed — a client's own timeouts, trust store and User-Agent win
+/// (see [kDefaultHttpTimeoutSettings] and [kDefaultTlsSettings]).
+ClientSettings httpClientSettings({
+  String? baseUrl,
+  ClientSettings settings = const ClientSettings(),
+}) {
+  var configured = settings;
+  if (baseUrl != null) {
+    configured = configured.copyWith(baseUrl: baseUrl);
+  }
+  if (configured.timeoutSettings == null) {
+    configured = configured.copyWith(
+      timeoutSettings: kDefaultHttpTimeoutSettings,
     );
   }
+  if (configured.tlsSettings == null) {
+    configured = configured.copyWith(tlsSettings: kDefaultTlsSettings);
+  }
+  if (configured.userAgent == null) {
+    // reqwest sends no User-Agent by default; GitHub rejects such requests.
+    // Set it once on the native client, not by copying every request's headers.
+    configured = configured.copyWith(
+      userAgent:
+          'ControlCenter/1.0 (+https://github.com/SamuelAlev/control-center)',
+    );
+  }
+  return configured;
+}
 
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onError: (DioException e, handler) {
-        final statusCode = e.response?.statusCode;
-        if (e.type == DioExceptionType.cancel) {
-          // Cancellation is a subscriber standing down (a Riverpod
-          // `onDispose` cancelling its in-flight request), not a failure —
-          // every client rethrows it by type so the caller can swallow it
-          // quietly. Keep the debug-tier log symmetric (every "→" gets a
-          // matching inbound line) but never surface it as an error.
-          CcInfraLog.debug('HTTP ✕ cancelled ${e.requestOptions.uri}');
-          handler.next(e);
-          return;
-        }
-        // [RetryInterceptor] re-issues a request through this whole chain
-        // from inside its own `onError`, so the final failure unwinds through
-        // every attempt's chain: one GitHub 502 after three retries was four
-        // identical error lines in the same millisecond. Log it once.
-        final extra = e.requestOptions.extra;
-        if (extra[_errorLoggedKey] == true) {
-          handler.next(e);
-          return;
-        }
-        extra[_errorLoggedKey] = true;
-        // Include the (truncated, whitespace-collapsed) request + response
-        // bodies on every error in every build, on the SAME line as the status
-        // and URL so one failure is one greppable line. The request body is the
-        // GraphQL query that failed and the response body is the server's
-        // reason — a 403 says "secondary rate limit" vs "missing scope", a 401
-        // says "OAuth access token has expired", a 504 returns its gateway page
-        // — which is what makes an otherwise opaque "bad response" diagnosable.
-        final req = _bodyForLog(e.requestOptions.data);
-        final resp = _bodyForLog(e.response?.data);
-        final reason = _reasonForLog(e);
-        final detail =
-            '${reason.isNotEmpty ? ' | $reason' : ''}'
-            '${req.isNotEmpty ? ' | request: $req' : ''}'
-            '${resp.isNotEmpty ? ' | response: $resp' : ''}';
-        if (statusCode != null &&
-            _isExpectedStatus(e.requestOptions, statusCode)) {
-          // The caller declared this status an ANSWER for this request (see
-          // [expectedStatusesExtra]) — it reads the body and turns it into
-          // state, so an error line says something is broken when nothing is.
-          // Kept at debug: the exchange is still there with logging turned up,
-          // and the error itself is forwarded untouched.
-          CcInfraLog.debug('HTTP $statusCode ${e.requestOptions.uri}$detail');
-          handler.next(e);
-          return;
-        }
-        if (statusCode != null && (statusCode == 401 || statusCode == 403)) {
-          // 401/403 are intentionally passed through untouched so the auth
-          // layer can react (token refresh / re-auth) — we only add logging,
-          // not control flow. They were previously swallowed with NO logging
-          // at all, which made a GitHub GraphQL 403 invisible.
-          CcInfraLog.warning('HTTP $statusCode ${e.requestOptions.uri}$detail');
-          handler.next(e);
-          return;
-        }
-        if (statusCode == 410 &&
-            e.requestOptions.uri.queryParameters.containsKey('syncToken')) {
-          // Google Calendar answers 410 (`fullSyncRequired`) when an
-          // incremental sync token expires — an EXPECTED, self-healing signal
-          // the calendar sync catches ([CalendarSyncTokenExpired]) to fall
-          // back to a token-minting full sync. Not an error; keep it visible
-          // at info so token churn is still diagnosable.
-          CcInfraLog.info(
-            'HTTP 410 sync token expired on ${e.requestOptions.uri.path} — '
-            'caller falls back to a full sync',
-          );
-          handler.next(e);
-          return;
-        }
-        CcInfraLog.error(
-          'HTTP ${statusCode ?? e.type.name} ${e.requestOptions.uri}$detail',
-          // The ROOT cause (a SocketException, a HandshakeException), never the
-          // DioException itself: both sinks append the error's `toString()` to
-          // the line, and a DioException's re-prints the same boilerplate
-          // paragraph [_reasonForLog] deliberately drops. Null on a bad
-          // response, where the status and the body already say everything.
-          e.error,
-        );
-        handler.next(e);
-      },
-    ),
-  );
+/// The interceptor chain every shared client runs, in order:
+/// [HttpRequestNormalizer], then [interceptors] — the caller's own, e.g. the
+/// forge factory's auth, which therefore runs BEFORE deduplication and is part
+/// of the request identity — then [RetryInterceptor], then [DedupInterceptor],
+/// then [HttpLogInterceptor].
+List<Interceptor> sharedHttpInterceptors({
+  List<Interceptor> interceptors = const [],
+}) => [
+  HttpRequestNormalizer(),
+  ...interceptors,
+  RetryInterceptor(),
+  DedupInterceptor(),
+  HttpLogInterceptor(),
+];
 
-  return dio;
+/// Normalizes an outgoing request so every cc_infra client agrees on what the
+/// wire URL is, and applies the shared default headers.
+///
+/// 1. **An absolute URL wins over `baseUrl`.** Pagination follows absolute
+///    `next` links, and downloads may target another host. Relative URLs are
+///    joined to the base with duplicate slashes collapsed and dot segments
+///    resolved.
+/// 2. **`Accept: application/json` is defaulted**, never a `Content-Type`.
+///    `Content-Type` describes a request *body*; forcing `application/json`
+///    onto bodiless GETs makes strict servers (e.g. Cloudflare-fronted feeds
+///    like Hacker News' RSS) reject the request with 415 Unsupported Media
+///    Type — a browser sends no `Content-Type` on a GET, which is why those
+///    URLs work in a browser. rhttp sets `application/json` itself for a
+///    [HttpBody.json] body, so JSON APIs are unaffected.
+class HttpRequestNormalizer extends Interceptor {
+  @override
+  Future<InterceptorResult<HttpRequest>> beforeRequest(
+    HttpRequest request,
+  ) async {
+    var outgoing = request;
+
+    final settings = outgoing.settings;
+    final baseUrl = settings?.baseUrl;
+    if (baseUrl != null && baseUrl.isNotEmpty) {
+      outgoing = outgoing.copyWith(
+        url: _joinedUrl(baseUrl, outgoing.url),
+        // Per-request: the client's own settings are immutable and untouched,
+        // and the URL is already absolute by now, so leaving baseUrl in place
+        // would prefix it a second time.
+        settings: settings!.copyWith(baseUrl: null),
+      );
+    }
+
+    if (!_hasHeader(outgoing.headers, 'accept')) {
+      outgoing = outgoing.copyWith(
+        headers: (outgoing.headers ?? HttpHeaders.empty).copyWithRaw(
+          name: 'Accept',
+          value: 'application/json',
+        ),
+      );
+    }
+
+    return Interceptor.next(identical(outgoing, request) ? null : outgoing);
+  }
+}
+
+/// Joins relative [url] onto [baseUrl], collapsing duplicate slashes after the
+/// scheme and resolving dot segments. Absolute HTTP(S) URLs ignore the base.
+String _joinedUrl(String baseUrl, String url) {
+  if (_absoluteUrlPattern.hasMatch(url)) {
+    return url;
+  }
+  var combined = '$baseUrl$url';
+  final parts = combined.split(':/');
+  if (parts.length == 2) {
+    combined = '${parts[0]}:/${parts[1].replaceAll('//', '/')}';
+  }
+  return Uri.parse(combined).normalizePath().toString();
+}
+
+final RegExp _absoluteUrlPattern = RegExp(r'^https?:');
+
+/// Logs every request/response at debug level and every failure once, at the
+/// level its status deserves.
+///
+/// The levels are deliberate: a cancellation is a subscriber standing down, a
+/// status the caller declared via [expectStatuses] is an ANSWER, a Google
+/// Calendar `410` on a `syncToken` request is a self-healing full-sync signal,
+/// a `401`/`403` is the auth layer's business, and everything else is an error
+/// with the server's own words attached.
+///
+/// It sits LAST in the shared chain so the line it logs is the FINAL failure —
+/// after [RetryInterceptor] has exhausted its attempts — and it stays silent
+/// for a retry's intermediate failures, which the retry loop owns: one network
+/// request, one failure line.
+class HttpLogInterceptor extends Interceptor {
+  @override
+  Future<InterceptorResult<HttpRequest>> beforeRequest(
+    HttpRequest request,
+  ) async {
+    if (!CcInfraLog.isEnabled(CcInfraLogLevel.debug)) {
+      return Interceptor.next();
+    }
+    // TRUNCATED bodies: the request body is the payload we send — for GraphQL
+    // that's the actual query, so an over-expensive batch query is visible at
+    // a glance — and it is capped (see [_collapse]) so large PR/file payloads
+    // can't stall the UI isolate. Auth headers are never logged.
+    final body = _collapse(_requestBody(request.body));
+    CcInfraLog.debug(
+      'HTTP → ${request.method.value} ${_urlOf(request)}'
+      '${body.isNotEmpty ? ' | request: $body' : ''}',
+    );
+    return Interceptor.next();
+  }
+
+  @override
+  Future<InterceptorResult<HttpResponse>> afterResponse(
+    HttpResponse response,
+  ) async {
+    if (!CcInfraLog.isEnabled(CcInfraLogLevel.debug)) {
+      return Interceptor.next();
+    }
+    CcInfraLog.debug(
+      'HTTP ← ${response.statusCode} ${_urlOf(response.request)}'
+      ' | response: ${_collapse(_responseBody(response))}',
+    );
+    return Interceptor.next();
+  }
+
+  @override
+  Future<InterceptorResult<RhttpException>> onError(
+    RhttpException exception,
+  ) async {
+    final request = exception.request;
+    if (exception is RhttpCancelException) {
+      // Cancellation is a subscriber standing down (a Riverpod `onDispose`
+      // cancelling its in-flight request), not a failure — every client
+      // rethrows it by type so the caller can swallow it quietly. Keep the
+      // debug-tier log symmetric (every "→" gets a matching inbound line) but
+      // never surface it as an error.
+      CcInfraLog.debug('HTTP ✕ cancelled ${_urlOf(request)}');
+      return Interceptor.next();
+    }
+
+    if (request.additionalData.containsKey(RetryInterceptor.retryCountKey)) {
+      // Only log the final request outcome, not failures the retry loop handles.
+      return Interceptor.next();
+    }
+
+    final statusCode = exception is RhttpStatusCodeException
+        ? exception.statusCode
+        : null;
+    // Include the (truncated, whitespace-collapsed) request + response bodies
+    // on every error in every build, on the SAME line as the status and URL so
+    // one failure is one greppable line. The request body is the GraphQL query
+    // that failed and the response body is the server's reason — a 403 says
+    // "secondary rate limit" vs "missing scope", a 401 says "OAuth access
+    // token has expired", a 504 returns its gateway page — which is what makes
+    // an otherwise opaque failure diagnosable.
+    final reason = httpExceptionReason(exception);
+    final req = _collapse(_requestBody(request.body));
+    final resp = _collapse(
+      exception is RhttpStatusCodeException
+          ? _collapseBody(exception.body)
+          : '',
+    );
+    final detail =
+        '${reason != null ? ' | $reason' : ''}'
+        '${req.isNotEmpty ? ' | request: $req' : ''}'
+        '${resp.isNotEmpty ? ' | response: $resp' : ''}';
+    final kind = statusCode?.toString() ?? _kindOf(exception);
+    final line = 'HTTP $kind ${_urlOf(request)}$detail';
+
+    if (statusCode != null && _isExpectedStatus(request, statusCode)) {
+      // The caller declared this status an ANSWER for this request (see
+      // [expectedStatusesExtra]) — it reads the body and turns it into state,
+      // so an error line says something is broken when nothing is. Kept at
+      // debug: the exchange is still there with logging turned up, and the
+      // error itself is forwarded untouched.
+      CcInfraLog.debug(line);
+      return Interceptor.next();
+    }
+    if (statusCode == 401 || statusCode == 403) {
+      // The auth layer handles token refresh or re-authentication; logging must
+      // leave the error untouched.
+      CcInfraLog.warning(line);
+      return Interceptor.next();
+    }
+    if (statusCode == 410 && _hasSyncToken(request)) {
+      // Google Calendar answers 410 (`fullSyncRequired`) when an incremental
+      // sync token expires — an EXPECTED, self-healing signal the calendar
+      // sync catches to fall back to a token-minting full sync. Not an error;
+      // keep it visible at info so token churn is still diagnosable. The body
+      // is left off: the whole exchange carries nothing more than the path the
+      // caller already knew.
+      CcInfraLog.info(
+        'HTTP 410 sync token expired on ${_pathOf(request)} — '
+        'caller falls back to a full sync',
+      );
+      return Interceptor.next();
+    }
+    CcInfraLog.error(line, _rootCause(exception));
+    return Interceptor.next();
+  }
 }
 
 /// Whether [statusCode] is one the request declared expected via
-/// [expectStatuses]. The extras survive a retry (`RetryInterceptor` copies them
-/// onto the re-issued request) and a coalesced waiter, so the marker holds for
-/// every attempt, not just the first.
-bool _isExpectedStatus(RequestOptions options, int statusCode) {
-  final expected = options.extra[expectedStatusesExtra];
+/// [expectStatuses]. The metadata survives a retry (`RetryInterceptor` copies
+/// it onto the re-issued request), so the marker holds for every attempt, not
+/// just the first.
+bool _isExpectedStatus(HttpRequest request, int statusCode) {
+  final expected = request.additionalData[expectedStatusesExtra];
   return expected is Iterable && expected.contains(statusCode);
 }
 
-/// The part of [DioException.message] worth logging, or `''` when there is
-/// none.
+/// Whether the request carries a Google Calendar `syncToken` (in either the
+/// typed query map or the raw pair list).
+bool _hasSyncToken(HttpRequest request) =>
+    request.query?.containsKey('syncToken') == true ||
+    (request.queryRaw?.any((part) => part.$1 == 'syncToken') ?? false);
+
+/// The URL a request will actually hit, base URL included.
+String _urlOf(HttpRequest request) =>
+    '${request.settings?.baseUrl ?? ''}${request.url}';
+
+/// The path of a request, for log lines that name the endpoint alone.
+String _pathOf(HttpRequest request) =>
+    Uri.tryParse(request.url)?.path ?? request.url;
+
+/// A short, loggable name for a failure that never produced a status.
+String _kindOf(RhttpException exception) => switch (exception) {
+  RhttpCancelException() => 'cancelled',
+  RhttpTimeoutException() => 'timeout',
+  RhttpRedirectException() => 'redirect',
+  RhttpInvalidCertificateException() => 'invalid_certificate',
+  RhttpConnectionException() => 'connection',
+  RhttpClientDisposedException() => 'client_disposed',
+  RhttpInterceptorException() => 'interceptor_error',
+  RhttpUnknownException() => 'unknown_error',
+  RhttpStatusCodeException() => 'status',
+  _ => 'error',
+};
+
+/// The ROOT cause worth handing to the log sink, or `null`.
 ///
-/// Dio's message for a bad response is a fixed four-line paragraph about
-/// `validateStatus`, what an HTTP status class means and a link to MDN. It is
-/// byte-identical on every failed request, says nothing about THIS one, and
-/// buried the parts that do (the URL, the status, the server's own reason)
-/// under four lines of noise on every warning and error. The exception types
-/// whose message IS specific — timeouts, connection and certificate failures,
-/// an unknown wrapped error — keep theirs, whitespace-collapsed onto the one
-/// line (an `unknown` wraps an arbitrary error whose `toString()` may not be).
-String _reasonForLog(DioException e) {
-  if (e.type == DioExceptionType.badResponse) {
-    return '';
+/// An [RhttpInterceptorException] wraps an arbitrary error (a token lookup that
+/// threw, say) which the log line does not otherwise show; for every other
+/// failure the line already says everything the exception knows, and passing
+/// the exception itself would only append its class name and URL a second time.
+Object? _rootCause(RhttpException exception) =>
+    exception is RhttpInterceptorException ? exception.error : null;
+
+/// The request body as text — the payload we actually send.
+String _requestBody(HttpBody? body) => switch (body) {
+  null => '',
+  HttpBodyText(:final text) => text,
+  HttpBodyJson(:final json) => _encode(json),
+  HttpBodyForm(:final form) => _encode(form),
+  HttpBodyBytes(:final bytes) => '<${bytes.length} bytes>',
+  HttpBodyBytesStream(:final length) =>
+    length == null ? '<bytes stream>' : '<bytes stream: $length bytes>',
+  HttpBodyMultipart(:final parts) => '<multipart: ${parts.length} part(s)>',
+};
+
+/// The response body as text. A stream is NOT read: it is the caller's to
+/// consume, and logging it would either stall on it or steal it.
+String _responseBody(HttpResponse response) => switch (response) {
+  HttpTextResponse(:final body) => body,
+  HttpBytesResponse(:final body) => '<${body.length} bytes>',
+  HttpStreamResponse() => '',
+};
+
+String _encode(Object? value) {
+  try {
+    return jsonEncode(value);
+  } on Object {
+    // A log line must never be the reason a request fails.
+    return value.toString();
   }
-  final message = e.message ?? '';
-  return message.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
-/// Renders a request/response [data] payload as a single, log-friendly string,
-/// capped at [max] chars. GitHub payloads (PR file lists, batched multi-repo
-/// queries, contribution calendars) run to hundreds of KB; logging them whole
-/// stalls the UI isolate, so anything past [max] is dropped with a count. Never
-/// pass headers here — only bodies, which carry no auth token.
+/// Renders a raw error body (text, or bytes decoded leniently).
+String _collapseBody(Object? body) => switch (body) {
+  String body => body,
+  List<int> bytes when bytes.isNotEmpty => utf8.decode(
+    bytes,
+    allowMalformed: true,
+  ),
+  _ => '',
+};
+
+/// Renders a payload as a single, log-friendly string, capped at 2000 chars.
 ///
-/// Internal whitespace is collapsed so one request is one log line: a GraphQL
-/// query arrives with a newline per field and a gateway's 504 page is whole
-/// HTML, either of which would otherwise smear a single failure across a
-/// screenful of log and break line-oriented tooling (`grep`, the log tail).
-/// [max] is applied AFTER the collapse so the cap counts content, not
-/// indentation.
-String _bodyForLog(Object? data, {int max = 2000}) {
-  if (data == null) {
-    return '';
-  }
-  final raw = data is String ? data : data.toString();
-  final text = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
+/// GitHub payloads (PR file lists, batched multi-repo queries, contribution
+/// calendars) run to hundreds of KB; logging them whole stalls the UI isolate,
+/// so anything past the cap is dropped with a count. Internal whitespace is
+/// collapsed so one request is one log line: a GraphQL query arrives with a
+/// newline per field and a gateway's 504 page is whole HTML, either of which
+/// would otherwise smear a single failure across a screenful of log and break
+/// line-oriented tooling (`grep`, the log tail). The cap is applied AFTER the
+/// collapse so it counts content, not indentation.
+String _collapse(String payload, {int max = 2000}) {
+  final text = payload.replaceAll(RegExp(r'\s+'), ' ').trim();
   if (text.length <= max) {
     return text;
   }
   return '${text.substring(0, max)}… [+${text.length - max} chars]';
+}
+
+/// Whether [headers] carries [name], case-insensitively.
+bool _hasHeader(HttpHeaders? headers, String name) {
+  if (headers == null) {
+    return false;
+  }
+  final lower = name.toLowerCase();
+  return headers.toMapList().keys.any((key) => key.toLowerCase() == lower);
 }

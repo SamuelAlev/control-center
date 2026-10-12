@@ -333,7 +333,9 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     required String overlayName,
     String? agentConfigDir,
   }) async {
-    final overlayDir = Directory(p.join(spaceRoot, 'agents', overlayName));
+    final overlayDir = Directory(
+      p.join(spaceRoot, kAgentOverlaysDirName, overlayName),
+    );
     if (!overlayDir.existsSync()) {
       await overlayDir.create(recursive: true);
     }

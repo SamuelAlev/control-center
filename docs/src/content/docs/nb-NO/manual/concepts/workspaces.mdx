@@ -2,7 +2,7 @@
 title: Arbeidsområder og isolasjon
 description: Hvorfor et arbeidsområde er en hard leietakergrense, hvordan databasedelingen gjør grensen strukturell, og hva som bevisst krysser den.
 slug: nb-NO/handbok/konsepter/arbeidsomrader
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Hva er et arbeidsområde?
@@ -119,13 +119,15 @@ Det ingen av dem tar med, er resten av arbeidsområdemappen. Et arbeidsområde s
 
 ## Flytte en sikkerhetskopi mellom serveren og enheten din
 
-Hver operasjon ovenfor snakker om stier på **serveren**, noe som bare er et fullstendig svar når serveren er din egen maskin. Tre signerte HTTP-ruter — [`/backup/workspace`, `/backup/snapshot` og `/backup/restore`](/nb-NO/handbok/referanse/sikkerhetskopi/#transfer-routes) — frakter bytene for alle andre topologier, på samme autentiserte bane som medieproxyen og bildelageret allerede bruker. På siden er dette en **Last ned**-knapp ved siden av hver eksport og hvert øyeblikksbilde (du velger hvor den lander), og **Velg en fil og last opp** for å gjenopprette fra en fil som ligger på maskinen du bruker. Opplastingen er den som virker når serveren ikke er din maskin: `workspace.import` trenger at filen allerede ligger på verten, og det er slik den kommer dit.
+Hver operasjon ovenfor snakker om stier på **serveren**, noe som bare er et fullstendig svar når serveren er din egen maskin. Tre signerte overføringsruter — [`/backup/workspace`, `/backup/snapshot` og `/backup/restore`](/nb-NO/handbok/referanse/sikkerhetskopi/#transfer-routes) — frakter bytene for alle andre topologier gjennom den autentiserte, krypterte ressurskanalen, på direkte tilkoblinger og over reléet. De offentlige HTTP-rutene betjener ikke lesbare sikkerhetskopibyter, og signerte stier krever fortsatt autorisasjon. På siden er dette en **Last ned**-knapp ved siden av hver eksport og hvert øyeblikksbilde (du velger hvor den lander), og **Velg en fil og last opp** for å gjenopprette fra en fil som ligger på maskinen du bruker. Opplastingen virker når serveren ikke er din maskin: `workspace.import` trenger at filen allerede ligger på verten, og det er slik den kommer dit.
 
 Tre egenskaper er verdt å kjenne til:
 
 - **En nedlasting lager en fersk kopi, og serveren beholder ingenting av den.** Å laste ned er ikke «hent filen eksportknappen lagde» — den eksporterer på nytt, strømmer den og sletter den. Svaret er `no-store` med `Accept-Ranges: none` av samme grunn: et gjenopptatt intervall ville spleise to forskjellige eksporter til én fil som ser gyldig ut, men ikke er det.
 - **En opplasting strømmes til disk, bufres aldri**, i begge ender, og den mellomlagrede kopien slettes på hver vei ut — også ved avvisning. En arbeidsområdedatabase er ikke et skjermbilde.
-- **En reléert tilkobling har ingen HTTP-opprinnelse**, så overføringskontrollene er deaktivert der, med en merknad som sier hvorfor. Alt som snakker om stier på serversiden, fortsetter å virke over reléet; bare byte-banene trenger en direkte tilkobling.
+- **Overføring virker over reléet også.** Nedlastinger og opplastinger bruker den samme krypterte ressurskanalen som direkte tilkoblinger; en direkte HTTP-origin kreves ikke.
+
+Kryptering beskytter overføringen underveis, ikke databaseserveren, øyeblikksbildemappen eller en nedlastet kopi i ro. Serveroperatøren kan få tilgang til data som ligger på den verten.
 
 :::note[Hvilke stier tilhører hvem]
 Stiene siden *viser* — mappen for øyeblikksbildet, filen en eksport skrev, kilden en import leser — ligger på maskinen som kjører `cc_server`. Stien en **nedlasting** rapporterer, ligger på maskinen du sitter ved. Den forskjellen er grunnen til at begge finnes: den første er det et vedlikeholdsskript eller en ssh-økt trenger, den andre er det en person som samler en sikkerhetskopi, trenger.

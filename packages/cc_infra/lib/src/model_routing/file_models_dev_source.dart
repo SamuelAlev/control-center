@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The models.dev catalogue endpoint — key-less public JSON.
 const String kModelsDevApiUrl = 'https://models.dev/api.json';
@@ -22,11 +24,11 @@ class FileModelsDevSource implements ModelsDevSource {
   /// restricted environments.
   FileModelsDevSource({
     required this.cacheFilePath,
-    Dio? dio,
+    RhttpClient? httpClient,
     this.url = kModelsDevApiUrl,
     this.ttl = const Duration(hours: 1),
     this.allowNetwork = true,
-  }) : _dio = dio ?? Dio();
+  }) : _httpClientOverride = httpClient;
 
   /// Path of the on-disk catalogue cache (`<dataDir>/models_dev/api.json`).
   final String cacheFilePath;
@@ -44,7 +46,24 @@ class FileModelsDevSource implements ModelsDevSource {
   static const _userAgent =
       'ControlCenter/1.0 (+https://github.com/SamuelAlev/control-center)';
 
-  final Dio _dio;
+  final RhttpClient? _httpClientOverride;
+
+  /// The [RhttpClient] used for [refresh], created on first use so that a
+  /// cache-only source (boot, [allowNetwork] false) never touches the
+  /// transport. A plain client (no app interceptor chain), bounded like the
+  /// per-request timeouts it replaces (15s to connect, 30s overall).
+  late final RhttpClient _httpClient =
+      _httpClientOverride ??
+      RhttpClient.createSync(
+        settings: httpClientSettings(
+          settings: const ClientSettings(
+            timeoutSettings: TimeoutSettings(
+              connectTimeout: Duration(seconds: 15),
+              timeout: Duration(seconds: 30),
+            ),
+          ),
+        ),
+      );
 
   @override
   Future<Map<String, dynamic>?> load() => _readCache(requireFresh: false);
@@ -86,18 +105,11 @@ class FileModelsDevSource implements ModelsDevSource {
       return null;
     }
     try {
-      final res = await _dio.getUri<Object?>(
-        Uri.parse(url),
-        options: Options(
-          responseType: ResponseType.plain,
-          sendTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 30),
-          headers: const {'User-Agent': _userAgent},
-        ),
+      final response = await _httpClient.getText(
+        url,
+        headers: const HttpHeaders.rawMap({'User-Agent': _userAgent}),
       );
-      final body = res.data;
-      final decoded = body is String ? jsonDecode(body) : body;
-      final document = _asDocument(decoded);
+      final document = _asDocument(httpJsonBody(response));
       if (document == null || document.isEmpty) {
         return null;
       }

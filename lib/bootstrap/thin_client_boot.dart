@@ -7,6 +7,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_natives/native_library_paths.dart' show nativeLibDirEnvVar;
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/core/server/client_resource_proxy.dart';
 import 'package:control_center/core/server/snapshot_cache_binding.dart';
 import 'package:control_center/core/storage/control_center_paths.dart';
 import 'package:control_center/core/theme/font_loader_install.dart';
@@ -25,6 +26,7 @@ class ThinClientBackend {
     required this._holder,
     required this.client,
     required this.supervisor,
+    required this.resourceProxy,
     this.mediaProxy,
   });
 
@@ -37,6 +39,9 @@ class ThinClientBackend {
   /// survives server restarts: the supervisor respawns the child and the
   /// client re-registers every subscription transparently.
   final ResilientRpcClient client;
+
+  /// Loopback capability, backed by the stable encrypted RPC resource client.
+  final LocalResourceProxy resourceProxy;
 
   /// The connection supervisor (status stream for the connection pill).
   final ServerConnectionSupervisor supervisor;
@@ -63,7 +68,12 @@ class ThinClientBackend {
   /// path an in-app switch to a REMOTE server takes to retire the bundled
   /// server, and a failure here used to leave it running behind the remote
   /// session for the rest of the app's life.
-  Future<void> dispose() => _holder.shutDown(first: client.close);
+  Future<void> dispose() => _holder.shutDown(
+    first: () async {
+      await resourceProxy.close();
+      await client.close();
+    },
+  );
 }
 
 /// Mutable owner of the current child process (replaced on respawn), shared
@@ -270,6 +280,7 @@ Future<ThinClientBackend> _connectThinClient({
     rethrow;
   }
   final client = ResilientRpcClient(supervisor);
+  LocalResourceProxy? resourceProxy;
   try {
     await attachVerifiedSnapshotCache(
       client: client,
@@ -277,25 +288,26 @@ Future<ThinClientBackend> _connectThinClient({
       fingerprint: supervisor.pinnedFingerprint,
       supervisor: supervisor,
     );
+    resourceProxy = await createClientResourceProxy(() => client.resources);
+    AppLog.i('cc_server', 'thin client connected on ${endpoint.rpcUri}');
+    final mediaProxy = MediaProxyConfig(
+      httpBase: resourceProxy.baseUri,
+      deviceId: localDesktopDeviceId,
+      psk: psk,
+    );
+    installHostFontLoader(mediaProxy);
+    return ThinClientBackend(
+      holder: holder,
+      client: client,
+      supervisor: supervisor,
+      resourceProxy: resourceProxy,
+      mediaProxy: mediaProxy,
+    );
   } on Object {
-    await client.close(); // Closes the supervisor too.
+    await resourceProxy?.close();
+    await client.close();
     rethrow;
   }
-  AppLog.i('cc_server', 'thin client connected on ${endpoint.rpcUri}');
-  final mediaProxy = MediaProxyConfig.fromConnection(
-    serverUri: endpoint.rpcUri,
-    deviceId: localDesktopDeviceId,
-    psk: psk,
-  );
-  // A user-selected font's bytes come from the host too (see
-  // `installHostFontLoader`), so it is armed with the same connection.
-  installHostFontLoader(mediaProxy);
-  return ThinClientBackend(
-    holder: holder,
-    client: client,
-    supervisor: supervisor,
-    mediaProxy: mediaProxy,
-  );
 }
 
 /// Locates, spawns and readies one `cc_server` child.

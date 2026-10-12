@@ -1,36 +1,37 @@
 ---
 title: Uzaktan kontrol ve mobil
-description: Telefonun sunucunuza, eşten eşe bir bağlantı yerine aracılı ve uçtan uca mühürlenmiş bir aktarıcı üzerinden nasıl ulaştığı ve bu erişimi dar tutan katmanlı erişim modeli.
+description: Telefonun sunucunuza, doğrudan ya da aracılı, uçtan uca şifrelenmiş bağlantılar üzerinden nasıl ulaştığı ve bu erişimi dar tutan katmanlı erişim modeli.
 slug: tr-TR/kilavuz/kavramlar/uzaktan-kontrol
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center bir masaüstü uygulamasıdır, ancak izlediği iş siz masanızdan
 uzaklaştığınızda durmaz. **Uzaktan kontrol**, remote.usectrl.dev adresindeki
 yardımcı uygulama **[Remote](https://remote.usectrl.dev/)** ile telefonunuzu
 `cc_server`'ınıza eşleştirir; böylece filoyu oradan izleyebilirsiniz: mesajları
-ve biletleri okuyun, bir ajana yanıt verin, haber akışınızı triyaj edin —
-sunucuda yaşayan ses, transkript, kaynak kod veya kimlik bilgileri oradan hiç
-ayrılmadan.
+ve biletleri okuyun, bir ajana yanıt verin, haber akışınızı uçtan uca şifrelenmiş
+bir bağlantı üzerinden triyaj edin. Telefon ve `cc_server` güvenilir düz metin uç
+noktalarıdır; aktarıcı yalnızca şifrelenmiş uygulama kayıtlarını taşır.
 
 Onu, Control Center'ın ağırlıklı olarak okuma amaçlı bir yardımcısı olarak
 düşünün. Tam masaüstü istemcisinin yerini alması amaçlanmamıştır.
 
-:::note[İki farklı uzaktan erişim yolu]
-Telefon yardımcı istemcisi, uçtan uca mühürlenmiş JSON-RPC çerçeveleri taşıyan
-**aracılı bir WebSocket aktarıcısı** üzerinden bir `cc_server` ile eşleşir. Tam
-**web yapısı** (ve uzak bir sunucuya yönlendirilmiş bir masaüstü) diğer uzak
-yoldur; `cc_server`'a WebSocket üzerinden bağlanır ve uygulamanın tamamını
-çizer. İkisinin nasıl farklılaştığını
-[Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/) sayfasında görün.
+:::note[İki farklı uzak istemci]
+Telefon yardımcı istemcisi ile tam **web yapısı** (ya da uzak bir sunucuya
+yönlendirilmiş bir masaüstü) ya doğrudan `cc_server`'a bağlanabilir ya da aracılı
+bir WebSocket aktarıcısı kullanabilir. Her iki yol da aynı şifrelenmiş oturumu
+gerektirir; telefon, tam istemciden daha küçük bir işlem kümesi sunar. İstemcilerin
+nasıl farklılaştığını [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/)
+sayfasında görün.
 :::
 
 ## Aktarım
 
 Telefon `cc_server`'a bir WebSocket üzerinden ulaşır: ya doğrudan bir bağlantı
-(loopback, LAN, tailnet veya `wss://`) ya da mühürlenmiş çerçeveleri aktaran
-bir sinyal aracısındaki davetle korunan bir oda. Eşten eşe bir veri kanalı
-yoktur.
+(loopback, LAN, tailnet veya `wss://`) ya da bir sinyal aracısındaki davetle
+korunan bir oda. Her iki yol da kimliği doğrulanmış ve uçtan uca şifrelenmiş bir
+oturum gerektirir; aracı yalnızca şifrelenmiş kayıtlarını iletir. Eşten eşe bir
+veri kanalı yoktur.
 
 ## Telefon neler yapabilir
 
@@ -54,22 +55,25 @@ amaçlanmadığını, nasıl uygulandığını
 
 ## Bağlantı nasıl kurulur
 
-Bağlantı **aracılı bir aktarıcı** üzerinden ilerler: sunucu, bir `wss://`
-aracısındaki davetle korunan tek bir odaya sahibi olarak katılır ve
-eşleştirilmiş her istemci — masaüstü, web, telefon — süreyle sınırlı bir giriş
-belirteciyle aynı odaya katılır. Üç parça bir araya gelir:
+Telefon sunucuya doğrudan ulaşamadığında bağlantı **aracılı bir aktarıcı**
+kullanır: sunucu, bir `wss://` aracısındaki davetle korunan tek bir odaya sahibi
+olarak katılır ve eşleştirilmiş istemciler süreyle sınırlı giriş belirteçleriyle
+katılır. Üç parça bir araya gelir:
 
 | Parça                          | Rol                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (telefon uygulaması)** | Varsayılan olarak `remote.usectrl.dev` adresinde ya da kendi sunucunuzda barındırılan yardımcı web uygulaması. Tarayıcıda yüklenir, eşleştirme kaydını IndexedDB'de tutar.                                                                                                                                                     |
-| **Aktarma aracısı**            | N yönlü odalar barındıran durumsuz bir `wss://` aktarıcısı (`cc_signaling_server`). **Yalnızca opak çerçeveler** taşır: her yük, telefon ile sunucu arasında uçtan uca mühürlenir; böylece aracı ne uygulama verisini ne de eşleştirme sırrını görür ve ilettiği şeyi hiçbir zaman yorumlamaz.                                    |
+| **Aktarma aracısı**            | N yönlü odalar barındıran durumsuz bir `wss://` aktarıcısı (`cc_signaling_server`). Eşleştirme sırrı veya uygulama düz metni olmadan şifrelenmiş kayıtları iletir, ancak yönlendirme tanımlayıcılarını, IP'leri, kayıt boyutlarını ve zamanlamayı görür. |
 | **`cc_server`**                | Odanın sahibi. Telefonun çağrılarını, diğer tüm istemcilerin kullandığı aynı dağıtıcı üzerinden yanıtlar.                                                                                                                                                                                                                       |
 
 Bir eşleştirme teklifi, sunucuya giden her yolu (LAN, tailnet, genel `wss://`,
 aktarıcı) ve kimlik parmak izini listeleyen bir **bağlantı tanımlayıcısı**
-taşır. Telefonun çözümleyicisi erişilebilen en iyi yolu seçer ve ilk bağlantıda
-parmak izini sabitler (TOFU); aktarıcı, doğrudan bir yol olmasa bile bağlantıyı
-garanti eder ve trafiği hiçbir zaman okuyamaz.
+taşır. Telefonun çözümleyicisi erişilebilen en iyi yolu seçer. Sunucu, şifrelenmiş
+el sıkışmayı imzalar ve istemci parmak izini sabitler. İlk bağlantıda parmak izini
+güvenilir bir QR ya da başka bir güvenilir kaynakla karşılaştırın: tek başına ilk
+imzalı kimlik, hangi sunucuya ulaştığınızı kanıtlamaz. Değişen bir sabitleme sessizce
+yeniden güvenilmek yerine reddedilir. Aktarıcı, doğrudan yol yokken şifreli metni
+taşır, ancak yine de bağlantıyı kesebilir ya da geciktirebilir.
 
 ## Eşleştirme yükü nedir
 
@@ -81,26 +85,33 @@ sayfasına bakın. Burada önemli olan yapısıdır.
 https://<pwa-host>/#<payload>
 ```
 
-Yük, URL **parçasında** — `#` sonrasındaki ve tarayıcıların sunucuya asla
-göndermediği bölümde — ilerler; böylece PWA'nın HTTPS ana makinesi onu hiç
-görmez. Telefonun sunucuya ulaşmak ve kim olduğunu kanıtlamak için ihtiyaç
-duyduğu her şeyi taşır: bağlantı tanımlayıcısı (her yol artı kimlik parmak
-izi), yeni üretilmiş bir cihaz kimliği, 32 baytlık bir ön paylaşımlı anahtar ve
-bir son kullanma damgası. Telefon bunu çözer, yerel olarak bir eşleştirme kaydı
-saklar ve parçayı kaldırır; böylece sır URL'den çıkar.
+Yük, URL **parçasında** — `#` sonrasındaki ve tarayıcıların PWA ana makinesine HTTP
+isteğinde göndermediği bölümde — ilerler. Telefonun sunucuya ulaşmak ve kim
+olduğunu kanıtlamak için ihtiyaç duyduğu her şeyi taşır: bağlantı tanımlayıcısı
+(her yol artı kimlik parmak izi), yeni üretilmiş bir cihaz kimliği, 32 baytlık bir
+ön paylaşımlı anahtar ve bir son kullanma damgası. Telefon bunu çözer, yerel olarak
+bir eşleştirme kaydı saklar ve parçayı URL'den kaldırır. Web uygulamasının kodu
+parçayı okuyabilir; bu yüzden güvenilir bir uygulama ana makinesi kullanın ve
+bağlantıyı bir sır olarak görün.
 
 İki yük biçimi vardır ve bunlar **birbirinin yerine geçmez**. Uygulama içi
 eşleştirme panelinden üretilen telefon QR'ı, Remote PWA ana makinesine
 yöneltilmiş yukarıdaki v2 `PairingPayload`'dır. `cc_server pair --client-url`
-ise yalnızca **web** istemcisi için tasarlanmış, farklı ve daha eski bir v1
-bağlantısı üretir (`{s, i, k}` — sunucu URL'si, cihaz kimliği, anahtar).
+ise yalnızca **web** istemcisi için tasarlanmış bir v1 bağlantısı üretir
+(`{s, i, k}` — sunucu URL'si, cihaz kimliği, anahtar). Bunlar eşleştirme veri
+biçimleridir, aktarım yedekleri değil: her iki istemci de güncel şifrelenmiş
+oturum protokolünü desteklemek zorundadır.
 
 Ayrıca ömürleri de farklıdır ve bu kolayca yanlış anlaşılır:
 
 | Üreten                                | Kimlik bilgisinin son kullanma süresi        |
 | ------------------------------------- | -------------------------------------------- |
 | Uygulama içi eşleştirme paneli (`pairing.mint`) | Her zaman 30 gün                    |
-| Komut satırında `cc_server pair`      | **Yok** — kimlik bilgisinin süresi dolmaz    |
+| Komut satırında `cc_server pair`      | Süre kodlanmamıştır; sunucu ilkeleri yine de geçerlidir |
+
+Sunucu genelindeki azami cihaz yaşı ve boşta kalma zaman aşımı ilkeleri, her iki
+kimlik bilgisini de daha erken reddedebilir. Hiçbir eşleştirme biçimi bu ilkeleri
+atlamaz.
 
 ## Erişim modeli
 
@@ -157,13 +168,14 @@ yine geçerlidir. Bu, ürünün geri kalanının uyguladığı aynı
 [çalışma alanı yalıtımı](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
 değişmezidir.
 
-### 5. Ön paylaşımlı anahtarla anahtarlanan uçtan uca mühürlenmiş çerçeveler
+### 5. Doğrudan ve aktarıcı üzerinden bağlantılarda uçtan uca şifreleme
 
-Telefon ile sunucu arasındaki her çerçeve eşleştirme anahtarıyla mühürlenir;
-giriş belirteci yalnızca bir istemciyi odaya sokar, hiçbir şeyin şifresini
-çözmez. Aracı yalnızca şifreli metni aktarır ve anahtarı hiç görmez. İptal
-edilen bir cihaz, kimlik bilgisinin çoktan gittiğini görür; bu yüzden yeniden
-bağlandığında **kapalı yönde başarısız olur**.
+Doğrudan ya da aktarıcı üzerinden her istemci oturumu imzalı bir Noise el sıkışması
+gerektirir. Eşleştirme anahtarı bu el sıkışmayı doğrular; her çerçeveyi eşleştirme
+anahtarıyla mühürlemek yerine yeni geçici anahtarlar trafik anahtarlarını türetir.
+Sunucu kimliğini bu değiş tokuşa imzalar ve istemci kayıtlı parmak izi sabitlemesini
+denetler. Düz metne ya da eski istemciye dönüş yoktur. Aktarıcının giriş belirteci
+yalnızca bir istemciyi odaya sokar; kayıtların şifresini çözemez.
 
 Uygulamanın ürettiği kimlik bilgisi 30 günle sınırlıdır; bu süreden sonra
 bağlantı kapısı onu geçersiz kılar ve telefonun yeniden eşleştirmesi gerekir.
@@ -178,20 +190,24 @@ vardır. Bütçe **oturuma değil, principal'a** aittir: üç cihazınız tek bi
 ödenekten çeker; böylece ele geçirilmiş bir istemci daha fazla oturum açarak
 kendine pay satın alamaz ve gürültücü bir üye diğerlerini aç bırakamaz.
 
-### 7. Hiçbir şey öğrenmeyen bir aracı
+### 7. Uygulama içeriğini okuyamayan bir aracı
 
-Aktarma aracısı kasıtlı olarak aptaldır: odalar barındırır, mühürlenmiş
-çerçeveleri iletir ve hiçbir hesap, uygulama verisi veya anahtar tutmaz. Odalar
-davetle korunur ve geçicidir. Uygulama verisi, ses, transkript, kaynak ve
-kimlik bilgileri sunucuda kalır.
+Aktarma aracısı geçici, davetle korunan odalar barındırır ve şifrelenmiş kayıtları
+uygulama düz metni ya da eşleştirme anahtarları olmadan iletir. Ancak yine de IP
+adreslerini, oda ve eş tanımlayıcılarını, kayıt boyutlarını, zamanlamayı ve
+bağlantı ömrünü görür; trafiği düşürebilir ya da geciktirebilir. Eşleştirilmiş
+istemci ve seçilen `cc_server` düz metin uç noktalarıdır; sunucu operatörü ve
+sunucunun içerik gönderdiği hizmetler bu içeriği görebilir. Aktarım sırasındaki
+şifreleme, sunucu verisini durağan hâlde şifrelemez.
 
 ## Canlı güncellemeler
 
 Eşleştirildikten sonra telefon, masaüstünün kendi bildirimlerini yansıtan
 bildirim çerçeveleri biçiminde **canlı güncellemeler** alır — yeni ajan
-mesajları, size atanan biletler, durum değişiklikleri. Sunucu bu çerçeveleri
-bağlı her oturuma yayınlar ve çalışma alanı filtresi istemci tarafında
-uygulanır; böylece gördükleriniz, baktığınız çalışma alanıyla sınırlıdır.
+mesajları, size atanan biletler, durum değişiklikleri. Sunucu bir olayı bir
+oturuma iletmeden önce çalışma alanı üyeliğini denetler. Ardından istemci, bu
+yetkilendirilmiş olayları baktığınız çalışma alanına göre filtreler; bu görüntüleme
+filtresi erişim sınırı değildir.
 
 ## Nerede bulunur
 
@@ -205,8 +221,8 @@ farklıdır.
 
 ::::note
 Uzaktan kontrol sunucu tarafındadır ve MCP üzerinden **sunulmaz**. Telefon,
-aktarıcı üzerinden sunucunun kendi dağıtıcısıyla konuşur; harici bir sunucunun
-MCP istemcisi değildir.
+sunucunun kendi dağıtıcısıyla şifrelenmiş doğrudan ya da aktarıcılı bağlantısı
+üzerinden konuşur; harici bir sunucunun MCP istemcisi değildir.
 ::::
 
 ## İlgili kavramlar

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/features/settings/domain/model_control.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Server-side [SelectableModelControl] for ASR/voice models.
 ///
@@ -19,7 +19,7 @@ class SelectableVoiceModelControl implements SelectableModelControl {
   /// (see [ModelLogLevel]).
   SelectableVoiceModelControl({
     required this._paths,
-    this._dio,
+    this._httpClient,
     String? initialId,
     void Function(String modelId)? persistSelection,
     this._onLog,
@@ -30,7 +30,7 @@ class SelectableVoiceModelControl implements SelectableModelControl {
   }
 
   final CcPaths _paths;
-  final Dio? _dio;
+  final RhttpClient? _httpClient;
   final void Function(String modelId)? _persist;
   final void Function(ModelLogLevel level, String message)? _onLog;
 
@@ -55,7 +55,7 @@ class SelectableVoiceModelControl implements SelectableModelControl {
     final manager = VoiceModelManager(
       model: _selected,
       paths: _paths,
-      dio: _dio,
+      httpClient: _httpClient,
     );
     return ManagedModelControl(
       probeInstalled: () async => (await manager.resolve()) != null,

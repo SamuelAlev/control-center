@@ -4,7 +4,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.da
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas_background.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas_layers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_editor_edge_handle.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_editor_geometry.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_editor_node_tile.dart';
@@ -146,19 +146,15 @@ class PipelineEditorSceneStack extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(
-              painter: PipelineEdgesPainter(
-                steps: graphSteps,
-                color: tokens.borderSecondary,
-                nodeWidths: widths,
-                nodeHeight: kPipelineEditorNodeHeight,
-                offset: shift,
-                positions: positions,
-                highlightStepId: highlightId,
-                highlightColor: tokens.accent,
-              ),
-            ),
+          child: PipelineEdgeLayer(
+            steps: graphSteps,
+            color: tokens.borderSecondary,
+            nodeWidths: widths,
+            nodeHeight: kPipelineEditorNodeHeight,
+            offset: shift,
+            positions: positions,
+            highlightStepId: highlightId,
+            highlightColor: tokens.accent,
           ),
         ),
         ..._triggerColumn(stacked, triggerSteps, positions),
@@ -179,9 +175,8 @@ class PipelineEditorSceneStack extends StatelessWidget {
           ? Offset.zero
           : pipelineEditorNodeOffset(triggerSteps.first, dragPositions);
       return [
-        Positioned(
-          // RTL carve-out: a DAG canvas — node placement is canvas-coordinate
-          // math over the laid-out graph, and diagram canvases stay LTR.
+        PipelineSceneSlot(
+          key: const ValueKey('pipeline-trigger-ghost'),
           left: origin.dx + shift.dx,
           top: origin.dy + shift.dy,
           width: kPipelineEditorNodeWidth,
@@ -217,9 +212,8 @@ class PipelineEditorSceneStack extends StatelessWidget {
   }) {
     final fromThis =
         connectFrom == trigger.id || connectFromTriggerId == trigger.id;
-    return Positioned(
-      // RTL carve-out: a DAG canvas — node placement is canvas-coordinate
-      // math over the laid-out graph, and diagram canvases stay LTR.
+    return PipelineSceneSlot(
+      key: ValueKey('pipeline-trigger-slot-${trigger.id}'),
       left: origin.dx + shift.dx,
       top: origin.dy + shift.dy,
       width: kPipelineEditorTileExtentWidth,
@@ -249,7 +243,8 @@ class PipelineEditorSceneStack extends StatelessWidget {
   ) {
     // RTL carve-out: a DAG canvas — node placement is canvas-coordinate
     // math over the laid-out graph, and diagram canvases stay LTR per policy.
-    return Positioned(
+    return PipelineSceneSlot(
+      key: ValueKey('pipeline-node-${step.id}'),
       left: origin.dx + shift.dx,
       top: origin.dy + shift.dy,
       width: kPipelineEditorTileExtentWidth,
@@ -285,7 +280,10 @@ class PipelineEditorSceneStack extends StatelessWidget {
       overrides: dragPositions,
       shift: shift,
     );
-    return Positioned(
+    return PipelineSceneSlot(
+      key: ValueKey(
+        'pipeline-edge-${edge.fromId}-${edge.toId}-${edge.routeKey}',
+      ),
       left: mid.dx,
       top: mid.dy,
       child: FractionalTranslation(

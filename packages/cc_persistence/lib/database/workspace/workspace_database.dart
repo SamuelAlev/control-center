@@ -85,6 +85,7 @@ import 'package:cc_persistence/database/tables/caches.dart';
 import 'package:cc_persistence/database/tables/calendar_accounts.dart';
 import 'package:cc_persistence/database/tables/calendar_events.dart';
 import 'package:cc_persistence/database/tables/calendar_sources.dart';
+import 'package:cc_persistence/database/tables/catalog_files_table.dart';
 import 'package:cc_persistence/database/tables/chat_links_tables.dart';
 import 'package:cc_persistence/database/tables/code_edges.dart';
 import 'package:cc_persistence/database/tables/code_files.dart';
@@ -131,6 +132,7 @@ import 'package:cc_persistence/database/tables/review_drafts.dart';
 import 'package:cc_persistence/database/tables/review_spaces.dart';
 import 'package:cc_persistence/database/tables/review_studio_tables.dart';
 import 'package:cc_persistence/database/tables/rigs_tables.dart';
+import 'package:cc_persistence/database/tables/run_call_usages_table.dart';
 import 'package:cc_persistence/database/tables/run_transcripts_table.dart';
 import 'package:cc_persistence/database/tables/runtime_profiles_table.dart';
 import 'package:cc_persistence/database/tables/sandbox_exec_grants_table.dart';
@@ -188,6 +190,7 @@ part 'workspace_database.g.dart';
     ConversationsTable,
     SpaceParticipantsTable,
     SpaceReposTable,
+    CatalogFilesTable,
     SpaceNotesTable,
     SpaceAutonomyTable,
     MessageReactionsTable,
@@ -269,6 +272,9 @@ part 'workspace_database.g.dart';
     EvalSuitesTable,
     EvalRunsTable,
     AgentConfigVersionsTable,
+    SkillEvalCampaignsTable,
+    SkillEvalAttemptsTable,
+    SkillEvalPoliciesTable,
     SkillScanResultsTable,
     ActionPoliciesTable,
     SandboxExecGrantsTable,
@@ -287,6 +293,7 @@ part 'workspace_database.g.dart';
     RigActionLogTable,
     SkillSourcesTable,
     RepoScriptRunsTable,
+    RunCallUsagesTable,
   ],
   daos: [
     WorkspaceSettingDao,
@@ -424,7 +431,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 17;
+  static const int currentSchemaVersion = 20;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -447,73 +454,49 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     // catalogs (the skills.sh registry replacement). Purely additive; a fresh
     // database already builds the table in `onCreate`, this step carries
     // existing workspace files forward.
-    MigrationStep(
-      1,
-      2,
-      (m) async {
-        await m.createTable(skillSourcesTable);
-        await _createIndexIfMissing(m, idxSkillSourcesWorkspace);
-      },
-    ),
+    MigrationStep(1, 2, (m) async {
+      await m.createTable(skillSourcesTable);
+      await _createIndexIfMissing(m, idxSkillSourcesWorkspace);
+    }),
     // v2 → v3: the session tree. `conversation_messages.parent_message_id`
     // turns the message list into a tree and `conversations.leaf_message_id`
     // names the branch tip, so branching is a pointer move rather than a
     // delete. Purely additive and both nullable: every existing row is a
     // linear chain with no parent recorded, which reads exactly as it did
     // before — the tree is only consulted by the branch/fork/tree paths.
-    MigrationStep(
-      2,
-      3,
-      (m) async {
-        await _addColumnIfMissing(
-          m,
-          conversationMessagesTable,
-          conversationMessagesTable.parentMessageId,
-        );
-        await _addColumnIfMissing(
-          m,
-          conversationsTable,
-          conversationsTable.leafMessageId,
-        );
-      },
-    ),
+    MigrationStep(2, 3, (m) async {
+      await _addColumnIfMissing(
+        m,
+        conversationMessagesTable,
+        conversationMessagesTable.parentMessageId,
+      );
+      await _addColumnIfMissing(
+        m,
+        conversationsTable,
+        conversationsTable.leafMessageId,
+      );
+    }),
     // v3 → v4: per-repo lifecycle scripts. Two nullable columns on `repos`
     // (`setup_script`, `archive_script`) and the `repo_script_runs` audit
     // table. Purely additive; a fresh database already builds all of it in
     // `onCreate`, this step carries existing workspace files forward.
-    MigrationStep(
-      3,
-      4,
-      (m) async {
-        await _addColumnIfMissing(
-          m,
-          reposTable,
-          reposTable.setupScript,
-        );
-        await _addColumnIfMissing(
-          m,
-          reposTable,
-          reposTable.archiveScript,
-        );
-        await m.createTable(repoScriptRunsTable);
-        await _createIndexIfMissing(m, idxRepoScriptRunsRepo);
-        await _createIndexIfMissing(m, idxRepoScriptRunsSpace);
-      },
-    ),
+    MigrationStep(3, 4, (m) async {
+      await _addColumnIfMissing(m, reposTable, reposTable.setupScript);
+      await _addColumnIfMissing(m, reposTable, reposTable.archiveScript);
+      await m.createTable(repoScriptRunsTable);
+      await _createIndexIfMissing(m, idxRepoScriptRunsRepo);
+      await _createIndexIfMissing(m, idxRepoScriptRunsSpace);
+    }),
     // v4 → v5: sandbox exec grants. Records whether the operator allowed
     // running binaries from inside a worktree, which the macOS writable-dir
     // exec block otherwise denies wholesale. Purely additive; a fresh database
     // already builds it in `onCreate`, this step carries existing files
     // forward. An absent row means "not asked yet", so nothing is implied for
     // workspaces that predate this.
-    MigrationStep(
-      4,
-      5,
-      (m) async {
-        await m.createTable(sandboxExecGrantsTable);
-        await _createIndexIfMissing(m, idxSandboxExecGrantsWorkspace);
-      },
-    ),
+    MigrationStep(4, 5, (m) async {
+      await m.createTable(sandboxExecGrantsTable);
+      await _createIndexIfMissing(m, idxSandboxExecGrantsWorkspace);
+    }),
     // v5 → v6: the enterprise permissions batch. Three new tables —
     // `approval_routing_policies` (the routing policy's durable home; it used
     // to be a `caches` row the retention sweep deleted after 21 quiet days),
@@ -523,33 +506,29 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     // `enforcement`) whose NULL reads exactly as the pre-column behavior
     // (match everything / never expire / hard). Purely additive; a fresh
     // database builds all of it in `onCreate`.
-    MigrationStep(
-      5,
-      6,
-      (m) async {
-        await m.createTable(approvalRoutingPoliciesTable);
-        await m.createTable(guardDecisionsTable);
-        await _createIndexIfMissing(m, idxGuardDecisionsWorkspace);
-        await _createIndexIfMissing(m, idxGuardDecisionsTime);
-        await m.createTable(workspaceRolesTable);
-        await _createIndexIfMissing(m, idxWorkspaceRolesWorkspace);
-        await _addColumnIfMissing(
-          m,
-          actionPoliciesTable,
-          actionPoliciesTable.constraintJson,
-        );
-        await _addColumnIfMissing(
-          m,
-          actionPoliciesTable,
-          actionPoliciesTable.expiresAt,
-        );
-        await _addColumnIfMissing(
-          m,
-          actionPoliciesTable,
-          actionPoliciesTable.enforcement,
-        );
-      },
-    ),
+    MigrationStep(5, 6, (m) async {
+      await m.createTable(approvalRoutingPoliciesTable);
+      await m.createTable(guardDecisionsTable);
+      await _createIndexIfMissing(m, idxGuardDecisionsWorkspace);
+      await _createIndexIfMissing(m, idxGuardDecisionsTime);
+      await m.createTable(workspaceRolesTable);
+      await _createIndexIfMissing(m, idxWorkspaceRolesWorkspace);
+      await _addColumnIfMissing(
+        m,
+        actionPoliciesTable,
+        actionPoliciesTable.constraintJson,
+      );
+      await _addColumnIfMissing(
+        m,
+        actionPoliciesTable,
+        actionPoliciesTable.expiresAt,
+      );
+      await _addColumnIfMissing(
+        m,
+        actionPoliciesTable,
+        actionPoliciesTable.enforcement,
+      );
+    }),
     // v6 → v7: code-graph reference-edge cleanup. Unresolved reference edges
     // (target_symbol_id NULL) are write-only rows — no graph query can see
     // them, they exist only as retry input for the name-resolution pass — and
@@ -560,182 +539,249 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     // removes the ones already on disk, because a quiet repo's checkpoint
     // short-circuits every future run and the organic prune would never fire.
     // Bound edges are untouched.
-    MigrationStep(
-      6,
-      7,
-      (m) async {
-        await m.database.customStatement(
-          'DELETE FROM code_edges '
-          'WHERE target_symbol_id IS NULL AND target_name IS NOT NULL',
-        );
-      },
-    ),
+    MigrationStep(6, 7, (m) async {
+      await m.database.customStatement(
+        'DELETE FROM code_edges '
+        'WHERE target_symbol_id IS NULL AND target_name IS NOT NULL',
+      );
+    }),
     // v7 → v8: richer user-activity rows. A single conventional target id
     // could not say which setting changed or which space a rig lived in;
     // `details` is the sanitized argument snapshot that can.
-    MigrationStep(
-      7,
-      8,
-      (m) async {
-        await _addColumnIfMissing(
-          m,
-          userActivityTable,
-          userActivityTable.details,
-        );
-      },
-    ),
+    MigrationStep(7, 8, (m) async {
+      await _addColumnIfMissing(
+        m,
+        userActivityTable,
+        userActivityTable.details,
+      );
+    }),
     // v8 → v9: todos + conversation_goals are keyed by conversation, not
     // space. Switching conversations in one space used to show the same list
     // because both tables FK'd `spaces`. No data is carried forward — a
     // conversation owns its own uuid, so a space-keyed row cannot be mapped
     // onto one stream without inventing an alias the product no longer has.
-    MigrationStep(
-      8,
-      9,
-      (m) async {
-        await m.database.customStatement('DROP TABLE IF EXISTS todos');
-        await m.database.customStatement(
-          'DROP TABLE IF EXISTS conversation_goals',
-        );
-        await m.createTable(todosTable);
-        await m.createTable(conversationGoalsTable);
-        await _createIndexIfMissing(m, idxTodosWorkspaceId);
-        await _createIndexIfMissing(m, idxTodosConversation);
-        await _createIndexIfMissing(m, idxConversationGoalsWorkspaceId);
-      },
-    ),
+    MigrationStep(8, 9, (m) async {
+      await m.database.customStatement('DROP TABLE IF EXISTS todos');
+      await m.database.customStatement(
+        'DROP TABLE IF EXISTS conversation_goals',
+      );
+      await m.createTable(todosTable);
+      await m.createTable(conversationGoalsTable);
+      await _createIndexIfMissing(m, idxTodosWorkspaceId);
+      await _createIndexIfMissing(m, idxTodosConversation);
+      await _createIndexIfMissing(m, idxConversationGoalsWorkspaceId);
+    }),
     // v9 → v10: Workspace → Profile is this workspace's overlay. Membership carries
     // optional display name / email / git author (null inherits the global
     // User). Calendar accounts gain userId so connecting Google on You is
     // that member's calendars here, not a shared pool.
-    MigrationStep(
-      9,
-      10,
-      (m) async {
-        await _addColumnIfMissing(
-          m,
-          workspaceMembersTable,
-          workspaceMembersTable.displayName,
-        );
-        await _addColumnIfMissing(
-          m,
-          workspaceMembersTable,
-          workspaceMembersTable.email,
-        );
-        await _addColumnIfMissing(
-          m,
-          workspaceMembersTable,
-          workspaceMembersTable.gitAuthorName,
-        );
-        await _addColumnIfMissing(
-          m,
-          workspaceMembersTable,
-          workspaceMembersTable.gitAuthorEmail,
-        );
-        await _addColumnIfMissing(
-          m,
-          calendarAccountsTable,
-          calendarAccountsTable.userId,
-        );
-        await m.database.customStatement(
-          'DROP INDEX IF EXISTS uq_calendar_accounts_ws_email',
-        );
-        await _createIndexIfMissing(m, idxCalendarAccountsUserId);
-        await _createIndexIfMissing(m, uqCalendarAccountsWsUserEmail);
-      },
-    ),
+    MigrationStep(9, 10, (m) async {
+      await _addColumnIfMissing(
+        m,
+        workspaceMembersTable,
+        workspaceMembersTable.displayName,
+      );
+      await _addColumnIfMissing(
+        m,
+        workspaceMembersTable,
+        workspaceMembersTable.email,
+      );
+      await _addColumnIfMissing(
+        m,
+        workspaceMembersTable,
+        workspaceMembersTable.gitAuthorName,
+      );
+      await _addColumnIfMissing(
+        m,
+        workspaceMembersTable,
+        workspaceMembersTable.gitAuthorEmail,
+      );
+      await _addColumnIfMissing(
+        m,
+        calendarAccountsTable,
+        calendarAccountsTable.userId,
+      );
+      await m.database.customStatement(
+        'DROP INDEX IF EXISTS uq_calendar_accounts_ws_email',
+      );
+      await _createIndexIfMissing(m, idxCalendarAccountsUserId);
+      await _createIndexIfMissing(m, uqCalendarAccountsWsUserEmail);
+    }),
     // v10 → v11: sidebar activity indexes. Fresh files build them in
     // onCreate; this step carries existing workspace files forward. See
     // [_createConversationActivityIndexes].
-    MigrationStep(
-      10,
-      11,
-      (m) async {
-        await _createConversationActivityIndexes();
-      },
-    ),
+    MigrationStep(10, 11, (m) async {
+      await _createConversationActivityIndexes();
+    }),
     // v11 → v12: integer character counts for the context meter. Fresh files
     // build the columns in onCreate; this step carries existing files forward
     // and backfills them once. See [_backfillConversationCharCounts].
-    MigrationStep(
-      11,
-      12,
-      (m) async {
-        await _addConversationCharColumns();
-        await _backfillConversationCharCounts();
-        await _createConversationCharIndex();
-      },
-    ),
+    MigrationStep(11, 12, (m) async {
+      await _addConversationCharColumns();
+      await _backfillConversationCharCounts();
+      await _createConversationCharIndex();
+    }),
     // v12 → v13: stored list metadata. Fresh files build the column in
     // onCreate; this step carries existing files forward and fills it once.
     // See [_backfillListMetadata].
-    MigrationStep(
-      12,
-      13,
-      (m) async {
-        await _addColumnIfMissing(
-          m,
-          conversationMessagesTable,
-          conversationMessagesTable.listMetadata,
-        );
-        await _backfillListMetadata();
-      },
-    ),
+    MigrationStep(12, 13, (m) async {
+      await _addColumnIfMissing(
+        m,
+        conversationMessagesTable,
+        conversationMessagesTable.listMetadata,
+      );
+      await _backfillListMetadata();
+    }),
     // v13 → v14: stacked branches inside one space's checkout. Fresh files
     // build the table in onCreate; this step carries existing files forward.
     // createTable is re-run safe (IF NOT EXISTS) because a rewound
     // user_version replays every later step against a database that already
     // has the current tables.
-    MigrationStep(
-      13,
-      14,
-      (m) async {
-        await m.createTable(spaceStackEntriesTable);
-        await _createIndexIfMissing(m, idxSpaceStackSpace);
-      },
-    ),
+    MigrationStep(13, 14, (m) async {
+      await m.createTable(spaceStackEntriesTable);
+      await _createIndexIfMissing(m, idxSpaceStackSpace);
+    }),
     // v14 → v15: the delta sync feed is gone. Drop its triggers before its
     // tables: a trigger left behind would fail every write to the table it
     // watches once `sync_changes` no longer exists. See [_dropSyncFeed].
-    MigrationStep(
-      14,
-      15,
-      (m) async {
-        await _dropSyncFeed();
-      },
-    ),
+    MigrationStep(14, 15, (m) async {
+      await _dropSyncFeed();
+    }),
     // v15 → v16: per-agent sandbox capabilities are gone — the action policy
     // (allow / ask / deny) is the one permission system. See
     // [_dropAgentSandboxCapabilities].
-    MigrationStep(
-      15,
-      16,
-      (m) async {
-        await _dropAgentSandboxCapabilities();
-      },
-    ),
+    MigrationStep(15, 16, (m) async {
+      await _dropAgentSandboxCapabilities();
+    }),
     // v16 → v17: the provider-reported context reading behind the meter.
     // Nullable and not backfilled: no turn before this version stored one,
     // and a null reading is what tells the meter to fall back to its
     // estimate.
-    MigrationStep(
-      16,
-      17,
-      (m) async {
-        await _addColumnIfMissing(
-          m,
-          conversationMessagesTable,
-          conversationMessagesTable.contextTokens,
-        );
-        await _addColumnIfMissing(
-          m,
-          conversationMessagesTable,
-          conversationMessagesTable.contextWindowTokens,
-        );
-        await _createContextReadingIndex();
-      },
-    ),
+    MigrationStep(16, 17, (m) async {
+      await _addColumnIfMissing(
+        m,
+        conversationMessagesTable,
+        conversationMessagesTable.contextTokens,
+      );
+      await _addColumnIfMissing(
+        m,
+        conversationMessagesTable,
+        conversationMessagesTable.contextWindowTokens,
+      );
+      await _createContextReadingIndex();
+    }),
+    // v17 → v18: precise cost accounting, run-stage latency and independent
+    // verification. All purely additive and nullable/defaulted — a legacy row
+    // reads as "cents only, unverified, no timings", which is what it is.
+    // `costMicros = 0` is deliberate: readers fall back to the widened cents
+    // projection rather than treating a historical cost as zero.
+    MigrationStep(17, 18, (m) async {
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.costMicros,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.costBasis,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.childCostMicros,
+      );
+      await _addColumnIfMissing(m, agentRunLogsTable, agentRunLogsTable.effort);
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.taskFamily,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.nativeSessionId,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.resumedNativeSession,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.latencyJson,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.verificationStatus,
+      );
+      await _addColumnIfMissing(
+        m,
+        agentRunLogsTable,
+        agentRunLogsTable.verificationJson,
+      );
+      await m.createTable(runCallUsagesTable);
+      await _createIndexIfMissing(m, idxRunCallUsagesRunId);
+      await _createIndexIfMissing(m, idxRunCallUsagesWorkspace);
+      await _createIndexIfMissing(m, idxRunCallUsagesConversation);
+      await _createIndexIfMissing(m, idxRunCallUsagesStarted);
+    }),
+    // v18 → v19: workspace-owned skill campaign state, indexed attempts,
+    // and explicit per-skill reevaluation opt-in.
+    MigrationStep(18, 19, (m) async {
+      await _createTableIfMissing(m, skillEvalCampaignsTable);
+      await _createTableIfMissing(m, skillEvalAttemptsTable);
+      await _createTableIfMissing(m, skillEvalPoliciesTable);
+      await _createIndexIfMissing(m, idxSkillEvalCampaignsSkillCreated);
+      await _createIndexIfMissing(m, idxSkillEvalCampaignsStatus);
+      await _createIndexIfMissing(m, idxSkillEvalAttemptsCampaign);
+      await _createIndexIfMissing(m, idxSkillEvalPoliciesEnabled);
+    }),
+    // v19 → v20: durable per-workspace logical file identities.
+    MigrationStep(19, 20, (m) async {
+      await _createTableIfMissing(m, catalogFilesTable);
+      await _createIndexIfMissing(m, idxCatalogFilesLifecycle);
+      await _createIndexIfMissing(m, idxCatalogFilesPath);
+      // Historic message refs remain readable without fileId. Index them as
+      // already-attached logical files; never treat pre-catalog bytes as
+      // removable content. json_valid guards malformed legacy metadata.
+      await customStatement(
+        r'''
+          INSERT OR IGNORE INTO catalog_files
+            (id, workspace_id, uploader_user_id, name, path, media_type,
+             bytes, source, state, owned_bytes, created_at, updated_at)
+          SELECT 'legacy-' || m.id || '-' || a.key, ?, m.sender_id,
+            COALESCE(json_extract(a.value, '$.name'), 'attachment'),
+            json_extract(a.value, '$.path'),
+            COALESCE(json_extract(a.value, '$.mediaType'),
+              'application/octet-stream'),
+            COALESCE(json_extract(a.value, '$.size'), 0),
+            'upload', 'attached', 0,
+            CAST(strftime('%s', 'now') AS INTEGER),
+            CAST(strftime('%s', 'now') AS INTEGER)
+          FROM conversation_messages m,
+            json_each(CASE WHEN json_valid(m.metadata) THEN m.metadata
+              ELSE '{}' END, '$.attachments') a
+          WHERE json_valid(a.value)
+            AND json_extract(a.value, '$.path') LIKE 'blob:sha256:%'
+        ''',
+        [workspaceId],
+      );
+    }),
   ];
+
+  Future<void> _createTableIfMissing(
+    Migrator m,
+    TableInfo<Table, dynamic> table,
+  ) async {
+    final existing = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable<String>(table.actualTableName)],
+    ).get();
+    if (existing.isEmpty) await m.createTable(table);
+  }
 
   /// Creates [index] unless the file already has it.
   ///
@@ -1136,15 +1182,13 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     await customStatement(
       'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
     );
-    await customStatement(
-      r'''
+    await customStatement(r'''
 UPDATE conversation_messages
 SET content_chars = LENGTH(content),
     transcript_chars = CAST(
       COALESCE(json_extract(metadata, '$.transcriptChars'), 0) AS INTEGER
     )
-''',
-    );
+''');
   }
 
   /// One-time copy of the metadata text list watches read.
@@ -1159,8 +1203,7 @@ SET content_chars = LENGTH(content),
     await customStatement(
       'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
     );
-    await customStatement(
-      r'''
+    await customStatement(r'''
 UPDATE conversation_messages
 SET list_metadata = CASE
   WHEN json_type(metadata, '$.segments') IS NULL THEN metadata
@@ -1170,8 +1213,7 @@ SET list_metadata = CASE
     '$.segment_count', json_array_length(metadata, '$.segments')
   )
 END
-''',
-    );
+''');
   }
 
   /// Covering index for [MessagingDao.conversationCharCountsSql].

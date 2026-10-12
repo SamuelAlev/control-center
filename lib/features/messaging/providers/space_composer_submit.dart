@@ -51,8 +51,8 @@ Future<void> submitSpaceComposer({
   // instead of a new turn — the server persists it as a conversation row, live
   // harness runs inject it at their next turn boundary, and anything still
   // queued when the last run ends is converted to a normal message.
-  // Attachments are uploaded first and ride the card: sent as a plain message
-  // mid-run, they landed in the trail while the run never read them.
+  // Files were uploaded on insertion; queued steering reuses their catalog
+  // ids without moving bytes again.
   // No toast: the card appearing in the strip IS the feedback.
   final hasAgentMention = submission.mentions.any((m) => m.kind == 'agent');
   if (!parsedCommand.isCommand &&
@@ -70,16 +70,16 @@ Future<void> submitSpaceComposer({
             ?.value ??
         const [];
     if (activeRuns.isNotEmpty) {
-      final stored = await ref
+      final attachmentRefs = ref
           .read(spaceMessageSendProvider.notifier)
-          .storeAttachments(workspaceId, submission.attachments);
+          .attachmentMetadata(submission.attachments);
       final port = ref.read(messagingServiceProvider);
       final queued = await port.enqueueSteering(
         workspaceId: workspaceId,
         spaceId: spaceId,
         conversationId: conversationId,
         content: content,
-        attachments: stored,
+        attachments: attachmentRefs,
       );
       if (queued != null) {
         // Remember whether ANY live run can inject mid-run: the strip's
@@ -120,6 +120,7 @@ Future<void> submitSpaceComposer({
         .read(pendingSpaceSendsProvider(spaceId).notifier)
         .enqueue(
           content: content,
+          workspaceId: workspaceId,
           structuredMentions: structured,
           entityRefs: entityRefs,
           attachments: submission.attachments,
@@ -142,24 +143,19 @@ Future<void> submitSpaceComposer({
 
 /// The message text as it is STORED — references intact.
 ///
-/// A `@[file:<name>]` token is not expanded here, and that is the point. This
-/// client is routinely not the machine the agent runs on, so its paths mean
-/// nothing on the far side; the bytes travel instead, and the server replaces
-/// each token IN PLACE with the path it wrote them to. In place matters: the
-/// position is the meaning — "compare ⟦before.png⟧ with ⟦after.png⟧"
-/// collapses into nonsense if the paths are appended as a list at the end.
-/// Keeping the token is also what makes the sent bubble read like the
-/// composer did: the transcript draws it as the same chip.
-///
-/// Attachments carrying no reference — a scratchpad, or a picture attached by
-/// a composer that inserts no token — keep the old trailing-line behaviour,
-/// so nothing that used to reach the agent stops doing so.
+/// Uploaded files retain their inline references; the server resolves the
+/// catalog-backed blob references at dispatch time. A repository-file mention
+/// is already a server-side checkout path and stays a reference. Its
+/// out-of-band path is appended only when there is no inline reference.
 String _renderContent(ComposerSubmission submission) {
   final text = submission.text.trim();
   final named = {for (final match in findFileRefs(text)) match.name};
   final buffer = StringBuffer(text);
   for (final a in submission.attachments) {
-    if (a.kind == 'file' && a.path != null && !named.contains(a.refName)) {
+    if (a.payload != null &&
+        a.kind == 'file' &&
+        a.path != null &&
+        !named.contains(a.refName)) {
       if (buffer.isNotEmpty) {
         buffer.write('\n');
       }

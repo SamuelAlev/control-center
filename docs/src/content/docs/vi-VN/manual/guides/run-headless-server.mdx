@@ -1,9 +1,9 @@
 ---
 title: Chạy máy chủ không giao diện
 description: Chạy tệp nhị phân không giao diện cc_server hoặc ảnh Docker của nó, ghép nối một máy khách với nó và cấu hình nó với toàn bộ bề mặt cờ CLI và biến môi trường.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Chạy `cc_server` trên một chiếc máy luôn bật, rồi kết nối tới nó từ máy tính,
@@ -25,7 +25,7 @@ cần checkout mã nguồn. Hãy ghim một thẻ phiên bản
 | `ghcr.io/samuelalev/cc-server`                    | Backend: cơ sở dữ liệu, agent, MCP, webhook  | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | Máy khách web (nginx tĩnh)                   | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | PWA đồng hành trên điện thoại (nginx tĩnh)   | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Bộ chuyển tiếp ghép nối WebRTC (tùy chọn)    | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Bộ chuyển tiếp kết nối đã mã hóa (tùy chọn)  | `-p 8788:8788`   |
 
 Toàn bộ ngăn xếp dưới dạng một tệp compose:
 
@@ -57,12 +57,14 @@ Những điều đáng biết trước khi bạn để lộ bất kỳ phần n�
 loopback:
 
 - **Ảnh `cc-server` đi kèm `CC_SERVER_INSECURE=1`** (nó phải bind `0.0.0.0` để
-  nhận lưu lượng qua cổng đã công bố), điều chỉ an toàn phía sau một reverse proxy
-  kết thúc TLS — Caddy, Traefik, nginx hoặc Cloudflare Tunnel — trên một mạng tin
-  cậy. Để kết thúc TLS ngay trong tiến trình thay vào đó, hãy gắn một chứng chỉ và
-  đặt `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (rồi bỏ đặt
-  `CC_SERVER_INSECURE`). Mọi thứ đều có thể ghi đè bằng `docker run -e …` hoặc khối
-  `environment:` của compose.
+  nhận lưu lượng qua cổng đã công bố). Hãy dùng một reverse proxy kết thúc TLS —
+  Caddy, Traefik, nginx hoặc Cloudflare Tunnel — trên một mạng tin cậy, hoặc gắn
+  một chứng chỉ và đặt `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (rồi bỏ đặt
+  `CC_SERVER_INSECURE`). Cài đặt này chỉ kiểm soát trình lắng nghe HTTP/WebSocket
+  bên ngoài của máy chủ. Nó không bao giờ tắt phiên máy khách đã mã hóa đầu-cuối
+  bắt buộc. TLS vẫn bảo vệ lưu lượng đăng nhập/khởi tạo, metadata kết nối, các
+  điểm cuối công khai và việc phân phối máy khách web. Mọi thứ đều có thể ghi đè
+  bằng `docker run -e …` hoặc khối `environment:` của compose.
 - **`/data` là trạng thái duy nhất.** Các cơ sở dữ liệu SQLite, bí mật của thiết bị
   đã ghép nối, mô hình đã tải về và âm thanh cuộc họp đều nằm trong volume — hãy
   sao lưu nó và container trở nên có thể vứt bỏ.
@@ -74,14 +76,18 @@ loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Hai ảnh máy khách là những máy chủ nginx tĩnh** — không có gì phải cấu hình lúc
-  chạy; biểu mẫu kết nối của mỗi máy khách nhận URL máy chủ, id thiết bị và khóa
-  ghép nối của bạn. Bộ chuyển tiếp signaling cũng chỉ cần cổng của nó
-  (`SIGNALING_HOST` / `SIGNALING_PORT` có thể ghi đè); nó phi trạng thái, không giữ
-  bí mật nào và là một **phương án dự phòng** — một chiếc điện thoại dùng loopback,
-  LAN, tailnet hoặc đường `wss://` trực tiếp khi có đường nào với tới được, và chỉ
-  quay về bộ chuyển tiếp khi không có đường nào. Hãy bỏ qua nó nếu các máy khách
-  của bạn luôn với tới máy chủ trực tiếp.
+- **Hai ảnh máy khách là những máy chủ nginx tĩnh.** Trình soạn thảo trên trình
+  duyệt nhúng dùng chính origin của ứng dụng và kết nối đã mã hóa, như mô tả
+  [bên dưới](#tài-nguyên-trình-soạn-thảo-trên-trình-duyệt). Biểu mẫu kết nối của
+  mỗi máy khách nhận URL máy chủ, id thiết bị và khóa ghép nối của bạn. Bộ chuyển
+  tiếp signaling chỉ cần cổng của nó (`SIGNALING_HOST` / `SIGNALING_PORT` có thể
+  ghi đè); nó phi trạng thái, không giữ khóa ghép nối nào và là một **phương án dự
+  phòng** — một chiếc điện thoại dùng loopback, LAN, tailnet hoặc đường `wss://`
+  trực tiếp khi có đường nào với tới được, và chỉ quay về bộ chuyển tiếp khi không
+  có đường nào. Hãy bỏ qua nó nếu các máy khách của bạn luôn với tới máy chủ trực
+  tiếp. Bộ môi giới có thể thấy định danh định tuyến, địa chỉ IP, kích thước và
+  thời điểm, và có thể ngắt lưu lượng; nó không thể giải mã luồng tài nguyên giữa
+  máy khách và máy chủ.
 
 Phần còn lại của hướng dẫn này dựng máy chủ từ mã nguồn; các cờ và hành vi mà nó
 đề cập cũng chính là những thứ mà các biến môi trường của ảnh đưa vào.
@@ -177,6 +183,14 @@ Thông tin xác thực do `cc_server pair` tạo **không có thời hạn**; th
 tạo trong ứng dụng luôn hết hạn sau 30 ngày. Hãy thu hồi thiết bị do CLI tạo từ
 **Cài đặt → Bạn → Thiết bị của bạn** khi bạn không cần nữa.
 
+Khóa ghép nối xác thực bắt tay Noise bắt buộc; mỗi phiên dẫn xuất các khóa lưu lượng
+mới và kiểm tra danh tính đã ký của máy chủ. Hãy bảo vệ khóa ghép nối và lấy nó từ
+một nguồn tin cậy (kể cả một mã QR tin cậy), rồi xác minh một dấu vân tay máy chủ
+mới qua một kênh tin cậy riêng hoặc đối chiếu với một ghim đã biết. Đừng âm thầm
+chấp nhận một ghim đã thay đổi: hãy ghép nối lại qua một kênh tin cậy nếu bạn chủ
+động thay thế danh tính máy chủ. Chỉ TLS thì không thể thiết lập ghim danh tính
+đầu-cuối đó.
+
 ## Bước 4: Khởi động máy chủ
 
 Trên loopback — mặc định và là tất cả những gì bạn cần cho một máy khách trên cùng
@@ -204,8 +218,13 @@ bind dạng thuần phía sau nó:
 ```
 
 `--insecure` bị bỏ qua khi cả `--tls-cert` và `--tls-key` đều được đặt — TLS luôn
-thắng. Máy chủ quảng bá trạng thái thuần là `insecure: true` trong `GET /healthz`
-và các máy khách đánh dấu kết nối như vậy là không an toàn.
+thắng. Máy chủ quảng bá trạng thái bản rõ của trình lắng nghe bên ngoài là
+`insecure: true` trong `GET /healthz`. Điều này không tắt mã hóa Noise trên `/rpc`,
+dù máy khách kết nối trực tiếp hay qua bộ chuyển tiếp. Hãy nâng cấp máy chủ, bộ
+chuyển tiếp và máy khách cùng nhau: các máy khách RPC bản rõ cũ sẽ bị từ chối,
+không có lối lùi để tương thích. Các yêu cầu công khai tới những tuyến tài nguyên
+nhạy cảm (kể cả truyền bản sao lưu) nhận HTTP `426`, ngay cả từ loopback; các máy
+khách đã ghép nối dùng đường hầm đã mã hóa thay vào đó.
 
 Máy chủ chạy cho tới khi nhận `SIGINT`/`SIGTERM`, rồi tắt một cách sạch sẽ.
 
@@ -225,6 +244,33 @@ origin trình duyệt khác loopback phải nằm trong `--allowed-origins`, n�
 nâng cấp WebSocket tới `/rpc` sẽ bị từ chối; danh sách mặc định là
 `https://app.usectrl.dev` và `localhost` / `127.0.0.1` luôn được cho phép.
 :::
+
+### Tài nguyên trình soạn thảo trên trình duyệt
+
+Giao diện trình soạn thảo là mã ứng dụng đáng tin cậy và chạy trên chính origin của
+ứng dụng web. Service Worker của nó định tuyến lưu lượng HTTP và WebSocket qua cùng
+phiên đã mã hóa và đã xác thực như phần còn lại của máy khách. `cc_server` giải mã
+từng yêu cầu, chuyển nó tới phần phụ trợ code-server cục bộ của mình, rồi mã hóa
+phản hồi trở lại máy khách. Các tệp vẫn thuộc quyền sở hữu của máy chủ.
+
+Hãy lưu trữ máy khách web qua HTTPS hoặc một origin loopback bảo mật để Service
+Worker có thể chạy. Các script dựng và phát hành web thông thường đã bao gồm các tài
+nguyên dùng chung. Nếu bạn tự dựng một gói, hãy đưa các tài nguyên đó vào sau khi
+dựng, từ gốc kho mã:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Với bản dựng web trên điện thoại, hãy thay bằng `apps/cc_remote/build/web`. Lệnh này
+sao chép `cc_resource_bridge.js`, `cc_resource_worker.js` và
+`cc_resource_ws_shim.js` vào gói của ứng dụng.
+
+Lưu lượng của trình soạn thảo gốc thay vào đó dùng một mặt tiền loopback giới hạn
+theo năng lực. Đừng để lộ cổng báo cáo/lệnh riêng trên loopback của tiện ích trình
+soạn thảo do máy chủ khởi chạy qua một proxy công khai. Các yêu cầu HTTP công khai
+nhạy cảm bị từ chối; tài nguyên yêu cầu một phiên đã mã hóa và đã xác thực.
+
 
 ## Bước 6: Kết nối một Google Calendar (tùy chọn)
 
@@ -285,7 +331,7 @@ phiên. Mọi lời gọi thuộc phạm vi không gian làm việc đều mang 
 riêng nó, và quyền truy cập được quyết định bởi tư cách thành viên và vai trò không
 gian làm việc của bên gọi — chứ không phải bởi việc giữ một khóa ghép nối.
 
-Hai điều cần biết trước khi bạn để lộ cổng ra ngoài loopback:
+Hai điều cần biết trước khi bạn để lộ cổng ra ngoài loopback (chỉ TLS thì không cung cấp mã hóa đầu-cuối cho máy khách đã ghép nối và không cấp quyền cho tài nguyên):
 
 - **MCP đóng an toàn khi ở ngoài máy chủ.** Một bề mặt MCP không token chỉ trả lời loopback. Việc bind `any` không mở rộng điều đó — một yêu cầu từ ngoài máy chủ bị từ chối với thông báo "MCP requires a bearer token to answer non-loopback clients" cho tới khi bạn cấu hình một token (`mcp.setToken`, hoặc **Cài đặt → Máy chủ → Máy chủ MCP**).
 - **`GET /healthz` không yêu cầu xác thực theo thiết kế**, có CORS ký tự đại diện và công bố id, tên, dấu vân tay danh tính và phiên bản build của máy chủ. Các máy khách cần dấu vân tay để ghim máy chủ, nên đây là chủ ý — nhưng điều đó cũng có nghĩa là bất kỳ `cc_server` nào với tới được cũng tiết lộ chừng đó cho bất kỳ ai hỏi.

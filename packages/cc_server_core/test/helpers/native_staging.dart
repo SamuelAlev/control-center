@@ -13,7 +13,14 @@ bool get runningInCi =>
 /// server-boot tests before they all hit the same preflight error.
 bool get hostHasServerNatives {
   for (final dir in _nativeSourceDirs()) {
-    for (final name in const ['libccpty.so', 'libccpty.dylib', 'ccpty.dll']) {
+    for (final name in const [
+      'libccpty.so',
+      'libccpty.dylib',
+      'ccpty.dll',
+      'librhttp.so',
+      'librhttp.dylib',
+      'rhttp.dll',
+    ]) {
       if (File(p.join(dir.path, name)).existsSync()) {
         return true;
       }
@@ -49,7 +56,7 @@ Future<void> stageServerNatives(String dataDir) async {
     // grammars. The versioned-soname tail (`(\..+)?`) stays: it costs nothing
     // and other natives may still carry one.
     r'^(lib)?(fff_c|ccpty|cc_watcher|rift_ffi|lame_ffi|aec_ffi|cc_inference'
-    r'|cc_saml|tree-sitter.*)'
+    r'|cc_saml|rhttp|tree-sitter.*)'
     r'\.(dylib|so|dll)(\..+)?$|\.scm$',
   );
 

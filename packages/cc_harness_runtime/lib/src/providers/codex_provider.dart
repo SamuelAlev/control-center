@@ -32,9 +32,7 @@ class CodexProvider implements LlmProviderPort {
     ProviderHttp? http,
   }) : _baseUrl = _normalizeBase(
          baseUrl,
-         chatgpt
-             ? CodexOAuth.backendApi
-             : CodexOAuth.apiKeyBase,
+         chatgpt ? CodexOAuth.backendApi : CodexOAuth.apiKeyBase,
        ),
        _http = http ?? ProviderHttp.shared;
 
@@ -70,10 +68,7 @@ class CodexProvider implements LlmProviderPort {
       return {'Authorization': 'Bearer $token'};
     }
     return {
-      ...CodexOAuth.chatgptHeaders(
-        accessToken: token,
-        accountId: _accountId,
-      ),
+      ...CodexOAuth.chatgptHeaders(accessToken: token, accountId: _accountId),
       'session_id': _uuidV4(),
       'conversation_id': conversationId ?? _uuidV4(),
       if (model != null && model.isNotEmpty)
@@ -105,9 +100,7 @@ class CodexProvider implements LlmProviderPort {
     final model = config.model ?? _defaultModel;
     final conversationId = config.cacheKey;
     final uri = Uri.parse(
-      chatgpt
-          ? '$_baseUrl${CodexOAuth.responsesPath}'
-          : '$_baseUrl/responses',
+      chatgpt ? '$_baseUrl${CodexOAuth.responsesPath}' : '$_baseUrl/responses',
     );
     final body = buildCodexResponsesBody(
       messages: messages,
@@ -167,8 +160,7 @@ class CodexProvider implements LlmProviderPort {
           case 'response.output_item.done':
             final item = json['item'];
             _noteItem(calls, item);
-            if (item is Map<String, dynamic> &&
-                item['type'] == 'reasoning') {
+            if (item is Map<String, dynamic> && item['type'] == 'reasoning') {
               final encrypted = item['encrypted_content'] as String?;
               if (encrypted != null && encrypted.isNotEmpty) {
                 yield LlmThinkingDelta('', signature: encrypted);
@@ -296,9 +288,11 @@ Map<String, dynamic> buildCodexResponsesBody({
           input.add({
             'type': 'function_call_output',
             'call_id': block.toolUseId,
+            // No reference slot on this wire; an activation is named in the
+            // output text instead of being dropped.
             'output': block.isError
-                ? 'ERROR: ${block.content}'
-                : block.content,
+                ? 'ERROR: ${block.portableContent}'
+                : block.portableContent,
           });
           if (block.images.isNotEmpty) {
             input.add({
@@ -380,10 +374,7 @@ List<Map<String, dynamic>> _assistantItems(HarnessMessage message) {
     if (block is HarnessThinkingBlock &&
         block.signature != null &&
         block.signature!.isNotEmpty) {
-      items.add({
-        'type': 'reasoning',
-        'encrypted_content': block.signature,
-      });
+      items.add({'type': 'reasoning', 'encrypted_content': block.signature});
     }
   }
   final text = message.textContent;

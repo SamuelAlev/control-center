@@ -74,11 +74,9 @@ class ClaudeAccountRow extends ConsumerWidget {
                       const SizedBox(width: 6),
                       _tokenBadge(l10n, account.longLivedTokenSavedAt),
                     ],
-                    // Warning badges are for a login a human has to repair.
-                    // A lapsed access token with a live refresh token is the
-                    // overnight state the CLI renews on the next run — same
-                    // copy as the usage flyout, muted, no badge.
-                    if (!account.loggedIn && account.isCredentialExpired()) ...[
+                    // CLI status reports credential presence, not freshness.
+                    // Show expiry before a run discovers a failed refresh.
+                    if (account.isCredentialExpired()) ...[
                       const SizedBox(width: 6),
                       CcBadge(
                         label: l10n.claudeAccountExpired,

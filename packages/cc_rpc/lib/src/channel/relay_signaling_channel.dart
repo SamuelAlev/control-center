@@ -178,9 +178,8 @@ class RelaySignalingChannel {
   /// Requests short-lived TURN credentials from the broker.
   ///
   /// ARCHITECTURE NOTE — this is a broker WebSocket relay, not a WebRTC+TURN data channel.
-  /// The broker never sees plaintext or the PSK — `RelayFrameCrypto` seals every frame
-  /// end-to-end between the two peers, so the dumb-relay guarantee holds regardless of the
-  /// transport underneath.
+  /// The broker routes opaque records; the authenticated Noise session between peers
+  /// encrypts application frames and flow-control records before relay delivery.
   Future<RelayTurnCredentials?> requestTurnCredentials({
     Duration timeout = const Duration(seconds: 10),
   }) async {

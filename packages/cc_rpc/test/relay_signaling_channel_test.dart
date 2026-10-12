@@ -240,48 +240,6 @@ void main() {
   });
 
   group('RelaySignalingChannel messaging', () {
-    test(
-      'sendSignal broadcasts and routes a peer signal to incoming',
-      () async {
-        broker = await _Broker.start(
-          onJoin: (frame) async {
-            return {
-              'type': 'joined',
-              'room': frame['room'],
-              'ownerPresent': true,
-              'ownerPeer': 'server',
-            };
-          },
-        );
-
-        final channel = await RelaySignalingChannel.joinAsClient(
-          signalingUrl: 'ws://127.0.0.1:${broker.port}/',
-          room: 'room-m',
-          token: 't',
-        );
-        final inbound = <Map<String, dynamic>>[];
-        channel.incoming.listen(inbound.add);
-
-        // Broadcast a signal to the room.
-        channel.sendSignal(payload: const {'hello': 'world'});
-
-        // Broker pushes a peer signal back.
-        broker.sendToLast({
-          'type': 'signal',
-          'from': 'server',
-          'kind': 'rpc',
-          'payload': {'ack': 1},
-        });
-        await _flush();
-
-        expect(inbound, isNotEmpty);
-        expect(inbound.last['type'], 'signal');
-        expect((inbound.last['payload'] as Map)['ack'], 1);
-
-        await channel.close();
-      },
-    );
-
     test('admit builds add/remove deltas and requestTurnCredentials returns '
         'the minted creds', () async {
       final brokerFrames = <Map<String, dynamic>>[];

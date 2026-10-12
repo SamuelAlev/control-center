@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/context/harness_compaction.dart';
+import 'package:cc_harness/src/context/harness_evidence.dart';
+import 'package:cc_harness/src/context/harness_token_accounting.dart';
 import 'package:cc_harness/src/context/provider_image_budget.dart';
 import 'package:cc_harness/src/context/token_estimator.dart';
+import 'package:cc_harness/src/context/tool_observation.dart';
 import 'package:cc_harness/src/context/tool_output_truncation.dart';
 import 'package:cc_harness/src/loop/advisor.dart';
 import 'package:cc_harness/src/loop/agent_loop.dart';
@@ -52,6 +55,8 @@ class AgentLoopRunner implements AgentLoop {
   /// Creates an [AgentLoopRunner].
   const AgentLoopRunner();
 
+  static int _nextLoopId = 0;
+
   @override
   Stream<AgentLoopEvent> run({
     required List<HarnessMessage> history,
@@ -76,36 +81,121 @@ class AgentLoopRunner implements AgentLoop {
     };
     final deferredByName = {for (final t in deferredTools) t.name: t};
     final residentSchemas = tools.map((t) => t.toSchema()).toList();
-    // Activation is APPEND-ONLY and never reordered: the resident block is the
-    // head of the provider's cache prefix, so appending after it leaves that
-    // prefix byte-identical and costs only the new schemas. Removing or
-    // reordering would invalidate the whole tools+system prefix on every turn,
-    // which is strictly worse than never having deferred at all.
-    final activatedNames = <String>[];
+    final nativeDeferral =
+        residentSchemas.isNotEmpty &&
+        deferredTools.isNotEmpty &&
+        providerSupportsDeferredTools(provider, model: config.model);
+    final deferredSchemas = nativeDeferral
+        ? {
+            for (final tool in deferredTools)
+              tool.name: tool.toSchema().copyWith(deferLoading: true),
+          }
+        : const <String, LlmToolSchema>{};
+    // Native search keeps one fixed, authorized catalog. Other providers
+    // append activated schemas behind the unchanged resident cache prefix.
+    final activatedNames = <String>{};
     var toolSchemas = residentSchemas;
+
+    /// Deferred tools this history activated whose carrier ON THE WIRE is gone.
+    ///
+    /// A native activation is carried by a `tool_reference` inside a result
+    /// block. A fold replaces that block with a summary, so the reference — the
+    /// only thing the provider can expand into a schema — disappears while the
+    /// tool stays nominally active. Only the activation metadata survives, and
+    /// a name known ONLY from that metadata must be admitted as a real,
+    /// non-deferred definition or the model loses a tool the history says it
+    /// has. Recomputed from the current history because a rewrite is exactly
+    /// what removes the carrier.
+    Set<String> carriedOnlyActivations() {
+      final restored = <String>{};
+      final referenced = <String>{};
+      for (final message in history) {
+        restored.addAll(message.activatedToolNames);
+        for (final block in message.content) {
+          if (block is HarnessToolResultBlock) {
+            restored.addAll(block.toolReferences);
+            referenced.addAll(block.toolReferences);
+          } else if (block is HarnessToolUseBlock) {
+            restored.add(block.name);
+            referenced.add(block.name);
+          }
+        }
+      }
+      return {
+        for (final name in restored)
+          if (deferredByName.containsKey(name) && !referenced.contains(name))
+            name,
+      };
+    }
+
+    /// Rebuilds the native catalog for the CURRENT history, in the fixed
+    /// declared order: the resident block, then every deferred tool — with a
+    /// carried-only activation admitted as a real definition in its own
+    /// position (no fabricated assistant call or result, and no reordering that
+    /// would churn the tools prefix beyond the rewrite that caused it).
+    void rebuildNativeToolCatalog() {
+      if (!nativeDeferral) {
+        return;
+      }
+      final carried = carriedOnlyActivations();
+      toolSchemas = <LlmToolSchema>[
+        ...residentSchemas,
+        for (final tool in deferredTools)
+          carried.contains(tool.name)
+              ? tool.toSchema()
+              : deferredSchemas[tool.name]!,
+      ];
+    }
+
+    rebuildNativeToolCatalog();
     var activatedOverheadTokens = 0;
     List<String> activateDeferred(Iterable<String> names) {
-      final fresh = [
-        for (final n in names)
-          if (deferredByName.containsKey(n) && !activatedNames.contains(n)) n,
-      ];
+      final fresh = <String>[];
+      for (final name in names) {
+        if (deferredByName.containsKey(name) && activatedNames.add(name)) {
+          fresh.add(name);
+        }
+      }
       if (fresh.isEmpty) {
         return const [];
       }
-      activatedNames.addAll(fresh);
-      final added = [for (final n in fresh) deferredByName[n]!.toSchema()];
-      for (final s in added) {
-        activatedOverheadTokens += _schemaTokens(s);
+      final added = [
+        for (final name in fresh)
+          deferredSchemas[name] ?? deferredByName[name]!.toSchema(),
+      ];
+      for (final schema in added) {
+        activatedOverheadTokens += _schemaTokens(schema);
       }
-      toolSchemas = [...toolSchemas, ...added];
+      if (!nativeDeferral) {
+        toolSchemas = [...toolSchemas, ...added];
+      }
       return fresh;
     }
+
+    List<String> referencesFor(_PendingTool call, HarnessToolResult result) {
+      final direct = deferredByName.containsKey(call.name);
+      if (!direct && result.activateTools.isEmpty) {
+        return const [];
+      }
+      final names = <String>{
+        if (direct) call.name,
+        for (final name in result.activateTools)
+          if (deferredByName.containsKey(name)) name,
+      };
+      return names.isEmpty ? const [] : names.toList(growable: false);
+    }
+
+    activateDeferred(collectActivatedToolNames(history));
 
     // Hand the run's cancellation token to tools so a cancelled run kills work
     // in flight (bash, web fetch) instead of only being noticed between tools.
     final ctx = (context ?? const HarnessToolContext(workingDirectory: '.'))
         .withCancel(cancelToken);
     final stopwatch = Stopwatch()..start();
+    final callIdPrefix =
+        '${config.callLedger?.runId ?? config.cacheKey ?? 'loop'}:${++_nextLoopId}';
+    final observationIngest =
+        config.observationIngest ?? ToolObservationIngest();
 
     // The user turn carries any pasted screenshots alongside its text. Built
     // as one message rather than two so the provider sees the picture and the
@@ -130,6 +220,7 @@ class AgentLoopRunner implements AgentLoop {
       effort: config.effort,
       cacheEnabled: config.cacheEnabled,
       cacheKey: config.cacheKey,
+      purpose: config.purpose,
     );
 
     // Where the previous request placed its message-tail cache breakpoint, so
@@ -138,6 +229,8 @@ class AgentLoopRunner implements AgentLoop {
     // pointer into a conversation that no longer exists.
     var cacheAnchorIndex = -1;
     var billableTokens = 0;
+    int billableTokensNow() =>
+        config.callLedger?.billableTokens ?? billableTokens;
     var pressureNotified = false;
     // One-shot latch for the host-priced soft budget steer (section 5b).
     var externalPressureSteered = false;
@@ -155,21 +248,39 @@ class AgentLoopRunner implements AgentLoop {
     // and delivered" from "stopped talking".
     final ledger = ContractLedger(config.contract);
 
+    bool hardBudgetExhausted() {
+      if (config.externalBudgetExceeded?.call() ?? false) {
+        return true;
+      }
+      final budget = config.budget;
+      return budget.hardStop &&
+          ((budget.tokenBudget != null &&
+                  billableTokensNow() >= budget.tokenBudget!) ||
+              (budget.timeBudget != null &&
+                  stopwatch.elapsed >= budget.timeBudget!));
+    }
+
+    LoopDone budgetStop() => LoopDone(
+      LoopDoneReason.budgetExhausted,
+      unmetContractId: ledger.isActive && !ledger.satisfied
+          ? ledger.contract!.id
+          : null,
+    );
+
     // Context management: the system prompt and the RESIDENT tool schemas are
     // constant across the run, so estimate them once for the compaction budget.
     final compactor = config.compactor;
     // Reserve the per-request overhead (system + tool schemas) AND the output
     // budget (max_tokens) so compaction fires before the input+output exceeds
     // the window, not just the input.
-    final baseOverheadTokens = compactor == null
-        ? 0
-        : _overheadTokens(config.systemPrompt, residentSchemas) +
-              config.maxTokens;
+    final basePromptTokens = _overheadTokens(
+      config.systemPrompt,
+      residentSchemas,
+    );
     // Tools activated mid-run are real request bytes: left out of the budget,
     // a run that pulls in a dozen schemas would compact too late and hit the
     // provider's context ceiling instead of its own.
-    int overheadTokensNow() =>
-        compactor == null ? 0 : baseOverheadTokens + activatedOverheadTokens;
+    int overheadTokensNow() => basePromptTokens + activatedOverheadTokens;
 
     final hooks = config.hooks;
     final advisor = config.advisor;
@@ -212,6 +323,10 @@ class AgentLoopRunner implements AgentLoop {
     // Seeded from a restored run, so a `rewind` to a label the model set
     // before a restart still lands where the label was set.
     final checkpoints = <String, int>{...config.initialCheckpoints};
+    // The text behind a live snapshot page, carried across the run and written
+    // back with the transcript. Seeded from the resumed record: without it a
+    // restarted run cannot recover the conversation a page represents.
+    var snapshotSource = config.initialSnapshotSource;
     final transcriptStore = config.transcriptStore;
     final transcriptKey = config.transcriptKey;
     var persistedTurns = 0;
@@ -231,10 +346,64 @@ class AgentLoopRunner implements AgentLoop {
             messages: List<HarnessMessage>.unmodifiable(history),
             checkpoints: Map<String, int>.unmodifiable(checkpoints),
             turns: persistedTurns,
+            retainedSnapshotSource: snapshotSource,
+            // A copy, so the persisted record is a snapshot of the host's
+            // bookkeeping rather than a live view of a map the host may keep
+            // mutating.
+            metadata: Map<String, Object?>.of(config.transcriptMetadata),
           ),
         );
       } on Object {
         // Continuity is worth less than the run in progress.
+      }
+    }
+
+    /// Folds a compaction result's snapshot bookkeeping into [snapshotSource].
+    ///
+    /// Only a pass that CHANGED anything can say something about the carrier:
+    ///
+    /// * a reported source is a page that is (still) on the wire — the only
+    ///   case that sets it, and it covers both a fresh page and one re-reported
+    ///   by a later pass, so an unchanged pass leaves the value alone;
+    /// * otherwise the source describes nothing and is spent — but only if the
+    ///   carrier is actually gone. A changed pass that leaves images in history
+    ///   (a mask or edit elsewhere, or a rehydration that could not reach the
+    ///   page) must KEEP it, or a later refusal folds the page by its caption
+    ///   and loses the conversation behind it. The post-pass history is the
+    ///   authority on that, not the result shape: the snapshot compactor
+    ///   rehydrates a refused region to text before the fallback may mask, so
+    ///   the combined rehydration + mask-only pass reports `messagesFolded: 0`
+    ///   yet has genuinely removed the carrier.
+    void absorbSnapshotSource(HarnessCompactionResult result) {
+      if (!result.changed) {
+        return;
+      }
+      final source = result.retainedSnapshotSource;
+      if (source != null) {
+        snapshotSource = source;
+        // The result's own contract says the folded span collapsed into ONE
+        // replacement message AT `foldedFromIndex`, so that message is the page
+        // the source describes. Stamping it here — sourced from the producer's
+        // reported identity rather than a guess about content — is what gives
+        // the source something that can survive a restart, a rewind and an
+        // unrelated screenshot.
+        final index = result.foldedFromIndex;
+        if (index >= 0 &&
+            index < history.length &&
+            !history[index].isSnapshotCarrier) {
+          history[index] = history[index].copyWith(isSnapshotCarrier: true);
+        }
+        return;
+      }
+      // The carrier's IDENTITY decides, not how many images happen to be left:
+      // a rewind or fold can drop the page while an unrelated screenshot stays,
+      // and an image count would then keep a source whose text describes a
+      // region that no longer exists — which a later refusal would rehydrate,
+      // resurrecting material the run explicitly discarded. A text rehydration
+      // builds a plain message without the marker, so its disappearance is
+      // exactly the signal.
+      if (!history.any((m) => m.isSnapshotCarrier)) {
+        snapshotSource = null;
       }
     }
 
@@ -282,6 +451,10 @@ class AgentLoopRunner implements AgentLoop {
         yield const LoopDone(LoopDoneReason.cancelled);
         return;
       }
+      if (hardBudgetExhausted()) {
+        yield budgetStop();
+        return;
+      }
 
       // ---- 0. Compact the history when it nears the context window. ----
       // Runs BEFORE the pre-turn boundary is captured so checkpoint/rewind
@@ -297,6 +470,7 @@ class AgentLoopRunner implements AgentLoop {
             history,
             contextWindow: config.contextWindow,
             overheadTokens: overheadTokensNow(),
+            reservedOutputTokens: config.maxTokens,
             selfAgentName: config.selfAgentName,
           );
         } on Object catch (e) {
@@ -304,7 +478,7 @@ class AgentLoopRunner implements AgentLoop {
           result = null;
         }
         if (result != null && result.changed) {
-          _remapCheckpoints(checkpoints, result.messagesFolded);
+          _remapCheckpoints(checkpoints, result);
           // The history was rewritten under the advisor's cursor — re-prime it
           // so it re-reads the compacted transcript instead of slicing past
           // its end and can re-raise issues that were folded away.
@@ -316,6 +490,11 @@ class AgentLoopRunner implements AgentLoop {
           // tail. (The tools and system prefixes are untouched — a message
           // rewrite costs the message tier only.)
           cacheAnchorIndex = -1;
+          // The fold may have replaced the result block that carried a native
+          // activation with a summary, so a tool whose only remaining evidence
+          // is metadata must be re-admitted as a real definition.
+          rebuildNativeToolCatalog();
+          absorbSnapshotSource(result);
           yield LoopCompaction(
             summarized: result.summarized,
             messagesFolded: result.messagesFolded,
@@ -377,10 +556,13 @@ class AgentLoopRunner implements AgentLoop {
       final thinkingBuffer = StringBuffer();
       String? thinkingSignature;
       final pending = <_PendingTool>[];
+      final pendingIds = <String>{};
+      final earlyResults = <String, HarnessToolResult>{};
       LlmError? lastError;
       var stopReason = LlmStopReason.unknown;
       var attempt = 0;
       var completed = false;
+      final callId = '$callIdPrefix:turn-$turn';
       // Output tokens the provider billed for THIS turn. Compared against what
       // the turn actually delivered to catch a provider that generates tokens
       // and then hands us none of them (see the delivery-ratio guard below).
@@ -393,11 +575,21 @@ class AgentLoopRunner implements AgentLoop {
       final hasStreamRules = config.streamRules.isNotEmpty;
 
       while (!completed) {
+        // Compaction and failed attempts are real spend. Do not begin another
+        // main call after an auxiliary request or retry exhausted the budget.
+        if (hardBudgetExhausted()) {
+          yield budgetStop();
+          return;
+        }
+        var requestUsage = const LlmUsage();
+        LlmUsage? finalUsage;
         textBuffer.clear();
         ruleWindow = '';
         thinkingBuffer.clear();
         thinkingSignature = null;
         pending.clear();
+        pendingIds.clear();
+        earlyResults.clear();
         lastError = null;
         stopReason = LlmStopReason.unknown;
         turnOutputTokens = 0;
@@ -434,15 +626,34 @@ class AgentLoopRunner implements AgentLoop {
         final requestConfig = completeConfig.copyWith(
           toolCacheBreakpointIndex: residentSchemas.length - 1,
           cacheAnchorIndex: cacheAnchorIndex,
+          callId: callId,
         );
         // Recorded BEFORE the call: this is the tail this request writes at,
         // and therefore the anchor the next one must read from.
         cacheAnchorIndex = wireMessages.length - 1;
-        await for (final event in provider.complete(
+        final recordStart = config.callLedger?.records.length ?? 0;
+        final estimatedPromptTokens = config.tokenCalibration == null
+            ? 0
+            : estimateHarnessHistory(wireMessages) +
+                  basePromptTokens +
+                  activatedOverheadTokens;
+        final modelEvents = provider.complete(
           messages: wireMessages,
           tools: toolSchemas,
           config: requestConfig,
-        )) {
+        );
+        final Stream<Object> turnEvents =
+            config.overlapReadOnlyTools &&
+                (hooks == null || !hooks.interceptsTools)
+            ? _overlapReadOnlyTools(
+                modelEvents,
+                toolsByName,
+                ctx,
+                limit: max(1, config.maxParallelToolCalls),
+                timeout: config.toolTimeout,
+              )
+            : _cancelableModelStream(modelEvents, cancelToken);
+        await for (final event in turnEvents) {
           if (cancelToken.isCancelled) {
             yield const LoopDone(LoopDoneReason.cancelled);
             return;
@@ -455,7 +666,17 @@ class AgentLoopRunner implements AgentLoop {
             yield const LoopDone(LoopDoneReason.error);
             return;
           }
-          switch (event) {
+          if (event is LoopToolCallStart) {
+            yield event;
+            continue;
+          }
+          if (event is LoopToolCallResult) {
+            earlyResults[event.toolUseId] = event.result;
+            yield event;
+            continue;
+          }
+          final modelEvent = event as LlmEvent;
+          switch (modelEvent) {
             case LlmTextDelta(:final text):
               textBuffer.write(text);
               yield LoopTextDelta(text);
@@ -485,28 +706,134 @@ class AgentLoopRunner implements AgentLoop {
                 yield LoopThinkingDelta(thinking);
               }
             case LlmToolUseDelta(:final id, :final name, :final argumentsJson):
-              pending.add(_PendingTool.fromStream(id, name, argumentsJson));
-            case LlmUsage(
-              :final inputTokens,
-              :final outputTokens,
-              :final cacheWriteTokens,
-            ):
-              billableTokens += inputTokens + outputTokens + cacheWriteTokens;
-              turnOutputTokens += outputTokens;
-              yield LoopUsage(event);
-            case LlmError():
-              lastError = event;
-              if (event.retryable && attempt < config.maxProviderRetries) {
-                retry = true;
+              if (pendingIds.add(id)) {
+                pending.add(_PendingTool.fromStream(id, name, argumentsJson));
+              } else {
+                lastError = LlmError(
+                  // A protocol error is not safe to replay as a transient one.
+                  'The provider emitted duplicate tool-call id "$id".',
+                  code: 'duplicate_tool_call_id',
+                );
+                retry = false;
               }
-            case LlmDone(stopReason: final reason):
+            case LlmUsage():
+              final previous = requestUsage;
+              requestUsage = previous.reconcile(modelEvent);
+              if (!identical(previous, requestUsage)) {
+                final previousTotal =
+                    previous.inputTokens +
+                    previous.outputTokens +
+                    previous.cacheReadTokens +
+                    previous.cacheWriteTokens +
+                    previous.thoughtTokens;
+                final delta = previousTotal == 0
+                    ? requestUsage
+                    : LlmUsage(
+                        inputTokens:
+                            requestUsage.inputTokens - previous.inputTokens,
+                        outputTokens:
+                            requestUsage.outputTokens - previous.outputTokens,
+                        cacheReadTokens:
+                            requestUsage.cacheReadTokens -
+                            previous.cacheReadTokens,
+                        cacheWriteTokens:
+                            requestUsage.cacheWriteTokens -
+                            previous.cacheWriteTokens,
+                        thoughtTokens:
+                            requestUsage.thoughtTokens - previous.thoughtTokens,
+                      );
+                if (config.callLedger == null) {
+                  billableTokens +=
+                      delta.inputTokens +
+                      delta.outputTokens +
+                      delta.cacheWriteTokens;
+                }
+                yield LoopUsage(delta);
+              }
+            case LlmError():
+              // Protocol-invalid duplicate IDs must never become retryable
+              // merely because another event reported a transient failure.
+              if (lastError?.code != 'duplicate_tool_call_id') {
+                lastError = modelEvent;
+                retry =
+                    modelEvent.retryable && attempt < config.maxProviderRetries;
+              }
+            case LlmDone(stopReason: final reason, :final usage):
               stopReason = reason;
+              finalUsage = usage;
               break;
           }
           // A stream rule fired: abandon this turn's stream and restart with
           // the reminder now in history.
           if (ruleRestart) {
             break;
+          }
+        }
+
+        if (cancelToken.isCancelled) {
+          yield const LoopDone(LoopDoneReason.cancelled);
+          return;
+        }
+
+        final reconciled = requestUsage.reconcile(finalUsage);
+        turnOutputTokens = reconciled.outputTokens;
+        if (!identical(reconciled, requestUsage)) {
+          final missing = LlmUsage(
+            inputTokens: reconciled.inputTokens - requestUsage.inputTokens,
+            outputTokens: reconciled.outputTokens - requestUsage.outputTokens,
+            cacheReadTokens:
+                reconciled.cacheReadTokens - requestUsage.cacheReadTokens,
+            cacheWriteTokens:
+                reconciled.cacheWriteTokens - requestUsage.cacheWriteTokens,
+            thoughtTokens:
+                reconciled.thoughtTokens - requestUsage.thoughtTokens,
+          );
+          if (config.callLedger == null) {
+            billableTokens +=
+                missing.inputTokens +
+                missing.outputTokens +
+                missing.cacheWriteTokens;
+          }
+          yield LoopUsage(missing);
+        }
+        final calibration = config.tokenCalibration;
+        if (calibration != null && !ruleRestart) {
+          final records = config.callLedger?.records;
+          if (records != null) {
+            for (var i = recordStart; i < records.length; i++) {
+              final record = records[i];
+              if (record.callId == callId && record.succeeded) {
+                final usage = record.usage;
+                calibration.observe(
+                  providerId: record.providerId,
+                  // The REQUESTED identity, not the serving one: a router or a
+                  // dated snapshot can serve a different id than the run
+                  // configured, and the compactor looks the factor up by the
+                  // model it was configured with. Keying observations by the
+                  // served id leaves every sample under a key nobody queries,
+                  // so the factor stays 1.0 no matter how many arrive. The
+                  // serving model keeps pricing/observability correct.
+                  modelId: record.requestedModelOrServed,
+                  purpose: config.purpose,
+                  estimatedTokens: estimatedPromptTokens,
+                  observedPromptTokens:
+                      usage.inputTokens +
+                      usage.cacheReadTokens +
+                      usage.cacheWriteTokens,
+                );
+              }
+            }
+          } else if (lastError == null) {
+            calibration.observe(
+              providerId: provider.displayName,
+              modelId: config.model ?? provider.defaultModel,
+              purpose: config.purpose,
+              estimatedTokens: estimatedPromptTokens,
+              observedPromptTokens:
+                  reconciled.inputTokens +
+                  reconciled.cacheReadTokens +
+                  reconciled.cacheWriteTokens,
+            );
           }
         }
 
@@ -571,15 +898,21 @@ class AgentLoopRunner implements AgentLoop {
               history,
               contextWindow: config.contextWindow,
               overheadTokens: overheadTokensNow(),
+              reservedOutputTokens: config.maxTokens,
               selfAgentName: config.selfAgentName,
               force: true,
             );
             if (result.changed) {
-              _remapCheckpoints(checkpoints, result.messagesFolded);
+              _remapCheckpoints(checkpoints, result);
               // Same rewrite hazard as the loop-top compaction: re-prime the
               // advisor so its cursor doesn't slice into the rewritten history.
               advisor?.reset();
               checklist?.resetCadence();
+              cacheAnchorIndex = -1;
+              // Same activation hazard too: the fold may have taken the
+              // reference block with it.
+              rebuildNativeToolCatalog();
+              absorbSnapshotSource(result);
               yield LoopCompaction(
                 summarized: result.summarized,
                 messagesFolded: result.messagesFolded,
@@ -716,6 +1049,21 @@ class AgentLoopRunner implements AgentLoop {
             _firstTaskIndex(history);
         final target = raw.clamp(0, history.length);
         final dropped = history.sublist(target);
+        // Deferred tools the dropped span had activated are still callable (the
+        // schema is already in this run's catalog), so the replacement message
+        // must carry their names: otherwise a restart from this transcript — or
+        // a later fold of it — has no record that they were ever activated.
+        final carriedThroughRewind = <String>{
+          for (final message in dropped) ...message.activatedToolNames,
+        };
+        // A rewind can drop the snapshot page itself. Keeping its source would
+        // let a later refusal rehydrate text the rewind just discarded —
+        // resurrecting material the run explicitly threw away — so the source
+        // goes with the PAGE, identified by its marker rather than by whether
+        // some unrelated image survived the truncation.
+        if (snapshotSource != null && dropped.any((m) => m.isSnapshotCarrier)) {
+          snapshotSource = null;
+        }
         final digest = dropped.isEmpty
             ? ''
             : await const StructuralHarnessSummarizer().summarize(
@@ -735,8 +1083,20 @@ class AgentLoopRunner implements AgentLoop {
                 '${digest.isEmpty ? '' : '\n\n$digest'}\n\nContinue.',
               ),
             ],
+            activatedToolNames: carriedThroughRewind.toList(growable: false),
           ),
         );
+        // A rewind truncates history, so the tail index the previous request
+        // wrote its cache breakpoint at no longer names the same message — and
+        // may not exist at all. Anchoring the next request there would place
+        // its cache READ on a different turn and miss the prefix it was meant
+        // to hit (or silently place nothing, since an out-of-range anchor is
+        // dropped). Same hazard as the compaction sites: invalidate it.
+        cacheAnchorIndex = -1;
+        // The dropped span may have held the only reference block for a tool
+        // that is still carried by metadata (above); the catalog follows the
+        // history it is built from.
+        rebuildNativeToolCatalog();
         // History was rewritten under the advisor's cursor (same hazard as the
         // two compaction sites) — re-prime it so it re-reads the rewound
         // transcript instead of slicing past its end.
@@ -780,58 +1140,87 @@ class AgentLoopRunner implements AgentLoop {
               ),
             );
           }
-          history.add(HarnessMessage.toolResults(resultBlocks));
+          history.add(
+            HarnessMessage.toolResults(
+              resultBlocks,
+              // Carried on the message that activated them, so a later fold or a
+              // restart can still tell these tools are callable once the reference
+              // blocks that carried them are gone.
+              activatedToolNames: activatedByCall,
+            ),
+          );
           yield const LoopDone(LoopDoneReason.cancelled);
           return;
         }
         if (batchingAllowed &&
             pending[pi].argsError == null &&
             _isParallelSafe(toolsByName[pending[pi].name])) {
-          // Gather a run of consecutive parallel-safe tools, capped at the
-          // per-wave concurrency limit; anything left over runs in the next
-          // wave (still concurrently and still cancellable in between).
-          final waveLimit = config.maxParallelToolCalls < 1
+          // Gather the entire independent region. A free slot starts its next
+          // call immediately rather than waiting for the slowest sibling.
+          final parallelLimit = config.maxParallelToolCalls < 1
               ? 1
               : config.maxParallelToolCalls;
           final batch = <_PendingTool>[];
           while (pi < pending.length &&
-              batch.length < waveLimit &&
               pending[pi].argsError == null &&
               _isParallelSafe(toolsByName[pending[pi].name])) {
             batch.add(pending[pi]);
             pi++;
           }
-          for (final b in batch) {
-            yield LoopToolCallStart(
-              toolName: b.name,
-              toolUseId: b.id,
-              args: b.args,
-            );
+          final results = List<HarnessToolResult?>.filled(batch.length, null);
+          await for (final event in _executeParallelBatch(
+            batch,
+            toolsByName,
+            ctx,
+            limit: parallelLimit,
+            timeout: config.toolTimeout,
+            completedReads: earlyResults,
+          )) {
+            final call = batch[event.index];
+            final result = event.result;
+            if (result == null) {
+              yield LoopToolCallStart(
+                toolName: call.name,
+                toolUseId: call.id,
+                args: call.args,
+              );
+            } else {
+              results[event.index] = result;
+              ledger.recordToolResult(call.name, isError: result.isError);
+              if (event.started) {
+                yield LoopToolCallResult(
+                  toolName: call.name,
+                  toolUseId: call.id,
+                  result: result,
+                );
+              }
+            }
           }
-          final results = await Future.wait([
-            for (final b in batch)
-              _safeExecute(
-                toolsByName[b.name]!,
-                b.args,
-                ctx,
-                toolCallId: b.id,
-                timeout: config.toolTimeout,
-              ),
-          ]);
+          // Completion events are immediate; history and activation remain in
+          // model order so timing cannot reorder the next cached request.
           for (var k = 0; k < batch.length; k++) {
-            ledger.recordToolResult(batch[k].name, isError: results[k].isError);
-            requestedActivations.addAll(results[k].activateTools);
-            yield LoopToolCallResult(
+            final result = results[k]!;
+            requestedActivations.addAll(result.activateTools);
+            final observation = await observationIngest.ingest(
               toolName: batch[k].name,
+              args: batch[k].args,
+              result: result,
+              context: ctx,
               toolUseId: batch[k].id,
-              result: results[k],
             );
+            if (observation.storageFailure case final failure?) {
+              yield LoopNotice(
+                'Original tool output was not retained: $failure',
+              );
+            }
             resultBlocks.add(
               HarnessToolResultBlock(
                 toolUseId: batch[k].id,
-                content: _budgetedContent(batch[k].name, results[k]),
-                isError: results[k].isError,
-                images: _budgetedImages(batch[k].name, results[k]),
+                content: observation.content,
+                isError: result.isError,
+                images: _budgetedImages(batch[k].name, result),
+                outputReference: observation.reference,
+                toolReferences: referencesFor(batch[k], result),
               ),
             );
           }
@@ -933,16 +1322,27 @@ class AgentLoopRunner implements AgentLoop {
           toolUseId: t.id,
           result: result,
         );
+        final observation = await observationIngest.ingest(
+          toolName: t.name,
+          args: t.args,
+          result: result,
+          context: ctx,
+          toolUseId: t.id,
+        );
+        if (observation.storageFailure case final failure?) {
+          yield LoopNotice('Original tool output was not retained: $failure');
+        }
         resultBlocks.add(
           HarnessToolResultBlock(
             toolUseId: t.id,
-            content: _budgetedContent(t.name, result),
+            content: observation.content,
             isError: result.isError,
             images: _budgetedImages(t.name, result),
+            outputReference: observation.reference,
+            toolReferences: referencesFor(t, result),
           ),
         );
       }
-      history.add(HarnessMessage.toolResults(resultBlocks));
       final activatedByRequest = activateDeferred(requestedActivations);
       if (activatedByRequest.isNotEmpty) {
         yield LoopToolsActivated(
@@ -952,6 +1352,12 @@ class AgentLoopRunner implements AgentLoop {
           trigger: pending.map((t) => t.name).toSet().join(','),
         );
       }
+      history.add(
+        HarnessMessage.toolResults(
+          resultBlocks,
+          activatedToolNames: [...activatedByCall, ...activatedByRequest],
+        ),
+      );
 
       // Doom-loop guard: detect cycles in the per-turn tool-call signature.
       // Period-1 (A-A-A): this turn's calls are byte-identical to the previous
@@ -1026,6 +1432,9 @@ class AgentLoopRunner implements AgentLoop {
         // The rewrite invalidated everything from the earliest edit onward, so
         // the anchor no longer names a position any request wrote at.
         cacheAnchorIndex = -1;
+        // Elision masks result text and may drop a reference with it; the
+        // native catalog must follow whatever the history now carries.
+        rebuildNativeToolCatalog();
       }
 
       // ---- 4b. Advisor: a second model reviews the turn and may inject a
@@ -1061,7 +1470,7 @@ class AgentLoopRunner implements AgentLoop {
         final timeExhausted =
             timeBudget != null && stopwatch.elapsed >= timeBudget;
         final tokenExhausted =
-            tokenBudget != null && billableTokens >= tokenBudget;
+            tokenBudget != null && billableTokensNow() >= tokenBudget;
         if (timeExhausted || tokenExhausted) {
           if (budget.hardStop) {
             yield LoopNotice(
@@ -1092,7 +1501,7 @@ class AgentLoopRunner implements AgentLoop {
               stopwatch.elapsed >= timeBudget * budget.pressureFraction;
           final tokenPressure =
               tokenBudget != null &&
-              billableTokens >= tokenBudget * budget.pressureFraction;
+              billableTokensNow() >= tokenBudget * budget.pressureFraction;
           if (timePressure || tokenPressure) {
             pressureNotified = true;
             const steer =
@@ -1139,7 +1548,7 @@ class AgentLoopRunner implements AgentLoop {
     // any answer, so it lands in the persisted message the next run's
     // conversation context rebuilds from — and the human sees what happened.
     // Best-effort: a provider error here must never mask the ceiling stop.
-    if (!cancelToken.isCancelled) {
+    if (!cancelToken.isCancelled && !hardBudgetExhausted()) {
       const handoff =
           'You reached this run\'s turn limit and it is stopping now. Do NOT '
           'call any tool. Write a concise handoff for whoever continues this '
@@ -1151,7 +1560,10 @@ class AgentLoopRunner implements AgentLoop {
       await for (final event in provider.complete(
         messages: history,
         tools: const [],
-        config: completeConfig,
+        config: completeConfig.copyWith(
+          purpose: LlmCallPurpose.sideRequest,
+          callId: '$callIdPrefix:handoff',
+        ),
       )) {
         if (cancelToken.isCancelled) {
           break;
@@ -1228,19 +1640,6 @@ class AgentLoopRunner implements AgentLoop {
     );
   }
 
-  /// Cap [result] text to the per-tool budget (omission marker). Applied here
-  /// so tools/MCP need not know transcript limits. Full text still reaches the
-  /// UI via [LoopToolCallResult]; only the model copy is bounded.
-  String _budgetedContent(String toolName, HarnessToolResult result) {
-    if (result.content.isEmpty) {
-      return result.content;
-    }
-    return truncateToolOutput(
-      result.content,
-      ToolOutputLimitTable.defaults.forTool(toolName),
-    ).content;
-  }
-
   /// Whether the pre-tool gate allows the call. A THROWING gate denies.
   ///
   /// Fail-closed matches the rest of the approval machinery: a hook that
@@ -1276,6 +1675,314 @@ class AgentLoopRunner implements AgentLoop {
     }
   }
 
+  /// Forwards [source], ending promptly when [token] is cancelled.
+  ///
+  /// The default (non-overlap) path consumed the provider stream in a plain
+  /// `await for`, which can only notice cancellation when an EVENT arrives — so
+  /// an idle or wedged stream, precisely the shape a wall-clock-limited turn
+  /// exists to bound, kept the run holding it open until the provider happened
+  /// to send something. Racing the token against the subscription fixes that
+  /// without turning on read speculation: nothing is read ahead, events are
+  /// forwarded one at a time, and the only thing added is a way to let go.
+  ///
+  /// Cancelling the subscription is also what lets an observed provider
+  /// finalize: the usage recorder emits when its stream terminates, so a stream
+  /// nobody unsubscribes never records the tokens it had already billed.
+  Stream<LlmEvent> _cancelableModelStream(
+    Stream<LlmEvent> source,
+    CancellationToken token,
+  ) {
+    late StreamController<LlmEvent> controller;
+    StreamSubscription<LlmEvent>? subscription;
+    var finished = false;
+
+    Future<void> release() async {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      await subscription?.cancel();
+      subscription = null;
+      if (!controller.isClosed) {
+        await controller.close();
+      }
+    }
+
+    controller = StreamController<LlmEvent>(
+      onListen: () {
+        subscription = source.listen(
+          (event) {
+            if (!finished) {
+              controller.add(event);
+            }
+          },
+          onError: (Object error, StackTrace stack) {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            controller.addError(error, stack);
+            unawaited(controller.close());
+          },
+          onDone: () {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            unawaited(controller.close());
+          },
+        );
+        // An already-cancelled token completes immediately, so a run cancelled
+        // before this turn reaches the provider stops on the first microtask.
+        unawaited(token.whenCancelled.then((_) => release()));
+      },
+      onCancel: () async {
+        finished = true;
+        await subscription?.cancel();
+        subscription = null;
+      },
+    );
+    return controller.stream;
+  }
+
+  /// Merges provider events with a bounded queue of explicitly safe reads.
+  /// Cancelling the subscription cancels both lanes. Failed attempts discard
+  /// their observations; a successful attempt reuses each result exactly once.
+  Stream<Object> _overlapReadOnlyTools(
+    Stream<LlmEvent> source,
+    Map<String, HarnessTool> tools,
+    HarnessToolContext context, {
+    required int limit,
+    Duration? timeout,
+  }) {
+    final stopped = CancellationTokenSource();
+    final token = CancellationToken.any([
+      context.cancel ?? CancellationToken.none,
+      stopped.token,
+    ]);
+    final childContext = context.withCancel(token);
+    final events = StreamController<Object>();
+    final queued = <_PendingTool>[];
+    final seen = <String>{};
+    StreamSubscription<LlmEvent>? subscription;
+    var next = 0;
+    var active = 0;
+    var sourceDone = false;
+    var barrier = false;
+    var closed = false;
+    late void Function() pump;
+
+    Future<void> execute(_PendingTool call) async {
+      final result = await _safeExecute(
+        tools[call.name]!,
+        call.args,
+        childContext,
+        toolCallId: call.id,
+        timeout: timeout,
+      );
+      active--;
+      if (closed) {
+        return;
+      }
+      events.add(
+        LoopToolCallResult(
+          toolName: call.name,
+          toolUseId: call.id,
+          result: result,
+        ),
+      );
+      pump();
+    }
+
+    pump = () {
+      if (closed) {
+        return;
+      }
+      if (token.isCancelled) {
+        next = queued.length;
+      } else {
+        while (active < limit && next < queued.length) {
+          final call = queued[next++];
+          active++;
+          events.add(
+            LoopToolCallStart(
+              toolName: call.name,
+              toolUseId: call.id,
+              args: call.args,
+            ),
+          );
+          unawaited(execute(call));
+        }
+      }
+      if (sourceDone && active == 0 && next == queued.length) {
+        closed = true;
+        unawaited(events.close());
+      }
+    };
+    events.onListen = () {
+      if (token.isCancelled) {
+        sourceDone = true;
+        pump();
+        return;
+      }
+      subscription = source.listen(
+        (event) {
+          if (closed) {
+            return;
+          }
+          events.add(event);
+          if (event is LlmError) {
+            barrier = true;
+            stopped.cancel('The provider attempt failed.');
+            pump();
+          } else if (event is LlmToolUseDelta) {
+            if (!seen.add(event.id)) {
+              barrier = true;
+              stopped.cancel('The provider repeated a tool-call id.');
+              pump();
+              return;
+            }
+            if (barrier) {
+              return;
+            }
+            final call = _PendingTool.fromStream(
+              event.id,
+              event.name,
+              event.argumentsJson,
+            );
+            final tool = tools[call.name];
+            if (call.argsError != null ||
+                tool == null ||
+                !tool.speculativeReadSafe ||
+                tool.approvalTier != ToolApprovalTier.read ||
+                tool.selfGuards ||
+                tool.actionClasses.isNotEmpty ||
+                !_isParallelSafe(tool)) {
+              barrier = true;
+              return;
+            }
+            queued.add(call);
+            pump();
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          stopped.cancel('The provider stream failed.');
+          if (!closed) {
+            events.addError(error, stack);
+          }
+        },
+        onDone: () {
+          sourceDone = true;
+          pump();
+        },
+      );
+      unawaited(
+        token.whenCancelled.then((_) async {
+          await subscription?.cancel();
+          sourceDone = true;
+          pump();
+        }),
+      );
+    };
+    events.onPause = () => subscription?.pause();
+    events.onResume = () => subscription?.resume();
+    events.onCancel = () async {
+      closed = true;
+      stopped.cancel('The provider attempt was abandoned.');
+      await subscription?.cancel();
+    };
+    return events.stream;
+  }
+
+  Stream<({int index, bool started, HarnessToolResult? result})>
+  _executeParallelBatch(
+    List<_PendingTool> calls,
+    Map<String, HarnessTool> tools,
+    HarnessToolContext context, {
+    required int limit,
+    Duration? timeout,
+    Map<String, HarnessToolResult> completedReads = const {},
+  }) {
+    final stopped = CancellationTokenSource();
+    final token = CancellationToken.any([
+      context.cancel ?? CancellationToken.none,
+      stopped.token,
+    ]);
+    final childContext = context.withCancel(token);
+    final events =
+        StreamController<
+          ({int index, bool started, HarnessToolResult? result})
+        >();
+    var next = 0;
+    var active = 0;
+    var finished = 0;
+    var closed = false;
+    late void Function() pump;
+
+    Future<void> execute(int index) async {
+      final call = calls[index];
+      final result = await _safeExecute(
+        tools[call.name]!,
+        call.args,
+        childContext,
+        toolCallId: call.id,
+        timeout: timeout,
+      );
+      active--;
+      finished++;
+      if (closed) {
+        return;
+      }
+      events.add((index: index, started: true, result: result));
+      pump();
+    }
+
+    pump = () {
+      if (closed) {
+        return;
+      }
+      if (token.isCancelled) {
+        while (next < calls.length) {
+          events.add((
+            index: next++,
+            started: false,
+            result: HarnessToolResult.error(
+              'Cancelled before the tool could run.',
+            ),
+          ));
+          finished++;
+        }
+      } else {
+        while (active < limit && next < calls.length) {
+          final index = next++;
+          final alreadyCompleted = completedReads[calls[index].id];
+          if (alreadyCompleted != null) {
+            finished++;
+            events.add((
+              index: index,
+              started: false,
+              result: alreadyCompleted,
+            ));
+            continue;
+          }
+          active++;
+          events.add((index: index, started: true, result: null));
+          unawaited(execute(index));
+        }
+      }
+      if (finished == calls.length) {
+        closed = true;
+        unawaited(events.close());
+      }
+    };
+    events.onListen = pump;
+    events.onCancel = () {
+      closed = true;
+      stopped.cancel('Tool result subscription closed.');
+    };
+    return events.stream;
+  }
+
   Future<HarnessToolResult> _safeExecute(
     HarnessTool tool,
     Map<String, dynamic> args,
@@ -1283,6 +1990,7 @@ class AgentLoopRunner implements AgentLoop {
     String? toolCallId,
     Duration? timeout,
   }) async {
+    Timer? timer;
     try {
       final execution = tool.execute(args, context.withToolCallId(toolCallId));
       final cancel = context.cancel;
@@ -1305,19 +2013,17 @@ class AgentLoopRunner implements AgentLoop {
         ),
       );
       if (timeout != null) {
-        unawaited(
-          Future<void>.delayed(timeout).then((_) {
-            if (!guard.isCompleted) {
-              guard.complete(
-                HarnessToolResult.error(
-                  'Tool "${tool.name}" exceeded its ${timeout.inSeconds}s '
-                  'time limit and was abandoned. Its work may still be '
-                  'running; do not assume it finished.',
-                ),
-              );
-            }
-          }),
-        );
+        timer = Timer(timeout, () {
+          if (!guard.isCompleted) {
+            guard.complete(
+              HarnessToolResult.error(
+                'Tool "${tool.name}" exceeded its ${timeout.inSeconds}s '
+                'time limit and was abandoned. Its work may still be '
+                'running; do not assume it finished.',
+              ),
+            );
+          }
+        });
       }
       if (cancel != null) {
         unawaited(
@@ -1333,19 +2039,26 @@ class AgentLoopRunner implements AgentLoop {
       return await guard.future;
     } on Object catch (e) {
       return HarnessToolResult.error('Tool "${tool.name}" failed: $e');
+    } finally {
+      timer?.cancel();
     }
   }
 
-  /// Remaps checkpoint indices across a compaction that folded [foldedCount]
-  /// leading messages into a single summary message. Indices inside the folded
-  /// region collapse to the tail start (1, just after the summary); indices in
-  /// the kept tail shift left by `foldedCount - 1`.
-  static void _remapCheckpoints(Map<String, int> checkpoints, int foldedCount) {
-    if (foldedCount <= 0 || checkpoints.isEmpty) {
-      return;
-    }
-    checkpoints.updateAll(
-      (_, index) => index >= foldedCount ? index - foldedCount + 1 : 1,
+  /// Remaps checkpoint indices across the fold a compaction result performed.
+  ///
+  /// Delegates to [remapCheckpointsAcrossFold] with the result's REAL span: a
+  /// text fold starts at 0, but a snapshot keeps a verbatim head and folds a
+  /// region after it, and a remap that assumed a leading fold shifted every
+  /// head checkpoint by the wrong amount — a rewind to a label then landed on a
+  /// different message while reporting success.
+  static void _remapCheckpoints(
+    Map<String, int> checkpoints,
+    HarnessCompactionResult result,
+  ) {
+    remapCheckpointsAcrossFold(
+      checkpoints,
+      foldedFromIndex: result.foldedFromIndex,
+      messagesFolded: result.messagesFolded,
     );
   }
 

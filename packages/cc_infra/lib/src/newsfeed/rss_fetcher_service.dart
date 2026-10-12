@@ -5,8 +5,9 @@ import 'package:cc_domain/core/utils/string_utils.dart' show decodeHtmlEntities;
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_article.dart';
 import 'package:cc_domain/features/newsfeed/domain/social_media_url_transformer.dart';
 import 'package:cc_domain/features/newsfeed/domain/tracking_param_stripper.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/app_network.dart';
 import 'package:html/parser.dart' as html_parser;
+import 'package:rhttp/rhttp.dart';
 import 'package:rss_dart/dart_rss.dart';
 import 'package:uuid/uuid.dart';
 
@@ -55,29 +56,36 @@ typedef _ParsedEntries = ({
 class RssFetcherService {
   /// Creates a new [Rss fetcher service].
   ///
-  /// [pageDio] fetches article pages for the og:image fallback. When omitted
-  /// it is a plain [Dio] sharing [dio]'s adapter — deliberately WITHOUT the
-  /// interceptor chain: no retry (a 403 challenge page never becomes
-  /// fetchable by retrying) and no error logging (Cloudflare/paywall 403s
-  /// are routine for page fetches, not warnings worth logging).
-  RssFetcherService(Dio dio, {Dio? pageDio})
-    : _dio = dio,
-      _pageDio =
-          pageDio ??
-          (Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 5),
-              // Without a receive timeout, an established connection to a
-              // stalled host never times out (dio only bounds connection
-              // setup) — one dead page could hold a feed refresh open
-              // indefinitely. Per-request Options restate this; the base
-              // bound is for any future call site that forgets them.
-              receiveTimeout: const Duration(seconds: 10),
-            ),
-          )..httpClientAdapter = dio.httpClientAdapter);
+  /// [pageHttpClient] fetches article pages for the og:image fallback. When
+  /// omitted it is a plain client — deliberately WITHOUT the interceptor chain:
+  /// no retry (a 403 challenge page never becomes fetchable by retrying) and no
+  /// error logging (Cloudflare/paywall 403s are routine for page fetches, not
+  /// warnings worth logging). It is created on first use, so a caller than
+  /// never resolves an og:image never needs the native runtime.
+  RssFetcherService(this._httpClient, {RhttpClient? pageHttpClient})
+    : _pageHttpClientOverride = pageHttpClient;
 
-  final Dio _dio;
-  final Dio _pageDio;
+  final RhttpClient _httpClient;
+  final RhttpClient? _pageHttpClientOverride;
+
+  /// The page-fetch client: the injected one, or a plain client bounded like
+  /// the per-request timeouts it replaces (5s to connect, 10s overall).
+  ///
+  /// Without a receive bound, an established connection to a stalled host never
+  /// times out — one dead page could hold a feed refresh open indefinitely.
+  late final RhttpClient _pageHttpClient =
+      _pageHttpClientOverride ??
+      RhttpClient.createSync(
+        settings: httpClientSettings(
+          settings: const ClientSettings(
+            timeoutSettings: TimeoutSettings(
+              connectTimeout: Duration(seconds: 5),
+              timeout: Duration(seconds: 10),
+            ),
+          ),
+        ),
+      );
+
   final _uuid = const Uuid();
 
   static const _defaultUserAgent =
@@ -110,25 +118,19 @@ class RssFetcherService {
     String? userAgent,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<String>(
+    final response = await _httpClient.getText(
       url,
       cancelToken: cancelToken,
-      options: Options(
-        responseType: ResponseType.plain,
-        headers: {
-          'User-Agent': userAgent?.isNotEmpty == true
-              ? userAgent!
-              : _defaultUserAgent,
-          'Accept':
-              'application/rss+xml, application/atom+xml, '
-              'application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5',
-        },
-        followRedirects: true,
-        validateStatus: (status) =>
-            status != null && status >= 200 && status < 400,
-      ),
+      headers: HttpHeaders.rawMap({
+        'User-Agent': userAgent?.isNotEmpty == true
+            ? userAgent!
+            : _defaultUserAgent,
+        'Accept':
+            'application/rss+xml, application/atom+xml, '
+            'application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5',
+      }),
     );
-    final body = response.data ?? '';
+    final body = response.body;
     if (body.isEmpty) {
       return const ParsedFeed(articles: []);
     }
@@ -190,19 +192,19 @@ class RssFetcherService {
       // The deadline check in the loop only stops NEW fetches; without an
       // explicit cancel, up to `concurrency` in-flight page fetches could each
       // run to their own per-request timeout past the budget. One token for
-      // the whole pass, cancelled by the wall clock — and linked to the
-      // caller's token so a cancelled feed refresh also cancels its page
-      // fetches.
+      // the whole pass, cancelled by the wall clock — and cancelled too the
+      // moment the caller's token is, so a cancelled feed refresh also drops
+      // its page fetches.
+      //
+      // [CancelToken.whenCancelRequested] is the transport's own signal (it
+      // completes as soon as cancellation is requested, including for a token
+      // that was already cancelled before this pass began), so the link costs
+      // no polling and no extra latency.
       final ogToken = CancelToken();
       final callerToken = cancelToken;
       if (callerToken != null) {
         unawaited(
-          callerToken.whenCancel.then(
-            (_) => ogToken.cancel(),
-            // `whenCancel` completes with the cancel error; it must not
-            // surface as an unhandled async error.
-            onError: (Object _) => ogToken.cancel(),
-          ),
+          callerToken.whenCancelRequested.then((_) => ogToken.cancel()),
         );
       }
       final deadlineTimer = Timer(_ogImageBudget, ogToken.cancel);
@@ -254,25 +256,17 @@ class RssFetcherService {
       return null;
     }
     try {
-      final response = await _pageDio.get<String>(
+      final response = await _pageHttpClient.getText(
         url,
         cancelToken: cancelToken,
-        options: Options(
-          responseType: ResponseType.plain,
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 10),
-          headers: {
-            'User-Agent': userAgent?.isNotEmpty == true
-                ? userAgent!
-                : _defaultUserAgent,
-            'Accept': 'text/html, application/xhtml+xml;q=0.9, */*;q=0.5',
-          },
-          followRedirects: true,
-          validateStatus: (status) =>
-              status != null && status >= 200 && status < 400,
-        ),
+        headers: HttpHeaders.rawMap({
+          'User-Agent': userAgent?.isNotEmpty == true
+              ? userAgent!
+              : _defaultUserAgent,
+          'Accept': 'text/html, application/xhtml+xml;q=0.9, */*;q=0.5',
+        }),
       );
-      final body = response.data ?? '';
+      final body = response.body;
       if (body.isEmpty) {
         return null;
       }

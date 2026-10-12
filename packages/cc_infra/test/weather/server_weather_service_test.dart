@@ -5,14 +5,13 @@ import 'dart:io';
 import 'package:cc_domain/features/weather/domain/entities/weather_snapshot.dart';
 import 'package:cc_infra/src/network/weather_api_client.dart';
 import 'package:cc_infra/src/weather/server_weather_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// Subclasses [WeatherApiClient] so the service's network calls are scripted
 /// without touching the real Open-Meteo endpoint. The superclass constructor
-/// receives a plain [Dio] that is never actually used (every method is
-/// overridden).
+/// receives a canned client that rejects any unexpected network call.
 class _FakeWeatherClient extends WeatherApiClient {
   _FakeWeatherClient({
     WeatherSnapshot? snapshot,
@@ -20,7 +19,11 @@ class _FakeWeatherClient extends WeatherApiClient {
     this.city,
     this.fetchThrows,
   }) : snapshot = snapshot ?? _defaultSnapshot,
-       super(dio: Dio());
+       super(
+         httpClient: TestHttpClient(
+           handler: (_) => throw StateError('Unexpected HTTP request'),
+         ),
+       );
 
   static final WeatherSnapshot _defaultSnapshot = WeatherSnapshot(
     latitude: 1,

@@ -16,7 +16,7 @@ dependencies:
   # over a web platform view (an <iframe>/embedded webview), which would
   # otherwise swallow the taps. Drives CcOverlayAnchor.interceptPointer. No-op
   # off-web, so it never touches the desktop/native render path.
-  pointer_interceptor: ^0.10.1+2
+  pointer_interceptor: ^0.10.1+3
 
 dev_dependencies:
   flutter_test:

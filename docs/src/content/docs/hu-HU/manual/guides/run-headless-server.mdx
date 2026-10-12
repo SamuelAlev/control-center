@@ -1,9 +1,9 @@
 ---
 title: Headless szerver futtatása
 description: Futtassa a cc_server headless binárisát vagy annak Docker-image-ét, párosítson hozzá egy klienst, és konfigurálja a teljes CLI-kapcsoló- és környezetiváltozó-felülettel.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Futtassa a `cc_server`-t egy folyamatosan bekapcsolt gépen, majd csatlakozzon
@@ -26,7 +26,7 @@ egy verziócímkét (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`), vagy használja 
 | `ghcr.io/samuelalev/cc-server`                    | A háttérszolgáltatás: adatbázis, ügynökök, MCP, webhookok | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | A webes kliens (statikus nginx)                          | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | A telefonos társalkalmazás PWA-ja (statikus nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | A WebRTC-párosítási relé (opcionális)                    | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | A titkosított kapcsolat reléje (opcionális)              | `-p 8788:8788`   |
 
 A teljes stack egy compose-fájlban:
 
@@ -57,13 +57,16 @@ volumes:
 Néhány dolog, amit érdemes tudni, mielőtt mindezt a loopbacken túlra nyitná:
 
 - **A `cc-server` image `CC_SERVER_INSECURE=1` beállítással indul** (a `0.0.0.0`-ra
-  kell kötnie, hogy fogadhassa a publikált portra érkező forgalmat), ami csak
-  megbízható hálózaton, TLS-t lezáró fordított proxy — Caddy, Traefik, nginx vagy
-  Cloudflare Tunnel — mögött biztonságos. Ha inkább a folyamaton belül zárná le a
-  TLS-t, csatoljon be egy tanúsítványt, és állítsa be a `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` értékét (majd törölje a `CC_SERVER_INSECURE`-t). Minden
-  felülírható a `docker run -e …` paranccsal vagy a compose `environment:`
-  blokkjával.
+  kell kötnie, hogy fogadhassa a publikált portra érkező forgalmat). Használjon
+  TLS-t lezáró fordított proxyt — Caddy, Traefik, nginx vagy Cloudflare Tunnel —
+  megbízható hálózaton, vagy csatoljon be egy tanúsítványt, és állítsa be a
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` értékét (majd törölje a
+  `CC_SERVER_INSECURE`-t). Ez a beállítás csak a szerver külső HTTP/WebSocket
+  listenerjét szabályozza. Soha nem kapcsolja ki a kötelező, végponttól végpontig
+  titkosított kliensmunkamenetet. A TLS továbbra is védi a bejelentkezési/bootstrap
+  forgalmat, a kapcsolat metaadatait, a nyilvános végpontokat és a webes kliens
+  kiszolgálását. Minden felülírható a `docker run -e …` paranccsal vagy a compose
+  `environment:` blokkjával.
 - **A `/data` az egyetlen állapot.** Az SQLite-adatbázisok, a párosított eszközök
   titkai, a letöltött modellek és a megbeszélések hanganyaga mind a kötetben élnek
   — készítsen róla biztonsági mentést, és a konténer eldobhatóvá válik.
@@ -75,14 +78,19 @@ Néhány dolog, amit érdemes tudni, mielőtt mindezt a loopbacken túlra nyitn�
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **A két kliensimage statikus nginx-hoszt** — futásidőben semmit sem kell
-  beállítani; az egyes kliensek csatlakozási űrlapja a szerver URL-t, az
-  eszköz-ID-t és a párosítási kulcsot kéri. A jelzőrelé szintén csak a portját
+- **A két kliensimage statikus nginx-hoszt.** A beágyazott böngészőszerkesztők
+  ugyanazt az alkalmazás-origint és ugyanazt a titkosított kapcsolatot
+  használják, ahogy az [alább](#böngészőszerkesztő-erőforrások) olvasható. Az
+  egyes kliensek csatlakozási űrlapja a szerver URL-t, az
+  eszköz-ID-t és a párosítási kulcsot kéri. A jelzőrelé csak a portját
   igényli (`SIGNALING_HOST` / `SIGNALING_PORT` felülírható); állapotmentes, nem
-  tárol titkokat, és csak **tartalék** — a telefon loopbacket, LAN-t, tailnetet
-  vagy közvetlen `wss://` útvonalat használ, ha valamelyik elérhető, és csak
-  akkor esik vissza a relére, ha egyik sem az. Hagyja ki, ha a kliensei mindig
-  közvetlenül érik el a szervert.
+  tárol párosítási kulcsokat, és csak **tartalék** — a telefon loopbacket, LAN-t,
+  tailnetet vagy közvetlen `wss://` útvonalat használ, ha valamelyik elérhető, és
+  csak akkor esik vissza a relére, ha egyik sem az. Hagyja ki, ha a kliensei
+  mindig közvetlenül érik el a szervert. A közvetítő látja az
+  útvonal-azonosítókat, az IP-címeket, a méreteket és az időzítést, és meg is
+  szakíthatja a forgalmat; a kliens és a szerver közötti erőforrásfolyamot nem
+  tudja visszafejteni.
 
 Az útmutató többi része forrásból építi fel a szervert; az itt tárgyalt kapcsolók
 és viselkedés ugyanazok, amelyeket az image környezeti változói táplálnak.
@@ -180,6 +188,15 @@ alkalmazásban kiállított viszont mindig 30 nap után lejár. Ha végzett egy
 CLI-vel kiállított eszközzel, vonja vissza a **Beállítások → Ön → Az Ön
 eszközei** alatt.
 
+A párosítási kulcs a kötelező Noise-kézfogást hitelesíti; minden munkamenet friss
+forgalmi kulcsokat vezet le, és ellenőrzi a szerver aláírt identitását. Óvja a
+párosítási kulcsot, és megbízható forrásból szerezze be (többek között
+megbízható QR-kódból), majd egy új szerver-ujjlenyomatot egy külön megbízható
+csatornán vagy egy ismert pinnel szemben ellenőrizzen. Ne fogadjon el csendben
+megváltozott pint: ha szándékosan cseréli le a szerveridentitást, párosítson
+újra egy megbízható csatornán. A TLS önmagában nem tudja megteremteni ezt a
+végponttól végpontig terjedő identitáspint.
+
 ## 4. lépés: A szerver indítása
 
 A loopbacken — ez az alapértelmezés, és minden, amire egy ugyanazon a gépen futó
@@ -210,8 +227,13 @@ válassza a mögötte futó, sima szöveges bindet:
 
 A `--insecure` figyelmen kívül marad, ha a `--tls-cert` és a `--tls-key` is be van
 állítva — a TLS mindig nyer. A szerver a `GET /healthz` válaszban
-`insecure: true` értékkel jelzi a sima szöveges állapotot, és az ilyen
-kapcsolatot a kliensek nem biztonságosként jelölik meg.
+`insecure: true` értékkel jelzi a külső listener sima szöveges állapotát. Ez nem
+kapcsolja ki a `/rpc` Noise-titkosítását, függetlenül attól, hogy a kliens
+közvetlenül vagy a relén keresztül csatlakozik. Frissítse együtt a szervert, a
+relét és a klienseket: a régi, nyílt szöveges RPC-klienseket elutasítjuk, és
+nincs kompatibilitási tartalék. A bizalmas erőforrás-útvonalakra (többek között a
+biztonsági mentések átvitelére) irányuló nyilvános kérések HTTP `426`-ot kapnak,
+loopbackről is; a párosított kliensek helyette a titkosított alagutat használják.
 
 A szerver a `SIGINT`/`SIGTERM` jelig fut, majd tisztán leáll.
 
@@ -233,6 +255,34 @@ kívüli böngésző-origint fel kell venni a `--allowed-origins` listára, kül
 lista a `https://app.usectrl.dev`, a `localhost` és a `127.0.0.1` pedig mindig
 engedélyezett.
 :::
+
+### Böngészőszerkesztő-erőforrások
+
+A szerkesztő-frontend megbízható alkalmazáskód, és a webalkalmazás saját
+originjén fut. A Service Workere ugyanazon a hitelesített titkosított
+munkameneten keresztül irányítja a HTTP- és WebSocket-forgalmat, mint a kliens
+többi része. A `cc_server` visszafejti az egyes kéréseket, továbbítja őket a
+helyi code-server-hátterének, majd visszatitkosítja a választ a kliens felé. A
+fájlok a szerver tulajdonában maradnak.
+
+A webes klienst HTTPS-en vagy biztonságos loopback-originen hostolja, hogy a
+Service Workerek futni tudjanak. A szokásos webes build és a kiadási szkriptek
+tartalmazzák a megosztott erőforrás-eszközöket. Ha kézzel épít csomagot, utána
+a repó gyökeréből készítse elő ezeket az eszközöket:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+A telefonos webes build esetén helyettesítse az `apps/cc_remote/build/web`
+értéket. Ez a `cc_resource_bridge.js`, a `cc_resource_worker.js` és a
+`cc_resource_ws_shim.js` fájlt másolja az alkalmazáscsomagba.
+
+A natív szerkesztőforgalom helyette egy képesség-hatókörű loopback-homlokzatot
+használ. Ne tegye elérhetővé a szerver által indított szerkesztőbővítmény privát
+loopback-jelentés-/parancsátjáróját nyilvános proxyn keresztül. Az érzékeny
+nyilvános HTTP-kéréseket elutasítja a rendszer; az erőforrásokhoz hitelesített
+titkosított munkamenet szükséges.
 
 ## 6. lépés: Google Calendar csatlakoztatása (opcionális)
 
@@ -295,7 +345,9 @@ munkaterület-hatókörű hívás a saját `workspace_id`-jét hordozza, és a h
 a hívó munkaterületi tagsága és szerepe dönti el — nem a párosítási kulcs
 birtoklása.
 
-Két dolgot érdemes tudni, mielőtt a portot a loopbacken túlra nyitná:
+Két dolgot érdemes tudni, mielőtt a portot a loopbacken túlra nyitná (a TLS
+önmagában nem biztosítja a párosított kliens végponttól végpontig terjedő
+titkosítását, és nem engedélyez erőforrásokat):
 
 - **Az MCP a hoszton kívül zártan hiúsul meg.** A token nélküli MCP-felület csak a loopbackre válaszol. Az `any` bind ezt nem tágítja ki — a hoszton kívüli kérést a „MCP requires a bearer token to answer non-loopback clients” üzenettel utasítja el, amíg be nem állít egy tokent (`mcp.setToken`, vagy **Beállítások → Szerver → MCP-szerverek**).
 - **A `GET /healthz` szándékosan hitelesítés nélküli**, helyettesítő karakteres CORS-szal, és közzéteszi a szerver azonosítóját, nevét, identitás-ujjlenyomatát és buildverzióját. A klienseknek szükségük van az ujjlenyomatra a szerver rögzítéséhez, tehát ez szándékos — de azt is jelenti, hogy bármely elérhető `cc_server` ennyit felfed bárkinek, aki kérdezi.

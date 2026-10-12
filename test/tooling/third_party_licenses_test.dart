@@ -57,6 +57,7 @@ void main() {
     'lame_ffi': 'LAME (libmp3lame)',
     'cc_inference': 'sherpa-onnx',
     'cc_saml': firstParty,
+    'rhttp': 'rhttp (Rust HTTP engine)',
     'rift_ffi': 'rift',
   };
 

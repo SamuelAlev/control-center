@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
@@ -52,6 +53,50 @@ void main() {
       );
     },
   );
+
+  test('public invite routing never exposes the Noise PSK', () async {
+    final created = await service.create(
+      workspaceId: 'ws-1',
+      createdBy: 'owner-1',
+      role: WorkspaceRole.member,
+    );
+    final hash = WorkspaceInviteService.hashInviteCode(created.code);
+    expect(InvitePairingProof.codeHash(created.code), hash);
+    final routeId = InvitePairingProof.routeIdFromHash(hash);
+    final psk = InvitePairingProof.pskFromHash(hash);
+    expect(routeId, isNot(hash));
+    expect(psk, isNot(created.code));
+    expect(await service.resolveInvitePsk(routeId), psk);
+    expect(await service.resolveInvitePsk(hash), isNull);
+    expect(await service.resolveInvitePsk('0' * 64), isNull);
+
+    await service.redeem(code: created.code);
+    expect(await service.resolveInvitePsk(routeId), isNull);
+  });
+
+  test('secure route closes for expired and revoked invites', () async {
+    final expires = await service.create(
+      workspaceId: 'ws-1',
+      createdBy: 'owner-1',
+      role: WorkspaceRole.member,
+      ttl: const Duration(hours: 1),
+    );
+    final revoked = await service.create(
+      workspaceId: 'ws-1',
+      createdBy: 'owner-1',
+      role: WorkspaceRole.member,
+    );
+    final expiresId = InvitePairingProof.routeIdFromHash(
+      WorkspaceInviteService.hashInviteCode(expires.code),
+    );
+    final revokedId = InvitePairingProof.routeIdFromHash(
+      WorkspaceInviteService.hashInviteCode(revoked.code),
+    );
+    await service.revoke('ws-1', revoked.invite.id);
+    expect(await service.resolveInvitePsk(revokedId), isNull);
+    now = now.add(const Duration(hours: 2));
+    expect(await service.resolveInvitePsk(expiresId), isNull);
+  });
 
   test('an owner-role invite is refused', () {
     expect(

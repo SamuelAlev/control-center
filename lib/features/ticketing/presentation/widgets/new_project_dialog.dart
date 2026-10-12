@@ -19,6 +19,7 @@ Future<String?> showProjectDialog(
 }) {
   return showCcDialog<String>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (ctx) =>
         _ProjectDialog(existing: existing, workspaceId: workspaceId),
   );

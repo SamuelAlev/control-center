@@ -17,8 +17,8 @@ import 'helpers/native_staging.dart';
 import 'helpers/test_database.dart';
 
 /// End-to-end proof of the pure-Dart server: seed a real database, boot the
-/// actual [runCcServer] composition, connect a real RPC client through the full
-/// PSK handshake and read a seeded ticket back over `repo/call`.
+/// actual [runCcServer] composition, connect a real RPC client through an
+/// authenticated Noise session and read a seeded ticket back over `repo/call`.
 void main() {
   if (!hostHasServerNatives) {
     test(
@@ -47,7 +47,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'web-test-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
       const workspaceId = 'ws-alpha';
 
       // --- Seed the server's DB + secrets exactly as a paired device would exist.
@@ -89,7 +89,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      // --- Connect a real client through the PSK handshake and read tickets.
+      // --- Connect through authenticated Noise and read tickets.
       final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
@@ -150,7 +150,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'web-test-device';
-    const psk = 'test-psk-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-alpha';
 
     // Seed a workspace + a space with three messages.
@@ -243,7 +243,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'web-test-device';
-    const psk = 'test-psk-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
@@ -307,7 +307,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'web-test-device';
-    const psk = 'test-psk-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
@@ -321,7 +321,9 @@ void main() {
     for (final id in ['r-1', 'r-2']) {
       await wsDb
           .into(wsDb.reposTable)
-          .insert(ReposTableCompanion.insert(id: id, name: 'o/$id', path: '/s/$id'));
+          .insert(
+            ReposTableCompanion.insert(id: id, name: 'o/$id', path: '/s/$id'),
+          );
     }
     final messaging = DaoMessagingRepository(seed.workspaces);
     final space = await messaging.createSpace(workspaceId, 'Build', const []);
@@ -426,14 +428,13 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      // The client must fail fast with the explicit "rejected" message (via the
-      // server's `auth_denied` frame), NOT stall until the handshake timeout and
-      // surface an opaque "Server did not complete auth".
+      // The server must refuse an active row with no credential promptly,
+      // without revealing which part of device admission failed.
       await expectLater(
         connectBootedServer(
           uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
           deviceId: deviceId,
-          psk: 'whatever-the-user-typed-0123456789',
+          psk: RemoteControlCrypto.generatePsk(),
           timeout: const Duration(seconds: 5),
         ),
         throwsA(
@@ -456,9 +457,9 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const adminId = 'web-admin';
-    const adminPsk = 'admin-psk-please-and-thank-you-0123456789';
+    final adminPsk = RemoteControlCrypto.generatePsk();
     const phoneId = 'phone-device';
-    const phonePsk = 'phone-psk-please-and-thank-you-0123456789';
+    final phonePsk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
@@ -569,7 +570,9 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'web-proxy-device';
-      const psk = 'proxy-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
+      const secondDeviceId = 'web-proxy-second-device';
+      final secondPsk = RemoteControlCrypto.generatePsk();
       const workspaceId = 'ws-alpha';
 
       final seed = openSeedDatabases(tmp.path);
@@ -588,25 +591,46 @@ void main() {
           status: Value(PairedDeviceStatus.active),
         ),
       );
+      await seed.global.pairedDeviceDao.upsert(
+        const PairedDevicesTableCompanion(
+          id: Value(secondDeviceId),
+          workspaceId: Value(workspaceId),
+          label: Value('second proxy device'),
+          pskRef: Value('file'),
+          status: Value(PairedDeviceStatus.active),
+        ),
+      );
       await seed.close();
       await FileSecretsStore(dataDir: tmp.path).writePsk(deviceId, psk);
+      await FileSecretsStore(
+        dataDir: tmp.path,
+      ).writePsk(secondDeviceId, secondPsk);
 
       final server = await runCcServer(
         args: ['--data-dir', tmp.path, '--port', '0'],
       );
       addTearDown(server.shutdown);
 
-      final base = 'http://127.0.0.1:${server.rpc.boundPort}';
-      final http = HttpClient();
-      addTearDown(() => http.close(force: true));
+      final client = await connectBootedServer(
+        uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
+        deviceId: deviceId,
+        psk: psk,
+      );
+      addTearDown(client.close);
+      final secondClient = await connectBootedServer(
+        uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
+        deviceId: secondDeviceId,
+        psk: secondPsk,
+      );
+      addTearDown(secondClient.close);
 
       Future<int> statusOf(Uri uri) async {
-        final resp = await (await http.getUrl(uri)).close();
-        await resp.drain<void>();
-        return resp.statusCode;
+        final response = await client.resources.request('GET', uri);
+        await response.body.drain<void>();
+        return response.statusCode;
       }
 
-      Uri proxyUri(String target, String signature) => Uri.parse(base).replace(
+      Uri proxyUri(String target, String signature) => Uri(
         path: '/proxy/media',
         queryParameters: {
           'u': base64Url.encode(utf8.encode(target)),
@@ -615,11 +639,33 @@ void main() {
         },
       );
 
-      // Missing the required query params → 400.
-      expect(await statusOf(Uri.parse('$base/proxy/media')), 400);
+      // The public HTTP listener must not serve these bytes, even to a
+      // correctly signed request from loopback.
+      final publicHttp = HttpClient();
+      addTearDown(() => publicHttp.close(force: true));
+      final publicResponse = await (await publicHttp.getUrl(
+        Uri.parse('http://127.0.0.1:${server.rpc.boundPort}').resolveUri(
+          proxyUri(
+            'https://images.example.com/cover.jpg',
+            RemoteControlCrypto.signProxyTarget(
+              'https://images.example.com/cover.jpg',
+              psk,
+            ),
+          ),
+        ),
+      )).close();
+      await publicResponse.drain<void>();
+      expect(publicResponse.statusCode, HttpStatus.upgradeRequired);
 
-      // A well-formed request whose signature does not match the PSK → 403
-      // (the endpoint is not an open relay).
+      // A bound device with missing target/signature receives a route-level 400.
+      expect(
+        await statusOf(
+          Uri(path: '/proxy/media', queryParameters: {'d': deviceId}),
+        ),
+        400,
+      );
+
+      // A well-formed request whose signature does not match the PSK → 403.
       expect(
         await statusOf(
           proxyUri('https://images.example.com/cover.jpg', 'not-the-signature'),
@@ -627,9 +673,7 @@ void main() {
         403,
       );
 
-      // A correctly-signed request whose TARGET is the cloud-metadata endpoint
-      // is refused by the SSRF guard — even though auth passes → 403 and no
-      // outbound fetch is made.
+      // A valid signature cannot turn the media proxy into an SSRF primitive.
       const ssrf = 'http://169.254.169.254/latest/meta-data/';
       expect(
         await statusOf(
@@ -637,6 +681,21 @@ void main() {
         ),
         403,
       );
+
+      // A second paired device cannot replay the first one's signed URL,
+      // even when both sessions belong to this server and the URL is valid.
+      final replay = await secondClient.resources.request(
+        'GET',
+        proxyUri(
+          'https://images.example.com/cover.jpg',
+          RemoteControlCrypto.signProxyTarget(
+            'https://images.example.com/cover.jpg',
+            psk,
+          ),
+        ),
+      );
+      await replay.body.drain<void>();
+      expect(replay.statusCode, HttpStatus.forbidden);
     },
   );
 
@@ -648,7 +707,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'tx-test-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
       const ownWorkspace = 'ws-own';
       const otherWorkspace = 'ws-other';
 
@@ -672,21 +731,24 @@ void main() {
       // in the same file and the run log's FK is what forces that.
       for (final (runId, ws) in [
         ('run-own', ownWorkspace),
+        ('run-active', ownWorkspace),
         ('run-other', otherWorkspace),
       ]) {
         final wsDb = seed.workspaces.of(ws);
-        await wsDb
-            .into(wsDb.agentsTable)
-            .insert(
-              AgentsTableCompanion.insert(
-                id: 'agent-1',
-                name: 'scout',
-                title: 'Scout',
-                agentMdPath: '/agents/scout.md',
-                workspaceId: ws,
-                skills: 'dart',
-              ),
-            );
+        if (runId != 'run-active') {
+          await wsDb
+              .into(wsDb.agentsTable)
+              .insert(
+                AgentsTableCompanion.insert(
+                  id: 'agent-1',
+                  name: 'scout',
+                  title: 'Scout',
+                  agentMdPath: '/agents/scout.md',
+                  workspaceId: ws,
+                  skills: 'dart',
+                ),
+              );
+        }
         await wsDb
             .into(wsDb.agentRunLogsTable)
             .insert(
@@ -695,8 +757,11 @@ void main() {
                 agentId: 'agent-1',
                 workspaceId: Value(ws),
                 startedAt: Value(recordedAt),
-                status: const Value('completed'),
-                completedAt: Value(finishedAt),
+                status: Value(runId == 'run-active' ? 'running' : 'completed'),
+                // Keep the active fixture attached to a live process; startup
+                // crash recovery correctly finalizes runs without one.
+                pid: Value(runId == 'run-active' ? pid : null),
+                completedAt: Value(runId == 'run-active' ? null : finishedAt),
                 agentRole: const Value('sub'),
                 parentRunId: const Value('run-parent'),
                 spawnToolCallId: const Value('call-task-1'),
@@ -773,6 +838,176 @@ void main() {
         }),
         throwsA(isA<RemoteRpcException>()),
       );
+      // Partial cost writes are member-gated and bound to the registered
+      // workspace, not to a client-supplied run id or a forged log.workspaceId.
+      await client.call('agent_run_log.updateCost', const {
+        'run_id': 'run-active',
+        'cost': {'input_tokens': 8, 'cost_micros': 1200},
+      });
+      await Future.wait([
+        for (var i = 0; i < 6; i++)
+          client.call('agent_run_log.addChildCostMicros', const {
+            'run_id': 'run-active',
+            'amount_micros': 1500,
+          }),
+      ]);
+      final active =
+          (await client.call('agent_run_log.get', const {
+                'id': 'run-active',
+              }))['log']
+              as Map;
+      expect(active['cost_micros'], 1200);
+      expect(active['child_cost_micros'], 9000);
+      final completed = await client.call('agent_run_log.completeIfActive', {
+        'log': {
+          ...active.cast<String, dynamic>(),
+          'status': 'completed',
+          'summary': 'done',
+          'completed_at': finishedAt.toIso8601String(),
+        },
+        'write_cost': false,
+      });
+      expect(completed['completed'], true);
+      await client.call('agent_run_log.addChildCostMicros', const {
+        'run_id': 'run-active',
+        'amount_micros': 2000,
+      });
+      final finalRun =
+          (await client.call('agent_run_log.get', const {
+                'id': 'run-active',
+              }))['log']
+              as Map;
+      expect(finalRun['child_cost_micros'], 11000);
+      expect(finalRun['child_cost_cents'], 1);
+      expect(finalRun['input_tokens'], 8);
+      expect(finalRun['summary'], 'done');
+
+      final refusedStart = await client.call(
+        'agent_run_log.updateRuntime',
+        const {'run_id': 'run-active', 'mark_running': true},
+      );
+      expect(refusedStart['updated'], false);
+      final runtime = await client.call('agent_run_log.updateRuntime', const {
+        'run_id': 'run-active',
+        'context_snapshot_json': '{"tools":["read"]}',
+      });
+      expect(runtime['updated'], true);
+      final runtimeRow =
+          (await client.call('agent_run_log.get', const {
+                'id': 'run-active',
+              }))['log']
+              as Map;
+      expect(runtimeRow['status'], 'completed');
+      expect(runtimeRow['child_cost_micros'], 11000);
+      expect(runtimeRow['cost_micros'], 1200);
+      expect(runtimeRow['context_snapshot_json'], '{"tools":["read"]}');
+
+      for (final op in [
+        'agent_run_log.updateCost',
+        'agent_run_log.addChildCostMicros',
+      ]) {
+        await expectLater(
+          client.call(op, {
+            'run_id': 'run-other',
+            if (op.endsWith('updateCost'))
+              'cost': {'input_tokens': 999}
+            else
+              'amount_micros': 999,
+          }),
+          throwsA(isA<RemoteRpcException>()),
+        );
+      }
+      await expectLater(
+        client.call('agent_run_log.updateRuntime', const {
+          'run_id': 'run-other',
+          'summary': 'cross-workspace mutation',
+        }),
+        throwsA(isA<RemoteRpcException>()),
+      );
+      await expectLater(
+        client.call('agent_run_log.completeIfActive', {
+          'log': {
+            ...active.cast<String, dynamic>(),
+            'workspace_id': otherWorkspace,
+            'completed_at': finishedAt.toIso8601String(),
+            'status': 'completed',
+          },
+          'write_cost': false,
+        }),
+        throwsA(isA<RemoteRpcException>()),
+      );
+      await expectLater(
+        client.call('agent_run_log.addChildCostMicros', const {
+          'workspace_id': 'ws-ghost',
+          'run_id': 'run-active',
+          'amount_micros': 1,
+        }),
+        throwsA(
+          isA<RemoteRpcException>().having(
+            (e) => e.code,
+            'code',
+            RpcErrorCodes.notFound,
+          ),
+        ),
+      );
+      const guestDeviceId = 'tx-unmembered-device';
+      final guestPsk = RemoteControlCrypto.generatePsk();
+      final guestSeed = openSeedDatabases(tmp.path);
+      await guestSeed.global.userDao.upsert(
+        const UsersTableCompanion(
+          id: Value('tx-unmembered-user'),
+          handle: Value('tx-unmembered'),
+          displayName: Value('Unmembered'),
+        ),
+      );
+      await guestSeed.global.pairedDeviceDao.upsert(
+        const PairedDevicesTableCompanion(
+          id: Value(guestDeviceId),
+          userId: Value('tx-unmembered-user'),
+          label: Value('Unmembered device'),
+          pskRef: Value('file'),
+          status: Value(PairedDeviceStatus.active),
+        ),
+      );
+      await guestSeed.close();
+      await FileSecretsStore(
+        dataDir: tmp.path,
+      ).writePsk(guestDeviceId, guestPsk);
+      final guest = await connectBootedServer(
+        uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
+        deviceId: guestDeviceId,
+        psk: guestPsk,
+      );
+      addTearDown(guest.close);
+      await guest.initialize();
+      await expectLater(
+        guest.call('agent_run_log.addChildCostMicros', const {
+          'workspace_id': ownWorkspace,
+          'run_id': 'run-active',
+          'amount_micros': 100,
+        }),
+        throwsA(
+          isA<RemoteRpcException>().having(
+            (e) => e.code,
+            'code',
+            RpcErrorCodes.unauthorized,
+          ),
+        ),
+      );
+      await expectLater(
+        guest.call('agent_run_log.updateRuntime', const {
+          'workspace_id': ownWorkspace,
+          'run_id': 'run-active',
+          'summary': 'forged',
+        }),
+        throwsA(
+          isA<RemoteRpcException>().having(
+            (e) => e.code,
+            'code',
+            RpcErrorCodes.unauthorized,
+          ),
+        ),
+      );
     },
   );
 
@@ -791,7 +1026,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'tx-msg-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
       const ownWorkspace = 'ws-own';
       const otherWorkspace = 'ws-other';
 
@@ -943,7 +1178,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'web-test-device';
-    const psk = 'test-psk-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
@@ -1016,7 +1251,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'web-test-device';
-    const psk = 'test-psk-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
@@ -1134,7 +1369,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'web-test-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
       const workspaceId = 'ws-alpha';
 
       final seed = openSeedDatabases(tmp.path);
@@ -1280,7 +1515,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'artifact-test-device';
-    const psk = 'test-psk-artifact-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-artifact';
 
     // Seed identity + membership up front: the subscription gate refuses a

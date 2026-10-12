@@ -1,8 +1,8 @@
 ---
 title: Controlo remoto e telemóvel
-description: Como o telemóvel chega ao seu servidor através de um relay intermediado e selado de ponta a ponta, em vez de uma ligação ponto a ponto, e o modelo de acesso em camadas que mantém esse alcance restrito.
+description: Como o telemóvel chega ao seu servidor através de ligações diretas ou intermediadas com cifragem ponto a ponto, e o modelo de acesso em camadas que mantém esse alcance restrito.
 slug: pt-PT/manual/conceitos/controlo-remoto
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 O Control Center é uma aplicação de computador, mas o trabalho que acompanha não
@@ -10,28 +10,30 @@ para quando se afasta da secretária. O **controlo remoto** emparelha o seu
 telemóvel com o seu `cc_server`, através do
 **[Remote](https://remote.usectrl.dev/)**, a aplicação complementar disponível
 em remote.usectrl.dev, para poder acompanhar a frota a partir daí: ler mensagens
-e tickets, responder a um agente, triar as suas notícias, sem que o áudio, a
-transcrição, o código-fonte ou as credenciais que residem no servidor cheguem a
-sair dele.
+e tickets, responder a um agente e triar as suas notícias através de uma ligação
+cifrada ponto a ponto. O telemóvel e o `cc_server` são extremos de texto simples
+fidedignos; um relay transporta apenas registos cifrados da aplicação.
 
 Pense nele como um companheiro do deck sobretudo de leitura. Não se destina a
 substituir o cliente de computador completo.
 
-:::note[Dois caminhos remotos diferentes]
-A aplicação complementar para telemóvel emparelha com um `cc_server` através de
-um **relay WebSocket intermediado** que transporta tramas JSON-RPC seladas de
-ponta a ponta. A **versão web** completa (e um computador apontado a um servidor
-remoto) é o outro caminho remoto; liga-se ao `cc_server` por WebSocket e
-apresenta a aplicação completa. Consulte
-[Implementação e clientes](/pt-PT/manual/conceitos/implementacao/) para saber em que os dois diferem.
+:::note[Dois clientes remotos diferentes]
+A aplicação complementar para telemóvel e a **versão web** completa (ou um
+computador apontado a um servidor remoto) podem ligar-se diretamente ao
+`cc_server` ou usar um relay WebSocket intermediado. Ambos os caminhos exigem a
+mesma sessão cifrada; o telemóvel expõe um conjunto de operações mais pequeno do
+que o cliente completo. Consulte
+[Implementação e clientes](/pt-PT/manual/conceitos/implementacao/) para saber em
+que os clientes diferem.
 :::
 
 ## Transporte
 
 O telemóvel chega ao `cc_server` através de um WebSocket: uma ligação direta
 (loopback, LAN, tailnet ou `wss://`) ou uma sala com acesso por convite num
-broker de sinalização que retransmite tramas seladas. Não existe nenhum canal de
-dados ponto a ponto.
+broker de sinalização. Ambos os caminhos exigem uma sessão autenticada e cifrada
+ponto a ponto; o broker apenas reencaminha os respetivos registos cifrados. Não
+existe nenhum canal de dados ponto a ponto.
 
 ## O que o telemóvel pode fazer
 
@@ -54,23 +56,26 @@ apenas pretendido.
 
 ## Como a ligação é estabelecida
 
-A ligação assenta num **relay intermediado**: o servidor entra numa sala com
-acesso por convite num broker `wss://` como seu proprietário e cada cliente
-emparelhado — computador, web, telemóvel — entra na mesma sala com um token de
-admissão de duração limitada. Três peças concorrem para isto:
+Quando o telemóvel não consegue chegar ao servidor diretamente, a ligação usa um
+**relay intermediado**: o servidor entra numa sala com acesso por convite num
+broker `wss://` como seu proprietário e os clientes emparelhados entram com
+tokens de admissão de duração limitada. Três peças concorrem para isto:
 
 | Peça                          | Função                                                                                                                                                                                                                                                                                            |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote (aplicação para telemóvel)** | A aplicação web complementar, alojada por predefinição em `remote.usectrl.dev`, ou auto-alojada. É carregada num navegador e guarda o registo de emparelhamento no IndexedDB.                                                                                                                     |
-| **Broker do relay**           | Um relay `wss://` sem estado (`cc_signaling_server`) que aloja salas de N participantes. Transporta **apenas tramas opacas**: cada carga útil é selada de ponta a ponta entre o telemóvel e o servidor, pelo que o broker nunca vê dados da aplicação nem o segredo de emparelhamento e nunca interpreta o que encaminha. |
+| **Broker do relay**           | Um relay `wss://` sem estado (`cc_signaling_server`) que aloja salas de N participantes. Reencaminha registos cifrados sem o segredo de emparelhamento nem o texto simples da aplicação, mas vê identificadores de encaminhamento, IPs, tamanhos de registo e temporização. |
 | **`cc_server`**               | O proprietário da sala. Responde às chamadas do telemóvel através do mesmo dispatcher que todos os outros clientes usam.                                                                                                                                                                          |
 
 Uma oferta de emparelhamento transporta um **descritor de ligação** que lista
 todos os caminhos para o servidor (LAN, tailnet, `wss://` público, relay) mais a
 respetiva impressão digital de identidade. O resolvedor do telemóvel escolhe o
-melhor caminho acessível e fixa a impressão digital na primeira ligação (TOFU);
-o relay garante conectividade mesmo quando não existe nenhum caminho direto, sem
-nunca conseguir ler o tráfego.
+melhor caminho acessível. O servidor assina o handshake cifrado e o cliente fixa
+a respetiva impressão digital. Na primeira ligação, verifique a impressão
+digital contra um QR ou outra fonte fidedigna: uma primeira identidade assinada,
+por si só, não prova a que servidor chegou. Uma fixação alterada é rejeitada em
+vez de voltar a ser confiada em silêncio. O relay transporta texto cifrado quando
+não existe nenhum caminho direto, mas ainda pode interromper ou atrasar a ligação.
 
 ## O que é a carga útil do emparelhamento
 
@@ -83,27 +88,33 @@ https://<pwa-host>/#<payload>
 ```
 
 A carga útil viaja no **fragmento** do URL, a parte a seguir a `#` que os
-navegadores nunca enviam ao servidor, pelo que o anfitrião HTTPS da PWA nunca a
-vê. Transporta tudo o que o telemóvel precisa para chegar ao servidor e provar
-quem é: o descritor de ligação (todos os caminhos mais a impressão digital de
-identidade), um id de dispositivo acabado de emitir, uma chave pré-partilhada de
-32 bytes e uma marca de expiração. O telemóvel descodifica-a, guarda localmente
-um registo de emparelhamento e remove o fragmento para que o segredo saia do
-URL.
+navegadores não enviam no pedido HTTP ao anfitrião da PWA. Transporta tudo o que
+o telemóvel precisa para chegar ao servidor e provar quem é: o descritor de
+ligação (todos os caminhos mais a impressão digital de identidade), um id de
+dispositivo acabado de emitir, uma chave pré-partilhada de 32 bytes e uma marca de
+expiração. O telemóvel descodifica-a, guarda localmente um registo de
+emparelhamento e remove o fragmento do URL. O código da aplicação web consegue
+ler o fragmento, por isso use um anfitrião de aplicação fidedigno e trate o link
+como um segredo.
 
 Existem duas formas de carga útil e **não são intermutáveis**. O QR para
 telemóvel emitido a partir do painel de emparelhamento da aplicação é o
 `PairingPayload` v2 acima, apontado ao anfitrião da PWA Remote. O comando
-`cc_server pair --client-url` emite um link v1 diferente e mais antigo
-(`{s, i, k}` — URL do servidor, id do dispositivo, chave) destinado apenas ao
-cliente **web**.
+`cc_server pair --client-url` emite um link v1 (`{s, i, k}` — URL do servidor,
+id do dispositivo, chave) destinado apenas ao cliente **web**. São formatos de
+dados de emparelhamento, e não alternativas de transporte: ambos os clientes têm
+de suportar o protocolo de sessão cifrada atual.
 
 Também diferem no tempo de vida, o que é fácil de entender mal:
 
 | Emitido por                                   | Expiração da credencial                            |
 | --------------------------------------------- | -------------------------------------------------- |
 | Painel de emparelhamento da aplicação (`pairing.mint`) | 30 dias, sempre                                    |
-| `cc_server pair` na linha de comandos         | **Nenhuma** — a credencial não expira              |
+| `cc_server pair` na linha de comandos         | Sem expiração codificada; as políticas do servidor continuam a aplicar-se |
+
+As políticas de idade máxima dos dispositivos e de tempo limite de inatividade à
+escala do servidor podem rejeitar qualquer uma das credenciais mais cedo. Nenhum
+dos dois formatos de emparelhamento contorna essas políticas.
 
 ## O modelo de acesso
 
@@ -163,13 +174,15 @@ verificação de pertença do portão 1 continua a aplicar-se. Esta é a mesma
 invariante de [isolamento de espaços de trabalho](/pt-PT/manual/conceitos/espacos-de-trabalho/) que o resto do
 produto impõe.
 
-### 5. Tramas seladas de ponta a ponta com a chave pré-partilhada
+### 5. Cifragem ponto a ponto em ligações diretas e intermediadas
 
-Todas as tramas entre o telemóvel e o servidor são seladas com a chave de
-emparelhamento; o token de admissão apenas coloca um cliente na sala e não
-decifra nada. O broker retransmite texto cifrado e nunca vê a chave. Um
-dispositivo revogado encontra a sua credencial já eliminada, pelo que **falha de
-forma fechada** ao reconectar.
+Todas as sessões de cliente, diretas ou intermediadas, exigem um handshake Noise
+assinado. A chave de emparelhamento autentica esse handshake; chaves efémeras
+novas derivam as chaves de tráfego, em vez de usar a chave de emparelhamento para
+selar cada trama. O servidor assina a sua identidade no intercâmbio e o cliente
+verifica a fixação da impressão digital guardada. Não existe texto simples nem
+alternativa para clientes mais antigos. Um token de admissão do relay apenas
+coloca um cliente numa sala; não consegue decifrar os registos.
 
 Uma credencial emitida pela aplicação tem um prazo de 30 dias; depois disso, o
 portão de ligação rejeita-a e o telemóvel tem de voltar a emparelhar. A revogação
@@ -186,21 +199,26 @@ dispositivos partilham o mesmo limite, pelo que um cliente comprometido não
 consegue ganhar margem abrindo mais sessões e um membro ruidoso não consegue
 deixar os outros sem margem.
 
-### 7. Um broker que nada fica a saber
+### 7. Um broker que não consegue ler o conteúdo da aplicação
 
-O broker de relay é deliberadamente simples: aloja salas, encaminha tramas
-seladas e não guarda contas, dados da aplicação nem chaves. As salas têm acesso
-por convite e são transitórias. Os dados da aplicação, o áudio, a transcrição, o
-código-fonte e as credenciais ficam todos no servidor.
+O broker de relay aloja salas transitórias com acesso por convite e reencaminha
+registos cifrados sem o texto simples da aplicação nem as chaves de
+emparelhamento. Ainda assim, vê endereços IP, identificadores de sala e de par,
+tamanhos de registo, temporização e duração da ligação, e pode descartar ou
+atrasar tráfego. Os pontos terminais em texto simples são o cliente emparelhado e
+o `cc_server` escolhido; o operador do servidor e os serviços para os quais este
+envia conteúdo conseguem ver esse conteúdo. A cifragem em trânsito não cifra os
+dados do servidor em repouso.
 
 ## Atualizações em direto
 
 Depois de emparelhado, o telemóvel recebe **atualizações em direto** sob a forma
 de tramas de notificação — novas mensagens de agentes, tickets atribuídos a si,
 alterações de estado — que espelham as notificações do próprio computador. O
-servidor difunde essas tramas a todas as sessões ligadas e o filtro de espaços
-de trabalho é aplicado do lado do cliente, pelo que o que vê fica limitado ao
-espaço de trabalho que está a consultar.
+servidor verifica a pertença ao espaço de trabalho antes de reencaminhar um
+evento para uma sessão. O cliente filtra depois esses eventos já autorizados
+para o espaço de trabalho que está a consultar; esse filtro de apresentação não
+é a fronteira de acesso.
 
 ## Onde se encontra
 
@@ -214,8 +232,8 @@ direto.
 
 ::::note
 O controlo remoto é do lado do servidor e **não** é exposto através de MCP. O
-telemóvel fala com o dispatcher do próprio servidor através do relay; não é um
-cliente MCP de um servidor externo.
+telemóvel fala com o dispatcher do próprio servidor através da sua ligação
+cifrada direta ou intermediada; não é um cliente MCP de um servidor externo.
 ::::
 
 ## Ver também

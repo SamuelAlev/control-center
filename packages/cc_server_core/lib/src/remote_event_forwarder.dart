@@ -26,7 +26,7 @@ typedef WorkspaceMembershipChecker = Future<bool> Function(String workspaceId);
 /// Pushes live workspace-scoped updates to every connected client as JSON-RPC
 /// notifications (id-less frames) — the single source the client-side
 /// `RpcNotificationMapper` renders as OS notifications, on every transport
-/// (loopback self-serve, LAN/WSS, paired phone over WebRTC).
+/// (loopback, direct WSS and encrypted relay).
 ///
 /// The server is stateless — there is no per-session workspace binding — so
 /// every event the device is entitled to is forwarded, each carrying its own
@@ -91,17 +91,11 @@ class RemoteEventForwarder {
     _subs.add(
       _eventBus.on<PrReviewDecisionChanged>().listen(_onPrReviewDecision),
     );
-    _subs.add(
-      _eventBus.on<PrChecksStatusChanged>().listen(_onPrChecksStatus),
-    );
-    _subs.add(
-      _eventBus.on<PrCommentMentioned>().listen(_onPrCommentMentioned),
-    );
+    _subs.add(_eventBus.on<PrChecksStatusChanged>().listen(_onPrChecksStatus));
+    _subs.add(_eventBus.on<PrCommentMentioned>().listen(_onPrCommentMentioned));
     _subs.add(_eventBus.on<PrThreadReplied>().listen(_onPrThreadReplied));
     _subs.add(_eventBus.on<PrThreadResolved>().listen(_onPrThreadResolved));
-    _subs.add(
-      _eventBus.on<ReviewBecameStale>().listen(_onReviewBecameStale),
-    );
+    _subs.add(_eventBus.on<ReviewBecameStale>().listen(_onReviewBecameStale));
     _subs.add(_eventBus.on<ExternalPrMerged>().listen(_onExternalPrMerged));
     _subs.add(
       _eventBus.on<MeetingStartingSoon>().listen(_onMeetingStartingSoon),
@@ -117,6 +111,13 @@ class RemoteEventForwarder {
     _subs.add(
       _eventBus.on<AgentAwaitingInput>().listen(
         (e) => _forward(agentAwaitingInputFrame(e)),
+      ),
+    );
+    // Policy refused an agent action without asking: informational, but the
+    // operator still needs to learn their agent was stopped.
+    _subs.add(
+      _eventBus.on<AgentActionBlocked>().listen(
+        (e) => _forward(agentActionBlockedFrame(e)),
       ),
     );
     // Membership liveness: a cached verdict must not outlive the change.

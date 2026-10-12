@@ -2,7 +2,7 @@
 title: Ein Gerät koppeln
 description: Kopple dein Telefon (oder einen zweiten Browser oder Desktop) mit deinem Control Center-Server, damit du die Flotte aus der Ferne verfolgen kannst.
 slug: de-DE/handbuch/anleitungen/geraet-koppeln
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Diese Anleitung zeigt, wie du ein Telefon mit Control Center koppelst, damit du
@@ -22,8 +22,9 @@ Telefon-App (`apps/cc_remote`, eine Flutter-Web-PWA, die du über ihre `wrangler
 auf Cloudflare Pages ausrollen kannst, auf das nginx-Image `docker/cc_remote` oder
 auf jeden statischen Host mit HTTPS — Service Worker und IndexedDB setzen einen
 sicheren Kontext voraus) und das Relay (`apps/cc_signaling_server`, eine einzelne
-zustandslose Dart-Binärdatei, die keine App-Daten hält und das Kopplungsgeheimnis
-nie sieht — sie leitet nur Ende-zu-Ende versiegelte Frames weiter). Build- und
+zustandslose Dart-Binärdatei, die keine App-Daten hält und verschlüsselte
+Datensätze nicht entschlüsseln oder das Kopplungsgeheimnis sehen kann). Es sieht
+weiterhin IPs, Routing-IDs, Größen und Timing und kann Verkehr verwerfen. Build- und
 Startschritte stehen in ihren READMEs.
 
 ## Schritt 1: Den Kopplungsbereich öffnen
@@ -50,15 +51,20 @@ für die Remote-PWA trägt.
 
 Auf dem Telefon koppelt das Öffnen eines Kopplungslinks nicht stillschweigend.
 Remote zeigt den Namen, den der Server bekannt gibt, und bittet dich um
-Bestätigung, bevor es etwas speichert, damit ein gefälschter Link die App nicht
-auf den Server einer anderen Person umlenken kann.
+Bestätigung, bevor es etwas speichert. Prüfe den Fingerabdruck im QR-Code gegen
+eine vertrauenswürdige Quelle: Ein unverifizierter Name oder ein gefälschter
+QR-Code belegt nicht, dass der Server deiner ist. Der Client legt die signierte
+Identität fest und lehnt bei späteren Verbindungen einen geänderten
+Fingerabdruck ab.
 
 :::caution[Ein gescannter QR gewährt sofort Zugriff]
 Es gibt keinen Schritt von ausstehend zu freigegeben: Ein ausgestelltes Gerät ist
 ab dem Moment der Erstellung aktiv, und das Verbindungs-Gate prüft nur, dass die
 Zugangsdaten aktiv und nicht abgelaufen sind. Behandle den QR und den
 Kopplungsschlüssel wie ein Passwort und widerrufe alles, was du nicht
-weitergeben wolltest.
+weitergeben wolltest. Sowohl direkte als auch über das Relay laufende
+Client-Sitzungen erfordern Ende-zu-Ende-Verschlüsselung; ältere Clients können
+nicht auf Klartext-RPC zurückfallen.
 :::
 
 ## Gekoppelte Geräte verwalten

@@ -42,7 +42,13 @@ class FallbackEntry {
 /// The chain is credential rotation (same provider, different keys/accounts)
 /// and/or cross-provider fallback. It is session-sticky: once a target works,
 /// later turns start there.
-class FallbackProvider implements LlmProviderPort {
+///
+/// Implements [LlmServedIdentity] so a usage ledger wrapping the CHAIN can
+/// attribute a call to the target that actually consumed it, and
+/// [LlmDeferredToolSupport] conservatively over the WHOLE chain — see
+/// [supportsDeferredTools].
+class FallbackProvider
+    implements LlmProviderPort, LlmServedIdentity, LlmDeferredToolSupport {
   /// Creates a [FallbackProvider] over `entries` (primary first).
   FallbackProvider(this._entries, {this.onFallback}) {
     if (_entries.isEmpty) {
@@ -71,18 +77,109 @@ class FallbackProvider implements LlmProviderPort {
   int _active = 0;
 
   /// The provider id that served the most recent completion.
+  @override
   String get lastServedProviderId => _entries[_active].providerId;
 
   /// The model that served the most recent completion.
+  @override
   String get lastServedModel => _entries[_active].model;
 
+  /// Whether EVERY target in the chain can defer tool loading natively.
+  ///
+  /// Deliberately conservative over the whole chain rather than answered by the
+  /// currently active target. The caller decides ONCE per turn whether to keep
+  /// deferred schemas out of the request and carry activations as references;
+  /// if the turn then fails over to a target that cannot expand a reference
+  /// (or was never told the schema), the model is left unable to call a tool
+  /// the history claims is available. `false` here means the request keeps the
+  /// full resident catalog — the pre-deferral cost — which is correct on every
+  /// target instead of fast on one and broken on the next.
+  ///
+  /// A target that cannot be built answers `false`: an unpriceable unknown is
+  /// not a capability.
+  ///
+  /// Each entry is checked with ITS OWN model, never the caller's: a rotation
+  /// entry shares the run's model, but a cross-provider entry targets a
+  /// different one, and an older model on the second target would reject
+  /// `defer_loading` even though the primary supports it.
+  @override
+  bool supportsDeferredTools({String? model}) {
+    if (_entries.isEmpty) {
+      return false;
+    }
+    for (var i = 0; i < _entries.length; i++) {
+      try {
+        if (!providerSupportsDeferredTools(
+          _providerAt(i),
+          model: _entryModel(i) ?? model,
+        )) {
+          return false;
+        }
+      } on Object {
+        return false;
+      }
+    }
+    return true;
+  }
+
   LlmProviderPort _providerAt(int i) => _built[i] ??= _entries[i].build();
+
+  /// Binds each physical target to a new run without wrapping the chain as a
+  /// single request. Credential resolvers and transports remain shared, but
+  /// fallback position and per-target accounting belong to the new run.
+  FallbackProvider mapProviders(
+    LlmProviderPort Function(LlmProviderPort provider, String providerId) bind,
+  ) {
+    final entries = <FallbackEntry>[];
+    for (var i = 0; i < _entries.length; i++) {
+      final index = i;
+      final entry = _entries[i];
+      entries.add(
+        FallbackEntry(
+          providerId: entry.providerId,
+          model: entry.model,
+          credentialId: entry.credentialId,
+          build: () => bind(_providerAt(index), entry.providerId),
+        ),
+      );
+    }
+    return FallbackProvider(entries, onFallback: onFallback).._active = _active;
+  }
+
+  /// The model to ask entry [i]'s provider for, or null when neither the entry
+  /// nor its provider names one.
+  ///
+  /// The entry's declared model wins; a rotation entry declares the run's model,
+  /// a cross-provider entry its own. Only when an entry declares none does the
+  /// built provider's default apply.
+  String? _entryModel(int i) {
+    final declared = _entries[i].model;
+    if (declared.isNotEmpty) {
+      return declared;
+    }
+    final fallback = _providerAt(i).defaultModel;
+    return fallback.isEmpty ? null : fallback;
+  }
 
   @override
   String get displayName => _providerAt(_active).displayName;
 
   @override
-  String get defaultModel => _entries[_active].model;
+  String get defaultModel {
+    // The model the ACTIVE target will actually be asked for, not the entry's
+    // declared field alone: a cross-provider entry may declare none and rely on
+    // its provider's default, and reporting '' there would misattribute the
+    // call (the request itself uses the provider's default).
+    final declared = _entries[_active].model;
+    if (declared.isNotEmpty) {
+      return declared;
+    }
+    try {
+      return _providerAt(_active).defaultModel;
+    } on Object {
+      return '';
+    }
+  }
 
   @override
   Future<List<ProviderModel>> listModels() => _providerAt(_active).listModels();
@@ -100,6 +197,16 @@ class FallbackProvider implements LlmProviderPort {
       // event is yielded (usage arrives before LlmDone, so updating _active only
       // at Done would mis-price the turn against the previous target).
       _active = i;
+      // Ask the TARGET for its own model. A cross-provider fallback entry
+      // targets a different model than the primary, and forwarding the caller's
+      // config verbatim would spend the whole turn asking the fallback provider
+      // for the primary's model (a 404 on every provider that validates it).
+      // An entry that declares no model keeps the provider's default — passing
+      // an empty id would be worse than passing none.
+      final entryModel = _entryModel(i);
+      final entryConfig = entryModel == null
+          ? config
+          : config.copyWith(model: entryModel);
       LlmError? failure;
       var producedTerminal = false;
       // Once any observable output has streamed, switching targets would
@@ -109,7 +216,7 @@ class FallbackProvider implements LlmProviderPort {
       await for (final event in provider.complete(
         messages: messages,
         tools: tools,
-        config: config,
+        config: entryConfig,
       )) {
         if (event is LlmError) {
           final canAdvance = i + 1 < _entries.length && !producedOutput;

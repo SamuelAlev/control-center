@@ -1,9 +1,9 @@
 ---
 title: Executar um servidor headless
 description: Execute o binário headless cc_server ou a imagem Docker dele, emparelhe um cliente com ele e configure-o com toda a superfície de flags da CLI e de variáveis de ambiente.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: pt-BR/manual/guias/executar-servidor-headless
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Execute o `cc_server` em uma máquina que fique ligada e depois conecte-se a ele
@@ -25,7 +25,7 @@ uma tag de versão (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ou use `latest`.
 | `ghcr.io/samuelalev/cc-server`                     | O backend: banco de dados, agentes, MCP, webhooks | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`            | O cliente web (nginx estático)             | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`         | O PWA complementar para celular (nginx estático) | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`      | O relay de pareamento WebRTC (opcional)    | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`      | O relay de conexão cifrada (opcional)      | `-p 8788:8788`   |
 
 O stack inteiro como um arquivo compose:
 
@@ -57,12 +57,15 @@ Coisas que vale a pena saber antes de expor qualquer parte disso além do
 loopback:
 
 - **A imagem `cc-server` vem com `CC_SERVER_INSECURE=1`** (ela precisa se
-  vincular a `0.0.0.0` para receber o tráfego da porta publicada), o que só é
-  seguro atrás de um proxy reverso que termina TLS — Caddy, Traefik, nginx ou um
-  Cloudflare Tunnel — em uma rede confiável. Para terminar o TLS no próprio
-  processo, monte um certificado e defina `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` (e então remova `CC_SERVER_INSECURE`). Tudo pode ser
-  sobrescrito com `docker run -e …` ou o bloco `environment:` do compose.
+  vincular a `0.0.0.0` para receber o tráfego da porta publicada). Use um proxy
+  reverso que termina TLS — Caddy, Traefik, nginx ou um Cloudflare Tunnel — em uma
+  rede confiável, ou monte um certificado e defina `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (e então remova `CC_SERVER_INSECURE`). Essa configuração
+  controla apenas o listener HTTP/WebSocket externo do servidor. Ela nunca
+  desativa a sessão de cliente cifrada de ponta a ponta obrigatória. O TLS ainda
+  protege o tráfego de login/bootstrap, os metadados de conexão, os endpoints
+  públicos e a entrega do cliente web. Tudo pode ser sobrescrito com
+  `docker run -e …` ou o bloco `environment:` do compose.
 - **`/data` é o único estado.** Os bancos SQLite, os segredos dos dispositivos
   emparelhados, os modelos baixados e o áudio das reuniões ficam todos no
   volume — faça backup dele e o contêiner se torna descartável.
@@ -74,15 +77,18 @@ loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **As duas imagens de cliente são hosts nginx estáticos** — nada para
-  configurar em tempo de execução; o formulário de conexão de cada cliente
-  recebe a URL do servidor, o id do dispositivo e a chave de pareamento. O relay
-  de sinalização também precisa apenas da porta dele
+- **As duas imagens de cliente são hosts nginx estáticos.** Editores de navegador
+  incorporados usam a mesma origem do app e a mesma conexão cifrada, como
+  descrito [mais abaixo](#recursos-do-editor-de-navegador). O formulário de
+  conexão de cada cliente recebe a URL do servidor, o id do dispositivo e a chave
+  de pareamento. O relay de sinalização precisa apenas da porta dele
   (`SIGNALING_HOST` / `SIGNALING_PORT` sobrescrevíveis); ele não tem estado, não
-  guarda segredos e é um **fallback** — um celular usa loopback, LAN, tailnet ou
-  um caminho `wss://` direto quando algum está acessível, e só recorre ao relay
-  quando nenhum está. Pule-o se os seus clientes sempre alcançam o servidor
-  diretamente.
+  guarda chaves de pareamento e é um **fallback** — um celular usa loopback, LAN,
+  tailnet ou um caminho `wss://` direto quando algum está acessível, e só recorre
+  ao relay quando nenhum está. Pule-o se os seus clientes sempre alcançam o
+  servidor diretamente. O broker vê identificadores de roteamento, endereços IP,
+  tamanhos e tempos, e pode interromper tráfego; ele não consegue descriptografar
+  o fluxo de recursos entre cliente e servidor.
 
 O restante deste guia compila o servidor a partir do código-fonte; as flags e o
 comportamento abordados são os mesmos alimentados pelas variáveis de ambiente da
@@ -181,6 +187,15 @@ Uma credencial gerada por `cc_server pair` **não tem expiração**; uma gerada 
 app sempre expira após 30 dias. Revogue um dispositivo gerado pela CLI em
 **Configurações → Você → Seus dispositivos** quando terminar de usá-lo.
 
+A chave de pareamento autentica o handshake Noise obrigatório; cada sessão deriva
+chaves de tráfego novas e verifica a identidade assinada do servidor. Proteja a
+chave de pareamento e obtenha-a de uma fonte confiável (inclusive um QR
+confiável), depois verifique uma nova impressão digital do servidor por um canal
+confiável separado ou contra um pin conhecido. Não aceite em silêncio um pin
+alterado: emparelhe de novo por um canal confiável se você substituir
+intencionalmente a identidade do servidor. O TLS por si só não consegue
+estabelecer esse pin de identidade de ponta a ponta.
+
 ## Etapa 4: Iniciar o servidor
 
 No loopback — o padrão e tudo o que você precisa para um cliente na mesma
@@ -209,9 +224,13 @@ bind em texto simples atrás dele:
 ```
 
 `--insecure` é ignorado quando `--tls-cert` e `--tls-key` estão ambos definidos —
-o TLS sempre vence. O servidor anuncia o estado de texto simples como
-`insecure: true` em `GET /healthz` e os clientes marcam essa conexão como
-insegura.
+o TLS sempre vence. O servidor anuncia o estado de texto simples do listener
+externo como `insecure: true` em `GET /healthz`. Isso não desativa a criptografia
+Noise em `/rpc`, quer o cliente se conecte diretamente quer pelo relay. Atualize
+servidor, relay e clientes juntos: clientes antigos de RPC em texto claro são
+rejeitados, sem fallback de compatibilidade. Requisições públicas a rotas de
+recursos sensíveis (incluindo transferências de backup) recebem HTTP `426`, mesmo
+do loopback; clientes emparelhados usam o túnel cifrado em vez disso.
 
 O servidor roda até receber `SIGINT`/`SIGTERM` e então encerra de forma limpa.
 
@@ -232,6 +251,33 @@ em `--allowed-origins`, ou o upgrade de WebSocket para `/rpc` é recusado; a
 lista padrão é `https://app.usectrl.dev` e `localhost` / `127.0.0.1` são sempre
 permitidos.
 :::
+
+### Recursos do editor de navegador
+
+O frontend do editor é código confiável do aplicativo e roda na origem própria do
+app web. O seu service worker encaminha o tráfego HTTP e WebSocket pela mesma
+sessão cifrada autenticada que o resto do cliente. O `cc_server` descriptografa
+cada requisição, encaminha-a ao seu backend code-server local e criptografa a
+resposta de volta ao cliente. Os arquivos continuam pertencendo ao servidor.
+
+Hospede o cliente web por HTTPS ou em uma origem de loopback segura para que os
+service workers possam rodar. A build web normal e os scripts de release incluem
+os recursos compartilhados. Se você compilar um bundle manualmente, inclua esses
+recursos depois a partir da raiz do repositório:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Para a build web do celular, substitua por `apps/cc_remote/build/web`. Isso copia
+`cc_resource_bridge.js`, `cc_resource_worker.js` e `cc_resource_ws_shim.js` para o
+bundle do app.
+
+O tráfego do editor nativo usa, em vez disso, uma fachada de loopback com escopo
+de capacidade. Não exponha o gateway privado de relatórios/comandos por loopback
+da extensão de editor iniciada pelo servidor por meio de um proxy público.
+Requisições HTTP públicas sensíveis são recusadas; os recursos exigem uma sessão
+cifrada autenticada.
 
 ## Etapa 6: Conectar um Google Calendar (opcional)
 
@@ -295,7 +341,9 @@ sessão. Toda chamada com escopo de espaço de trabalho carrega o próprio
 `workspace_id` e o acesso é decidido pela associação e pelo papel do chamador no
 espaço de trabalho — não por deter uma chave de pareamento.
 
-Duas coisas que você precisa saber antes de expor a porta além do loopback:
+Duas coisas que você precisa saber antes de expor a porta além do loopback (o TLS
+por si só não fornece a criptografia de ponta a ponta do cliente emparelhado nem
+autoriza recursos):
 
 - **O MCP falha fechado fora do host.** Uma superfície MCP sem token responde apenas ao loopback. Vincular `any` não a amplia — uma requisição de fora do host é recusada com "MCP requires a bearer token to answer non-loopback clients" até você configurar um (`mcp.setToken`, ou **Configurações → Servidor → Servidores MCP**).
 - **`GET /healthz` não tem autenticação por design**, com CORS curinga, e publica o id, o nome, a impressão digital de identidade e a versão de build do servidor. Os clientes precisam da impressão digital para fixar o servidor, então isso é deliberado — mas significa que qualquer `cc_server` alcançável divulga tudo isso a quem perguntar.

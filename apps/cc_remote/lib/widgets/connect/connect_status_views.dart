@@ -44,7 +44,7 @@ class NotPairedView extends StatelessWidget {
   }
 }
 
-/// Connecting: signaling -> WebRTC -> handshake in progress.
+/// Connecting: selecting a transport and authenticating the Noise session.
 class ConnectingView extends StatelessWidget {
   const ConnectingView({super.key, required this.t});
 

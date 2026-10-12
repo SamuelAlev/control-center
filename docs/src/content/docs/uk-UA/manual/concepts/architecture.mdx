@@ -3,7 +3,7 @@ title: "Архітектура"
 description: "Як Control Center структуровано: модель тонкого клієнта із сервером, Clean Architecture з первинністю фіч і патерн «порти та адаптери»."
 dateModified: 2026-09-19
 slug: uk-UA/керівництво/поняття/архітектура
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Огляд
@@ -26,7 +26,7 @@ Control Center має **архітектуру тонкого клієнта**. 
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Доменний шар**: сутності, об’єкти-значення, інтерфейси репозиторіїв, порти й доменні сервіси на чистому Dart. Жодних імпортів з інфраструктури (ані dio, ані drift, ані мережевих моделей).
+- **Доменний шар**: сутності, об’єкти-значення, інтерфейси репозиторіїв, порти й доменні сервіси на чистому Dart. Жодних імпортів з інфраструктури (ані rhttp, ані drift, ані мережевих моделей).
 - **Шар представлення**: екрани, віджети, нотифікатори. Без прямого доступу до drift, DAO чи шару даних; усе проходить через провайдери Riverpod → репозиторії.
 - **Інфраструктурний шар**: конкретні реалізації доменних портів та інтерфейсів репозиторіїв. Залежить від домену й ніколи навпаки.
 
@@ -122,7 +122,7 @@ Control Center — багатокористувацька система: люд
 
 Увесь зовнішній HTTP живе на сервері. Клієнти ніколи не звертаються до GitHub, Linear чи Google напряму — вони викликають RPC-операції сервера, і навіть віддалені медіа завантажуються через серверну кінцеву точку `/proxy/media`, а не з початкового джерела.
 
-- Клієнти **dio** в `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` і `GoogleCalendarApiClient`
+- Клієнти **rhttp** в `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` і `GoogleCalendarApiClient`
 - Вставлення токенів автентифікації через перехоплювачі, зокрема перехоплювач Google OAuth для кожного облікового запису в `cc_server_core`, який оновлює токени при 401
 - Усі помилки проходять через `packages/cc_infra/lib/src/network/error_mapper.dart` → типізовані підкласи `AppException`, визначені в `cc_domain`
 

@@ -1,9 +1,16 @@
 ---
 title: Đánh giá và chất lượng
-description: Các bộ đánh giá, bộ khởi đầu được gieo sẵn vào mỗi không gian làm việc và nơi chúng xuất hiện trong Quan sát.
+description: Các bộ đánh giá và chiến dịch kỹ năng ghim theo bản sửa đổi, và cách diễn giải bằng chứng của chúng.
 slug: vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Quan sát → Chất lượng** chứa cả các bộ đánh giá cho một tác vụ đơn lẻ lẫn các
+chiến dịch kỹ năng theo cặp. Một chiến dịch kỹ năng đo một gói theo cách một mô
+hình và một harness cụ thể dùng nó, chứ không đo chất lượng Markdown của gói đó
+một cách riêng lẻ.
+
+## Bộ đánh giá
 
 **Bộ đánh giá** là một định nghĩa trong phạm vi không gian làm việc về một tác
 vụ cần chạy trên một agent: một prompt, một agent đích cùng chế độ, phần thiết
@@ -18,7 +25,7 @@ phiếu. Việc gieo sẵn lắng nghe `WorkspaceCreated` (`workspace.upsert` ho
 `workspace.create`), bỏ qua tên đã tồn tại và không điền bù cho các không gian
 làm việc cũ.
 
-## Nơi chúng xuất hiện
+### Nơi chúng xuất hiện
 
 **Quan sát → Chất lượng** (`/workspaces/<id>/observability`) liệt kê từng bộ
 đánh giá trong không gian làm việc.
@@ -27,10 +34,121 @@ Tạo, liệt kê, sửa và xóa bộ đánh giá qua `evals.upsertSuite`,
 `evals.deleteSuite` và `evals.watchSuites`. Tab Chất lượng chính là danh sách;
 còn những thao tác đó chính là trình biên tập.
 
+## Chiến dịch kỹ năng
+
+Một chiến dịch so sánh hai nhánh dưới cùng một tác vụ và cùng một cấu hình thực
+thi. Ứng viên có thể không tồn tại, sẵn có theo cách thông thường, được tải rõ
+ràng, hoặc được so với một bản sửa đổi trước đó hay một bộ kỹ năng nền cố định.
+Những lựa chọn này trả lời các câu hỏi khác nhau; buộc tải là một phép chẩn
+đoán, không phải điểm số cho khả năng phát hiện thông thường.
+[Hướng dẫn về kỹ năng](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-skill/#đánh-giá-một-kỹ-năng)
+giải thích cách chọn một phép so sánh và cho phép một lượt chạy có ngân sách.
+
+Bằng chứng thuộc về một **hash chính xác của toàn bộ gói**: `SKILL.md`, siêu dữ
+liệu, script, tài liệu tham chiếu và tài nguyên. Máy chủ ghi lại các gói bất
+biến đã quét và ghim tập tác vụ, bộ điều hợp, định danh nhà cung cấp/mô hình
+gốc, giao thức, lược đồ công cụ và bộ kỹ năng nền. Các chiến dịch Claude gốc
+cũng ghim tài khoản được quản lý và phiên bản CLI quan sát được. Sửa một tài
+liệu tham chiếu làm bằng chứng hiện tại mất hiệu lực, kể cả khi `SKILL.md`
+không đổi. Bí danh mô hình ghi lại điều đã được yêu cầu, không phải trọng số
+bất biến của nhà cung cấp.
+
+Mỗi lượt thử nhận được ngữ cảnh, thư mục home và trạng thái fixture mới. Các
+nhánh theo cặp dùng cùng chính sách và cùng điều kiện tác vụ, trừ can thiệp kỹ
+năng đã khai báo. Việc không có đích nghĩa là siêu dữ liệu và tệp của ứng viên
+không khả dụng, chứ không phải mọi chỉ dẫn hay kỹ năng nền đã bị gỡ bỏ. Prompt
+của tác vụ không được nêu tên ứng viên trong một phép so sánh về phát hiện thông
+thường.
+
+Máy chủ nắm quyền cấp phép, thực thi, ngân sách và lưu trữ vào không gian làm
+việc. Ứng dụng khách chọn cài đặt và hiển thị bằng chứng. Tiến độ tồn tại qua
+các lần kết nối lại; việc hủy giữ lại kết quả một phần, và một lần khởi động
+lại đánh dấu công việc chưa xong là bị gián đoạn thay vì âm thầm lặp lại những
+cuộc gọi tính phí. Những chiến dịch này không cung cấp hợp đồng trình thực thi
+riêng cho các bộ đánh giá tùy ý.
+
+## Đọc bằng chứng một cách thận trọng
+
+- **Kết quả quyết định tính đúng đắn.** Những bộ xác minh có kiểu dữ liệu độc
+  lập kiểm tra hiện vật và hành vi tạo ra, chứ không kiểm tra lời tuyên bố thành
+  công của agent. Các câu trả lời mong đợi nằm ngoài vùng bao của ứng viên; mã
+  sinh ra được chấm trong một bản sao được bao riêng.
+- **Tải và tính hữu ích là hai chuyện khác nhau.** Tính sẵn có, các lần tải
+  phần thân/tham chiếu và việc dùng script quan sát được giải thích quá trình
+  thực thi. Việc một tệp được đọc không chứng minh mô hình đã tuân theo chỉ dẫn
+  của nó; truy cập không quan sát được vẫn là chưa biết.
+- **Giữ đường cơ sở tương ứng.** Một lượt chạy thành công của ứng viên, chỉ
+  riêng nó, không thiết lập được lợi ích. Hãy gồm cả những lượt thử mà một kỹ
+  năng sẵn có bị bỏ qua, những lượt thất bại và chi phí của chúng; đừng chỉ giữ
+  lần chạy lại tốt nhất.
+- **Các lần lặp lại không phải tác vụ mới.** Báo cáo nhóm độ bất định theo tác
+  vụ. Mẫu nhỏ, thiếu độ bao phủ, trôi dạt danh tính và chi phí chưa biết không
+  thể biện minh cho một khuyến nghị áp dụng. Một chiến dịch đã hoàn tất vẫn có
+  thể chưa thể kết luận; việc không cho thấy cải thiện không phải bằng chứng về
+  sự tương đương hay thoái bộ.
+- **Xem xét từng hồi quy riêng lẻ.** Lợi ích tổng hợp không được che khuất một
+  tác vụ bị tổn hại hay một tác dụng phụ không được phép. Quét bảo mật, quan sát
+  an toàn khi chạy và tính hữu ích vẫn tách biệt; thực thi rẻ hơn không thể bù
+  đắp cho bằng chứng thiếu về chất lượng hay an toàn.
+- **Đừng gộp các kết quả không tương thích.** Một mô hình, harness, chính sách,
+  fixture hay tổ hợp kỹ năng khác là một cấu hình khác. Hãy giữ bằng chứng về
+  chuyển giao và thành phần trên các tập giữ lại riêng, tách khỏi các ca phát
+  triển.
+
+Chín tập tác vụ thí điểm do nội bộ soạn có 108 mục tác vụ, trải trên tính hữu
+ích, định tuyến/an toàn theo họ và chuyển giao/thành phần trên các tập giữ lại.
+Hãy chọn một họ khớp với mục đích của kỹ năng. Các lời giải tham chiếu và đầu ra
+đã biết là xấu dùng để kiểm tra các bộ xác minh; những fixture này không phải
+bản sao chép của một benchmark công khai, cũng không phải bằng chứng rằng bất kỳ
+kỹ năng đã cài nào là hữu ích. Các lượt chạy khói của phần triển khai với phản
+hồi nhà cung cấp được viết sẵn không phải là phép đo chất lượng kỹ năng trên mô
+hình thật.
+
+## Giới hạn về thực thi và bằng chứng
+
+Hai bộ điều hợp được kiểm soát **harness tích hợp** và **Claude Code** được hỗ
+trợ. Vùng bao và thông tin xác thực đang hoạt động phải đạt trước khi thực thi.
+Các nhà cung cấp tích hợp yêu cầu hỗ trợ công cụ, giới hạn token và giá được ghi
+lại; Codex OAuth tự xác thực tài khoản của mình thay vì đòi một khóa API OpenAI
+riêng. Claude Code dùng tài khoản được quản lý mặc định, một mã mô hình cụ thể và
+báo cáo chi phí tương đương API gốc của nó.
+
+Claude Code và Codex OAuth dùng một **ngưỡng dừng mức sử dụng**: một lượt gọi
+đang chạy có thể vượt ngân sách, sau đó các lượt gọi tiếp theo dừng lại. Đây
+không phải chi tiêu đăng ký được lập hóa đơn và cũng không phải trần hóa đơn
+cứng. Các nhà cung cấp dùng khóa API giữ khoản đặt trước thận trọng trước lượt
+gọi. Chi phí quan sát được nhưng chưa biết sẽ dừng các lượt gọi tiếp theo với mọi
+bộ điều hợp; độ bao phủ chưa đầy đủ vẫn là dang dở hoặc chưa thể kết luận.
+
+Claude chạy vòng lặp mô hình gốc của mình trong một thư mục bộ điều khiển riêng,
+với các công cụ tích hợp và kỹ năng nền bị tắt. Công cụ duy nhất của nó là cầu
+MCP đã xác thực, do máy chủ sở hữu, dẫn vào đúng khách bị giam hãm mà harness
+tích hợp dùng. Thông tin xác thực nằm ngoài vị khách đó. Danh tính CLI hay bề mặt
+công cụ thay đổi sẽ làm lượt thử mất hiệu lực thay vì âm thầm đổi trình thực
+thi. Đánh giá theo đội máy và Windows không được hỗ trợ; một phép dò Git thành
+công của worker hay việc prompt được dội lại không được tính là đánh giá.
+
+Vùng bao trên macOS từ chối mạng của khách và truy cập hệ thống tệp bên ngoài,
+chặn tách tiến trình, giới hạn CPU/tệp/đầu ra và dọn dẹp các tiến trình con
+thuộc sở hữu, nhưng **không áp đặt hạn mức bộ nhớ cứng**. Linux cần bubblewrap và
+áp một giới hạn không gian địa chỉ. Lần xác thực vùng bao đầu tiên đã thử trên
+macOS, không phải Linux. Việc thiếu vùng bao không bao giờ chuyển sang shell của
+máy chủ. Thông tin xác thực nhà cung cấp ở lại trên máy chủ, ngoài các công cụ
+của khách.
+
+Bằng chứng của các lượt thử được ẩn thông tin và giới hạn ở 256 KiB; một bản xuất
+bị giới hạn ở 16 MiB. Các bản xuất lớn giữ những tóm tắt kết quả/chi phí gọn nhẹ
+cho mọi lượt thử được chấp nhận và báo cáo rõ nội dung vết bị bỏ qua hay được
+tóm tắt. Cả bản xuất lẫn báo cáo đều không chứa gói phát lại đầy đủ của nguồn
+riêng tư. Các kiểm tra an toàn tổng hợp không thiết lập khả năng chống rò rỉ
+thực tế, không vô hiệu hóa cách ly và không chứng nhận một kỹ năng là an toàn.
+
 ## Khái niệm liên quan
 
 - [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): cấu hình mà một bộ đánh giá
   ghim lại
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): vùng bao và ranh
+  giới quyền hạn
 - [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): núm tự chủ
 - [Quản lý chi phí và ngân sách](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/): chi phí được ghi lại
   song song với một lần chạy

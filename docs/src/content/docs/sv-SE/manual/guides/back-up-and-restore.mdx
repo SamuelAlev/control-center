@@ -2,7 +2,7 @@
 title: Säkerhetskopiera och återställ
 description: Ta en ögonblicksbild av installationen, flytta en arbetsyta mellan maskiner, återställ en arbetsyta eller alla, och förvara kopior någon annanstans.
 slug: sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Den här guiden täcker de fem saker folk faktiskt gör med säkerhetskopior: tar en,
@@ -17,7 +17,7 @@ Allt här finns under **Inställningar → Server → Säkerhetskopiering och å
 - En **fullständig klient** – skrivbordsappen eller webbappen. En parkopplad telefon kan inte starta något av detta, och det är avsiktligt.
 - För att ta, lista, hämta eller radera en **ögonblicksbild av installationen**: installationens **ägare**.
 - För åtgärder per arbetsyta: **admin** för arbetsytan att exportera, **ägare** att importera eller radera den.
-- För hämtningar och uppladdningar: en **direkt** anslutning till servern. Det förmedlade reläet transporterar RPC-ramar, inte filöverföringar, och överföringskontrollerna inaktiverar sig själva med en notis när du är på ett.
+- För hämtningar och uppladdningar: en parkopplad fullständig klient på antingen en direkt eller en reläförmedlad anslutning. Båda vägarna bär filbyten genom samma autentiserade, end-to-end-krypterade resurstunnel; reläet kan inte läsa dem.
 
 :::caution[Ögonblicksbilder av installationen är manuella]
 **Säkerhetskopiera nu** skapar fortfarande en ögonblicksbild av hela installationen bara
@@ -25,7 +25,14 @@ på begäran. Den inbyggda pipelinen **Workspace backup** kan i stället ta en
 säkerhetskopia av arbetsytans databas en gång i veckan och ta bort den arbetsytans
 säkerhetskopior som är äldre än 30 dagar. Den kopierar inte `global.db`, andra
 arbetsytor eller filer bredvid databasen. Förvara kopior utanför maskinen separat.
-:::
+::::
+
+::::caution[Säkerhetskopior krypteras inte i vila]
+Den krypterade överföringen slutar vid din klient och `cc_server`.
+Ögonblicksbildskataloger, arbetsytaexporter, hämtade filer och serverns databaser
+krypteras inte i vila av Control Center. Skydda servervärden, dina hämtningar och
+kopior utanför maskinen med din egen lagringskryptering och åtkomstkontroll.
+::::
 
 ## Vad en säkerhetskopia omfattar
 
@@ -324,7 +331,7 @@ de lagras.
 
 | Symtom                                                                   | Orsak och åtgärd                                                                                                          |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Kontrollerna för hämtning och uppladdning är inaktiverade med en notis om ett relä | Du är ansluten via det förmedlade reläet, som inte transporterar några filöverföringar. Anslut direkt                       |
+| Hämtningen eller uppladdningen misslyckas efter att anslutningen ändrats | Försök igen på den aktiva parkopplade anslutningen. Både direkt och via relä stöds krypterad filöverföring; ingen av dem erbjuder en klartext-HTTP-reserv |
 | "Servern nekade"                                                         | Roll. Att ta eller lista en ögonblicksbild av installationen kräver installationens operatör. Att hämta en arbetsyta kräver admin, att återställa en kräver ägare, en zip för hela ögonblicksbilden kräver installationens operatör |
 | "Den här servern har ingen säkerhetskopieringsyta"                       | Värden har ingen säkerhetskopieringsport inkopplad – en demoserver. Operationerna saknas i stället för att nekas              |
 | "Filen är större än vad servern accepterar"                              | Uppladdningar är begränsade till 8 GiB. Lägg filen på servervärden och använd **Importera** → **Välj fil** i stället          |
@@ -338,7 +345,7 @@ de lagras.
 
 - [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/): varifrån datakatalogen kommer
 - [Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/): direkta anslutningar kontra anslutningar via relä
-- [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/): uppgiften som överföringsrutterna signerar med
+- [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/): den parkopplade enhetens uppgift som den krypterade överföringen och dess signerade resursbegäranden använder
 
 ## Relaterade koncept och referens
 

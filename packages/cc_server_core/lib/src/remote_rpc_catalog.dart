@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
@@ -29,6 +30,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
+import 'package:cc_domain/core/domain/repositories/file_catalog_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
@@ -290,6 +292,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // a screenshot never travels inside a message row. Optional: when null the
   // op is absent and the composer silently keeps text-only behaviour.
   BlobStore? blobStore,
+  FileCatalogRepository? fileCatalog,
   // The server-side pending-question map behind the `ask_user` tool.
   //
   // `AgentQuestionService.ask()` blocks on a Completer in the process running
@@ -458,8 +461,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   Future<bool> Function()? manualPairingEnabled,
   // The phone-reachable RPC WebSocket URL this server advertises in
   // `pairing.mint`. Empty when the host is not directly reachable (e.g. a
-  // desktop that is not running its LAN WSS server) — the client then falls
-  // back to WebRTC pairing instead of a direct-WS QR.
+  // desktop without a reachable LAN WSS server) — the client then uses the
+  // encrypted WebSocket relay advertised in the same pairing descriptor.
   required String pairingServerUrl,
   // The signaling broker (`wss://…`) advertised in `pairing.mint` for the relay
   // pairing path: when the server is not directly reachable from the client,
@@ -856,14 +859,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   ModelControl? embeddingModelControl,
   ModelControl? diarizationModelControl,
   ModelControl? voiceModelControl,
-  // Owns server-hosted interactive terminal sessions (a `flutter_pty` shell
-  // inside the agent sandbox). The PTY runs on the SERVER's machine, so the
-  // `terminal.*` ops + the `terminal.output` subscription exist only when the
-  // host wires this port (the desktop in-process host, which links flutter_pty
-  // via DesktopTerminalSessionPort). A pure-Dart headless cc_server does NOT
-  // link flutter_pty, so it leaves this null and the ops are simply absent —
-  // the web terminal panel then shows an honest "terminal runs on the server
-  // host" state. Sessions are workspace-scoped (ownership validated per op).
+  // Server-hosted interactive PTY sessions inside the agent sandbox, backed by
+  // cc_natives rather than a Flutter plugin. `terminal.*` and `terminal.output`
+  // are present when the host wires this port. Sessions are workspace-scoped;
+  // ownership is validated on every operation.
   TerminalSessionPort? terminalSessions,
   // Owns enclosures (rigs): disposable VMs/microVMs an agent or a human drives.
   // Present only on a host that can actually boot one — a server with no
@@ -1232,6 +1231,33 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         'Space belongs to a different workspace',
       );
     }
+  }
+
+  Future<void> claimMessageFiles(RepoOpContext ctx, Object? raw) async {
+    if (raw is! Map || raw['attachments'] == null) {
+      return;
+    }
+    final entries = raw['attachments'];
+    if (entries is! List) {
+      throw const ValidationException('attachments must be a list');
+    }
+    final files = <({String fileId, String path})>[];
+    for (final entry in entries) {
+      if (entry is! Map || entry['path'] is! String || entry['path'] == '') {
+        throw const ValidationException('Invalid attachment');
+      }
+      final path = entry['path'] as String;
+      final id = entry['fileId'];
+      if (id is String && id.isNotEmpty) {
+        if (fileCatalog == null) {
+          throw const ValidationException('File catalog is unavailable');
+        }
+        files.add((fileId: id, path: path));
+      } else if (path.startsWith('blob:sha256:')) {
+        throw const ValidationException('Uploaded attachment requires fileId');
+      }
+    }
+    await fileCatalog?.claim(ctx.workspaceId!, ctx.userId, files);
   }
 
   // Open PR(s) from this conversation — matched by head branch, off the
@@ -2085,6 +2111,22 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final estimatePlan = estimatePlanDocument;
   final approvePlan = approvePlanDocument;
   final playbookRun = runPlaybook;
+
+  // RepoOpDispatcher verifies registered/non-deleted workspace and member
+  // role before these handlers run. Verify run ownership as well: a run ID is
+  // not by itself an authorization boundary, even for partial writes.
+  Future<AgentRunLog> requireOwnedRun(String workspaceId, String runId) async {
+    final run = await agentRunLogRepository.getById(workspaceId, runId);
+    if (run == null) {
+      throw const NotFoundException('Agent run log not found');
+    }
+    if (run.workspaceId != workspaceId) {
+      throw const WorkspaceMismatchException(
+        'Agent run log belongs to a different workspace',
+      );
+    }
+    return run;
+  }
 
   // `late` so the `roles.list` handler below can name the registry it lives
   // in: the permission vocabulary a role editor offers is DERIVED from the
@@ -5080,14 +5122,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (voiceModel is SelectableModelControl)
       ...voiceSelectionOps(control: voiceModel, guard: requireServerAdmin),
 
-    // A `flutter_pty` shell runs inside the agent sandbox on the SERVER's
-    // machine; the thin client drives it over these ops + the `terminal.output`
-    // subscription. The PTY can only exist on a host that links flutter_pty, so
-    // these ops exist only when the host wired a [TerminalSessionPort] (the
-    // guard promotes `terminals` non-null into the closures). A pure-Dart
-    // headless server leaves it null → the ops are absent and the web panel
-    // shows "terminal runs on the server host". Every op is workspace-scoped:
-    // `spawn` records the bound workspace and the port validates ownership on
+    // Thin clients drive the server's native PTY through these ops and the
+    // `terminal.output` subscription when a TerminalSessionPort is wired.
+    // `spawn` records the bound workspace; the port validates ownership on
     // `output`/`write`/`resize`/`kill`, so no session leaks across workspaces.
     if (terminals != null)
       ...[
@@ -5761,16 +5798,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (rigPorts != null)
       ...buildTerminalPortOps(rigPorts: rigPorts).map(fullClientOnly),
 
-    // code-server runs on the SERVER host — loopback-bound, opening the
-    // conversation's isolated CoW worktree — and the client reaches it through
-    // the authenticated `/proxy/vscode/<sid>/` reverse proxy. `open` mints a
-    // high-entropy capability bound to the caller's `(workspaceId, deviceId)`
-    // and returns the app-relative proxy URL (or a loopback URL for a
-    // loopback-local desktop/Linux external open). The worktree is resolved
-    // strictly from the caller's workspace; a foreign id → no worktree → no
-    // session (never a raw-checkout fallback). Sessions are workspace-scoped:
-    // the host validates ownership on `close`. These ops exist only when the
-    // host wired a [CodeServerPort] (the headless cc_server).
+    // code-server runs on the SERVER host, bound loopback to the conversation's
+    // isolated CoW worktree. The client reaches it through an encrypted resource
+    // tunnel with a device-bound proxy capability. The shared process's
+    // extension bridge id is server-only. A foreign workspace/space/repo yields
+    // no worktree or session (never a raw-checkout fallback).
     if (vscode != null)
       ...[
         RepoOp(
@@ -5809,9 +5841,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               ctx.args['path'] as String?,
               line: lineArg is num ? lineArg.toInt() : null,
             );
-            // App-relative proxy URL by default (works on every tier). A
-            // loopback-local desktop/Linux may pass base_url to get a direct
-            // `http://127.0.0.1:<port>/` URL for an external-browser open.
+            // App-relative proxy URL by default; the client's local resource
+            // facade supplies its own origin when embedding the editor.
             final url = base == null || base.isEmpty
                 ? '/proxy/vscode/${session.sessionId}/$query'
                 : '$base/proxy/vscode/${session.sessionId}/$query';
@@ -5820,7 +5851,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'url': url,
               'port': session.port,
               'status': session.status.name,
-              'direct_url': 'http://127.0.0.1:${session.port}/$query',
             };
           },
         ),
@@ -6308,6 +6338,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           }
         }
         final metadata = ctx.args['metadata'];
+        await claimMessageFiles(ctx, metadata);
         final messageId = await messagingRepository.sendMessage(
           workspaceId: ctx.workspaceId!,
           spaceId: spaceId,
@@ -6613,6 +6644,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final typedMetadata = metadata is Map
             ? metadata.cast<String, dynamic>()
             : null;
+        // Unchanged historic attachments lack fileId; unrelated metadata
+        // edits must keep working without revalidating old stored bytes.
+        if (typedMetadata?['attachments'] != null &&
+            jsonEncode(typedMetadata!['attachments']) !=
+                jsonEncode(existing.metadata?['attachments'])) {
+          await claimMessageFiles(ctx, typedMetadata);
+        }
         await messagingRepository.updateMessage(
           ctx.workspaceId!,
           messageId,
@@ -6637,7 +6675,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // workspace and the dispatcher has already checked their role, so this
     // cannot write into a workspace the caller is not a member of. The store
     // itself caps size and refuses a payload that is not decodable.
-    if (blobStore != null)
+    if (blobStore != null && fileCatalog != null)
       RepoOp(
         name: 'blob.put',
         kind: RepoOpKind.mutate,
@@ -6646,36 +6684,94 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // would want to "undo": the blob is meaningless until a message
         // references it, and THAT message is what enters the undo stack.
         undoClass: UndoClass.irreversible,
-        requiredArgs: ['data'],
+        requiredArgs: ['data', 'name'],
         handler: (ctx) async {
           final data = ctx.args['data'];
           if (data is! String || data.isEmpty) {
             throw const ValidationException('data must be a base64 string');
           }
+          final name = ctx.args['name'];
+          if (name is! String ||
+              name.isEmpty ||
+              name.length > 255 ||
+              name == '.' ||
+              name == '..' ||
+              name.contains(RegExp(r'[/\\\x00-\x1f\x7f]'))) {
+            throw const ValidationException('name must be a file name');
+          }
           // Any type, not just images: the device and the server are often not
           // the same machine, so a dropped PDF or source file has to have its
           // BYTES here too — a host path means nothing on this side.
           final mediaType = ctx.args['media_type'];
-          final stored = await blobStore.putBase64(
+          final Uint8List content;
+          try {
+            content = base64Decode(data);
+          } on FormatException {
+            throw const ValidationException('attachment data is malformed');
+          }
+          final type = mediaType is String && mediaType.contains('/')
+              ? mediaType
+              : 'application/octet-stream';
+          final result = await blobStore.putUpload(
             ctx.workspaceId!,
-            data,
-            mediaType: mediaType is String && mediaType.contains('/')
-                ? mediaType
-                : 'application/octet-stream',
+            content,
+            mediaType: type,
+            register: (stored, ownedBytes) async {
+              final file = await fileCatalog.createUpload(
+                workspaceId: ctx.workspaceId!,
+                uploaderUserId: ctx.userId,
+                name: name,
+                path: stored.ref,
+                mediaType: stored.mediaType,
+                bytes: stored.bytes,
+                ownedBytes: ownedBytes,
+              );
+              return {
+                'ref': stored.ref,
+                'bytes': stored.bytes,
+                'media_type': stored.mediaType,
+                'file_id': file.id,
+              };
+            },
           );
-          if (stored == null) {
+          if (result == null) {
             throw const ValidationException(
-              'attachment could not be stored (empty, malformed, or too large)',
+              'attachment could not be stored (empty or too large)',
             );
           }
-          return {
-            'ref': stored.ref,
-            'bytes': stored.bytes,
-            'media_type': stored.mediaType,
-          };
+          return result;
         },
       ),
 
+    if (fileCatalog != null && blobStore != null)
+      RepoOp(
+        name: 'files.discard',
+        kind: RepoOpKind.mutate,
+        undoClass: UndoClass.irreversible,
+        requiredArgs: ['file_id'],
+        handler: (ctx) async {
+          final fileId = ctx.args['file_id'];
+          if (fileId is! String || fileId.isEmpty) {
+            throw const ValidationException(
+              'file_id must be a nonempty string',
+            );
+          }
+          final workspaceId = ctx.workspaceId!;
+          final file = await fileCatalog.byId(workspaceId, fileId);
+          final hash = blobHashOf(file?.path);
+          if (hash == null) {
+            await fileCatalog.discard(workspaceId, ctx.userId, fileId);
+          } else {
+            await blobStore.withHashLock(workspaceId, hash, () async {
+              await fileCatalog.discard(workspaceId, ctx.userId, fileId);
+              if (await fileCatalog.canReclaim(workspaceId, file!.path)) {
+                await blobStore.deleteHash(workspaceId, hash);
+              }
+            });
+          }
+          return {'ok': true};
+        },
+      ),
     // Opening a DM, creating a group, deleting/clearing a space and removing
     // a participant are pure persistence — they need no dispatch engine — so
     // they are served on EVERY host (including a pure-Dart headless server),
@@ -7050,6 +7146,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final spaceId = ctx.args['space_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId);
           final metadata = ctx.args['metadata'];
+          await claimMessageFiles(ctx, metadata);
           await dispatch.sendUserMessage(
             ctx.workspaceId!,
             spaceId,
@@ -7085,6 +7182,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await claimMessageFiles(ctx, ctx.args['metadata']);
           await dispatch.sendAndDispatch(
             ctx.workspaceId!,
             spaceId,
@@ -7294,6 +7392,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // Same narrowing as `dispatch.sendAndDispatch`: attachments are the
           // one client-authored metadata key.
           final metadata = userMessageMetadataFromWire(ctx.args['metadata']);
+          await claimMessageFiles(ctx, ctx.args['metadata']);
           final result = await dispatch.enqueueSteering(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -10019,6 +10118,126 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         }
         await agentRunLogRepository.upsert(log);
         return {'ok': true};
+      },
+    ),
+
+    RepoOp(
+      name: 'agent_run_log.updateCost',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['run_id', 'cost'],
+      handler: (ctx) async {
+        final workspaceId = ctx.workspaceId!;
+        final runId = ctx.args['run_id'] as String;
+        await requireOwnedRun(workspaceId, runId);
+        final cost = runCostFromWire(
+          (ctx.args['cost'] as Map).cast<String, dynamic>(),
+        );
+        await agentRunLogRepository.updateCost(workspaceId, runId, cost);
+        return {'ok': true};
+      },
+    ),
+    RepoOp(
+      name: 'agent_run_log.addChildCostMicros',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['run_id', 'amount_micros'],
+      handler: (ctx) async {
+        final workspaceId = ctx.workspaceId!;
+        final runId = ctx.args['run_id'] as String;
+        await requireOwnedRun(workspaceId, runId);
+        final amount = ctx.args['amount_micros'];
+        if (amount is! int || amount < 0) {
+          throw const ValidationException(
+            'Descendant cost increment must be a nonnegative integer',
+          );
+        }
+        await agentRunLogRepository.addChildCostMicros(
+          workspaceId,
+          runId,
+          amount,
+        );
+        return {'ok': true};
+      },
+    ),
+    RepoOp(
+      name: 'agent_run_log.updateRuntime',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['run_id'],
+      handler: (ctx) async {
+        final workspaceId = ctx.workspaceId!;
+        final runId = ctx.args['run_id'] as String;
+        await requireOwnedRun(workspaceId, runId);
+        final markRunning = ctx.args['mark_running'];
+        if (markRunning != null && markRunning is! bool) {
+          throw const ValidationException('mark_running must be a boolean');
+        }
+        final liveness = ctx.args['liveness'];
+        final errorFamily = ctx.args['error_family'];
+        final parsedLiveness = liveness == null
+            ? null
+            : RunLiveness.values.asNameMap()[liveness];
+        final parsedError = errorFamily == null
+            ? null
+            : RunErrorFamily.values.asNameMap()[errorFamily];
+        if ((liveness != null && parsedLiveness == null) ||
+            (errorFamily != null && parsedError == null)) {
+          throw const ValidationException('Invalid run classification');
+        }
+        final rawLastOutput = ctx.args['last_output_at'];
+        final lastOutput = rawLastOutput == null
+            ? null
+            : rawLastOutput is String
+            ? DateTime.tryParse(rawLastOutput)
+            : null;
+        if (rawLastOutput != null && lastOutput == null) {
+          throw const ValidationException('Invalid last_output_at timestamp');
+        }
+        return {
+          'updated': await agentRunLogRepository.updateRuntime(
+            workspaceId,
+            runId,
+            pid: (ctx.args['pid'] as num?)?.toInt(),
+            markRunning: markRunning == true,
+            logPath: ctx.args['log_path'] as String?,
+            contextSnapshotJson: ctx.args['context_snapshot_json'] as String?,
+            lastOutputAt: lastOutput,
+            liveness: parsedLiveness,
+            errorFamily: parsedError,
+            summary: ctx.args['summary'] as String?,
+            modelId: ctx.args['model_id'] as String?,
+            effort: ctx.args['effort'] as String?,
+            taskFamily: ctx.args['task_family'] as String?,
+          ),
+        };
+      },
+    ),
+    RepoOp(
+      name: 'agent_run_log.completeIfActive',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['log', 'write_cost'],
+      handler: (ctx) async {
+        final workspaceId = ctx.workspaceId!;
+        final completed = agentRunLogFromWire(
+          (ctx.args['log'] as Map).cast<String, dynamic>(),
+        );
+        if (completed.workspaceId != workspaceId) {
+          throw const WorkspaceMismatchException(
+            'Agent run log belongs to a different workspace',
+          );
+        }
+        await requireOwnedRun(workspaceId, completed.id);
+        if (completed.completedAt == null ||
+            (completed.status != RunStatus.completed &&
+                completed.status != RunStatus.error)) {
+          throw const ValidationException(
+            'Terminal write requires a completed/error status and timestamp',
+          );
+        }
+        return {
+          'completed': await agentRunLogRepository.completeIfActive(
+            completed,
+            writeCost: ctx.args['write_cost'] as bool,
+          ),
+        };
       },
     ),
 

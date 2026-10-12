@@ -69,6 +69,8 @@ import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
@@ -582,14 +584,27 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   'cached_read_tokens': l.cost.cachedReadTokens,
   'cached_write_tokens': l.cost.cachedWriteTokens,
   'estimated_cost_cents': l.cost.estimatedCostCents,
+  'cost_micros': l.cost.costMicros,
+  'cost_basis': l.cost.costBasis.name,
   'child_cost_cents': l.childCostCents,
+  'child_cost_micros': l.childCostMicros,
   'agent_role': l.role.name,
+  // Null means unknown, so the key travels only when a level was recorded.
+  'effort': ?l.effort,
+  'task_family': ?l.taskFamily,
   'duration_ms': ?l.cost.durationMs,
   'time_to_first_token_ms': ?l.cost.timeToFirstTokenMs,
   'liveness': ?l.liveness?.name,
   'error_family': ?l.errorFamily?.name,
   'last_output_at': ?l.lastOutputAt?.toIso8601String(),
   'continuation_summary': ?l.continuationSummary,
+  // An empty profile is every stage unknown, so it is omitted rather than sent
+  // as `[]` — the same fact a legacy row records as absent.
+  if (!l.latency.isEmpty) 'latency': l.latency.toJson(),
+  // Only a verdict a verifier actually reached travels: `unverified` is
+  // "nothing checked", which is what an absent key already says.
+  if (l.verification.status != VerificationStatus.unverified)
+    'verification': l.verification.toJson(),
   'context_snapshot_json': ?l.contextSnapshotJson,
   'pipeline_run_id': ?l.pipelineRunId,
   'pipeline_step_id': ?l.pipelineStepId,
@@ -602,7 +617,27 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   'retry_attempt': l.retry.attempt,
   'parent_run_id': ?l.parentRunId,
   'spawn_tool_call_id': ?l.spawnToolCallId,
+  // Adapter-session lineage: which native session this run continued, and
+  // whether it resumed one rather than starting fresh. `false` is the default,
+  // so it travels as an absent key like every other unknown.
+  'native_session_id': ?l.nativeSessionId,
+  if (l.resumedNativeSession) 'resumed_native_session': true,
 };
+
+/// Parses the own-usage columns shared by a full run log and a partial cost
+/// update. Descendant spend has separate columns and is never accepted here.
+RunCost runCostFromWire(Map<String, dynamic> w) => RunCost(
+  inputTokens: (w['input_tokens'] as num?)?.toInt() ?? 0,
+  outputTokens: (w['output_tokens'] as num?)?.toInt() ?? 0,
+  thoughtTokens: (w['thought_tokens'] as num?)?.toInt() ?? 0,
+  cachedReadTokens: (w['cached_read_tokens'] as num?)?.toInt() ?? 0,
+  cachedWriteTokens: (w['cached_write_tokens'] as num?)?.toInt() ?? 0,
+  estimatedCostCents: (w['estimated_cost_cents'] as num?)?.toInt() ?? 0,
+  costMicros: (w['cost_micros'] as num?)?.toInt() ?? 0,
+  costBasis: CostBasis.fromWire(w['cost_basis'] as String?),
+  durationMs: (w['duration_ms'] as num?)?.toInt(),
+  timeToFirstTokenMs: (w['time_to_first_token_ms'] as num?)?.toInt(),
+);
 
 /// Reconstructs an [AgentRunLog] from an `AgentRunLogDto` wire map (the inverse
 /// of [agentRunLogToWire]), used by the `agent_run_log.upsert` op.
@@ -628,16 +663,7 @@ AgentRunLog agentRunLogFromWire(Map<String, dynamic> w) {
     modelId: w['model_id'] as String?,
     pid: (w['pid'] as num?)?.toInt(),
     logPath: w['log_path'] as String?,
-    cost: RunCost(
-      inputTokens: (w['input_tokens'] as num?)?.toInt() ?? 0,
-      outputTokens: (w['output_tokens'] as num?)?.toInt() ?? 0,
-      thoughtTokens: (w['thought_tokens'] as num?)?.toInt() ?? 0,
-      cachedReadTokens: (w['cached_read_tokens'] as num?)?.toInt() ?? 0,
-      cachedWriteTokens: (w['cached_write_tokens'] as num?)?.toInt() ?? 0,
-      estimatedCostCents: (w['estimated_cost_cents'] as num?)?.toInt() ?? 0,
-      durationMs: (w['duration_ms'] as num?)?.toInt(),
-      timeToFirstTokenMs: (w['time_to_first_token_ms'] as num?)?.toInt(),
-    ),
+    cost: runCostFromWire(w),
     liveness: w['liveness'] == null
         ? null
         : RunLiveness.values.asNameMap()[w['liveness']],
@@ -664,8 +690,17 @@ AgentRunLog agentRunLogFromWire(Map<String, dynamic> w) {
     ),
     role: AgentRunRole.tryParse(w['agent_role'] as String?),
     childCostCents: (w['child_cost_cents'] as num?)?.toInt() ?? 0,
+    childCostMicros: (w['child_cost_micros'] as num?)?.toInt() ?? 0,
+    effort: w['effort'] as String?,
+    taskFamily: w['task_family'] as String?,
+    // Absent means "every stage unknown" / "nothing checked", which is exactly
+    // what the null-aware parsers answer.
+    latency: RunLatencyProfile.fromJson(w['latency']),
+    verification: RunVerification.fromJson(w['verification']),
     parentRunId: w['parent_run_id'] as String?,
     spawnToolCallId: w['spawn_tool_call_id'] as String?,
+    nativeSessionId: w['native_session_id'] as String?,
+    resumedNativeSession: (w['resumed_native_session'] as bool?) ?? false,
   );
 }
 
@@ -2805,12 +2840,7 @@ typedef OrgMembersFetcher =
 typedef GitHubReadFetchers = ({
   /// A PR's description payload for the peek panel, or null when unresolvable.
   Future<({String body, String? bodyHtml, int changedFiles, int commitsCount})?>
-  Function(
-    String owner,
-    String repo,
-    int number, {
-    required String workspaceId,
-  })
+  Function(String owner, String repo, int number, {required String workspaceId})
   prContent,
 
   /// Issues/PRs in `owner/repo` matching `query` (the `#`-reference picker).

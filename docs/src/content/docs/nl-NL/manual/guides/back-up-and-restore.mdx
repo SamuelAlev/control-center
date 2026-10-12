@@ -2,7 +2,7 @@
 title: Back-uppen en herstellen
 description: Maak een momentopname van de installatie, verplaats een werkruimte tussen machines, herstel één werkruimte of allemaal, en bewaar kopieën ergens anders.
 slug: nl-NL/handleiding/gidsen/back-uppen-en-herstellen
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Deze handleiding behandelt de vijf dingen die mensen daadwerkelijk met back-ups doen:
@@ -17,7 +17,7 @@ Alles hier staat onder **Instellingen → Server → Back-up en herstel**.
 - Een **volledige client** — de desktop- of webapp. Een gekoppelde telefoon kan dit allemaal niet starten, en dat is bewust.
 - Voor het maken, opvragen, downloaden of verwijderen van een **momentopname van de installatie**: de **eigenaar** van de installatie.
 - Voor acties per werkruimte: **beheerder** van die werkruimte om te exporteren, **eigenaar** om te importeren of te verwijderen.
-- Voor downloads en uploads: een **rechtstreekse** verbinding met de server. De relay die dit bemiddelt, vervoert RPC-frames, geen bestandsoverdrachten, en de overdrachtsknoppen schakelen zichzelf uit met een melding zodra je via een relay verbonden bent.
+- Voor downloads en uploads: een gekoppelde volledige client, op een rechtstreekse of een via een relay bemiddelde verbinding. Beide routes dragen de bestandsbytes door dezelfde geauthenticeerde, end-to-end-versleutelde brontunnel; de relay kan ze niet lezen.
 
 :::caution[Momentopnamen van de installatie zijn handmatig]
 **Nu back-uppen** maakt nog steeds alleen op verzoek een momentopname van de hele
@@ -25,7 +25,15 @@ installatie. De ingebouwde pipeline **Workspace backup** kan in plaats daarvan w
 een back-up van de werkruimtedatabase maken en de back-ups van die werkruimte verwijderen
 die ouder zijn dan 30 dagen. Hij kopieert `global.db`, andere werkruimtes of bestanden
 naast de database niet mee. Bewaar kopieën buiten de machine apart.
-:::
+::::
+
+::::caution[Back-ups zijn niet versleuteld in rust]
+De versleutelde overdracht eindigt bij je client en `cc_server`.
+Momentopnamemappen, werkruimte-exports, gedownloade bestanden en de databases van
+de server worden door Control Center niet in rust versleuteld. Bescherm de
+serverhost, je downloads en kopieën buiten de machine met je eigen
+opslagversleuteling en toegangscontroles.
+::::
 
 ## Wat een back-up omvat
 
@@ -326,7 +334,7 @@ worden bewaard.
 
 | Symptoom                                                                  | Oorzaak en oplossing                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download- en uploadknoppen zijn uitgeschakeld met een melding over een relay | Je bent verbonden via de relay, die geen bestandsoverdrachten vervoert. Verbind rechtstreeks                          |
+| Download of upload mislukt na een gewijzigde verbinding | Probeer het opnieuw op de actieve gekoppelde verbinding. Zowel rechtstreeks als via een relay wordt versleutelde bestandsoverdracht ondersteund; geen van beide biedt een plaintext-HTTP-terugval |
 | “De server weigerde”                                                     | Rol. Een momentopname van de installatie maken of opvragen vereist de beheerder van de installatie. Een werkruimte downloaden vereist beheerder, er een herstellen vereist eigenaar, een zip van een hele momentopname vereist de beheerder van de installatie |
 | “Deze server heeft geen back-upoppervlak”                                | Op de host is geen back-uppoort aangesloten — een demoserver. De handelingen ontbreken in plaats van dat ze worden geweigerd                          |
 | “Het bestand is groter dan de server accepteert”                         | Uploads zijn beperkt tot 8 GiB. Zet het bestand op de serverhost en gebruik in plaats daarvan **Importeren** → **Bestand kiezen**                 |
@@ -340,7 +348,7 @@ worden bewaard.
 
 - [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/): waar de gegevensmap vandaan komt
 - [Verbinden met een externe server](/nl-NL/handleiding/gidsen/externe-server-verbinden/): rechtstreekse verbindingen versus verbindingen via een relay
-- [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/): het inloggegeven waarmee de overdrachtsroutes ondertekenen
+- [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/): het referentiegegeven van het gekoppelde apparaat dat de versleutelde overdracht en zijn ondertekende bronverzoeken gebruiken
 
 ## Gerelateerde concepten en referentie
 

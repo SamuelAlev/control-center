@@ -1,35 +1,10 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_infra/src/git/pr_polling_service.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
-
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => handler(options);
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(Object? body, {int status = 200}) => ResponseBody.fromString(
-  body == null ? '' : jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
 
 List<Map<String, dynamic>> _prs(List<int> numbers) => [
   for (final n in numbers)
@@ -46,21 +21,19 @@ List<Map<String, dynamic>> _prs(List<int> numbers) => [
 /// then an empty page forever after.
 GitHubApiClient _client(List<List<Map<String, dynamic>>> pages) {
   var call = 0;
-  final fake = _FakeAdapter((options) {
-    final page = call < pages.length ? pages[call] : const [];
-    call++;
-    return _json(page);
-  });
-  final dio = Dio()..httpClientAdapter = fake;
-  return GitHubApiClient(dio);
+  final fake = TestHttpClient(
+    handler: (request) {
+      final page = call < pages.length ? pages[call] : const [];
+      call++;
+      return httpTextResponse(request, page);
+    },
+  );
+  return GitHubApiClient(fake);
 }
 
 GitHubApiClient _throwingClient(Object Function() error) {
-  final fake = _FakeAdapter((_) {
-    throw error();
-  });
-  final dio = Dio()..httpClientAdapter = fake;
-  return GitHubApiClient(dio);
+  final fake = TestHttpClient(handler: (_) => throw error());
+  return GitHubApiClient(fake);
 }
 
 const _interval = Duration(milliseconds: 30);
@@ -182,10 +155,7 @@ void main() {
       eventBus.on<DomainEvent>().listen(events.add);
 
       final client = _throwingClient(
-        () => DioException(
-          requestOptions: RequestOptions(path: '/'),
-          type: DioExceptionType.connectionTimeout,
-        ),
+        () => RhttpTimeoutException(HttpRequest(url: '/')),
       );
       final svc = PrPollingService(
         githubClient: client,

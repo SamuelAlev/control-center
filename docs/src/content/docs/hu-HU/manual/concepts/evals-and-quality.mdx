@@ -1,9 +1,16 @@
 ---
 title: Kiértékelések és minőség
-description: Kiértékelési csomagok, a munkaterületekbe betöltött kezdőkészlet és hogy hol jelennek meg a Megfigyelhetőségben.
+description: Értékelési csomagok és verzióhoz rögzített készségkampányok, valamint ezek bizonyítékainak értelmezése.
 slug: hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+A **Megfigyelhetőség → Minőség** oldal egyfeladatos kiértékelési csomagokat és
+párosított készségkampányokat egyaránt tartalmaz. Egy készségkampány egy
+csomagot mér, ahogy egy adott modell és harness használja, nem a Markdown
+minőségét önmagában.
+
+## Kiértékelési csomagok
 
 A **kiértékelési csomag** egy munkaterület-hatókörű definíció egy ügynökkel
 futtatandó feladatra: egy prompt, egy célügynök és -mód, opcionális előkészítés,
@@ -18,7 +25,7 @@ oda-vissza útját. A betöltés a `WorkspaceCreated` eseményre figyel
 (`workspace.upsert` vagy `workspace.create`), kihagyja a már létező nevet, és
 nem tölti fel visszamenőleg a régebbi munkaterületeket.
 
-## Hol jelennek meg
+### Hol jelennek meg
 
 A **Megfigyelhetőség → Minőség** (`/workspaces/<id>/observability`) listázza a
 munkaterület összes csomagját.
@@ -27,10 +34,129 @@ A csomagokat az `evals.upsertSuite`, az `evals.deleteSuite` és az
 `evals.watchSuites` műveletekkel hozhatja létre, listázhatja, szerkesztheti és
 törölheti. A Minőség lap maga a lista; ezek a műveletek pedig a szerkesztő.
 
+## Készségkampányok
+
+A kampány két ágat hasonlít össze ugyanazon feladat- és végrehajtási
+konfiguráció mellett. A jelölt vagy hiányzik, vagy szokásosan elérhető, vagy
+kifejezetten be van töltve, esetleg egy korábbi verzióval vagy rögzített
+környezeti készségkészlettel vetik össze. Ezek különböző kérdésekre válaszolnak;
+a kényszerített betöltés diagnosztika, nem a szokásos felderítés pontszáma. A
+[készségekről szóló
+útmutató](/hu-HU/kezikonyv/gyakorlati-utmutatok/keszsegek-kezelese/#készség-értékelése)
+elmagyarázza, hogyan válasszon összehasonlítást, és hogyan engedélyezzen
+költségkerethez kötött futtatást.
+
+A bizonyíték egy pontos, **teljes csomagra vonatkozó hash**-hez tartozik:
+`SKILL.md`, metaadatok, szkriptek, hivatkozások és erőforrások. A szerver rögzíti
+a beolvasott, változtathatatlan csomagokat, valamint a feladatkészletet, az
+adaptert, a szolgáltató/natív modell azonosítóját, a protokollt, az
+eszközsémákat és a környezeti készletet. A natív Claude-kampányok emellett a
+felügyelt fiókot és a megfigyelt CLI-verziót is rögzítik. Egy hivatkozás
+szerkesztése érvényteleníti a jelenlegi bizonyítékot akkor is, ha a `SKILL.md`
+változatlan. A modellálnév azt rögzíti,
+amit kértek, nem a szolgáltató változtathatatlan súlyait.
+
+Minden próbálkozás friss kontextust, friss home-könyvtárat és friss
+fixture-állapotot kap. A párosított ágak ugyanazt a szabályzatot és
+feladatfeltételeket használják, kivéve a bejelentett készségbeavatkozást. A cél
+hiánya azt jelenti, hogy a jelölt metaadatai és fájljai nem érhetők el, nem azt,
+hogy minden háttérutasítást vagy készséget eltávolítottak. A feladatpromptok nem
+nevezhetik meg a jelöltet egy szokásos felderítési összehasonlításban.
+
+A szerver felel az engedélyezésért, a végrehajtásért, a keretekért és a
+munkaterület tartós tárolásáért. A kliensek beállításokat választanak, és
+bizonyítékokat jelenítenek meg. Az előrehaladás túléli az újracsatlakozást; a
+megszakítás megőrzi a részleges eredményeket, az újraindítás pedig inkább
+megszakítottként jelöli a befejezetlen munkát, mintsem hogy csendben megismételné
+a fizetős hívásokat. Ezek a kampányok nem biztosítják a külön végrehajtói
+szerződést tetszőleges értékelési csomagokhoz.
+
+## A bizonyítékok óvatos olvasása
+
+- **Az eredmények döntik el a helyességet.** Független, típusos ellenőrzők
+  vizsgálják a műtermékeket és az abból fakadó viselkedést, nem azt az állítást,
+  hogy az ügynök sikerrel járt. A várt válaszok a jelölt zárt területén kívül
+  maradnak; a generált kódot egy külön elkülönített másolatban értékelik.
+- **A betöltés és a hasznosság két külön dolog.** Az elérhetőség, a
+  törzs-/hivatkozásbetöltések és a megfigyelt szkripthasználat magyarázzák a
+  végrehajtást. Egy fájl beolvasása nem bizonyítja, hogy a modell követte az
+  utasításait; a nem megfigyelhető hozzáférés ismeretlen marad.
+- **Tartsa meg az illesztett alapszintet.** Egy sikeres jelöltfuttatás önmagában
+  nem igazol előnyt. Vegye bele azokat a próbálkozásokat is, ahol egy elérhető
+  készséget figyelmen kívül hagytak, a sikertelen próbálkozásokat és azok
+  költségeit; ne csak a legjobb ismétlést tartsa meg.
+- **Az ismétlések nem új feladatok.** A jelentések feladatonként csoportosítják
+  a bizonytalanságot. Kis minták, hiányzó lefedettség, identitáseltolódás és
+  ismeretlen költés nem igazolhatnak átvételi ajánlást. Egy befejezett kampány
+  még lehet nem dönthető el; a javulás elmaradása nem bizonyítja az
+  egyenértékűséget vagy a visszaesést.
+- **Vizsgálja meg az egyes visszaeséseket.** Az összesített nyereség nem
+  rejthet el egy károsodott feladatot vagy jogosulatlan mellékhatást. A
+  biztonsági vizsgálatok, a futásidejű biztonsági megfigyelések és a hasznosság
+  továbbra is különállóak; az olcsóbb végrehajtás nem ellensúlyozza a hiányzó
+  minőségi vagy biztonsági bizonyítékokat.
+- **Ne vonjon össze össze nem illő eredményeket.** Egy másik modell,
+  harness, szabályzat, fixture vagy készségkombináció más konfiguráció. A
+  félretett transzfer- és összetételbizonyítékokat tartsa külön a fejlesztési
+  esetektől.
+
+A kilenc helyben készített kísérleti korpusz 108 feladatbejegyzést tartalmaz a
+hasznosság, a családra jellemző útvonalválasztás/biztonság, valamint a félretett
+transzfer/összetétel körében. A készség céljához illő családot válassza. A
+referenciamegoldások és az ismerten hibás kimenetek ellenőrzik az ellenőrzőket;
+ezek a fixture-ök nem egy nyilvános benchmark reprodukciója, és nem bizonyítják,
+hogy bármely telepített készség hasznos. A szkriptelt szolgáltatói válaszokkal
+végzett implementációs smoke-futtatások nem élő modellen mért
+készségminőségi mérések.
+
+## Végrehajtási és bizonyítékhatárok
+
+A vezérelt **beépített harness** és a **Claude Code** adapter támogatott. Az
+elkülönítésnek és az aktív hitelesítő adatoknak a végrehajtás előtt át kell
+mennie az ellenőrzésen. A beépített szolgáltatóknál dokumentált eszköztámogatás,
+tokenkorlátok és árazás szükséges; a **Codex OAuth** a saját fiókját
+hitelesíti, nem igényel külön OpenAI API-kulcsot. A **Claude Code** az
+alapértelmezett felügyelt fiókot, egy konkrét modellazonosítót és a natív,
+API-egyenértékű költségjelentését használja.
+
+A **Claude Code** és a **Codex OAuth** egy **használati küszöbértéket** használ:
+egy futó hívás túllépheti a keretet, majd a további hívások leállnak. Ez nem a
+számlázott előfizetési költés és nem kemény számlázási plafon. Az API-kulcsos
+szolgáltatók konzervatív, hívás előtti foglalásokat tartanak fenn. Az ismeretlen
+megfigyelt költés minden adapternél leállítja a további hívásokat; a hiányos
+lefedettség részleges vagy nem dönthető el marad.
+
+A **Claude** a natív modellciklusát egy privát vezérlőkönyvtárban futtatja,
+letiltott beépített eszközökkel és környezeti készségekkel. Egyetlen eszköze a
+hitelesített, szerverbirtokolta MCP-híd ugyanabba az elkülönített vendégbe,
+amelyet a beépített harness is használ. A hitelesítő adatok azon a vendégen
+kívül maradnak. A megváltozott CLI-identitás vagy eszközfelszín érvényteleníti a
+próbálkozást, mintsem hogy csendben végrehajtót váltson. A flottaértékelés és a
+Windows nem támogatott; egy sikeres worker Git-próba vagy prompt-visszhang nem
+számít értékelésnek.
+
+A macOS elkülönítés megtagadja a vendég hálózati és külső fájlrendszer-hozzáférést,
+blokkolja a folyamatleválasztást, korlátozza a CPU-t, a fájlokat és a kimenetet,
+valamint megtisztítja a saját leszármazott folyamatait, de **nem kényszerít ki
+kemény memóriakvótát**. A Linuxhoz bubblewrap kell, és címtér-korlátot alkalmaz.
+A kezdeti elkülönítés-érvényesítés a macOS-t gyakorolta, nem a Linuxot. A hiányzó
+elkülönítés soha nem esik vissza egy gazdagép shelljére. A szolgáltatói
+hitelesítő adatok a szerveren maradnak, a vendégeszközökön kívül.
+
+A próbálkozási bizonyítékok anonimizáltak, és legfeljebb 256 KiB méretűek; egy
+export legfeljebb 16 MiB. A nagy exportok tömör eredmény- és költségösszegzéseket
+tartanak meg minden beengedett próbálkozásról, és kifejezetten jelentik a
+kihagyott vagy összegzett nyomtartalmat. Sem egy export, sem egy jelentés nem
+tartalmaz teljes, privát forrású visszajátszási csomagot. A szintetikus
+biztonsági ellenőrzések nem igazolják a tényleges exfiltrációellenállást, nem
+írják felül a karantént, és nem tanúsítják egy készség biztonságosságát.
+
 ## Kapcsolódó fogalmak
 
 - [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): az a
   konfiguráció, amelyet egy csomag rögzít
+- [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/): az
+  elkülönítés és a hatáskörök határai
 - [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): az autonómiaszabályzó
 - [Költségek és keretek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/):
   a futtatás mellett rögzített költés

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
 import 'package:cc_domain/features/newsfeed/domain/helpers/abp_parser.dart';
 import 'package:cc_infra/src/newsfeed/filter_list_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Helpers to instantiate [FilterListService] for testing instance methods.
@@ -14,7 +14,9 @@ void main() {
   setUpAll(() {
     _service = FilterListService(
       cacheDir: Directory.systemTemp.createTempSync('fl_test_').path,
-      dio: Dio(),
+      httpClient: TestHttpClient(
+        handler: (request) => httpTextResponse(request, ''),
+      ),
       allowNetwork: false,
     );
   });
@@ -1023,7 +1025,9 @@ example.com\$removeparam=tracking
       );
       final svcWithData = FilterListService(
         cacheDir: dir,
-        dio: Dio(),
+        httpClient: TestHttpClient(
+          handler: (request) => httpTextResponse(request, ''),
+        ),
         allowNetwork: false,
       );
       final state = svcWithData.readState();
@@ -1062,7 +1066,9 @@ example.com\$removeparam=tracking
       );
       final svcWithData = FilterListService(
         cacheDir: dir,
-        dio: Dio(),
+        httpClient: TestHttpClient(
+          handler: (request) => httpTextResponse(request, ''),
+        ),
         allowNetwork: false,
       );
       final params = svcWithData.readRemoveParams();
@@ -1081,7 +1087,9 @@ example.com\$removeparam=tracking
       );
       final svcWithData = FilterListService(
         cacheDir: dir,
-        dio: Dio(),
+        httpClient: TestHttpClient(
+          handler: (request) => httpTextResponse(request, ''),
+        ),
         allowNetwork: false,
       );
       final params = svcWithData.readRemoveParams();

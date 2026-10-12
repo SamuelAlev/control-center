@@ -7,7 +7,7 @@ import 'package:cc_infra/src/usage/cursor_usage_strategy.dart';
 import 'package:cc_infra/src/usage/kimi_usage_strategy.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
 import 'package:cc_infra/src/usage/zai_usage_strategy.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The five plan-usage providers, in the order the pill and the popover
 /// render them. A missing account for any of these still yields one
@@ -34,13 +34,14 @@ const List<({String id, String name})> kSubscriptionUsageProviders = [
 class SubscriptionUsageService {
   /// Creates a [SubscriptionUsageService].
   ///
-  /// [_dio] is the outbound HTTP client (the host passes its shared `createDio`
-  /// instance). [homeDir]/[environment] default to the process environment.
-  /// [fetchClaudeCached] is the single-flight cache in front of Claude's
-  /// rate-limited usage endpoint — the pill and the dispatch-time headroom
-  /// check share it so multi-account does not 429 itself.
+  /// [_httpClient] is the outbound HTTP client (the host passes its shared
+  /// `createHttpClient` instance). [homeDir]/[environment] default to the
+  /// process environment. [fetchClaudeCached] is the single-flight cache in
+  /// front of Claude's rate-limited usage endpoint — the pill and the
+  /// dispatch-time headroom check share it so multi-account does not 429
+  /// itself.
   SubscriptionUsageService({
-    required this._dio,
+    required this._httpClient,
     String? homeDir,
     Map<String, String>? environment,
     this.readClaudeKeychain = true,
@@ -48,7 +49,7 @@ class SubscriptionUsageService {
   }) : _env = environment ?? Platform.environment,
        _home = homeDir;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final Map<String, String> _env;
   final String? _home;
 
@@ -122,10 +123,10 @@ class SubscriptionUsageService {
     final claude = _claude();
     final strategies = <String, SubscriptionUsageStrategy>{
       'claude': claude,
-      'codex': CodexUsageStrategy(dio: _dio),
-      'zai': ZaiUsageStrategy(dio: _dio),
-      'kimi-code': KimiUsageStrategy(dio: _dio),
-      'cursor': CursorUsageStrategy(dio: _dio),
+      'codex': CodexUsageStrategy(httpClient: _httpClient),
+      'zai': ZaiUsageStrategy(httpClient: _httpClient),
+      'kimi-code': KimiUsageStrategy(httpClient: _httpClient),
+      'cursor': CursorUsageStrategy(httpClient: _httpClient),
     };
 
     final futures = <Future<SubscriptionUsage>>[];
@@ -138,9 +139,7 @@ class SubscriptionUsageService {
       }
       final identify = list.length > 1;
       for (final account in list) {
-        futures.add(
-          _fetchOne(strategy, account, identify: identify),
-        );
+        futures.add(_fetchOne(strategy, account, identify: identify));
       }
     }
     return Future.wait(futures);
@@ -186,9 +185,7 @@ class SubscriptionUsageService {
       usage = await strategy.guarded(account);
     }
 
-    if (identify ||
-        account.accountId != null ||
-        account.accountLabel != null) {
+    if (identify || account.accountId != null || account.accountLabel != null) {
       return usage.copyWith(
         accountId: account.accountId,
         accountLabel: account.accountLabel,
@@ -198,7 +195,7 @@ class SubscriptionUsageService {
   }
 
   ClaudeUsageStrategy _claude() => ClaudeUsageStrategy(
-    dio: _dio,
+    httpClient: _httpClient,
     environment: _env,
     homeDir: _home,
     readClaudeKeychain: readClaudeKeychain,

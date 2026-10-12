@@ -101,7 +101,7 @@ void main() {
             done.complete();
           }
         });
-        // Above the decode threshold, under the 256KB inbound cap.
+        // Above the decode threshold, under the 64 KiB Noise-record cap.
         clientSocket.add(jsonEncode({'id': 1, 'blob': 'x' * 60000}));
         clientSocket.add(jsonEncode({'id': 2}));
         await done.future.timeout(const Duration(seconds: 10));
@@ -133,52 +133,31 @@ void main() {
       },
     );
 
-    test('a non-text (binary) frame is ignored and never decoded', () async {
+    test('a binary record aborts the channel without delivering data', () async {
       transport.start();
-      final received = <Map<String, dynamic>>[];
-      final frameArrived = Completer<void>();
-      final sub = transport.incoming.listen((frame) {
-        received.add(frame);
-        if (!frameArrived.isCompleted) {
-          frameArrived.complete();
-        }
-      });
-
-      clientSocket.add(<int>[0, 1, 2, 3]); // binary, not text
-      // Follow it with a valid frame so we know the listener is alive.
-      clientSocket.add(jsonEncode({'method': 'after-binary', 'id': 3}));
-      await frameArrived.future.timeout(const Duration(seconds: 5));
-      await sub.cancel();
-      expect(received, [
-        {'method': 'after-binary', 'id': 3},
-      ], reason: 'binary frame must be dropped, text frame still delivered');
+      final received = transport.incoming.toList();
+      clientSocket.add(<int>[0, 1, 2, 3]);
+      expect(await received.timeout(const Duration(seconds: 5)), isEmpty);
+      expect(transport.isOpen, isFalse);
     });
 
-    test(
-      'a malformed JSON text frame is dropped (never reaches incoming)',
-      () async {
-        transport.start();
-        final received = <Map<String, dynamic>>[];
-        final frameArrived = Completer<void>();
-        final sub = transport.incoming.listen((frame) {
-          received.add(frame);
-          if (!frameArrived.isCompleted) {
-            frameArrived.complete();
-          }
-        });
+    test('malformed JSON aborts the channel without delivering data', () async {
+      transport.start();
+      final received = transport.incoming.toList();
+      clientSocket.add('not-json');
+      expect(await received.timeout(const Duration(seconds: 5)), isEmpty);
+      expect(transport.isOpen, isFalse);
+    });
 
-        clientSocket.add('not-json');
-        clientSocket.add(jsonEncode({'method': 'after-bad', 'id': 4}));
-        // Wait for the frame itself, not a fixed pump count — a loaded runner
-        // needs more event-loop turns than any fixed number (same flake the
-        // sibling tests in this file already wait out).
-        await frameArrived.future.timeout(const Duration(seconds: 5));
-        await sub.cancel();
-        expect(received, [
-          {'method': 'after-bad', 'id': 4},
-        ]);
-      },
-    );
+    test('socket EOF delivers the final decoded record before done', () async {
+      transport.start();
+      final received = transport.incoming.toList();
+      final frame = {'id': 7, 'blob': 'x' * 60000};
+      clientSocket.add(jsonEncode(frame));
+      await clientSocket.close();
+      expect(await received.timeout(const Duration(seconds: 5)), [frame]);
+      expect(transport.isOpen, isFalse);
+    });
 
     test('send writes a frame back to the client as JSON text', () async {
       transport.start();
@@ -209,30 +188,14 @@ void main() {
       });
     });
 
-    test(
-      'one frame larger than the outbound ceiling is still delivered',
-      () async {
-        transport.start();
-        final arrived = Completer<String>();
-        final sub = clientSocket.listen((frame) {
-          if (!arrived.isCompleted) {
-            arrived.complete(frame as String);
-          }
-        });
-
-        // Past the 8 MiB ceiling on its own, onto an empty queue: a big
-        // snapshot, not a stalled peer. Closing here was a reconnect loop,
-        // since the re-seed pushed the same snapshot again.
-        final big = 'x' * (9 * 1024 * 1024);
-        await transport.send({'jsonrpc': '2.0', 'id': 1, 'result': big});
-
-        final frame = await arrived.future.timeout(const Duration(seconds: 10));
-        await sub.cancel();
-        expect(transport.isOpen, isTrue);
-        expect((jsonDecode(frame) as Map)['result'], hasLength(big.length));
-      },
-      timeout: const Timeout(Duration(seconds: 20)),
-    );
+    test('outbound raw records over the wire cap are rejected', () async {
+      transport.start();
+      await expectLater(
+        transport.send({'type': 'secure', 'c': 'x' * (64 * 1024)}),
+        throwsA(isA<StateError>()),
+      );
+      expect(transport.isOpen, isTrue);
+    });
 
     test('send throws StateError once the transport is closed', () async {
       transport.start();
@@ -266,8 +229,8 @@ void main() {
         }
       });
 
-      // Build a string well past the 256 KiB cap declared in the transport.
-      const maxFrameBytes = 256 * 1024;
+      // Raw Noise records are capped at 64 KiB; application assemblies are not.
+      const maxFrameBytes = 64 * 1024;
       final oversized = 'x' * (maxFrameBytes + 1);
       clientSocket.add(oversized);
       // The close is a real socket round-trip away; waiting for the event

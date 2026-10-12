@@ -6,7 +6,6 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_message_send_provider.dart';
-import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,6 +16,7 @@ class PendingSpaceSend {
   /// Creates a pending send.
   const PendingSpaceSend({
     required this.content,
+    required this.workspaceId,
     this.structuredMentions,
     this.entityRefs,
     this.attachments = const [],
@@ -24,6 +24,9 @@ class PendingSpaceSend {
 
   /// Message body.
   final String content;
+
+  /// Workspace where the files were staged, even if selection changes later.
+  final String workspaceId;
 
   /// `@agent` mentions parsed from the composer.
   final List<StructuredMention>? structuredMentions;
@@ -55,6 +58,7 @@ class PendingSpaceSendsNotifier extends Notifier<List<PendingSpaceSend>> {
 
   /// The space this queue belongs to.
   final String spaceId;
+  bool _flushing = false;
 
   @override
   List<PendingSpaceSend> build() {
@@ -73,6 +77,7 @@ class PendingSpaceSendsNotifier extends Notifier<List<PendingSpaceSend>> {
   /// Parks a submission to be dispatched when the space is ready.
   void enqueue({
     required String content,
+    required String workspaceId,
     List<StructuredMention>? structuredMentions,
     List<EntityRef>? entityRefs,
     List<ComposerAttachment> attachments = const [],
@@ -87,39 +92,53 @@ class PendingSpaceSendsNotifier extends Notifier<List<PendingSpaceSend>> {
     state = [
       ...state,
       PendingSpaceSend(
+        workspaceId: workspaceId,
         content: trimmed,
         structuredMentions: structuredMentions,
         entityRefs: entityRefs,
-        attachments: attachments,
+        attachments: [
+          for (final a in attachments)
+            a.copyWith(clearBytes: true, clearPath: a.fileId != null),
+        ],
       ),
     ];
   }
 
-  /// Drains the queue through the SAME send path the input bar uses.
-  ///
-  /// Not `sendAndDispatch` directly: that skips the blob upload, so every
-  /// picture in a parked message reached the agent as a filename and nothing
-  /// else.
+  /// Drains catalog-backed attachments through the normal message path.
   void _flushAll() {
-    if (state.isEmpty) {
+    if (state.isEmpty || _flushing) {
       return;
     }
-    final workspaceId = ref.requireWorkspaceId();
+    _flushing = true;
+    unawaited(_flushReady());
+  }
+
+  Future<void> _flushReady() async {
     final pending = state;
     state = const [];
-    for (final item in pending) {
-      unawaited(
-        ref
-            .read(spaceMessageSendProvider.notifier)
-            .send(
-              content: item.content,
-              spaceId: spaceId,
-              workspaceId: workspaceId,
-              structuredMentions: item.structuredMentions,
-              entityRefs: item.entityRefs,
-              attachments: item.attachments,
-            ),
-      );
+    try {
+      for (var i = 0; i < pending.length; i++) {
+        final item = pending[i];
+        try {
+          await ref
+              .read(spaceMessageSendProvider.notifier)
+              .send(
+                content: item.content,
+                spaceId: spaceId,
+                workspaceId: item.workspaceId,
+                structuredMentions: item.structuredMentions,
+                entityRefs: item.entityRefs,
+                attachments: item.attachments,
+              );
+        } on Object {
+          // A failed send keeps its uploaded files and remains queued rather
+          // than disappearing without a message.
+          state = [...pending.skip(i), ...state];
+          return;
+        }
+      }
+    } finally {
+      _flushing = false;
     }
   }
 }

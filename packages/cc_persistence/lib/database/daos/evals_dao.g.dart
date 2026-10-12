@@ -12,6 +12,12 @@ mixin _$EvalsDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
   $EvalRunsTableTable get evalRunsTable => attachedDatabase.evalRunsTable;
   $AgentConfigVersionsTableTable get agentConfigVersionsTable =>
       attachedDatabase.agentConfigVersionsTable;
+  $SkillEvalCampaignsTableTable get skillEvalCampaignsTable =>
+      attachedDatabase.skillEvalCampaignsTable;
+  $SkillEvalAttemptsTableTable get skillEvalAttemptsTable =>
+      attachedDatabase.skillEvalAttemptsTable;
+  $SkillEvalPoliciesTableTable get skillEvalPoliciesTable =>
+      attachedDatabase.skillEvalPoliciesTable;
   EvalsDaoManager get managers => EvalsDaoManager(this);
 }
 
@@ -39,5 +45,20 @@ class EvalsDaoManager {
       $$AgentConfigVersionsTableTableTableManager(
         _db.attachedDatabase,
         _db.agentConfigVersionsTable,
+      );
+  $$SkillEvalCampaignsTableTableTableManager get skillEvalCampaignsTable =>
+      $$SkillEvalCampaignsTableTableTableManager(
+        _db.attachedDatabase,
+        _db.skillEvalCampaignsTable,
+      );
+  $$SkillEvalAttemptsTableTableTableManager get skillEvalAttemptsTable =>
+      $$SkillEvalAttemptsTableTableTableManager(
+        _db.attachedDatabase,
+        _db.skillEvalAttemptsTable,
+      );
+  $$SkillEvalPoliciesTableTableTableManager get skillEvalPoliciesTable =>
+      $$SkillEvalPoliciesTableTableTableManager(
+        _db.attachedDatabase,
+        _db.skillEvalPoliciesTable,
       );
 }

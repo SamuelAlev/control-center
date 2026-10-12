@@ -1,9 +1,15 @@
 ---
 title: Evaluasi dan kualitas
-description: Suite eval, kumpulan pemula yang ditanam ke setiap ruang kerja, dan tempat kemunculannya di Observabilitas.
+description: Suite eval dan kampanye skill yang dipatok revisi, serta cara menafsirkan buktinya.
 slug: id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observabilitas → Kualitas** memuat suite eval satu tugas sekaligus kampanye
+skill berpasangan. Kampanye skill mengukur sebuah paket sebagaimana digunakan
+oleh model dan harness tertentu, bukan kualitas Markdown-nya secara terpisah.
+
+## Suite eval
 
 Sebuah **suite eval** adalah definisi bercakupan ruang kerja atas sebuah tugas
 yang dijalankan terhadap agen: sebuah prompt, agen target beserta modenya,
@@ -18,7 +24,7 @@ bolak-balik. Penanaman mendengarkan `WorkspaceCreated` (`workspace.upsert`
 atau `workspace.create`), melewati nama yang sudah ada, dan tidak mengisi
 mundur ruang kerja lama.
 
-## Di mana ini muncul
+### Di mana ini muncul
 
 **Observabilitas → Kualitas** (`/workspaces/<id>/observability`) mendaftar
 setiap suite di ruang kerja.
@@ -27,10 +33,120 @@ Buat, daftar, edit, dan hapus suite melalui `evals.upsertSuite`,
 `evals.deleteSuite`, dan `evals.watchSuites`. Tab Kualitas adalah daftarnya;
 operasi-operasi tersebut adalah editornya.
 
+## Kampanye skill
+
+Kampanye membandingkan dua lengan di bawah tugas dan konfigurasi eksekusi yang
+sama. Kandidat bisa tidak ada, tersedia secara normal, dimuat secara eksplisit,
+atau dibandingkan dengan revisi sebelumnya maupun inventaris skill sekitar yang
+tetap. Semuanya menjawab pertanyaan yang berbeda; pemuatan paksa adalah
+diagnostik, bukan skor untuk penemuan normal. [Panduan
+skill](/id-ID/panduan-pengguna/panduan-praktis/kelola-skill/#evaluasi-skill)
+menjelaskan cara memilih perbandingan dan mengotorisasi proses beranggaran.
+
+Bukti melekat pada **hash seluruh paket** yang persis: `SKILL.md`, metadata,
+skrip, referensi, dan aset. Server menangkap paket tak berubah yang telah
+dipindai dan mematok kumpulan tugas, adapter, pengenal penyedia/model native,
+protokol, skema alat, dan inventaris sekitar. Kampanye Claude native juga
+mematok akun terkelola dan versi CLI yang teramati. Menyunting sebuah referensi
+membatalkan bukti yang berlaku meskipun `SKILL.md` tidak berubah. Alias model mencatat apa
+yang diminta, bukan bobot penyedia yang tak berubah.
+
+Setiap percobaan mendapat konteks, home, dan status fixture yang segar. Lengan
+berpasangan memakai kebijakan dan kondisi tugas yang sama kecuali intervensi
+skill yang dinyatakan. Target tidak ada berarti metadata dan berkas kandidat
+tidak tersedia, bukan bahwa semua instruksi atau skill latar telah dihapus.
+Prompt tugas tidak boleh menyebut kandidat dalam perbandingan penemuan normal.
+
+Server memegang otorisasi, eksekusi, anggaran, dan persistensi ruang kerja.
+Klien memilih pengaturan dan menampilkan bukti. Progres bertahan melewati
+sambungan ulang; pembatalan menyimpan hasil sebagian, dan mulai ulang menandai
+pekerjaan yang belum selesai sebagai terhenti alih-alih diam-diam mengulang
+panggilan berbayar. Kampanye ini tidak menyediakan kontrak pelaksana terpisah
+untuk suite eval sembarang.
+
+## Membaca bukti secara konservatif
+
+- **Hasil menentukan kebenaran.** Pemverifikasi bertipe yang independen
+  memeriksa artefak dan perilaku yang dihasilkan, bukan klaim agen bahwa ia
+  berhasil. Jawaban yang diharapkan tetap berada di luar kurungan kandidat; kode
+  yang dihasilkan dinilai dalam salinan yang dikurung terpisah.
+- **Pemuatan dan kegunaan adalah hal berbeda.** Ketersediaan, pemuatan
+  isi/referensi, dan penggunaan skrip yang teramati menjelaskan eksekusi.
+  Membaca sebuah berkas tidak membuktikan model mengikuti instruksinya; akses
+  yang tidak dapat diamati tetap tidak diketahui.
+- **Pertahankan baseline yang diselaraskan.** Satu proses kandidat yang berhasil
+  saja tidak menetapkan manfaat. Sertakan percobaan ketika skill yang tersedia
+  diabaikan, percobaan yang gagal beserta biayanya; jangan hanya menyimpan
+  ulangan terbaik.
+- **Pengulangan bukan tugas baru.** Laporan mengelompokkan ketidakpastian per
+  tugas. Sampel kecil, cakupan yang hilang, penyimpangan identitas, dan
+  pengeluaran yang tidak diketahui tidak dapat membenarkan rekomendasi adopsi.
+  Kampanye yang selesai masih bisa belum dapat disimpulkan; kegagalan
+  menunjukkan perbaikan bukan bukti kesetaraan atau regresi.
+- **Periksa regresi individual.** Keuntungan agregat tidak boleh menyembunyikan
+  tugas yang dirugikan atau efek samping yang tidak sah. Pemindaian keamanan,
+  pengamatan keselamatan runtime, dan kegunaan tetap terpisah; eksekusi yang
+  lebih murah tidak dapat menggantikan bukti kualitas atau keamanan yang hilang.
+- **Jangan menggabungkan hasil yang tidak sepadan.** Model, harness, kebijakan,
+  fixture, atau kombinasi skill yang lain adalah konfigurasi lain. Pisahkan
+  bukti transfer dan komposisi yang disisihkan dari kasus pengembangan.
+
+Sembilan korpus percontohan yang ditulis secara lokal memuat 108 entri tugas
+yang mencakup kegunaan, perutean/keamanan khas keluarga, dan transfer/komposisi
+yang disisihkan. Pilih keluarga yang sesuai dengan tujuan skill. Solusi rujukan
+dan keluaran yang diketahui buruk menguji para pemverifikasi; fixture ini bukan
+reproduksi benchmark publik, dan bukan bukti bahwa skill yang terpasang
+berguna. Uji asap implementasi dengan respons penyedia terskrip bukan pengukuran
+kualitas skill pada model sungguhan.
+
+## Batas eksekusi dan bukti
+
+**Harness bawaan** yang terkendali dan adapter **Claude Code** didukung.
+Isolasi dan kredensial aktif harus lulus sebelum eksekusi. Penyedia bawaan
+memerlukan dukungan alat, batas token, dan harga yang terdokumentasi; **Codex
+OAuth** mengautentikasi akunnya sendiri alih-alih memerlukan kunci API OpenAI
+terpisah. **Claude Code** memakai akun terkelola bawaan, ID model yang konkret,
+dan laporan biaya setara API native-nya.
+
+**Claude Code** dan **Codex OAuth** memakai **ambang penghentian penggunaan**:
+panggilan yang sedang berjalan dapat melampaui anggaran, lalu panggilan
+berikutnya berhenti. Ini bukan pengeluaran langganan yang ditagih atau plafon
+faktur yang keras. Penyedia berbasis kunci API menyimpan reservasi prapanggilan
+yang konservatif. Pengeluaran teramati yang tidak diketahui menghentikan
+panggilan berikutnya untuk setiap adapter; cakupan yang tidak lengkap tetap
+sebagian atau belum dapat disimpulkan.
+
+**Claude** menjalankan loop model native-nya di direktori pengontrol privat,
+dengan alat bawaan dan skill sekitar dinonaktifkan. Satu-satunya alatnya adalah
+jembatan MCP yang terautentikasi dan dimiliki server ke tamu terkurung yang
+sama yang dipakai oleh harness bawaan. Kredensial tetap berada di luar tamu
+itu. Identitas CLI atau permukaan alat yang berubah membatalkan percobaan
+alih-alih diam-diam mengganti pelaksana. Evaluasi armada dan Windows tidak
+didukung; probe Git worker atau gema prompt yang berhasil tidak dihitung sebagai
+evaluasi.
+
+Isolasi macOS menolak jaringan tamu dan akses sistem berkas eksternal,
+memblokir pelepasan proses, membatasi CPU/berkas/keluaran, dan membersihkan
+keturunan yang dimilikinya, tetapi **tidak menegakkan kuota memori yang keras**.
+Linux memerlukan bubblewrap dan menerapkan batas ruang alamat. Validasi
+isolasi awal menguji macOS, bukan Linux. Isolasi yang tidak ada tidak
+pernah jatuh kembali ke shell host. Kredensial penyedia tetap di server, di luar
+alat tamu.
+
+Bukti percobaan disamarkan dan dibatasi 256 KiB; sebuah ekspor dibatasi 16 MiB.
+Ekspor besar menyimpan ringkasan hasil/biaya yang ringkas untuk semua percobaan
+yang diterima dan melaporkan secara eksplisit konten jejak yang dihilangkan atau
+diringkas. Baik ekspor maupun laporan tidak memuat bundel pemutaran ulang sumber
+privat yang lengkap. Pemeriksaan keselamatan sintetis tidak menetapkan
+ketahanan eksfiltrasi yang sesungguhnya, tidak menimpa karantina, dan tidak
+mensertifikasi skill sebagai aman.
+
 ## Konsep terkait
 
 - [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): konfigurasi yang
   dipatok oleh sebuah suite
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/):
+  isolasi dan batas kewenangan
 - [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): dial
   otonomi
 - [Kelola biaya dan anggaran](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/):

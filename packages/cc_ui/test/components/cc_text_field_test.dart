@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:cc_ui/src/components/cc_button.dart';
 import 'package:cc_ui/src/components/cc_icon_button.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
@@ -10,13 +12,6 @@ import '../cc_test_app.dart';
 
 void main() {
   group('CcTextField', () {
-    testWidgets('renders without throwing', (tester) async {
-      await tester.pumpWidget(ccTestApp(const CcTextField(hintText: 'Search')));
-      expect(find.byType(CcTextField), findsOneWidget);
-      expect(find.byType(EditableText), findsOneWidget);
-      expect(find.text('Search'), findsOneWidget);
-    });
-
     testWidgets('typing updates the controller', (tester) async {
       final controller = TextEditingController();
       addTearDown(controller.dispose);
@@ -24,6 +19,46 @@ void main() {
       await tester.enterText(find.byType(EditableText), 'hello');
       expect(controller.text, 'hello');
       await tester.pump();
+    });
+
+    testWidgets('accessible fields retain their editing availability', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final availability = ValueNotifier((enabled: true, readOnly: false));
+      addTearDown(availability.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          ValueListenableBuilder(
+            valueListenable: availability,
+            builder: (context, state, child) => CcTextField(
+              initialValue: 'Accessible input',
+              enabled: state.enabled,
+              readOnly: state.readOnly,
+            ),
+          ),
+        ),
+      );
+      for (final state in [
+        (enabled: true, readOnly: false),
+        (enabled: true, readOnly: true),
+        (enabled: false, readOnly: false),
+      ]) {
+        availability.value = state;
+        await tester.pump();
+        final data = tester
+            .getSemantics(find.byType(CcTextField))
+            .getSemanticsData();
+        expect(
+          data.flagsCollection.isEnabled,
+          state.enabled ? ui.Tristate.isTrue : ui.Tristate.isFalse,
+        );
+        expect(
+          data.flagsCollection.isReadOnly,
+          !state.enabled || state.readOnly,
+        );
+      }
+      semantics.dispose();
     });
 
     // Regression: the hint is a Stack sibling of EditableText, rebuilt only
@@ -59,14 +94,6 @@ void main() {
       await tester.tap(find.byType(CcTextField));
       await tester.pump();
       expect(focusNode.hasFocus, isTrue);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('error state renders without throwing', (tester) async {
-      await tester.pumpWidget(
-        ccTestApp(const CcTextField(errorText: 'Required')),
-      );
-      expect(find.byType(CcTextField), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

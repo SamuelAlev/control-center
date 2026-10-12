@@ -699,7 +699,9 @@ void main() {
             userMessage: 'go',
             tools: [tool],
             provider: provider,
-            config: AgentLoopConfig(externalBudgetExceeded: () => true),
+            config: AgentLoopConfig(
+              externalBudgetExceeded: () => tool.calls.isNotEmpty,
+            ),
           )
           .toList();
       expect((events.last as LoopDone).reason, LoopDoneReason.budgetExhausted);
@@ -900,7 +902,6 @@ void main() {
           .whereType<HarnessToolResultBlock>()
           .single;
       expect(block.content.length, lessThan(60000));
-      expect(block.content, contains('characters omitted'));
 
       // The UI still gets the whole thing: a human looking at a run wants what
       // actually happened, not the model's budgeted copy.

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
 # Builds Windows native FFI libs into build/natives/ (fff, cc_watcher, ccpty,
-# tree-sitter + grammars, aec, lame, cc_inference, cc_saml). rift is the sole
-# intentional gap (git worktree backend). All listed libs are REQUIRED — first
-# failure aborts. Pins from scripts/lib/native_pins.env (env overrides). Needs
-# cargo, cmake, clang, MSVC, and vcpkg/LAME_PREFIX for LAME; on arm64 also
+# tree-sitter + grammars, aec, lame, cc_inference, cc_saml, rhttp). rift is the
+# sole intentional gap (git worktree backend). All listed libs are REQUIRED — the
+# first failure aborts. Pins from scripts/lib/native_pins.env (env overrides).
+# Needs cargo, cmake, clang, MSVC, and vcpkg/LAME_PREFIX for LAME; on arm64 also
 # clang-cl (the AEC build, see that block).
 # Usage: scripts/release/windows_natives.sh [x64|arm64]
 #
@@ -117,6 +117,42 @@ log "Target architecture: $WIN_ARCH (rust $RUST_HOST, cmake -A $CMAKE_PLATFORM)"
     grep -qw "$sym" <<<"$SAML_EXPORTS" || { echo "built cc_saml.dll is missing the $sym export"; exit 1; }
   done
   log "Built cc_saml.dll"
+)
+
+# --- rhttp (rhttp's Rust HTTP engine; boot-REQUIRED) -------------------------
+# The Windows half of scripts/natives/build_rhttp.sh. rhttp is consumed as a
+# PURE-DART pub dependency (patches/rhttp@0.18.0.patch drops its Flutter plugin
+# registration), so its native is built here from the same checksum-pinned
+# pub.dev archive the unix build script uses — not by cargokit inside
+# `flutter build windows`.
+#
+# The server cannot make a single HTTP request without it and there is no
+# fallback transport, so a failure here is fatal rather than degraded.
+(
+  trap '[ $? -eq 0 ] || echo "ERROR: rhttp.dll not built — cc_server REFUSES TO BOOT without it (HTTP has no fallback transport)" >&2' EXIT
+  fetch_pinned "${RHTTP_URL:?RHTTP_URL unset}" "${RHTTP_SHA256:?RHTTP_SHA256 unset}" \
+    "$RUNNER_TEMP/rhttp.tar.gz"
+  # GNU tar reads an -f value with a drive letter as a REMOTE archive
+  # (`D:` → host `D`), so the archive goes in on stdin and the -C directory is
+  # converted with cygpath, exactly like the sherpa-onnx archive below.
+  rhttp_src="$RUNNER_TEMP/rhttp-$RHTTP_VERSION"
+  mkdir -p "$rhttp_src"
+  tar xz -C "$(cygpath -u "$rhttp_src")" <"$RUNNER_TEMP/rhttp.tar.gz"
+  [ -f "$rhttp_src/rust/Cargo.toml" ] || {
+    echo "ERROR: the pinned rhttp archive carries no rust/Cargo.toml — is RHTTP_URL the package archive?" >&2
+    exit 1
+  }
+  # `--cfg reqwest_unstable` is the flag rhttp's own Flutter build sets; the
+  # shipped codegen was generated with it (see the crate's CONTRIBUTE.md).
+  RUSTFLAGS="${RUSTFLAGS:-} --cfg reqwest_unstable" \
+    CARGO_TARGET_DIR="$RUNNER_TEMP/rhttp_target" \
+    cargo build --release --locked --manifest-path "$rhttp_src/rust/Cargo.toml"
+  cp "$RUNNER_TEMP/rhttp_target/release/rhttp.dll" build/natives/
+
+  # Sanity: flutter_rust_bridge's entry point must be exported — a stripped
+  # cdylib that lost its exports still loads and only fails at the first request.
+  assert_exports "$(cygpath -w build/natives/rhttp.dll)" frb_get_rust_content_hash
+  log "Built rhttp.dll"
 )
 
 # --- cc_inference (first-party, in-repo source; boot-REQUIRED) ---------------

@@ -14273,6 +14273,32 @@ class AppLocalizationsEl extends AppLocalizations {
   String get composerDropToAttach => 'Αφήστε για επισύναψη';
 
   @override
+  String get composerAttachmentUploading => 'Μεταφόρτωση…';
+
+  @override
+  String get composerAttachmentReady => 'Έτοιμο';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Η μεταφόρτωση απέτυχε';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Το αρχείο υπερβαίνει το όριο των $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable =>
+      'Δεν ήταν δυνατή η ανάγνωση αυτού του αρχείου';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Περιμένετε να ολοκληρωθεί η μεταφόρτωση των συνημμένων';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Δοκιμάστε ξανά ή αφαιρέστε τα συνημμένα που απέτυχαν πριν από την αποστολή';
+
+  @override
   String get attachmentUnavailable => 'Το συνημμένο δεν είναι διαθέσιμο';
 
   @override
@@ -15451,11 +15477,12 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Ένας πράκτορας σας περιμένει';
+  String get notificationAgentAwaitingInput =>
+      'Ένας πράκτορας χρειάζεται την προσοχή σας';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Όταν ένας πράκτορας χρειάζεται την έγκρισή σας, μια απάντηση ή έγκυρα διαπιστευτήρια';
+      'Όταν ένας πράκτορας χρειάζεται έγκριση, απάντηση ή έγκυρα διαπιστευτήρια ή όταν μια πολιτική αποκλείει μια ενέργεια';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15530,4 +15557,389 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Ο διακομιστής τερματίζεται';
+
+  @override
+  String get skillEvalAbsent => 'Απούσα έναντι διαθέσιμης';
+
+  @override
+  String get skillEvalAmbient => 'Δεξιότητες περιβάλλοντος';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Αναφορά τεκμηρίου: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · επανάληψη $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Προσπάθειες';
+
+  @override
+  String get skillEvalAvailableEvent => 'Διαθέσιμη';
+
+  @override
+  String get skillEvalBaseline => 'Hash προηγούμενης αναθεώρησης';
+
+  @override
+  String get skillEvalBodyLoad => 'Φορτώθηκε το σώμα';
+
+  @override
+  String get skillEvalBudgetCents => 'Προϋπολογισμός (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Η αξιολόγηση επί πληρωμή χρησιμοποιεί τον επιλεγμένο πάροχο και προϋπολογισμό. Τα αποτελέσματα του ελέγχου ασφαλείας είναι ξεχωριστά.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Οι προϋπολογισμοί συνδρομών παρακολουθούν τη χρήση σε ισοδύναμες τιμές API, όχι τα τιμολόγια. Μια κλήση σε εξέλιξη μπορεί να υπερβεί τον προϋπολογισμό· μόλις συμπληρωθεί, δεν ξεκινούν άλλες κλήσεις. Οι έλεγχοι ασφαλείας είναι ξεχωριστοί.';
+
+  @override
+  String get skillEvalCancel => 'Ακύρωση εκτέλεσης';
+
+  @override
+  String get skillEvalCancelled => 'Ακυρώθηκε';
+
+  @override
+  String get skillEvalCancelling => 'Ακυρώνεται';
+
+  @override
+  String get skillEvalComparison => 'Σύγκριση';
+
+  @override
+  String get skillEvalCompleted => 'Ολοκληρώθηκε';
+
+  @override
+  String get skillEvalComposition => 'Σύνθεση';
+
+  @override
+  String get skillEvalCorpus => 'Σύνολο εργασιών';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString επαναλήψεις';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Παρατηρήθηκαν όλες οι προγραμματισμένες δοκιμές';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Hash τρέχοντος πακέτου: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates =>
+      'Απενεργοποίηση αξιολογήσεων ενημερώσεων';
+
+  @override
+  String get skillEvalEnableUpdates => 'Ενεργοποίηση αξιολογήσεων ενημερώσεων';
+
+  @override
+  String get skillEvalExport => 'Αντιγραφή JSON με απόκρυψη στοιχείων';
+
+  @override
+  String get skillEvalFailed => 'Απέτυχε';
+
+  @override
+  String get skillEvalForced => 'Εξαναγκασμένη φόρτωση έναντι απουσίας';
+
+  @override
+  String get skillEvalForcedEvent => 'Εξαναγκασμένη φόρτωση';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Το hash του πακέτου δεν είναι διαθέσιμο σε αυτόν τον διακομιστή. Η αξιολόγηση είναι απενεργοποιημένη.';
+
+  @override
+  String get skillEvalHistory => 'Ιστορικό αναθεωρήσεων';
+
+  @override
+  String get skillEvalImproved => 'Βελτιώθηκε';
+
+  @override
+  String get skillEvalIncomplete => 'Ελλιπές';
+
+  @override
+  String get skillEvalInconclusive => 'Χωρίς σαφές συμπέρασμα';
+
+  @override
+  String get skillEvalInferred => 'Συνάγεται';
+
+  @override
+  String get skillEvalInterrupted => 'Διακόπηκε';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Η φόρτωση της δεξιότητας δεν είναι παρατηρήσιμη· η απουσία συμβάντος δεν αποδεικνύει ότι αγνοήθηκε.';
+
+  @override
+  String get skillEvalModel => 'Επιλεγμένο μοντέλο';
+
+  @override
+  String get skillEvalNoAttempts => 'Δεν υπάρχουν ακόμη προσπάθειες.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Δεν υπάρχουν διαθέσιμα συνδεδεμένα μοντέλα. Συνδέστε πρώτα έναν πάροχο στις Ρυθμίσεις.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Δεν υπάρχει προηγούμενο hash στο ιστορικό της καμπάνιας. Αξιολογήστε την προηγούμενη αναθεώρηση πριν την αντικαταστήσετε.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Δεν υπάρχει ακόμη αναφορά· οι μερικές προσπάθειες παραμένουν διαθέσιμες.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Δεν έχει επιλεγεί χώρος εργασίας.';
+
+  @override
+  String get skillEvalNoTasks => 'Δεν έχουν αναφερθεί ακόμη εργασίες.';
+
+  @override
+  String get skillEvalNoVerifiers =>
+      'Δεν έχουν καταγραφεί στοιχεία επαλήθευσης.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Δεν έχει αξιολογηθεί για αυτά ακριβώς τα byte. Ο έλεγχος δεν αποτελεί ένδειξη συμπεριφοράς.';
+
+  @override
+  String get skillEvalNotVerified => 'Μη επαληθευμένο';
+
+  @override
+  String get skillEvalObserved => 'Παρατηρήθηκε';
+
+  @override
+  String get skillEvalOpenQuality => 'Άνοιγμα Ποιότητας';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Από προεπιλογή, η αποθήκευση δεξιότητας δεν ξεκινά αξιολόγηση επί πληρωμή. Αν ενεργοποιήσετε ρητά την αυτόματη επαναξιολόγηση κατά την ενημέρωση, η αποθήκευση ξεκινά αξιολόγηση επί πληρωμή εντός προϋπολογισμού.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Αξιολογήστε πρώτα μια αναθεώρηση για να ρυθμίσετε την πολιτική ενημερώσεων.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Ρύθμιση πολιτικής ενημερώσεων';
+
+  @override
+  String get skillEvalPartial =>
+      'Μερικά στοιχεία· χωρίς συμπέρασμα για υιοθέτηση';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString από $plannedString προσπάθειες';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Πάροχος: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Καμπάνιες δεξιοτήτων χώρου εργασίας και στοιχεία ανά αναθεώρηση.';
+
+  @override
+  String get skillEvalQueued => 'Σε αναμονή';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Επανασύνδεση στα στιγμιότυπα της καμπάνιας…';
+
+  @override
+  String get skillEvalRefresh => 'Ανανέωση';
+
+  @override
+  String get skillEvalReferenceLoad => 'Φορτώθηκε η αναφορά';
+
+  @override
+  String get skillEvalRepetitions => 'Επαναλήψεις ανά εργασία';
+
+  @override
+  String get skillEvalReport => 'Αναφορά στοιχείων';
+
+  @override
+  String get skillEvalRunning => 'Σε εκτέλεση';
+
+  @override
+  String get skillEvalScriptExecution => 'Εκτελέστηκε το σενάριο';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Δαπάνη: $spent / προϋπολογισμός $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Έναρξη αξιολόγησης';
+
+  @override
+  String get skillEvalStartTitle => 'Σύγκριση αναθεωρήσεων δεξιότητας';
+
+  @override
+  String get skillEvalStale => 'Μη επίκαιρο';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Μη επίκαιρο: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Διακριτές ομάδες εργασιών: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes επαληθευμένες) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Εργασίες ανά σκέλος';
+
+  @override
+  String get skillEvalToolError => 'Σφάλμα εργαλείου';
+
+  @override
+  String get skillEvalTools => 'Συμβάντα εργαλείων';
+
+  @override
+  String get skillEvalTitle => 'Αξιολόγηση δεξιότητας';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Μη διαθέσιμο: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Άγνωστο';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Οι μη αποθηκευμένες αλλαγές δεν περιλαμβάνονται. Αποθηκεύστε πριν από την αξιολόγηση.';
+
+  @override
+  String get skillEvalUncertainty => 'Διάστημα αβεβαιότητας';
+
+  @override
+  String get skillEvalVerified => 'Επαληθεύτηκε';
+
+  @override
+  String get skillEvalVerifiers => 'Επαλήθευση';
+
+  @override
+  String get skillEvalVerdict => 'Συμπέρασμα';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Η αντιγραφή ολοκληρώθηκε: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Παραβίαση σχεδίου';
+
+  @override
+  String get skillEvalPreserved => 'Η ποιότητα διατηρήθηκε';
+
+  @override
+  String get skillEvalPrevious => 'Προηγούμενη έναντι τρέχουσας';
+
+  @override
+  String get skillEvalRegressed => 'Αποδείχθηκε υποβάθμιση';
+
+  @override
+  String get skillEvalCostRegression => 'Παλινδρόμηση κόστους';
+
+  @override
+  String get skillEvalHarnessError => 'Σφάλμα πλαισίου δοκιμών';
+
+  @override
+  String get skillBehaviorRouting => 'Δρομολόγηση δεξιότητας';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive αναμενόμενες χρήσεις · $falsePositive μη αναμενόμενες χρήσεις · $falseNegative χρήσεις που χάθηκαν · $trueNegative σωστές παραλείψεις';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive αβέβαιες χρήσεις · $negative αβέβαιες παραλείψεις · $notOffered δεν προσφέρθηκε';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Παρατηρούμενη ακρίβεια $precision · ανάκληση $recall · ποσοστό ψευδώς θετικών $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced =>
+      'Εξαναγκασμένος βραχίονας · μόνο για διάγνωση';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Τα ποσοστά βασίζονται μόνο σε παρατηρήσιμες προσβάσεις. Η πρόσβαση μέσω κελύφους ή αναζήτησης μπορεί να παραμείνει άγνωστη· η φόρτωση μιας δεξιότητας δεν αποδεικνύει την εφαρμογή της.';
+
+  @override
+  String get skillBehaviorSafety => 'Συνθετική ασφάλεια';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts επιτυχείς έλεγχοι τεχνουργημάτων · $denials απορρίψεις πολιτικής · $violations παραβιάσεις προστατευμένων αρχείων';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Οι έλεγχοι τεχνουργημάτων είναι συνθετικοί και δεν αποτυπώνουν ποσοστά επιθέσεων στον πραγματικό κόσμο· οι πραγματικές παρενέργειες δεν καταγράφονται.';
+
+  @override
+  String get skillBehaviorUtility => 'Χρησιμότητα ανά οικογένεια';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts επαληθευμένες επιτυχίες';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Όλες οι προσπάθειες μετρούν στον παρονομαστή χρησιμότητας, ακόμη και οι αποτυχημένες και οι ημιτελείς.';
 }

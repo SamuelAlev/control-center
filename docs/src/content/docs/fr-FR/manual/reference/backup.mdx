@@ -2,7 +2,7 @@
 title: Sauvegarde, export et import
 description: L'arborescence des instantanés, le manifeste, chaque opération de sauvegarde et chaque route de transfert, et exactement quels fichiers une sauvegarde contient et ne contient pas.
 slug: fr-FR/manuel/reference/sauvegarde
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Tout ce que Control Center peut copier, transmettre ou adopter, et la forme exacte de chaque
@@ -23,6 +23,12 @@ Il existe trois artefacts de copie de base de données, aux portées et aux poli
 Tous sont écrits avec `VACUUM INTO` de SQLite, qui est sûr face à une base de données WAL
 active : il prend une transaction de lecture, produit une copie défragmentée et cohérente
 du point de vue transactionnel, et n'exige jamais d'arrêter le serveur.
+
+Ces fichiers et les copies téléchargées ne sont **pas chiffrés au repos** par Control
+Center. Le transfert chiffré de bout en bout protège les octets en transit entre un
+client associé et son `cc_server`, sur les connexions directes comme relayées.
+Protégez séparément le stockage local et les copies hors machine ; le serveur et tout
+destinataire autorisé peuvent lire les fichiers de base de données.
 
 ## Arborescence d'un instantané
 
@@ -207,11 +213,16 @@ contenu d'un fichier importé sont remplies, mais son index peut être périmé.
 
 ## Routes de transfert
 
-Chaque opération ci-dessus s'exprime en chemins côté serveur, ce qui n'est une réponse
-complète que lorsque le serveur est votre propre machine. Ces trois routes transportent les
-octets, sur la même voie signée par PSK que celle qu'utilisent le proxy multimédia et le
-magasin de blobs. L'appelant signe une chaîne cible avec la clé pré-partagée de son appareil
-et transmet la signature sous le nom `s`.
+Les opérations d'export/import et de listage d'instantanés ci-dessus s'expriment en
+chemins côté serveur, ce qui n'est une réponse complète que lorsque le serveur est
+votre propre machine. Ces routes en forme de HTTP transportent les octets de sauvegarde
+**à l'intérieur du même tunnel de ressources authentifié et chiffré de bout en bout**
+que d'autres ressources sensibles, que la connexion RPC soit directe ou relayée. Ce ne
+sont pas des points de terminaison publics de transfert de fichiers HTTP : une requête
+vers l'un d'eux sur l'écouteur public renvoie `426 Upgrade Required`, même depuis la
+boucle locale. Dans le tunnel chiffré, l'appareil authentifié par Noise doit
+correspondre à `d` ; le gestionnaire vérifie en outre la signature de l'appareil sur sa
+chaîne cible au moyen de sa PSK d'appairage et du rôle ci-dessous.
 
 | Route                   | Méthode | Requête           | Cible signée                  | Exige                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -231,6 +242,7 @@ des sauvegardes plutôt que concaténé à la racine des sauvegardes : la route
 | `404`  | Aucun port de sauvegarde sur cet hôte, ou le fichier d'instantané/d'espace de travail nommé n'existe pas    |
 | `405`  | `/backup/restore` appelé avec autre chose que `POST`                                   |
 | `413`  | Le corps de l'envoi dépasse 8 GiB, d'après la longueur de contenu déclarée ou les octets réellement lus     |
+| `426`  | Toute requête directe vers une route de transfert sur l'écouteur HTTP public ; utilisez le tunnel de ressources chiffré d'un client associé |
 | `500`  | L'export ou l'archivage a échoué côté serveur                                            |
 
 Les deux téléchargements répondent `Cache-Control: no-store` avec `Accept-Ranges: none`.
@@ -247,12 +259,14 @@ du même instantané sont donc la même archive.
 mettre en mémoire tampon, le borne avant et pendant la lecture, et supprime le fichier mis en
 transit sur **toutes** les voies de sortie, y compris en cas de refus.
 
-:::caution[Une connexion relayée n'a pas d'origine HTTP]
-Le relais intermédié transporte des trames RPC, pas des transferts de fichiers. Tout ce qui
-s'exprime en chemins côté serveur continue de fonctionner à travers lui ; les trois routes de
-transfert exigent une connexion directe, et l'interface les désactive avec une note plutôt que
-d'échouer en plein téléchargement.
-:::
+::::caution[La connexion directe et le relais utilisent le même transfert chiffré]
+Le relais transporte les requêtes de ressources, les réponses diffusées en flux et
+les octets d'envoi sous forme de texte chiffré ; il ne peut pas lire le contenu des
+sauvegardes. Un chemin côté serveur reste un chemin sur l'hôte du serveur, et non un
+fichier sur le relais. L'accès exige toujours l'appareil associé, la signature de la
+cible et le rôle applicable d'espace de travail ou d'installation. Aucun des deux
+transports ne chiffre au repos les fichiers de sauvegarde produits.
+::::
 
 ## Chemins et limites
 
@@ -263,7 +277,7 @@ d'échouer en plein téléchargement.
 | Exports d'espace de travail              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Transit des transferts               | `<dataDir>/backups/transfer/` — un atelier, balayé par la route qui y écrit |
 | Nom de l'archive d'instantané          | `<snapshot directory name>.zip`                              |
-| Plafond d'envoi                 | 8 GiB par `POST /backup/restore`                             |
+| Plafond d'envoi                | 8 GiB par envoi chiffré vers `/backup/restore`               |
 | Rétention                      | Instantanés de l'installation : suppression manuelle. Sauvegardes d'espace de travail : pipeline hebdomadaire, 30 jours par défaut |
 
 Les répertoires `exports/`, `transfer/` et `workspace-backups/` ne sont pas des instantanés de

@@ -1,9 +1,16 @@
 ---
 title: Evals og kvalitet
-description: Eval-suiter, startsettet som legges inn i hvert arbeidsområde, og hvor de vises i Observabilitet.
+description: Eval-suiter og revisjonsfestede skill-kampanjer, og hvordan du tolker dokumentasjonen deres.
 slug: nb-NO/handbok/konsepter/evals-og-kvalitet
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observabilitet → Kvalitet** inneholder både eval-suiter for enkeltoppgaver og
+parede skill-kampanjer. En skill-kampanje måler en pakke slik den brukes av en
+bestemt modell og et bestemt harness, ikke kvaliteten på Markdown-en i seg
+selv.
+
+## Eval-suiter
 
 En **eval-suite** er en arbeidsområdeavgrenset definisjon av en oppgave som skal
 kjøres mot en agent: en prompt, en målagent og en målmodus, valgfritt oppsett, en
@@ -18,7 +25,7 @@ en sak. Innleggingen lytter på `WorkspaceCreated` (`workspace.upsert` eller
 `workspace.create`), hopper over et navn som allerede finnes og etterfyller ikke
 eldre arbeidsområder.
 
-## Hvor de vises
+### Hvor de vises
 
 **Observabilitet → Kvalitet** (`/workspaces/<id>/observability`) lister opp hver
 suite i arbeidsområdet.
@@ -27,10 +34,122 @@ Opprett, list opp, rediger og slett suiter med `evals.upsertSuite`,
 `evals.deleteSuite` og `evals.watchSuites`. Kvalitet-fanen er listen; disse
 operasjonene er redigeringsverktøyet.
 
+## Skill-kampanjer
+
+En kampanje sammenligner to armer under den samme oppgaven og den samme
+kjøringskonfigurasjonen. Kandidaten er fraværende, normalt tilgjengelig,
+eksplisitt lastet inn, eller sammenlignet med en tidligere revisjon eller en
+fast beholdning av bakgrunnsskills. Disse svarer på ulike spørsmål; tvungen
+innlasting er en diagnostikk, ikke en poengsum for vanlig oppdagelse.
+[Skill-veiledningen](/nb-NO/handbok/slik-gjor-du/administrer-skills/#evaluer-en-skill)
+forklarer hvordan du velger en sammenligning og godkjenner en budsjettert kjøring.
+
+Dokumentasjonen tilhører en eksakt **hash for hele pakken**: `SKILL.md`,
+metadata, skript, referanser og ressurser. Serveren fanger skannede, uforanderlige
+pakker og fester oppgavesamlingen, adapteren, identifikatoren for leverandør/nativ
+modell, protokollen, verktøyskjemaene og bakgrunnsbeholdningen. Native
+Claude-kampanjer fester også den forvaltede kontoen og den observerte
+CLI-versjonen. Å redigere en referanse ugyldiggjør gjeldende dokumentasjon selv om
+`SKILL.md` er uendret. Et modellalias
+registrerer hva som ble forespurt, ikke uforanderlige leverandørvekter.
+
+Hvert forsøk får fersk kontekst, fersk hjemmekatalog og fersk fixture-tilstand.
+Parede armer bruker samme regelverk og oppgavevilkår, bortsett fra
+skill-inngrepet som er erklært. Målfravær betyr at kandidatens metadata og filer
+er utilgjengelige, ikke at alle bakgrunnsinstrukser eller skills er fjernet.
+Oppgaveprompter må ikke navngi kandidaten i en sammenligning av vanlig
+oppdagelse.
+
+Serveren eier autorisasjon, kjøring, budsjetter og varig lagring i
+arbeidsområdet. Klienter velger innstillinger og viser dokumentasjon. Framdrift
+overlever gjentilkoblinger; avbrudd beholder delvise resultater, og en omstart
+merker uferdig arbeid som avbrutt i stedet for å gjenta betalte kall i det
+stille. Disse kampanjene leverer ikke den separate utførerkontrakten for
+vilkårlige eval-suiter.
+
+## Les dokumentasjonen med forsiktighet
+
+- **Resultatene avgjør korrektheten.** Uavhengige, typede verifiserere
+  kontrollerer artefakter og atferden de fører til, ikke agentens påstand om at
+  den lyktes. Forventede svar holdes utenfor kandidatens innhegning; generert
+  kode bedømmes i en separat isolert kopi.
+- **Innlasting og nytte er forskjellige ting.** Tilgjengelighet, innlasting av
+  brødtekst og referanser og observert skriptbruk forklarer kjøringen. At en fil
+  leses, beviser ikke at modellen fulgte instruksjonene; utilgjengelig tilgang
+  forblir ukjent.
+- **Behold den tilpassede referansen.** En enkelt vellykket kandidatkjøring
+  alene etablerer ikke nytte. Ta med forsøk der en tilgjengelig skill ble
+  ignorert, mislykkede forsøk og kostnadene deres; ikke behold bare det beste
+  nye forsøket.
+- **Gjentakelser er ikke nye oppgaver.** Rapporter klynger usikkerhet per
+  oppgave. Små utvalg, manglende dekning, identitetsdrift og ukjent forbruk kan
+  ikke rettferdiggjøre en anbefaling om innføring. En fullført kampanje kan
+  fortsatt være ikke entydig; å ikke vise forbedring er ikke bevis for
+  likeverdighet eller tilbakegang.
+- **Undersøk enkelttilbakeganger.** Samlet gevinst må ikke skjule en skadet
+  oppgave eller en uautorisert bivirkning. Sikkerhetsskanninger, observasjoner
+  av kjøretidssikkerhet og nytte forblir atskilt; billigere kjøring kan ikke
+  kompensere for manglende kvalitets- eller sikkerhetsdokumentasjon.
+- **Ikke slå sammen uforenlige resultater.** En annen modell, et annet
+  harness, regelverk, fixture eller skillkombinasjon er en annen
+  konfigurasjon. Hold tilbakeholdt overførings- og sammensetningsdokumentasjon
+  atskilt fra utviklingstilfellene.
+
+De ni lokalt forfattede pilotkorpusene inneholder 108 oppgaveoppføringer på
+tvers av nytte, familiespesifikk ruting/sikkerhet og tilbakeholdt
+overføring/sammensetning. Velg en familie som passer til skillens formål.
+Referanseløsninger og kjent dårlige utdata tester verifisererne; disse
+fixturene er ikke en gjenskapning av en offentlig referansemåling, og heller
+ikke bevis for at en installert skill er nyttig. Røykkjøringer av
+implementasjonen med skriptede leverandørsvar er ikke målinger av
+skillkvalitet på levende modeller.
+
+## Grenser for kjøring og dokumentasjon
+
+Det kontrollerte **innebygde harnesset** og **Claude Code**-adapteren støttes.
+Isolasjon og aktive påloggingsdata må passere før kjøring. Innebygde leverandører
+krever dokumentert verktøystøtte, tokenbegrensninger og priser; **Codex OAuth**
+autentiserer sin egen konto i stedet for å kreve en separat OpenAI-API-nøkkel.
+**Claude Code** bruker den forvaltede kontoen som standard, en konkret modell-ID
+og sin native API-ekvivalente kostnadsrapport.
+
+**Claude Code** og **Codex OAuth** bruker en **terskel for bruksstopp**: et kall
+som er i gang, kan overskride budsjettet, og deretter stopper videre kall. Dette
+er ikke fakturert abonnementsforbruk eller et hardt fakturatak. Leverandører med
+API-nøkkel beholder konservative reservasjoner før kall. Observert ukjent forbruk
+stopper videre kall for alle adaptere; ufullstendig dekning forblir delvis eller
+ikke entydig.
+
+**Claude** kjører sin native modellsløyfe i en privat kontrollkatalog, med
+innebygde verktøy og bakgrunnsskills deaktivert. De eneste verktøyene er den
+autentiserte MCP-broen som serveren eier, inn til den samme innesperrede gjesten
+som det innebygde harnesset bruker. Påloggingsdata blir utenfor den gjesten. En
+endret CLI-identitet eller verktøyflate ugyldiggjør forsøket i stedet for å bytte
+utfører i det stille. Flåteevaluering og Windows støttes ikke. En vellykket
+Git-probe fra arbeideren eller en prompt-ekko teller ikke som evaluering.
+
+Isolasjonen på macOS avviser gjestenettverk og tilgang til eksterne
+filsystemer, blokkerer prosessløsrivelse, begrenser CPU/filer/utdata og rydder
+opp i egne etterkommere, men **håndhever ingen hard minnekvote**. Linux krever
+bubblewrap og bruker en grense for adresserom. Den første valideringen av
+isolasjonen prøvde macOS, ikke Linux. Manglende isolasjon faller aldri
+tilbake til et hostshellet. Leverandørens påloggingsdata blir på serveren,
+utenfor gjesteverktøyene.
+
+Dokumentasjon fra forsøk sladdes og begrenses til 256 KiB; en eksport begrenses
+til 16 MiB. Store eksporter beholder kompakte oppsummeringer av resultat og
+kostnad for alle innslupne forsøk og rapporterer eksplisitt sporinnhold som er
+utelatt eller oppsummert. Verken en eksport eller en rapport inneholder en
+fullstendig gjenskapingspakke for privat kildekode. Syntetiske
+sikkerhetskontroller etablerer ikke reell motstand mot datauttrekk, overstyrer
+ikke karantene og sertifiserer ikke en skill som trygg.
+
 ## Relaterte konsepter
 
 - [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): konfigurasjonen en
   suite låser
+- [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/):
+  isolasjon og myndighetsgrenser
 - [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): autonomiinnstillingen
 - [Administrer kostnader og budsjetter](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/): forbruk som
   registreres sammen med en kjøring

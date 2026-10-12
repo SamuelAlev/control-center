@@ -1,9 +1,9 @@
 ---
 title: Kör en headless-server
 description: Kör headless-binären cc_server eller dess Docker-avbildning, parkoppla en klient mot den och konfigurera den med hela ytan av CLI-flaggor och miljövariabler.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: sv-SE/handbok/how-to-guider/kor-headless-server
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Kör `cc_server` på en maskin som står på, och anslut sedan till den från
@@ -25,7 +25,7 @@ egenhostad installation kräver ingen källkodsutcheckning. Lås en versionstagg
 | `ghcr.io/samuelalev/cc-server`               | Backend: databas, agenter, MCP, webhooks     | `-p 9030:9030`  |
 | `ghcr.io/samuelalev/cc-webapp`               | Webbklienten (statisk nginx)                 | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`               | Telefonkompanjonen, en PWA (statisk nginx)   | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC-parkopplingsreläet (valfritt)         | `-p 8788:8788`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Det krypterade anslutningsreläet (valfritt)  | `-p 8788:8788`  |
 
 Hela stacken som en compose-fil:
 
@@ -53,15 +53,19 @@ volumes:
   cc_data:
 ```
 
-Saker som är värda att veta innan du exponerar något av detta utanför loopback:
+Saker som är värda att veta innan du exponerar något av detta utanför loopback (enbart TLS ger inte den parkopplade klientens end-to-end-kryptering eller auktoriserar resurser):
 
 - **`cc-server`-avbildningen levereras med `CC_SERVER_INSECURE=1`** (den måste
-  binda `0.0.0.0` för att ta emot trafik på publicerade portar), vilket bara är
-  säkert bakom en TLS-avslutande omvänd proxy – Caddy, Traefik, nginx eller en
-  Cloudflare-tunnel – i ett betrott nätverk. För att i stället avsluta TLS i
-  processen monterar du ett certifikat och sätter `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` (och tar sedan bort `CC_SERVER_INSECURE`). Allt kan skrivas
-  över med `docker run -e …` eller compose-blockets `environment:`.
+  binda `0.0.0.0` för att ta emot trafik på publicerade portar). Använd en
+  TLS-avslutande omvänd proxy – Caddy, Traefik, nginx eller en Cloudflare-tunnel –
+  i ett betrott nätverk, eller montera ett certifikat och sätt
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (och ta sedan bort
+  `CC_SERVER_INSECURE`). Den här inställningen styr bara serverns yttre
+  HTTP/WebSocket-lyssnare. Den stänger aldrig av den obligatoriska
+  end-to-end-krypterade klientsessionen. TLS skyddar fortfarande
+  inloggnings-/bootstrap-trafik, anslutningsmetadata, publika ändpunkter och
+  leverans av webbklienten. Allt kan skrivas över med `docker run -e …` eller
+  compose-blockets `environment:`.
 - **`/data` är det enda tillståndet.** SQLite-databaserna, hemligheterna för
   parkopplade enheter, nedladdade modeller och mötesljud ligger allt i volymen –
   säkerhetskopiera den och containern kan slängas.
@@ -73,14 +77,17 @@ Saker som är värda att veta innan du exponerar något av detta utanför loopba
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **De två klientavbildningarna är statiska nginx-värdar** – inget att
-  konfigurera vid körning; varje klients anslutningsformulär tar serverns URL,
-  enhets-ID:t och parkopplingsnyckeln. Signaleringsreläet behöver på samma sätt
-  bara sin port (`SIGNALING_HOST` / `SIGNALING_PORT` kan skrivas över); det är
-  tillståndslöst, håller inga hemligheter och är en **reservväg** – en telefon
-  använder loopback, LAN, tailnet eller en direkt `wss://`-väg när en sådan är
-  nåbar, och faller bara tillbaka på reläet när ingen är det. Hoppa över det om
-  dina klienter alltid når servern direkt.
+- **De två klientavbildningarna är statiska nginx-värdar.** Inbäddade
+  webbläsarredigerare använder samma app-origin och samma krypterade anslutning
+  som beskrivs [nedan](#webbläsarredigerarens-resurser). Varje klients
+  anslutningsformulär tar serverns URL, enhets-ID:t och parkopplingsnyckeln.
+  Signaleringsreläet behöver bara sin port (`SIGNALING_HOST` / `SIGNALING_PORT`
+  kan skrivas över); det är tillståndslöst, håller inga parkopplingsnycklar och
+  är en **reservväg** – en telefon använder loopback, LAN, tailnet eller en
+  direkt `wss://`-väg när en sådan är nåbar, och faller bara tillbaka på reläet
+  när ingen är det. Hoppa över det om dina klienter alltid når servern direkt.
+  Brokern kan se routing-id:n, IP-adresser, storlekar och timing och kan avbryta
+  trafik; den kan inte dekryptera resursströmmen mellan klient och server.
 
 Resten av den här guiden bygger servern från källkod; flaggorna och beteendet
 den tar upp är desamma som avbildningens miljövariabler matar in i.
@@ -177,6 +184,14 @@ som skapats i appen löper alltid ut efter 30 dagar. Återkalla en enhet som
 skapats i CLI:t från **Inställningar → Du → Dina enheter** när du är klar med
 den.
 
+Parkopplingsnyckeln autentiserar den obligatoriska Noise-handskakningen; varje
+session härleder färska trafiknycklar och kontrollerar serverns signerade
+identitet. Skydda parkopplingsnyckeln och skaffa den från en betrodd källa (även
+en betrodd QR-kod) och verifiera sedan ett nytt serverfingeravtryck genom en
+separat betrodd kanal eller mot en känd pin. Acceptera inte en ändrad pin tyst:
+parkoppla om genom en betrodd kanal om du avsiktligt byter serveridentitet. Enbart
+TLS kan inte fastställa den end-to-end-identitetspinnen.
+
 ## Steg 4: Starta servern
 
 På loopback – standardvärdet och allt du behöver för en klient på samma maskin:
@@ -204,8 +219,13 @@ klartextbindning bakom den:
 ```
 
 `--insecure` ignoreras när både `--tls-cert` och `--tls-key` är satta – TLS
-vinner alltid. Servern annonserar klartexttillståndet som `insecure: true` i
-`GET /healthz`, och klienter märker en sådan anslutning som osäker.
+vinner alltid. Servern annonserar den yttre lyssnarens klartexttillstånd som
+`insecure: true` i `GET /healthz`. Det stänger inte av Noise-krypteringen på
+`/rpc`, oavsett om klienten ansluter direkt eller via reläet. Uppgradera servern,
+reläet och klienterna tillsammans: gamla klartext-RPC-klienter avvisas, utan
+kompatibilitetsreserv. Publika begäranden till känsliga resursvägar (inklusive
+säkerhetskopieöverföringar) får HTTP `426`, även från loopback; parkopplade
+klienter använder i stället den krypterade tunneln.
 
 Servern kör tills den får `SIGINT`/`SIGTERM` och stängs sedan av på ett rent
 sätt.
@@ -227,6 +247,33 @@ precis det). En webbläsarorigin som inte är loopback måste finnas med i
 standardlistan är `https://app.usectrl.dev` och `localhost` / `127.0.0.1` tillåts
 alltid.
 :::
+
+### Webbläsarredigerarens resurser
+
+Redigerarfrontenden är betrodd programkod och körs på webbappens egen origin.
+Dess Service Worker dirigerar HTTP- och WebSocket-trafik genom samma
+autentiserade krypterade session som resten av klienten. `cc_server` dekrypterar
+varje förfrågan, vidarebefordrar den till sin lokala code-server-backend och
+krypterar svaret tillbaka till klienten. Filerna förblir serverns egendom.
+
+Hosta webbklienten över HTTPS eller en säker loopback-origin så att Service
+Workers kan köra. Det vanliga webbbygget och utgivningsskripten innehåller de
+delade resursfilerna. Om du bygger ett paket manuellt ställer du i efterhand
+fram de filerna från repots rot:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+För telefonens webbbygge använder du `apps/cc_remote/build/web` i stället. Det
+kopierar `cc_resource_bridge.js`, `cc_resource_worker.js` och
+`cc_resource_ws_shim.js` till appaketet.
+
+Nativ redigerartrafik använder i stället en kapabilitetsavgränsad
+loopback-fasad. Exponera inte den privata
+loopback-porten för rapporter och kommandon från det serverstartade
+redigerartillägget genom en publik proxy. Känsliga offentliga HTTP-förfrågningar
+avvisas; resurser kräver en autentiserad krypterad session.
 
 ## Steg 6: Anslut en Google Calendar (valfritt)
 

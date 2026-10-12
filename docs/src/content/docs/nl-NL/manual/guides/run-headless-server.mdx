@@ -1,9 +1,9 @@
 ---
 title: Een headless server draaien
 description: Draai de headless binary cc_server of de Docker-image ervan, koppel een client eraan en configureer hem met het volledige CLI-flag- en omgevingsoppervlak.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: nl-NL/handleiding/gidsen/headless-server-draaien
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Draai `cc_server` op een machine die aan blijft staan en maak er vervolgens
@@ -25,7 +25,7 @@ heeft geen source-checkout nodig. Pin een versietag
 | `ghcr.io/samuelalev/cc-server`                    | De backend: database, agenten, MCP, webhooks | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | De webclient (statische nginx)                | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | De telefooncompanion-PWA (statische nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | De WebRTC-koppelingsrelay (optioneel)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | De versleutelde verbindingsrelay (optioneel)   | `-p 8788:8788`   |
 
 De hele stack als composebestand:
 
@@ -53,15 +53,19 @@ volumes:
   cc_data:
 ```
 
-Dingen die je moet weten voordat je dit alles buiten loopback beschikbaar stelt:
+Dingen die je moet weten voordat je dit alles buiten loopback beschikbaar stelt (TLS alleen levert niet de end-to-end-encryptie van de gekoppelde client en machtigt geen bronnen):
 
 - **De `cc-server`-image levert `CC_SERVER_INSECURE=1` mee** (hij moet `0.0.0.0`
-  binden om verkeer via gepubliceerde poorten te ontvangen), wat alleen veilig is
-  achter een TLS-beëindigende reverse proxy — Caddy, Traefik, nginx of een
-  Cloudflare Tunnel — op een vertrouwd netwerk. Wil je TLS juist in-process
-  beëindigen, mount dan een certificaat en stel `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` in (haal daarna `CC_SERVER_INSECURE` weg). Alles is te
-  overschrijven met `docker run -e …` of het `environment:`-blok van compose.
+  binden om verkeer via gepubliceerde poorten te ontvangen). Gebruik een
+  TLS-beëindigende reverse proxy — Caddy, Traefik, nginx of een Cloudflare
+  Tunnel — op een vertrouwd netwerk, of mount een certificaat en stel
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` in (haal daarna
+  `CC_SERVER_INSECURE` weg). Deze instelling beheert alleen de buitenste
+  HTTP/WebSocket-listener van de server. Hij schakelt nooit de verplichte
+  end-to-end-versleutelde clientsessie uit. TLS beschermt nog steeds
+  login-/bootstraptverkeer, verbindingsmetadata, openbare endpoints en de
+  levering van de webclient. Alles is te overschrijven met `docker run -e …` of
+  het `environment:`-blok van compose.
 - **`/data` is de enige state.** De SQLite-databases, secrets van gekoppelde
   apparaten, gedownloade modellen en vergaderaudio staan allemaal in het volume —
   maak er een back-up van en de container is wegwerpbaar.
@@ -73,14 +77,18 @@ Dingen die je moet weten voordat je dit alles buiten loopback beschikbaar stelt:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **De twee client-images zijn statische nginx-hosts** — niets om tijdens runtime
-  te configureren; het verbindingsformulier van elke client neemt je server-URL,
-  apparaat-id en koppelingssleutel. De signaleringsrelay heeft net zo goed alleen
-  zijn poort nodig (`SIGNALING_HOST` / `SIGNALING_PORT` zijn te overschrijven);
-  hij is stateless, bevat geen secrets en is een **fallback** — een telefoon
-  gebruikt loopback, LAN, tailnet of een direct `wss://`-pad wanneer dat
-  bereikbaar is, en valt alleen terug op de relay als geen daarvan werkt. Sla hem
-  over als je clients de server altijd rechtstreeks bereiken.
+- **De twee client-images zijn statische nginx-hosts.** Ingebedde
+  browserseditors gebruiken dezelfde app-origin en dezelfde versleutelde
+  verbinding, zoals [hieronder](#browserseditor-bronnen) wordt beschreven. Het
+  verbindingsformulier van elke client neemt je server-URL, apparaat-id en
+  koppelingssleutel. De signaleringsrelay heeft alleen zijn poort nodig
+  (`SIGNALING_HOST` / `SIGNALING_PORT` zijn te overschrijven); hij is stateless,
+  bevat geen koppelingssleutels en is een **fallback** — een telefoon gebruikt
+  loopback, LAN, tailnet of een direct `wss://`-pad wanneer dat bereikbaar is, en
+  valt alleen terug op de relay als geen daarvan werkt. Sla hem over als je
+  clients de server altijd rechtstreeks bereiken. De broker kan
+  routerings-id's, IP-adressen, groottes en timing zien en verkeer onderbreken;
+  de bronnenstroom tussen client en server kan hij niet ontsleutelen.
 
 De rest van deze gids bouwt de server uit de source; de flags en het gedrag die
 erin aan bod komen, zijn dezelfde als waar de omgevingsvariabelen van de image op
@@ -180,6 +188,15 @@ vervaldatum**; een referentie die in de app is aangemaakt, verloopt altijd na 30
 dagen. Trek een via de CLI aangemaakt apparaat in via
 **Instellingen → Jij → Je apparaten** wanneer je het niet meer nodig hebt.
 
+De koppelingssleutel authenticeert de verplichte Noise-handshake; elke sessie
+leidt verse verkeerssleutels af en controleert de ondertekende identiteit van de
+server. Bescherm de koppelingssleutel en verkrijg hem uit een vertrouwde bron
+(ook een vertrouwde QR-code), en verifieer daarna een nieuwe servervingerafdruk
+via een apart vertrouwd kanaal of tegen een bekende pin. Accepteer een gewijzigde
+pin niet stilzwijgend: koppel opnieuw via een vertrouwd kanaal als je de
+serveridentiteit bewust vervangt. TLS alleen kan die end-to-end-identiteitspin
+niet vaststellen.
+
 ## Stap 4: De server starten
 
 Op loopback — de standaard en alles wat je nodig hebt voor een client op dezelfde
@@ -208,9 +225,14 @@ een plaintextbind erachter:
 ```
 
 `--insecure` wordt genegeerd wanneer `--tls-cert` en `--tls-key` beide zijn
-ingesteld — TLS wint altijd. De server adverteert de plaintext-state als
-`insecure: true` in `GET /healthz` en clients tonen zo'n verbinding met de badge
-**Onveilig**.
+ingesteld — TLS wint altijd. De server adverteert de plaintext-state van de
+buitenste listener als `insecure: true` in `GET /healthz`. Dit schakelt de
+Noise-versleuteling op `/rpc` niet uit, of de client nu rechtstreeks of via de
+relay verbindt. Werk server, relay en clients samen bij: oude plaintext-RPC-clients
+worden geweigerd, zonder compatibiliteitsfallback. Openbare verzoeken naar
+gevoelige bronroutes (waaronder back-upoverdrachten) krijgen HTTP `426`, ook
+vanaf loopback; gekoppelde clients gebruiken in plaats daarvan de versleutelde
+tunnel.
 
 De server blijft draaien tot `SIGINT`/`SIGTERM` en sluit dan netjes af.
 
@@ -231,6 +253,34 @@ precies dat). Een browser-origin anders dan loopback moet in
 geweigerd; de standaardlijst is `https://app.usectrl.dev` en `localhost` /
 `127.0.0.1` zijn altijd toegestaan.
 :::
+
+### Browserseditor-bronnen
+
+De editorfrontend is vertrouwde applicatiecode en draait op de eigen origin van
+de webapp. Zijn Service Worker leidt HTTP- en WebSocket-verkeer via dezelfde
+geauthenticeerde versleutelde sessie als de rest van de client. `cc_server`
+ontsleutelt elk verzoek, stuurt het door naar zijn lokale code-server-backend en
+versleutelt het antwoord terug naar de client. De bestanden blijven eigendom van
+de server.
+
+Host de webclient via HTTPS of een veilige loopback-origin, zodat Service
+Workers kunnen draaien. De normale webbuild en de releasescripts bevatten de
+gedeelde bronbestanden. Als je handmatig een bundel bouwt, zet die bestanden er
+daarna klaar vanuit de hoofdmap van de repository:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Gebruik voor de web-build van de telefoon `apps/cc_remote/build/web`. Dat
+kopieert `cc_resource_bridge.js`, `cc_resource_worker.js` en
+`cc_resource_ws_shim.js` naar de app-bundel.
+
+Native editortverkeer gebruikt in plaats daarvan een tot capabilities beperkte
+loopback-façade. Stel de privé loopback-poort voor rapportage en opdrachten van
+de door de server gestarte editoruitbreiding niet beschikbaar via een openbare
+proxy. Gevoelige openbare HTTP-verzoeken worden geweigerd; bronnen vereisen een
+geauthenticeerde versleutelde sessie.
 
 ## Stap 6: Een Google Calendar verbinden (optioneel)
 

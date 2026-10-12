@@ -38,14 +38,14 @@ class AuthProviderInfo {
   String loginUrl(
     String origin, {
     String relay = 'web-popup',
+    required String handoffPublicKey,
     String? clientOrigin,
   }) {
     final base = kind == 'saml'
         ? '$origin/saml/login?relay=$relay'
         : '$origin/oidc/login?relay=$relay';
-    return clientOrigin == null
-        ? base
-        : '$base&client_origin=${Uri.encodeComponent(clientOrigin)}';
+    return '$base&handoff_key=${Uri.encodeComponent(handoffPublicKey)}'
+        '${clientOrigin == null ? '' : '&client_origin=${Uri.encodeComponent(clientOrigin)}'}';
   }
 }
 

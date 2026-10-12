@@ -2,7 +2,7 @@
 title: Implementación y clientes
 description: Cómo la arquitectura de cliente ligero de Control Center separa un servidor headless de sus clientes de escritorio, web y celular.
 slug: es-MX/manual/conceptos/implementacion
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center no es un único programa. Es una **arquitectura de cliente
@@ -23,9 +23,10 @@ clientes deben ver de forma idéntica, vive ahí.
 
 Ningún cliente abre por su cuenta un archivo de base de datos. En su lugar, cada
 cliente tiene un único **`RemoteRpcClient`** y lanza por él las operaciones de
-repositorio y las suscripciones. El servidor autentica la conexión contra una
-clave precompartida de dispositivo emparejado — y a partir de ahí deja de
-preocuparse por la conexión. **Una sesión no está vinculada a un espacio de
+repositorio y las suscripciones. Tanto las sesiones directas como las
+intermediadas requieren un handshake Noise firmado: la clave precompartida del
+dispositivo emparejado autentica el intercambio, mientras que claves de tráfico
+nuevas cifran cada sesión. **Una sesión no está vinculada a un espacio de
 trabajo.** El despachador no tiene estado: cada llamada con alcance de espacio
 de trabajo lleva su propio `workspace_id` en sus argumentos, y una llamada que lo
 omita se rechaza.
@@ -103,12 +104,13 @@ de la base de datos.
 La compilación web es la misma aplicación Flutter compilada para ejecutarse en
 un navegador, alojada en [app.usectrl.dev](https://app.usectrl.dev), así que no
 hay nada que instalar. Un navegador no puede lanzar un subproceso, por lo que el
-cliente web es **siempre** remoto: marca un `cc_server` por `wss://` y dibuja la
-interfaz de escritorio completa. Una vez conectado, muestra las mismas pantallas
-sobre la misma flota, porque es el mismo código sobre el mismo RPC. Lo que falta
-son el puñado de lugares que necesitan una capacidad nativa que un navegador no
-tiene: la capa de calidad de la captura de reuniones que aparece más abajo es la
-principal, y las notificaciones del sistema operativo son otra.
+cliente web es **siempre** remoto: marca un `cc_server` por una sesión WebSocket
+cifrada y dibuja la interfaz de escritorio completa. Una vez conectado, muestra
+las mismas pantallas sobre la misma flota, porque usa el mismo código sobre el
+mismo RPC. Lo que falta son el puñado de lugares que necesitan una capacidad
+nativa que un navegador no tiene: la capa de calidad de la captura de reuniones
+que aparece más abajo es la principal, y las notificaciones del sistema operativo
+son otra.
 
 Por eso «sin descarga» y «sin servidor» son afirmaciones distintas. El cliente
 web elimina la instalación; no elimina el servidor. A lo que marca puede ser un
@@ -129,28 +131,33 @@ servidor solo acepta orígenes de navegador en su lista `--allowed-origins`, que
 de forma predeterminada es `https://app.usectrl.dev`, así que alojar el bundle
 por tu cuenta implica agregar su origen.
 
-Los medios (avatares, imágenes del feed, capturas de PR) pasan por el endpoint
-de proxy del servidor en lugar de llamar directamente a los hosts externos, de
-modo que un navegador nunca descarga un origen arbitrario. El cliente desplegado
-fija una Content-Security Policy por solicitud a partir de una cookie no
-sensible, de modo que solo se permite el origen del servidor conectado.
+Los medios (avatares, imágenes del feed, capturas de PR), las cargas, los
+respaldos y el HTTP/WebSocket del editor integrado viajan por el túnel de
+recursos cifrado, no por rutas HTTP públicas legibles; las rutas firmadas siguen
+requiriendo autorización. El frontend del editor confiable se ejecuta en el
+propio origen de la app web. Su service worker enruta las peticiones del editor
+por la sesión cifrada existente hasta `cc_server`, que es dueño de los archivos
+y del backend de code-server. El navegador necesita HTTPS o un contexto de
+loopback seguro para los service workers. Los clientes nativos usan una fachada
+de loopback con alcance de capacidades.
 
 ### Compañero para celular (cc_remote)
 
 La aplicación **Remote** es un cliente aparte y más ligero: una PWA web de
 Flutter en [remote.usectrl.dev](https://remote.usectrl.dev/). Deliberadamente
-**no** es la aplicación completa. Se empareja a través de un relevo WebSocket
-negociado y sellado de extremo a extremo, y habla un subconjunto de la
-superficie de herramientas mayormente de lectura: leer tickets, mensajes y el
-feed de noticias; enviar una respuesta o actualizar un ticket.
+**no** es la aplicación completa. Se conecta directamente cuando puede o a través
+de un relevo intermediado; ambas rutas requieren cifrado de extremo a extremo.
+Habla un subconjunto de la superficie de herramientas mayormente de lectura: leer
+tickets, mensajes y el feed de noticias; enviar una respuesta o actualizar un
+ticket.
 
 Un celular es un **principal con menos privilegios** que un agente local. Una
-política de herramientas de denegación predeterminada, una clave precompartida
-que sella cada trama, una capacidad de sesión que deja fuera de un cliente
-complementario las operaciones privilegiadas (el emparejamiento, por ejemplo),
-las verificaciones de rol y de permiso por repositorio de más arriba y la
-limitación de tasa impiden que un emparejamiento aprobado (o filtrado) se
-convierta en un control remoto total. Consulta
+política de herramientas de denegación predeterminada, una capacidad de sesión
+que deja fuera de un cliente complementario las operaciones privilegiadas (el
+emparejamiento, por ejemplo), las verificaciones de rol y de permiso por
+repositorio de más arriba y la limitación de tasa impiden que un emparejamiento
+aprobado (o filtrado) se convierta en un control remoto total. El cifrado del
+transporte no otorga permisos. Consulta
 [Control remoto y móvil](/es-MX/manual/conceptos/control-remoto/) para ver el
 modelo de seguridad completo.
 
@@ -235,15 +242,27 @@ cancelar el procesamiento y la acción de grabar y vincular del calendario.
 
 ## Emparejamiento y confianza
 
-Cada cliente demuestra quién es con una **clave precompartida** aprovisionada una
-sola vez:
+Cada cliente usa una **clave precompartida** aprovisionada una sola vez para
+autenticar su handshake Noise firmado con `cc_server`, incluso sobre loopback y
+el relevo:
 
 - El escritorio en modo local genera una clave nueva en cada arranque y se la
   pasa al servidor que lanza mediante el entorno, así que en el escritorio no se
   persiste nada secreto.
 - Los clientes remotos (escritorio remoto, web, celular) usan una clave emitida
-  por el comando `pair` del servidor y guardada en el llavero del sistema
-  operativo (o, en el celular, localmente).
+  por el flujo de emparejamiento del servidor o por el comando `pair`. Los
+  clientes nativos usan el llavero del sistema operativo; los clientes de
+  navegador guardan su emparejamiento localmente.
+
+El cliente verifica la identidad firmada del servidor contra su fijado de huella
+guardado. En la primera conexión, verifica esa huella mediante un QR de
+confianza u otro canal confiable: un primer contacto firmado por sí solo no
+puede autenticar quién proporcionó la clave. Si la identidad cambia, el cliente
+falla en cerrado; vuelve a emparejarte por un canal confiable en lugar de
+ignorar la discrepancia. Los clientes antiguos y el RPC en texto plano no pueden
+conectarse. TLS sigue siendo necesario para los orígenes del navegador, el
+arranque y los metadatos públicos; `--insecure` afecta al listener externo del
+servidor, no a la sesión cifrada obligatoria.
 
 La revocación es **en vivo**, no diferida. El servidor vigila su tabla de
 dispositivos emparejados y corta cualquier sesión abierta cuyo dispositivo haya
@@ -251,13 +270,13 @@ salido del conjunto activo, en cuestión de segundos, tanto en la ruta directa d
 WebSocket como en la del relevo. No tienes que esperar a que el dispositivo se
 vuelva a conectar para cortarlo.
 
-La clave nunca viaja por una URL que un host estático pueda ver. Cuando llega por
-un enlace — en el celular o en un navegador — va en el **fragmento de la URL**,
-la parte posterior a `#`, que el navegador nunca envía al servidor que aloja la
-página. Esa es la invariante que conviene recordar, y se aplica a ambos. El
-cliente web tiene otros dos puntos de entrada: el formulario de conexión, donde
-pegas un servidor y una clave directamente, y un código de invitación, que canjea
-por una credencial emitida solo para ese navegador.
+Cuando la clave llega por un enlace — en el celular o en un navegador — va en el
+**fragmento de la URL**, la parte posterior a `#` que los navegadores no envían
+en la solicitud al host de la página. El JavaScript de la página sí puede leerlo,
+así que confía en ese host y mantén el enlace en secreto. El cliente web también
+tiene un formulario de conexión, donde pegas un servidor y una clave
+directamente, y un código de invitación, que canjea por una credencial emitida
+solo para ese navegador.
 
 ## Conceptos relacionados
 

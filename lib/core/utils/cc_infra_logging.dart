@@ -7,13 +7,9 @@ import 'package:flutter/foundation.dart';
 /// `cc_infra` is a Flutter-free package (it links into the `dart build cli`
 /// server binary), so it cannot call [AppLog] — which depends on
 /// `kDebugMode`/`debugPrint` — directly. It logs through [CcInfraLog] instead.
-/// Call this once at startup (desktop `main`) so the dio network clients'
-/// request/response and error diagnostics land in the same place as app logs,
-/// under the `Infra` tag. [CcInfraLog.level] is seeded from [kDebugMode] so
-/// the debug-tier per-request logging is on in debug and off in release —
-/// matching the `kDebugMode` gate the network logger used before the exodus.
-/// The user's settings log level still applies on top via [AppLog]'s own
-/// filter.
+/// Call once at desktop startup to route infrastructure diagnostics into the
+/// `Infra` app log. [CcInfraLog.level] follows [kDebugMode]; [AppLog] also applies
+/// the user's configured log-level filter.
 void installCcInfraLogging() {
   CcInfraLog.level = kDebugMode ? CcInfraLogLevel.debug : CcInfraLogLevel.info;
   CcInfraLog.sink = (level, message, [error, stackTrace]) {

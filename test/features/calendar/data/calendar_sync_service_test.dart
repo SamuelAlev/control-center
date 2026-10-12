@@ -1,42 +1,10 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_infra/src/calendar/calendar_sync_service.dart';
 import 'package:cc_infra/src/network/google_calendar_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fake_calendar_repository.dart';
-
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter({required this.events, required this.calendars});
-
-  /// Returned for `/events` requests.
-  final Map<String, dynamic> events;
-
-  /// Returned for `/calendarList` requests.
-  final Map<String, dynamic> calendars;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    final body = options.uri.path.contains('calendarList') ? calendars : events;
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
 
 /// Builds a client returning [events] for event requests and, by default, a
 /// single primary calendar for the calendar-list request.
@@ -44,24 +12,27 @@ GoogleCalendarApiClient _clientReturning(
   Map<String, dynamic> events, {
   Map<String, dynamic>? calendars,
 }) {
-  final dio = Dio()
-    ..httpClientAdapter = _FakeAdapter(
-      events: events,
-      calendars:
-          calendars ??
-          <String, dynamic>{
-            'items': [
-              {
-                'id': 'primary',
-                'summary': 'Primary',
-                'primary': true,
-                'selected': true,
-                'accessRole': 'owner',
-              },
-            ],
+  final calendarList =
+      calendars ??
+      <String, dynamic>{
+        'items': [
+          {
+            'id': 'primary',
+            'summary': 'Primary',
+            'primary': true,
+            'selected': true,
+            'accessRole': 'owner',
           },
-    );
-  return GoogleCalendarApiClient(dio);
+        ],
+      };
+  return GoogleCalendarApiClient(
+    TestHttpClient(
+      handler: (request) => httpTextResponse(
+        request,
+        request.url.contains('calendarList') ? calendarList : events,
+      ),
+    ),
+  );
 }
 
 void main() {

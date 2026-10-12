@@ -2,7 +2,7 @@
 title: Connect to a remote server
 description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
 slug: en-GB/manual/guides/connect-remote-server
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Every client is a renderer over a `cc_server` that owns the data. The desktop can
@@ -13,7 +13,7 @@ a client at a server running elsewhere — a small box, a cloud VM, a build serv
 ## Prerequisites
 
 - A running `cc_server`. If you don't have one, see [Run a headless server](/en-GB/manual/guides/run-headless-server/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key. Obtain these through a trusted channel and check the server fingerprint against a trusted QR or known pin on first connection.
 
 ### Make sure the server is reachable
 
@@ -26,7 +26,7 @@ trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
 the first place. Give it one of:
 
 - a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
+- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext between proxy and server at the outer listener, on a trusted network only; this does not disable the mandatory encrypted client session)
 - a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
 
 Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
@@ -55,7 +55,8 @@ The row for the server you are on has no **Switch** action; the local server is
 the first row, labelled **Run in this app**.
 
 Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+through the remote server over a signed, end-to-end-encrypted WebSocket session;
+the same protection applies on loopback and through the relay.
 
 ## Connect the web client
 
@@ -67,13 +68,17 @@ The web build is always remote.
 
 If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
 rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+the page. Treat the link as a secret and trust the page serving the web client:
+the fragment does not protect against malicious page code.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Media, editors and security]
+Media (avatars, feed images, PR screenshots), backup transfers and embedded
+editor traffic use the encrypted resource tunnel, not readable public HTTP
+routes. The trusted browser editor runs on the web app's own origin; its Service
+Worker carries requests through the authenticated encrypted session to the
+code-server backend on `cc_server`. Host the web client over HTTPS or secure
+loopback so Service Workers are available. Native clients use a
+capability-scoped loopback facade.
 :::
 
 ### What the browser does not do
@@ -96,6 +101,7 @@ editors installed.
 
 - **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
 - **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
+- **Server identity changed**: the client rejects a fingerprint that differs from its saved pin. Verify the server's identity out of band and re-pair through a trusted channel; do not ignore the warning or switch to an older/plaintext client.
 - **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
 - **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/en-GB/manual/concepts/workspaces/).
 

@@ -40,6 +40,12 @@ CC_NATIVES=(
   "tree-sitter-ada|desktop,server|all|ada code graph grammar"
 
   # Server-side: probed by the boot preflight, so a miss refuses to start.
+  # The HTTP engine (reqwest + rustls) behind every server HTTP client. Built by
+  # scripts/natives/build_rhttp.sh from the checksum-pinned pub archive, because
+  # rhttp is consumed as a pure-Dart pub package rather than a Flutter plugin.
+  # Server-only: the desktop app's own HTTP is dart:io/package:http (see
+  # lib/core/server/tailscale_discovery.dart) and it builds no rhttp client.
+  "rhttp|server|all|HTTP transport for every server HTTP client"
   "ccpty|server|all|sandboxed terminals"
   "cc_watcher|server|all|code-graph file watching"
   "lame_ffi|server|all|soundscape MP3 encoding"

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,33 +14,110 @@ void main() {
   });
 
   group('decodeSsoPairLink', () {
-    String linkFor(Map<String, String> payload) {
+    String linkFor(Map<String, dynamic> payload) {
       final fragment = base64Url
           .encode(utf8.encode(jsonEncode(payload)))
           .replaceAll('=', '');
       return 'control-center://pair#$fragment';
     }
 
-    test('decodes the {s, i, k} fragment', () {
-      final payload = decodeSsoPairLink(
-        linkFor({
+    test('decrypts only the expected client-held recipient', () async {
+      final recipient = await CredentialSeal.newRecipient();
+      beginSealedSsoLogin(
+        origin: 'https://cc.example.com',
+        privateKey: recipient.privateKey,
+      );
+      final sealed = await CredentialSeal.seal(
+        recipientPublicKey: recipient.publicKey,
+        credential: const {
           's': 'https://cc.example.com',
           'i': 'device-1',
           'k': 'psk-1',
-        }),
+        },
+        context: 'https://cc.example.com',
       );
-      expect(payload, isNotNull);
-      expect(payload!.server, 'https://cc.example.com');
-      expect(payload.deviceId, 'device-1');
-      expect(payload.psk, 'psk-1');
+      final link = linkFor({'s': 'https://cc.example.com', 'box': sealed});
+      expect(link, isNot(contains('psk-1')));
+      final payload = await decodeSsoPairLink(link);
+      expect(payload?.server, 'https://cc.example.com');
+      expect(payload?.deviceId, 'device-1');
+      expect(payload?.psk, 'psk-1');
+      expect(await decodeSsoPairLink(link), isNull); // Single use.
     });
 
-    test('refuses malformed fragments', () {
-      expect(decodeSsoPairLink('control-center://pair'), isNull);
-      expect(decodeSsoPairLink('control-center://pair#!!!'), isNull);
-      // Missing any of s/i/k.
+    test('rejects plaintext, wrong recipients and changed origin', () async {
+      final recipient = await CredentialSeal.newRecipient();
+      final other = await CredentialSeal.newRecipient();
+      beginSealedSsoLogin(
+        origin: 'https://cc.example.com',
+        privateKey: recipient.privateKey,
+      );
+      final legacy = linkFor({
+        's': 'https://cc.example.com',
+        'i': 'device-1',
+        'k': 'psk-1',
+      });
+      expect(await decodeSsoPairLink(legacy), isNull);
+      final sealed = await CredentialSeal.seal(
+        recipientPublicKey: other.publicKey,
+        credential: const {
+          's': 'https://cc.example.com',
+          'i': 'device-1',
+          'k': 'psk-1',
+        },
+        context: 'https://cc.example.com',
+      );
+      expect(await decodeSsoPairLink(linkFor({
+        's': 'https://cc.example.com',
+        'box': sealed,
+      })), isNull);
+      expect(await decodeSsoPairLink(linkFor({
+        's': 'https://impostor.example.com',
+        'box': sealed,
+      })), isNull);
+      expect(await decodeSsoPairLink('control-center://pair#!!!'), isNull);
+      clearSealedSsoLogin();
+    });
+    test('IdP-initiated sealed link requires explicit confirmation', () async {
+      clearSealedSsoLogin();
+      final recipient = await CredentialSeal.newRecipient();
+      final sealed = await CredentialSeal.seal(
+        recipientPublicKey: recipient.publicKey,
+        credential: const {
+          's': 'https://cc.example.com',
+          'i': 'device-1',
+          'k': 'psk-1',
+        },
+        context: 'https://cc.example.com',
+      );
+      final link = linkFor({
+        's': 'https://cc.example.com',
+        'box': sealed,
+        'recipientPrivateKey': recipient.privateKey,
+        'idpInitiated': true,
+      });
+      expect(isIdpInitiatedSsoPairLink(link), isTrue);
+      expect(link, isNot(contains('psk-1')));
+      final opened = await decodeSsoPairLink(link);
+      expect(opened?.psk, 'psk-1');
+      expect(opened?.unsolicited, isTrue);
+      final other = await CredentialSeal.newRecipient();
       expect(
-        decodeSsoPairLink(linkFor({'s': 'https://cc.example.com'})),
+        await decodeSsoPairLink(linkFor({
+          's': 'https://cc.example.com',
+          'box': sealed,
+          'recipientPrivateKey': other.privateKey,
+          'idpInitiated': true,
+        })),
+        isNull,
+      );
+      expect(
+        await decodeSsoPairLink(linkFor({
+          's': 'https://impostor.example.com',
+          'box': sealed,
+          'recipientPrivateKey': recipient.privateKey,
+          'idpInitiated': true,
+        })),
         isNull,
       );
     });

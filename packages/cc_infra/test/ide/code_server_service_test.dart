@@ -115,7 +115,11 @@ void main() {
         dataRoot: tmp.path,
       );
       // No throw — idempotent.
-      await service.closeSession(workspaceId: 'wsA', sessionId: 'nope');
+      await service.closeSession(
+        workspaceId: 'wsA',
+        sessionId: 'nope',
+        deviceId: 'device-a',
+      );
     });
 
     test('reportDirty for an unknown session emits nothing', () async {
@@ -193,6 +197,8 @@ void main() {
         late Directory worktreeDir;
         late CodeServerService service;
         late String sessionId;
+        late String bridgeId;
+        late DateTime now;
 
         setUp(() async {
           // A stand-in `code-server` in the managed install dir: it accepts the
@@ -208,6 +214,9 @@ void main() {
             ..writeAsStringSync(
               '#!/bin/sh\n'
               'case "\$*" in *--install-extension*) exit 0;; esac\n'
+              'printf "%s\\n" "\$\$" >> "${tmp.path}/launches"\n'
+              'printf "%s\\n" "\$CC_IDE_REPORT_URL" > "${tmp.path}/bridge-report-url"\n'
+              'printf "%s\\n" "\$CC_IDE_COMMANDS_URL" > "${tmp.path}/bridge-commands-url"\n'
               'echo "HTTP server listening on http://127.0.0.1:45678/"\n'
               'exec sleep 60\n',
             );
@@ -220,6 +229,7 @@ void main() {
           }
           worktreeDir = Directory('${tmp.path}/wsA-chA-repoA')
             ..createSync(recursive: true);
+          now = DateTime.utc(2026, 10, 11);
           service = CodeServerService(
             isolatedRepos: _FakeIsolatedRepoRepo(
               worktrees: {
@@ -233,7 +243,10 @@ void main() {
             ),
             dataRoot: tmp.path,
             attemptManagedDownload: false,
+            clock: () => now,
           );
+          service.resolveBridgeBase = () =>
+              Uri.parse('http://127.0.0.1:8090/private-server-cap/');
           final session = await service.ensureSession(
             workspaceId: 'wsA',
             spaceId: 'chA',
@@ -242,13 +255,246 @@ void main() {
           );
           expect(session.status, CodeServerStatus.ready);
           sessionId = session.sessionId;
+          final report = Uri.parse(
+            File('${tmp.path}/bridge-report-url').readAsStringSync().trim(),
+          );
+          final commands = Uri.parse(
+            File('${tmp.path}/bridge-commands-url').readAsStringSync().trim(),
+          );
+          expect(report.pathSegments.take(2), ['private-server-cap', 'proxy']);
+          expect(report.pathSegments.last, '__cc_open__');
+          bridgeId = report.pathSegments[3];
+          expect(bridgeId, isNot(sessionId));
+          expect(service.lookup(bridgeId), isNull);
+          expect(service.lookupBridge(bridgeId), isTrue);
+          expect(commands.pathSegments[3], bridgeId);
+          expect(commands.pathSegments.last, '__cc_commands__');
         });
 
         tearDown(() => service.disposeAll());
+        test('public capabilities bind to the real owning device', () async {
+          final a = service.lookup(sessionId)!;
+          expect(a.deviceId, 'device-a');
+          expect(a.workspaceId, 'wsA');
+          expect(a.port, 45678);
+          expect(service.lookupBridge(sessionId), isFalse);
+          await expectLater(
+            service.ensureSession(
+              workspaceId: 'wsA',
+              spaceId: 'chA',
+              repoId: 'repoA',
+              deviceId: '',
+            ),
+            throwsArgumentError,
+          );
+
+          final b = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-b',
+          );
+          expect(b.sessionId, isNot(sessionId));
+          expect(b.port, a.port);
+          expect(service.lookup(b.sessionId)!.deviceId, 'device-b');
+          expect(service.lookupBridge(bridgeId), isTrue);
+          expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(1));
+
+          await expectLater(
+            service.closeSession(
+              workspaceId: 'wsB',
+              sessionId: sessionId,
+              deviceId: 'device-a',
+            ),
+            throwsStateError,
+          );
+          await expectLater(
+            service.closeSession(
+              workspaceId: 'wsA',
+              sessionId: sessionId,
+              deviceId: 'device-b',
+            ),
+            throwsStateError,
+          );
+          expect(service.lookup(sessionId)!.deviceId, 'device-a');
+
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: sessionId,
+            deviceId: 'device-a',
+          );
+          expect(service.lookup(sessionId), isNull);
+          expect(service.lookup(b.sessionId), isNotNull);
+          expect(service.lookupBridge(bridgeId), isTrue);
+          final reopened = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-a',
+          );
+          expect(reopened.sessionId, isNot(sessionId));
+          expect(reopened.port, b.port);
+          expect(service.lookup(sessionId), isNull);
+        });
+
+        test('simultaneous opens share one new process, not a capability', () async {
+          final other = CodeServerService(
+            isolatedRepos: _FakeIsolatedRepoRepo(
+              worktrees: {
+                'wsA:chA:repoA': _worktree(
+                  workspaceId: 'wsA',
+                  spaceId: 'chA',
+                  repoId: 'repoA',
+                  path: worktreeDir.path,
+                ),
+              },
+            ),
+            dataRoot: tmp.path,
+            attemptManagedDownload: false,
+          );
+          other.resolveBridgeBase = service.resolveBridgeBase;
+          addTearDown(other.disposeAll);
+          final sessions = await Future.wait([
+            other.ensureSession(
+              workspaceId: 'wsA',
+              spaceId: 'chA',
+              repoId: 'repoA',
+              deviceId: 'device-a',
+            ),
+            other.ensureSession(
+              workspaceId: 'wsA',
+              spaceId: 'chA',
+              repoId: 'repoA',
+              deviceId: 'device-b',
+            ),
+          ]);
+          expect(sessions[0].sessionId, isNot(sessions[1].sessionId));
+          expect(other.lookup(sessions[0].sessionId)!.deviceId, 'device-a');
+          expect(other.lookup(sessions[1].sessionId)!.deviceId, 'device-b');
+          expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(2));
+        });
+
+        test('same-device tabs retain the binding until the last close', () async {
+          final second = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-a',
+          );
+          expect(second.sessionId, sessionId);
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: sessionId,
+            deviceId: 'device-a',
+          );
+          expect(service.lookup(sessionId), isNotNull);
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: sessionId,
+            deviceId: 'device-a',
+          );
+          expect(service.lookup(sessionId), isNull);
+          expect(service.lookupBridge(bridgeId), isFalse);
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: sessionId,
+            deviceId: 'device-a',
+          );
+          expect(await service.commandStream(bridgeId).isEmpty, isTrue);
+          expect(
+            await service.openFile(
+              workspaceId: 'wsA',
+              spaceId: 'chA',
+              repoId: 'repoA',
+              windowId: 'old-window',
+              path: 'lib/main.dart',
+            ),
+            isFalse,
+          );
+        });
+
+        test('expiry revokes only the stale device capability', () async {
+          now = now.add(const Duration(hours: 6));
+          final b = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-b',
+          );
+          now = now.add(const Duration(hours: 7));
+          expect(service.lookup(sessionId), isNull);
+          expect(service.lookup(b.sessionId)!.deviceId, 'device-b');
+          expect(service.lookupBridge(bridgeId), isTrue);
+          final renewed = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-a',
+          );
+          expect(renewed.sessionId, isNot(sessionId));
+          expect(renewed.port, b.port);
+        });
+
+        test('bridge reports and save commands use internal id only', () async {
+          final dirty = <CodeServerDirtyEvent>[];
+          final opened = <CodeServerOpenRequest>[];
+          final dirtySub = service.watchDirtyState('wsA').listen(dirty.add);
+          final openSub = service.watchOpenRequests('wsA').listen(opened.add);
+          addTearDown(dirtySub.cancel);
+          addTearDown(openSub.cancel);
+          final abs = '${worktreeDir.path}/lib/main.dart';
+
+          service.reportDirty(
+            sessionId: sessionId,
+            absPath: abs,
+            dirty: true,
+          );
+          service.reportOpen(sessionId: sessionId, absPath: abs);
+          expect(dirty, isEmpty);
+          expect(opened, isEmpty);
+          service.reportDirty(
+            sessionId: bridgeId,
+            absPath: abs,
+            dirty: true,
+          );
+          service.reportOpen(
+            sessionId: bridgeId,
+            absPath: abs,
+            line: 17,
+            windowId: 'window-a',
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(dirty.single.path, 'lib/main.dart');
+          expect(dirty.single.dirty, isTrue);
+          expect(opened.single.repoId, 'repoA');
+          expect(opened.single.windowId, 'window-a');
+          expect(opened.single.line, 17);
+
+          final commands = service.commandStream(bridgeId).listen((command) {
+            if (command['cmd'] == 'save') {
+              service.reportDirty(
+                sessionId: bridgeId,
+                absPath: abs,
+                dirty: false,
+              );
+            }
+          });
+          addTearDown(commands.cancel);
+          expect(
+            await service.saveFile(
+              workspaceId: 'wsA',
+              spaceId: 'chA',
+              repoId: 'repoA',
+              path: 'lib/main.dart',
+            ),
+            isTrue,
+          );
+          expect(dirty.last.dirty, isFalse);
+        });
 
         test('openFile addresses one window with the absolute path', () async {
           final commands = <Map<String, Object?>>[];
-          final sub = service.commandStream(sessionId).listen(commands.add);
+          final sub = service.commandStream(bridgeId).listen(commands.add);
           addTearDown(sub.cancel);
 
           final sent = await service.openFile(
@@ -276,7 +522,7 @@ void main() {
           'closeFile broadcasts the close, with revert when asked',
           () async {
             final commands = <Map<String, Object?>>[];
-            final sub = service.commandStream(sessionId).listen(commands.add);
+            final sub = service.commandStream(bridgeId).listen(commands.add);
             addTearDown(sub.cancel);
 
             await service.closeFile(
@@ -300,7 +546,7 @@ void main() {
 
         test('a path escaping the worktree is refused', () async {
           final commands = <Map<String, Object?>>[];
-          final sub = service.commandStream(sessionId).listen(commands.add);
+          final sub = service.commandStream(bridgeId).listen(commands.add);
           addTearDown(sub.cancel);
 
           expect(

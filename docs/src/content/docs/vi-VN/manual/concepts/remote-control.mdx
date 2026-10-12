@@ -1,35 +1,37 @@
 ---
 title: Điều khiển từ xa và di động
-description: Cách điện thoại tiếp cận máy chủ của bạn qua một relay được môi giới, niêm phong đầu-cuối thay vì một liên kết ngang hàng, và mô hình truy cập phân tầng giữ cho phạm vi tiếp cận đó luôn hẹp.
+description: Cách điện thoại tiếp cận máy chủ của bạn qua các kết nối mã hóa đầu-cuối, trực tiếp hoặc qua môi giới, và mô hình truy cập phân tầng giữ cho phạm vi tiếp cận đó luôn hẹp.
 slug: vi-VN/so-tay/khai-niem/dieu-khien-tu-xa
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center là một ứng dụng máy tính để bàn, nhưng công việc mà nó theo dõi
 không dừng lại khi bạn rời khỏi bàn. **Điều khiển từ xa** ghép nối điện thoại của
 bạn với `cc_server` của bạn, dùng **[Remote](https://remote.usectrl.dev/)**, ứng
 dụng đồng hành tại remote.usectrl.dev, để bạn theo dõi đội máy từ đó: đọc tin nhắn
-và phiếu, trả lời một agent, phân loại bảng tin của bạn, mà âm thanh, phiên âm, mã
-nguồn hay thông tin xác thực nằm trên máy chủ không bao giờ rời khỏi đó.
+và phiếu, trả lời một agent, phân loại bảng tin của bạn qua một kết nối mã hóa
+đầu-cuối. Điện thoại và `cc_server` là các đầu mút bản rõ được tin cậy; relay chỉ
+chở các bản ghi ứng dụng đã mã hóa.
 
 Hãy coi nó như một bạn đồng hành thiên về đọc của bàn làm việc. Nó không nhằm thay
 thế máy khách máy tính để bàn đầy đủ.
 
-:::note[Hai đường điều khiển từ xa khác nhau]
-Ứng dụng đồng hành trên điện thoại ghép nối với một `cc_server` qua một **relay
-WebSocket được môi giới** chở các khung JSON-RPC niêm phong đầu-cuối. **Bản dựng
-web** đầy đủ (và một máy tính để bàn trỏ tới máy chủ từ xa) là đường điều khiển
-từ xa còn lại; nó quay số tới `cc_server` qua WebSocket và dựng toàn bộ ứng dụng.
-Xem [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) để biết hai
-đường này khác nhau thế nào.
+:::note[Hai máy khách từ xa khác nhau]
+Ứng dụng đồng hành trên điện thoại và **bản dựng web** đầy đủ (hoặc một máy tính
+để bàn trỏ tới máy chủ từ xa) đều có thể kết nối trực tiếp tới `cc_server` hoặc
+dùng một relay WebSocket được môi giới. Cả hai đường đều cần cùng một phiên mã hóa;
+điện thoại phơi ra một tập thao tác nhỏ hơn máy khách đầy đủ. Xem
+[Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) để biết các máy
+khách khác nhau thế nào.
 :::
 
 ## Vận chuyển
 
 Điện thoại tiếp cận `cc_server` qua một WebSocket: hoặc một kết nối trực tiếp
 (loopback, LAN, tailnet, hoặc `wss://`) hoặc một phòng được gác bằng lời mời trên
-một bộ môi giới tín hiệu chuyển tiếp các khung niêm phong. Không có kênh dữ liệu
-ngang hàng nào.
+một bộ môi giới tín hiệu. Cả hai đường đều cần một phiên được xác thực và mã hóa
+đầu-cuối; bộ môi giới chỉ chuyển tiếp các bản ghi đã mã hóa của nó. Không có kênh
+dữ liệu ngang hàng nào.
 
 ## Điện thoại làm được gì
 
@@ -52,22 +54,25 @@ là ý định như thế nào.
 
 ## Liên kết được xây dựng như thế nào
 
-Kết nối đi trên một **relay được môi giới**: máy chủ tham gia một phòng được gác
-bằng lời mời trên một bộ môi giới `wss://` với tư cách chủ sở hữu, và mọi máy
-khách đã ghép nối — máy tính để bàn, web, điện thoại — cùng tham gia phòng đó
-bằng một token gia nhập có giới hạn thời gian. Ba thành phần kết hợp lại:
+Khi điện thoại không thể tới máy chủ một cách trực tiếp, kết nối dùng một **relay
+được môi giới**: máy chủ tham gia một phòng được gác bằng lời mời trên một bộ môi
+giới `wss://` với tư cách chủ sở hữu, và các máy khách đã ghép nối tham gia bằng
+các token gia nhập có giới hạn thời gian. Ba thành phần kết hợp lại:
 
 | Thành phần                    | Vai trò                                                                                                                                                                                                                                                                                                                                       |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote (ứng dụng điện thoại)** | Ứng dụng web đồng hành, mặc định được lưu trữ tại `remote.usectrl.dev`, hoặc tự lưu trữ. Tải trong trình duyệt, giữ bản ghi ghép nối trong IndexedDB.                                                                                                                                                                                     |
-| **Bộ môi giới relay**         | Một relay `wss://` phi trạng thái (`cc_signaling_server`) chứa các phòng N chiều. Nó **chỉ chở các khung mờ đục**: mọi payload đều được niêm phong đầu-cuối giữa điện thoại và máy chủ, nên bộ môi giới không bao giờ thấy dữ liệu ứng dụng hay bí mật ghép nối và không bao giờ diễn giải những gì nó chuyển tiếp.                            |
+| **Bộ môi giới relay**         | Một relay `wss://` phi trạng thái (`cc_signaling_server`) chứa các phòng N chiều. Nó chuyển tiếp các bản ghi đã mã hóa mà không có bí mật ghép nối hay bản rõ của ứng dụng, nhưng vẫn thấy định danh định tuyến, IP, kích thước bản ghi và thời điểm. |
 | **`cc_server`**               | Chủ sở hữu phòng. Nó trả lời các lời gọi của điện thoại qua chính bộ điều phối mà mọi máy khách khác dùng.                                                                                                                                                                                                                                   |
 
 Một lời đề nghị ghép nối mang theo một **bản mô tả kết nối** liệt kê mọi đường tới
 máy chủ (LAN, tailnet, `wss://` công khai, relay) cùng dấu vân tay danh tính của
-nó. Bộ phân giải của điện thoại chọn đường với tới được tốt nhất và ghim dấu vân
-tay ở lần kết nối đầu tiên (TOFU); relay bảo đảm khả năng kết nối ngay cả khi
-không có đường trực tiếp nào, mà không bao giờ đọc được lưu lượng.
+nó. Bộ phân giải của điện thoại chọn đường với tới được tốt nhất. Máy chủ ký vào
+bắt tay đã mã hóa, và máy khách ghim dấu vân tay của nó. Ở lần kết nối đầu tiên,
+hãy đối chiếu dấu vân tay với một mã QR hoặc nguồn tin cậy khác: một danh tính đã
+ký ở lần đầu không tự nó chứng minh bạn đã tới máy chủ nào. Một ghim đã thay đổi
+sẽ bị từ chối thay vì được âm thầm tin cậy trở lại. Relay chở bản mã khi không có
+đường trực tiếp nào, nhưng vẫn có thể ngắt hoặc làm chậm kết nối.
 
 ## Payload ghép nối là gì
 
@@ -79,25 +84,31 @@ quy trình. Điều đáng quan tâm ở đây là cấu trúc của nó.
 https://<pwa-host>/#<payload>
 ```
 
-Payload đi trong **URL fragment**, phần sau dấu `#` mà trình duyệt không bao giờ
-gửi tới máy chủ, nên host HTTPS của PWA không bao giờ thấy nó. Nó mang mọi thứ
-điện thoại cần để với tới máy chủ và chứng minh mình là ai: bản mô tả kết nối (mọi
-đường cộng dấu vân tay danh tính), một id thiết bị vừa được cấp, một khóa chia sẻ
-trước 32 byte và một dấu hết hạn. Điện thoại giải mã nó, lưu một bản ghi ghép nối
-cục bộ rồi gỡ bỏ fragment để bí mật rời khỏi URL.
+Payload đi trong **URL fragment**, phần sau dấu `#` mà trình duyệt không gửi trong
+yêu cầu HTTP tới host của PWA. Nó mang mọi thứ điện thoại cần để với tới máy chủ và
+chứng minh mình là ai: bản mô tả kết nối (mọi đường cộng dấu vân tay danh tính), một
+id thiết bị vừa được cấp, một khóa chia sẻ trước 32 byte và một dấu hết hạn. Điện
+thoại giải mã nó, lưu một bản ghi ghép nối cục bộ rồi gỡ bỏ fragment khỏi URL. Mã
+của ứng dụng web đọc được fragment, nên hãy dùng một host ứng dụng đáng tin cậy và
+coi liên kết như một bí mật.
 
 Có hai dạng payload và chúng **không thể thay thế cho nhau**. Mã QR điện thoại
 được cấp từ bảng ghép nối trong ứng dụng chính là `PairingPayload` v2 ở trên, trỏ
-tới host PWA của Remote. `cc_server pair --client-url` phát ra một liên kết v1 cũ
-hơn, khác biệt (`{s, i, k}` — URL máy chủ, id thiết bị, khóa) chỉ dành cho máy
-khách **web**.
+tới host PWA của Remote. `cc_server pair --client-url` phát ra một liên kết v1
+(`{s, i, k}` — URL máy chủ, id thiết bị, khóa) chỉ dành cho máy khách **web**. Đây
+là các định dạng dữ liệu ghép nối, không phải đường lùi vận chuyển: cả hai máy
+khách đều phải hỗ trợ giao thức phiên mã hóa hiện hành.
 
 Chúng cũng khác nhau về thời hạn, điều dễ bị hiểu nhầm:
 
 | Cấp bởi                               | Hạn của thông tin xác thực      |
 | ------------------------------------- | -------------------------------- |
 | Bảng ghép nối trong ứng dụng (`pairing.mint`) | 30 ngày, luôn luôn      |
-| `cc_server pair` trên dòng lệnh       | **Không** — thông tin xác thực không hết hạn |
+| `cc_server pair` trên dòng lệnh       | Không mã hóa hạn; chính sách máy chủ vẫn áp dụng |
+
+Các chính sách toàn máy chủ về tuổi thiết bị tối đa và thời gian nhàn rỗi có thể
+từ chối cả hai loại thông tin xác thực sớm hơn. Không định dạng ghép nối nào bỏ
+qua được các chính sách đó.
 
 ## Mô hình truy cập
 
@@ -153,13 +164,14 @@ lạ cũng không ích gì, bởi kiểm tra tư cách thành viên ở cổng 1
 [cô lập không gian làm việc](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) mà phần
 còn lại của sản phẩm cũng thi hành.
 
-### 5. Khung niêm phong đầu-cuối, khóa bằng khóa chia sẻ trước
+### 5. Mã hóa đầu-cuối trên các kết nối trực tiếp và qua relay
 
-Mọi khung giữa điện thoại và máy chủ đều được niêm phong bằng khóa ghép nối;
-token gia nhập chỉ giúp máy khách vào được phòng, nó không giải mã gì cả. Bộ môi
-giới chỉ chuyển tiếp bản mã và không bao giờ thấy khóa. Một thiết bị đã bị thu hồi
-sẽ thấy thông tin xác thực của nó đã biến mất, nên nó **hỏng theo hướng đóng** khi
-kết nối lại.
+Mọi phiên máy khách, trực tiếp hay qua relay, đều cần một bắt tay Noise đã ký.
+Khóa ghép nối xác thực bắt tay đó; các khóa tức thời mới dẫn xuất ra khóa lưu lượng,
+thay vì dùng khóa ghép nối để niêm phong từng khung. Máy chủ ký danh tính của nó
+vào trao đổi này và máy khách kiểm tra ghim dấu vân tay đã lưu. Không có đường lùi
+về bản rõ hay máy khách cũ hơn. Một token gia nhập của relay chỉ đưa máy khách vào
+phòng; nó không thể giải mã các bản ghi.
 
 Thông tin xác thực do ứng dụng cấp có thời hạn 30 ngày; quá hạn đó, cổng kết nối
 sẽ đánh trượt nó và điện thoại phải ghép nối lại. Việc thu hồi diễn ra trực tiếp:
@@ -174,20 +186,24 @@ Hạn mức thuộc về **chủ thể, chứ không phải phiên**: ba thiết
 từ một hạn mức, nên một máy khách bị chiếm quyền không thể mua thêm dư địa bằng
 cách mở thêm phiên, và một thành viên ồn ào không thể bỏ đói những người khác.
 
-### 7. Một bộ môi giới không biết gì
+### 7. Một bộ môi giới không thể đọc nội dung ứng dụng
 
-Bộ môi giới relay cố tình đơn giản: nó chứa các phòng, chuyển tiếp khung niêm
-phong, và không giữ tài khoản, dữ liệu ứng dụng hay khóa nào. Các phòng được gác
-bằng lời mời và chỉ tồn tại tạm thời. Dữ liệu ứng dụng, âm thanh, phiên âm, mã
-nguồn và thông tin xác thực đều nằm lại trên máy chủ.
+Bộ môi giới relay chứa các phòng tạm thời, được gác bằng lời mời và chuyển tiếp
+các bản ghi đã mã hóa mà không có bản rõ của ứng dụng hay khóa ghép nối. Tuy vậy nó
+vẫn thấy địa chỉ IP, định danh phòng và peer, kích thước bản ghi, thời điểm và
+vòng đời kết nối, và có thể bỏ hoặc làm chậm lưu lượng. Máy khách đã ghép nối và
+`cc_server` được chọn là các đầu mút bản rõ; người vận hành máy chủ và các dịch vụ
+mà nó gửi nội dung tới có thể thấy nội dung đó. Mã hóa trên đường truyền không mã
+hóa dữ liệu máy chủ khi lưu trữ.
 
 ## Cập nhật trực tiếp
 
 Sau khi đã ghép nối, điện thoại nhận **cập nhật trực tiếp** dưới dạng khung thông
 báo — tin nhắn agent mới, phiếu được giao cho bạn, thay đổi trạng thái — phản chiếu
-chính thông báo của máy tính để bàn. Máy chủ phát những khung đó tới mọi phiên
-đang kết nối và bộ lọc không gian làm việc được áp dụng ở phía máy khách, nên
-những gì bạn thấy thuộc phạm vi không gian làm việc bạn đang xem.
+chính thông báo của máy tính để bàn. Máy chủ kiểm tra tư cách thành viên không gian
+làm việc trước khi chuyển tiếp một sự kiện tới một phiên. Sau đó máy khách lọc
+những sự kiện đã được cấp quyền ấy theo không gian làm việc bạn đang xem; bộ lọc
+hiển thị đó không phải là ranh giới truy cập.
 
 ## Nằm ở đâu
 
@@ -201,8 +217,8 @@ kết sâu.
 
 ::::note
 Điều khiển từ xa hoạt động phía máy chủ và **không** được phơi ra qua MCP. Điện
-thoại nói chuyện với bộ điều phối của chính máy chủ qua relay; nó không phải một
-máy khách MCP của một máy chủ bên ngoài.
+thoại nói chuyện với bộ điều phối của chính máy chủ qua kết nối trực tiếp hoặc qua
+relay đã mã hóa của nó; nó không phải một máy khách MCP của một máy chủ bên ngoài.
 ::::
 
 ## Xem thêm

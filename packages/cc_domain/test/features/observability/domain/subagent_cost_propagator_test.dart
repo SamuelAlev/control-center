@@ -31,8 +31,8 @@ void main() {
   setUp(() {
     store = _InMemoryStore();
     propagator = SubagentCostPropagator(
-      readChildCostCents: store.read,
-      writeChildCostCents: store.write,
+      readChildCostMicros: store.read,
+      writeChildCostMicros: store.write,
     );
   });
 
@@ -73,11 +73,11 @@ void main() {
     var reads = 0;
     var writes = 0;
     final counting = SubagentCostPropagator(
-      readChildCostCents: (_) async {
+      readChildCostMicros: (_) async {
         reads++;
         return 0;
       },
-      writeChildCostCents: (_, _) async {
+      writeChildCostMicros: (_, _) async {
         writes++;
       },
     );
@@ -92,13 +92,13 @@ void main() {
     // must still complete while 'a' is blocked, proving keys run concurrently.
     final gate = Completer<void>();
     final gated = SubagentCostPropagator(
-      readChildCostCents: (key) async {
+      readChildCostMicros: (key) async {
         if (key == 'a') {
           await gate.future;
         }
         return store.get(key);
       },
-      writeChildCostCents: store.write,
+      writeChildCostMicros: store.write,
     );
 
     final aFuture = gated.propagate('a', 10);
@@ -120,7 +120,7 @@ void main() {
     () async {
       var call = 0;
       final flaky = SubagentCostPropagator(
-        readChildCostCents: (key) async {
+        readChildCostMicros: (key) async {
           call++;
           // The second enqueued call's read throws; the others succeed.
           if (call == 2) {
@@ -128,7 +128,7 @@ void main() {
           }
           return store.get(key);
         },
-        writeChildCostCents: store.write,
+        writeChildCostMicros: store.write,
       );
 
       final first = flaky.propagate('parent', 1);
@@ -154,6 +154,19 @@ void main() {
     await propagator.propagate('parent', 90);
     expect(store.get('parent'), 100);
   });
+
+  test(
+    'sub-cent amounts accumulate EXACTLY (the rollup is micro-USD)',
+    () async {
+      // A hundred 3-micro-USD subagents. Under a whole-cent rollup every one of
+      // them rounds to zero and the parent records a child total of 0 — the
+      // accounting loss the ledger exists to remove.
+      await Future.wait(
+        List.generate(100, (_) => propagator.propagate('parent', 3)),
+      );
+      expect(store.get('parent'), 300);
+    },
+  );
 
   test('lock entry is cleaned up after the chain drains', () async {
     await propagator.propagate('parent', 1);

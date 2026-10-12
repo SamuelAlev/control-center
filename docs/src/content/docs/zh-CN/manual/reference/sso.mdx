@@ -2,7 +2,7 @@
 title: SSO 配置参考
 description: 单点登录的每一项配置、端点、操作与错误码。
 slug: zh-CN/手册/参考/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 关于单点登录的一切可配置项都集中在这里。取值存放在 `global.db` 的
@@ -22,7 +22,7 @@ sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 | `displayNameAttribute` | SAML     | `displayName`   | 显示名称属性                                                                                                                                         |
 | `groupsAttribute`      | SAML     | `groups`        | 组名称属性                                                                                                                                           |
 | `clockSkewSeconds`     | SAML     | 90              | 生命周期校验允许的时钟偏差                                                                                                                           |
-| `allowIdpInitiated`    | SAML     | 关闭            | 接受未经请求的响应（无 `InResponseTo`）                                                                                                              |
+| `allowIdpInitiated`    | SAML     | 关闭            | 接受有效的未经请求的响应（无 `InResponseTo`）；浏览器必须先认领一个短期 grant，才能收到为接收方密封的凭据 |
 | `wantResponseSigned`   | SAML     | 关闭            | 要求响应根元素签名（断言签名始终必需）                                                                                                               |
 | `issuer`               | OIDC     | —               | 签发者基址 URL（启用前必填）                                                                                                                         |
 | `clientId`             | OIDC     | —               | 公共客户端 id（启用前必填）                                                                                                                          |
@@ -35,28 +35,33 @@ sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 
 ## 进程配置
 
-SSO 连接不会从环境变量中初始化。仅剩的一个进程标志与**浏览器交接**有关，
-而不是连接行：
+SSO 连接不会从环境变量中初始化。仅剩的一个进程标志决定 SSO 回调后浏览器在哪里打开
+Web 客户端：
 
 | 变量 / 标志                                      | 含义                                                                                                                 |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | SSO 回调把浏览器弹回的目标源（凭据随 URL 片段传递）。未设置时，交接保持同源。                                        |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | 用于密封凭据交接的 Web 客户端 URL；未设置时，交接保持同源（仅当 Web 客户端在该源上提供服务时才有用）。对于 `web-popup` 登录，发起标签页中允许的 `client_origin` 优先。 |
 
 签发者 URL 本身必须是 `https`（仅对回环签发者 `localhost`、`127.0.0.1` 和
-`::1` 接受 `http`）。
+`::1` 接受 `http`）。请为 IdP 回调和 Web 客户端主机使用可信的 TLS：生成接收方密钥的页面及其投递的 JavaScript 都属于信任边界。HTTPS 保护这段引导过程；配对之后，直连和经中继的 `/rpc` 会话都要求 Noise 加密和固定的服务器身份。
 
 ## HTTP 端点
 
 | 端点                                             | 认证                | 用途                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | 无（重定向）        | 发起 SP 发起的登录；`relay=desktop` 交接给应用，`relay=web-popup` 向等待中的连接标签页 postMessages（该标签页会声明自己的 `client_origin`，仅当源允许列表信任它时才会被采纳）                                    |
-| `POST /saml/acs`                                 | 无（IdP POST）      | 断言消费者——校验、预配、签发                                                                                                                                                                                    |
+| `GET /saml/login?relay=…&handoff_key=…`         | 无（重定向）        | 用一个由客户端持有的 X25519 接收方密钥发起 SP 发起的登录；`relay=desktop` 交接给应用，`relay=web-popup` 向等待中的连接标签页 postMessages（仅当源允许列表信任它时，才会采纳它的 `client_origin`）                                    |
+| `POST /saml/acs`                                 | 无（IdP POST）      | 校验断言并预配用户；SP 发起的登录会把签发的设备凭据密封给发起时的接收方密钥；被允许的未经请求的 SAML 则改为返回一个与浏览器绑定的认领 |
+| `POST /saml/claim`                               | 同源浏览器 grant    | 用一个一次性、未经请求的 SAML grant，连同其 cookie 和一个新的 `handoff_key` 进行兑换；返回为接收方密封的凭据，绝不返回明文配对密钥 |
 | `GET /saml/metadata`                             | 无                  | 我们的 SP `EntityDescriptor`                                                                                                                                                                                    |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | 无                  | OIDC 往返；`relay=desktop` 交接给应用，`relay=web-popup` 交接给等待中的连接标签页（采用同样的 `client_origin` 约定）                                                                                             |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | 无      | OIDC 往返；登录需要由客户端持有的接收方密钥；`relay=desktop` 交接给应用，`relay=web-popup` 交接给等待中的连接标签页（采用同样的 `client_origin` 约定）                                                                                             |
 | `GET /auth/providers`                            | 无，CORS `*`        | 连接界面的探测：所提供的 SSO 连接（`id`/`kind`/`label`）+ `pairingEnabled`                                                                                                                                      |
 | `/scim/v2/Users…`                                | Bearer（SCIM token） | Users 的创建/读取/列表+过滤/PUT/PATCH/DELETE                                                                                                                                                                    |
 | `/scim/v2/Groups`                                | Bearer              | 只读；按设计，组推送会返回 501                                                                                                                                                                                  |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | 能力文档                                                                                                                                                                                                        |
+
+对于 SP 发起的 SAML 和 OIDC，登录起始 URL 需要一个有效的 `handoff_key`（发起客户端的 X25519 公钥）。服务器会把这个密钥与待处理的登录一并保留，并在回调时用临时的 X25519、HKDF-SHA256 和 AES-256-GCM，把它签发的设备凭据密封、并绑定到服务器源。桌面端交接使用 `control-center://pair`，同标签页的 Web 交接使用 URL 片段，而 `web-popup`（如果提供了）会 postMessage 到被允许的 `client_origin`，否则发送到所配置的 Web 客户端 URL 或回调源。在那个片段或弹窗消息中传递的是密封信封，而不是明文配对密钥。发起客户端保留对应的私钥以便打开它。这个信封不同于配对后建立的强制性 Noise 会话。
+
+IdP 发起的 SAML 响应（在启用时）没有发起方接收者。作为替代，ACS 会设置一个五分钟有效的 HttpOnly、SameSite=Strict 浏览器 cookie，并给出 **打开 Web 客户端** / **打开桌面应用** 的选择。该页面会生成一个新的接收方密钥，并从同一源把它的公钥部分和 grant 句柄 POST 到 `POST /saml/claim`。认领需要匹配的 cookie 和源（一道 CSRF 边界），一次性消费该 grant，并只返回一个为接收方密封的信封。随后的 Web/桌面片段会携带那个信封以及接收方的私钥材料，使目标客户端能够打开它，**而不是**明文设备凭据。另一个浏览器或已过期的 grant 无法兑换它。目标 Web 客户端源可以访问该片段并解密它；被攻陷的回调页面或 Web 客户端源可以窃取凭据。加密并不能让不受信任的、被投递的代码变得安全。
 
 ## RPC 操作
 

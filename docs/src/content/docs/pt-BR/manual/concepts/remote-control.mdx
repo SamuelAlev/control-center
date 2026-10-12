@@ -1,37 +1,37 @@
 ---
 title: Controle remoto e mobile
-description: Como o celular alcança o seu servidor por um relay intermediado e selado de ponta a ponta, em vez de um link ponto a ponto, e o modelo de acesso em camadas que mantém esse alcance estreito.
+description: Como o celular alcança o seu servidor por conexões diretas ou intermediadas cifradas de ponta a ponta, e o modelo de acesso em camadas que mantém esse alcance estreito.
 slug: pt-BR/manual/conceitos/controle-remoto
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 O Control Center é um app de desktop, mas o trabalho que ele acompanha não para
 quando você se afasta da mesa. O **controle remoto** emparelha o seu celular com
 o seu `cc_server`, usando o **[Remote](https://remote.usectrl.dev/)**, o app
 complementar em remote.usectrl.dev, para você acompanhar a frota de lá: ler
-mensagens e tickets, responder a um agente, triar o seu feed de notícias, sem que
-o áudio, a transcrição, o código-fonte ou as credenciais que vivem no servidor
-jamais saiam dele.
+mensagens e tickets, responder a um agente e triar o seu feed de notícias por
+uma conexão cifrada de ponta a ponta. O celular e o `cc_server` são endpoints em
+texto claro confiáveis; um relay transporta apenas registros cifrados do app.
 
 Pense nele como um companheiro predominantemente de leitura para o deck. Ele não
 foi feito para substituir o cliente de desktop completo.
 
-:::note[Dois caminhos remotos diferentes]
-O companheiro de celular se emparelha com um `cc_server` por um **relay
-WebSocket intermediado** que transporta frames JSON-RPC selados de ponta a ponta.
-A **build web** completa (e um desktop apontado para um servidor remoto) é o
-outro caminho remoto; ela disca para o `cc_server` por WebSocket e renderiza o
-app completo. Consulte
+:::note[Dois clientes remotos diferentes]
+O companheiro de celular e a **build web** completa (ou um desktop apontado para um
+servidor remoto) podem se conectar diretamente ao `cc_server` ou usar um relay
+WebSocket intermediado. Os dois caminhos exigem a mesma sessão cifrada; o celular
+expõe um conjunto de operações menor do que o cliente completo. Consulte
 [Implantação e clientes](/pt-BR/manual/conceitos/implantacao/) para ver como os
-dois diferem.
+clientes diferem.
 :::
 
 ## Transporte
 
 O celular alcança o `cc_server` por um WebSocket: ou uma conexão direta
 (loopback, LAN, tailnet ou `wss://`), ou uma sala com entrada por convite em um
-broker de sinalização que repassa frames selados. Não há canal de dados ponto a
-ponto.
+broker de sinalização. Os dois caminhos exigem uma sessão autenticada e cifrada de
+ponta a ponta; o broker apenas repassa os seus registros cifrados. Não há canal de
+dados ponto a ponto.
 
 ## O que o celular pode fazer
 
@@ -55,23 +55,26 @@ apenas pretendido.
 
 ## Como o link é construído
 
-A conexão viaja por um **relay intermediado**: o servidor entra como proprietário
-em uma sala com entrada por convite em um broker `wss://`, e cada cliente
-emparelhado — desktop, web, celular — entra na mesma sala com um token de admissão
-de prazo limitado. Três peças se juntam:
+Quando o celular não consegue alcançar o servidor diretamente, a conexão usa um
+**relay intermediado**: o servidor entra como proprietário em uma sala com entrada
+por convite em um broker `wss://`, e os clientes emparelhados entram com tokens de
+admissão de prazo limitado. Três peças se juntam:
 
 | Peça                          | Papel                                                                                                                                                                                                                                                   |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote (app de celular)**   | O app web complementar, hospedado por padrão em `remote.usectrl.dev`, ou auto-hospedado. Carrega em um navegador e guarda o registro de emparelhamento no IndexedDB.                                                                                    |
-| **Broker de relay**           | Um relay `wss://` sem estado (`cc_signaling_server`) que hospeda salas de N vias. Ele transporta **apenas frames opacos**: cada payload é selado de ponta a ponta entre o celular e o servidor, então o broker nunca vê dados do app nem o segredo de emparelhamento, e nunca interpreta o que repassa. |
+| **Broker de relay**           | Um relay `wss://` sem estado (`cc_signaling_server`) que hospeda salas de N vias. Ele repassa registros cifrados sem o segredo de emparelhamento nem o texto claro do app, mas vê identificadores de roteamento, IPs, tamanhos de registro e tempos. |
 | **`cc_server`**               | O proprietário da sala. Ele responde às chamadas do celular pelo mesmo dispatcher que todos os outros clientes usam.                                                                                                                                    |
 
 Uma oferta de emparelhamento carrega um **descritor de conexão** que lista todos
 os caminhos até o servidor (LAN, tailnet, `wss://` público, relay) mais a sua
 impressão digital de identidade. O resolvedor do celular escolhe o melhor caminho
-alcançável e fixa a impressão digital na primeira conexão (TOFU); o relay garante
-a conectividade mesmo quando não existe caminho direto, sem nunca conseguir ler o
-tráfego.
+alcançável. O servidor assina o handshake cifrado, e o cliente fixa a sua
+impressão digital. Na primeira conexão, verifique a impressão digital contra um QR
+ou outra fonte confiável: uma primeira identidade assinada, por si só, não prova
+em qual servidor você chegou. Um pin alterado é rejeitado em vez de ser novamente
+confiado em silêncio. O relay transporta texto cifrado quando não existe caminho
+direto, mas ainda pode interromper ou atrasar a conexão.
 
 ## O que é o payload de emparelhamento
 
@@ -84,25 +87,32 @@ https://<pwa-host>/#<payload>
 ```
 
 O payload viaja no **fragmento** da URL, a parte depois de `#` que os navegadores
-nunca enviam ao servidor, então o host HTTPS da PWA nunca o vê. Ele carrega tudo
-de que o celular precisa para alcançar o servidor e provar quem é: o descritor de
-conexão (todos os caminhos mais a impressão digital de identidade), um id de
-dispositivo recém-emitido, uma chave pré-compartilhada de 32 bytes e um carimbo de
-validade. O celular o decodifica, guarda um registro de emparelhamento localmente
-e remove o fragmento, para que o segredo saia da URL.
+não enviam na requisição HTTP ao host da PWA. Ele carrega tudo de que o celular
+precisa para alcançar o servidor e provar quem é: o descritor de conexão (todos os
+caminhos mais a impressão digital de identidade), um id de dispositivo
+recém-emitido, uma chave pré-compartilhada de 32 bytes e um carimbo de validade. O
+celular o decodifica, guarda um registro de emparelhamento localmente e remove o
+fragmento da URL. O código do app web pode ler o fragmento, então use um host de
+app confiável e trate o link como um segredo.
 
 Há dois formatos de payload e eles **não são intercambiáveis**. O QR de celular
 emitido pelo painel de emparelhamento do app é o `PairingPayload` v2 acima,
 apontado para o host da PWA Remote. `cc_server pair --client-url` emite um link v1
-diferente e mais antigo (`{s, i, k}` — URL do servidor, id do dispositivo, chave),
-destinado apenas ao cliente **web**.
+(`{s, i, k}` — URL do servidor, id do dispositivo, chave), destinado apenas ao
+cliente **web**. São formatos de dados de emparelhamento, não alternativas de
+transporte: os dois clientes precisam dar suporte ao protocolo de sessão cifrada
+atual.
 
 Eles também diferem no tempo de vida, o que é fácil de errar:
 
 | Emitido por                                      | Validade da credencial                |
 | ------------------------------------------------ | ------------------------------------- |
 | Painel de emparelhamento do app (`pairing.mint`) | 30 dias, sempre                       |
-| `cc_server pair` na linha de comando             | **Nenhuma** — a credencial não expira |
+| `cc_server pair` na linha de comando             | Sem expiração codificada; as políticas do servidor continuam valendo |
+
+As políticas de idade máxima de dispositivo e de tempo limite de inatividade de
+todo o servidor podem rejeitar qualquer uma das credenciais mais cedo. Nenhum dos
+dois formatos de emparelhamento contorna essas políticas.
 
 ## O modelo de acesso
 
@@ -161,12 +171,15 @@ do portão 1 continua valendo. Esse é o mesmo invariante de
 [isolamento de espaço de trabalho](/pt-BR/manual/conceitos/espacos-de-trabalho/)
 que o resto do produto aplica.
 
-### 5. Frames selados de ponta a ponta com a chave pré-compartilhada
+### 5. Criptografia de ponta a ponta em conexões diretas e intermediadas
 
-Cada frame entre o celular e o servidor é selado com a chave de emparelhamento; o
-token de admissão só coloca um cliente na sala, ele não descriptografa nada. O
-broker repassa texto cifrado e nunca vê a chave. Um dispositivo revogado encontra
-a sua credencial já removida, por isso **falha fechado** ao reconectar.
+Toda sessão de cliente, direta ou intermediada, exige um handshake Noise assinado.
+A chave de emparelhamento autentica esse handshake; chaves efêmeras novas derivam
+as chaves de tráfego, em vez de usar a chave de emparelhamento para selar cada
+frame. O servidor assina a sua identidade na troca, e o cliente verifica o pin da
+impressão digital salvo. Não há texto claro nem alternativa para clientes mais
+antigos. Um token de admissão de relay só coloca um cliente em uma sala; ele não
+consegue descriptografar os registros.
 
 Uma credencial emitida pelo app tem prazo limitado de 30 dias; passado isso, o
 portão de conexão a rejeita e o celular precisa emparelhar de novo. A revogação é
@@ -181,21 +194,24 @@ de mutação. O orçamento pertence ao **principal, não à sessão**: três dis
 seus consomem uma única cota, então um cliente sequestrado não compra folga
 abrindo mais sessões, e um membro ruidoso não deixa os demais sem cota.
 
-### 7. Um broker que não fica sabendo de nada
+### 7. Um broker que não consegue ler o conteúdo do app
 
-O broker de relay é deliberadamente burro: ele hospeda salas, repassa frames
-selados e não guarda contas, dados do app nem chaves. As salas têm entrada por
-convite e são transitórias. Os dados do app, o áudio, a transcrição, o
-código-fonte e as credenciais ficam todos no servidor.
+O broker de relay hospeda salas transitórias com entrada por convite e repassa
+registros cifrados sem o texto claro do app nem as chaves de emparelhamento. Ele
+ainda vê endereços IP, identificadores de sala e de par, tamanhos de registro,
+tempos e duração da conexão, e pode descartar ou atrasar tráfego. Os endpoints em
+texto claro são o cliente emparelhado e o `cc_server` escolhido; o operador do
+servidor e os serviços para os quais ele envia conteúdo podem ver esse conteúdo. A
+criptografia em trânsito não cifra os dados do servidor em repouso.
 
 ## Atualizações ao vivo
 
 Depois de emparelhado, o celular recebe **atualizações ao vivo** como frames de
 notificação — novas mensagens de agentes, tickets atribuídos a você, mudanças de
-status — espelhando as notificações do próprio desktop. O servidor transmite esses
-frames a todas as sessões conectadas, e o filtro de espaço de trabalho é aplicado
-no lado do cliente, então o que você vê tem por escopo o espaço de trabalho que
-está olhando.
+status — espelhando as notificações do próprio desktop. O servidor verifica a
+associação ao espaço de trabalho antes de repassar um evento a uma sessão. O
+cliente então filtra esses eventos já autorizados para o espaço de trabalho que
+você está vendo; esse filtro de exibição não é a fronteira de acesso.
 
 ## Onde ele fica
 
@@ -208,8 +224,8 @@ não apenas para celulares — o fluxo é idêntico, só o deep link muda.
 
 ::::note
 O controle remoto fica do lado do servidor e **não** é exposto por MCP. O celular
-fala com o dispatcher do próprio servidor pelo relay; ele não é um cliente MCP de
-um servidor externo.
+fala com o dispatcher do próprio servidor pela sua conexão cifrada direta ou
+intermediada; ele não é um cliente MCP de um servidor externo.
 ::::
 
 ## Veja também

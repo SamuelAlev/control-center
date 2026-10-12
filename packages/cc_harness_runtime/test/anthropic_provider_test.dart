@@ -18,6 +18,8 @@ class _FakeHttp extends ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     for (final event in events) {
       yield SseMessage(

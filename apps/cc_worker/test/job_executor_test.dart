@@ -60,6 +60,27 @@ void main() {
     await executor.done;
   }
 
+  for (final kind in ['evalBatch', 'benchmark']) {
+    test('$kind fails without materializing or claiming a result', () async {
+      await runJob(LeaseOffer(
+        jobId: 'job-unsupported',
+        workspaceId: 'ws-1',
+        kind: kind,
+        specJson: '{}',
+        repoRemote: '${cacheDir.path}/unmaterialized-source',
+        leaseExpiresAtIso: DateTime.utc(2026).toIso8601String(),
+      ));
+
+      final report = space.completionReport!;
+      expect(report.success, isFalse);
+      expect(report.resultJson, isNull);
+      expect(cacheDir.listSync(), isEmpty,
+          reason: 'Unsupported evaluations must not create a worktree');
+      expect(WorkerEventFrame.fromJson(space.eventFrames.last).event,
+          isA<DoneEvent>());
+    });
+  }
+
   test('speaks the op names and argument keys the server declares', () async {
     await runJob(leaseFor());
 

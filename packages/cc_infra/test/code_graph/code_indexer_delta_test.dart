@@ -9,7 +9,7 @@ import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_rep
 import 'package:cc_infra/src/code_graph/code_extractor.dart';
 import 'package:cc_infra/src/code_graph/code_indexer.dart';
 import 'package:cc_natives/cc_natives.dart';
-import 'package:dio/dio.dart' show CancelToken;
+import 'package:rhttp/rhttp.dart' show CancelToken;
 import 'package:test/test.dart';
 
 /// A worktree partition stores only its DELTA against the linked checkout.
@@ -152,11 +152,9 @@ void main() {
       // only thing retaining one buys is a bigger unresolved read on the next
       // run. It must fire on EVERY completed run — a quiet save included —
       // and be scoped to the run's partition, never another checkout's rows.
-      await indexerOver({'a.dart': 'h1'}).indexRepo(
-        workspaceId: 'ws1',
-        repoId: 'repo1',
-        repoPath: '/linked',
-      );
+      await indexerOver({
+        'a.dart': 'h1',
+      }).indexRepo(workspaceId: 'ws1', repoId: 'repo1', repoPath: '/linked');
       expect(repo.pruned, hasLength(1));
       expect(repo.pruned.single.workspaceId, 'ws1');
       expect(repo.pruned.single.repoId, 'repo1');
@@ -297,13 +295,11 @@ class _FakeRepo implements CodeGraphRepository {
     String repoId, {
     String? checkoutId,
   }) async {
-    pruned.add(
-      (
-        workspaceId: workspaceId,
-        repoId: repoId,
-        checkoutId: checkoutId,
-      ),
-    );
+    pruned.add((
+      workspaceId: workspaceId,
+      repoId: repoId,
+      checkoutId: checkoutId,
+    ));
     return 0;
   }
 

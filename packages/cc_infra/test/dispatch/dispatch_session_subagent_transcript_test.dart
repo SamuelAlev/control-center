@@ -107,6 +107,76 @@ class _MemRunLogRepo implements AgentRunLogRepository {
     final row = rows[id];
     return row != null && row.workspaceId == workspaceId ? row : null;
   }
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) async {
+    final row = await getById(completed.workspaceId ?? '', completed.id);
+    if (row == null ||
+        row.completedAt != null ||
+        row.status == RunStatus.completed ||
+        row.status == RunStatus.error) {
+      return false;
+    }
+    await upsert(
+      row.copyWith(
+        completedAt: completed.completedAt,
+        status: completed.status,
+        summary: completed.summary,
+        cost: writeCost ? completed.cost : null,
+      ),
+    );
+    return true;
+  }
+
+  @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async {
+    final row = await getById(workspaceId, runId);
+    if (row == null) {
+      return false;
+    }
+    final start = markRunning &&
+        row.completedAt == null &&
+        row.status == RunStatus.pending;
+    final hasMetadata = pid != null || logPath != null ||
+        contextSnapshotJson != null || lastOutputAt != null ||
+        liveness != null || errorFamily != null || summary != null ||
+        modelId != null || effort != null || taskFamily != null;
+    if (!start && !hasMetadata) {
+      return false;
+    }
+    await upsert(
+      row.copyWith(
+        pid: pid,
+        status: start ? RunStatus.running : null,
+        logPath: logPath,
+        contextSnapshotJson: contextSnapshotJson,
+        lastOutputAt: lastOutputAt,
+        liveness: liveness,
+        errorFamily: errorFamily,
+        summary: summary,
+        modelId: modelId,
+        effort: effort,
+        taskFamily: taskFamily,
+      ),
+    );
+    return true;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

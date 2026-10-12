@@ -218,6 +218,8 @@ class _ScriptedHttp implements ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     lastBody = body;
     for (final m in sse) {

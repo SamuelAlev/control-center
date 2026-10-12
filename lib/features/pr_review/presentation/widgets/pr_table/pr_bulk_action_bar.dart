@@ -219,6 +219,7 @@ class PrBulkActionBar extends ConsumerWidget {
   }) {
     return showCcDialog<List<String>>(
       context: context,
+      presentation: CcDialogPresentation.immediate,
       builder: (ctx) => _BulkUserPickerDialog(title: title),
     );
   }

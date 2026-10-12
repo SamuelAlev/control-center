@@ -2,7 +2,7 @@
 title: Emparejar un dispositivo
 description: Empareja tu teléfono (o un segundo navegador o escritorio) con tu servidor de Control Center para poder seguir la flota en remoto.
 slug: es-ES/manual/guias/emparejar-dispositivo
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Esta guía te muestra cómo emparejar un teléfono con Control Center, para que
@@ -23,9 +23,10 @@ puedes desplegar en Cloudflare Pages mediante su `wrangler.jsonc`, en la imagen
 nginx `docker/cc_remote`, o en cualquier host estático con HTTPS —los service
 workers y IndexedDB solo están disponibles en contextos seguros—) y el relé
 (`apps/cc_signaling_server`, un único binario de Dart sin estado que no guarda
-datos de la app y nunca ve el secreto de emparejamiento: solo reenvía tramas
-selladas de extremo a extremo). Consulta sus README para los pasos de compilación
-y ejecución.
+datos de la app y no puede descifrar registros cifrados ni ver el secreto de
+emparejamiento). Aun así ve IP, identificadores de enrutamiento, tamaños y
+tiempos, y puede descartar tráfico. Consulta sus README para los pasos de
+compilación y ejecución.
 
 ## Paso 1: Abrir el panel de emparejamiento
 
@@ -51,15 +52,19 @@ Remote.
 
 En el lado del teléfono, abrir un enlace de emparejamiento no empareja en
 silencio. Remote muestra el nombre anunciado del servidor y te pide que confirmes
-antes de guardar nada, así que un enlace falsificado no puede secuestrar la app
-para llevarla al servidor de otra persona.
+antes de guardar nada. Comprueba la huella del QR contra una fuente de confianza:
+confirmar un nombre no verificado o un QR falsificado no demuestra que el
+servidor sea tuyo. El cliente fija la identidad firmada y rechaza una huella que
+cambie en conexiones posteriores.
 
 :::caution[Un QR escaneado concede acceso de inmediato]
 No hay ningún paso de pendiente-y-luego-aprobar: un dispositivo generado está
 activo desde el momento en que se crea y la barrera de conexión solo comprueba
 que la credencial esté activa y no haya caducado. Trata el QR y la clave de
 emparejamiento como una contraseña y revoca todo lo que no tuvieras intención de
-entregar.
+entregar. Tanto las sesiones de cliente directas como las que pasan por el relé
+requieren cifrado de extremo a extremo; los clientes antiguos no pueden recurrir
+a RPC en texto plano.
 :::
 
 ## Gestionar dispositivos emparejados

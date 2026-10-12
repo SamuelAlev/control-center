@@ -12,12 +12,9 @@ import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 /// Two roles share one channel: the **server** endpoint (consumed by a
 /// `RemoteRpcSession`) and the **client** endpoint (used by a `RemoteConnection`
 /// or a test). What the client sends arrives on the server's [incoming] and
-/// vice-versa. This is:
-///   1. the desktop-LOCAL "be your own server" data path (no serialization, no
-///      sockets) and
-///   2. the fast protocol-conformance harness — drive the full repo-RPC +
-///      subscription surface through it and assert parity with direct calls,
-///      with no WebRTC/WSS in the test path.
+/// vice-versa. This is a trusted in-process protocol-conformance harness:
+/// drive the full repo-RPC and subscription surface without network sockets.
+/// Network clients must authenticate and encrypt through `SecureRpcChannel`.
 ///
 /// Construct a pair with [InProcessRpcChannel.pair]; the two returned channels
 /// are wired back-to-back and share a single open/closed lifecycle.

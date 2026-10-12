@@ -2,7 +2,7 @@
 title: Backup, esportazione e importazione
 description: La struttura dell'istantanea, il manifest, ogni operazione di backup e route di trasferimento, ed esattamente quali file un backup contiene e quali no.
 slug: it-IT/manuale/riferimento/backup
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Tutto ciò che Control Center può copiare, cedere o adottare, e la forma esatta di ogni
@@ -25,6 +25,12 @@ diversi.
 Tutti vengono scritti con `VACUUM INTO` di SQLite, che è sicuro su un database WAL in
 uso: apre una transazione di lettura, produce una copia deframmentata e
 transazionalmente coerente e non richiede mai di fermare il server.
+
+Questi file e le copie scaricate **non sono cifrati a riposo** da Control Center. Il
+trasferimento cifrato end-to-end protegge i byte in transito tra un client associato e
+il suo `cc_server`, su connessioni dirette o tramite relay. Proteggi separatamente
+l'archiviazione locale e le copie fuori dalla macchina; il server e qualsiasi
+destinatario autorizzato possono leggere i file di database.
 
 ## Struttura dell'istantanea
 
@@ -210,11 +216,16 @@ contenuti di un file importato sono popolate, ma il suo indice può essere obsol
 
 ## Route di trasferimento
 
-Ogni operazione qui sopra parla in termini di percorsi lato server, il che è una
-risposta completa solo quando il server è la tua macchina. Queste tre trasportano i
-byte, sullo stesso canale firmato con PSK che usano il proxy dei media e il blob store.
-Il chiamante firma una stringa di destinazione con la chiave pre-condivisa del suo
-dispositivo e passa la firma come `s`.
+Le operazioni di esportazione/importazione e di elencazione delle istantanee qui sopra
+parlano in termini di percorsi lato server, il che è una risposta completa solo quando
+il server è la tua macchina. Queste route in forma di HTTP trasportano i byte del backup
+**dentro lo stesso tunnel delle risorse autenticato e cifrato end-to-end** di altre
+risorse sensibili, sia che la connessione RPC sia diretta sia intermediata. Non sono
+endpoint pubblici di trasferimento file HTTP: una richiesta a uno di essi sul listener
+pubblico restituisce `426 Upgrade Required`, anche dal loopback. Nel tunnel cifrato, il
+dispositivo autenticato con Noise deve corrispondere a `d`; il gestore verifica inoltre
+la firma del dispositivo sulla sua stringa di destinazione usando la sua PSK di
+abbinamento e il ruolo riportato sotto.
 
 | Route                   | Metodo | Query           | Destinazione firmata           | Richiede                   |
 | ----------------------- | ------ | --------------- | ------------------------------ | -------------------------- |
@@ -234,6 +245,7 @@ una directory che l'elenco non avrebbe mostrato.
 | `404`  | Nessuna porta di backup su questo host, o il file di istantanea/spazio di lavoro indicato non esiste |
 | `405`  | `/backup/restore` chiamato con un metodo diverso da `POST`                         |
 | `413`  | Il corpo del caricamento supera gli 8 GiB, per content-length dichiarato o per byte effettivamente letti |
+| `426`  | Qualsiasi richiesta diretta a una route di trasferimento sul listener HTTP pubblico; usa il tunnel delle risorse cifrato di un client associato |
 | `500`  | L'esportazione o l'archiviazione non è riuscita lato server                        |
 
 Entrambi i download rispondono con `Cache-Control: no-store` e `Accept-Ranges: none`.
@@ -250,12 +262,14 @@ della stessa istantanea sono lo stesso archivio.
 bufferizzarlo, lo limita prima e durante la lettura, ed elimina il file temporaneo su
 **ogni** percorso di uscita, compreso un rifiuto.
 
-:::caution[Una connessione inoltrata non ha un'origine HTTP]
-Il relay intermediato da un broker trasporta frame RPC, non trasferimenti di file. Tutto
-ciò che parla in termini di percorsi lato server continua a funzionare; le tre route di
-trasferimento richiedono una connessione diretta, e l'interfaccia le disattiva con una
-nota anziché fallire a metà download.
-:::
+::::caution[La connessione diretta e il relay usano lo stesso trasferimento cifrato]
+Il relay trasporta richieste di risorse, risposte in streaming e byte di caricamento
+come testo cifrato; non può leggere il contenuto dei backup. Un percorso lato server
+resta un percorso sull'host del server, non un file sul relay. L'accesso richiede
+comunque il dispositivo associato, la firma della destinazione e il ruolo applicabile
+di spazio di lavoro o installazione. Nessuno dei due trasporti cifra a riposo i file
+di backup risultanti.
+::::
 
 ## Percorsi e limiti
 
@@ -266,7 +280,7 @@ nota anziché fallire a metà download.
 | Esportazioni degli spazi di lavoro | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`  |
 | Staging dei trasferimenti       | `<dataDir>/backups/transfer/` — un banco di lavoro, ripulito dalla route che lo scrive |
 | Nome dell'archivio dell'istantanea | `<snapshot directory name>.zip`                           |
-| Limite di caricamento           | 8 GiB per `POST /backup/restore`                             |
+| Limite di caricamento           | 8 GiB per caricamento cifrato verso `/backup/restore`        |
 | Conservazione                   | Istantanee dell'installazione: eliminazione manuale. Backup degli spazi di lavoro: pipeline settimanale, 30 giorni per impostazione predefinita |
 
 Le directory `exports/`, `transfer/` e `workspace-backups/` non sono istantanee

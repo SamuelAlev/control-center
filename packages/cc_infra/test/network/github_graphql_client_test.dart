@@ -1,81 +1,65 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/network/github_graphql_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises the GitHub GraphQL client: variable passing, pagination cursor
 /// walking, partial-failure tolerance (errored repo aliases), the
 /// `_postTolerant` cancel-as-null path and the `_runQuery` GraphQL-error →
-/// NetworkException mapping. Uses a stubbed [HttpClientAdapter].
+/// NetworkException mapping. Uses a canned [TestHttpClient].
 
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
+/// Builds the response for a captured request.
+typedef Handler = HttpResponse Function(HttpRequest request);
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
-  }
+/// A [status] response carrying the JSON-encoded [body].
+HttpResponse _json(HttpRequest request, Object? body, {int status = 200}) =>
+    httpTextResponse(request, body, statusCode: status);
 
-  @override
-  void close({bool force = false}) {}
-}
+/// A JSON error response. Statuses ≥ 400 make the client throw the same
+/// [RhttpStatusCodeException] a real transport would.
+HttpResponse _error(
+  HttpRequest request,
+  int status, {
+  String message = 'boom',
+}) => _json(request, {'message': message}, status: status);
 
-ResponseBody _json(Object? body, {int status = 200}) => ResponseBody.fromString(
-  body == null ? '' : jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
+/// The JSON body a captured request posted.
+Map<String, dynamic> _bodyOf(HttpRequest request) =>
+    (request.body! as HttpBodyJson).json as Map<String, dynamic>;
 
-ResponseBody _dioError(int status, {String message = 'boom'}) =>
-    _json({'message': message}, status: status);
-
-typedef Handler = ResponseBody Function(RequestOptions o);
-
-({GitHubGraphQLClient client, _FakeAdapter fake}) build(Handler handler) {
-  final fake = _FakeAdapter(handler);
-  final dio = Dio()..httpClientAdapter = fake;
-  return (client: GitHubGraphQLClient(dio), fake: fake);
+({GitHubGraphQLClient client, TestHttpClient fake}) build(Handler handler) {
+  final fake = TestHttpClient(handler: handler);
+  return (client: GitHubGraphQLClient(fake), fake: fake);
 }
 
 void main() {
   group('GitHubGraphQLClient markFileAsViewed / unmarkFileAsViewed', () {
     test('POSTs the mutation with variables', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {'markFileAsViewed': null},
         }),
       );
       await b.client.markFileAsViewed(pullRequestId: 'PR_1', path: 'a.dart');
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect(req.path, '/graphql');
-      final body = req.data as Map<String, dynamic>;
+      expect(req.method.value, 'POST');
+      expect(req.url, '/graphql');
+      final body = _bodyOf(req);
       expect(body['query'], contains('MarkFileAsViewed'));
       expect((body['variables'] as Map)['pullRequestId'], 'PR_1');
       expect((body['variables'] as Map)['path'], 'a.dart');
     });
 
     test('unmark POSTs the unmark mutation', () async {
-      final b = build((_) => _json({'data': {}}));
+      final b = build((r) => _json(r, {'data': {}}));
       await b.client.unmarkFileAsViewed(pullRequestId: 'PR_1', path: 'a.dart');
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _bodyOf(b.fake.requests.single);
       expect(body['query'], contains('UnmarkFileAsViewed'));
     });
 
-    test('maps a non-cancel DioException via mapDioException', () async {
-      final b = build((_) => _dioError(401));
+    test('maps a non-cancel RhttpException via mapHttpException', () async {
+      final b = build((r) => _error(r, 401));
       await expectLater(
         b.client.markFileAsViewed(pullRequestId: 'PR_1', path: 'a.dart'),
         throwsA(isA<NetworkException>()),
@@ -86,10 +70,10 @@ void main() {
   group('GitHubGraphQLClient.getFileViewedStates', () {
     test('walks pages and collects path→state', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
         final hasNext = page == 1;
-        return _json({
+        return _json(r, {
           'data': {
             'repository': {
               'pullRequest': {
@@ -122,7 +106,7 @@ void main() {
 
     test('breaks when the files connection is null', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {'pullRequest': null},
           },
@@ -140,7 +124,7 @@ void main() {
   group('GitHubGraphQLClient.listBranchesWithActivity', () {
     test('maps branch name + committed date + author login', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'refs': {
@@ -177,10 +161,10 @@ void main() {
   group('GitHubGraphQLClient.listAssignableUsers', () {
     test('maps login, name and avatar and paginates', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
         final hasNext = page == 1;
-        return _json({
+        return _json(r, {
           'data': {
             'repository': {
               'assignableUsers': {
@@ -215,7 +199,7 @@ void main() {
 
     test('breaks when the connection is null', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {'assignableUsers': null},
           },
@@ -226,8 +210,8 @@ void main() {
   });
 
   group('GitHubGraphQLClient.fetchPullRequestTemplates', () {
-    test('returns [] on any non-cancel DioException', () async {
-      final b = build((_) => _dioError(500));
+    test('returns [] on any non-cancel RhttpException', () async {
+      final b = build((r) => _error(r, 500));
       final templates = await b.client.fetchPullRequestTemplates('o', 'r');
       expect(templates, isEmpty);
     });
@@ -236,7 +220,7 @@ void main() {
       'returns [] on a NetworkException-shaped response (no data)',
       () async {
         final b = build(
-          (_) => _json({
+          (r) => _json(r, {
             'errors': [
               {'message': 'bad repo'},
             ],
@@ -248,7 +232,7 @@ void main() {
 
     test('collects named templates from dirs then the default file', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'githubDir': {
@@ -292,7 +276,7 @@ void main() {
 
     test('first-found default wins (.github > root > docs)', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'githubFile': {'text': 'gh'},
@@ -309,7 +293,7 @@ void main() {
 
     test('dedupes named templates by lowercased display name', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'githubDir': {
@@ -338,7 +322,7 @@ void main() {
 
   group('GitHubGraphQLClient.fetchOpenPullRequestsBatch', () {
     test('empty repo list returns an empty result without a request', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => _json(r, {}));
       final res = await b.client.fetchOpenPullRequestsBatch(const []);
       expect(res.viewerLogin, isNull);
       expect(res.byIndex, isEmpty);
@@ -349,7 +333,7 @@ void main() {
       'chunks repos and tolerates errored aliases (null repository)',
       () async {
         final b = build(
-          (_) => _json({
+          (r) => _json(r, {
             'data': {
               'r0': {
                 'pullRequests': {
@@ -376,24 +360,36 @@ void main() {
     );
 
     test('continues when a chunk returns no data', () async {
-      final b = build((_) => _json({'data': null}));
+      final b = build((r) => _json(r, {'data': null}));
       final res = await b.client.fetchOpenPullRequestsBatch(const [
         (owner: 'o', name: 'a'),
       ]);
       expect(res.byIndex, isEmpty);
     });
+
+    test(
+      'a cancelled chunk resolves to no repos rather than throwing',
+      () async {
+        final b = build((r) => throw RhttpCancelException(r));
+        final res = await b.client.fetchOpenPullRequestsBatch(const [
+          (owner: 'o', name: 'a'),
+        ]);
+        expect(res.byIndex, isEmpty);
+        expect(b.fake.requests, hasLength(1));
+      },
+    );
   });
 
   group('GitHubGraphQLClient.fetchOpenPullRequestsChecks', () {
     test('empty repos → empty map', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => _json(r, {}));
       expect(await b.client.fetchOpenPullRequestsChecks(const []), isEmpty);
       expect(b.fake.requests, isEmpty);
     });
 
     test('decodes rollup state + review decision per PR number', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'r0': {
               'pullRequests': {
@@ -469,7 +465,7 @@ void main() {
     };
 
     test('one repo per request, in small pages', () async {
-      final b = build((_) => _json(rollup('SUCCESS')));
+      final b = build((r) => _json(r, rollup('SUCCESS')));
       await b.client.fetchOpenPullRequestsChecks(const [
         (owner: 'o', name: 'a'),
         (owner: 'o', name: 'b'),
@@ -482,9 +478,7 @@ void main() {
             'statusCheckRollup is the query GitHub 502s/504s on, so each '
             'repo is its own request',
       );
-      final query =
-          (b.fake.requests.first.data as Map<String, dynamic>)['query']
-              as String;
+      final query = _bodyOf(b.fake.requests.first)['query'] as String;
       expect(query, contains('first: 25'));
       expect(query, isNot(contains('r1:')));
     });
@@ -504,7 +498,7 @@ void main() {
       };
       var call = 0;
       final b = build(
-        (_) => _json(switch (call++) {
+        (r) => _json(r, switch (call++) {
           0 => page(1, cursor: 'c1'),
           1 => page(2, cursor: 'c2'),
           _ => page(3),
@@ -516,7 +510,7 @@ void main() {
 
       expect(b.fake.requests, hasLength(3));
       expect(
-        (b.fake.requests[1].data as Map<String, dynamic>)['query'] as String,
+        _bodyOf(b.fake.requests[1])['query'] as String,
         contains('after: "c1"'),
       );
       expect(res[0]!.keys, unorderedEquals([1, 2, 3]));
@@ -525,7 +519,7 @@ void main() {
     test('a page failing leaves only its own repo unread', () async {
       var call = 0;
       final b = build(
-        (_) => call++ == 0 ? _dioError(504) : _json(rollup('FAILURE')),
+        (r) => call++ == 0 ? _error(r, 504) : _json(r, rollup('FAILURE')),
       );
       final res = await b.client.fetchOpenPullRequestsChecks(const [
         (owner: 'o', name: 'a'),
@@ -540,7 +534,7 @@ void main() {
     });
 
     test('every chunk failing still throws', () async {
-      final b = build((_) => _dioError(504));
+      final b = build((r) => _error(r, 504));
       await expectLater(
         b.client.fetchOpenPullRequestsChecks(const [
           (owner: 'o', name: 'a'),
@@ -555,7 +549,7 @@ void main() {
     test(
       'searchReviewRequestedPullRequests short-circuits on empty inputs',
       () async {
-        final b = build((_) => _json({}));
+        final b = build((r) => _json(r, {}));
         expect(
           await b.client.searchReviewRequestedPullRequests(
             reviewerLogin: '',
@@ -576,7 +570,7 @@ void main() {
 
     test('searchReviewRequestedPullRequests returns raw PR nodes', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'search': {
               'nodes': [
@@ -599,7 +593,7 @@ void main() {
       'searchReviewedByPullRequests returns (repoFullName,number) pairs',
       () async {
         final b = build(
-          (_) => _json({
+          (r) => _json(r, {
             'data': {
               'search': {
                 'nodes': [
@@ -631,7 +625,7 @@ void main() {
     );
 
     test('searchPullRequestNodes returns [] for empty repos', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => _json(r, {}));
       expect(
         await b.client.searchPullRequestNodes(
           searchQualifiers: 'x',
@@ -643,7 +637,7 @@ void main() {
 
     test('searchPullRequestNodes decodes matched nodes', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'search': {
               'nodes': [
@@ -663,7 +657,7 @@ void main() {
 
   group('GitHubGraphQLClient.prCountsByAuthor', () {
     test('returns zeros for empty login/repos', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => _json(r, {}));
       final r1 = await b.client.prCountsByAuthor(
         login: '',
         repos: const [(owner: 'o', name: 'r')],
@@ -676,7 +670,7 @@ void main() {
 
     test('sums issueCount across aliases', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'open': {'issueCount': 3},
             'draft': {'issueCount': 1},
@@ -693,7 +687,7 @@ void main() {
     });
 
     test('tolerates missing issueCount (defaults to 0)', () async {
-      final b = build((_) => _json({'data': {}}));
+      final b = build((r) => _json(r, {'data': {}}));
       final r = await b.client.prCountsByAuthor(
         login: 'me',
         repos: const [(owner: 'o', name: 'r')],
@@ -705,7 +699,7 @@ void main() {
   group('GitHubGraphQLClient getUserProfile / getUserContributions', () {
     test('getUserProfile parses a full profile', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repositoryOwner': {
               '__typename': 'User',
@@ -738,7 +732,7 @@ void main() {
 
     test('getUserProfile returns null when repositoryOwner is null', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {'repositoryOwner': null},
         }),
       );
@@ -747,7 +741,7 @@ void main() {
 
     test('getUserProfile POSTs its variables', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repositoryOwner': {
               '__typename': 'User',
@@ -759,7 +753,7 @@ void main() {
         }),
       );
       await b.client.getUserProfile(login: 'sam');
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _bodyOf(b.fake.requests.single);
       expect(body['query'], contains('repositoryOwner(login: \$login)'));
       final variables = body['variables'] as Map;
       expect(variables['login'], 'sam');
@@ -773,7 +767,7 @@ void main() {
     // complete profile and blanked the hover card.
     test('getUserProfile keeps a partial answer alongside errors', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repositoryOwner': {
               '__typename': 'User',
@@ -813,7 +807,7 @@ void main() {
 
     test('getUserProfile throws when errors come back with no owner', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {'repositoryOwner': null},
           'errors': [
             {'message': 'Bad credentials'},
@@ -832,7 +826,7 @@ void main() {
 
     test('getUserProfile maps an organization owner', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repositoryOwner': {
               '__typename': 'Organization',
@@ -858,11 +852,11 @@ void main() {
     test(
       'getUserProfile does not throw when GitHub cannot resolve a User',
       () async {
-        final b = build((o) {
-          if (o.method == 'GET') {
-            return _json({'message': 'Not Found'}, status: 404);
+        final b = build((r) {
+          if (r.method.value == 'GET') {
+            return _json(r, {'message': 'Not Found'}, status: 404);
           }
-          return _json({
+          return _json(r, {
             'data': {'repositoryOwner': null},
             'errors': [
               {
@@ -878,9 +872,9 @@ void main() {
     );
 
     test('getUserProfile falls back to GET /apps/{slug}', () async {
-      final b = build((o) {
-        if (o.path == '/apps/parced') {
-          return _json({
+      final b = build((r) {
+        if (r.url == '/apps/parced') {
+          return _json(r, {
             'id': 42,
             'slug': 'parced',
             'name': 'Parced',
@@ -889,7 +883,7 @@ void main() {
             'external_url': 'https://parced.example',
           });
         }
-        return _json({
+        return _json(r, {
           'data': {'repositoryOwner': null},
           'errors': [
             {
@@ -909,11 +903,11 @@ void main() {
         profile?.avatarUrl,
         'https://avatars.githubusercontent.com/in/42?v=4',
       );
-      expect(b.fake.requests.map((r) => r.path), ['/graphql', '/apps/parced']);
+      expect(b.fake.requests.map((r) => r.url), ['/graphql', '/apps/parced']);
     });
 
     test('getUserProfile does not query GitHub App bot logins', () async {
-      final b = build((_) => _json({'data': {}}));
+      final b = build((r) => _json(r, {'data': {}}));
       expect(await b.client.getUserProfile(login: 'renovate[bot]'), isNull);
       expect(await b.client.getUserProfile(login: 'dependabot[bot]'), isNull);
       expect(
@@ -925,7 +919,7 @@ void main() {
 
     test('getUserContributions returns the parsed calendar', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'user': {
               'contributionCalendar': {'totalContributions': 7, 'weeks': []},
@@ -939,7 +933,7 @@ void main() {
 
     test('getUserContributions returns null when calendar missing', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {'user': null},
         }),
       );
@@ -947,7 +941,7 @@ void main() {
     });
 
     test('getUserContributions does not query GitHub App bot logins', () async {
-      final b = build((_) => _json({'data': {}}));
+      final b = build((r) => _json(r, {'data': {}}));
       expect(
         await b.client.getUserContributions(login: 'renovate[bot]'),
         isNull,
@@ -959,7 +953,7 @@ void main() {
   group('GitHubGraphQLClient.getPullRequestReviewState', () {
     test('returns empty state when pullRequest is null', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {'pullRequest': null},
           },
@@ -980,7 +974,7 @@ void main() {
       'maps pending users + teams + completed reviews with onBehalfOf',
       () async {
         final b = build(
-          (_) => _json({
+          (r) => _json(r, {
             'data': {
               'repository': {
                 'pullRequest': {
@@ -1073,7 +1067,7 @@ void main() {
 
     test('completed review with empty author login is skipped', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'pullRequest': {
@@ -1100,7 +1094,7 @@ void main() {
 
     test('pending team without avatarUrl uses databaseId CDN path', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'pullRequest': {
@@ -1136,7 +1130,7 @@ void main() {
 
     test('maps isDraft from the pull request', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'repository': {
               'pullRequest': {'state': 'OPEN', 'isDraft': true},
@@ -1151,7 +1145,7 @@ void main() {
       );
       expect(state.isDraft, isTrue);
       expect(state.prState, 'OPEN');
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _bodyOf(b.fake.requests.single);
       expect(body['query'], contains('isDraft'));
     });
   });
@@ -1159,7 +1153,7 @@ void main() {
   group('GitHubGraphQLClient _runQuery error mapping', () {
     test('a GraphQL errors array maps to NetworkException', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'errors': [
             {'message': 'field x missing'},
           ],
@@ -1171,8 +1165,8 @@ void main() {
       );
     });
 
-    test('a non-200 transport error maps via mapDioException', () async {
-      final b = build((_) => _dioError(403));
+    test('a non-200 transport error maps via mapHttpException', () async {
+      final b = build((r) => _error(r, 403));
       await expectLater(
         b.client.getUserProfile(login: 'x'),
         throwsA(isA<NetworkException>()),
@@ -1181,7 +1175,7 @@ void main() {
   });
 
   group('GitHubGraphQLClient searchViewerPullRequestActivity', () {
-    ResponseBody emptyLanes(RequestOptions _) => _json({
+    HttpResponse emptyLanes(HttpRequest request) => _json(request, {
       'data': {
         'reviewRequested': {'nodes': <Object>[]},
         'mentioned': {'nodes': <Object>[]},
@@ -1199,7 +1193,7 @@ void main() {
       final b = build(emptyLanes);
       await b.client.searchViewerPullRequestActivity();
 
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _bodyOf(b.fake.requests.single);
       final query = body['query'] as String;
       final variables = (body['variables'] as Map).cast<String, Object?>();
 
@@ -1225,9 +1219,8 @@ void main() {
       await b.client.searchViewerPullRequestActivity(
         since: DateTime.utc(2026, 1, 2, 3, 4, 5),
       );
-      final variables =
-          ((b.fake.requests.single.data as Map)['variables'] as Map)
-              .cast<String, Object?>();
+      final variables = (_bodyOf(b.fake.requests.single)['variables'] as Map)
+          .cast<String, Object?>();
 
       // Team review requests ride `review-requested:` — `user-review-requested:`
       // would silently drop every request made of a team the viewer is in.
@@ -1249,7 +1242,7 @@ void main() {
 
     test('decodes the four lanes and skips unusable nodes', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'reviewRequested': {
               'nodes': [
@@ -1296,7 +1289,7 @@ void main() {
 
     test('a missing lane decodes as empty rather than throwing', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {
             'reviewRequested': {'nodes': <Object>[]},
           },
@@ -1311,7 +1304,7 @@ void main() {
 
     test('a GraphQL error surfaces as NetworkException', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'errors': [
             {'message': r'Variable $first of type Int! ...'},
           ],
@@ -1327,10 +1320,10 @@ void main() {
   group('GitHubGraphQLClient review reactions', () {
     test('listReviewReactions walks pages and shortcodes contents', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
         final hasNext = page == 1;
-        return _json({
+        return _json(r, {
           'data': {
             'repository': {
               'pullRequest': {
@@ -1393,12 +1386,12 @@ void main() {
 
     test('addReaction maps the shortcode to the enum name', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {'addReaction': null},
         }),
       );
       await b.client.addReaction(subjectId: 'PRR_1', content: '+1');
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _bodyOf(b.fake.requests.single);
       expect(body['query'], contains('addReaction'));
       expect((body['variables'] as Map)['subject'], 'PRR_1');
       expect((body['variables'] as Map)['content'], 'THUMBS_UP');
@@ -1406,12 +1399,12 @@ void main() {
 
     test('removeReaction sends the reaction node id', () async {
       final b = build(
-        (_) => _json({
+        (r) => _json(r, {
           'data': {'removeReaction': null},
         }),
       );
       await b.client.removeReaction(reactionId: 'REACT_1');
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _bodyOf(b.fake.requests.single);
       expect(body['query'], contains('removeReaction'));
       expect((body['variables'] as Map)['reactionId'], 'REACT_1');
     });
@@ -1420,9 +1413,9 @@ void main() {
   group('GitHubGraphQLClient profile activity', () {
     test('paginates every visible team member', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
-        return _json({
+        return _json(r, {
           'data': {
             'organization': {
               'team': {
@@ -1460,15 +1453,15 @@ void main() {
       expect(profile?.organization, 'acme');
       expect(profile?.memberCount, 2);
       expect(profile?.members.map((member) => member.login), ['ada', 'grace']);
-      final secondBody = b.fake.requests[1].data as Map<String, dynamic>;
+      final secondBody = _bodyOf(b.fake.requests[1]);
       expect((secondBody['variables'] as Map)['after'], 'member-cursor');
     });
 
     test('chunks team authors while preserving exact outcome totals', () async {
       var request = 0;
-      final b = build((_) {
+      final b = build((r) {
         request++;
-        return _json({
+        return _json(r, {
           'data': {
             'open': {'issueCount': request},
             'draft': {'issueCount': request},
@@ -1485,12 +1478,8 @@ void main() {
 
       expect(b.fake.requests, hasLength(2));
       expect(counts, (open: 3, draft: 3, merged: 3, closed: 3));
-      final firstVariables =
-          (b.fake.requests.first.data as Map<String, dynamic>)['variables']
-              as Map;
-      final secondVariables =
-          (b.fake.requests.last.data as Map<String, dynamic>)['variables']
-              as Map;
+      final firstVariables = _bodyOf(b.fake.requests.first)['variables'] as Map;
+      final secondVariables = _bodyOf(b.fake.requests.last)['variables'] as Map;
       expect(firstVariables['open'], contains('author:user9'));
       expect(firstVariables['open'], isNot(contains('author:user10')));
       expect(secondVariables['open'], contains('author:user10'));
@@ -1500,7 +1489,7 @@ void main() {
       'returns detailed all-state PR nodes for percentile analysis',
       () async {
         final b = build(
-          (_) => _json({
+          (r) => _json(r, {
             'data': {
               'search': {
                 'issueCount': 1,
@@ -1526,9 +1515,7 @@ void main() {
         expect(result.truncated, isFalse);
         expect(result.nodes, hasLength(1));
         expect(result.nodes.single['number'], 42);
-        final variables =
-            (b.fake.requests.single.data as Map<String, dynamic>)['variables']
-                as Map;
+        final variables = _bodyOf(b.fake.requests.single)['variables'] as Map;
         expect(variables['q'], contains('author:ada'));
         expect(variables['q'], contains('repo:acme/app'));
       },

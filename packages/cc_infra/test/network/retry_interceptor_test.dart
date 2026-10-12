@@ -1,267 +1,202 @@
-import 'dart:typed_data';
-
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/retry_interceptor.dart';
-import 'package:dio/dio.dart';
+// rhttp ships an interceptor of its own with the same name as the cc_infra
+// one this file uses; hide it so the local class is unambiguous.
+import 'package:rhttp/rhttp.dart' hide RetryInterceptor;
 import 'package:test/test.dart';
 
-class _ScriptingAdapter implements HttpClientAdapter {
-  _ScriptingAdapter(this._handler);
-  final ResponseBody Function(RequestOptions, int) _handler;
-  int _call = 0;
+/// Pins [RetryInterceptor]'s semantics against a scripted transport: how many
+/// attempts a failure earns, how long each waits, when a `retry-after` hint is
+/// honored or refused, and when the rate-limit circuit opens and closes.
+///
+/// The transport is the interceptor's `send` seam rather than a socket: the
+/// retry logic is pure decision-making over exceptions and headers, and every
+/// assertion below is about that decision. The default seam —
+/// [HttpRequest.send], i.e. the request's own client and interceptor chain — is
+/// the production path, exercised end to end by the server smoke test.
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    final index = _call;
-    _call++;
-    return _handler(options, index);
-  }
+HttpRequest _request([String url = 'https://example.test/x']) =>
+    HttpRequest(method: HttpMethod.get, url: url);
 
-  int get callCount => _call;
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _ok() => ResponseBody.fromString(
-  '{"ok":true}',
-  200,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
+HttpTextResponse _ok(HttpRequest request) => HttpTextResponse(
+  remoteIp: null,
+  request: request,
+  version: HttpVersion.http1_1,
+  statusCode: 200,
+  headers: const [],
+  body: '{"ok":true}',
 );
 
-DioException _err(
-  RequestOptions options, {
-  DioExceptionType type = DioExceptionType.connectionTimeout,
-  int? status,
-  Map<String, List<String>>? headers,
-}) => DioException(
-  requestOptions: options,
-  type: type,
-  response: status == null
-      ? null
-      : Response(
-          requestOptions: options,
-          statusCode: status,
-          data: '',
-          headers: Headers.fromMap(headers ?? const {}),
-        ),
+RhttpStatusCodeException _status(
+  HttpRequest request,
+  int statusCode, {
+  Map<String, String> headers = const {},
+}) => RhttpStatusCodeException(
+  request: request,
+  statusCode: statusCode,
+  headers: [for (final entry in headers.entries) (entry.key, entry.value)],
+  body: '',
 );
+
+int _attemptOf(HttpRequest request) =>
+    request.additionalData[RetryInterceptor.retryCountKey] as int;
 
 void main() {
-  group('RetryInterceptor', () {
-    test('resolves on first success without retry', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter((_, _) => _ok());
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(dio: dio, baseDelay: const Duration(milliseconds: 1)),
+  group('RetryInterceptor attempts', () {
+    test('retries a timeout and resolves with the server answer', () async {
+      final sent = <HttpRequest>[];
+      var calls = 0;
+      final retry = RetryInterceptor(
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          sent.add(request);
+          calls++;
+          if (calls < 2) {
+            throw RhttpTimeoutException(request);
+          }
+          return _ok(request);
+        },
       );
 
-      final response = await dio.get<String>('/x');
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 1);
+      final result = await retry.onError(RhttpTimeoutException(_request()));
+
+      expect(
+        (result as InterceptorResolveResult<RhttpException>)
+            .response
+            .statusCode,
+        200,
+      );
+      expect(calls, 2);
+      expect(sent.map(_attemptOf), [1, 2]);
     });
 
-    test('retries on connectionTimeout then succeeds', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (options, index) => index < 2 ? throw _err(options) : _ok(),
-      );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(dio: dio, baseDelay: const Duration(milliseconds: 1)),
+    test('stops after maxRetries and hands the caller a failure', () async {
+      final sent = <HttpRequest>[];
+      final original = _request();
+      final retry = RetryInterceptor(
+        maxRetries: 2,
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          sent.add(request);
+          throw RhttpTimeoutException(request);
+        },
       );
 
-      final response = await dio.get<String>('/x');
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 3);
+      final result = await retry.onError(RhttpTimeoutException(original));
+
+      expect(result, isA<InterceptorNextResult<RhttpException>>());
+      expect(sent.map(_attemptOf), [1, 2]);
+      // The failure the caller sees must name the caller's OWN request: the
+      // dedup fan-out and the logger both key their behaviour off
+      // `exception.request`, and a re-issued request carries the retry marker
+      // they deliberately stand down for.
+      expect(result.value!.request, same(original));
     });
 
-    test('stops retrying after maxRetries and propagates the error', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter((options, _) => throw _err(options));
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 2,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
+    test('a 404 is not retried', () async {
+      var calls = 0;
+      final retry = RetryInterceptor(
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
 
-      await expectLater(dio.get<String>('/x'), throwsA(isA<DioException>()));
-      // 1 initial + 2 retries = 3 fetch calls.
-      expect(adapter.callCount, 3);
+      final result = await retry.onError(_status(_request(), 404));
+
+      expect(result.value, isNull, reason: 'the failure travels unchanged');
+      expect(calls, 0);
     });
 
-    test('retries on 429 with retry-after header', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter((options, index) {
-        if (index == 0) {
-          throw _err(
-            options,
-            type: DioExceptionType.badResponse,
-            status: 429,
-            headers: const {
-              'retry-after': ['1'],
-            },
-          );
-        }
-        return _ok();
-      });
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
+    test('a cancellation is not retried', () async {
+      var calls = 0;
+      final retry = RetryInterceptor(
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
 
-      final response = await dio.get<String>('/x');
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 2);
+      await retry.onError(RhttpCancelException(_request()));
+
+      expect(calls, 0);
     });
 
-    test('retries on 5xx server error', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter((options, index) {
-        if (index == 0) {
-          throw _err(options, type: DioExceptionType.badResponse, status: 503);
-        }
-        return _ok();
-      });
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
+    test('a connection failure is not retried', () async {
+      var calls = 0;
+      final retry = RetryInterceptor(
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
 
-      final response = await dio.get<String>('/x');
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 2);
-    });
+      await retry.onError(RhttpConnectionException(_request(), 'refused'));
 
-    test('does not retry on 4xx client error', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (options, _) => throw _err(
-          options,
-          type: DioExceptionType.badResponse,
-          status: 404,
-        ),
-      );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
-      );
-
-      await expectLater(dio.get<String>('/x'), throwsA(isA<DioException>()));
-      expect(adapter.callCount, 1);
-    });
-
-    test('exponential backoff grows, with full jitter', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter((options, _) => throw _err(options));
-      dio.httpClientAdapter = adapter;
-      final start = DateTime.now();
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 50),
-        ),
-      );
-
-      await expectLater(dio.get<String>('/x'), throwsA(isA<DioException>()));
-      final elapsed = DateTime.now().difference(start);
-      // The unjittered targets are base * (1 + 2 + 4) = 350ms. FULL JITTER
-      // sleeps in [50%, 100%] of each target, so the total lands in
-      // [175ms, 350ms] — the jitter is what stops N requests that failed
-      // together from retrying in lockstep forever, so the floor is half the
-      // nominal by design, not by accident.
-      expect(elapsed.inMilliseconds, greaterThanOrEqualTo(150));
-      // A generous ceiling: proves the backoff is still BOUNDED (a regression
-      // that dropped the cap or the jitter's upper half would blow past it).
-      expect(elapsed.inMilliseconds, lessThan(2000));
+      expect(calls, 0);
     });
 
     test(
-      'retry-after with non-numeric falls back to baseDelay seconds',
+      'a 429 then a 200: one retry, and the retry-after is honored',
       () async {
-        final dio = Dio();
-        final adapter = _ScriptingAdapter((options, index) {
-          if (index == 0) {
-            throw _err(
-              options,
-              type: DioExceptionType.badResponse,
-              status: 429,
-              headers: const {
-                'retry-after': ['soon'],
-              },
-            );
-          }
-          return _ok();
-        });
-        dio.httpClientAdapter = adapter;
-        dio.interceptors.add(
-          RetryInterceptor(
-            dio: dio,
-            maxRetries: 3,
-            // small so retry-after='soon' (parsed as 0 seconds) resolves quickly.
-            baseDelay: const Duration(milliseconds: 1),
-          ),
+        var calls = 0;
+        final retry = RetryInterceptor(
+          baseDelay: const Duration(milliseconds: 1),
+          send: (request) async {
+            calls++;
+            if (calls == 1) {
+              throw _status(request, 429, headers: {'retry-after': '1'});
+            }
+            return _ok(request);
+          },
         );
 
-        final response = await dio.get<String>('/x');
-        expect(response.statusCode, 200);
-        expect(adapter.callCount, 2);
+        final start = DateTime.now();
+        final result = await retry.onError(_status(_request(), 429));
+
+        expect(
+          (result as InterceptorResolveResult<RhttpException>)
+              .response
+              .statusCode,
+          200,
+        );
+        // One attempt failed with the hint, the second answered.
+        expect(calls, 2);
+        expect(
+          DateTime.now().difference(start).inMilliseconds,
+          greaterThanOrEqualTo(900),
+        );
       },
     );
 
-    test('retry-after with numeric value is honored as delay', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter((options, index) {
-        if (index == 0) {
-          throw _err(
-            options,
-            type: DioExceptionType.badResponse,
-            status: 503,
-            headers: const {
-              'retry-after': ['1'],
-            },
-          );
-        }
-        return _ok();
-      });
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
+    test('a retry-after with a non-numeric value falls back to baseDelay '
+        'seconds', () async {
+      var calls = 0;
+      final retry = RetryInterceptor(
+        // `soon` parses as 0 seconds, so the retry is immediate.
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
 
       final start = DateTime.now();
-      final response = await dio.get<String>('/x');
-      final elapsed = DateTime.now().difference(start);
+      final result = await retry.onError(
+        _status(_request(), 429, headers: {'retry-after': 'soon'}),
+      );
 
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 2);
-      expect(elapsed.inMilliseconds, greaterThanOrEqualTo(900));
+      expect(
+        (result as InterceptorResolveResult<RhttpException>)
+            .response
+            .statusCode,
+        200,
+      );
+      expect(calls, 1);
+      expect(DateTime.now().difference(start).inMilliseconds, lessThan(500));
     });
 
     test('a retry-after past the ceiling gives up NOW instead of waiting it '
@@ -269,29 +204,23 @@ void main() {
       // `api.anthropic.com/api/oauth/usage` answers a stale token with
       // `429 retry-after: 3600`. Honouring that literally slept an hour, three
       // times over, inside a handler with a 60s budget — invisibly, because the
-      // sleep sits BETWEEN requests where no per-request timeout reaches it and
-      // the error is not forwarded until the retries are exhausted.
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (options, _) => throw _err(
-          options,
-          type: DioExceptionType.badResponse,
-          status: 429,
-          headers: const {
-            'retry-after': ['3600'],
-          },
-        ),
+      // sleep sits BETWEEN requests where no per-request timeout reaches it.
+      var calls = 0;
+      final retry = RetryInterceptor(
+        maxRetryAfter: const Duration(seconds: 10),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(RetryInterceptor(dio: dio));
 
       final start = DateTime.now();
-      await expectLater(
-        dio.get<String>('/x').timeout(const Duration(seconds: 5)),
-        throwsA(isA<DioException>()),
+      final result = await retry.onError(
+        _status(_request(), 429, headers: {'retry-after': '3600'}),
       );
 
-      expect(adapter.callCount, 1, reason: 'no retry was attempted');
+      expect(result.value, isNotNull);
+      expect(calls, 0, reason: 'no retry was attempted');
       expect(
         DateTime.now().difference(start).inSeconds,
         lessThan(2),
@@ -302,256 +231,212 @@ void main() {
     test('a hint AT the ceiling is still honoured', () async {
       // The clamp must not turn every rate-limit hint into a hard failure —
       // ordinary 1-10s hints are exactly what retrying is for.
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (options, index) => index == 0
-            ? throw _err(
-                options,
-                type: DioExceptionType.badResponse,
-                status: 429,
-                headers: const {
-                  'retry-after': ['1'],
-                },
-              )
-            : _ok(),
-      );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(dio: dio, maxRetryAfter: const Duration(seconds: 1)),
+      var calls = 0;
+      final retry = RetryInterceptor(
+        maxRetryAfter: const Duration(seconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
 
-      final response = await dio.get<String>('/x');
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 2);
+      final result = await retry.onError(
+        _status(_request(), 429, headers: {'retry-after': '1'}),
+      );
+
+      expect(
+        (result as InterceptorResolveResult<RhttpException>)
+            .response
+            .statusCode,
+        200,
+      );
+      expect(calls, 1);
     });
 
-    test('receiveTimeout is retried', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (options, index) => index < 1
-            ? throw _err(options, type: DioExceptionType.receiveTimeout)
-            : _ok(),
-      );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
-      );
-
-      final response = await dio.get<String>('/x');
-      expect(response.statusCode, 200);
-      expect(adapter.callCount, 2);
-    });
-
-    test('cancel error is not retried (propagated immediately)', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (options, _) => throw _err(options, type: DioExceptionType.cancel),
-      );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
-        ),
-      );
-
-      await expectLater(dio.get<String>('/x'), throwsA(isA<DioException>()));
-      expect(adapter.callCount, 1);
-    });
-
-    test('onResponse: x-ratelimit-remaining=0 delivers the 200 immediately '
-        '(no hostage delay)', () async {
-      final dio = Dio();
-      final adapter = _ScriptingAdapter(
-        (_, _) => ResponseBody.fromString(
-          '{"ok":true}',
-          200,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-            'x-ratelimit-remaining': ['0'],
-            'retry-after': ['1'],
-          },
-        ),
-      );
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(dio: dio, baseDelay: const Duration(milliseconds: 1)),
+    test('exponential backoff grows, with full jitter', () async {
+      var calls = 0;
+      final retry = RetryInterceptor(
+        maxRetries: 3,
+        baseDelay: const Duration(milliseconds: 50),
+        send: (request) async {
+          calls++;
+          throw RhttpTimeoutException(request);
+        },
       );
 
       final start = DateTime.now();
-      final response = await dio.get<String>('/x');
+      await retry.onError(RhttpTimeoutException(_request()));
       final elapsed = DateTime.now().difference(start);
 
-      // The successful response is NOT held for `retry-after`; the breaker
-      // gates the NEXT request instead.
-      expect(response.statusCode, 200);
-      expect(elapsed.inMilliseconds, lessThan(500));
+      expect(calls, 3);
+      // The unjittered targets are base * (1 + 2 + 4) = 350ms. FULL JITTER
+      // sleeps in [50%, 100%] of each target, so the total lands in
+      // [175ms, 350ms] — the jitter is what stops N requests that failed
+      // together from retrying in lockstep forever, so the floor is half the
+      // nominal by design, not by accident.
+      expect(elapsed.inMilliseconds, greaterThanOrEqualTo(150));
+      // A generous ceiling: proves the backoff is still BOUNDED (a regression
+      // that dropped the cap or the jitter's upper half would blow past it).
+      expect(elapsed.inMilliseconds, lessThan(2000));
     });
+  });
 
-    test('circuit breaker: after remaining=0 the NEXT request short-circuits '
-        'without a network call', () async {
-      final dio = Dio();
-      var networkCalls = 0;
+  group('RetryInterceptor rate-limit circuit breaker', () {
+    test('a successful response is delivered immediately, and a spent budget '
+        'arms the breaker for the NEXT request', () async {
+      var calls = 0;
       final futureReset =
           DateTime.now()
               .add(const Duration(seconds: 30))
               .millisecondsSinceEpoch ~/
           1000;
-      final adapter = _ScriptingAdapter((_, _) {
-        networkCalls++;
-        return ResponseBody.fromString(
-          '{"ok":true}',
-          200,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-            'x-ratelimit-remaining': ['0'],
-            'x-ratelimit-reset': ['$futureReset'],
-          },
-        );
-      });
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(dio: dio, baseDelay: const Duration(milliseconds: 1)),
+      final retry = RetryInterceptor(
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
       );
 
-      // First call exhausts the budget and arms the breaker.
-      final first = await dio.get<String>('/x');
-      expect(first.statusCode, 200);
-      expect(networkCalls, 1);
+      final start = DateTime.now();
+      final response = HttpTextResponse(
+        remoteIp: null,
+        request: _request(),
+        version: HttpVersion.http1_1,
+        statusCode: 200,
+        headers: [
+          ('x-ratelimit-remaining', '0'),
+          ('x-ratelimit-reset', '$futureReset'),
+        ],
+        body: '{"ok":true}',
+      );
+      final passed = await retry.afterResponse(response);
 
-      // Second call must be rejected LOCALLY as a rate limit — no fetch.
+      // The successful response is NOT held for the window; the breaker gates
+      // the NEXT request instead.
+      expect(passed.value, isNull);
+      expect(DateTime.now().difference(start).inMilliseconds, lessThan(200));
+
       await expectLater(
-        dio.get<String>('/x'),
+        retry.beforeRequest(_request()),
         throwsA(
-          isA<DioException>().having(
-            (e) => e.response?.statusCode,
+          isA<RhttpStatusCodeException>().having(
+            (e) => e.statusCode,
             'statusCode',
             403,
           ),
         ),
       );
-      expect(networkCalls, 1, reason: 'the breaker must not hit the network');
+      expect(calls, 0, reason: 'the breaker must not hit the network');
     });
 
-    test('circuit breaker: a 403 rate-limit error arms the breaker and is not '
-        'retried', () async {
-      final dio = Dio();
-      var networkCalls = 0;
+    test('the synthetic short-circuit reads as a rate limit, not an auth '
+        'failure', () async {
       final futureReset =
           DateTime.now()
               .add(const Duration(seconds: 30))
               .millisecondsSinceEpoch ~/
           1000;
-      final adapter = _ScriptingAdapter((options, _) {
-        networkCalls++;
-        throw _err(
-          options,
-          type: DioExceptionType.badResponse,
-          status: 403,
-          headers: {
-            'x-ratelimit-remaining': ['0'],
-            'x-ratelimit-reset': ['$futureReset'],
-          },
-        );
-      });
-      dio.httpClientAdapter = adapter;
-      dio.interceptors.add(
-        RetryInterceptor(
-          dio: dio,
-          maxRetries: 3,
-          baseDelay: const Duration(milliseconds: 1),
+      final headers = [
+        ('x-ratelimit-remaining', '0'),
+        ('x-ratelimit-reset', '$futureReset'),
+      ];
+
+      // A 403 rate-limit error arms the breaker and is not retried.
+      var calls = 0;
+      final armed =
+          await RetryInterceptor(
+            baseDelay: const Duration(milliseconds: 1),
+            send: (request) async {
+              calls++;
+              return _ok(request);
+            },
+          ).onError(
+            _status(
+              _request(),
+              403,
+              headers: {
+                'x-ratelimit-remaining': '0',
+                'x-ratelimit-reset': '$futureReset',
+              },
+            ),
+          );
+      expect(armed.value, isNull);
+      expect(calls, 0);
+
+      final retry = RetryInterceptor();
+      await retry.afterResponse(
+        HttpTextResponse(
+          remoteIp: null,
+          request: _request(),
+          version: HttpVersion.http1_1,
+          statusCode: 200,
+          headers: headers,
+          body: '',
         ),
       );
 
-      await expectLater(dio.get<String>('/x'), throwsA(isA<DioException>()));
-      // 403 is not retried (1 call only) and the window is now armed.
-      expect(networkCalls, 1);
-
-      await expectLater(dio.get<String>('/x'), throwsA(isA<DioException>()));
-      expect(networkCalls, 1, reason: 'breaker short-circuits the next call');
+      Object? thrown;
+      try {
+        await retry.beforeRequest(_request());
+      } on RhttpException catch (e) {
+        thrown = e;
+      }
+      expect(thrown, isA<RhttpStatusCodeException>());
+      // The whole point of the synthetic failure's shape: the caller's mapper
+      // reads it as a rate limit, exactly like the API's own 403.
+      expect(mapHttpException(thrown! as RhttpException).code, 'rate_limited');
     });
 
-    test(
-      'onResponse: x-ratelimit-remaining>0 passes through immediately',
-      () async {
-        final dio = Dio();
-        final adapter = _ScriptingAdapter(
-          (_, _) => ResponseBody.fromString(
-            '{"ok":true}',
-            200,
-            headers: {
-              Headers.contentTypeHeader: [Headers.jsonContentType],
-              'x-ratelimit-remaining': ['10'],
-            },
+    test('a budget that is not spent leaves the circuit closed', () async {
+      final retry = RetryInterceptor();
+
+      for (final headers in const [
+        {'x-ratelimit-remaining': '10'},
+        {'x-ratelimit-remaining': 'plenty'},
+        <String, String>{},
+      ]) {
+        await retry.afterResponse(
+          HttpTextResponse(
+            remoteIp: null,
+            request: _request(),
+            version: HttpVersion.http1_1,
+            statusCode: 200,
+            headers: [
+              for (final entry in headers.entries) (entry.key, entry.value),
+            ],
+            body: '',
           ),
         );
-        dio.httpClientAdapter = adapter;
-        dio.interceptors.add(
-          RetryInterceptor(
-            dio: dio,
-            baseDelay: const Duration(milliseconds: 1),
-          ),
-        );
+        final result = await retry.beforeRequest(_request());
+        expect(result.value, isNull, reason: 'no short-circuit');
+      }
+    });
 
-        final start = DateTime.now();
-        await dio.get<String>('/x');
-        final elapsed = DateTime.now().difference(start);
-        expect(elapsed.inMilliseconds, lessThan(200));
-      },
-    );
+    test('an elapsed window closes the circuit again', () async {
+      final retry = RetryInterceptor();
+      final pastReset =
+          DateTime.now()
+              .subtract(const Duration(minutes: 1))
+              .millisecondsSinceEpoch ~/
+          1000;
 
-    test(
-      'onResponse: no rate-limit header passes through immediately',
-      () async {
-        final dio = Dio();
-        final adapter = _ScriptingAdapter((_, _) => _ok());
-        dio.httpClientAdapter = adapter;
-        dio.interceptors.add(
-          RetryInterceptor(
-            dio: dio,
-            baseDelay: const Duration(milliseconds: 1),
-          ),
-        );
+      await retry.afterResponse(
+        HttpTextResponse(
+          remoteIp: null,
+          request: _request(),
+          version: HttpVersion.http1_1,
+          statusCode: 200,
+          headers: [
+            ('x-ratelimit-remaining', '0'),
+            ('x-ratelimit-reset', '$pastReset'),
+          ],
+          body: '',
+        ),
+      );
 
-        final start = DateTime.now();
-        await dio.get<String>('/x');
-        final elapsed = DateTime.now().difference(start);
-        expect(elapsed.inMilliseconds, lessThan(200));
-      },
-    );
-
-    test(
-      'onResponse: non-numeric x-ratelimit-remaining passes through',
-      () async {
-        final dio = Dio();
-        final adapter = _ScriptingAdapter(
-          (_, _) => ResponseBody.fromString(
-            '{"ok":true}',
-            200,
-            headers: {
-              Headers.contentTypeHeader: [Headers.jsonContentType],
-              'x-ratelimit-remaining': ['plenty'],
-            },
-          ),
-        );
-        dio.httpClientAdapter = adapter;
-        dio.interceptors.add(
-          RetryInterceptor(
-            dio: dio,
-            baseDelay: const Duration(milliseconds: 1),
-          ),
-        );
-
-        final start = DateTime.now();
-        await dio.get<String>('/x');
-        final elapsed = DateTime.now().difference(start);
-        expect(elapsed.inMilliseconds, lessThan(200));
-      },
-    );
+      final result = await retry.beforeRequest(_request());
+      expect(result.value, isNull);
+    });
   });
 }

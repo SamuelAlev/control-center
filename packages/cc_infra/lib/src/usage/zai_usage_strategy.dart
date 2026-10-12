@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// z.ai (Zhipu) GLM Coding Plan usage via
 /// `GET <base>/api/monitor/usage/quota/limit`.
@@ -10,16 +10,18 @@ import 'package:dio/dio.dart';
 /// z.ai / Zhipu host.
 class ZaiUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [ZaiUsageStrategy].
-  ZaiUsageStrategy({required this._dio})
+  ZaiUsageStrategy({required this._httpClient})
     : super(providerId: 'zai', displayName: 'z.ai');
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   static const _defaultBaseUrl = 'https://api.z.ai';
   static const _usagePath = '/api/monitor/usage/quota/limit';
 
   @override
-  Future<SubscriptionUsage> fetchAccount(SubscriptionUsageAccount account) async {
+  Future<SubscriptionUsage> fetchAccount(
+    SubscriptionUsageAccount account,
+  ) async {
     final key = account.apiKey?.trim() ?? '';
     if (key.isEmpty) {
       return unconfigured('Sign in to z.ai to see usage.');
@@ -39,7 +41,7 @@ class ZaiUsageStrategy extends SubscriptionUsageStrategy {
       }
       final url = '${base.replaceAll(RegExp(r'/+$'), '')}$_usagePath';
       final resp = await _get(url, key);
-      final windows = _parseWindows(resp.data);
+      final windows = _parseWindows(jsonObject(resp));
       if (windows.isEmpty) {
         return error('Could not read z.ai usage.');
       }
@@ -52,28 +54,26 @@ class ZaiUsageStrategy extends SubscriptionUsageStrategy {
   /// z.ai installs disagree on the auth scheme — some want the raw key in the
   /// `Authorization` header, others want `Bearer <key>`. Try raw first (the
   /// dominant convention) and fall back to Bearer on a 401/403.
-  Future<Response<Map<String, dynamic>>> _get(String url, String key) async {
-    Options opts(String auth) => Options(
-      responseType: ResponseType.json,
-      headers: {
-        'Authorization': auth,
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en',
-      },
-      sendTimeout: SubscriptionUsageStrategy.requestTimeout,
-      receiveTimeout: SubscriptionUsageStrategy.requestTimeout,
-    );
+  Future<HttpResponse> _get(String url, String key) async {
+    HttpHeaders headers(String auth) => HttpHeaders.rawMap({
+      'Authorization': auth,
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en',
+    });
     try {
-      return await _dio.getUri<Map<String, dynamic>>(
-        Uri.parse(url),
-        options: opts(key),
+      return await boundedRequest(
+        (token) =>
+            _httpClient.get(url, headers: headers(key), cancelToken: token),
       );
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
+    } on RhttpStatusCodeException catch (e) {
+      final code = e.statusCode;
       if (code == 401 || code == 403) {
-        return _dio.getUri<Map<String, dynamic>>(
-          Uri.parse(url),
-          options: opts('Bearer $key'),
+        return boundedRequest(
+          (token) => _httpClient.get(
+            url,
+            headers: headers('Bearer $key'),
+            cancelToken: token,
+          ),
         );
       }
       rethrow;

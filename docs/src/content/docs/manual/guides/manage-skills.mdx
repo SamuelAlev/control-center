@@ -1,19 +1,21 @@
 ---
 title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+description: Install and update workspace skills through the scan gate, then compare saved revisions with budgeted skill evaluations.
 ---
 
 This guide shows you how to fill a workspace with skills from GitHub: add a
 repository as a source, install the skills you want from it, and keep them
-current over time.
+current over time. You can also evaluate a saved revision against a matched
+baseline before deciding whether to keep it.
 
 The important thing to know before you start: **a source repository is
 untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/manual/concepts/agent-model/); this page stays
-on the doing.
+it. Every install passes through the antivirus scan gate before anything
+reaches disk or an agent prompt. That verdict is an admission check, not
+proof that a skill is safe or useful. Read the
+[agent model's skills section](/manual/concepts/agent-model/) for the
+installation model and [Evals and quality](/manual/concepts/evals-and-quality/)
+for how behavioral evidence differs from a scan.
 
 Skills live at **Settings → Workspace → Skills**
 (`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
@@ -79,6 +81,80 @@ the same scan gate as an install — a skill whose new version quarantines is
 refused and the version you had stays put. The old version's hash is kept as a
 rollback reference in the lock.
 
+## Evaluate a skill
+
+1. Open **Settings → Workspace → Skills**, select the installed skill and
+   save any edits. In **Skill evaluation**, check the package hash.
+2. Select **Start evaluation**. Choose a **Task corpus** matching the skill's
+   purpose and an **Adapter**. The built-in harness uses a configured provider
+   and tool-capable model. **Claude Code** uses the default managed Claude
+   account and a concrete model identifier; sign in under **Settings →
+   Adapters** first. It does not borrow the server operator's personal login.
+3. Choose a **Comparison** from the table below.
+4. Set **Repeats per task** (1–20) and **Budget (US cents)**. For example,
+   `100` means US$1. Select **Start evaluation** to authorize paid provider
+   work.
+5. Follow the campaign in **Observability → Quality**, or return through
+   **Open Quality** in the skill panel.
+
+For Claude Code and Codex OAuth subscriptions, the budget is an
+**API-equivalent usage stopping threshold**, not an invoice limit or a measure
+of subscription quota. `100` admits a US$1 threshold: an in-flight call may
+exceed it, but no further calls start once reported usage reaches it. Unknown
+usage also stops further calls. A small budget can leave the comparison
+partial; it does not promise completion of the selected corpus.
+
+API-key providers retain conservative per-call reservations from documented
+token limits and pricing. They can reject `100` before spending when one
+safely reserved call needs more. The error identifies the selected model and
+minimum reservation; choose a lower-cost model or increase that budget.
+
+| Comparison | Use it to answer |
+| --- | --- |
+| **Absent vs available** | Does normal discovery and use of this skill improve the result compared with not having it? |
+| **Previous vs current** | Does the update preserve or improve behavior against a previously captured revision? |
+| **Forced load vs absent** | Can the content help when loaded explicitly? This diagnoses loading problems; it does not demonstrate normal discovery. |
+| **Composition** | Does adding the candidate help or conflict with the selected ambient skills? The baseline keeps that same ambient inventory without the candidate. |
+
+**Previous vs current** needs a package hash from campaign history. Evaluate
+a revision before replacing it if you want to use it as a baseline;
+arbitrary Git history is not imported.
+
+Unsaved edits, an unavailable hash and read-only demo mode disable launch.
+The server also checks workspace/repository access, scan quarantine, action
+policy, model support, pricing and execution containment. Resolve a failed
+check rather than bypassing it. Provider/model identity is recorded, but a
+remote model alias does not freeze the provider's underlying weights.
+
+### Inspect, cancel and export
+
+Read coverage and spend alongside per-task outcomes and regressions. Open
+individual attempts to inspect observed skill loads, tool events, errors and
+verifier evidence. **Partial**, **stale** and **inconclusive** results are not
+recommendations to adopt a revision. A report's hash identifies the captured
+package, not necessarily the package currently installed.
+
+Use **Cancel run** for queued or active work. Completed attempts remain
+visible; cancellation does not refund provider work already performed.
+**Copy redacted JSON** copies a bounded evidence export to the clipboard,
+not a complete private-source replay bundle. See
+[Evals and quality](/manual/concepts/evals-and-quality/) for evidence and
+platform limits.
+
+### Reevaluate after updates
+
+Automatic paid reevaluation is **off by default**. After evaluating the
+current revision, choose a campaign under **Update policy configuration**
+and select **Enable update evaluations**. Changing this policy requires
+workspace administrator permission. The selected campaign supplies the
+corpus, adapter, provider/model, comparison, repetitions and budget.
+
+Subsequent admitted content changes schedule budgeted work; unchanged hashes
+are deduplicated. **Disable update evaluations** prevents future automatic
+admissions. Use **Cancel run** for an already admitted campaign. Historical
+reports stay attached to their original package hashes; reevaluation does
+not publish, enable or rewrite a skill.
+
 ## Uninstall a skill, remove a repository
 
 **Uninstall** (on an installed skill's detail view, or delete in the Installed
@@ -126,3 +202,4 @@ See [Repo-scoped skills](/manual/concepts/agent-model/#repo-scoped-skills) and
 ## Related concepts
 
 - [The agent model](/manual/concepts/agent-model/)
+- [Evals and quality](/manual/concepts/evals-and-quality/)

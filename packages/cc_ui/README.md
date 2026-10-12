@@ -21,6 +21,10 @@ Components under `lib/src/components/` cover buttons; text/select/toggle inputs;
 
 Decorated single-line `CcTextField` inputs reserve their control height (~40px default, ~32px compact) before a conditional suffix appears; a 32px clear button does not resize the field as text changes. Multiline fields grow with their content, while chromeless fields leave sizing to their host.
 
+`CcTextField` owns a distinct semantic field boundary with explicit enabled/read-only state. Keep that declaration when wrapping `EditableText`: Flutter web uses it to decide whether its accessibility input accepts typing.
+
+Pass `presentation: CcDialogPresentation.immediate` to `showCcDialog` for keyboard-first command surfaces. It removes route transitions and backdrop blur without replacing the shared focus trap, Escape/barrier policy, text style or focus restoration. Standard dialogs retain their existing animation/reduced-motion policy.
+
 ## Adding a component
 
 1. Build `lib/src/components/cc_<name>.dart` on `flutter/widgets.dart`, using `context.designSystem` or shared `CcCardTokens`/`CcInputTokens` resolvers.

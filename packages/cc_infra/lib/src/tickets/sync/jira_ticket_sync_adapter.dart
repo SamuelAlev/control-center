@@ -5,17 +5,18 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_status_normalizer.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_adapter.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_delta.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// [TicketSyncAdapter] for Jira Cloud, over the REST v3 API. `vendorProjectId`
-/// is the Jira project key (e.g. `PROJ`). Construct from a [Dio] authorized with
-/// Basic auth (email:api-token) and based at the site's
+/// is the Jira project key (e.g. `PROJ`). Construct from an [RhttpClient]
+/// authorized with Basic auth (email:api-token) and based at the site's
 /// `https://<site>.atlassian.net`.
 class JiraTicketSyncAdapter implements TicketSyncAdapter {
-  /// Creates a [JiraTicketSyncAdapter] over an authorized [Dio].
-  JiraTicketSyncAdapter(this._dio, {this.issueTypeName = 'Task'});
+  /// Creates a [JiraTicketSyncAdapter] over an authorized [RhttpClient].
+  JiraTicketSyncAdapter(this._httpClient, {this.issueTypeName = 'Task'});
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Issue type used when creating issues.
   final String issueTypeName;
@@ -32,15 +33,15 @@ class JiraTicketSyncAdapter implements TicketSyncAdapter {
     required String vendorProjectId,
     DateTime? since,
   }) async {
-    final response = await _dio.get<Map<String, dynamic>>(
+    final response = await _httpClient.get(
       '/rest/api/3/search',
-      queryParameters: {
+      query: {
         'jql': 'project = "$vendorProjectId" ORDER BY updated DESC',
-        'maxResults': 100,
+        'maxResults': '100',
         'fields': 'summary,description,status,priority,assignee,labels,updated',
       },
     );
-    final issues = (response.data?['issues'] as List?) ?? const [];
+    final issues = (_jsonObject(response)?['issues'] as List?) ?? const [];
     return issues.whereType<Map<String, dynamic>>().map(_toDelta).toList();
   }
 
@@ -53,9 +54,9 @@ class JiraTicketSyncAdapter implements TicketSyncAdapter {
     String vendorProjectId = '',
   }) async {
     if (externalId == null || externalId.isEmpty) {
-      final response = await _dio.post<Map<String, dynamic>>(
+      final response = await _httpClient.post(
         '/rest/api/3/issue',
-        data: {
+        body: HttpBody.json({
           'fields': {
             'project': {'key': vendorProjectId},
             'summary': ticket.title,
@@ -65,9 +66,9 @@ class JiraTicketSyncAdapter implements TicketSyncAdapter {
             if (_priorityName(ticket.priority) != null)
               'priority': {'name': _priorityName(ticket.priority)},
           },
-        },
+        }),
       );
-      final data = response.data ?? const {};
+      final data = _jsonObject(response) ?? const {};
       return TicketPushOutcome(
         externalId: '${data['id'] ?? ''}',
         externalKey: data['key'] as String?,
@@ -80,15 +81,15 @@ class JiraTicketSyncAdapter implements TicketSyncAdapter {
         await _transition(externalId, ticket.status);
       case TicketChangeType.created:
       case TicketChangeType.updated:
-        await _dio.put<void>(
+        await _httpClient.put(
           '/rest/api/3/issue/$externalId',
-          data: {
+          body: HttpBody.json({
             'fields': {
               'summary': ticket.title,
               if (ticket.description != null)
                 'description': _adf(ticket.description!),
             },
-          },
+          }),
         );
       case TicketChangeType.assigned:
       case TicketChangeType.commented:
@@ -99,18 +100,19 @@ class JiraTicketSyncAdapter implements TicketSyncAdapter {
   }
 
   Future<void> _transition(String issueIdOrKey, TicketStatus target) async {
-    final response = await _dio.get<Map<String, dynamic>>(
+    final response = await _httpClient.get(
       '/rest/api/3/issue/$issueIdOrKey/transitions',
     );
-    final transitions = (response.data?['transitions'] as List?) ?? const [];
+    final transitions =
+        (_jsonObject(response)?['transitions'] as List?) ?? const [];
     for (final t in transitions.whereType<Map<String, dynamic>>()) {
       final toName = (t['to'] is Map) ? '${(t['to'] as Map)['name']}' : '';
       if (normalizeVendorStatus(toName) == target) {
-        await _dio.post<void>(
+        await _httpClient.post(
           '/rest/api/3/issue/$issueIdOrKey/transitions',
-          data: {
+          body: HttpBody.json({
             'transition': {'id': t['id']},
-          },
+          }),
         );
         return;
       }
@@ -231,4 +233,16 @@ class JiraTicketSyncAdapter implements TicketSyncAdapter {
     final text = buffer.toString().trim();
     return text.isEmpty ? null : text;
   }
+}
+
+/// The response's JSON object, or null when the body is empty or not an object.
+Map<String, dynamic>? _jsonObject(HttpResponse response) {
+  final body = httpJsonBody(response);
+  if (body is Map<String, dynamic>) {
+    return body;
+  }
+  if (body is Map) {
+    return body.cast<String, dynamic>();
+  }
+  return null;
 }

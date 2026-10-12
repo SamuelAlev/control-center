@@ -2,7 +2,7 @@
 title: Driftsättning och klienter
 description: Hur Control Centers arkitektur med tunna klienter skiljer en headless-server från klienterna för dator, webb och mobil.
 slug: sv-SE/handbok/koncept/driftsattning
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center är inte ett enda program. Det är en **arkitektur med tunna
@@ -22,11 +22,12 @@ två klienter ska se identiskt, bor där.
 
 Ingen klient öppnar en databasfil själv. I stället håller varje klient en enda
 **`RemoteRpcClient`** och utfärdar repo-operationer och prenumerationer över
-den. Servern autentiserar anslutningen mot en i förväg delad nyckel för den
-parkopplade enheten – och slutar sedan bry sig om anslutningen. **En session är
-inte bunden till en arbetsyta.** Dispatchern är tillståndslös: varje anrop som
-gäller en arbetsyta bär sitt eget `workspace_id` i argumenten, och ett anrop som
-utelämnar det avvisas.
+den. Både direkta och reläade sessioner kräver en signerad Noise-handskakning:
+den i förväg delade nyckeln för den parkopplade enheten autentiserar utbytet,
+medan färska trafiknycklar krypterar varje session. **En session är inte bunden
+till en arbetsyta.** Dispatchern är tillståndslös: varje anrop som gäller en
+arbetsyta bär sitt eget `workspace_id` i argumenten, och ett anrop som utelämnar
+det avvisas.
 
 Det är avsiktligt, och det är vad som låter två klienter på en server sitta i
 olika arbetsytor utan någon serverhållen ”aktuell arbetsyta” som de kan vara
@@ -95,9 +96,10 @@ Skrivbordsappen rör aldrig databasfilen direkt.
 Webbbygget är samma Flutter-app kompilerad för att köras i en webbläsare, och
 finns på [app.usectrl.dev](https://app.usectrl.dev) så att det inte finns något
 att installera. En webbläsare kan inte starta en subprocess, så webbklienten är
-**alltid** fjärransluten: den ringer upp en `cc_server` över `wss://` och
-renderar hela skrivbordsgränssnittet. När den är ansluten visar den samma
-skärmar mot samma flotta, eftersom det är samma kod över samma RPC. Luckorna är
+**alltid** fjärransluten: den ringer upp en `cc_server` över en krypterad
+WebSocket-session och renderar hela skrivbordsgränssnittet. När den är ansluten
+visar den samma skärmar mot samma flotta, eftersom den använder samma kod över
+samma RPC. Luckorna är
 de få ställen som behöver en nativ förmåga som en webbläsare inte har –
 kvalitetslagret för mötesinspelning nedan är det viktigaste, och
 OS-aviseringar ett annat.
@@ -121,27 +123,31 @@ bara webbläsarorigins som finns i listan `--allowed-origins`, som standard
 `https://app.usectrl.dev`, så att hosta bundlen själv innebär att lägga till
 dess origin.
 
-Media (avatars, flödesbilder, PR-skärmbilder) dirigeras via serverns
-proxyändpunkt i stället för att gå direkt till uppströmsvärdar, så en webbläsare
-hämtar aldrig en godtycklig origin. Den driftsatta klienten sätter en
-Content-Security Policy per begäran utifrån en icke-känslig cookie, så att bara
-den anslutna serverns origin tillåts.
+Media (avatars, flödesbilder, PR-skärmbilder), uppladdningar,
+säkerhetskopior och HTTP/WebSockets för den inbäddade redigeraren går genom den
+krypterade resurstunneln, inte läsbara publika HTTP-rutter; signerade sökvägar
+kräver fortfarande auktorisering. Redigerarfrontenden är betrodd och körs på
+webbappens egen origin. Dess Service Worker dirigerar redigerar-förfrågningar
+genom den befintliga krypterade sessionen till `cc_server`, som äger filerna och
+code-server-backenden. Webbläsaren behöver HTTPS eller en säker
+loopback-kontext för Service Workers. Inbyggda klienter använder en
+kapabilitetsavgränsad loopback-fasad.
 
 ### Telefonkompanjonen (cc_remote)
 
 **Remote**-appen är en separat, lättare klient – en Flutter-webb-PWA på
 [remote.usectrl.dev](https://remote.usectrl.dev/). Den är medvetet **inte** den
-fullständiga appen. Den parkopplas över en förmedlad, end-to-end-förseglad
-WebSocket-relä och talar en mestadels läsande delmängd av verktygsytan: läsa
-ärenden, meddelanden och nyhetsflödet; skicka ett svar eller uppdatera ett
-ärende.
+fullständiga appen. Den ansluter direkt när det är möjligt eller genom ett
+förmedlat relä; båda vägarna kräver end-to-end-kryptering. Den talar en
+mestadels läsande delmängd av verktygsytan: läsa ärenden, meddelanden och
+nyhetsflödet; skicka ett svar eller uppdatera ett ärende.
 
 En telefon är en **principal med lägre privilegier** än en lokal agent. En
-verktygspolicy med neka som standard, en i förväg delad nyckel som förseglar
-varje frame, en sessionskapabilitet som stänger ute privilegierade operationer
-(till exempel parkoppling) från en kompanjonklient, roll- och
-repo-behörighetskontrollerna per anrop ovan samt hastighetsbegränsning hindrar
-en godkänd (eller läckt) parkoppling från att bli full fjärrstyrning. Se
+verktygspolicy med neka som standard, en sessionskapabilitet som stänger ute
+privilegierade operationer (till exempel parkoppling) från en kompanjonklient,
+roll- och repo-behörighetskontrollerna per anrop ovan samt
+hastighetsbegränsning hindrar en godkänd (eller läckt) parkoppling från att bli
+full fjärrstyrning. Transportkryptering ger inga behörigheter. Se
 [Fjärrstyrning och mobil](/sv-SE/handbok/koncept/fjarrstyrning/) för hela
 säkerhetsmodellen.
 
@@ -223,28 +229,38 @@ kalenderns åtgärd för inspelning och länkning.
 
 ## Parkoppling och tillit
 
-Varje klient bevisar vem den är med en **i förväg delad nyckel** som etableras
-en gång:
+Varje klient använder en **i förväg delad nyckel** som etableras en gång, för
+att autentisera sin signerade Noise-handskakning med `cc_server`, även över
+loopback och reläet:
 
 - Skrivbordsappen i lokalt läge genererar en ny nyckel vid varje start och
   skickar den till den startade servern via miljön, så inget hemligt sparas på
   skrivbordet.
 - Fjärrklienter (skrivbord-fjärr, webb, telefon) använder en nyckel som skapas
-  av serverns `pair`-kommando och lagras i OS-nyckelringen (eller lokalt på
-  telefonen).
+  av serverns parkopplingsflöde eller `pair`-kommando. Inbyggda klienter
+  använder OS-nyckelringen; webbläsarklienter lagrar sin parkoppling lokalt.
+
+Klienten kontrollerar serverns signerade identitet mot sin sparade
+fingeravtrycks-pin. Vid första anslutningen verifierar du det fingeravtrycket
+genom en betrodd QR-kod eller en annan betrodd kanal: en signerad första kontakt
+ensam kan inte autentisera vem som bidrog med nyckeln. Om identiteten ändras
+faller klienten stängt; parkoppla om genom en betrodd kanal i stället för att
+ignorera avvikelsen. Äldre klienter och klartext-RPC kan inte ansluta. TLS
+behövs fortfarande för webbläsarorigins, bootstrap och publik metadata;
+`--insecure` påverkar serverns yttre lyssnare, inte den obligatoriska krypterade
+sessionen.
 
 Återkallning sker **live**, inte lat. Servern bevakar sin tabell över parkopplade
 enheter och stänger varje öppen session vars enhet har lämnat den aktiva
 mängden, inom några sekunder – både på den direkta WebSocket-vägen och på
 relävägen. Du behöver inte vänta på att enheten återansluter för att kapa den.
 
-Nyckeln färdas aldrig genom en URL som en statisk host kan se. När den kommer
-via en länk – på telefonen eller i en webbläsare – färdas den i
-**URL-fragmentet**, delen efter `#`, som webbläsaren aldrig skickar till servern
-som hostar sidan. Det är invarianten värd att komma ihåg, och den gäller båda.
-Webbklienten har två andra ingångar: anslutningsformuläret, där du klistrar in en
-server och en nyckel direkt, och en inbjudningskod, som den löser in mot en
-autentiseringsuppgift som skapats enbart för den webbläsaren.
+När nyckeln kommer via en länk – på telefonen eller i en webbläsare – färdas
+den i **URL-fragmentet**, delen efter `#` som webbläsare inte skickar i begäran
+till sidvärden. Sidans JavaScript kan ändå läsa det, så lita på den värden och
+håll länken hemlig. Webbklienten har också ett anslutningsformulär, där du
+klistrar in en server och en nyckel direkt, och en inbjudningskod, som den löser
+in mot en autentiseringsuppgift som skapats enbart för den webbläsaren.
 
 ## Relaterade koncept
 

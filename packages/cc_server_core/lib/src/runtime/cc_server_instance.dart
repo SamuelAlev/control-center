@@ -108,6 +108,9 @@ class CcServer {
   /// reaps expired ones. Cancelled/disposed on [shutdown].
   FleetSchedulerService? _fleetScheduler;
 
+  /// Controlled skill campaigns stop before their workspace databases close.
+  SkillEvaluationService? _skillEvaluation;
+
   /// The implicit local worker's executor (PRD 20) — kind→runner registry that
   /// feature services (evals, golden render, code index) register into.
   LocalJobExecutor? _fleetLocalExecutor;
@@ -316,6 +319,8 @@ class CcServer {
       _pairedDeviceWatch?.dispose();
     });
     await step('scheduler', () async => _fleetScheduler?.dispose());
+    await step('skillEvaluations', () async => _skillEvaluation?.dispose(),
+        timeout: const Duration(seconds: 30));
     await step('calendar', () async => _calendarSync?.dispose());
     await step('weather', () async => _weatherService?.dispose());
     await step('soundscape', () async => _soundscapeHub?.dispose());

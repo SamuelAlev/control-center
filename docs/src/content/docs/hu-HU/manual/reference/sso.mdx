@@ -2,7 +2,7 @@
 title: SSO-konfigurációs referencia
 description: Az egyszeri bejelentkezés minden kapcsolója, végpontja, művelete és hibakódja.
 slug: hu-HU/kezikonyv/referencia/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Az egyszeri bejelentkezés minden beállítható eleme egy helyen. Az értékek a
@@ -24,7 +24,7 @@ képernyő ellentmondhat).
 | `displayNameAttribute` | SAML          | `displayName`   | a megjelenítendő nevet hordozó attribútum                                                                                                           |
 | `groupsAttribute`      | SAML          | `groups`        | a csoportneveket hordozó attribútum                                                                                                                 |
 | `clockSkewSeconds`     | SAML          | 90              | az élettartam-ellenőrzés megengedett óraeltérése                                                                                                    |
-| `allowIdpInitiated`    | SAML          | ki              | kéretlen válaszok elfogadása (nincs `InResponseTo`)                                                                                                 |
+| `allowIdpInitiated`    | SAML          | ki              | érvényes kéretlen válaszok elfogadása (nincs `InResponseTo`); a böngészőnek rövid életű grantot kell igényelnie, mielőtt címzettnek lezárt hitelesítő adatot kap |
 | `wantResponseSigned`   | SAML          | ki              | a válasz gyökérelemének aláírásának megkövetelése (az állítás aláírása mindig kötelező)                                                              |
 | `issuer`               | OIDC          | —               | a kibocsátó alap URL-je (az engedélyezéshez kötelező)                                                                                               |
 | `clientId`             | OIDC          | —               | nyilvános kliens azonosítója (az engedélyezéshez kötelező)                                                                                          |
@@ -38,28 +38,62 @@ képernyő ellentmondhat).
 ## Folyamatkonfiguráció
 
 Az SSO-kapcsolatok nem a környezetből töltődnek fel. Egy megmaradt
-folyamatkapcsoló a **böngészős átadásról** szól, nem a kapcsolatsorról:
+folyamatkapcsoló azt választja meg, hol nyitja meg a böngésző a webes klienst egy
+SSO-visszahívás után:
 
 | Változó / kapcsoló                               | Jelentés                                                                                                                                    |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | az az origin, amelyre az SSO-visszahívások visszairányítják a böngészőt (a hitelesítő adat az URL-fragmentumban utazik). Beállítatlanul az átadás azonos originen marad. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | webeskliens-URL egy lezárt hitelesítőadat-átadáshoz; beállítatlanul az átadás azonos originen marad (csak akkor hasznos, ha a webes klienst ott szolgálják ki). Egy `web-popup` bejelentkezésnél az indító lap egy engedélyezett `client_origin` értéke élvez elsőbbséget. |
 
 Magának a kibocsátó URL-jének `https`-nek kell lennie (`http` csak
 visszacsatolási (loopback) kibocsátókhoz, a `localhost`, `127.0.0.1` és `::1`
-esetében fogadható el).
+esetében fogadható el). Használjon megbízható TLS-t az IdP-visszahíváshoz és a
+webeskliens-hoszthoz: a címzettkulcsot előállító oldal és az általa kiszolgált
+JavaScript a bizalmi határ része. A HTTPS ezt a bootstrapet védi; párosítás után
+a közvetlen és a relén átvezetett `/rpc`-munkamenetek egyaránt Noise-titkosítást
+és rögzített szerveridentitást igényelnek.
 
 ## HTTP-végpontok
 
 | Végpont                                          | Hitelesítés         | Cél                                                                                                                                                                                                              |
 | ------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | nincs (átirányítás) | SP által indított bejelentkezés indítása; a `relay=desktop` átadja az alkalmazásnak, a `relay=web-popup` postMessage-t küld a várakozó csatlakozási lapnak (amely megadja a saját `client_origin` értékét; ezt csak akkor vesszük figyelembe, ha az origin-engedélylista megbízik benne) |
-| `POST /saml/acs`                                 | nincs (IdP POST)    | az állításfeldolgozó — ellenőriz, provisionál, kiállít                                                                                                                                                            |
+| `GET /saml/login?relay=…&handoff_key=…`         | nincs (átirányítás) | SP által indított bejelentkezés indítása egy kliens által birtokolt X25519 címzettkulccsal; a `relay=desktop` átadja az alkalmazásnak, a `relay=web-popup` postMessage-t küld a várakozó csatlakozási lapnak (a `client_origin` értékét csak akkor vesszük figyelembe, ha az origin-engedélylista megbízik benne) |
+| `POST /saml/acs`                                 | nincs (IdP POST)    | az állítás ellenőrzése és a felhasználó provisionálása; az SP által indított bejelentkezés a kiállított eszközhitelesítő adatot az indító címzettkulcshoz zárja le; az engedélyezett kéretlen SAML helyette egy böngészőhöz kötött claimet ad |
+| `POST /saml/claim`                               | azonos originen lévő böngészőgrant | egy egyszer használatos kéretlen SAML-grant beváltása a cookie-jával és egy friss `handoff_key`-jel; a címzettnek lezárt hitelesítő adatot adja vissza, soha nem nyílt szöveges párosítási kulcsot |
 | `GET /saml/metadata`                             | nincs               | a saját SP `EntityDescriptor`-ünk                                                                                                                                                                                |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | nincs               | az OIDC-körforduló; a `relay=desktop` átadja az alkalmazásnak, a `relay=web-popup` a várakozó csatlakozási lapnak (ugyanaz a `client_origin` konvenció)                                                          |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | nincs | az OIDC-körforduló; a bejelentkezéshez a kliens által birtokolt címzettkulcs kell; a `relay=desktop` átadja az alkalmazásnak, a `relay=web-popup` a várakozó csatlakozási lapnak (ugyanaz a `client_origin` konvenció) |
 | `GET /auth/providers`                            | nincs, CORS `*`     | a csatlakozási képernyő próbája: a felkínált SSO-kapcsolatok (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                             |
 | `/scim/v2/Users…`                                | Bearer (SCIM-token) | Users létrehozás/lekérés/lista+szűrés/PUT/PATCH/DELETE                                                                                                                                                            |
 | `/scim/v2/Groups`                                | Bearer              | csak olvasható; a csoportpush tervezés szerint 501-gyel válaszol                                                                                                                                                  |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | képességdokumentum                                                                                                                                                                                                |
+
+Az SP által indított SAML és OIDC esetében a bejelentkezést indító URL-hez
+érvényes `handoff_key` kell (az indító kliens X25519 nyilvános kulcsa). A szerver
+a függőben lévő bejelentkezéssel együtt megőrzi ezt a kulcsot, és a
+visszahívásnál efemer X25519, HKDF-SHA256 és AES-256-GCM segítségével a
+szerver-originhez kötve lezárja a kiállított eszközhitelesítő adatot. Az asztali
+átadás a `control-center://pair` hivatkozást használja, az ugyanabban a lapban
+történő webes átadás egy URL-fragmentumot, a `web-popup` pedig postMessage-t küld
+az engedélyezett `client_origin` címre, ha meg van adva (egyébként a beállított
+webeskliens-URL-re vagy a visszahívási originre). A lezárt boríték, nem egy nyílt
+szöveges párosítási kulcs utazik abban a fragmentumban vagy popup-üzenetben. Az
+indító kliens megőrzi a hozzá tartozó privát kulcsot a megnyitásához. Ez a
+boríték különbözik a párosítás után létrejövő kötelező Noise-munkamenettől.
+
+Az IdP által indított SAML-válasznak (ha engedélyezett) nincs indító címzettje.
+Helyette az ACS beállít egy öt percig érvényes, HttpOnly, SameSite=Strict
+böngésző-cookie-t, és felkínálja a **Webes kliens megnyitása** / **Asztali
+alkalmazás megnyitása** választást. Ez az oldal friss címzettkulcsot állít elő,
+és ugyanarról az originről elküldi annak nyilvános felét és a grant-kezelőt a
+`POST /saml/claim` végpontra. A beváltáshoz a hozzá tartozó cookie és origin kell
+(egy CSRF-határ), a grantot egyszer használja fel, és csak egy címzettnek lezárt
+borítékot ad vissza. A rákövetkező webes/asztali fragmentum azt a borítékot és a
+címzett privátkulcs-anyagát szállítja, hogy a cél kliens meg tudja nyitni,
+**nem** egy nyílt szöveges eszközhitelesítő adatot. Egy másik böngésző vagy egy
+lejárt grant nem tudja beváltani. A cél webeskliens-origin hozzáfér a
+fragmentumhoz, és vissza tudja fejteni; egy kompromittált visszahívási oldal
+vagy webeskliens-origin el tudja lopni a hitelesítő adatokat. A titkosítás nem
+teszi biztonságossá a nem megbízható, kiszolgált kódot.
 
 ## RPC-műveletek
 

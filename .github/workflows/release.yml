@@ -117,6 +117,12 @@ jobs:
       - name: Build macOS release
         run: flutter build macos --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
 
+      # Upload before packaging. Credential-free releases warn and skip, configured upload failures still fail the step.
+      - name: Upload debug symbols to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: bash scripts/release/sentry_upload.sh --allow-missing-credentials --platform macos --build-name "$VERSION" --build-number "$BUILD_NUMBER"
+
       - name: Package (embed + sign + DMG + notarize)
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -273,6 +279,17 @@ jobs:
             throw "flutter build windows produced no $out (is this runner's host architecture $env:ARCH?)"
           }
 
+      # Git Bash on purpose: the uploader is the same script the other platform
+      # jobs run. Windows has no version.json — sentry_upload.sh takes the
+      # release's owner from Runner.rc's InternalName (what package_info_plus
+      # reports) and the version/build from the flags below, so the release
+      # matches what the app reports.
+      - name: Upload debug symbols to Sentry
+        shell: bash
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: bash scripts/release/sentry_upload.sh --allow-missing-credentials --platform windows --arch "$ARCH" --build-name "$VERSION" --build-number "$BUILD_NUMBER"
+
       - name: Package (bundle + verify + installer + sign + zip)
         shell: bash
         env:
@@ -327,9 +344,12 @@ jobs:
       # A missing host fails the release. Do not put comments inside the
       # folded scalar below. Hosts: apt (the Azure mirror plus the archive and
       # security hosts its mirror list falls back to when Azure is down),
-      # GitHub release assets, crates/rustup, freedesktop + wrapdb (aec), PyPI
+      # GitHub release assets (Flutter, and the pinned sentry-cli binary),
+      # crates/rustup, freedesktop + wrapdb (aec), PyPI
       # (meson), SourceForge (LAME; downloads. redirects to *.dl), Flutter,
-      # sigstore, Azure blobs (actions/cache).
+      # sigstore, Azure blobs (actions/cache), Sentry (symbol upload — the org
+      # lives on the DE region, so sentry.io plus the region host are both
+      # needed for the API redirect).
       - name: Harden runner
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
@@ -337,8 +357,10 @@ jobs:
           allowed-endpoints: >
             *.archive.ubuntu.com:80
             *.blob.core.windows.net:443
+            *.de.sentry.io:443
             *.dl.sourceforge.net:443
             *.microsoft.com:443
+            *.sentry.io:443
             api.github.com:443
             archive.ubuntu.com:443
             dl.google.com:443
@@ -356,6 +378,7 @@ jobs:
             release-assets.githubusercontent.com:443
             security.ubuntu.com:443
             security.ubuntu.com:80
+            sentry.io:443
             static.crates.io:443
             static.rust-lang.org:443
             storage.googleapis.com:443
@@ -415,6 +438,12 @@ jobs:
 
       - name: Build Linux release
         run: flutter build linux --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+
+      # Reads the release identity out of the bundle's version.json (the field the app reports), so no flag needs to repeat it.
+      - name: Upload debug symbols to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: bash scripts/release/sentry_upload.sh --allow-missing-credentials --platform linux --build-name "$VERSION" --build-number "$BUILD_NUMBER"
 
       - name: Package (bundle + AppImage + zsync + tarball + checksums)
         run: bash scripts/release/linux_package.sh "$VERSION"
@@ -577,13 +606,16 @@ jobs:
       - name: Build web client (root app)
         run: |
           ./tool/gen_workers.sh
-          flutter build web --release --wasm
+          flutter build web --release --wasm --enable-wasm-deferred-loading
 
       - name: Build phone PWA (cc_remote)
         working-directory: apps/cc_remote
+        run: flutter build web --release --wasm --enable-wasm-deferred-loading
+
+      - name: Stage encrypted resource assets
         run: |
-          flutter pub get
-          flutter build web --release --wasm
+          node tool/stage_resource_assets.mjs build/web
+          node tool/stage_resource_assets.mjs apps/cc_remote/build/web
 
       # After both builds. flutter build web owns version.json.
       - name: Write deploy.json manifests

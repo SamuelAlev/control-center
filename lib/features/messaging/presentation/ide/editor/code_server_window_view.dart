@@ -16,12 +16,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Resolves a code-server URL against the server [base] into the absolute
-/// `http(s)` URL to embed. Returns null when [url] is empty, or relative with
-/// no base (the caller then falls back to the direct loopback URL). A relative
-/// proxy path must NOT be embedded as-is: it would resolve against the
-/// client's own origin (Flutter web bundle / dev server) and never reach the
-/// server proxy.
+/// Resolves a code-server route only through the local resource capability.
+/// Never embed an absolute server URL or fall back to an unencrypted origin.
 ///
 /// Also points the `openFile` payload at the window's own remote authority.
 /// code-server's workbench takes its remote authority from the page's
@@ -35,21 +31,23 @@ String? codeServerEmbedUrl(String url, Uri? base) {
   if (url.isEmpty) {
     return null;
   }
-  Uri? resolved;
   final parsed = Uri.tryParse(url);
-  if (parsed != null && (parsed.scheme == 'http' || parsed.scheme == 'https')) {
-    resolved = parsed;
-  } else if (base != null) {
-    resolved = base.resolveUri(Uri.parse(url));
-  }
-  if (resolved == null) {
+  if (base == null ||
+      parsed == null ||
+      parsed.hasScheme ||
+      parsed.hasAuthority ||
+      !parsed.path.startsWith('/proxy/vscode/') ||
+      parsed.hasFragment) {
     return null;
   }
-  // cc_server binds IPv4 loopback (127.0.0.1) only. A browser resolving
-  // `localhost` may try IPv6 (::1) first and get "connection refused" for an
-  // iframe navigation (unlike the WS/media fetch, which falls back). Pin the
-  // loopback host to 127.0.0.1 so the embed always reaches the server; remote
-  // hosts are left untouched.
+  final prefix = base.path.endsWith('/')
+      ? base.path.substring(0, base.path.length - 1)
+      : base.path;
+  var resolved = base.replace(
+    path: '$prefix${parsed.path}',
+    query: parsed.query,
+  );
+  // Native facades bind IPv4 loopback only; `localhost` can resolve to ::1.
   if (resolved.host == 'localhost') {
     resolved = resolved.replace(host: '127.0.0.1');
   }
@@ -112,6 +110,7 @@ class _CodeServerWindowViewState extends ConsumerState<CodeServerWindowView> {
   // code-server owns its own reload chrome, so the view never bumps this — the
   // iframe just needs a stable token.
   final int _reloadToken = 0;
+  bool _editorResourceFailed = false;
 
   // `flutter_inappwebview` ships a NATIVE webview on these platforms only. Web
   // is handled separately via the proxied iframe (see [_buildContent]); Linux
@@ -159,22 +158,35 @@ class _CodeServerWindowViewState extends ConsumerState<CodeServerWindowView> {
       return const CodeServerPreparing();
     }
 
-    // The server returns an app-relative proxy path (`/proxy/vscode/<sid>/`).
-    // Make it ABSOLUTE against the connected server's http base — a relative
-    // path would resolve against the client's own origin (the Flutter web
-    // bundle / dev server), hit the SPA fallback and throw a go_router
-    // "no routes for location" instead of reaching the server proxy. Works for
-    // a loopback desktop server and a remote server alike; the capability is in
-    // the path, so no cookie is required.
+    if (_editorResourceFailed) {
+      return _UnavailableCard(
+        title: l10n.ideCodeServerUnavailable,
+        hint: l10n.ideCodeServerUnavailableHint,
+      );
+    }
+    // The host returns a path; only a live encrypted local resource facade
+    // may turn it into an iframe/WebView URL.
     final base = MediaProxyScope.httpBaseOf(context);
-    final embedUrl = codeServerEmbedUrl(result.url, base) ?? result.directUrl;
+    final embedUrl = codeServerEmbedUrl(result.url, base);
+    if (embedUrl == null) {
+      return _UnavailableCard(
+        title: l10n.ideCodeServerUnavailable,
+        hint: l10n.ideCodeServerUnavailableHint,
+      );
+    }
 
     const web = kIsWeb;
     if (web) {
-      // Proxied URL embeds inline in the web bundle's <iframe>. Not covered
-      // like the native webview: the parent cannot read the iframe's console
-      // for the bridge's chrome-hidden marker.
-      return BrowserWebView(src: embedUrl, reloadToken: _reloadToken);
+      // Trusted editor scripts share the app origin; all server I/O stays
+      // inside this connection's encrypted resource capability.
+      return BrowserWebView(
+        src: embedUrl,
+        reloadToken: _reloadToken,
+        codeServerResource: true,
+        onError: () {
+          if (mounted) setState(() => _editorResourceFailed = true);
+        },
+      );
     }
     if (!_nativeWebviewSupported) {
       // Linux desktop: no Flutter webview → open code-server in the system

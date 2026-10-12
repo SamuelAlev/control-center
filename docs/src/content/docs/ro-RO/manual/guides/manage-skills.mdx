@@ -1,21 +1,23 @@
 ---
 title: Instalează și gestionează skill-uri
-description: Adaugă depozite GitHub ca surse de skill-uri, răsfoiește-le cataloagele și instalează, actualizează sau dezinstalează skill-uri prin poarta de scanare antivirus.
+description: Instalează și actualizează skill-urile unui spațiu de lucru prin poarta de scanare, apoi compară reviziile salvate cu ajutorul evaluărilor de skill-uri cu buget.
 slug: ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Acest ghid îți arată cum să umpli un spațiu de lucru cu skill-uri de pe GitHub:
 adaugi un depozit ca sursă, instalezi skill-urile dorite din el și le menții la zi
-în timp.
+în timp. Poți, de asemenea, să evaluezi o revizie salvată față de o linie de
+referință potrivită înainte de a hotărî dacă o păstrezi.
 
 Lucrul important de știut înainte de a începe: **un depozit sursă este
 neîncrezut.** Numele, descrierea și numărul lui de stele sunt scrise de cine îl
-deține. Singurul semnal de siguranță în care Control Center are încredere este
-verdictul scanării antivirus, prin care trece fiecare instalare înainte ca ceva
-să ajungă pe disc sau într-un prompt de agent. Dacă vrei raționamentul, citește
-[secțiunea despre skill-uri a modelului agenților](/ro-RO/manual/concepte/modelul-agentilor/); această
-pagină rămâne la partea practică.
+deține. Fiecare instalare trece prin poarta de scanare antivirus înainte ca ceva
+să ajungă pe disc sau într-un prompt de agent. Acel verdict este o verificare de
+admitere, nu o dovadă că un skill este sigur sau util. Citește
+[secțiunea despre skill-uri a modelului agenților](/ro-RO/manual/concepte/modelul-agentilor/)
+pentru modelul de instalare și [Eval-uri și calitate](/ro-RO/manual/concepte/eval-uri-si-calitate/)
+pentru felul în care dovezile de comportament diferă de o scanare.
 
 Skill-urile se află la **Setări → Spațiu de lucru → Abilități**
 (`/workspaces/<id>/settings/workspace/skills`). Sunt limitate la spațiul de
@@ -86,6 +88,86 @@ o instalare — un skill a cărui versiune nouă intră în carantină este refu
 versiunea pe care o aveai rămâne pe loc. Hash-ul versiunii vechi este păstrat în
 fișierul de blocare ca referință de revenire.
 
+## Evaluează un skill
+
+1. Deschide **Setări → Spațiu de lucru → Abilități**, selectează skill-ul
+   instalat și salvează orice modificări. În **Evaluarea abilității**, verifică
+   hash-ul pachetului.
+2. Selectează **Pornește evaluarea**. Alege un **Set de sarcini** care
+   corespunde scopului skill-ului și un **Adaptor**. Harness-ul încorporat
+   folosește un furnizor configurat și un model capabil de instrumente.
+   **Claude Code** folosește contul Claude gestionat implicit și un
+   identificator concret de model; autentifică-te mai întâi în **Setări →
+   Adaptori**. Nu împrumută autentificarea personală a operatorului de server.
+3. Alege o **Comparație** din tabelul de mai jos.
+4. Setează **Repetări per sarcină** (1–20) și **Buget (cenți SUA)**. De exemplu,
+   `100` înseamnă 1 USD. Selectează **Pornește evaluarea** pentru a autoriza
+   munca plătită a furnizorului.
+5. Urmărește campania în **Observabilitate → Calitate** sau revino prin
+   **Deschide Quality** din panoul skill-ului.
+
+Pentru abonamentele Claude Code și Codex OAuth, bugetul este un **prag de
+oprire a utilizării echivalent cu API**, nu o limită de factură și nici o
+măsură a cotei de abonament. `100` admite un prag de 1 USD: un apel în curs
+poate depăși pragul, dar niciun apel nou nu mai pornește odată ce utilizarea
+raportată îl atinge. Nici utilizarea necunoscută nu mai pornește apeluri
+suplimentare. Un buget mic poate lăsa comparația parțială; nu garantează
+finalizarea corpusului selectat.
+
+Furnizorii cu chei API păstrează rezervări conservatoare per apel, derivate din
+limitele de tokeni și prețurile documentate. Pot respinge `100` înainte de a
+cheltui, atunci când un singur apel rezervat în siguranță are nevoie de mai
+mult. Eroarea identifică modelul selectat și rezervarea minimă; alege un model
+mai ieftin sau crește acel buget.
+
+| Comparație | Folosește-o pentru a afla |
+| --- | --- |
+| **Absent vs disponibil** | Descoperirea și folosirea normale ale acestui skill îmbunătățesc rezultatul față de situația în care nu îl ai? |
+| **Anterior vs curent** | Actualizarea păstrează sau îmbunătățește comportamentul față de o revizie capturată anterior? |
+| **Încărcare forțată vs absent** | Poate conținutul să ajute atunci când este încărcat explicit? Aceasta diagnostichează problemele de încărcare; nu demonstrează descoperirea normală. |
+| **Componență** | Adăugarea candidatului ajută sau intră în conflict cu skill-urile ambientale selectate? Linia de referință păstrează același inventar ambiental, fără candidat. |
+
+**Anterior vs curent** are nevoie de un hash de pachet din istoricul campaniei.
+Evaluează o revizie înainte de a o înlocui dacă vrei să o folosești drept linie
+de referință; istoricul Git arbitrar nu este importat.
+
+Modificările nesalvate, un hash indisponibil și modul demo doar-citire blochează
+lansarea. Serverul verifică de asemenea accesul la spațiul de lucru și la
+depozit, carantina scanării, politica de acțiuni, suportul pentru model,
+prețurile și izolarea execuției. Rezolvă o verificare eșuată în loc să o
+ocolești. Identitatea furnizorului și a modelului este înregistrată, dar un alias
+de model de la distanță nu îngheață ponderile subiacente ale furnizorului.
+
+### Inspectează, anulează și exportă
+
+Citește acoperirea și cheltuielile alături de rezultatele per sarcină și de
+regresii. Deschide încercările individuale pentru a inspecta încărcările de
+skill-uri observate, evenimentele de instrumente, erorile și dovezile
+verificatorilor. Rezultatele **parțiale**, **învechite** și **inconcludente** nu
+sunt recomandări de a adopta o revizie. Hash-ul unui raport identifică pachetul
+capturat, nu neapărat pachetul instalat în prezent.
+
+Folosește **Anulează rularea** pentru munca aflată în așteptare sau activă.
+Încercările finalizate rămân vizibile; anularea nu rambursează munca deja
+efectuată de furnizor. **Copiază JSON-ul cu date mascate** copiază în clipboard
+un export de dovezi delimitat, nu un pachet complet de reluare a sursei private.
+Vezi [Eval-uri și calitate](/ro-RO/manual/concepte/eval-uri-si-calitate/) pentru
+dovezi și limitele platformei.
+
+### Reevaluează după actualizări
+
+Reevaluarea automată plătită este **dezactivată implicit**. După ce evaluezi
+revizia curentă, alege o campanie la **Configurarea politicii de actualizare** și
+selectează **Activează evaluările la actualizare**. Schimbarea acestei politici
+necesită permisiune de administrator al spațiului de lucru. Campania selectată
+furnizează corpusul, adaptorul, furnizorul/modelul, comparația, repetările și bugetul.
+
+Modificările ulterioare de conținut admise programează muncă cu buget; hash-urile
+neschimbate sunt deduplicate. **Dezactivează evaluările la actualizare** împiedică
+admiterile automate viitoare. Folosește **Anulează rularea** pentru o campanie
+deja admisă. Rapoartele istorice rămân atașate la hash-urile lor de pachet
+originale; reevaluarea nu publică, nu activează și nu rescrie un skill.
+
 ## Dezinstalează un skill, elimină un depozit
 
 **Dezinstalează** (din vizualizarea detaliată a unui skill instalat sau prin
@@ -124,7 +206,7 @@ Skill-urile de repo trec prin aceeași scanare cu eșec închis (`pass` / `warn`
 admis; `quarantine` este reținut, fără nicio suprascriere din partea
 operatorului pe acea cale.
 
-Vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills) și
+Vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#skill-uri-limitate-la-repo) și
 [Comenzi slash](/ro-RO/manual/referinta/comenzi-slash/).
 
 ## Ghiduri conexe
@@ -135,3 +217,4 @@ Vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#repo
 ## Concepte conexe
 
 - [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/)
+- [Eval-uri și calitate](/ro-RO/manual/concepte/eval-uri-si-calitate/)

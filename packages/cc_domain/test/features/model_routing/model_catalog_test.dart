@@ -126,78 +126,128 @@ void main() {
       expect(opus.releasedAt, DateTime.parse('2025-11-24'));
     });
 
-    test(
-      'a reasoning model with no documented efforts gets its provider\'s '
-      'wire vocabulary, not a flat low/medium/high',
-      () {
-        Map<String, dynamic> providerDoc(String id) => {
-          'id': id,
-          'name': id,
-          'models': {
-            'm': {'id': 'm', 'name': 'M', 'reasoning': true},
-          },
-        };
-        final providers = ModelsDevParser.parse({
-          'anthropic': providerDoc('anthropic'),
-          'openai': providerDoc('openai'),
-          'zhipuai': providerDoc('zhipuai'),
-        });
+    test('a reasoning model with no documented efforts gets its provider\'s '
+        'wire vocabulary, not a flat low/medium/high', () {
+      Map<String, dynamic> providerDoc(String id) => {
+        'id': id,
+        'name': id,
+        'models': {
+          'm': {'id': 'm', 'name': 'M', 'reasoning': true},
+        },
+      };
+      final providers = ModelsDevParser.parse({
+        'anthropic': providerDoc('anthropic'),
+        'openai': providerDoc('openai'),
+        'zhipuai': providerDoc('zhipuai'),
+      });
 
-        // Anthropic accepts xhigh on the wire (anthropicEffort); the old flat
-        // fallback let ThinkingConfig.resolve clamp a chosen xhigh to high.
-        expect(providers['anthropic']!.models['m']!.thinking!.efforts, [
-          ReasoningEffort.low,
+      // Anthropic accepts xhigh on the wire (anthropicEffort); the old flat
+      // fallback let ThinkingConfig.resolve clamp a chosen xhigh to high.
+      expect(providers['anthropic']!.models['m']!.thinking!.efforts, [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+        ReasoningEffort.xhigh,
+      ]);
+      // OpenAI's real scale starts at minimal and tops out at high.
+      expect(providers['openai']!.models['m']!.thinking!.efforts, [
+        ReasoningEffort.minimal,
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ]);
+      // Unmapped providers keep the conventional three-step knob.
+      expect(providers['zhipuai']!.models['m']!.thinking!.efforts, [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ]);
+      for (final id in ['anthropic', 'openai', 'zhipuai']) {
+        expect(
+          providers[id]!.models['m']!.thinking!.defaultLevel,
           ReasoningEffort.medium,
+          reason: '$id defaults to medium',
+        );
+      }
+    });
+
+    test(
+      'explicit reasoning_options always win over the provider fallback',
+      () {
+        final providers = ModelsDevParser.parse({
+          'anthropic': {
+            'id': 'anthropic',
+            'name': 'Anthropic',
+            'models': {
+              'm': {
+                'id': 'm',
+                'name': 'M',
+                'reasoning': true,
+                'reasoning_options': [
+                  {
+                    'type': 'effort',
+                    'values': ['high', 'xhigh'],
+                  },
+                ],
+              },
+            },
+          },
+        });
+        expect(providers['anthropic']!.models['m']!.thinking!.efforts, [
           ReasoningEffort.high,
           ReasoningEffort.xhigh,
         ]);
-        // OpenAI's real scale starts at minimal and tops out at high.
-        expect(providers['openai']!.models['m']!.thinking!.efforts, [
-          ReasoningEffort.minimal,
-          ReasoningEffort.low,
-          ReasoningEffort.medium,
-          ReasoningEffort.high,
-        ]);
-        // Unmapped providers keep the conventional three-step knob.
-        expect(providers['zhipuai']!.models['m']!.thinking!.efforts, [
-          ReasoningEffort.low,
-          ReasoningEffort.medium,
-          ReasoningEffort.high,
-        ]);
-        for (final id in ['anthropic', 'openai', 'zhipuai']) {
-          expect(
-            providers[id]!.models['m']!.thinking!.defaultLevel,
-            ReasoningEffort.medium,
-            reason: '$id defaults to medium',
-          );
-        }
       },
     );
 
-    test('explicit reasoning_options always win over the provider fallback', () {
-      final providers = ModelsDevParser.parse({
-        'anthropic': {
-          'id': 'anthropic',
-          'name': 'Anthropic',
+    test('preserves context pricing and refuses malformed tier prices', () {
+      final parsed = ModelCatalog.fromModelsDev({
+        'openai': {
+          'id': 'openai',
           'models': {
             'm': {
               'id': 'm',
-              'name': 'M',
-              'reasoning': true,
-              'reasoning_options': [
-                {
-                  'type': 'effort',
-                  'values': ['high', 'xhigh'],
+              'cost': {
+                'input': 2,
+                'output': 12,
+                'cache_read': 0.2,
+                'cache_write': 2.5,
+                'context_over_200k': {
+                  'input': 4,
+                  'output': 18,
+                  'cache_read': 0.4,
+                  'cache_write': 5,
                 },
-              ],
+              },
+            },
+            'incomplete': {
+              'cost': {
+                'input': 2,
+                'output': 12,
+                'tiers': [
+                  {
+                    'tier': {'type': 'context', 'size': 272000},
+                  },
+                ],
+              },
             },
           },
         },
       });
-      expect(providers['anthropic']!.models['m']!.thinking!.efforts, [
-        ReasoningEffort.high,
-        ReasoningEffort.xhigh,
-      ]);
+      final cost = parsed.modelGet('openai', 'm')!.cost!;
+      expect(cost.pricingComplete, isTrue);
+      expect(cost.reservationRates.output, 18);
+      expect(cost.estimate(inputTokens: 1000, outputTokens: 100), 0.0032);
+      expect(cost.estimate(inputTokens: 220000), 0.88);
+      expect(cost.estimate(inputTokens: 200000, outputTokens: 1000), 0.412);
+      expect(
+        cost.estimate(inputTokens: 199999, cacheReadTokens: 2),
+        closeTo(0.7999968, 1e-12),
+      );
+      expect(
+        parsed.modelGet('openai', 'incomplete')!.cost!.pricingComplete,
+        isFalse,
+      );
     });
 
     test('skips malformed entries instead of throwing', () {
@@ -428,5 +478,4 @@ void main() {
       expect(config.resolve(null), ReasoningEffort.low);
     });
   });
-
 }

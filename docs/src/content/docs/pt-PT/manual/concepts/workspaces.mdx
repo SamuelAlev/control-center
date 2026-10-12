@@ -2,7 +2,7 @@
 title: Espaços de trabalho e isolamento
 description: Porque é que um espaço de trabalho é uma fronteira rígida entre inquilinos, como a divisão da base de dados torna essa fronteira estrutural e o que a atravessa deliberadamente.
 slug: pt-PT/manual/conceitos/espacos-de-trabalho
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## O que é um espaço de trabalho?
@@ -119,13 +119,17 @@ O que nenhuma delas transporta é o resto do diretório do espaço de trabalho. 
 
 ## Mover uma cópia de segurança entre o servidor e o seu dispositivo
 
-Todas as operações acima falam em caminhos no **servidor**, o que só é uma resposta completa quando o servidor é a sua própria máquina. Três rotas HTTP assinadas — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/pt-PT/manual/referencia/copia-de-seguranca/#transfer-routes) — transportam os bytes em qualquer outra topologia, na mesma via autenticada que o proxy de multimédia e o armazenamento de imagens já utilizam. Na página, isto traduz-se num botão **Descarregar** junto a cada exportação e a cada instantâneo (escolhe onde fica) e em **Escolher um ficheiro e enviar** para restaurar a partir de um ficheiro que esteja na máquina que está a utilizar. O envio é o que funciona quando o servidor não é a sua máquina: `workspace.import` precisa que o ficheiro já esteja no host, e é assim que ele lá chega.
+Todas as operações acima falam em caminhos no **servidor**, o que só é uma resposta completa quando o servidor é a sua própria máquina. Três rotas de transferência assinadas — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/pt-PT/manual/referencia/copia-de-seguranca/#transfer-routes) — transportam os bytes em qualquer outra topologia através do túnel de recursos autenticado e cifrado, em ligações diretas e pelo relay. As rotas HTTP públicas não servem bytes de cópia de segurança legíveis, e os caminhos assinados continuam a exigir autorização. Na página, isto traduz-se num botão **Descarregar** junto a cada exportação e a cada instantâneo (escolhe onde fica) e em **Escolher um ficheiro e enviar** para restaurar a partir de um ficheiro que esteja na máquina que está a utilizar. O envio funciona quando o servidor não é a sua máquina: `workspace.import` precisa que o ficheiro já esteja no host, e é assim que ele lá chega.
 
 Vale a pena conhecer três propriedades:
 
 - **Um descarregamento gera uma cópia nova e o servidor não guarda nada dela.** Descarregar não é “ir buscar o ficheiro que o botão de exportação criou” — exporta outra vez, transmite esse resultado em fluxo e elimina-o. A resposta é `no-store` com `Accept-Ranges: none` pela mesma razão: um intervalo retomado iria juntar duas exportações diferentes num único ficheiro que parece válido e não é.
 - **Um envio é transmitido em fluxo para o disco, nunca colocado em buffer**, em ambas as extremidades, e a cópia preparada é eliminada em todas as saídas — incluindo numa recusa. Uma base de dados de espaço de trabalho não é uma captura de ecrã.
-- **Uma ligação retransmitida por relay não tem origem HTTP**, pelo que os controlos de transferência ficam aí desativados, com uma nota a explicar porquê. Tudo o que fala em caminhos do lado do servidor continua a funcionar através do relay; só as vias de bytes precisam de uma ligação direta.
+- **A transferência também funciona pelo relay.** Os descarregamentos e os envios usam o mesmo túnel de recursos cifrado das ligações diretas; não é precisa uma origem HTTP direta.
+
+A cifragem protege a transferência em trânsito, e não a base de dados do lado do
+servidor, o diretório de instantâneos nem uma cópia descarregada em repouso. O
+operador do servidor consegue aceder aos dados mantidos nesse anfitrião.
 
 :::note[Que caminhos pertencem a quem]
 Os caminhos que a página *mostra* — o diretório do instantâneo, o ficheiro que uma exportação escreveu, a origem que uma importação lê — estão na máquina que executa o `cc_server`. O caminho que um **descarregamento** comunica está na máquina onde está sentado. Essa distinção é a razão de existirem ambos: o primeiro é o que um script de manutenção ou uma sessão ssh precisa, o segundo é o que uma pessoa a recolher uma cópia de segurança precisa.

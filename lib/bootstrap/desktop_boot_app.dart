@@ -1,0 +1,65 @@
+import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
+import 'package:flutter/widget_previews.dart';
+import 'package:flutter/widgets.dart';
+
+/// The first desktop frame, before secure storage, native media and server boot.
+///
+/// Contains no session or cached workspace data. The setup window hosts it
+/// until authentication and workspace admission permit the real app to mount.
+class DesktopBootApp extends StatelessWidget {
+  /// Creates the localized, OS-themed startup surface.
+  @Preview(name: 'Desktop startup', group: 'Bootstrap', size: Size(640, 420))
+  const DesktopBootApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+        Brightness.dark;
+    final theme = dark ? CcThemeData.dark() : CcThemeData.light();
+    return CcTheme(
+      data: theme,
+      child: ForegroundTickerGate(
+        child: WidgetsApp(
+          color: theme.tokens.bgPrimary,
+          title: 'Control Center',
+          debugShowCheckedModeBanner: false,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          textStyle: CcFonts.ui(textStyle: CcTypography.body).copyWith(
+            color: theme.tokens.textPrimary,
+            decoration: TextDecoration.none,
+          ),
+          builder: (context, _) {
+            final loading = AppLocalizations.of(context).loadingEllipsis;
+            return ColoredBox(
+              color: theme.tokens.bgPrimary,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Control Center'),
+                      const SizedBox(height: 16),
+                      CcSpinner(semanticLabel: loading),
+                      const SizedBox(height: 12),
+                      ExcludeSemantics(
+                        child: Text(
+                          loading,
+                          style: TextStyle(color: theme.tokens.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

@@ -8,7 +8,7 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_server_core/src/cached_pr_review_repository.dart';
 import 'package:cc_server_core/src/pr_review/forge_client_pr_diff_source.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Builds the [ForgePrClient] for one repository on one forge.
 typedef ForgePrClientBuilder =
@@ -86,7 +86,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
 /// inbox.
 ForgeProviderRegistry buildForgeProviderRegistry({
   required WorkspaceDatabaseManager workspaceDbs,
-  required ForgeDioFactory dioFactory,
+  required ForgeHttpClientFactory httpClientFactory,
   required PrDiffSource localGitSource,
   DomainEventBus? eventBus,
   PrChangeSignals? changeSignals,
@@ -95,14 +95,14 @@ ForgeProviderRegistry buildForgeProviderRegistry({
   final factories = <ForgeProviderFactory>[];
 
   for (final forge in ForgeHost.supported) {
-    final dio = dioFactory.of(forge);
+    final httpClient = httpClientFactory.of(forge);
     factories.add(
       ForgeRepositoryFactory(
         forge: forge,
         workspaceDbs: workspaceDbs,
-        buildClient: forgePrClientBuilder(forge, dio),
+        buildClient: forgePrClientBuilder(forge, httpClient),
         localGitSource: localGitSource,
-        buildApiDiffSource: () => forgeApiDiffSource(forge, dio),
+        buildApiDiffSource: () => forgeApiDiffSource(forge, httpClient),
         eventBus: eventBus,
         changeSignals: changeSignals,
         blobStore: blobStore,
@@ -113,24 +113,24 @@ ForgeProviderRegistry buildForgeProviderRegistry({
   return ForgeProviderRegistry(factories);
 }
 
-/// The client builder for [forge] over [dio].
+/// The client builder for [forge] over [httpClient].
 ForgePrClientBuilder forgePrClientBuilder(
   ForgeHost forge,
-  Dio dio,
+  RhttpClient httpClient,
 ) => switch (forge) {
   ForgeHost.github => ({required owner, required repo}) => GitHubForgePrClient(
-    client: GitHubApiClient(dio),
+    client: GitHubApiClient(httpClient),
     owner: owner,
     repo: repo,
   ),
   ForgeHost.gitlab => ({required owner, required repo}) => GitLabForgePrClient(
-    client: GitLabApiClient(dio),
+    client: GitLabApiClient(httpClient),
     owner: owner,
     repo: repo,
   ),
   ForgeHost.bitbucket =>
     ({required owner, required repo}) => BitbucketForgePrClient(
-      client: BitbucketApiClient(dio),
+      client: BitbucketApiClient(httpClient),
       owner: owner,
       repo: repo,
     ),
@@ -141,11 +141,12 @@ ForgePrClientBuilder forgePrClientBuilder(
   ),
 };
 
-/// The API-backed diff source for [forge] over [dio].
+/// The API-backed diff source for [forge] over [httpClient].
 ///
 /// Only GitHub ships a dedicated API diff source today; the others serve their
 /// diff through the client and reuse the generic path.
-PrDiffSource forgeApiDiffSource(ForgeHost forge, Dio dio) => switch (forge) {
-  ForgeHost.github => GitHubApiPrDiffSource(GitHubApiClient(dio)),
-  _ => ForgeClientPrDiffSource(forgePrClientBuilder(forge, dio)),
-};
+PrDiffSource forgeApiDiffSource(ForgeHost forge, RhttpClient httpClient) =>
+    switch (forge) {
+      ForgeHost.github => GitHubApiPrDiffSource(GitHubApiClient(httpClient)),
+      _ => ForgeClientPrDiffSource(forgePrClientBuilder(forge, httpClient)),
+    };

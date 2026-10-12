@@ -1,9 +1,9 @@
 ---
 title: 執行無介面伺服器
 description: 執行 cc_server 無介面二進位檔或其 Docker 映像，配對用戶端，並以完整的 CLI 旗標與環境變數介面進行設定。
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: zh-TW/手冊/操作指南/執行無介面伺服器
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 在一台持續開機的機器上執行 `cc_server`，然後從你的桌面版、瀏覽器或手機連線過去。
@@ -23,7 +23,7 @@ Windows 上無介面執行。它擁有資料庫、執行代理，並發出每一
 | `ghcr.io/samuelalev/cc-server`                    | 後端：資料庫、代理、MCP、webhook | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | 網頁用戶端（靜態 nginx）                | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | 手機伴侶 PWA（靜態 nginx）       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC 配對中繼（選用）          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | 加密連線中繼（選用）     | `-p 8788:8788`   |
 
 整組堆疊的 compose 檔案如下：
 
@@ -54,11 +54,13 @@ volumes:
 在你把上述任何東西開放至回送以外的範圍之前，有幾件事值得先了解：
 
 - **`cc-server` 映像隨附 `CC_SERVER_INSECURE=1`**（它必須繫結 `0.0.0.0`
-  才能收到已發布連接埠的流量），因此只有在可信任網路上、位於負責終止 TLS 的反向
-  代理——Caddy、Traefik、nginx 或 Cloudflare Tunnel——後方才安全。若要在行程內
-  終止 TLS，請改為掛載憑證並設定 `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`
-  （然後取消設定 `CC_SERVER_INSECURE`）。這一切都能用 `docker run -e …` 或
-  compose 的 `environment:` 區塊覆寫。
+  才能收到已發布連接埠的流量）。請在可信任網路上使用負責終止 TLS 的反向
+  代理——Caddy、Traefik、nginx 或 Cloudflare Tunnel——或改為掛載憑證並設定
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`（然後取消設定
+  `CC_SERVER_INSECURE`）。這項設定只管伺服器外層的 HTTP/WebSocket 監聽器。
+  它永遠不會停用強制要求的端對端加密用戶端工作階段。TLS 仍保護登入／引導
+  流量、連線中繼資料、公開端點與網頁用戶端交付。這一切都能用 `docker run -e …`
+  或 compose 的 `environment:` 區塊覆寫。
 - **`/data` 是唯一保存狀態的地方。** SQLite 資料庫、已配對裝置的密鑰、
   下載的模型與會議音訊全都放在這個磁碟區裡——備份它，容器就變成可拋棄的。
 - **在首次連線前，從映像內部配對一個用戶端**，這是[步驟 3](#步驟-3在首次啟動前配對用戶端)
@@ -69,12 +71,14 @@ volumes:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **兩個用戶端映像都是靜態 nginx 主機**——執行時沒有什麼要設定；每個用戶端的
-  連線表單會接收你的伺服器 URL、裝置 id 與配對金鑰。中繼也一樣只需要它的
+- **兩個用戶端映像都是靜態 nginx 主機。** 內嵌的瀏覽器編輯器使用相同的
+  應用程式來源與相同的加密連線，如[下文](#瀏覽器編輯器資源)所述。每個用戶端的
+  連線表單會接收你的伺服器 URL、裝置 id 與配對金鑰。中繼只需要它的
   連接埠（`SIGNALING_HOST` / `SIGNALING_PORT` 可覆寫）；它是無狀態的、不保存
-  任何密鑰，而且是**備援**路徑——手機在可觸達時會使用回送、LAN、tailnet 或
+  配對金鑰，而且是**備援**路徑——手機在可觸達時會使用回送、LAN、tailnet 或
   直接的 `wss://` 路徑，只有在全都不可達時才退回中繼。如果你的用戶端一律能
-  直接觸達伺服器，就可以略過它。
+  直接觸達伺服器，就可以略過它。仲介看得到路由識別碼、IP 位址、大小與時序，
+  也能中斷流量；但它無法解密用戶端與伺服器之間的資源串流。
 
 本指南其餘部分會從原始碼建置伺服器；它所涵蓋的旗標與行為，和映像的環境變數
 所餵入的是同一批。
@@ -165,6 +169,12 @@ Connect a thin client (paste into its connect form):
 由 `cc_server pair` 簽發的認證資訊**不會過期**；在應用程式內簽發的則一律在
 30 天後過期。用畢之後，請從**設定 → 你 → 你的裝置**撤銷 CLI 簽發的裝置。
 
+配對金鑰為強制要求的 Noise 握手提供驗證；每個工作階段都會推導出新的流量金鑰，
+並檢查伺服器已簽署的身分。請保護配對金鑰，並從可信任的來源取得它（包括可信任
+的 QR），接著透過另一個可信任管道，或對照已知的釘選值來驗證新的伺服器指紋。
+不要默默接受已改變的釘選值：若你刻意更換伺服器身分，請經可信任管道重新配對。
+單靠 TLS 無法建立那份端對端的身分釘選。
+
 ## 步驟 4：啟動伺服器
 
 在回送上——這是預設值，對於同一台機器上的用戶端來說也已經足夠：
@@ -191,8 +201,11 @@ Connect a thin client (paste into its connect form):
 ```
 
 當 `--tls-cert` 與 `--tls-key` 兩者都設定時，`--insecure` 會被忽略——TLS
-一律優先。伺服器會在 `GET /healthz` 中以 `insecure: true` 公告明文狀態，
-用戶端則會把這類連線標示為不安全。
+一律優先。伺服器會在 `GET /healthz` 中以 `insecure: true` 公告外層監聽器的
+明文狀態。這並不會關閉 `/rpc` 上的 Noise 加密，無論用戶端是直接連線或經由
+中繼。請一起升級伺服器、中繼與用戶端：舊的明文 RPC 用戶端會遭到拒絕，沒有
+相容性退回。對敏感資源路由（包括備份傳輸）的公開請求會得到 HTTP `426`，
+即使來自回送也一樣；已配對的用戶端請改用加密隧道。
 
 伺服器會一直執行到收到 `SIGINT`/`SIGTERM`，然後乾淨地關機。
 
@@ -211,6 +224,29 @@ Connect a thin client (paste into its connect form):
 必須列入 `--allowed-origins`，否則對 `/rpc` 的 WebSocket 升級會遭拒；預設
 清單是 `https://app.usectrl.dev`，而 `localhost` / `127.0.0.1` 一律允許。
 :::
+
+### 瀏覽器編輯器資源
+
+編輯器前端是受信任的應用程式碼，在網頁應用程式自身的來源上執行。其
+Service Worker 會將 HTTP 與 WebSocket 流量經由與用戶端其餘部分相同的
+已驗證加密工作階段路由。`cc_server` 會解密每個要求、將其轉送至本機的
+code-server 後端，並將回應加密後傳回用戶端。檔案仍由伺服器掌管。
+
+請以 HTTPS 或安全的回送來源代管網頁用戶端，讓 Service Worker 能夠運作。
+一般的網頁建置與發行指令碼都會納入共用的資源檔案。如果你手動建置套件，
+請之後在儲存庫根目錄準備好這些檔案：
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+手機網頁版建置請改用 `apps/cc_remote/build/web`。這會把
+`cc_resource_bridge.js`、`cc_resource_worker.js` 與
+`cc_resource_ws_shim.js` 複製到應用程式套件中。
+
+原生編輯器流量則改用受能力範圍限定的回送外觀。請不要透過公開代理，暴露
+伺服器所啟動之編輯器擴充功能的私有回送回報／命令閘道。敏感的公開 HTTP
+要求會遭拒；資源需要已驗證的加密工作階段。
 
 ## 步驟 6：連接 Google Calendar（選用）
 
@@ -265,7 +301,7 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
 每一項以工作區為範圍的呼叫都攜帶自己的 `workspace_id`，存取權由呼叫者的工作區
 成員資格與角色決定——而不是持有配對金鑰。
 
-在你把連接埠開放至回送以外的範圍之前，有兩件事要知道：
+在你把連接埠開放至回送以外的範圍之前，有兩件事要知道（單靠 TLS 並不能提供已配對用戶端的端對端加密，也不能授權資源）：
 
 - **MCP 在主機外會失效即關閉。** 沒有權杖的 MCP 介面只回應回送。繫結 `any` 並不會擴大範圍——來自主機外的請求會遭到拒絕，並附上「MCP requires a bearer token to answer non-loopback clients」，直到你設定一個權杖（`mcp.setToken`，或 **設定 → 伺服器 → MCP 伺服器**）。
 - **`GET /healthz` 依設計不需驗證**，具有萬用字元 CORS，並會公布伺服器的 id、名稱、身分指紋與建置版本。用戶端需要指紋才能釘選伺服器，因此這是刻意的——但這也確實表示任何可觸達的 `cc_server` 都會向任何詢問的人揭露這麼多資訊。

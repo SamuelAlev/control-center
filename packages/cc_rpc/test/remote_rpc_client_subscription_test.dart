@@ -16,6 +16,7 @@ class _FakeChannel implements RemoteRpcChannelPort {
   final List<Map<String, dynamic>> sent = [];
 
   bool _open = true;
+  Future<void>? sendBarrier;
 
   @override
   Stream<Map<String, dynamic>> get incoming => _incoming.stream;
@@ -29,6 +30,7 @@ class _FakeChannel implements RemoteRpcChannelPort {
   @override
   Future<void> send(Map<String, dynamic> frame) async {
     sent.add(frame);
+    if (sendBarrier case final barrier?) await barrier;
     // Auto-acknowledge unsubscribes so an awaited `sub.cancel()` (which awaits
     // the `sub/unsubscribe` round-trip) completes, like a real server would.
     if (frame['method'] == RpcMethods.unsubscribe) {
@@ -492,6 +494,30 @@ void main() {
       await client.close();
       await expectation;
     });
+
+    test(
+      'close cancels a request while encrypted send is still flushing',
+      () async {
+        final barrier = Completer<void>();
+        final channel = _FakeChannel()..sendBarrier = barrier.future;
+        final client = RemoteRpcClient(channel)..start();
+        addTearDown(() async {
+          if (!barrier.isCompleted) barrier.complete();
+          await client.close();
+          await channel.close();
+        });
+        final pending = expectLater(
+          client.call('tickets.list', const {}),
+          throwsA(isA<RemoteRpcClientClosedException>()),
+        );
+        await _flush();
+        await client.close();
+        // Teardown is prompt even if the transport cannot finish its send.
+        await pending.timeout(const Duration(seconds: 1));
+        barrier.complete();
+        await _flush();
+      },
+    );
 
     test(
       'a request that times out throws TimeoutException and clears pending',

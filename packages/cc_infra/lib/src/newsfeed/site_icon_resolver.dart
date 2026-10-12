@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/app_network.dart';
 import 'package:html/parser.dart' as html_parser;
+import 'package:rhttp/rhttp.dart';
 
 /// Whether [url] points at an SVG document. SVG icons cannot be decoded by
 /// the client's raster pipeline (Flutter `Image` + the media proxy's ICO→PNG
@@ -19,9 +20,37 @@ bool isSvgIconUrl(String url) {
 /// no stored icon).
 class SiteIconResolver {
   /// Creates a new [SiteIconResolver].
-  SiteIconResolver(this._dio);
+  ///
+  /// The passed client's settings (trust store, timeouts, base URL) and
+  /// interceptor chain carry over to the client the page fetch actually runs
+  /// on: rhttp does not report the URL a redirect chain ended on, so redirects
+  /// are turned off there and followed here, where each `Location` is visible.
+  /// `redirectlessHttpClient` injects that client directly, for tests.
+  SiteIconResolver(this._httpClient, {RhttpClient? redirectlessHttpClient})
+    : _redirectlessHttpClientOverride = redirectlessHttpClient;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
+  final RhttpClient? _redirectlessHttpClientOverride;
+
+  /// Maximum redirects to follow before abandoning the fetch.
+  static const int _maxRedirects = 5;
+
+  /// The fetch transport: the injected client's settings and interceptors with
+  /// redirect-following turned OFF, so every hop is observable here. Created on
+  /// first use, so a caller that never resolves an icon never needs the native
+  /// runtime.
+  late final RhttpClient _redirectlessHttpClient =
+      _redirectlessHttpClientOverride ??
+      RhttpClient.createSync(
+        settings: httpClientSettings(
+          settings: _httpClient.settings.copyWith(
+            redirectSettings: const RedirectSettings.none(),
+          ),
+        ),
+        interceptors: [
+          if (_httpClient.interceptor != null) _httpClient.interceptor!,
+        ],
+      );
 
   /// Resolves the favicon of [siteUrl]. Returns null when nothing usable is
   /// found; never throws.
@@ -37,33 +66,71 @@ class SiteIconResolver {
       return null;
     }
     try {
-      final response = await _dio.get<String>(
-        uri.toString(),
+      final page = await _fetchPage(
+        uri,
+        userAgent: userAgent,
         cancelToken: cancelToken,
-        options: Options(
-          responseType: ResponseType.plain,
-          headers: {
-            'User-Agent': userAgent?.isNotEmpty == true
-                ? userAgent!
-                : 'ControlCenter/1.0 (+https://github.com/SamuelAlev/control-center)',
-            'Accept': 'text/html, application/xhtml+xml, */*;q=0.5',
-          },
-          followRedirects: true,
-          receiveTimeout: const Duration(seconds: 10),
-          validateStatus: (status) =>
-              status != null && status >= 200 && status < 400,
-        ),
       );
-      final body = response.data ?? '';
-      if (body.isEmpty) {
+      if (page == null || page.body.isEmpty) {
         return null;
       }
-      // Hrefs resolve against the FINAL url after redirects, not the
-      // requested one.
-      return pickBestIcon(body, base: response.realUri);
+      // Hrefs resolve against the URL the page was finally served from, not the
+      // one that was requested — a site that redirects to a subdomain or a path
+      // prefix would otherwise point every relative icon href at the wrong
+      // host.
+      return pickBestIcon(page.body, base: page.finalUri);
     } on Object {
       return null;
     }
+  }
+
+  /// Fetches [uri] through the redirect-less transport, following up to
+  /// [_maxRedirects] `Location` hops itself so the page's effective URL is
+  /// known. Null when the chain left http(s) or exceeded the budget.
+  Future<({String body, Uri finalUri})?> _fetchPage(
+    Uri uri, {
+    String? userAgent,
+    CancelToken? cancelToken,
+  }) async {
+    var current = uri;
+    for (var hop = 0; hop <= _maxRedirects; hop++) {
+      final response = await _redirectlessHttpClient.getText(
+        current.toString(),
+        headers: HttpHeaders.rawMap({
+          'User-Agent': userAgent?.isNotEmpty == true
+              ? userAgent!
+              : 'ControlCenter/1.0 (+https://github.com/SamuelAlev/control-center)',
+          'Accept': 'text/html, application/xhtml+xml, */*;q=0.5',
+        }),
+        cancelToken: cancelToken,
+      );
+      final location = _header(response, 'location');
+      final isRedirect = response.statusCode ~/ 100 == 3;
+      if (!isRedirect || location == null || location.isEmpty) {
+        return (body: response.body, finalUri: current);
+      }
+      final next = current.resolve(location);
+      if (next.scheme != 'http' && next.scheme != 'https') {
+        return null;
+      }
+      current = next;
+    }
+    return null;
+  }
+
+  /// Case-insensitive lookup of [name] in a response's headers (reqwest
+  /// lower-cases them; a canned test response may not).
+  static String? _header(HttpResponse response, String name) {
+    final direct = response.headerMap[name];
+    if (direct != null) {
+      return direct;
+    }
+    for (final entry in response.headerMap.entries) {
+      if (entry.key.toLowerCase() == name) {
+        return entry.value;
+      }
+    }
+    return null;
   }
 
   /// Picks the best icon candidate out of an HTML document. Visible for

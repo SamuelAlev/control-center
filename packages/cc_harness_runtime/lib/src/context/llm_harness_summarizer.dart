@@ -8,40 +8,93 @@ import 'package:cc_harness/provider.dart';
 ///
 /// Uses the run's own provider so no extra credential/model resolution is
 /// needed; the call is one-shot (non-streaming drain) and cache-free.
+///
+/// The request is tagged [LlmCallPurpose.compaction] so the provider usage
+/// ledger can attribute and price it (report 3A) — a compaction must never look
+/// free by moving work into a call nothing counts.
 class LlmHarnessSummarizer implements HarnessSummarizerPort {
   /// Creates an [LlmHarnessSummarizer] over `provider`.
-  const LlmHarnessSummarizer(this._provider);
+  const LlmHarnessSummarizer(
+    this._provider, {
+    this.budget = HarnessEvidenceBudget.defaults,
+    this.calibration,
+    this.providerId,
+  });
 
   final LlmProviderPort _provider;
+
+  /// Evidence budget for the bounded history handed to the model.
+  final HarnessEvidenceBudget budget;
+
+  /// Optional estimator calibration. When set, the prompt-token estimate for
+  /// each summarization request is compared against the provider's reported
+  /// prompt usage and folded in under [LlmCallPurpose.compaction].
+  final TokenCalibration? calibration;
+
+  /// Provider id used to key [calibration]; defaults to the provider's own
+  /// display name.
+  final String? providerId;
 
   static const HarnessSummarizerPort _fallback = StructuralHarnessSummarizer();
 
   @override
   Future<String> summarize(HarnessCompactionInput input) async {
     try {
+      final userPrompt = _userPrompt(input);
       final buf = StringBuffer();
+      // The estimate must cover the SAME content the provider bills: the
+      // system prompt plus the single user turn.
+      final estimatedPromptTokens =
+          TokenEstimator.instance.estimate(harnessCompactionSystemPrompt) +
+          TokenEstimator.instance.estimate(userPrompt);
+      var usage = const LlmUsage();
       await for (final event in _provider.complete(
-        messages: [HarnessMessage.user(_userPrompt(input))],
+        messages: [HarnessMessage.user(userPrompt)],
         config: const LlmCompleteConfig(
           systemPrompt: harnessCompactionSystemPrompt,
           maxTokens: 2048,
           cacheEnabled: false,
+          purpose: LlmCallPurpose.compaction,
         ),
       )) {
         switch (event) {
           case LlmTextDelta(:final text):
             buf.write(text);
+          case LlmUsage():
+            usage = usage.reconcile(event);
+          case LlmDone(usage: final finalUsage):
+            if (finalUsage != null) {
+              usage = usage.reconcile(finalUsage);
+            }
           case LlmError(:final message):
             throw StateError(message);
           default:
             break;
         }
       }
+      _observeUsage(
+        estimatedPromptTokens,
+        usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens,
+      );
       final text = buf.toString().trim();
       return text.isEmpty ? await _fallback.summarize(input) : text;
     } on Object {
       return _fallback.summarize(input);
     }
+  }
+
+  void _observeUsage(int estimatedPromptTokens, int observedPromptTokens) {
+    final calibration = this.calibration;
+    if (calibration == null || observedPromptTokens <= 0) {
+      return;
+    }
+    calibration.observe(
+      providerId: providerId ?? _provider.displayName,
+      modelId: _provider.defaultModel,
+      purpose: LlmCallPurpose.compaction,
+      estimatedTokens: estimatedPromptTokens,
+      observedPromptTokens: observedPromptTokens,
+    );
   }
 
   String _userPrompt(HarnessCompactionInput input) {
@@ -73,6 +126,10 @@ class LlmHarnessSummarizer implements HarnessSummarizerPort {
         serializeHarnessHistory(
           input.messages,
           selfAgentName: input.selfAgentName,
+          budget: budget,
+          activeEditTargets: input.activeEditTargets.isEmpty
+              ? collectActiveEditTargets(input.messages)
+              : input.activeEditTargets,
         ),
       )
       ..writeln('</conversation-history>');

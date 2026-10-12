@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart'
     show GoogleOAuthException, WorkspaceMismatchException;
@@ -8,9 +7,10 @@ import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart'
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_infra/cc_infra.dart'
     show GoogleServerCredentials, googleOAuthTokenEndpoint;
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Connecting a calendar with Control Center's own Google app.
@@ -42,14 +42,12 @@ void main() {
 
   CalendarConnectService service({
     GoogleOAuthClient serverClient = const GoogleOAuthClient.none(),
-    _GoogleStubAdapter? adapter,
+    _GoogleStub? stub,
   }) => CalendarConnectService(
     store: store,
     calendarRepository: calendars,
     serverClient: serverClient,
-    dioFactory: adapter == null
-        ? null
-        : () => Dio()..httpClientAdapter = adapter,
+    httpClientFactory: stub == null ? null : () => stub.client,
   );
 
   const builtin = GoogleOAuthClient(
@@ -104,16 +102,16 @@ void main() {
     });
 
     test('authorizes with the server client and never echoes it back', () async {
-      final adapter = _GoogleStubAdapter();
+      final stub = _GoogleStub();
 
       final begin = await service(
         serverClient: builtin,
-        adapter: adapter,
+        stub: stub,
       ).begin(workspaceId: 'ws-1', useBuiltin: true);
 
       expect(begin.userCode, 'WDJB-MJHT');
       expect(begin.verificationUrl, 'https://www.google.com/device');
-      expect(adapter.deviceCodeRequests.single['client_id'], builtin.clientId);
+      expect(stub.deviceCodeRequests.single['client_id'], builtin.clientId);
       // The handle and the display strings are all the client gets — a response
       // carrying the secret would put it on every paired device.
       expect(
@@ -125,12 +123,9 @@ void main() {
 
   group('poll stores a marker, not the secret', () {
     test('a built-in connect writes no client credentials at all', () async {
-      final adapter = _GoogleStubAdapter();
-      final connect = service(serverClient: builtin, adapter: adapter);
-      final begin = await connect.begin(
-        workspaceId: 'ws-1',
-        useBuiltin: true,
-      );
+      final stub = _GoogleStub();
+      final connect = service(serverClient: builtin, stub: stub);
+      final begin = await connect.begin(workspaceId: 'ws-1', useBuiltin: true);
 
       final poll = await connect.poll(
         workspaceId: 'ws-1',
@@ -156,8 +151,8 @@ void main() {
     });
 
     test('a bring-your-own connect stores the pair it was given', () async {
-      final adapter = _GoogleStubAdapter();
-      final connect = service(serverClient: builtin, adapter: adapter);
+      final stub = _GoogleStub();
+      final connect = service(serverClient: builtin, stub: stub);
       final begin = await connect.begin(
         workspaceId: 'ws-1',
         clientId: 'mine.apps.googleusercontent.com',
@@ -174,16 +169,13 @@ void main() {
       expect(saved.usesBuiltinClient, isFalse);
       expect(saved.clientId, 'mine.apps.googleusercontent.com');
       expect(saved.clientSecret, 'my-secret');
-      expect(adapter.deviceCodeRequests.single['client_id'], saved.clientId);
+      expect(stub.deviceCodeRequests.single['client_id'], saved.clientId);
     });
 
     test('a handle cannot be polled from another workspace', () async {
-      final adapter = _GoogleStubAdapter();
-      final connect = service(serverClient: builtin, adapter: adapter);
-      final begin = await connect.begin(
-        workspaceId: 'ws-1',
-        useBuiltin: true,
-      );
+      final stub = _GoogleStub();
+      final connect = service(serverClient: builtin, stub: stub);
+      final begin = await connect.begin(workspaceId: 'ws-1', useBuiltin: true);
 
       await expectLater(
         connect.poll(workspaceId: 'ws-2', handle: begin.handle),
@@ -210,7 +202,7 @@ void main() {
 
     test('against the pair the server holds now, so rotation works', () async {
       await saveMarker();
-      final adapter = _GoogleStubAdapter();
+      final stub = _GoogleStub();
       // Deliberately NOT the pair the account was connected under: this stands in
       // for a rotated secret shipped in a later build.
       final tokens = ServerGoogleTokenManager(
@@ -219,7 +211,7 @@ void main() {
           clientId: 'rotated-id.apps.googleusercontent.com',
           clientSecret: 'rotated-secret',
         ),
-        dioFactory: () => Dio()..httpClientAdapter = adapter,
+        httpClientFactory: () => stub.client,
       );
 
       final token = await tokens.accessTokenFor(
@@ -227,7 +219,7 @@ void main() {
       );
 
       expect(token, 'fresh-access');
-      final refresh = adapter.refreshRequests.single;
+      final refresh = stub.refreshRequests.single;
       expect(refresh['client_id'], 'rotated-id.apps.googleusercontent.com');
       expect(refresh['client_secret'], 'rotated-secret');
       // Refreshing must not turn the marker into a stored copy of the pair.
@@ -239,10 +231,10 @@ void main() {
 
     test('a server that no longer has one dials nothing', () async {
       await saveMarker();
-      final adapter = _GoogleStubAdapter();
+      final stub = _GoogleStub();
       final tokens = ServerGoogleTokenManager(
         store: store,
-        dioFactory: () => Dio()..httpClientAdapter = adapter,
+        httpClientFactory: () => stub.client,
       );
 
       // e.g. an account connected on an official build, then moved to a
@@ -259,7 +251,7 @@ void main() {
         await tokens.accessTokenFor('google:ws-1:someone@example.com'),
         'stale',
       );
-      expect(adapter.tokenRequests, isEmpty);
+      expect(stub.tokenRequests, isEmpty);
     });
 
     test("a user's own pair is used as stored, not the server's", () async {
@@ -275,11 +267,11 @@ void main() {
           clientSecret: 'my-secret',
         ),
       );
-      final adapter = _GoogleStubAdapter();
+      final stub = _GoogleStub();
       final tokens = ServerGoogleTokenManager(
         store: store,
         serverClient: builtin,
-        dioFactory: () => Dio()..httpClientAdapter = adapter,
+        httpClientFactory: () => stub.client,
       );
 
       expect(
@@ -289,7 +281,7 @@ void main() {
       // A workspace can hold accounts from several Google projects, so the
       // server's own client must never be substituted for a stored one.
       expect(
-        adapter.refreshRequests.single['client_id'],
+        stub.refreshRequests.single['client_id'],
         'mine.apps.googleusercontent.com',
       );
     });
@@ -360,9 +352,10 @@ void main() {
   });
 }
 
-/// Answers Google's device-code and token endpoints, recording the form bodies
-/// so a test can assert which client credentials were actually sent.
-class _GoogleStubAdapter implements HttpClientAdapter {
+/// Answers Google's device-code and token endpoints over a [TestHttpClient],
+/// recording the form bodies so a test can assert which client credentials were
+/// actually sent.
+class _GoogleStub {
   final List<Map<String, String>> deviceCodeRequests = [];
   final List<Map<String, String>> tokenRequests = [];
 
@@ -370,22 +363,23 @@ class _GoogleStubAdapter implements HttpClientAdapter {
   Iterable<Map<String, String>> get refreshRequests =>
       tokenRequests.where((r) => r['grant_type'] == 'refresh_token');
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    final form = requestStream == null
-        ? const <String, String>{}
-        : Uri.splitQueryString(
-            utf8.decode(
-              await requestStream.expand((chunk) => chunk).toList(),
-            ),
-          );
-    if (options.uri.toString() == googleOAuthTokenEndpoint) {
+  /// A fresh transport for each `GoogleDeviceAuthClient` the services build.
+  TestHttpClient get client => TestHttpClient(handler: _handle);
+
+  /// The path of the token endpoint, so the two hops are told apart by URL
+  /// rather than by the order they happen to arrive in.
+  static final String _tokenPath = Uri.parse(googleOAuthTokenEndpoint).path;
+
+  HttpResponse _handle(HttpRequest request) {
+    final form = switch (request.body) {
+      HttpBodyForm(:final form) => form,
+      _ => const <String, String>{},
+    };
+    if (request.method == HttpMethod.post &&
+        httpRequestUri(request).path == _tokenPath) {
       tokenRequests.add(form);
-      return _json(
+      return httpTextResponse(
+        request,
         form['grant_type'] == 'refresh_token'
             ? {'access_token': 'fresh-access', 'expires_in': 3600}
             : {
@@ -398,7 +392,7 @@ class _GoogleStubAdapter implements HttpClientAdapter {
       );
     }
     deviceCodeRequests.add(form);
-    return _json(const {
+    return httpTextResponse(request, const {
       'device_code': 'device-1',
       'user_code': 'WDJB-MJHT',
       'verification_url': 'https://www.google.com/device',
@@ -406,15 +400,6 @@ class _GoogleStubAdapter implements HttpClientAdapter {
       'interval': 5,
     });
   }
-
-  static ResponseBody _json(Map<String, dynamic> body) =>
-      ResponseBody.fromString(
-        jsonEncode(body),
-        200,
-        headers: const {
-          Headers.contentTypeHeader: [Headers.jsonContentType],
-        },
-      );
 
   /// An unsigned JWT whose payload carries the email — the shape the connect path
   /// reads the account address out of.
@@ -424,9 +409,6 @@ class _GoogleStubAdapter implements HttpClientAdapter {
     return '${segment(const {'alg': 'none'})}.'
         '${segment({'email': email})}.signature';
   }
-
-  @override
-  void close({bool force = false}) {}
 }
 
 class _FakeCalendarRepository implements CalendarRepository {

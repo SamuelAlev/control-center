@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/network_constants.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// A Slack Web API call that returned HTTP 200 with `ok: false`.
 ///
@@ -172,9 +172,9 @@ class SlackStreamHandle {
 class SlackApiClient {
   /// Creates a [SlackApiClient]. [_botToken] is the default authorization for
   /// every call that does not name its own token.
-  SlackApiClient({required this._dio, required this._botToken});
+  SlackApiClient({required this._httpClient, required this._botToken});
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final String _botToken;
 
   /// Retries on `ratelimited`. Slack's `chat.*` tiers are per-space and the
@@ -392,22 +392,22 @@ class SlackApiClient {
     List<Map<String, dynamic>>? blocks,
   }) async {
     try {
-      await _dio.post<dynamic>(
+      await _httpClient.post(
         responseUrl,
-        data: {
+        headers: const HttpHeaders.rawMap({
+          'Content-Type': 'application/json; charset=utf-8',
+        }),
+        body: HttpBody.json({
           'response_type': visibleToSpace ? 'in_channel' : 'ephemeral',
           'text': text,
           'blocks': ?blocks,
-        },
-        options: Options(
-          headers: {'Content-Type': 'application/json; charset=utf-8'},
-        ),
+        }),
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -570,17 +570,23 @@ class SlackApiClient {
     // refresh_token" — a message that reads like the caller forgot to pass one.
     final unauthenticated = auth.isEmpty;
     try {
-      final response = await _dio.post<dynamic>(
+      final response = await _httpClient.post(
         '$slackApiBaseUrl/$method',
-        data: payload ?? const <String, dynamic>{},
-        options: Options(
-          contentType: unauthenticated
-              ? Headers.formUrlEncodedContentType
+        headers: HttpHeaders.rawMap({
+          if (!unauthenticated) 'Authorization': 'Bearer $auth',
+          'Content-Type': unauthenticated
+              ? 'application/x-www-form-urlencoded'
               : 'application/json; charset=utf-8',
-          headers: {if (!unauthenticated) 'Authorization': 'Bearer $auth'},
-        ),
+        }),
+        body: unauthenticated
+            ? HttpBody.form({
+                for (final entry
+                    in (payload ?? const <String, dynamic>{}).entries)
+                  entry.key: '${entry.value}',
+              })
+            : HttpBody.json(payload ?? const <String, dynamic>{}),
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is! Map) {
         throw SlackApiException(method, 'malformed_response');
       }
@@ -594,32 +600,44 @@ class SlackApiClient {
         needed: body['needed'] as String?,
         details: _complaints(body),
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       // Slack signals throttling with HTTP 429 + `Retry-After` (seconds).
-      if (e.response?.statusCode == 429 && attempt < _maxRateLimitRetries) {
-        final seconds =
-            int.tryParse(e.response?.headers.value('retry-after') ?? '') ?? 1;
-        await Future<void>.delayed(Duration(seconds: seconds));
-        return _call(
-          method,
-          payload: payload,
-          token: token,
-          attempt: attempt + 1,
-        );
-      }
-      if (e.response?.statusCode == 429) {
-        final seconds =
-            int.tryParse(e.response?.headers.value('retry-after') ?? '') ?? 1;
+      if (e is RhttpStatusCodeException && e.statusCode == 429) {
+        final seconds = int.tryParse(_header(e, 'retry-after') ?? '') ?? 1;
+        if (attempt < _maxRateLimitRetries) {
+          await Future<void>.delayed(Duration(seconds: seconds));
+          return _call(
+            method,
+            payload: payload,
+            token: token,
+            attempt: attempt + 1,
+          );
+        }
         throw SlackApiException(
           method,
           'ratelimited',
           retryAfter: Duration(seconds: seconds),
         );
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
+  }
+
+  /// Case-insensitive lookup of [name] in a status failure's headers (reqwest
+  /// lower-cases them; a canned test response may not).
+  static String? _header(RhttpStatusCodeException e, String name) {
+    final direct = e.headerMap[name];
+    if (direct != null) {
+      return direct;
+    }
+    for (final entry in e.headerMap.entries) {
+      if (entry.key.toLowerCase() == name) {
+        return entry.value;
+      }
+    }
+    return null;
   }
 }

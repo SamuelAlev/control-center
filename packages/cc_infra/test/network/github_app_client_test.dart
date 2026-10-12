@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_infra/src/network/github/github_app_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// A 2048-bit key generated for this test and used nowhere else.
@@ -37,37 +36,38 @@ SVgaUK2148/jd/aKIcXn3k4Hc17BYRgsoeMdfe3jrjOw4SknWBjC5g==
 -----END RSA PRIVATE KEY-----
 ''';
 
-class _RecordingAdapter implements HttpClientAdapter {
-  _RecordingAdapter(this.responses, {this.statusByPath = const {}});
+/// Serves canned JSON per request path and records what was asked for.
+class _RecordingTransport {
+  _RecordingTransport(this.responses, {this.statusByPath = const {}});
 
   final Map<String, Object> responses;
   final Map<String, int> statusByPath;
+
+  /// Request paths, in call order.
   final List<String> paths = [];
+
+  /// `Authorization` header values, in call order.
   final List<String> authorizations = [];
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    paths.add(options.path);
-    authorizations.add('${options.headers[HttpHeaders.authorizationHeader]}');
-    final body = responses[options.path];
-    if (body == null && !statusByPath.containsKey(options.path)) {
-      return ResponseBody.fromString('{}', 404);
+  /// The transport the app client under test talks to.
+  late final TestHttpClient client = TestHttpClient(handler: _handle);
+
+  HttpResponse _handle(HttpRequest request) {
+    final path = httpRequestUri(request).path;
+    paths.add(path);
+    authorizations.add(request.headers?[HttpHeaderName.authorization] ?? '');
+    final body = responses[path];
+    if (body == null && !statusByPath.containsKey(path)) {
+      return httpTextResponse(request, const {
+        'message': 'Not Found',
+      }, statusCode: 404);
     }
-    return ResponseBody.fromString(
-      jsonEncode(body ?? const {}),
-      statusByPath[options.path] ?? 200,
-      headers: {
-        HttpHeaders.contentTypeHeader: ['application/json'],
-      },
+    return httpTextResponse(
+      request,
+      body ?? const <String, Object?>{},
+      statusCode: statusByPath[path] ?? 200,
     );
   }
-
-  @override
-  void close({bool force = false}) {}
 }
 
 void main() {
@@ -102,25 +102,23 @@ void main() {
     },
   };
 
-  ({GitHubAppClient client, _RecordingAdapter adapter}) build({
+  ({GitHubAppClient client, _RecordingTransport transport}) build({
     Map<String, Object>? responses,
     Map<String, int> statusByPath = const {},
     DateTime Function()? now,
   }) {
-    final adapter = _RecordingAdapter(
+    final transport = _RecordingTransport(
       responses ?? responsesWith(),
       statusByPath: statusByPath,
     );
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-      ..httpClientAdapter = adapter;
     return (
       client: GitHubAppClient(
         appId: '12345',
         privateKeyPem: _testKeyPem,
-        dio: dio,
+        httpClient: transport.client,
         now: now,
       ),
-      adapter: adapter,
+      transport: transport,
     );
   }
 
@@ -157,7 +155,11 @@ void main() {
     test('is presented as the bearer on app requests', () async {
       final built = build();
       await built.client.installations();
-      expect(built.adapter.authorizations.first, startsWith('Bearer eyJ'));
+      expect(built.transport.authorizations.first, startsWith('Bearer eyJ'));
+      final request = built.transport.client.requests.first;
+      final headers = (request.headers! as HttpHeaderRawMap).map;
+      expect(headers['Accept'], 'application/vnd.github+json');
+      expect(headers['X-GitHub-Api-Version'], '2022-11-28');
     });
   });
 
@@ -182,7 +184,7 @@ void main() {
       await built.client.installations();
       await built.client.installations();
       expect(
-        built.adapter.paths.where((p) => p == '/app/installations'),
+        built.transport.paths.where((p) => p == '/app/installations'),
         hasLength(1),
       );
     });
@@ -194,7 +196,7 @@ void main() {
       expect(await built.client.installations(), isEmpty);
       expect(await built.client.installations(), isEmpty);
       expect(
-        built.adapter.paths.where((p) => p == '/app/installations').length,
+        built.transport.paths.where((p) => p == '/app/installations').length,
         greaterThan(1),
       );
     });
@@ -220,7 +222,7 @@ void main() {
       await built.client.tokenForOwner('acme');
       await built.client.tokenForOwner('acme');
       expect(
-        built.adapter.paths.where(
+        built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
         ),
         hasLength(1),
@@ -241,7 +243,7 @@ void main() {
       await built.client.tokenForInstallation(42);
 
       expect(
-        built.adapter.paths.where(
+        built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
         ),
         hasLength(2),
@@ -255,7 +257,7 @@ void main() {
       await built.client.tokenForInstallation(42);
 
       expect(
-        built.adapter.paths.where(
+        built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
         ),
         hasLength(2),
@@ -295,7 +297,7 @@ void main() {
       expect(await built.client.isOwnerSuspended('acme'), isTrue);
       expect(await built.client.allInstallationsSuspended(), isTrue);
       expect(
-        built.adapter.paths.where(
+        built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
         ),
         isEmpty,
@@ -322,7 +324,7 @@ void main() {
       expect(await built.client.tokenForOwner('acme'), isNull);
       expect(await built.client.tokenForOwner('acme'), isNull);
       expect(
-        built.adapter.paths.where(
+        built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
         ),
         hasLength(1),

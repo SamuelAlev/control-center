@@ -11,7 +11,7 @@ import 'package:cc_infra/src/code_graph/code_indexer.dart';
 import 'package:cc_infra/src/code_graph/extraction_isolate.dart';
 import 'package:cc_infra/src/code_graph/extraction_worker.dart';
 import 'package:cc_natives/cc_natives.dart';
-import 'package:dio/dio.dart' show CancelToken;
+import 'package:rhttp/rhttp.dart' show CancelToken;
 import 'package:test/test.dart';
 
 /// The extraction worker replaced one throwaway `Isolate.run` PER FILE (each

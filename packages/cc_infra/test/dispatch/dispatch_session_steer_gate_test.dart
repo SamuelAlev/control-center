@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
@@ -60,6 +61,23 @@ class _UnusedAgentRepo implements AgentRepository {
 }
 
 class _UnusedRunLogRepo implements AgentRunLogRepository {
+  @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async => false;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

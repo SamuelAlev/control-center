@@ -1,45 +1,19 @@
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:cc_infra/src/git/service_status_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-// ---------------------------------------------------------------------------
-// Fake Dio — stubs getUri with configurable response/error.
-// ---------------------------------------------------------------------------
-class _FakeDio extends Fake implements Dio {
-  Object? _nextResult;
-
-  void stubResponse(Response<Map<String, dynamic>> response) {
-    _nextResult = response;
-  }
-
-  void stubError(Object error) {
-    _nextResult = error;
-  }
-
-  @override
-  Future<Response<T>> getUri<T>(
-    Uri uri, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onReceiveProgress,
-  }) async {
-    final result = _nextResult;
-    if (result is Exception) {
-      throw result;
-    }
-    final r =
-        (result as Response?) ??
-        Response(requestOptions: RequestOptions(path: ''));
-    return r as Response<T>;
-  }
-}
+import 'package:rhttp/rhttp.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Drives [ServiceStatusService] with a canned transport: [TestHttpClient]
+/// answers with [body] (a `String` is sent verbatim, anything else is
+/// JSON-encoded) and records the outgoing request for URL assertions.
+TestHttpClient _clientWithBody(Object? body) =>
+    TestHttpClient(handler: (request) => httpTextResponse(request, body));
+
 Map<String, dynamic> _baseResponse({
   String? indicator = 'none',
   String description = 'All Systems Operational',
@@ -88,36 +62,61 @@ Map<String, dynamic> _incident({
 // Tests
 // ---------------------------------------------------------------------------
 void main() {
-  late _FakeDio dio;
+  late TestHttpClient client;
   late ServiceStatusService service;
 
-  Response<Map<String, dynamic>> response(Map<String, dynamic> data) {
-    return Response<Map<String, dynamic>>(
-      data: data,
-      requestOptions: RequestOptions(path: ''),
-    );
+  /// Rebuilds [client]/[service] so the next request is answered with [body]
+  /// (a `String` is sent verbatim; any other value is JSON-encoded). `null`
+  /// mimics a null response payload (`'null'` body → no JSON object).
+  void stubBody(Object? body) {
+    client = _clientWithBody(body);
+    service = ServiceStatusService(client);
   }
 
   setUp(() {
-    dio = _FakeDio();
-    service = ServiceStatusService(dio);
+    stubBody(null);
   });
 
   // ── Status polling ────────────────────────────────────────────────────
 
   group('fetch (status polling)', () {
+    test('requests the githubstatus.com summary URL by default', () async {
+      stubBody(_baseResponse());
+
+      await service.fetch();
+
+      expect(client.requests, hasLength(1));
+      expect(
+        httpRequestUri(client.requests.single),
+        Uri.parse(githubStatusSummaryUrl),
+      );
+    });
+
+    test('requests a custom summaryUrl when configured', () async {
+      stubBody(_baseResponse());
+      final custom = ServiceStatusService(
+        client,
+        summaryUrl: claudeStatusSummaryUrl,
+      );
+
+      await custom.fetch();
+
+      expect(
+        httpRequestUri(client.requests.single),
+        Uri.parse(claudeStatusSummaryUrl),
+      );
+    });
+
     test('returns parsed status from full API response', () async {
-      dio.stubResponse(
-        response(
-          _baseResponse(
-            indicator: 'none',
-            description: 'All Systems Operational',
-            components: [
-              _component(id: 'c1', name: 'Git Operations', position: 1),
-              _component(id: 'c2', name: 'API Requests', position: 2),
-            ],
-            incidents: [_incident(id: 'inc1', name: 'Slow API')],
-          ),
+      stubBody(
+        _baseResponse(
+          indicator: 'none',
+          description: 'All Systems Operational',
+          components: [
+            _component(id: 'c1', name: 'Git Operations', position: 1),
+            _component(id: 'c2', name: 'API Requests', position: 2),
+          ],
+          incidents: [_incident(id: 'inc1', name: 'Slow API')],
         ),
       );
 
@@ -143,9 +142,7 @@ void main() {
     test(
       'returns minimal status when response has no components or incidents',
       () async {
-        dio.stubResponse(
-          response(_baseResponse(indicator: 'none', description: 'OK')),
-        );
+        stubBody(_baseResponse(indicator: 'none', description: 'OK'));
 
         final result = await service.fetch();
 
@@ -157,12 +154,7 @@ void main() {
     );
 
     test('handles null response data', () async {
-      dio.stubResponse(
-        Response<Map<String, dynamic>>(
-          data: null,
-          requestOptions: RequestOptions(path: ''),
-        ),
-      );
+      stubBody(null);
 
       final result = await service.fetch();
 
@@ -173,7 +165,7 @@ void main() {
     });
 
     test('handles missing status block', () async {
-      dio.stubResponse(response(<String, dynamic>{}));
+      stubBody(<String, dynamic>{});
 
       final result = await service.fetch();
 
@@ -194,59 +186,51 @@ void main() {
         const MapEntry('maintenance', GitHubStatusIndicator.maintenance),
       ]) {
         test('maps "$entry.key" → ${entry.value}', () async {
-          dio.stubResponse(
-            response(_baseResponse(indicator: entry.key, description: '')),
-          );
+          stubBody(_baseResponse(indicator: entry.key, description: ''));
 
           final result = await service.fetch();
 
           expect(result.indicator, entry.value);
         });
       }
+
+      test(
+        'unknown indicator string falls back to GitHubStatusIndicator.unknown',
+        () async {
+          stubBody(_baseResponse(indicator: 'bogus_value', description: ''));
+
+          final result = await service.fetch();
+
+          expect(result.indicator, GitHubStatusIndicator.unknown);
+        },
+      );
+
+      test(
+        'null indicator string falls back to GitHubStatusIndicator.unknown',
+        () async {
+          stubBody(_baseResponse(indicator: null, description: ''));
+
+          final result = await service.fetch();
+
+          expect(result.indicator, GitHubStatusIndicator.unknown);
+        },
+      );
     });
-
-    test(
-      'unknown indicator string falls back to GitHubStatusIndicator.unknown',
-      () async {
-        dio.stubResponse(
-          response(_baseResponse(indicator: 'bogus_value', description: '')),
-        );
-
-        final result = await service.fetch();
-
-        expect(result.indicator, GitHubStatusIndicator.unknown);
-      },
-    );
-
-    test(
-      'null indicator string falls back to GitHubStatusIndicator.unknown',
-      () async {
-        dio.stubResponse(
-          response(_baseResponse(indicator: null, description: '')),
-        );
-
-        final result = await service.fetch();
-
-        expect(result.indicator, GitHubStatusIndicator.unknown);
-      },
-    );
 
     group('component parsing', () {
       test('filters out only_show_if_degraded components', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              components: [
-                _component(id: 'c1', name: 'Visible', position: 1),
-                {
-                  'id': 'c2',
-                  'name': 'HiddenByDegradedFlag',
-                  'status': 'operational',
-                  'position': 2,
-                  'only_show_if_degraded': true,
-                },
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            components: [
+              _component(id: 'c1', name: 'Visible', position: 1),
+              {
+                'id': 'c2',
+                'name': 'HiddenByDegradedFlag',
+                'status': 'operational',
+                'position': 2,
+                'only_show_if_degraded': true,
+              },
+            ],
           ),
         );
 
@@ -257,19 +241,17 @@ void main() {
       });
 
       test('filters out "Visit www.githubstatus.com" component', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              components: [
-                _component(id: 'c1', name: 'Real Component', position: 1),
-                {
-                  'id': 'footer',
-                  'name': 'Visit www.githubstatus.com for more information',
-                  'status': 'operational',
-                  'position': 999,
-                },
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            components: [
+              _component(id: 'c1', name: 'Real Component', position: 1),
+              {
+                'id': 'footer',
+                'name': 'Visit www.githubstatus.com for more information',
+                'status': 'operational',
+                'position': 999,
+              },
+            ],
           ),
         );
 
@@ -280,15 +262,13 @@ void main() {
       });
 
       test('sorts components by position', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              components: [
-                _component(id: 'c3', name: 'Third', position: 30),
-                _component(id: 'c1', name: 'First', position: 10),
-                _component(id: 'c2', name: 'Second', position: 20),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            components: [
+              _component(id: 'c3', name: 'Third', position: 30),
+              _component(id: 'c1', name: 'First', position: 10),
+              _component(id: 'c2', name: 'Second', position: 20),
+            ],
           ),
         );
 
@@ -301,27 +281,17 @@ void main() {
       });
 
       test('maps component status strings', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              components: [
-                _component(id: 'c1', name: 'Op', status: 'operational'),
-                _component(
-                  id: 'c2',
-                  name: 'Deg',
-                  status: 'degraded_performance',
-                ),
-                _component(id: 'c3', name: 'PO', status: 'partial_outage'),
-                _component(id: 'c4', name: 'MO', status: 'major_outage'),
-                _component(
-                  id: 'c5',
-                  name: 'Maint',
-                  status: 'under_maintenance',
-                ),
-                _component(id: 'c6', name: 'Unk', status: 'bogus'),
-                _component(id: 'c7', name: 'NullSt', status: null),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            components: [
+              _component(id: 'c1', name: 'Op', status: 'operational'),
+              _component(id: 'c2', name: 'Deg', status: 'degraded_performance'),
+              _component(id: 'c3', name: 'PO', status: 'partial_outage'),
+              _component(id: 'c4', name: 'MO', status: 'major_outage'),
+              _component(id: 'c5', name: 'Maint', status: 'under_maintenance'),
+              _component(id: 'c6', name: 'Unk', status: 'bogus'),
+              _component(id: 'c7', name: 'NullSt', status: null),
+            ],
           ),
         );
 
@@ -346,9 +316,7 @@ void main() {
       });
 
       test('handles missing fields in component', () async {
-        dio.stubResponse(
-          response(_baseResponse(components: [<String, dynamic>{}])),
-        );
+        stubBody(_baseResponse(components: [<String, dynamic>{}]));
 
         final result = await service.fetch();
 
@@ -360,15 +328,13 @@ void main() {
       });
 
       test('filters non-map elements from raw components list', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              components: [
-                'not a map',
-                42,
-                _component(id: 'c1', name: 'Valid'),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            components: [
+              'not a map',
+              42,
+              _component(id: 'c1', name: 'Valid'),
+            ],
           ),
         );
 
@@ -381,20 +347,18 @@ void main() {
 
     group('incident parsing', () {
       test('parses valid incidents', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                _incident(
-                  id: 'inc1',
-                  name: 'Incident Alpha',
-                  status: 'investigating',
-                  shortlink: 'https://githubstatus.com/incidents/1',
-                  createdAt: '2024-06-01T12:00:00Z',
-                  updatedAt: '2024-06-01T14:30:00Z',
-                ),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              _incident(
+                id: 'inc1',
+                name: 'Incident Alpha',
+                status: 'investigating',
+                shortlink: 'https://githubstatus.com/incidents/1',
+                createdAt: '2024-06-01T12:00:00Z',
+                updatedAt: '2024-06-01T14:30:00Z',
+              ),
+            ],
           ),
         );
 
@@ -409,20 +373,18 @@ void main() {
       });
 
       test('null shortlink falls back to default URL', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                {
-                  'id': 'inc1',
-                  'name': 'No Link Incident',
-                  'status': 'resolved',
-                  'shortlink': null,
-                  'created_at': '2024-01-01T00:00:00Z',
-                  'updated_at': '2024-01-01T00:00:00Z',
-                },
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              {
+                'id': 'inc1',
+                'name': 'No Link Incident',
+                'status': 'resolved',
+                'shortlink': null,
+                'created_at': '2024-01-01T00:00:00Z',
+                'updated_at': '2024-01-01T00:00:00Z',
+              },
+            ],
           ),
         );
 
@@ -432,9 +394,7 @@ void main() {
       });
 
       test('handles missing fields in incident', () async {
-        dio.stubResponse(
-          response(_baseResponse(incidents: [<String, dynamic>{}])),
-        );
+        stubBody(_baseResponse(incidents: [<String, dynamic>{}]));
 
         final result = await service.fetch();
 
@@ -449,14 +409,12 @@ void main() {
       });
 
       test('filters non-map elements from raw incidents list', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                'not a map',
-                _incident(id: 'i1'),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              'not a map',
+              _incident(id: 'i1'),
+            ],
           ),
         );
 
@@ -469,16 +427,14 @@ void main() {
 
     group('date parsing', () {
       test('parses valid ISO 8601 date strings', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                _incident(
-                  createdAt: '2024-06-01T12:00:00Z',
-                  updatedAt: '2024-06-02T08:30:45.123Z',
-                ),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              _incident(
+                createdAt: '2024-06-01T12:00:00Z',
+                updatedAt: '2024-06-02T08:30:45.123Z',
+              ),
+            ],
           ),
         );
 
@@ -495,13 +451,11 @@ void main() {
       });
 
       test('unparseable date string returns epoch', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                _incident(createdAt: 'not-a-date', updatedAt: 'garbage'),
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              _incident(createdAt: 'not-a-date', updatedAt: 'garbage'),
+            ],
           ),
         );
 
@@ -518,20 +472,18 @@ void main() {
       });
 
       test('null date returns epoch', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                {
-                  'id': 'i1',
-                  'name': 'N',
-                  'status': 'N',
-                  'shortlink': 'https://x',
-                  'created_at': null,
-                  'updated_at': null,
-                },
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              {
+                'id': 'i1',
+                'name': 'N',
+                'status': 'N',
+                'shortlink': 'https://x',
+                'created_at': null,
+                'updated_at': null,
+              },
+            ],
           ),
         );
 
@@ -548,20 +500,18 @@ void main() {
       });
 
       test('non-string date value returns epoch', () async {
-        dio.stubResponse(
-          response(
-            _baseResponse(
-              incidents: [
-                {
-                  'id': 'i1',
-                  'name': 'N',
-                  'status': 'N',
-                  'shortlink': 'https://x',
-                  'created_at': 42,
-                  'updated_at': true,
-                },
-              ],
-            ),
+        stubBody(
+          _baseResponse(
+            incidents: [
+              {
+                'id': 'i1',
+                'name': 'N',
+                'status': 'N',
+                'shortlink': 'https://x',
+                'created_at': 42,
+                'updated_at': true,
+              },
+            ],
           ),
         );
 
@@ -580,7 +530,7 @@ void main() {
 
     test('fetchedAt is close to now', () async {
       final before = DateTime.now();
-      dio.stubResponse(response(_baseResponse()));
+      stubBody(_baseResponse());
 
       final result = await service.fetch();
       final after = DateTime.now();
@@ -599,72 +549,75 @@ void main() {
   // ── Error handling ────────────────────────────────────────────────────
 
   group('error handling', () {
-    test('propagates DioException on connection error', () async {
-      dio.stubError(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
-          message: 'Connection refused',
+    test('propagates RhttpStatusCodeException on an HTTP failure', () async {
+      final failing = ServiceStatusService(
+        TestHttpClient(
+          handler: (request) =>
+              httpTextResponse(request, 'oops', statusCode: 500),
         ),
       );
 
       expect(
-        () => service.fetch(),
+        () => failing.fetch(),
         throwsA(
-          isA<DioException>().having(
-            (e) => e.type,
-            'type',
-            DioExceptionType.connectionError,
+          isA<RhttpStatusCodeException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            500,
           ),
         ),
       );
     });
 
-    test('propagates DioException on timeout', () async {
-      dio.stubError(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.receiveTimeout,
+    test('propagates transport exceptions on connection error', () async {
+      final failing = ServiceStatusService(
+        TestHttpClient(
+          handler: (request) =>
+              throw RhttpConnectionException(request, 'Connection refused'),
         ),
       );
 
       expect(
-        () => service.fetch(),
+        () => failing.fetch(),
         throwsA(
-          isA<DioException>().having(
-            (e) => e.type,
-            'type',
-            DioExceptionType.receiveTimeout,
+          isA<RhttpConnectionException>().having(
+            (e) => e.message,
+            'message',
+            'Connection refused',
           ),
         ),
       );
     });
 
-    test('propagates DioException on cancel', () async {
-      dio.stubError(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.cancel,
+    test('propagates transport exceptions on timeout', () async {
+      final failing = ServiceStatusService(
+        TestHttpClient(
+          handler: (request) => throw RhttpTimeoutException(request),
         ),
       );
 
-      expect(
-        () => service.fetch(),
-        throwsA(
-          isA<DioException>().having(
-            (e) => e.type,
-            'type',
-            DioExceptionType.cancel,
-          ),
-        ),
-      );
+      expect(() => failing.fetch(), throwsA(isA<RhttpTimeoutException>()));
     });
 
-    test('propagates non-Dio exceptions', () async {
-      dio.stubError(Exception('Unexpected error'));
+    test('propagates transport exceptions on cancel', () async {
+      final failing = ServiceStatusService(
+        TestHttpClient(
+          handler: (request) => throw RhttpCancelException(request),
+        ),
+      );
+
+      expect(() => failing.fetch(), throwsA(isA<RhttpCancelException>()));
+    });
+
+    test('propagates non-transport exceptions', () async {
+      final failing = ServiceStatusService(
+        TestHttpClient(
+          handler: (request) => throw Exception('Unexpected error'),
+        ),
+      );
 
       expect(
-        () => service.fetch(),
+        () => failing.fetch(),
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),

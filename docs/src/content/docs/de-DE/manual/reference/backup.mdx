@@ -2,7 +2,7 @@
 title: Backup, Export und Import
 description: Das Layout der Momentaufnahme, das Manifest, jede Sicherungsoperation und jede Transfer-Route, und genau, welche Dateien eine Sicherung enthält und welche nicht.
 slug: de-DE/handbuch/referenz/backup
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Alles, was Control Center kopieren, übergeben oder übernehmen kann, und die genaue Form jedes
@@ -23,6 +23,13 @@ Es gibt drei Artefakte, die eine Datenbank kopieren, mit unterschiedlichem Geltu
 Alle werden mit SQLite `VACUUM INTO` geschrieben. Das ist gegen eine laufende WAL-Datenbank sicher:
 es nimmt eine Lesetransaktion, erzeugt eine defragmentierte und transaktional konsistente
 Kopie und verlangt nie, den Server anzuhalten.
+
+Diese Dateien und heruntergeladenen Kopien werden von Control Center **nicht im
+Ruhezustand verschlüsselt**. Der Ende-zu-Ende verschlüsselte Transfer schützt die
+Bytes während der Übertragung zwischen einem gekoppelten Client und seinem
+`cc_server`, sowohl über direkte als auch über vermittelte Relay-Verbindungen.
+Schütze lokalen Speicher und Kopien außerhalb des Rechners getrennt; der Server
+und jeder autorisierte Empfänger können die Datenbankdateien lesen.
 
 ## Layout der Momentaufnahme
 
@@ -197,10 +204,17 @@ aber veraltet sein.
 
 ## Transfer-Routen
 
-Jede Operation oben spricht in serverseitigen Pfaden, und das ist nur dann eine vollständige Antwort, wenn der
-Server dein eigener Rechner ist. Diese drei tragen die Bytes, auf derselben mit PSK signierten Bahn, die der
-Medien-Proxy und der Blob-Speicher nutzen. Der Aufrufer signiert eine Zielzeichenkette mit dem vorab geteilten Schlüssel seines Geräts
-und übergibt die Signatur als `s`.
+Die Operationen oben zum Exportieren/Importieren und zum Auflisten von
+Momentaufnahmen sprechen in serverseitigen Pfaden, und das ist nur dann eine
+vollständige Antwort, wenn der Server dein eigener Rechner ist. Diese
+HTTP-förmigen Routen tragen Sicherungsbytes **innerhalb desselben
+authentifizierten, Ende-zu-Ende verschlüsselten Ressourcen-Tunnels** wie andere
+sensible Ressourcen, egal ob die RPC-Verbindung direkt oder vermittelt ist. Sie
+sind keine öffentlichen HTTP-Dateitransfer-Endpunkte: Eine Anfrage an einen
+davon am öffentlichen Listener liefert `426 Upgrade Required`, auch von
+Loopback. Im verschlüsselten Tunnel muss das über Noise authentifizierte Gerät
+zu `d` passen; der Handler prüft zusätzlich die Signatur des Geräts über seine
+Zielzeichenkette mit seinem Kopplungs-PSK und die Rolle unten.
 
 | Route                   | Methode | Query           | Signiertes Ziel                  | Erfordert                            |
 | ----------------------- | ------- | --------------- | -------------------------------- | ------------------------------------ |
@@ -219,6 +233,7 @@ gehängt, die Route lässt sich also nicht auf ein Verzeichnis richten, das die 
 | `404`  | Kein Backup-Port auf diesem Host, oder die genannte Momentaufnahme bzw. Arbeitsbereichsdatei existiert nicht |
 | `405`  | `/backup/restore` mit etwas anderem als `POST` aufgerufen                            |
 | `413`  | Der Upload-Body überschreitet 8 GiB, nach deklariertem content-length oder nach den Bytes, die tatsächlich gelesen wurden |
+| `426`  | Jede direkte Anfrage an einen Transfer-Pfad am öffentlichen HTTP-Listener; nutze den verschlüsselten Ressourcen-Tunnel eines gekoppelten Clients |
 | `500`  | Export oder Archiv ist serverseitig fehlgeschlagen                                   |
 
 Beide Downloads antworten mit `Cache-Control: no-store` und `Accept-Ranges: none`. Jede Anfrage
@@ -234,11 +249,14 @@ Archiv.
 begrenzt ihn vor dem Lesen und währenddessen und löscht die bereitgestellte Datei auf **jedem** Weg nach draußen,
 auch bei einer Ablehnung.
 
-:::caution[Eine Verbindung über das Relay hat keinen HTTP-Origin]
-Das vermittelte Relay trägt RPC-Frames, keine Dateiübertragungen. Alles, was in
-serverseitigen Pfaden spricht, funktioniert weiter darüber. Die drei Transfer-Routen brauchen eine direkte
-Verbindung, und die Oberfläche schaltet sie mit einem Hinweis ab, statt mitten im Download zu scheitern.
-:::
+::::caution[Direkt und Relay nutzen denselben verschlüsselten Transfer]
+Das Relay trägt Ressourcenanfragen, gestreamte Antworten und Upload-Bytes als
+Chiffretext; den Inhalt der Sicherung kann es nicht lesen. Ein serverseitiger
+Pfad bleibt ein Pfad auf dem Server-Host, keine Datei auf dem Relay. Der Zugriff
+erfordert weiterhin das gekoppelte Gerät, die Zielsignatur und die
+anwendbare Arbeitsbereichs- oder Installationsrolle. Keiner der beiden
+Transportwege verschlüsselt die entstehenden Sicherungsdateien im Ruhezustand.
+::::
 
 ## Pfade und Grenzen
 
@@ -249,7 +267,7 @@ Verbindung, und die Oberfläche schaltet sie mit einem Hinweis ab, statt mitten 
 | Arbeitsbereichs-Exporte            | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Transfer-Bereitstellung            | `<dataDir>/backups/transfer/` — eine Werkbank, die die Route wegräumt, die hineinschreibt |
 | Archivname der Momentaufnahme      | `<snapshot directory name>.zip`                              |
-| Upload-Obergrenze                  | 8 GiB je `POST /backup/restore`                              |
+| Upload-Obergrenze                  | 8 GiB je verschlüsseltem `/backup/restore`-Upload            |
 | Aufbewahrung                       | Momentaufnahmen der Installation: manuelles Löschen. Arbeitsbereichssicherungen: wöchentliche Pipeline, Standard 30 Tage |
 
 Die Verzeichnisse `exports/`, `transfer/` und `workspace-backups/` sind keine

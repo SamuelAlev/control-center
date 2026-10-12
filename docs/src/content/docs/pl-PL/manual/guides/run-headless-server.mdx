@@ -1,9 +1,9 @@
 ---
 title: Uruchom serwer headless
 description: Uruchom binarkę headless cc_server lub jej obraz Docker, sparuj z nią klienta i skonfiguruj ją pełnym zestawem flag CLI i zmiennych środowiskowych.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Uruchom `cc_server` na maszynie, która jest stale włączona, a następnie połącz się
@@ -25,7 +25,7 @@ wersji (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) albo korzystaj z `latest`.
 | `ghcr.io/samuelalev/cc-server`               | Backend: baza danych, agenci, MCP, webhooki       | `-p 9030:9030` |
 | `ghcr.io/samuelalev/cc-webapp`               | Klient webowy (statyczny nginx)                   | `-p 8080:8080` |
 | `ghcr.io/samuelalev/cc-remote`               | Towarzysząca aplikacja PWA na telefon (statyczny nginx) | `-p 8081:8080` |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Przekaźnik parowania WebRTC (opcjonalny)          | `-p 8788:8788` |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Szyfrowany przekaźnik połączeń (opcjonalny)       | `-p 8788:8788` |
 
 Cały stos jako plik compose:
 
@@ -53,15 +53,18 @@ volumes:
   cc_data:
 ```
 
-O czym warto wiedzieć, zanim wystawisz to wszystko poza loopback:
+O czym warto wiedzieć, zanim wystawisz to wszystko poza loopback (sam TLS nie daje szyfrowania end-to-end sparowanego klienta ani nie autoryzuje zasobów):
 
 - **Obraz `cc-server` zawiera `CC_SERVER_INSECURE=1`** (musi nasłuchiwać na
-  `0.0.0.0`, aby odbierać ruch z opublikowanych portów), co jest bezpieczne tylko
-  za terminującym TLS odwrotnym proxy — Caddy, Traefik, nginx lub Cloudflare
-  Tunnel — w zaufanej sieci. Aby zamiast tego terminować TLS w samym procesie,
-  zamontuj certyfikat i ustaw `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (a
-  następnie usuń `CC_SERVER_INSECURE`). Wszystko można nadpisać za pomocą
-  `docker run -e …` lub bloku `environment:` w compose.
+  `0.0.0.0`, aby odbierać ruch z opublikowanych portów). Użyj terminującego TLS
+  odwrotnego proxy — Caddy, Traefik, nginx lub Cloudflare Tunnel — w zaufanej
+  sieci albo zamontuj certyfikat i ustaw `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (a następnie usuń `CC_SERVER_INSECURE`). To ustawienie
+  steruje wyłącznie zewnętrznym nasłuchem HTTP/WebSocket serwera. Nigdy nie
+  wyłącza obowiązkowej szyfrowanej end-to-end sesji klienta. TLS nadal chroni
+  ruch logowania/startu, metadane połączeń, publiczne punkty końcowe i dostarczanie
+  klienta webowego. Wszystko można nadpisać za pomocą `docker run -e …` lub
+  bloku `environment:` w compose.
 - **`/data` to cały stan.** Bazy SQLite, sekrety sparowanych urządzeń, pobrane
   modele i dźwięk ze spotkań — wszystko to mieszka w wolumenie; zrób jego kopię
   zapasową, a kontener stanie się jednorazowy.
@@ -73,15 +76,20 @@ O czym warto wiedzieć, zanim wystawisz to wszystko poza loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Oba obrazy klientów to statyczne hosty nginx** — niczego nie trzeba
-  konfigurować w czasie działania; formularz połączenia każdego klienta przyjmuje
-  adres URL serwera, identyfikator urządzenia i klucz parowania. Przekaźnik
-  sygnalizacyjny również potrzebuje wyłącznie swojego portu (`SIGNALING_HOST` /
-  `SIGNALING_PORT` można nadpisać); jest bezstanowy, nie przechowuje żadnych
-  sekretów i stanowi **mechanizm awaryjny** — telefon korzysta z loopbacku, sieci
-  LAN, tailnetu albo bezpośredniej ścieżki `wss://`, gdy któraś z nich jest
-  osiągalna, a sięga po przekaźnik tylko wtedy, gdy żadna nie jest. Pomiń go,
-  jeśli Twoi klienci zawsze łączą się z serwerem bezpośrednio.
+- **Oba obrazy klientów to statyczne hosty nginx.** Wbudowane edytory
+  w przeglądarce korzystają z tego samego originu aplikacji i tego samego
+  szyfrowanego połączenia, jak opisano [poniżej](#zasoby-edytora-w-przegladarce).
+  Formularz połączenia każdego klienta przyjmuje adres URL serwera,
+  identyfikator urządzenia i klucz
+  parowania. Przekaźnik sygnalizacyjny potrzebuje wyłącznie swojego portu
+  (`SIGNALING_HOST` / `SIGNALING_PORT` można nadpisać); jest bezstanowy, nie
+  przechowuje kluczy parowania i stanowi **mechanizm awaryjny** — telefon
+  korzysta z loopbacku, sieci LAN, tailnetu albo bezpośredniej ścieżki `wss://`,
+  gdy któraś z nich jest osiągalna, a sięga po przekaźnik tylko wtedy, gdy żadna
+  nie jest. Pomiń go, jeśli Twoi klienci zawsze łączą się z serwerem
+  bezpośrednio. Broker widzi identyfikatory routingu, adresy IP, rozmiary
+  i czasy oraz może przerywać ruch; nie potrafi odszyfrować strumienia zasobów
+  między klientem a serwerem.
 
 Dalsza część tego poradnika buduje serwer ze źródeł; omawiane tu flagi i
 zachowanie to te same, które zasilają zmienne środowiskowe obrazu.
@@ -181,6 +189,14 @@ wygenerowane w aplikacji zawsze wygasa po 30 dniach. Gdy urządzenie utworzone z
 CLI przestanie być potrzebne, odwołaj je w
 **Ustawienia → Ty → Twoje urządzenia**.
 
+Klucz parowania uwierzytelnia obowiązkowy uścisk dłoni Noise; każda sesja
+wyprowadza świeże klucze ruchu i sprawdza podpisaną tożsamość serwera. Chroń
+klucz parowania i zdobądź go zaufanym źródłem (w tym zaufanym kodem QR), a
+następnie zweryfikuj nowy odcisk serwera przez osobny zaufany kanał albo wobec
+znanego przypięcia. Nie akceptuj po cichu zmienionego przypięcia: jeśli świadomie
+wymieniasz tożsamość serwera, sparuj ponownie przez zaufany kanał. Sam TLS nie
+ustali tego przypięcia tożsamości end-to-end.
+
 ## Krok 4: Uruchom serwer
 
 Na loopbacku — to ustawienie domyślne i wszystko, czego potrzebujesz dla klienta
@@ -209,9 +225,14 @@ nieszyfrowane powiązanie za nim:
 ```
 
 `--insecure` jest ignorowane, gdy ustawione są jednocześnie `--tls-cert` i
-`--tls-key` — TLS zawsze wygrywa. Serwer ogłasza stan nieszyfrowany jako
-`insecure: true` w `GET /healthz`, a klienty oznaczają takie połączenie jako
-niezabezpieczone.
+`--tls-key` — TLS zawsze wygrywa. Serwer ogłasza stan nieszyfrowany zewnętrznego
+nasłuchu jako `insecure: true` w `GET /healthz`. Nie wyłącza to szyfrowania Noise
+na `/rpc`, niezależnie od tego, czy klient łączy się bezpośrednio, czy przez
+przekaźnik. Aktualizuj serwer, przekaźnik i klientów razem: starzy klienci z
+tekstem jawnym RPC są odrzucani, bez mechanizmu zgodności wstecznej. Publiczne
+żądania do wrażliwych tras zasobów (w tym transferów kopii zapasowych) otrzymują
+HTTP `426`, także z loopbacku; sparowani klienci korzystają zamiast tego
+z szyfrowanego tunelu.
 
 Serwer działa aż do `SIGINT`/`SIGTERM`, po czym zamyka się czysto.
 
@@ -232,6 +253,32 @@ loopback musi znajdować się na `--allowed-origins`, inaczej aktualizacja
 WebSocket do `/rpc` jest odrzucana; domyślna lista to
 `https://app.usectrl.dev`, a `localhost` / `127.0.0.1` są zawsze dozwolone.
 :::
+
+### Zasoby edytora w przeglądarce
+
+Frontend edytora to zaufany kod aplikacji i działa w origin samej aplikacji
+webowej. Jego Service Worker kieruje ruch HTTP i WebSocket przez tę samą
+uwierzytelnioną szyfrowaną sesję co reszta klienta. `cc_server` odszyfrowuje
+każde żądanie, przekazuje je do swojego lokalnego zaplecza code-server i
+szyfruje odpowiedź z powrotem do klienta. Pliki pozostają własnością serwera.
+
+Hostuj klienta webowego przez HTTPS lub bezpieczny origin loopback, aby Service
+Workery mogły działać. Standardowa kompilacja webowa i skrypty wydania zawierają
+wspólne zasoby. Jeśli budujesz pakiet ręcznie, przygotuj te pliki później z
+katalogu głównego repozytorium:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+W przypadku kompilacji webowej telefonu użyj `apps/cc_remote/build/web`.
+Kopiuje ona `cc_resource_bridge.js`, `cc_resource_worker.js` i
+`cc_resource_ws_shim.js` do pakietu aplikacji.
+
+Natywny ruch edytora korzysta zamiast tego z fasady loopback o ograniczonym
+zakresie uprawnień. Nie wystawiaj prywatnej bramy raportów i poleceń rozszerzenia
+edytora uruchamianego przez serwer przez publiczne proxy. Wrażliwe publiczne
+żądania HTTP są odrzucane; zasoby wymagają uwierzytelnionej szyfrowanej sesji.
 
 ## Krok 6: Połącz Google Calendar (opcjonalnie)
 

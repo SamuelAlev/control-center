@@ -1,6 +1,8 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/database/tables/agent_run_logs.dart'
     show AgentRunLogsTable;
@@ -47,6 +49,14 @@ AgentRunLog _makeLog({
   String? continuationSummary,
   String? contextSnapshotJson,
   RetryMeta? retry,
+  int childCostMicros = 0,
+  String? parentRunId,
+  String? effort,
+  String? taskFamily,
+  String? nativeSessionId,
+  bool resumedNativeSession = false,
+  RunVerification? verification,
+  RunLatencyProfile? latency,
 }) {
   return AgentRunLog(
     id: id,
@@ -69,6 +79,14 @@ AgentRunLog _makeLog({
     continuationSummary: continuationSummary,
     contextSnapshotJson: contextSnapshotJson,
     retry: retry ?? const RetryMeta(),
+    childCostMicros: childCostMicros,
+    parentRunId: parentRunId,
+    effort: effort,
+    taskFamily: taskFamily,
+    nativeSessionId: nativeSessionId,
+    resumedNativeSession: resumedNativeSession,
+    verification: verification,
+    latency: latency,
   );
 }
 
@@ -705,6 +723,416 @@ void main() {
       expect(fetched.cost.outputTokens, 500);
       expect(fetched.cost.estimatedCostCents, 75);
     });
+  });
+
+  // ── exact cost, latency and verification telemetry ──────────────────────
+
+  group('accounting telemetry round-trip', () {
+    test('exact micro-USD cost and its basis survive a write/read', () async {
+      final log = _makeLog(
+        id: 'exact-cost',
+        cost: const RunCost(
+          inputTokens: 10,
+          estimatedCostCents: 0,
+          costMicros: 4321,
+          costBasis: CostBasis.subscription,
+        ),
+      );
+      await repo.upsert(log);
+
+      final fetched = await repo.getById('ws-1', 'exact-cost');
+      // A sub-cent cost must NOT come back as the rounded cents (0).
+      expect(fetched!.cost.costMicros, 4321);
+      expect(fetched.cost.estimatedCostCents, 0);
+      expect(fetched.cost.costBasis, CostBasis.subscription);
+      expect(fetched.cost.preciseCostMicros, 4321);
+    });
+
+    test('a legacy cents-only row reads as an estimated cost', () async {
+      final log = _makeLog(
+        id: 'legacy-cost',
+        cost: const RunCost(inputTokens: 5, estimatedCostCents: 12),
+      );
+      await repo.upsert(log);
+
+      final fetched = await repo.getById('ws-1', 'legacy-cost');
+      expect(fetched!.cost.costMicros, 0);
+      // Unknown provenance must NOT be read as provider-reported/billed.
+      expect(fetched.cost.costBasis, CostBasis.estimated);
+      // The cents figure is still authoritative for that historical row.
+      expect(fetched.cost.preciseCostMicros, 120000);
+    });
+
+    test('child cost micros, effort and task family round-trip', () async {
+      final log = _makeLog(
+        id: 'hierarchy',
+        childCostMicros: 50000,
+        effort: 'high',
+        taskFamily: 'refactor',
+        parentRunId: 'parent-1',
+      );
+      await repo.upsert(log);
+
+      final fetched = await repo.getById('ws-1', 'hierarchy');
+      expect(fetched!.childCostMicros, 50000);
+      expect(fetched.effort, 'high');
+      expect(fetched.taskFamily, 'refactor');
+      // Inclusive total = own exact cost + the propagated rollup.
+      expect(fetched.totalCostMicrosWithChildren, 50000);
+    });
+
+    test('stage latency profile round-trips exactly', () async {
+      final log = _makeLog(
+        id: 'latency',
+        latency: const RunLatencyProfile({
+          RunStage.submitted: RunStageTiming(
+            stage: RunStage.submitted,
+            offsetMs: 0,
+            source: RunTimingSource.harness,
+          ),
+          RunStage.requestSent: RunStageTiming(
+            stage: RunStage.requestSent,
+            offsetMs: 300,
+            source: RunTimingSource.transport,
+            requestId: 'request-1:2',
+          ),
+          RunStage.firstResponseByte: RunStageTiming(
+            stage: RunStage.firstResponseByte,
+            offsetMs: 520,
+            source: RunTimingSource.transport,
+            requestId: 'request-1:2',
+          ),
+          RunStage.firstUsefulText: RunStageTiming(
+            stage: RunStage.firstUsefulText,
+            offsetMs: 1500,
+            source: RunTimingSource.adapter,
+            durationMs: 980,
+            provider: 'anthropic',
+            modelId: 'claude-opus-4-8',
+          ),
+        }),
+      );
+      await repo.upsert(log);
+
+      final fetched = await repo.getById('ws-1', 'latency');
+      expect(fetched!.latency.offsetMs(RunStage.firstUsefulText), 1500);
+      expect(fetched.latency.durationMs(RunStage.firstUsefulText), 980);
+      // The transport-observed byte is what makes a TTFB claim legitimate; it
+      // has to survive storage or the claim cannot be re-derived on replay.
+      expect(fetched.latency.transportTtfbMs, 220);
+      expect(fetched.latency.timeToFirstUsefulWorkMs, 1500);
+      expect(
+        fetched.latency.timings[RunStage.firstUsefulText]!.provider,
+        'anthropic',
+      );
+    });
+
+    test('a run with no timings stores and reads back as unknown', () async {
+      await repo.upsert(_makeLog(id: 'no-timings'));
+
+      final fetched = await repo.getById('ws-1', 'no-timings');
+      // Unknown, NOT zero: an empty profile carries no observations at all.
+      expect(fetched!.latency.isEmpty, isTrue);
+      expect(fetched.latency.offsetMs(RunStage.submitted), isNull);
+    });
+
+    test('verification is stored separately from run status', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'verified',
+          status: RunStatus.completed,
+          verification: RunVerification(
+            status: VerificationStatus.passed,
+            verifier: 'behavioral-check',
+            verifiedAt: DateTime.utc(2026, 10, 11, 12, 30),
+            notes: 'tests green',
+          ),
+        ),
+      );
+      await repo.upsert(
+        _makeLog(id: 'unverified', status: RunStatus.completed),
+      );
+
+      final verified = await repo.getById('ws-1', 'verified');
+      expect(verified!.verification.status, VerificationStatus.passed);
+      expect(verified.verification.verifier, 'behavioral-check');
+      expect(verified.verification.notes, 'tests green');
+      expect(verified.isVerifiedSuccess, isTrue);
+
+      final unchecked = await repo.getById('ws-1', 'unverified');
+      // A completed run that nothing checked is NOT a verified success.
+      expect(unchecked!.verification.status, VerificationStatus.unverified);
+      expect(unchecked.isVerifiedSuccess, isFalse);
+      expect(unchecked.isCompleted, isTrue);
+    });
+
+    test('native session lineage round-trips as data', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'resumed',
+          nativeSessionId: 'sess-abc',
+          resumedNativeSession: true,
+        ),
+      );
+      await repo.upsert(_makeLog(id: 'fresh'));
+
+      final resumed = await repo.getById('ws-1', 'resumed');
+      expect(resumed!.nativeSessionId, 'sess-abc');
+      expect(resumed.resumedNativeSession, isTrue);
+
+      // A run with no native session must not read back as "resumed".
+      final fresh = await repo.getById('ws-1', 'fresh');
+      expect(fresh!.nativeSessionId, isNull);
+      expect(fresh.resumedNativeSession, isFalse);
+    });
+
+    test('a failed verification on a completed run is preserved', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'rejected',
+          verification: const RunVerification(
+            status: VerificationStatus.failed,
+            verifier: 'behavioral-check',
+          ),
+        ),
+      );
+
+      final fetched = await repo.getById('ws-1', 'rejected');
+      expect(fetched!.verification.status, VerificationStatus.failed);
+      expect(fetched.isCompleted, isTrue);
+      expect(fetched.isVerifiedSuccess, isFalse);
+    });
+  });
+
+  group('atomic cost writes', () {
+    test('concurrent siblings accumulate sub-cent spend exactly', () async {
+      await repo.upsert(_makeLog(status: RunStatus.running));
+      await Future.wait([
+        for (var i = 0; i < 40; i++)
+          repo.addChildCostMicros('ws-1', 'log-1', 375),
+      ]);
+      final row = (await repo.getById('ws-1', 'log-1'))!;
+      expect(row.childCostMicros, 15000);
+      expect(row.childCostCents, 2);
+      expect(row.status, RunStatus.running);
+    });
+
+    test('first increment widens legacy cents before adding micros', () async {
+      await repo.upsert(_makeLog(status: RunStatus.running));
+      await dbs
+          .of('ws-1')
+          .agentDao
+          .updateLogCost(
+            'ws-1',
+            'log-1',
+            const AgentRunLogsTableCompanion(childCostCents: Value(7)),
+          );
+      await repo.addChildCostMicros('ws-1', 'log-1', 5500);
+      final row = (await repo.getById('ws-1', 'log-1'))!;
+      expect(row.childCostMicros, 75500);
+      expect(row.childCostCents, 8);
+    });
+
+    test(
+      'own cost update preserves rollup, terminal state and metadata',
+      () async {
+        final original = _makeLog(
+          status: RunStatus.completed,
+          completedAt: DateTime.utc(2025, 6, 2),
+          summary: 'answer',
+          logPath: '/runs/log.ndjson',
+          childCostMicros: 15001,
+          nativeSessionId: 'thread-1',
+        );
+        await repo.upsert(original);
+        await repo.updateCost(
+          'ws-1',
+          'log-1',
+          const RunCost(
+            inputTokens: 45,
+            outputTokens: 9,
+            estimatedCostCents: 3,
+            costMicros: 25125,
+            durationMs: 321,
+          ),
+        );
+        final row = (await repo.getById('ws-1', 'log-1'))!;
+        expect(row.cost.inputTokens, 45);
+        expect(row.cost.costMicros, 25125);
+        expect(row.cost.durationMs, 321);
+        expect(row.childCostMicros, 15001);
+        expect(row.status, RunStatus.completed);
+        expect(row.completedAt?.toUtc(), original.completedAt);
+        expect(row.summary, 'answer');
+        expect(row.logPath, '/runs/log.ndjson');
+        expect(row.nativeSessionId, 'thread-1');
+      },
+    );
+
+    test('terminal write racing child increments never loses rollup', () async {
+      final original = _makeLog(
+        status: RunStatus.running,
+        summary: 'in flight',
+      );
+      await repo.upsert(original);
+      final terminal = original.copyWith(
+        status: RunStatus.completed,
+        completedAt: DateTime.utc(2025, 6, 2),
+        summary: 'done',
+        cost: const RunCost(inputTokens: 4, costMicros: 123),
+      );
+      await Future.wait([
+        repo.completeIfActive(terminal).then((_) {}),
+        for (var i = 0; i < 32; i++)
+          repo.addChildCostMicros('ws-1', 'log-1', 777),
+      ]);
+      final row = (await repo.getById('ws-1', 'log-1'))!;
+      expect(row.childCostMicros, 24864);
+      expect(row.childCostCents, 2);
+      expect(row.status, RunStatus.completed);
+      expect(row.summary, 'done');
+      expect(row.cost.inputTokens, 4);
+      expect(await repo.completeIfActive(terminal), isFalse);
+    });
+
+    test(
+      'runtime metadata writes never replace own or descendant spend',
+      () async {
+        await repo.upsert(
+          _makeLog(status: RunStatus.pending, summary: 'initial'),
+        );
+        await Future.wait([
+          repo
+              .updateRuntime('ws-1', 'log-1', pid: 76, markRunning: true)
+              .then((_) {}),
+          repo
+              .updateRuntime(
+                'ws-1',
+                'log-1',
+                logPath: '/runs/log.ndjson',
+                contextSnapshotJson: '{"tools":["read"]}',
+                lastOutputAt: DateTime.utc(2025, 6, 1, 2),
+                modelId: 'model-a',
+                effort: 'high',
+                taskFamily: 'repair',
+              )
+              .then((_) {}),
+          repo.updateCost(
+            'ws-1',
+            'log-1',
+            const RunCost(inputTokens: 34, costMicros: 1350),
+          ),
+          for (var i = 0; i < 12; i++)
+            repo.addChildCostMicros('ws-1', 'log-1', 750),
+        ]);
+        final row = (await repo.getById('ws-1', 'log-1'))!;
+        expect(row.status, RunStatus.running);
+        expect(row.pid, 76);
+        expect(row.logPath, '/runs/log.ndjson');
+        expect(row.contextSnapshotJson, '{"tools":["read"]}');
+        expect(row.lastOutputAt?.toUtc(), DateTime.utc(2025, 6, 1, 2));
+        expect(row.modelId, 'model-a');
+        expect(row.effort, 'high');
+        expect(row.taskFamily, 'repair');
+        expect(row.summary, 'initial');
+        expect(row.cost.inputTokens, 34);
+        expect(row.cost.costMicros, 1350);
+        expect(row.childCostMicros, 9000);
+        expect(row.childCostCents, 1);
+      },
+    );
+
+    test(
+      'runtime start cannot revive terminal or already started runs',
+      () async {
+        final original = _makeLog(status: RunStatus.pending);
+        await repo.upsert(original);
+        expect(
+          await repo.updateRuntime('ws-1', 'log-1', markRunning: true),
+          true,
+        );
+        expect(
+          await repo.updateRuntime('ws-1', 'log-1', markRunning: true, pid: 20),
+          true,
+        );
+        expect((await repo.getById('ws-1', 'log-1'))!.pid, 20);
+        await repo.completeIfActive(
+          original.copyWith(
+            status: RunStatus.completed,
+            completedAt: DateTime.utc(2025, 6, 2),
+          ),
+        );
+        expect(
+          await repo.updateRuntime('ws-1', 'log-1', markRunning: true),
+          false,
+        );
+        expect(
+          await repo.updateRuntime(
+            'ws-1',
+            'log-1',
+            markRunning: true,
+            logPath: '/runs/late.ndjson',
+            lastOutputAt: DateTime.utc(2025, 6, 2, 1),
+            summary: 'terminal diagnosis',
+          ),
+          true,
+        );
+        final completed = (await repo.getById('ws-1', 'log-1'))!;
+        expect(completed.status, RunStatus.completed);
+        expect(completed.summary, 'terminal diagnosis');
+        expect(completed.logPath, '/runs/late.ndjson');
+        expect(completed.lastOutputAt?.toUtc(), DateTime.utc(2025, 6, 2, 1));
+      },
+    );
+
+    test(
+      'workspace scope and absent rows are harmless, invalid id fails',
+      () async {
+        await repo.upsert(_makeLog(status: RunStatus.running));
+        await repo.addChildCostMicros('ws-2', 'log-1', 15000);
+        await repo.updateCost('ws-2', 'log-1', const RunCost(inputTokens: 10));
+        expect(
+          await repo.completeIfActive(
+            _makeLog(
+              workspaceId: 'ws-2',
+              status: RunStatus.completed,
+              completedAt: DateTime.utc(2025, 6, 2),
+            ),
+          ),
+          isFalse,
+        );
+        expect(
+          await repo.updateRuntime('ws-2', 'log-1', summary: 'foreign'),
+          false,
+        );
+        expect((await repo.getById('ws-1', 'log-1'))!.childCostMicros, 0);
+        expect(
+          (await repo.getById('ws-1', 'log-1'))!.status,
+          RunStatus.running,
+        );
+        await repo.addChildCostMicros('ws-1', 'absent', 1);
+        await repo.updateCost('ws-1', 'absent', RunCost.zero);
+        expect(await repo.updateRuntime('ws-1', 'absent', pid: 30), false);
+        await expectLater(
+          repo.updateCost('../escape', 'log-1', RunCost.zero),
+          throwsArgumentError,
+        );
+        await expectLater(
+          repo.addChildCostMicros('../escape', 'log-1', 1),
+          throwsArgumentError,
+        );
+        await expectLater(
+          repo.updateRuntime('../escape', 'log-1', summary: 'invalid'),
+          throwsArgumentError,
+        );
+        await expectLater(
+          repo.completeIfActive(
+            _makeLog(workspaceId: null, status: RunStatus.completed),
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
   });
 
   // ── run status helpers on entity ────────────────────────────────────────

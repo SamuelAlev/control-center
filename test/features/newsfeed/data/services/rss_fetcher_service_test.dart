@@ -1,54 +1,17 @@
-import 'dart:convert';
-
 import 'package:cc_infra/src/newsfeed/rss_fetcher_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart';
 
 // ---------------------------------------------------------------------------
-// Fake Dio adapter — intercepts HTTP calls and returns pre-canned responses
+// Canned transport — a `TestHttpClient` serving one response per test
 // ---------------------------------------------------------------------------
 
-class _FakeAdapter implements HttpClientAdapter {
-  Response<String>? _nextResponse;
-  Object? _nextError;
-
-  void respondWith(String xml, {int statusCode = 200}) {
-    _nextResponse = Response<String>(
-      data: xml,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: 'https://test/feed'),
-    );
-    _nextError = null;
-  }
-
-  void throwError(Object error) {
-    _nextError = error;
-    _nextResponse = null;
-  }
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<List<int>>? requestStream,
-    Future<dynamic>? cancelFuture,
-  ) async {
-    if (_nextError != null) {
-      throw _nextError!;
-    }
-    final r = _nextResponse!;
-    final bytes = utf8.encode(r.data ?? '');
-    return ResponseBody(
-      Stream.fromIterable([bytes]),
-      r.statusCode ?? 200,
-      headers: {},
-      statusMessage: 'OK',
-      isRedirect: false,
-      redirects: [],
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
+/// Makes [fake] answer with [body]: a String (the XML/HTML fixtures) is
+/// returned verbatim, any other value is JSON-encoded.
+void _respondWith(TestHttpClient fake, Object? body, {int statusCode = 200}) {
+  fake.handler = (request) =>
+      httpTextResponse(request, body, statusCode: statusCode);
 }
 
 // ---------------------------------------------------------------------------
@@ -386,21 +349,26 @@ const _atomSummaryFallback = '''<?xml version="1.0"?>
 // ---------------------------------------------------------------------------
 
 void main() {
-  late _FakeAdapter adapter;
-  late Dio dio;
+  late TestHttpClient fake;
+  late TestHttpClient pageFake;
   late RssFetcherService service;
 
   setUp(() {
-    adapter = _FakeAdapter();
-    dio = Dio()..httpClientAdapter = adapter;
-    service = RssFetcherService(dio);
+    fake = TestHttpClient(handler: (_) => throw StateError('handler not set'));
+    // The og:image fallback fetches article pages through this client; a page
+    // with no `og:image` leaves an image-less article untouched. Passing it
+    // keeps those page fetches on the double, never on a native client.
+    pageFake = TestHttpClient(
+      handler: (request) => httpTextResponse(request, ''),
+    );
+    service = RssFetcherService(fake, pageHttpClient: pageFake);
   });
 
   // ── fetchAndParse: transport & edge cases ────────────────────────────────
 
   group('fetchAndParse transport', () {
     test('returns empty list on empty response body', () async {
-      adapter.respondWith('');
+      _respondWith(fake, '');
       final articles = await service.fetchAndParse(
         feedId: 'f1',
         url: 'https://example.com/feed',
@@ -409,7 +377,7 @@ void main() {
     });
 
     test('throws FormatException on whitespace-only body', () async {
-      adapter.respondWith('   \n  ');
+      _respondWith(fake, '   \n  ');
       expect(
         () => service.fetchAndParse(
           feedId: 'f1',
@@ -419,26 +387,21 @@ void main() {
       );
     });
 
-    test('propagates DioException on network error', () async {
-      adapter.throwError(
-        DioException(
-          requestOptions: RequestOptions(path: 'https://dead.example/feed'),
-          message: 'Connection refused',
-          type: DioExceptionType.connectionError,
-        ),
-      );
+    test('propagates RhttpConnectionException on network error', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'Connection refused');
 
       expect(
         () => service.fetchAndParse(
           feedId: 'f1',
           url: 'https://dead.example/feed',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpConnectionException>()),
       );
     });
 
     test('throws FormatException on response with no XML envelope', () async {
-      adapter.respondWith('<html><body>Not a feed</body></html>');
+      _respondWith(fake, '<html><body>Not a feed</body></html>');
       expect(
         () => service.fetchAndParse(
           feedId: 'f',
@@ -453,7 +416,7 @@ void main() {
 
   group('RSS parsing', () {
     test('parses valid RSS with all fields', () async {
-      adapter.respondWith(_rssXml);
+      _respondWith(fake, _rssXml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f-rss',
@@ -483,7 +446,7 @@ void main() {
     });
 
     test('parses minimal RSS item', () async {
-      adapter.respondWith(_rssMinimal);
+      _respondWith(fake, _rssMinimal);
 
       final articles = await service.fetchAndParse(
         feedId: 'f-min',
@@ -507,7 +470,7 @@ void main() {
 <item><title></title><link>https://example.com/a</link></item>
 <item><title>Good</title><link>https://example.com/b</link></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -524,7 +487,7 @@ void main() {
 <item><title>Bad</title><link></link></item>
 <item><title>Good</title><link>https://example.com/good</link></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -540,7 +503,7 @@ void main() {
 <rss version="2.0"><channel>
 <item><title>T</title><link>https://e.com/p</link><guid></guid></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -555,7 +518,7 @@ void main() {
 
   group('Atom parsing', () {
     test('parses valid Atom feed with all fields', () async {
-      adapter.respondWith(_atomXml);
+      _respondWith(fake, _atomXml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f-atom',
@@ -582,7 +545,7 @@ void main() {
     });
 
     test('parses minimal Atom entry', () async {
-      adapter.respondWith(_atomMinimal);
+      _respondWith(fake, _atomMinimal);
 
       final articles = await service.fetchAndParse(
         feedId: 'f-amin',
@@ -605,7 +568,7 @@ void main() {
 <entry><title></title><link href="https://e.com/bad" rel="alternate"/></entry>
 <entry><title>Good</title><link href="https://e.com/good" rel="alternate"/></entry>
 </feed>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -622,7 +585,7 @@ void main() {
 <entry><title>No Link</title></entry>
 <entry><title>Has Link</title><link href="https://e.com/has" rel="alternate"/></entry>
 </feed>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -638,7 +601,7 @@ void main() {
 <feed xmlns="http://www.w3.org/2005/Atom">
 <entry><title>T</title><link href="https://e.com/p" rel="alternate"/><id></id></entry>
 </feed>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -653,7 +616,7 @@ void main() {
 
   group('envelope extraction', () {
     test('extracts RSS envelope from HTML-wrapped response', () async {
-      adapter.respondWith(_rssWrappedInHtml);
+      _respondWith(fake, _rssWrappedInHtml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f-wrap',
@@ -665,7 +628,7 @@ void main() {
     });
 
     test('extracts Atom envelope from HTML-wrapped response', () async {
-      adapter.respondWith(_atomWrappedInHtml);
+      _respondWith(fake, _atomWrappedInHtml);
 
       final articles = await service.fetchAndParse(
         feedId: 'atom-wrap',
@@ -677,7 +640,7 @@ void main() {
     });
 
     test('throws FormatException when no envelope found', () async {
-      adapter.respondWith('<html><body>Not a feed at all</body></html>');
+      _respondWith(fake, '<html><body>Not a feed at all</body></html>');
 
       expect(
         () => service.fetchAndParse(
@@ -693,7 +656,7 @@ void main() {
 
   group('XML sanitization', () {
     test('strips control characters from titles', () async {
-      adapter.respondWith(_rssWithControlChars);
+      _respondWith(fake, _rssWithControlChars);
 
       final articles = await service.fetchAndParse(
         feedId: 'ctrl',
@@ -705,7 +668,7 @@ void main() {
     });
 
     test('CDATA content survives sanitization', () async {
-      adapter.respondWith(_rssWithCdata);
+      _respondWith(fake, _rssWithCdata);
 
       final articles = await service.fetchAndParse(
         feedId: 'cdata',
@@ -718,7 +681,7 @@ void main() {
       expect(articles.single.summary, 'Description with  inside');
     });
     test('handles stray less-than in title', () async {
-      adapter.respondWith(_rssWithStrayLt);
+      _respondWith(fake, _rssWithStrayLt);
 
       final articles = await service.fetchAndParse(
         feedId: 'lt',
@@ -730,7 +693,7 @@ void main() {
     });
 
     test('handles bare ampersands', () async {
-      adapter.respondWith(_rssWithBareAmpersandInUrl);
+      _respondWith(fake, _rssWithBareAmpersandInUrl);
 
       final articles = await service.fetchAndParse(
         feedId: 'amp',
@@ -746,7 +709,7 @@ void main() {
 
   group('Hacker News discussion preference', () {
     test('prefers HN comments link over article link', () async {
-      adapter.respondWith(_rssHnFeed);
+      _respondWith(fake, _rssHnFeed);
 
       final articles = await service.fetchAndParse(
         feedId: 'hn',
@@ -766,7 +729,7 @@ void main() {
 <item><title>P</title><link>https://e.com/post</link>
 <comments>https://reddit.com/r/prog/comments/abc</comments></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'not-hn',
@@ -782,7 +745,7 @@ void main() {
 <item><title>P</title><link>https://e.com/post</link>
 <comments>news.ycombinator.com/item?id=999</comments></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'hn-noscheme',
@@ -797,7 +760,7 @@ void main() {
 
   group('article IDs', () {
     test('generates unique IDs for each article', () async {
-      adapter.respondWith(_rssXml);
+      _respondWith(fake, _rssXml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -809,7 +772,7 @@ void main() {
     });
 
     test('each article ID is non-empty', () async {
-      adapter.respondWith(_rssXml);
+      _respondWith(fake, _rssXml);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -829,7 +792,7 @@ void main() {
       const bad =
           '<rss version="2.0"><channel><item>'
           '<title>Bad</title><link>https://x.com</link></itm></channel></rss>';
-      adapter.respondWith(bad);
+      _respondWith(fake, bad);
 
       expect(
         () => service.fetchAndParse(feedId: 'f', url: 'https://x.com/feed'),
@@ -841,7 +804,7 @@ void main() {
       const bad =
           '<rss version="2.0"><channel><item>'
           '<title>Bad</title><link>https://x.com</link></channel></rss>';
-      adapter.respondWith(bad);
+      _respondWith(fake, bad);
 
       expect(
         () => service.fetchAndParse(feedId: 'f', url: 'https://x.com/feed'),
@@ -859,7 +822,7 @@ void main() {
 <item><title>Img Test</title><link>https://e.com/imgtest</link>
 <description>&lt;div&gt;&lt;img src="https://e.com/pic.png" alt="p"/&gt;&lt;/div&gt;</description>
 </item></channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'img',
@@ -876,7 +839,7 @@ void main() {
 <media:thumbnail url="https://e.com/thumb.jpg"/>
 <description>&lt;img src="https://e.com/fallback.png"/&gt;</description>
 </item></channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'media',
@@ -887,7 +850,7 @@ void main() {
     });
 
     test('no image when none available', () async {
-      adapter.respondWith(_rssMinimal);
+      _respondWith(fake, _rssMinimal);
 
       final articles = await service.fetchAndParse(
         feedId: 'noimg',
@@ -907,7 +870,7 @@ void main() {
 <item><title>S</title><link>https://e.com/s</link>
 <description>&lt;p&gt;Paragraph one.&lt;/p&gt;&lt;p&gt;Paragraph two.&lt;/p&gt;</description>
 </item></channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'strip',
@@ -918,7 +881,7 @@ void main() {
     });
 
     test('HN items get empty summary', () async {
-      adapter.respondWith(_rssHnFeed);
+      _respondWith(fake, _rssHnFeed);
 
       final articles = await service.fetchAndParse(
         feedId: 'hn',
@@ -929,7 +892,7 @@ void main() {
     });
 
     test('empty description yields empty summary', () async {
-      adapter.respondWith(_rssMinimal);
+      _respondWith(fake, _rssMinimal);
 
       final articles = await service.fetchAndParse(
         feedId: 'empty-desc',
@@ -949,7 +912,7 @@ void main() {
 <item><title>D</title><link>https://e.com/d</link>
 <pubDate>Mon, 02 Jun 2025 12:00:00 GMT</pubDate></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'date',
@@ -968,7 +931,7 @@ void main() {
 <item><title>D</title><link>https://e.com/d</link>
 <pubDate>Not a real date at all</pubDate></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'baddate',
@@ -984,7 +947,7 @@ void main() {
 <item><title>D</title><link>https://e.com/d</link>
 <dc:date>2025-06-06T18:00:00Z</dc:date></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'dc-date',
@@ -1003,7 +966,7 @@ void main() {
 <entry><title>A</title><link href="https://e.com/a" rel="alternate"/>
 <id>a1</id><updated>2025-06-07T09:00:00Z</updated></entry>
 </feed>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'upd',
@@ -1026,7 +989,7 @@ void main() {
 <item><title>A</title><link>https://e.com/a</link>
 <dc:creator>Charlie</dc:creator></item>
 </channel></rss>''';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'dc',
@@ -1037,7 +1000,7 @@ void main() {
     });
 
     test('author is empty string when no author info', () async {
-      adapter.respondWith(_rssMinimal);
+      _respondWith(fake, _rssMinimal);
 
       final articles = await service.fetchAndParse(
         feedId: 'no-author',
@@ -1051,38 +1014,43 @@ void main() {
   // ── HTTP error response handling ─────────────────────────────────────────
 
   group('HTTP error responses', () {
-    test('throws DioException on 404 Not Found', () async {
-      adapter.respondWith('<html>Not Found</html>', statusCode: 404);
+    test('throws RhttpStatusCodeException on 404 Not Found', () async {
+      _respondWith(fake, '<html>Not Found</html>', statusCode: 404);
 
       expect(
         () =>
             service.fetchAndParse(feedId: 'f', url: 'https://example.com/feed'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpStatusCodeException>()),
       );
     });
 
-    test('throws DioException on 500 Internal Server Error', () async {
-      adapter.respondWith('<html>Server Error</html>', statusCode: 500);
+    test(
+      'throws RhttpStatusCodeException on 500 Internal Server Error',
+      () async {
+        _respondWith(fake, '<html>Server Error</html>', statusCode: 500);
+
+        expect(
+          () => service.fetchAndParse(
+            feedId: 'f',
+            url: 'https://example.com/feed',
+          ),
+          throwsA(isA<RhttpStatusCodeException>()),
+        );
+      },
+    );
+
+    test('throws RhttpStatusCodeException on 403 Forbidden', () async {
+      _respondWith(fake, '<html>Forbidden</html>', statusCode: 403);
 
       expect(
         () =>
             service.fetchAndParse(feedId: 'f', url: 'https://example.com/feed'),
-        throwsA(isA<DioException>()),
-      );
-    });
-
-    test('throws DioException on 403 Forbidden', () async {
-      adapter.respondWith('<html>Forbidden</html>', statusCode: 403);
-
-      expect(
-        () =>
-            service.fetchAndParse(feedId: 'f', url: 'https://example.com/feed'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpStatusCodeException>()),
       );
     });
 
     test('accepts 304 Not Modified (within 200-399 range)', () async {
-      adapter.respondWith('', statusCode: 304);
+      _respondWith(fake, '', statusCode: 304);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -1097,7 +1065,7 @@ void main() {
 
   group('enclosure handling', () {
     test('uses image/jpeg enclosure as imageUrl', () async {
-      adapter.respondWith(_rssWithImageEnclosure);
+      _respondWith(fake, _rssWithImageEnclosure);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -1108,7 +1076,7 @@ void main() {
     });
 
     test('ignores audio/mpeg enclosure for imageUrl', () async {
-      adapter.respondWith(_rssWithAudioEnclosure);
+      _respondWith(fake, _rssWithAudioEnclosure);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -1119,7 +1087,7 @@ void main() {
     });
 
     test('ignores application/pdf enclosure for imageUrl', () async {
-      adapter.respondWith(_rssWithPdfEnclosure);
+      _respondWith(fake, _rssWithPdfEnclosure);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -1130,7 +1098,7 @@ void main() {
     });
 
     test('ignores enclosure with no type attribute', () async {
-      adapter.respondWith(_rssWithUntypedEnclosure);
+      _respondWith(fake, _rssWithUntypedEnclosure);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -1141,7 +1109,7 @@ void main() {
     });
 
     test('uses first image enclosure when multiple enclosures exist', () async {
-      adapter.respondWith(_rssWithMultipleEnclosures);
+      _respondWith(fake, _rssWithMultipleEnclosures);
 
       final articles = await service.fetchAndParse(
         feedId: 'f',
@@ -1156,7 +1124,7 @@ void main() {
     test(
       'image enclosure takes priority over HTML img in description',
       () async {
-        adapter.respondWith(_rssEnclosureOverHtmlImg);
+        _respondWith(fake, _rssEnclosureOverHtmlImg);
 
         final articles = await service.fetchAndParse(
           feedId: 'f',
@@ -1172,7 +1140,7 @@ void main() {
 
   group('CDATA edge cases', () {
     test('preserves HTML entities inside CDATA description', () async {
-      adapter.respondWith(_rssCdataWithAmpersands);
+      _respondWith(fake, _rssCdataWithAmpersands);
 
       final articles = await service.fetchAndParse(
         feedId: 'cdata-amp',
@@ -1183,7 +1151,7 @@ void main() {
     });
 
     test('handles CDATA in Atom entry title and content', () async {
-      adapter.respondWith(_rssCdataInAtom);
+      _respondWith(fake, _rssCdataInAtom);
 
       final articles = await service.fetchAndParse(
         feedId: 'cdata-atom',
@@ -1195,7 +1163,7 @@ void main() {
     });
 
     test('treats XML-like content inside CDATA as plain text', () async {
-      adapter.respondWith(_rssCdataWithXmlLike);
+      _respondWith(fake, _rssCdataWithXmlLike);
 
       final articles = await service.fetchAndParse(
         feedId: 'xml-like',
@@ -1211,7 +1179,7 @@ void main() {
 
   group('date parsing variants', () {
     test('parses RFC 2822 date with positive timezone offset', () async {
-      adapter.respondWith(_rssDateOffset);
+      _respondWith(fake, _rssDateOffset);
 
       final articles = await service.fetchAndParse(
         feedId: 'tz',
@@ -1225,7 +1193,7 @@ void main() {
     });
 
     test('parses RFC 2822 date with negative timezone offset', () async {
-      adapter.respondWith(_rssDateNegativeOffset);
+      _respondWith(fake, _rssDateNegativeOffset);
 
       final articles = await service.fetchAndParse(
         feedId: 'tz',
@@ -1239,7 +1207,7 @@ void main() {
     });
 
     test('parses ISO 8601 date without timezone', () async {
-      adapter.respondWith(_rssDateIsoNoZone);
+      _respondWith(fake, _rssDateIsoNoZone);
 
       final articles = await service.fetchAndParse(
         feedId: 'iso',
@@ -1258,7 +1226,7 @@ void main() {
     });
 
     test('parses ISO 8601 date with milliseconds', () async {
-      adapter.respondWith(_rssDateIsoWithMs);
+      _respondWith(fake, _rssDateIsoWithMs);
 
       final articles = await service.fetchAndParse(
         feedId: 'isoms',
@@ -1272,7 +1240,7 @@ void main() {
     });
 
     test('parses human-readable date without weekday', () async {
-      adapter.respondWith(_rssDateHumanReadable);
+      _respondWith(fake, _rssDateHumanReadable);
 
       final articles = await service.fetchAndParse(
         feedId: 'human',
@@ -1286,7 +1254,7 @@ void main() {
     });
 
     test('returns null for empty pubDate string', () async {
-      adapter.respondWith(_rssDateEmpty);
+      _respondWith(fake, _rssDateEmpty);
 
       final articles = await service.fetchAndParse(
         feedId: 'empty',
@@ -1297,7 +1265,7 @@ void main() {
     });
 
     test('returns null for whitespace-only pubDate', () async {
-      adapter.respondWith(_rssDateWhitespace);
+      _respondWith(fake, _rssDateWhitespace);
 
       final articles = await service.fetchAndParse(
         feedId: 'ws',
@@ -1312,7 +1280,7 @@ void main() {
 
   group('malformed XML extras', () {
     test('throws on garbage text that is not XML', () async {
-      adapter.respondWith(_rssGarbageXml);
+      _respondWith(fake, _rssGarbageXml);
 
       expect(
         () => service.fetchAndParse(feedId: 'f', url: 'https://x.com/feed'),
@@ -1321,7 +1289,7 @@ void main() {
     });
 
     test('throws on RSS with missing channel element', () async {
-      adapter.respondWith(_rssMissingSpace);
+      _respondWith(fake, _rssMissingSpace);
 
       // rss_dart fails to find <space>, throws ArgumentError which
       // percolates up through _parseAny's fallback logic.
@@ -1336,7 +1304,7 @@ void main() {
 
   group('missing fields', () {
     test('missing description yields empty summary', () async {
-      adapter.respondWith(_rssMissingDescription);
+      _respondWith(fake, _rssMissingDescription);
 
       final articles = await service.fetchAndParse(
         feedId: 'nodesc',
@@ -1347,7 +1315,7 @@ void main() {
     });
 
     test('missing author and dc:creator yields empty author string', () async {
-      adapter.respondWith(_rssMissingAuthorAndCreator);
+      _respondWith(fake, _rssMissingAuthorAndCreator);
 
       final articles = await service.fetchAndParse(
         feedId: 'noauth',
@@ -1358,7 +1326,7 @@ void main() {
     });
 
     test('missing guid falls back to link', () async {
-      adapter.respondWith(_rssMissingGuid);
+      _respondWith(fake, _rssMissingGuid);
 
       final articles = await service.fetchAndParse(
         feedId: 'noguid',
@@ -1373,7 +1341,7 @@ void main() {
 
   group('Atom link selection', () {
     test('selects alternate link among multiple links', () async {
-      adapter.respondWith(_atomMultipleLinks);
+      _respondWith(fake, _atomMultipleLinks);
 
       final articles = await service.fetchAndParse(
         feedId: 'multi-link',
@@ -1384,7 +1352,7 @@ void main() {
     });
 
     test('falls back to first link when no alternate rel', () async {
-      adapter.respondWith(_atomNoAlternateLink);
+      _respondWith(fake, _atomNoAlternateLink);
 
       final articles = await service.fetchAndParse(
         feedId: 'no-alt',
@@ -1395,7 +1363,7 @@ void main() {
     });
 
     test('link without rel attribute defaults to alternate', () async {
-      adapter.respondWith(_atomLinkNoRel);
+      _respondWith(fake, _atomLinkNoRel);
 
       final articles = await service.fetchAndParse(
         feedId: 'no-rel',
@@ -1410,7 +1378,7 @@ void main() {
 
   group('summary edge cases', () {
     test('Atom entry uses summary when content is missing', () async {
-      adapter.respondWith(_atomSummaryFallback);
+      _respondWith(fake, _atomSummaryFallback);
 
       final articles = await service.fetchAndParse(
         feedId: 'sum-fb',
@@ -1427,57 +1395,39 @@ void main() {
   // ── Timeout handling ──────────────────────────────────────────────────
 
   group('timeout handling', () {
-    test('propagates DioException on connection timeout', () async {
-      adapter.throwError(
-        DioException(
-          requestOptions: RequestOptions(path: 'https://slow.example/feed'),
-          message: 'Connection timeout',
-          type: DioExceptionType.connectionTimeout,
-        ),
-      );
+    test('propagates RhttpTimeoutException on connection timeout', () async {
+      fake.handler = (request) => throw RhttpTimeoutException(request);
 
       expect(
         () => service.fetchAndParse(
           feedId: 'f',
           url: 'https://slow.example/feed',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpTimeoutException>()),
       );
     });
 
-    test('propagates DioException on receive timeout', () async {
-      adapter.throwError(
-        DioException(
-          requestOptions: RequestOptions(path: 'https://slow.example/feed'),
-          message: 'Receive timeout',
-          type: DioExceptionType.receiveTimeout,
-        ),
-      );
+    test('propagates RhttpTimeoutException on receive timeout', () async {
+      fake.handler = (request) => throw RhttpTimeoutException(request);
 
       expect(
         () => service.fetchAndParse(
           feedId: 'f',
           url: 'https://slow.example/feed',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpTimeoutException>()),
       );
     });
 
-    test('propagates DioException on send timeout', () async {
-      adapter.throwError(
-        DioException(
-          requestOptions: RequestOptions(path: 'https://slow.example/feed'),
-          message: 'Send timeout',
-          type: DioExceptionType.sendTimeout,
-        ),
-      );
+    test('propagates RhttpTimeoutException on send timeout', () async {
+      fake.handler = (request) => throw RhttpTimeoutException(request);
 
       expect(
         () => service.fetchAndParse(
           feedId: 'f',
           url: 'https://slow.example/feed',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpTimeoutException>()),
       );
     });
   });
@@ -1492,7 +1442,7 @@ void main() {
           '<title>Empty Feed</title>'
           '<link>https://e.com</link>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'empty',
@@ -1508,7 +1458,7 @@ void main() {
           '<feed xmlns="http://www.w3.org/2005/Atom">'
           '<title>Empty Atom</title>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'empty-atom',
@@ -1523,7 +1473,7 @@ void main() {
 
   group('feedId propagation', () {
     test('feedId is set on every article from RSS', () async {
-      adapter.respondWith(_rssXml);
+      _respondWith(fake, _rssXml);
 
       final articles = await service.fetchAndParse(
         feedId: 'my-feed-42',
@@ -1536,7 +1486,7 @@ void main() {
     });
 
     test('feedId is set on every article from Atom', () async {
-      adapter.respondWith(_atomXml);
+      _respondWith(fake, _atomXml);
 
       final articles = await service.fetchAndParse(
         feedId: 'atom-feed-99',
@@ -1564,7 +1514,7 @@ void main() {
           '<dc:date>2025-06-01T00:00:00Z</dc:date>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'dc',
@@ -1585,7 +1535,7 @@ void main() {
           '<media:thumbnail url="https://e.com/thumb.jpg"/>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'media',
@@ -1610,7 +1560,7 @@ void main() {
           '<author><name>Jane Doe</name></author>'
           '</entry>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'named',
@@ -1631,7 +1581,7 @@ void main() {
           '<author><email>jane@example.com</email></author>'
           '</entry>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'email',
@@ -1646,12 +1596,12 @@ void main() {
   // ── HTTP redirect handling ────────────────────────────────────────────
 
   group('HTTP redirect', () {
-    test('accepts 301 redirect response (handled by Dio)', () async {
-      adapter.respondWith(_rssMinimal, statusCode: 301);
-      // Dio with default options follows redirects; our fake adapter just
-      // returns whatever we set, so a 301 response body with valid XML
-      // should be parsed as normal (status code check is in Dio, bypassed here).
-      // This test verifies the adapter receives the status code.
+    test('accepts 301 redirect response (handled by the transport)', () async {
+      _respondWith(fake, _rssMinimal, statusCode: 301);
+      // rhttp with default settings follows redirects; the double just returns
+      // whatever we set, so a 301 response body with valid XML is parsed as
+      // normal (only >= 400 statuses are rejected, and that check lives in the
+      // transport, bypassed here).
       final articles = await service.fetchAndParse(
         feedId: 'redirect',
         url: 'https://e.com/redirect',
@@ -1675,7 +1625,7 @@ void main() {
           '<description>Plain text description</description>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'encoded',
@@ -1697,7 +1647,7 @@ void main() {
           '<description>Fallback description text</description>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'empty-enc',
@@ -1724,7 +1674,7 @@ void main() {
           '<media:content url="https://e.com/content-image.jpg" type="image/jpeg"/>'
           '</entry>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'mediac',
@@ -1745,7 +1695,7 @@ void main() {
           '<media:content url="https://e.com/rss-content-img.png" type="image/png" width="800" height="600"/>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'rss-media',
@@ -1768,7 +1718,7 @@ void main() {
           '<link>https://twitter.com/user/status/123456789</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'twitter',
@@ -1787,7 +1737,7 @@ void main() {
           '<link>https://x.com/user/status/987654321</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'xcom',
@@ -1806,7 +1756,7 @@ void main() {
           '<link>https://example.com/blog/post</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'normal',
@@ -1827,7 +1777,7 @@ void main() {
           '<link>https://example.com/page?utm_source=twitter&amp;utm_medium=social&amp;ref=keepme</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'utm',
@@ -1846,7 +1796,7 @@ void main() {
           '<link>https://example.com/page?fbclid=abc123def456</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'fb',
@@ -1865,7 +1815,7 @@ void main() {
           '<link>https://example.com/clean?page=2&amp;sort=asc</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'clean',
@@ -1889,7 +1839,7 @@ void main() {
           '<link href="https://e.com/noid" rel="alternate"/>'
           '</entry>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'noid',
@@ -1914,7 +1864,7 @@ void main() {
           '<id>nh-2</id>'
           '</entry>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'nohref',
@@ -1937,7 +1887,7 @@ void main() {
           '<updated>2025-06-10T15:00:00Z</updated>'
           '</entry>'
           '</feed>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'pubwins',
@@ -1963,7 +1913,7 @@ void main() {
             '<author><name></name></author>'
             '</entry>'
             '</feed>';
-        adapter.respondWith(xml);
+        _respondWith(fake, xml);
 
         final articles = await service.fetchAndParse(
           feedId: 'empty-auth',
@@ -1987,7 +1937,7 @@ void main() {
           '<link>https://e.com/ent</link>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'ent',
@@ -2008,7 +1958,7 @@ void main() {
           '<author>John &amp;quot;JD&amp;quot; Doe &amp;amp; Associates</author>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'auth-ent',
@@ -2034,7 +1984,7 @@ void main() {
           '<dc:creator>Fallback Creator</dc:creator>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'author-prio',
@@ -2054,7 +2004,7 @@ void main() {
           '<author>   </author>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'ws-author',
@@ -2078,7 +2028,7 @@ void main() {
           '<description><![CDATA[First paragraph.]]> Middle text. <![CDATA[Second paragraph.]]></description>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'multi-cdata',
@@ -2110,7 +2060,7 @@ void main() {
           '<enclosure url="https://e.com/enclosure-loses.png" type="image/png" length="512"/>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'prio-chain',
@@ -2132,7 +2082,7 @@ void main() {
           '<enclosure url="https://e.com/enclosure-loses.png" type="image/png" length="512"/>'
           '</item>'
           '</channel></rss>';
-      adapter.respondWith(xml);
+      _respondWith(fake, xml);
 
       final articles = await service.fetchAndParse(
         feedId: 'content-enc',
@@ -2156,7 +2106,7 @@ void main() {
             '<item><title>Fallback RSS</title><link>https://e.com/fbrss</link></item>'
             '</channel></rss>'
             '<feed xmlns="http://www.w3.org/2005/Atom"><title>stray</title></feed>';
-        adapter.respondWith(xml);
+        _respondWith(fake, xml);
 
         final articles = await service.fetchAndParse(
           feedId: 'fallback-rss',
@@ -2179,7 +2129,7 @@ void main() {
             '<link>https://twitter.com/author/status/456?utm_source=rss&amp;utm_medium=feed</link>'
             '</item>'
             '</channel></rss>';
-        adapter.respondWith(xml);
+        _respondWith(fake, xml);
 
         final articles = await service.fetchAndParse(
           feedId: 'tw-utm',

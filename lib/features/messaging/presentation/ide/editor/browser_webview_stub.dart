@@ -10,6 +10,8 @@ class BrowserWebView extends StatelessWidget {
     super.key,
     required this.src,
     required this.reloadToken,
+    this.codeServerResource = false,
+    this.onError,
   });
 
   /// Unused on non-web.
@@ -17,6 +19,12 @@ class BrowserWebView extends StatelessWidget {
 
   /// Unused on non-web.
   final int reloadToken;
+
+  /// Whether this iframe serves authenticated code-server content.
+  final bool codeServerResource;
+
+  /// Called when the encrypted editor resource is unavailable.
+  final VoidCallback? onError;
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();

@@ -51,15 +51,13 @@ class CodeServerSessionRequest {
   int get hashCode => Object.hash(spaceId, repoId, path, line);
 }
 
-/// The resolved code-server handle: the app-relative proxy URL, the loopback
-/// direct URL (for an external-browser open on Linux) and readiness.
+/// The resolved code-server handle: an app-relative proxy path and readiness.
 @immutable
 class CodeServerSessionResult {
   /// Creates a [CodeServerSessionResult].
   const CodeServerSessionResult({
     required this.sessionId,
     required this.url,
-    required this.directUrl,
     required this.status,
   });
 
@@ -70,9 +68,6 @@ class CodeServerSessionResult {
   /// tier; same-origin to the web bundle and to the desktop-served bundle.
   final String url;
 
-  /// The loopback direct URL (`http://127.0.0.1:<port>/`) — for an
-  /// external-browser open where a native webview is unavailable (Linux).
-  final String directUrl;
 
   /// Server-side readiness (spinner while installing, card when unavailable).
   final CodeServerStatus status;
@@ -117,7 +112,6 @@ final codeServerSessionProvider = FutureProvider.autoDispose
       return CodeServerSessionResult(
         sessionId: data['session_id'] as String? ?? '',
         url: data['url'] as String? ?? '',
-        directUrl: data['direct_url'] as String? ?? '',
         status: status,
       );
     });

@@ -42,6 +42,14 @@ class ReadTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.read;
 
+  /// Audited safe for speculative (early) execution: reads a file inside the
+  /// resolved workspace boundary and returns a line window. The only side
+  /// effect is [onRead] recording an in-memory snapshot, which is idempotent
+  /// for identical content — so an early call that the model then declines
+  /// costs one read, never a state change.
+  @override
+  bool get speculativeReadSafe => true;
+
   @override
   Map<String, dynamic> get inputSchema => {
     'type': 'object',
@@ -156,6 +164,32 @@ class ReadTool extends HarnessTool {
     }
     for (var i = 0; i < window.lines.length; i++) {
       buffer.writeln('${start + i + 1}\t${window.lines[i]}');
+    }
+    // State the omitted regions explicitly. A window is usually narrower than
+    // the file, and "here are 2000 lines" silently implies the file ended.
+    // Both bounds are exact line numbers, so the model pages deliberately
+    // instead of re-reading and guessing — and nothing here changes the
+    // requested range itself.
+    if (window.lines.isNotEmpty) {
+      final firstLine = start + 1;
+      final lastLine = start + window.lines.length;
+      if (firstLine > 1 || lastLine < window.totalLines) {
+        final omitted = StringBuffer(
+          '[showing lines $firstLine-$lastLine of '
+          '${window.totalLines}',
+        );
+        if (firstLine > 1) {
+          omitted.write('; lines 1-${firstLine - 1} omitted');
+        }
+        if (lastLine < window.totalLines) {
+          omitted.write(
+            '; lines ${lastLine + 1}-${window.totalLines} omitted, continue '
+            'with offset=${lastLine + 1}',
+          );
+        }
+        omitted.write(']');
+        buffer.writeln(omitted.toString());
+      }
     }
     return HarnessToolResult.success(buffer.toString().trimRight());
   }

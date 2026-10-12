@@ -2,7 +2,7 @@
 title: Spații de lucru și izolare
 description: De ce un spațiu de lucru este o graniță strictă de tenant, cum separarea bazelor de date face această graniță structurală și ce o traversează în mod deliberat.
 slug: ro-RO/manual/concepte/spatii-de-lucru
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Ce este un spațiu de lucru?
@@ -110,13 +110,17 @@ Ce nu transportă niciuna dintre ele este restul directorului spațiului de lucr
 
 ## Mutarea unui backup între server și dispozitivul tău
 
-Fiecare operație de mai sus vorbește în căi de pe **server**, ceea ce este un răspuns complet doar atunci când serverul este propria ta mașină. Trei rute HTTP semnate — [`/backup/workspace`, `/backup/snapshot` și `/backup/restore`](/ro-RO/manual/referinta/backup/#transfer-routes) — cară octeții pentru orice altă topologie, pe aceeași cale autentificată pe care o folosesc deja proxy-ul media și depozitul de imagini. În pagină, acesta este un buton **Descarcă** lângă fiecare export și fiecare snapshot (tu alegi unde ajunge) și **Alege un fișier și încarcă** pentru a restaura dintr-un fișier aflat pe mașina pe care o folosești. Încărcarea este varianta care funcționează când serverul nu este mașina ta: `workspace.import` are nevoie ca fișierul să fie deja pe gazdă, iar așa ajunge acolo.
+Fiecare operație de mai sus vorbește în căi de pe **server**, ceea ce este un răspuns complet doar atunci când serverul este propria ta mașină. Trei rute de transfer semnate — [`/backup/workspace`, `/backup/snapshot` și `/backup/restore`](/ro-RO/manual/referinta/backup/#transfer-routes) — cară octeții pentru orice altă topologie prin tunelul de resurse autentificat și criptat, pe conexiuni directe și prin releu. Rutele HTTP publice nu servesc octeți de backup care pot fi citiți, iar căile semnate necesită în continuare autorizare. În pagină, acesta este un buton **Descarcă** lângă fiecare export și fiecare snapshot (tu alegi unde ajunge) și **Alege un fișier și încarcă** pentru a restaura dintr-un fișier aflat pe mașina pe care o folosești. Încărcarea funcționează când serverul nu este mașina ta: `workspace.import` are nevoie ca fișierul să fie deja pe gazdă, iar așa ajunge acolo.
 
 Trei proprietăți merită cunoscute:
 
 - **O descărcare creează o copie nouă, iar serverul nu păstrează nimic din ea.** Descărcarea nu înseamnă „preia fișierul pe care l-a creat butonul de export” — exportă din nou, transmite în flux rezultatul și îl șterge. Răspunsul este `no-store` cu `Accept-Ranges: none` din același motiv: un interval reluat ar îmbina două exporturi diferite într-un singur fișier care pare valid, dar nu este.
 - **O încărcare este transmisă în flux direct pe disc, niciodată tamponată**, la ambele capete, iar copia pregătită este ștearsă pe fiecare cale de ieșire — inclusiv la un refuz. O bază de date de spațiu de lucru nu este o captură de ecran.
-- **O conexiune prin releu nu are origine HTTP**, așa că acolo controalele de transfer sunt dezactivate, cu o notă care explică de ce. Tot ce vorbește în căi de pe server continuă să funcționeze prin releu; doar căile de octeți au nevoie de o conexiune directă.
+- **Transferul funcționează și prin releu.** Descărcările și încărcările folosesc același tunel de resurse criptat ca conexiunile directe; nu este nevoie de o origine HTTP directă.
+
+Criptarea protejează transferul în tranzit, nu baza de date de pe partea
+serverului, directorul de snapshoturi sau o copie descărcată în repaus. Operatorul
+serverului poate accesa datele deținute pe acea gazdă.
 
 :::note[Ale cui sunt căile]
 Căile pe care le *arată* pagina — directorul snapshotului, fișierul scris de un export, sursa citită de un import — sunt pe mașina care rulează `cc_server`. Calea raportată de o **descărcare** este pe mașina la care stai. Această distincție este motivul pentru care există ambele: prima este ceea ce are nevoie un script de mentenanță sau o sesiune ssh, a doua este ceea ce are nevoie o persoană care adună un backup.

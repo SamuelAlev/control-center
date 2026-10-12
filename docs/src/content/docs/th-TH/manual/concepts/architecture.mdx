@@ -3,7 +3,7 @@ title: สถาปัตยกรรม
 description: โครงสร้างของ Control Center ด้วยโมเดลเซิร์ฟเวอร์และไคลเอนต์แบบบาง สถาปัตยกรรมแบบคลีนที่ยึดฟีเจอร์เป็นหลัก และพอร์ตกับอะแดปเตอร์
 dateModified: 2026-09-19
 slug: th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## ภาพรวม
@@ -26,7 +26,7 @@ Control Center เป็น**สถาปัตยกรรมไคลเอน
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **เลเยอร์โดเมน**: เอนทิตี ออบเจกต์ค่า อินเทอร์เฟซรีโพซิทอรี พอร์ต และบริการโดเมนที่เขียนด้วย Dart ล้วน ไม่มีการนำเข้าจากชั้นโครงสร้างพื้นฐานเลย (ไม่มี dio, drift หรือโมเดลเครือข่าย)
+- **เลเยอร์โดเมน**: เอนทิตี ออบเจกต์ค่า อินเทอร์เฟซรีโพซิทอรี พอร์ต และบริการโดเมนที่เขียนด้วย Dart ล้วน ไม่มีการนำเข้าจากชั้นโครงสร้างพื้นฐานเลย (ไม่มี rhttp, drift หรือโมเดลเครือข่าย)
 - **เลเยอร์พรีเซนเทชัน**: หน้าจอ วิดเจ็ต และนอติไฟเออร์ ไม่เข้าถึง drift/DAO/ชั้นข้อมูลโดยตรง ทุกอย่างไหลผ่านผู้ให้บริการ Riverpod → รีโพซิทอรี
 - **เลเยอร์โครงสร้างพื้นฐาน**: อิมพลีเมนเตชันจริงของพอร์ตโดเมนและอินเทอร์เฟซรีโพซิทอรี โดยขึ้นกับโดเมน ไม่มีทางเป็นกลับกัน
 
@@ -122,7 +122,7 @@ Control Center รองรับผู้ใช้หลายคน: มนุ
 
 HTTP ภายนอกทั้งหมดอยู่ที่เซิร์ฟเวอร์ ไคลเอนต์ไม่เคยต่อตรงไปยัง GitHub, Linear หรือ Google — แต่จะเรียกอ็อป RPC ของเซิร์ฟเวอร์ และแม้แต่สื่อจากระยะไกลก็ถูกดึงผ่านปลายทาง `/proxy/media` ของเซิร์ฟเวอร์ แทนที่จะดึงจากต้นทางโดยตรง
 
-- ไคลเอนต์ **dio** ใน `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` และ `GoogleCalendarApiClient`
+- ไคลเอนต์ **rhttp** ใน `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` และ `GoogleCalendarApiClient`
 - การฉีดโทเค็นยืนยันตัวตนผ่านอินเทอร์เซปเตอร์ รวมถึงอินเทอร์เซปเตอร์ Google OAuth แยกตามบัญชีใน `cc_server_core` ที่รีเฟรชโทเค็นเมื่อเจอ 401
 - ข้อผิดพลาดทั้งหมดถูกแมปผ่าน `packages/cc_infra/lib/src/network/error_mapper.dart` → คลาสย่อยของ `AppException` ที่มีชนิดข้อมูลชัดเจนซึ่งนิยามไว้ใน `cc_domain`
 

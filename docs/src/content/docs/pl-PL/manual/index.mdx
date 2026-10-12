@@ -2,7 +2,7 @@
 title: Wprowadzenie
 description: Control Center to kokpit do wieloagentowego tworzenia oprogramowania.
 slug: pl-PL/podrecznik
-sourceHash: 77561c3d61668603e953379e85b192b9b5440635
+sourceHash: 23a8e4fad783961ca840345b87b52d56fa793945
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
@@ -25,7 +25,7 @@ Control Center daje Ci dowodzenie nad flotą agentów AI piszących kod. Urucham
 - **Śledź pracę** za pomocą niezależnych od dostawcy zgłoszeń, projektów i delegowania
 - **Nagrywaj spotkania** dzięki przechwytywaniu na urządzeniu, transkrypcji i diaryzacji, a następnie streszczaniu do notatek, działań i decyzji
 - **Zobacz swój dzień** dzięki synchronizacji z Google Calendar, RSVP, alertom o spotkaniach oraz nagrywaniu i łączeniu
-- **Śledź flotę z telefonu**: sparuj urządzenie z serwerem, a potem czytaj wiadomości, odpowiadaj i przeglądaj zgłoszenia. Telefon wybiera najlepszą osiągalną ścieżkę — loopback, sieć LAN, tailnet albo TLS — i w razie potrzeby przechodzi na relay z szyfrowaniem end-to-end, który przekazuje ramki, których nie może odczytać
+- **Śledź flotę z telefonu**: sparuj urządzenie z serwerem, a potem czytaj wiadomości, odpowiadaj i przeglądaj zgłoszenia. Telefon wybiera najlepszą osiągalną ścieżkę — loopback, sieć LAN, tailnet albo TLS — i w razie potrzeby przechodzi na przekaźnik. Zarówno połączenia bezpośrednie, jak i przez przekaźnik używają szyfrowania end-to-end; przekaźnik przekazuje ruch, którego nie może odszyfrować
 - **Kieruj agentami ze Slacka**: mostkuj obszar roboczy z aplikacją czatu i wspomnij bota, odpowiedz w wątku Slacka albo utwórz zgłoszenie poleceniem slash — przez połączenie wychodzące, więc publiczny endpoint nie jest potrzebny
 - **Integruj się** z GitHub, Linear, Slack, Google Calendar i ponad 100 narzędziami MCP
 

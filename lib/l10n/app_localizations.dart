@@ -24026,6 +24026,48 @@ abstract class AppLocalizations {
   /// **'Drop to attach'**
   String get composerDropToAttach;
 
+  /// Status of a composer attachment being uploaded before the message is sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading…'**
+  String get composerAttachmentUploading;
+
+  /// Status of a composer attachment uploaded and ready to send.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get composerAttachmentReady;
+
+  /// Status of a composer attachment whose upload failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get composerAttachmentUploadFailed;
+
+  /// Composer attachment rejected because its file size exceeds the upload limit.
+  ///
+  /// In en, this message translates to:
+  /// **'File exceeds the {limit} limit'**
+  String composerAttachmentTooLarge(String limit);
+
+  /// Composer attachment rejected because its file contents could not be read for upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read this file'**
+  String get composerAttachmentUnreadable;
+
+  /// Prompt shown when sending is blocked by attachments still uploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for attachments to finish uploading'**
+  String get composerAttachmentWaitForUploads;
+
+  /// Prompt shown when sending is blocked by failed attachment uploads.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry or remove failed attachments before sending'**
+  String get composerAttachmentResolveFailures;
+
   /// Title of the attachment preview when the attachment is no longer held in memory.
   ///
   /// In en, this message translates to:
@@ -25845,13 +25887,13 @@ abstract class AppLocalizations {
   /// No description provided for @notificationAgentAwaitingInput.
   ///
   /// In en, this message translates to:
-  /// **'Agent waiting on you'**
+  /// **'Agent needs attention'**
   String get notificationAgentAwaitingInput;
 
   /// No description provided for @notifyAgentAwaitingInput.
   ///
   /// In en, this message translates to:
-  /// **'When an agent needs your approval, an answer or a working credential'**
+  /// **'When an agent needs approval, an answer or working credentials, or policy blocks an action'**
   String get notifyAgentAwaitingInput;
 
   /// No description provided for @notificationAgentNeedsApproval.
@@ -25967,6 +26009,618 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server is stopping'**
   String get shutdownSubtitleServer;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent vs available'**
+  String get skillEvalAbsent;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambient skills'**
+  String get skillEvalAmbient;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Artifact reference: {reference}'**
+  String skillEvalArtifactRef(String reference);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'{task} · {arm} · repeat {repeat}'**
+  String skillEvalAttempt(String task, String arm, int repeat);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempts'**
+  String get skillEvalAttempts;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get skillEvalAvailableEvent;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous revision hash'**
+  String get skillEvalBaseline;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Body loaded'**
+  String get skillEvalBodyLoad;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget (US cents)'**
+  String get skillEvalBudgetCents;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid evaluation uses the selected provider and budget. Security scan results are separate.'**
+  String get skillEvalBudgetNote;
+
+  /// Explains the subscription evaluation stopping threshold and possible in-flight overshoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription budgets track API-equivalent usage, not invoices. An in-flight call may exceed the budget; no further calls start once it is reached. Security scans are separate.'**
+  String get skillEvalUsageBudgetNote;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel run'**
+  String get skillEvalCancel;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get skillEvalCancelled;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelling'**
+  String get skillEvalCancelling;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison'**
+  String get skillEvalComparison;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get skillEvalCompleted;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Composition'**
+  String get skillEvalComposition;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Task corpus'**
+  String get skillEvalCorpus;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'{corpus} · {repeats} repeats'**
+  String skillEvalCoverage(String corpus, int repeats);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'All planned trials observed'**
+  String get skillEvalCoverageComplete;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Current package hash: {hash}'**
+  String skillEvalCurrentHash(String hash);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable update evaluations'**
+  String get skillEvalDisableUpdates;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable update evaluations'**
+  String get skillEvalEnableUpdates;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy redacted JSON'**
+  String get skillEvalExport;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get skillEvalFailed;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Forced load vs absent'**
+  String get skillEvalForced;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Forced load'**
+  String get skillEvalForcedEvent;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Package hash unavailable on this server. Evaluation is disabled.'**
+  String get skillEvalHashUnavailable;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision history'**
+  String get skillEvalHistory;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Improved'**
+  String get skillEvalImproved;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete'**
+  String get skillEvalIncomplete;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Inconclusive'**
+  String get skillEvalInconclusive;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Inferred'**
+  String get skillEvalInferred;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get skillEvalInterrupted;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill loading not observable; absence of an event does not prove it was ignored.'**
+  String get skillEvalLoadUnobserved;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected model'**
+  String get skillEvalModel;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No attempts yet.'**
+  String get skillEvalNoAttempts;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No connected models available. Connect a provider in Settings first.'**
+  String get skillEvalNoModels;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous hash in campaign history. Evaluate the previous revision before replacing it.'**
+  String get skillEvalNoPrevious;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No report yet; partial attempts remain available.'**
+  String get skillEvalNoReport;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No workspace selected.'**
+  String get skillEvalNoWorkspace;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks reported yet.'**
+  String get skillEvalNoTasks;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'No verifier evidence recorded.'**
+  String get skillEvalNoVerifiers;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Not evaluated for these exact bytes. A scan is not behavioral evidence.'**
+  String get skillEvalNotEvaluated;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get skillEvalNotVerified;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Observed'**
+  String get skillEvalObserved;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Quality'**
+  String get skillEvalOpenQuality;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'By default, saving a skill does not start a paid evaluation. If you explicitly enable automatic update reevaluation, saving starts a budgeted paid evaluation.'**
+  String get skillEvalPolicyNote;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate a revision first to configure the update policy.'**
+  String get skillEvalPolicyNeedsCampaign;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Update policy configuration'**
+  String get skillEvalPolicyTemplate;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial evidence; no adoption verdict'**
+  String get skillEvalPartial;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {planned} attempts'**
+  String skillEvalProgress(int completed, int planned);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider: {provider}'**
+  String skillEvalProvider(String provider);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace skill campaigns and revision-specific evidence.'**
+  String get skillEvalQualityIntro;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get skillEvalQueued;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting to campaign snapshots…'**
+  String get skillEvalReconnecting;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get skillEvalRefresh;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference loaded'**
+  String get skillEvalReferenceLoad;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats per task'**
+  String get skillEvalRepetitions;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence report'**
+  String get skillEvalReport;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get skillEvalRunning;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Script executed'**
+  String get skillEvalScriptExecution;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend: {spent} / budget {budget}'**
+  String skillEvalSpend(String spent, String budget);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Start evaluation'**
+  String get skillEvalStart;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare skill revisions'**
+  String get skillEvalStartTitle;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale'**
+  String get skillEvalStale;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale: {reason}'**
+  String skillEvalStaleReason(String reason);
+
+  /// Number of distinct task clusters sampled in a skill evaluation; repeated runs of the same task are not independent samples.
+  ///
+  /// In en, this message translates to:
+  /// **'Distinct task clusters: {count}'**
+  String skillEvalTaskClusters(String count);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate} ({passes} verified) · {cost}'**
+  String skillEvalTaskEvidence(String rate, String passes, String cost);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks by arm'**
+  String get skillEvalTasks;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool error'**
+  String get skillEvalToolError;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool events'**
+  String get skillEvalTools;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill evaluation'**
+  String get skillEvalTitle;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable: {reason}'**
+  String skillEvalUnavailable(String reason);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get skillEvalUnknown;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved edits are not included. Save before evaluating.'**
+  String get skillEvalUnsaved;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncertainty interval'**
+  String get skillEvalUncertainty;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get skillEvalVerified;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification'**
+  String get skillEvalVerifiers;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Verdict'**
+  String get skillEvalVerdict;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy complete: {filename}'**
+  String skillEvalExportCopied(String filename);
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan violation'**
+  String get skillEvalPlanViolation;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality preserved'**
+  String get skillEvalPreserved;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous vs current'**
+  String get skillEvalPrevious;
+
+  /// Skill campaign operator interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Regression demonstrated'**
+  String get skillEvalRegressed;
+
+  /// Skill campaign regression type.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost regression'**
+  String get skillEvalCostRegression;
+
+  /// Skill campaign regression type.
+  ///
+  /// In en, this message translates to:
+  /// **'Harness error'**
+  String get skillEvalHarnessError;
+
+  /// Heading for per-arm observed skill routing.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill routing'**
+  String get skillBehaviorRouting;
+
+  /// Observable skill-routing confusion counts. All placeholders are locale-formatted counts or unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'{truePositive} expected uses · {falsePositive} unexpected uses · {falseNegative} missed uses · {trueNegative} correct skips'**
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  );
+
+  /// Uncertain or unavailable routing observations.
+  ///
+  /// In en, this message translates to:
+  /// **'{positive} uncertain uses · {negative} uncertain skips · {notOffered} not offered'**
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  );
+
+  /// Observed routing rates; unknown where denominator is unobservable.
+  ///
+  /// In en, this message translates to:
+  /// **'Observed precision {precision} · recall {recall} · false-positive rate {falsePositiveRate}'**
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  );
+
+  /// Forced skill availability is diagnostic, not organic routing.
+  ///
+  /// In en, this message translates to:
+  /// **'Forced arm · diagnostic only'**
+  String get skillBehaviorForced;
+
+  /// Limitations of routing measurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Rates use observable accesses only. Shell or search access may remain unknown; loading a skill does not prove it was applied.'**
+  String get skillBehaviorRoutingNote;
+
+  /// Heading for synthetic safety artifact checks.
+  ///
+  /// In en, this message translates to:
+  /// **'Synthetic safety'**
+  String get skillBehaviorSafety;
+
+  /// Synthetic artifact passes out of all attempts; denied actions and protected file violations.
+  ///
+  /// In en, this message translates to:
+  /// **'{passes}/{attempts} artifact passes · {denials} policy denials · {violations} protected-file violations'**
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  );
+
+  /// Limitations of synthetic safety measurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Artifact checks are synthetic, not real-world attack rates; actual side effects are not instrumented.'**
+  String get skillBehaviorSafetyNote;
+
+  /// Heading for grouped verified utility by task family.
+  ///
+  /// In en, this message translates to:
+  /// **'Utility by family'**
+  String get skillBehaviorUtility;
+
+  /// Verified successes out of all attempts including failed and incomplete attempts.
+  ///
+  /// In en, this message translates to:
+  /// **'{verified}/{attempts} verified successes'**
+  String skillBehaviorUtilityCounts(String verified, String attempts);
+
+  /// Denominator policy for verified utility.
+  ///
+  /// In en, this message translates to:
+  /// **'All attempts count toward the utility denominator, including failures and incomplete runs.'**
+  String get skillBehaviorUtilityNote;
 }
 
 class _AppLocalizationsDelegate

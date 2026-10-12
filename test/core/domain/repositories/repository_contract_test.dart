@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
-import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
-import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
@@ -15,11 +13,9 @@ import 'package:cc_domain/core/domain/repositories/review_space_repository.dart'
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
-import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final _testDate = DateTime(2026, 1, 1);
-final _testDate2 = DateTime(2026, 1, 2);
 
 void main() {
   // ---------------------------------------------------------------------------
@@ -389,38 +385,38 @@ void main() {
       expect(found!.spaceId, 'ch-2');
     });
 
-    test(
-      'contract — watchAllBySpace returns every PR for a space',
-      () async {
-        final repo = _TestReviewSpaceRepository();
-        await repo.create(
-          spaceId: 'ch-multi',
-          workspaceId: 'ws-1',
-          prExternalId: 'pr-node-1',
-          prNumber: 1,
-          repoFullName: 'acme/a',
-        );
-        await repo.create(
-          spaceId: 'ch-multi',
-          workspaceId: 'ws-1',
-          prExternalId: 'pr-node-2',
-          prNumber: 2,
-          repoFullName: 'acme/b',
-        );
-        // A different space must not bleed in.
-        await repo.create(
-          spaceId: 'ch-other',
-          workspaceId: 'ws-1',
-          prExternalId: 'pr-node-3',
-          prNumber: 3,
-          repoFullName: 'acme/c',
-        );
+    test('contract — watchAllBySpace returns every PR for a space', () async {
+      final repo = _TestReviewSpaceRepository();
+      await repo.create(
+        spaceId: 'ch-multi',
+        workspaceId: 'ws-1',
+        prExternalId: 'pr-node-1',
+        prNumber: 1,
+        repoFullName: 'acme/a',
+      );
+      await repo.create(
+        spaceId: 'ch-multi',
+        workspaceId: 'ws-1',
+        prExternalId: 'pr-node-2',
+        prNumber: 2,
+        repoFullName: 'acme/b',
+      );
+      // A different space must not bleed in.
+      await repo.create(
+        spaceId: 'ch-other',
+        workspaceId: 'ws-1',
+        prExternalId: 'pr-node-3',
+        prNumber: 3,
+        repoFullName: 'acme/c',
+      );
 
-        final list = await repo.watchAllBySpace('ws-1', 'ch-multi').first;
-        expect(list.length, 2);
-        expect(list.map((a) => a.prExternalId).toSet(), {'pr-node-1', 'pr-node-2'});
-      },
-    );
+      final list = await repo.watchAllBySpace('ws-1', 'ch-multi').first;
+      expect(list.length, 2);
+      expect(list.map((a) => a.prExternalId).toSet(), {
+        'pr-node-1',
+        'pr-node-2',
+      });
+    });
 
     test('contract — watchAllBySpace is workspace-scoped', () async {
       final repo = _TestReviewSpaceRepository();
@@ -621,126 +617,6 @@ void main() {
       expect(list.any((i) => i.id == 'ir-w'), isTrue);
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // AgentRunLogRepository
-  // ---------------------------------------------------------------------------
-  group('AgentRunLogRepository', () {
-    test('contract — upsert and getById', () async {
-      final repo = _TestAgentRunLogRepository();
-      final log = _testRunLog(
-        'log-1',
-        'agent-1',
-        'ws-1',
-        'conv-1',
-        startedAt: _testDate,
-        completedAt: _testDate2,
-      );
-
-      await repo.upsert(log);
-      final found = await repo.getById('ws-1', 'log-1');
-
-      expect(found, isNotNull);
-      expect(found!.id, 'log-1');
-      expect(found.agentId, 'agent-1');
-      expect(found.status, RunStatus.completed);
-    });
-
-    test('contract — getById returns null for missing', () async {
-      final repo = _TestAgentRunLogRepository();
-      expect(await repo.getById('ws-1', 'nonexistent'), isNull);
-    });
-
-    test('contract — upsert updates existing', () async {
-      final repo = _TestAgentRunLogRepository();
-      await repo.upsert(
-        _testRunLog(
-          'log-1',
-          'a-1',
-          'ws-1',
-          'c-1',
-          startedAt: _testDate,
-          status: RunStatus.running,
-        ),
-      );
-      await repo.upsert(
-        _testRunLog(
-          'log-1',
-          'a-1',
-          'ws-1',
-          'c-1',
-          startedAt: _testDate,
-          status: RunStatus.error,
-          completedAt: _testDate2,
-        ),
-      );
-
-      final found = await repo.getById('ws-1', 'log-1');
-      expect(found!.status, RunStatus.error);
-      expect(found.completedAt, isNotNull);
-    });
-
-    test('contract — watchByAgent emits', () async {
-      final repo = _TestAgentRunLogRepository();
-      await repo.upsert(
-        _testRunLog('log-a', 'agent-a', 'ws-1', 'c-1', startedAt: _testDate),
-      );
-      await repo.upsert(
-        _testRunLog('log-b', 'agent-b', 'ws-1', 'c-2', startedAt: _testDate2),
-      );
-
-      final stream = repo.watchByAgent('ws-1', 'agent-a');
-      final logs = await stream.first;
-      expect(logs.length, 1);
-      expect(logs.first.id, 'log-a');
-    });
-
-    test('contract — watchAll emits all logs', () async {
-      final repo = _TestAgentRunLogRepository();
-      await repo.upsert(
-        _testRunLog('log-1', 'a-1', 'ws-1', 'c-1', startedAt: _testDate),
-      );
-
-      final stream = repo.watchAll();
-      final logs = await stream.first;
-      expect(logs.length, 1);
-    });
-
-    test(
-      'contract — watchActiveByConversation filters completed runs',
-      () async {
-        final repo = _TestAgentRunLogRepository();
-        // Active run (no completedAt)
-        await repo.upsert(
-          _testRunLog(
-            'active',
-            'a-1',
-            'ws-1',
-            'conv-1',
-            startedAt: _testDate,
-            status: RunStatus.running,
-          ),
-        );
-        // Completed run
-        await repo.upsert(
-          _testRunLog(
-            'done',
-            'a-1',
-            'ws-1',
-            'conv-1',
-            startedAt: _testDate,
-            status: RunStatus.completed,
-            completedAt: _testDate2,
-          ),
-        );
-
-        final stream = repo.watchActiveByConversation('ws-1', 'conv-1');
-        final active = await stream.first;
-        expect(active.length, 1);
-        expect(active.first.id, 'active');
-      },
-    );
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -831,7 +707,8 @@ class _TestWorkspaceRepository implements WorkspaceRepository {
     final byId = {for (final w in _workspaces) w.id: w};
     final reordered = [
       for (final id in orderedIds)
-        if (byId.remove(id) case final Workspace w) w, ...byId.values,
+        if (byId.remove(id) case final Workspace w) w,
+      ...byId.values,
     ];
     _workspaces
       ..clear()
@@ -975,7 +852,8 @@ class _TestRepoRepository implements RepoRepository {
     final byId = {for (final r in list) r.id: r};
     final reordered = [
       for (final id in orderedIds)
-        if (byId.remove(id) case final Repo r) r, ...byId.values,
+        if (byId.remove(id) case final Repo r) r,
+      ...byId.values,
     ];
     list
       ..clear()
@@ -1017,9 +895,7 @@ class _TestReviewSpaceRepository implements ReviewSpaceRepository {
   ) {
     final found =
         _assocs.values
-            .where(
-              (a) => a.workspaceId == workspaceId && a.spaceId == spaceId,
-            )
+            .where((a) => a.workspaceId == workspaceId && a.spaceId == spaceId)
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return Stream.value(found);
@@ -1097,9 +973,7 @@ class _TestIsolatedRepoRepository implements IsolatedRepoRepository {
     String spaceId,
   ) async {
     return _repos.values
-        .where(
-          (ir) => ir.workspaceId == workspaceId && ir.spaceId == spaceId,
-        )
+        .where((ir) => ir.workspaceId == workspaceId && ir.spaceId == spaceId)
         .toList();
   }
 
@@ -1114,9 +988,7 @@ class _TestIsolatedRepoRepository implements IsolatedRepoRepository {
   }
 
   @override
-  Future<List<IsolatedRepo>> forSpaceAcrossWorkspaces(
-    String spaceId,
-  ) async {
+  Future<List<IsolatedRepo>> forSpaceAcrossWorkspaces(String spaceId) async {
     return _repos.values.where((ir) => ir.spaceId == spaceId).toList();
   }
 
@@ -1141,114 +1013,6 @@ class _TestIsolatedRepoRepository implements IsolatedRepoRepository {
   Future<void> deleteById(String workspaceId, String id) async {
     _repos.removeWhere((_, ir) => ir.id == id && ir.workspaceId == workspaceId);
     _emit();
-  }
-}
-
-class _TestAgentRunLogRepository implements AgentRunLogRepository {
-  @override
-  Future<List<AgentRunLog>> forPipelineStep(
-    String workspaceId,
-    String pipelineRunId,
-    String pipelineStepId,
-  ) async => const [];
-
-  @override
-  Future<AgentRunLog?> activeRunForAgent(
-    String workspaceId,
-    String agentId,
-  ) async => null;
-
-  @override
-  Future<List<AgentRunLog>> activeByConversation(
-    String workspaceId,
-    String conversationId,
-  ) async => _logs.values
-      .where(
-        (l) =>
-            l.workspaceId == workspaceId &&
-            l.conversationId == conversationId &&
-            l.completedAt == null,
-      )
-      .toList();
-
-  final Map<String, AgentRunLog> _logs = {};
-
-  @override
-  Future<AgentRunLog?> getById(String workspaceId, String id) async {
-    final log = _logs[id];
-    return log != null && log.workspaceId == workspaceId ? log : null;
-  }
-
-  @override
-  Future<List<AgentRunLog>> forPipelineRun(
-    String workspaceId,
-    String pipelineRunId,
-  ) async => const [];
-  @override
-  Stream<List<AgentRunLog>> watchByAgent(String workspaceId, String agentId) =>
-      Stream.value(
-        _logs.values
-            .where((l) => l.workspaceId == workspaceId && l.agentId == agentId)
-            .toList(),
-      );
-
-  @override
-  Stream<List<AgentRunLog>> watchAll() => Stream.value(_logs.values.toList());
-
-  @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
-
-  @override
-  Stream<List<AgentRunLog>> watchByConversation(
-    String workspaceId,
-    String conversationId,
-  ) => const Stream.empty();
-
-  @override
-  Stream<List<AgentRunLog>> watchBySpace(
-    String workspaceId,
-    String conversationId,
-  ) => const Stream.empty();
-
-  @override
-  Stream<List<AgentRunLog>> watchActiveByConversation(
-    String workspaceId,
-    String conversationId,
-  ) {
-    return Stream.value(
-      _logs.values
-          .where(
-            (l) =>
-                l.workspaceId == workspaceId &&
-                l.conversationId == conversationId &&
-                l.completedAt == null,
-          )
-          .toList(),
-    );
-  }
-
-  @override
-  Stream<List<AgentRunLog>> watchActiveBySpace(
-    String workspaceId,
-    String conversationId,
-  ) {
-    return Stream.value(
-      _logs.values
-          .where(
-            (l) =>
-                l.workspaceId == workspaceId &&
-                l.conversationId == conversationId &&
-                l.completedAt == null,
-          )
-          .toList(),
-    );
-  }
-
-  @override
-  Future<void> upsert(AgentRunLog log) async {
-    _logs[log.id] = log;
   }
 }
 
@@ -1298,23 +1062,4 @@ IsolatedRepo _testIsolatedRepo(
   sourcePath: '/tmp/source/$repoId',
   createdAt: _testDate,
   ticketId: ticketId,
-);
-
-AgentRunLog _testRunLog(
-  String id,
-  String agentId,
-  String workspaceId,
-  String conversationId, {
-  required DateTime startedAt,
-  DateTime? completedAt,
-  RunStatus status = RunStatus.completed,
-}) => AgentRunLog(
-  id: id,
-  agentId: agentId,
-  workspaceId: workspaceId,
-  conversationId: conversationId,
-  startedAt: startedAt,
-  completedAt: completedAt,
-  status: status,
-  cost: RunCost.zero,
 );

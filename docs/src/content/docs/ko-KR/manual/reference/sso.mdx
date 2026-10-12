@@ -2,7 +2,7 @@
 title: SSO 구성 레퍼런스
 description: 싱글 사인온의 모든 설정 항목, 엔드포인트, 작업, 오류 코드.
 slug: ko-KR/매뉴얼/레퍼런스/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 싱글 사인온에 대해 구성할 수 있는 모든 것을 한곳에 모았습니다. 값은
@@ -23,7 +23,7 @@ sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 | `displayNameAttribute` | SAML       | `displayName`   | 표시 이름 특성                                                                                                                                        |
 | `groupsAttribute`      | SAML       | `groups`        | 그룹 이름 특성                                                                                                                                        |
 | `clockSkewSeconds`     | SAML       | 90              | 수명 검증 시 허용하는 오차                                                                                                                            |
-| `allowIdpInitiated`    | SAML       | 꺼짐            | 요청하지 않은 응답(`InResponseTo` 없음)을 수락합니다                                                                                                  |
+| `allowIdpInitiated`    | SAML       | 꺼짐            | 유효한 요청하지 않은 응답(`InResponseTo` 없음)을 수락합니다. 브라우저는 수신자에게 봉인된 자격 증명을 받기 전에 단기 grant를 요구해야 합니다 |
 | `wantResponseSigned`   | SAML       | 꺼짐            | Response 루트 서명을 요구합니다(어설션 서명은 항상 필요합니다)                                                                                        |
 | `issuer`               | OIDC       | —               | 발급자 기본 URL(활성화하려면 필수)                                                                                                                    |
 | `clientId`             | OIDC       | —               | 공개 클라이언트 id(활성화하려면 필수)                                                                                                                 |
@@ -36,28 +36,56 @@ sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 
 ## 프로세스 구성
 
-SSO 연결은 환경에서 시드되지 않습니다. 남은 프로세스 플래그 하나는
-연결 행이 아니라 **브라우저 핸드오프**에 관한 것입니다:
+SSO 연결은 환경에서 시드되지 않습니다. 남은 프로세스 플래그 하나는 SSO 콜백 후
+브라우저가 웹 클라이언트를 어디에서 열지 정합니다:
 
 | 변수 / 플래그                            | 의미                                                                                                                  |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | SSO 콜백이 브라우저를 되돌려 보내는 오리진입니다(자격 증명은 URL 프래그먼트에 실립니다). 설정하지 않으면 핸드오프는 같은 오리진으로 유지됩니다. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | 봉인된 자격 증명 핸드오프용 웹 클라이언트 URL입니다. 설정하지 않으면 핸드오프는 같은 오리진으로 유지됩니다(웹 클라이언트가 거기에서 제공될 때만 유용합니다). `web-popup` 로그인에서는 시작한 탭의 허용된 `client_origin`이 우선합니다. |
 
 발급자 URL 자체는 `https`여야 합니다(루프백 발급자 `localhost`,
-`127.0.0.1`, `::1`에 한해 `http`도 허용됩니다).
+`127.0.0.1`, `::1`에 한해 `http`도 허용됩니다). IdP 콜백과 웹 클라이언트
+호스트에는 신뢰할 수 있는 TLS를 사용하세요. 수신자 키를 생성하는 페이지와 그것이
+전달하는 JavaScript는 신뢰 경계의 일부입니다. HTTPS가 그 부트스트랩을 보호합니다.
+페어링 후에는 직접 연결과 릴레이 `/rpc` 세션 모두 Noise 암호화와 고정된 서버
+신원을 요구합니다.
 
 ## HTTP 엔드포인트
 
 | 엔드포인트                                       | 인증                | 용도                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | 없음(리디렉션)      | SP 시작 로그인을 시작합니다. `relay=desktop`은 앱으로 핸드오프하고, `relay=web-popup`은 대기 중인 연결 탭에 postMessage합니다(이 탭은 자신의 `client_origin`을 선언하며, 오리진 허용 목록이 신뢰할 때만 반영됩니다) |
-| `POST /saml/acs`                                 | 없음(IdP POST)      | 어설션 소비자입니다 — 검증하고, 프로비저닝하고, 발급합니다                                                                                                                                                      |
+| `GET /saml/login?relay=…&handoff_key=…`         | 없음(리디렉션)      | 클라이언트가 보유한 X25519 수신자 키로 SP 시작 로그인을 시작합니다. `relay=desktop`은 앱으로 핸드오프하고, `relay=web-popup`은 대기 중인 연결 탭에 postMessage합니다(그 `client_origin`은 오리진 허용 목록이 신뢰할 때만 반영됩니다) |
+| `POST /saml/acs`                                 | 없음(IdP POST)      | 어설션을 검증하고 사용자를 프로비저닝합니다. SP 시작 로그인은 발급된 기기 자격 증명을 시작한 수신자 키로 봉인합니다. 허용된 요청하지 않은 SAML은 대신 브라우저에 묶인 클레임을 반환합니다 |
+| `POST /saml/claim`                               | 같은 오리진의 브라우저 grant | 일회용 요청하지 않은 SAML grant를 쿠키와 새 `handoff_key`로 교환합니다. 수신자에게 봉인된 자격 증명을 반환하며, 평문 페어링 키는 절대 반환하지 않습니다 |
 | `GET /saml/metadata`                             | 없음                | 우리 SP `EntityDescriptor`                                                                                                                                                                                      |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | 없음                | OIDC 왕복입니다. `relay=desktop`은 앱으로, `relay=web-popup`은 대기 중인 연결 탭으로 핸드오프합니다(같은 `client_origin` 규칙)                                                                                  |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | 없음                | OIDC 왕복입니다. 로그인에는 클라이언트가 보유한 수신자 키가 필요합니다. `relay=desktop`은 앱으로, `relay=web-popup`은 대기 중인 연결 탭으로 핸드오프합니다(같은 `client_origin` 규칙) |
 | `GET /auth/providers`                            | 없음, CORS `*`      | 연결 화면 프로브입니다: 제공되는 SSO 연결(`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                               |
 | `/scim/v2/Users…`                                | Bearer(SCIM 토큰)   | Users 생성/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                     |
 | `/scim/v2/Groups`                                | Bearer              | 읽기 전용이며, 그룹 푸시는 설계상 501로 응답합니다                                                                                                                                                              |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | 기능 문서                                                                                                                                                                                                       |
+
+SP 시작 SAML과 OIDC에서 로그인 시작 URL에는 유효한 `handoff_key`(시작하는
+클라이언트의 X25519 공개 키)가 필요합니다. 서버는 대기 중인 로그인과 함께 그 키를
+보관하고, 콜백에서 발급된 기기 자격 증명을 임시 X25519, HKDF-SHA256,
+AES-256-GCM으로 서버 오리진에 묶어 봉인합니다. 데스크톱 핸드오프는
+`control-center://pair`를, 같은 탭 웹 핸드오프는 URL 프래그먼트를 사용하며,
+`web-popup`은 (제공되면) 허용된 `client_origin`에, 그렇지 않으면 구성된 웹
+클라이언트 URL이나 콜백 오리진에 postMessage합니다. 그 프래그먼트나 팝업
+메시지에는 평문 페어링 키가 아니라 봉인된 봉투가 실립니다. 시작한 클라이언트는
+그것을 열기 위한 대응하는 개인 키를 보관합니다. 이 봉투는 페어링 후 수립되는 필수
+Noise 세션과는 별개입니다.
+
+IdP 시작 SAML 응답(활성화된 경우)에는 시작한 수신자가 없습니다. 대신 ACS는
+5분짜리 HttpOnly, SameSite=Strict 브라우저 쿠키를 설정하고 **웹 클라이언트 열기** /
+**데스크톱 앱 열기** 선택지를 제공합니다. 그 페이지는 새 수신자 키를 생성하고 그
+공개 절반과 grant 핸들을 같은 오리진에서 `POST /saml/claim`으로 보냅니다. 교환에는
+일치하는 쿠키와 오리진(CSRF 경계)이 필요하고, grant를 한 번만 소비하며, 수신자에게
+봉인된 봉투만 반환합니다. 이어지는 웹/데스크톱 프래그먼트는 대상 클라이언트가
+열 수 있도록 그 봉투와 수신자의 개인 키 자료를 운반하며, 평문 기기 자격 증명을
+운반하지 **않습니다**. 다른 브라우저나 만료된 grant는 그것을 교환할 수 없습니다.
+대상 웹 클라이언트 오리진은 프래그먼트에 접근해 해독할 수 있습니다. 침해된 콜백
+페이지나 웹 클라이언트 오리진은 자격 증명을 훔칠 수 있습니다. 암호화가 신뢰할 수
+없는 제공 코드를 안전하게 만들지는 않습니다.
 
 ## RPC 작업
 

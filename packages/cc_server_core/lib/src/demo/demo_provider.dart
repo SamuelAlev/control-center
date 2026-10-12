@@ -4,10 +4,9 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 
 /// The model id a demo run reports.
 ///
-/// It is deliberately a REAL catalogue id: `DispatchSession` prices every turn
-/// through the same `HarnessCostCalculator` a live run uses, so a model the
-/// models.dev catalogue does not know would silently price every demo run at
-/// zero and make the cost, budget and observability surfaces read as broken.
+/// It is deliberately a real catalog id: physical demo calls are priced by
+/// `HarnessRunAccounting` just like live calls. Unknown catalog pricing remains
+/// explicitly unpriced rather than making the demo appear free.
 const String kDemoModelId = 'claude-sonnet-4-5';
 
 /// The provider id a demo run reports.

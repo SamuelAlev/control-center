@@ -1,21 +1,25 @@
 ---
 title: Instal dan kelola skill
-description: Tambahkan repositori GitHub sebagai sumber skill, telusuri katalognya, lalu pasang, perbarui, atau copot skill melalui gerbang pemindaian antivirus.
+description: Pasang dan perbarui skill ruang kerja melalui gerbang pemindaian, lalu bandingkan revisi tersimpan dengan evaluasi skill yang beranggaran.
 slug: id-ID/panduan-pengguna/panduan-praktis/kelola-skill
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Panduan ini menunjukkan cara mengisi ruang kerja dengan skill dari GitHub:
 tambahkan sebuah repositori sebagai sumber, pasang skill yang Anda inginkan
-darinya, dan jaga agar semuanya tetap mutakhir seiring waktu.
+darinya, dan jaga agar semuanya tetap mutakhir seiring waktu. Anda juga dapat
+mengevaluasi revisi tersimpan terhadap baseline yang diselaraskan sebelum
+memutuskan apakah akan mempertahankannya.
 
 Hal penting yang perlu diketahui sebelum memulai: **repositori sumber tidak
 tepercaya.** Nama, deskripsi, dan jumlah bintangnya ditulis oleh siapa pun yang
-memilikinya. Satu-satunya sinyal keamanan yang dipercaya Control Center adalah
-putusan pemindaian antivirus, yang dilalui setiap instalasi sebelum apa pun
-mencapai disk atau prompt agen. Jika Anda ingin tahu alasan di baliknya, baca
-[bagian skill di model agen](/id-ID/panduan-pengguna/konsep/model-agen/); halaman ini tetap
-fokus pada praktiknya.
+memilikinya. Setiap pemasangan melewati gerbang pemindaian antivirus sebelum
+apa pun mencapai disk atau prompt agen. Putusan itu adalah pemeriksaan
+penerimaan, bukan bukti bahwa sebuah skill aman atau berguna. Baca
+[bagian skill di model agen](/id-ID/panduan-pengguna/konsep/model-agen/) untuk
+model pemasangannya, dan
+[Evaluasi dan kualitas](/id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas/)
+untuk memahami bagaimana bukti perilaku berbeda dari sebuah pemindaian.
 
 Skill berada di **Pengaturan → Ruang kerja → Skill**
 (`/workspaces/<id>/settings/workspace/skills`). Skill bercakupan ruang kerja:
@@ -87,6 +91,89 @@ instalasi — skill yang versi barunya dikarantina akan ditolak dan versi yang
 Anda miliki tetap bertahan. Hash versi lama disimpan sebagai rujukan rollback di
 kunci.
 
+## Evaluasi skill
+
+1. Buka **Pengaturan → Ruang kerja → Skill**, pilih skill yang terpasang, dan
+   simpan setiap perubahan. Di **Evaluasi skill**, periksa hash paketnya.
+2. Pilih **Mulai evaluasi**. Pilih **Kumpulan tugas** yang sesuai dengan tujuan
+   skill dan sebuah **Adapter**. Harness bawaan memakai penyedia yang telah
+   dikonfigurasi dan model yang mendukung alat. **Claude Code** memakai akun
+   Claude terkelola bawaan dan pengenal model yang konkret; masuk dulu di
+   **Pengaturan → Adapter**. Ini tidak meminjam login pribadi operator server.
+3. Pilih **Perbandingan** dari tabel di bawah.
+4. Atur **Pengulangan per tugas** (1–20) dan **Anggaran (sen AS)**. Misalnya,
+   `100` berarti US$1. Pilih **Mulai evaluasi** untuk mengotorisasi pekerjaan
+   penyedia berbayar.
+5. Ikuti kampanyenya di **Observabilitas → Kualitas**, atau kembali melalui
+   **Buka Kualitas** di panel skill.
+
+Untuk langganan **Claude Code** dan **Codex OAuth**, anggaran adalah **ambang
+penghentian penggunaan yang setara API**, bukan batas faktur atau ukuran kuota
+langganan. `100` memungkinkan ambang US$1: panggilan yang sedang berjalan dapat
+melampauinya, tetapi tidak ada panggilan berikutnya yang dimulai begitu
+penggunaan yang dilaporkan mencapainya. Penggunaan yang tidak diketahui juga
+menghentikan panggilan berikutnya. Anggaran yang kecil dapat membuat
+perbandingan menjadi sebagian; ini tidak menjanjikan penyelesaian kumpulan
+tugas yang dipilih.
+
+Penyedia berbasis kunci API tetap menyimpan reservasi per panggilan yang
+konservatif berdasarkan batas token dan harga yang terdokumentasi. Penyedia ini
+dapat menolak `100` sebelum berbelanja ketika satu panggilan yang direservasi
+secara aman membutuhkan lebih banyak. Galatnya mengidentifikasi model yang
+dipilih dan reservasi minimum; pilih model yang lebih murah atau tingkatkan
+anggaran tersebut.
+
+| Perbandingan | Gunakan untuk menjawab |
+| --- | --- |
+| **Tidak ada vs tersedia** | Apakah penemuan dan penggunaan skill ini secara normal meningkatkan hasil dibandingkan tidak memilikinya? |
+| **Sebelumnya vs saat ini** | Apakah pembaruan mempertahankan atau meningkatkan perilaku dibandingkan revisi yang ditangkap sebelumnya? |
+| **Muat paksa vs tidak ada** | Dapatkah kontennya membantu saat dimuat secara eksplisit? Ini mendiagnosis masalah pemuatan; ini tidak membuktikan penemuan normal. |
+| **Komposisi** | Apakah menambahkan kandidat membantu atau berbenturan dengan skill sekitar yang dipilih? Baseline mempertahankan inventaris sekitar yang sama tanpa kandidat. |
+
+**Sebelumnya vs saat ini** memerlukan hash paket dari riwayat kampanye. Evaluasi
+sebuah revisi sebelum menggantinya jika Anda ingin memakainya sebagai baseline;
+riwayat Git sembarang tidak diimpor.
+
+Perubahan yang belum disimpan, hash yang tidak tersedia, dan mode demo hanya-baca
+menonaktifkan peluncuran. Server juga memeriksa akses ruang kerja/repositori,
+karantina pemindaian, kebijakan tindakan, dukungan model, harga, dan isolasi
+eksekusi. Selesaikan pemeriksaan yang gagal alih-alih mengabaikannya. Identitas
+penyedia/model dicatat, tetapi alias model jarak jauh tidak membekukan bobot
+dasar penyedia.
+
+### Periksa, batalkan, dan ekspor
+
+Baca cakupan dan pengeluaran bersama hasil per tugas dan regresi. Buka setiap
+percobaan untuk memeriksa pemuatan skill yang teramati, peristiwa alat, galat,
+dan bukti pemverifikasi. Hasil **sebagian**, **kedaluwarsa**, dan **belum dapat
+disimpulkan** bukan rekomendasi untuk menerapkan sebuah revisi. Hash sebuah
+laporan mengidentifikasi paket yang ditangkap, belum tentu paket yang sedang
+terpasang.
+
+Gunakan **Batalkan proses** untuk pekerjaan yang mengantre atau aktif.
+Percobaan yang selesai tetap terlihat; pembatalan tidak mengembalikan pekerjaan
+penyedia yang sudah dilakukan. **Salin JSON yang disamarkan** menyalin ekspor
+bukti yang terbatas ke papan klip, bukan bundel pemutaran ulang sumber privat
+yang lengkap. Lihat
+[Evaluasi dan kualitas](/id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas/)
+untuk batas bukti dan platform.
+
+### Evaluasi ulang setelah pembaruan
+
+Evaluasi ulang berbayar otomatis **nonaktif secara default**. Setelah
+mengevaluasi revisi saat ini, pilih kampanye di **Konfigurasi kebijakan
+pembaruan** lalu pilih **Aktifkan evaluasi pembaruan**. Mengubah kebijakan ini
+memerlukan izin administrator ruang kerja. Kampanye yang dipilih memasok
+kumpulan tugas, adapter, penyedia/model, perbandingan, pengulangan, dan
+anggaran.
+
+Perubahan konten yang diterima setelahnya menjadwalkan pekerjaan beranggaran;
+hash yang tidak berubah dideduplikasi. **Nonaktifkan evaluasi pembaruan**
+mencegah penerimaan otomatis di masa mendatang. Gunakan **Batalkan proses**
+untuk kampanye yang sudah diterima. Laporan historis tetap melekat pada hash
+paket aslinya; evaluasi ulang tidak menerbitkan, mengaktifkan, atau menulis
+ulang sebuah skill.
+
 ## Copot skill, hapus repositori
 
 **Copot** (di tampilan detail skill yang terinstal, atau hapus di tab
@@ -125,7 +212,8 @@ Skill repo melewati pemindaian yang menolak secara default yang sama (`pass` /
 `warn` / `quarantine`) sebelum frontmatter-nya mencapai prompt. `warn` diterima;
 `quarantine` ditahan, tanpa penimpaan operator di jalur itu.
 
-Lihat [Skill bercakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills) dan
+Lihat [Skill dengan cakupan
+repo](/id-ID/panduan-pengguna/konsep/model-agen/#skill-dengan-cakupan-repo) dan
 [Perintah slash](/id-ID/panduan-pengguna/referensi/perintah-slash/).
 
 ## Panduan terkait
@@ -136,3 +224,4 @@ Lihat [Skill bercakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-sc
 ## Konsep terkait
 
 - [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/)
+- [Evaluasi dan kualitas](/id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas/)

@@ -2,7 +2,7 @@
 title: Yedekleme ve geri yükleme
 description: Kurulumun anlık görüntüsünü alın, bir çalışma alanını makineler arasında taşıyın, tek bir çalışma alanını ya da tümünü geri yükleyin ve kopyaları başka bir yerde saklayın.
 slug: tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Bu kılavuz, yedeklerle gerçekte yapılan beş şeyi ele alır: yedek almak, yedeği toplamak,
@@ -17,15 +17,23 @@ Buradaki her şey **Ayarlar → Sunucu → Yedekleme ve geri yükleme** altında
 - **Tam bir istemci** — masaüstü ya da web uygulaması. Eşleştirilmiş bir telefon bunların hiçbirini tetikleyemez; bu tasarım gereğidir.
 - **Kurulum anlık görüntüsü** almak, listelemek, indirmek veya silmek için: kurulumun **sahibi**.
 - Çalışma alanı başına işlemler için: dışa aktarmak üzere o çalışma alanının **yöneticisi**, içe aktarmak veya silmek üzere **sahibi**.
-- İndirmeler ve yüklemeler için: sunucuya **doğrudan** bir bağlantı. Aracılı relay, RPC çerçeveleri taşır, dosya aktarımı taşımaz; böyle bir bağlantıdayken aktarım denetimleri kendilerini bir notla birlikte devre dışı bırakır.
+- İndirmeler ve yüklemeler için: eşleştirilmiş tam bir istemci; ister doğrudan ister aracılı aktarıcı üzerinden bir bağlantıda. İki yol da dosya baytlarını aynı kimliği doğrulanmış ve uçtan uca şifrelenmiş kaynak tünelinden geçirir; aktarıcı bunları okuyamaz.
 
-:::caution[Kurulum anlık görüntüleri elle alınır]
+::::caution[Kurulum anlık görüntüleri elle alınır]
 **Şimdi yedekle** yalnızca istendiğinde tüm kurulumun anlık görüntüsünü oluşturur. Yerleşik
 **Workspace backup** işlem hattı ise haftada bir çalışma alanı veritabanı yedeği alabilir
 ve o çalışma alanının 30 günden eski yedeklerini silebilir. `global.db` dosyasını, diğer
 çalışma alanlarını veya veritabanının yanındaki dosyaları kopyalamaz. Makine dışı
 kopyaları ayrıca tutun.
-:::
+::::
+
+::::caution[Yedekler durağan hâlde şifrelenmez]
+Şifrelenmiş aktarım istemcinizde ve `cc_server` üzerinde sona erer. Anlık görüntü
+dizinleri, çalışma alanı dışa aktarmaları, indirilen dosyalar ve sunucunun
+veritabanları Control Center tarafından durağan hâlde şifrelenmez. Sunucu ana
+makinesini, indirmelerinizi ve makine dışı kopyalarınızı kendi depolama şifrelemeniz
+ve erişim denetimlerinizle koruyun.
+::::
 
 ## Yedek neleri kapsar
 
@@ -322,7 +330,7 @@ yapın.
 
 | Belirti                                                                  | Neden ve çözüm                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| İndirme ve yükleme denetimleri, relay'le ilgili bir notla devre dışı     | Aracılı relay üzerinden bağlısınız ve bu relay dosya aktarımı taşımaz. Doğrudan bağlanın                                 |
+| Bağlantı değiştikten sonra indirme veya yükleme başarısız oluyor | Etkin eşleştirilmiş bağlantıda yeniden deneyin. Doğrudan yol da aktarıcı da şifrelenmiş dosya aktarımını destekler; ikisi de düz metin HTTP'ye dönüş sunmaz |
 | “Sunucu reddetti”                                                        | Rol. Kurulum anlık görüntüsü almak veya listelemek kurulumun operatörünü gerektirir. Bir çalışma alanını indirmek yönetici rolünü, geri yüklemek sahip rolünü, tüm bir anlık görüntü zip'i kurulumun operatörünü gerektirir |
 | “Bu sunucuda yedekleme yüzeyi yok”                                       | Makinede yedekleme portu bağlı değil — bir demo sunucusu. İşlemler reddedilmek yerine yoktur                                  |
 | “Dosya, sunucunun kabul ettiğinden büyük”                                | Yüklemeler 8 GiB ile sınırlıdır. Dosyayı sunucu makinesine koyun ve bunun yerine **İçe aktar** → **Dosya seç** kullanın   |
@@ -336,7 +344,7 @@ yapın.
 
 - [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): veri dizininin nereden geldiği
 - [Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/): doğrudan ve relay üzerinden bağlantılar
-- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): aktarım rotalarının imzaladığı kimlik bilgisi
+- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): şifrelenmiş aktarımın ve onun imzalı kaynak isteklerinin kullandığı eşleştirilmiş cihaz kimlik bilgisi
 
 ## İlgili kavramlar ve başvuru
 

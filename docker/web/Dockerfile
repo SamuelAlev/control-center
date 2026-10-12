@@ -3,7 +3,7 @@
 # =============================================================================
 # Dockerfile for self-hosting the Control Center WEB CLIENT.
 #
-#   # the release `containers` job builds `flutter build web --release --wasm`
+#   # the release `containers` job builds Wasm with deferred loading
 #   # and stages the output to docker/web/site/ next to this Dockerfile, then:
 #   docker build -t cc-webapp docker/web/
 #   docker run --rm -p 8080:8080 cc-webapp

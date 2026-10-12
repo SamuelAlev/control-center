@@ -43,12 +43,9 @@ const Duration _sessionTtl = Duration(hours: 12);
 /// for this long (cheap re-opens, surviving tab flicker) before being killed.
 const Duration _idleGrace = Duration(minutes: 10);
 
-/// Pure-Dart [CodeServerPort]: one code-server per `(workspaceId, worktreePath)`,
-/// refcounted, idle-GC'd; `codeServer.*` RPC + `/proxy/vscode/`.
-///
-/// Binds loopback only; opens the CoW worktree from
-/// [IsolatedRepoRepository.forUnitRepo] — never the raw checkout. Foreign ids
-/// → no session. [ensureSession]/[closeSession]/[lookup] enforce workspace.
+/// One process per `(workspaceId, worktreePath)` with device-bound client
+/// capabilities and an independent server-only bridge id. The process opens
+/// only the isolated CoW worktree, never the raw checkout.
 class CodeServerService implements CodeServerPort {
   /// Creates the service over an [isolatedRepos] resolver (worktree lookup), a
   /// `filesystem` (workspace layout) and a [_dataRoot] (managed code-server
@@ -57,7 +54,9 @@ class CodeServerService implements CodeServerPort {
     required IsolatedRepoRepository isolatedRepos,
     required this._dataRoot,
     this.attemptManagedDownload = true,
-  }) : _repos = isolatedRepos;
+    DateTime Function()? clock,
+  }) : _repos = isolatedRepos,
+       _now = clock ?? DateTime.now;
 
   final IsolatedRepoRepository _repos;
   final String _dataRoot;
@@ -68,14 +67,23 @@ class CodeServerService implements CodeServerPort {
   /// `unavailable` behavior without a network round-trip.
   final bool attemptManagedDownload;
 
-  /// Capability id → live instance. One code-server per `(workspaceId,
-  /// worktreePath)`; the key is the capability token.
+  final DateTime Function() _now;
+
+  /// Serializes process startup for the same resolved worktree. Device
+  /// bindings remain independent for callers waiting on that startup.
+  final Map<String, Future<void>> _opening = {};
+
+  /// Internal bridge id → process. Never returned to an RPC client.
   final Map<String, _CodeServerInstance> _instances = {};
 
-  /// Reverse index: `(workspaceId, worktreePath)` → capability id, so a re-open
-  /// reuses the running process instead of spawning a second one.
+  /// Client capability → device-owned reference to an internal process.
+  final Map<String, _CodeServerBinding> _bindings = {};
+
+  /// `(workspaceId, worktreePath)` → internal bridge id. A process is shared
+  /// across devices, while its client capabilities remain device-specific.
   final Map<String, String> _byWorktree = {};
   Timer? _gcTimer;
+  bool _disposed = false;
   final Random _rnd = Random.secure();
 
   /// Fans out bridge-extension "open this file as an app tab" reports to the
@@ -89,11 +97,10 @@ class CodeServerService implements CodeServerPort {
   final StreamController<CodeServerDirtyEvent> _dirtyEvents =
       StreamController<CodeServerDirtyEvent>.broadcast();
 
-  /// Resolves `cc_server`'s own loopback base (`http://127.0.0.1:<rpcPort>`) so
-  /// the bridge extension — which runs server-side in code-server's extension
-  /// host — knows where to POST its reports. Set by the runtime AFTER the RPC
-  /// server binds (the port isn't known when this service is constructed).
-  Uri Function()? resolveProxyBase;
+  /// Private loopback capability base for the server-side bridge extension.
+  /// The runtime wires this after binding the private resource listener; it
+  /// must end in `/` so relative resolution retains its capability prefix.
+  Uri Function()? resolveBridgeBase;
 
   /// The isolated-repo repository backing worktree lookups.
   IsolatedRepoRepository get isolatedRepos => _repos;
@@ -356,6 +363,10 @@ class CodeServerService implements CodeServerPort {
     String? path,
     String autoSave = 'afterDelay',
   }) async {
+    if (_disposed) throw StateError('Code-server service has been disposed.');
+    if (deviceId.isEmpty) {
+      throw ArgumentError.value(deviceId, 'deviceId', 'must not be empty');
+    }
     // Resolve the conversation's isolated CoW worktree. Foreign ids / a repo
     // not yet provisioned for this conversation → no worktree → no session.
     // NEVER fall back to a raw checkout (would bypass the CoW isolation).
@@ -392,6 +403,46 @@ class CodeServerService implements CodeServerPort {
     }
 
     final key = '${worktree.workspaceId}\x1f${worktree.path}';
+    if (_disposed) throw StateError('Code-server service has been disposed.');
+    final pending = _opening[key];
+    if (pending != null) {
+      await pending;
+      return ensureSession(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        repoId: repoId,
+        deviceId: deviceId,
+        path: path,
+        autoSave: autoSave,
+      );
+    }
+    final settled = Completer<void>();
+    _opening[key] = settled.future;
+    try {
+      return await _ensureResolvedSession(
+        worktree: worktree,
+        key: key,
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        deviceId: deviceId,
+        path: path,
+        autoSave: autoSave,
+      );
+    } finally {
+      _opening.remove(key);
+      settled.complete();
+    }
+  }
+
+  Future<CodeServerSession> _ensureResolvedSession({
+    required IsolatedRepo worktree,
+    required String key,
+    required String workspaceId,
+    required String spaceId,
+    required String deviceId,
+    required String? path,
+    required String autoSave,
+  }) async {
 
     // Seed / refresh the workbench settings on EVERY open (including a reuse
     // below) so a changed client preference — chiefly auto-save — applies to an
@@ -403,17 +454,15 @@ class CodeServerService implements CodeServerPort {
     // editor can't sensibly answer.
     await _ensureWorkbenchSettings(workspaceId, autoSave);
 
-    // Reuse a running instance for the same worktree (one code-server per
-    // worktree, shared across tabs).
+    // Reuse the process across devices, never its client capability.
     final existingId = _byWorktree[key];
     if (existingId != null) {
       final instance = _instances[existingId];
-      if (instance != null && instance.process.pid > 0) {
-        instance.refCount++;
-        return _sessionFor(instance, deviceId, path);
+      if (instance != null && !instance.exited) {
+        return _bind(instance, deviceId);
       }
+      _killAndRemove(existingId);
     }
-
     final binary = await _resolveBinary();
     if (binary == null) {
       // No code-server on this host. Return an unavailable session so the
@@ -425,7 +474,7 @@ class CodeServerService implements CodeServerPort {
         port: 0,
         folderPath: worktree.path,
         deviceId: deviceId,
-        expiresAt: DateTime.now().add(_sessionTtl),
+        expiresAt: _now().add(_sessionTtl),
         status: CodeServerStatus.unavailable,
       );
     }
@@ -456,10 +505,9 @@ class CodeServerService implements CodeServerPort {
       }
     }
 
-    // Mint the capability BEFORE spawn so the bridge extension's report URL can
-    // embed it (the extension POSTs back to `/proxy/vscode/<sid>/__cc_open__`,
-    // authorized by the same capability the proxy checks).
-    final capability = _mintCapability();
+    // The extension's private bridge id is independent of all client tokens.
+    // It is installed in the server-side extension host before process spawn.
+    final bridgeId = _mintCapability();
 
     // `--bind-addr 127.0.0.1:0` makes the kernel pick a free ephemeral port;
     // code-server prints the resolved URL (with the port) to stdout.
@@ -477,20 +525,15 @@ class CodeServerService implements CodeServerPort {
       worktree.path,
       ?fileArg,
     ];
-    // Generated port-forward links (forwarded server ports) resolve under the
-    // proxy sub-path so they aren't broken by the prefix strip. `CC_IDE_*` tells
-    // the bundled bridge extension where to POST its open-file reports (the
-    // capability-scoped proxy endpoint on cc_server's own loopback base).
+    // Port-forward links retain code-server's proxy sub-path. Bridge reports
+    // and reverse commands use the private loopback resource listener only.
     final env = Map<String, String>.from(Platform.environment)
       ..['VSCODE_PROXY_URI'] = '/proxy/vscode/{{session}}/{{port}}/';
-    final reportUrl = _bridgeReportUrl(capability);
+    final reportUrl = _bridgeReportUrl(bridgeId);
     if (reportUrl != null) {
       env['CC_IDE_REPORT_URL'] = reportUrl;
     }
-    // Reverse command space: the bridge extension opens this as an SSE stream
-    // and executes the `{cmd, …}` events cc_server pushes (e.g. a Save-on-close
-    // relayed by [saveFile]). Same capability-scoped proxy base as the report.
-    final commandsUrl = _bridgeCommandsUrl(capability);
+    final commandsUrl = _bridgeCommandsUrl(bridgeId);
     if (commandsUrl != null) {
       env['CC_IDE_COMMANDS_URL'] = commandsUrl;
     }
@@ -510,7 +553,7 @@ class CodeServerService implements CodeServerPort {
     );
 
     final instance = _CodeServerInstance(
-      capability: capability,
+      bridgeId: bridgeId,
       workspaceId: workspaceId,
       spaceId: spaceId,
       // Use the RESOLVED worktree's repo id, never the (possibly empty) caller
@@ -522,52 +565,93 @@ class CodeServerService implements CodeServerPort {
       folderPath: worktree.path,
       port: port,
       process: process,
-      refCount: 1,
-      lastTouched: DateTime.now(),
+      lastTouched: _now(),
     );
-    _instances[capability] = instance;
-    _byWorktree[key] = capability;
+    _instances[bridgeId] = instance;
+    _byWorktree[key] = bridgeId;
     _ensureGc();
+    unawaited(process.exitCode.then((_) {
+      instance.exited = true;
+      if (_instances[bridgeId] == instance) _killAndRemove(bridgeId);
+    }));
 
-    return _sessionFor(instance, deviceId, path);
+    return _bind(instance, deviceId);
+  }
+
+  /// Shares one client capability across tabs from the same device, keeping a
+  /// separate ref for each open. An expired binding is replaced, not revived.
+  CodeServerSession _bind(_CodeServerInstance instance, String deviceId) {
+    if (deviceId.isEmpty) {
+      throw ArgumentError.value(deviceId, 'deviceId', 'must not be empty');
+    }
+    final now = _now();
+    final oldId = instance.byDevice[deviceId];
+    if (oldId != null) {
+      final old = _bindings[oldId];
+      if (old != null && old.expiresAt.isAfter(now)) {
+        old.refCount++;
+        instance.refCount++;
+        return _sessionFor(old);
+      }
+      _revokeBinding(oldId);
+    }
+    final binding = _CodeServerBinding(
+      capability: _mintCapability(),
+      deviceId: deviceId,
+      instance: instance,
+      expiresAt: now.add(_sessionTtl),
+    );
+    _bindings[binding.capability] = binding;
+    instance.byDevice[deviceId] = binding.capability;
+    instance.refCount++;
+    return _sessionFor(binding);
   }
 
   @override
   Future<void> closeSession({
     required String workspaceId,
     required String sessionId,
+    required String deviceId,
   }) async {
-    final instance = _instances[sessionId];
-    if (instance == null) {
+    final binding = _bindings[sessionId];
+    if (binding == null) return;
+    final instance = binding.instance;
+    _assertOwned(instance, workspaceId);
+    if (binding.deviceId != deviceId || deviceId.isEmpty) {
+      throw StateError('Code-server session belongs to another device.');
+    }
+    if (!binding.expiresAt.isAfter(_now())) {
+      _revokeBinding(sessionId);
       return;
     }
-    _assertOwned(instance, workspaceId);
-    if (instance.refCount > 0) {
-      instance.refCount--;
-    }
-    instance.lastTouched = DateTime.now();
-    // The actual kill happens on the idle-GC sweep after [_idleGrace], so a
-    // quick tab flicker / re-open reuses the warm process.
+    binding.refCount--;
+    instance.refCount--;
+    instance.lastTouched = _now();
+    if (binding.refCount == 0) _revokeBinding(sessionId);
   }
 
   @override
   CodeServerSession? lookup(String sessionId) {
-    final instance = _instances[sessionId];
-    if (instance == null) {
+    final binding = _bindings[sessionId];
+    if (binding == null) return null;
+    if (!binding.expiresAt.isAfter(_now()) ||
+        binding.instance.exited) {
+      _revokeBinding(sessionId);
       return null;
     }
-    if (DateTime.now().isAfter(instance.expiresAt)) {
-      return null;
+    return _sessionFor(binding);
+  }
+
+  @override
+  bool lookupBridge(String instanceId) {
+    final instance = _instances[instanceId];
+    if (instance == null || instance.exited) return false;
+    final now = _now();
+    for (final id in instance.byDevice.values) {
+      final binding = _bindings[id];
+      if (binding != null && binding.expiresAt.isAfter(now)) return true;
     }
-    return CodeServerSession(
-      sessionId: instance.capability,
-      workspaceId: instance.workspaceId,
-      port: instance.port,
-      folderPath: instance.folderPath,
-      deviceId: '',
-      expiresAt: instance.expiresAt,
-      status: CodeServerStatus.ready,
-    );
+    return false;
   }
 
   /// Pre-provisions code-server (download the pinned standalone archive) AND
@@ -619,18 +703,15 @@ class CodeServerService implements CodeServerPort {
   bool _warmupDone = false;
   Future<void>? _warmupInFlight;
 
-  CodeServerSession _sessionFor(
-    _CodeServerInstance instance,
-    String deviceId,
-    String? path,
-  ) {
+  CodeServerSession _sessionFor(_CodeServerBinding binding) {
+    final instance = binding.instance;
     return CodeServerSession(
-      sessionId: instance.capability,
+      sessionId: binding.capability,
       workspaceId: instance.workspaceId,
       port: instance.port,
       folderPath: instance.folderPath,
-      deviceId: deviceId,
-      expiresAt: instance.expiresAt,
+      deviceId: binding.deviceId,
+      expiresAt: binding.expiresAt,
       status: CodeServerStatus.ready,
     );
   }
@@ -920,9 +1001,7 @@ class CodeServerService implements CodeServerPort {
     String? windowId,
   }) {
     final instance = _instances[sessionId];
-    if (instance == null) {
-      return; // unknown / expired capability → ignore.
-    }
+    if (instance == null || !lookupBridge(sessionId)) return;
     // Confine to the worktree; a report for a path outside it (e.g. an
     // out-of-tree definition target) is ignored rather than opened.
     final normalized = p.normalize(absPath);
@@ -957,9 +1036,7 @@ class CodeServerService implements CodeServerPort {
     required bool dirty,
   }) {
     final instance = _instances[sessionId];
-    if (instance == null) {
-      return; // unknown / expired capability → ignore.
-    }
+    if (instance == null || !lookupBridge(sessionId)) return;
     // Confine to the worktree (same guard as [reportOpen]): a report for a path
     // outside it is ignored rather than surfaced.
     final normalized = p.normalize(absPath);
@@ -985,7 +1062,7 @@ class CodeServerService implements CodeServerPort {
   @override
   Stream<Map<String, Object?>> commandStream(String sessionId) {
     final instance = _instances[sessionId];
-    if (instance == null) {
+    if (instance == null || !lookupBridge(sessionId)) {
       return const Stream<Map<String, Object?>>.empty();
     }
     return instance.commands.stream;
@@ -1010,9 +1087,9 @@ class CodeServerService implements CodeServerPort {
       return null;
     }
     final key = '${worktree.workspaceId}\x1f${worktree.path}';
-    final capability = _byWorktree[key];
-    final instance = capability == null ? null : _instances[capability];
-    if (instance == null || instance.process.pid <= 0) {
+    final bridgeId = _byWorktree[key];
+    final instance = bridgeId == null ? null : _instances[bridgeId];
+    if (instance == null || !lookupBridge(bridgeId!)) {
       return null;
     }
     // Cross-workspace guard: the resolved worktree is workspace-scoped, but
@@ -1122,27 +1199,19 @@ class CodeServerService implements CodeServerPort {
     );
   }
 
-  /// The capability-scoped URL the bridge extension POSTs open-file reports to
-  /// (`<cc_server loopback base>/proxy/vscode/<sid>/__cc_open__`). Null when the
-  /// runtime has not wired [resolveProxyBase] yet — the bridge then simply stays
-  /// dormant (the editor still works, it just won't hand off in-editor opens).
-  String? _bridgeReportUrl(String capability) {
-    final base = resolveProxyBase?.call();
-    if (base == null) {
-      return null;
-    }
-    return base.resolve('/proxy/vscode/$capability/__cc_open__').toString();
+  /// Private listener URL for the bridge extension's open/dirty reports.
+  /// Relative resolution preserves the listener's server-only capability.
+  String? _bridgeReportUrl(String bridgeId) {
+    final base = resolveBridgeBase?.call();
+    if (base == null) return null;
+    return base.resolve('proxy/vscode/$bridgeId/__cc_open__').toString();
   }
 
-  /// The capability-scoped URL the bridge extension opens as an SSE stream to
-  /// receive reverse commands (`/proxy/vscode/<sid>/__cc_commands__`). Null when
-  /// [resolveProxyBase] is not wired yet (the bridge stays dormant on commands).
-  String? _bridgeCommandsUrl(String capability) {
-    final base = resolveProxyBase?.call();
-    if (base == null) {
-      return null;
-    }
-    return base.resolve('/proxy/vscode/$capability/__cc_commands__').toString();
+  /// Private listener URL for reverse command SSE from the extension host.
+  String? _bridgeCommandsUrl(String bridgeId) {
+    final base = resolveBridgeBase?.call();
+    if (base == null) return null;
+    return base.resolve('proxy/vscode/$bridgeId/__cc_commands__').toString();
   }
 
   /// Installs the bundled bridge extension so code-server actually LOADS it.
@@ -1354,28 +1423,30 @@ class CodeServerService implements CodeServerPort {
   }
 
   void _ensureGc() {
-    if (_gcTimer != null) {
+    if (_gcTimer != null || _disposed) {
       return;
     }
     _gcTimer = Timer.periodic(const Duration(minutes: 1), (_) => _sweep());
   }
 
-  /// Reaps expired capabilities and idle processes (no open references past the
-  /// grace window). Keeps a warm process around for quick re-opens.
+  /// Revoke expired client bindings before considering an unreferenced process
+  /// for idle GC. One device's expiry never tears down another's live editor.
   void _sweep() {
-    final now = DateTime.now();
-    final dead = <String>[];
-    _instances.forEach((capability, instance) {
-      final expired = now.isAfter(instance.expiresAt);
-      final idle =
-          instance.refCount <= 0 &&
-          now.difference(instance.lastTouched) > _idleGrace;
-      if (expired || idle) {
-        dead.add(capability);
+    final now = _now();
+    for (final binding in _bindings.values.toList()) {
+      if (!binding.expiresAt.isAfter(now)) {
+        _revokeBinding(binding.capability);
       }
+    }
+    final dead = <String>[];
+    _instances.forEach((id, instance) {
+      final idle =
+          instance.refCount == 0 &&
+          now.difference(instance.lastTouched) > _idleGrace;
+      if (idle || instance.process.pid <= 0) dead.add(id);
     });
-    for (final capability in dead) {
-      _killAndRemove(capability);
+    for (final id in dead) {
+      _killAndRemove(id);
     }
     if (_instances.isEmpty) {
       _gcTimer?.cancel();
@@ -1383,17 +1454,28 @@ class CodeServerService implements CodeServerPort {
     }
   }
 
-  void _killAndRemove(String capability) {
-    final instance = _instances.remove(capability);
-    if (instance == null) {
-      return;
+  void _revokeBinding(String capability) {
+    final binding = _bindings.remove(capability);
+    if (binding == null) return;
+    final instance = binding.instance;
+    if (instance.byDevice[binding.deviceId] == capability) {
+      instance.byDevice.remove(binding.deviceId);
+    }
+    instance.refCount -= binding.refCount;
+    instance.lastTouched = _now();
+  }
+
+  void _killAndRemove(String bridgeId) {
+    final instance = _instances.remove(bridgeId);
+    if (instance == null) return;
+    for (final id in instance.byDevice.values.toList()) {
+      _revokeBinding(id);
     }
     final key = '${instance.workspaceId}\x1f${instance.folderPath}';
-    if (_byWorktree[key] == capability) {
-      _byWorktree.remove(key);
-    }
+    if (_byWorktree[key] == bridgeId) _byWorktree.remove(key);
     // Close the reverse command space so any live SSE handler ends cleanly.
     unawaited(instance.commands.close());
+    if (instance.exited) return;
     try {
       instance.process.kill(ProcessSignal.sigterm);
     } catch (_) {
@@ -1401,6 +1483,7 @@ class CodeServerService implements CodeServerPort {
     }
     // Hard-kill shortly after if it hasn't exited.
     Timer(const Duration(seconds: 3), () {
+      if (instance.exited) return;
       try {
         instance.process.kill(ProcessSignal.sigkill);
       } catch (_) {
@@ -1411,8 +1494,11 @@ class CodeServerService implements CodeServerPort {
 
   /// Tears down every live code-server process (host shutdown).
   Future<void> disposeAll() async {
+    if (_disposed) return;
+    _disposed = true;
     _gcTimer?.cancel();
     _gcTimer = null;
+    await Future.wait<void>(_opening.values.toList());
     final capabilities = _instances.keys.toList();
     for (final capability in capabilities) {
       final instance = _instances[capability];
@@ -1427,6 +1513,7 @@ class CodeServerService implements CodeServerPort {
       unawaited(instance.commands.close());
     }
     _instances.clear();
+    _bindings.clear();
     _byWorktree.clear();
     await _openRequests.close();
     await _dirtyEvents.close();
@@ -1436,18 +1523,17 @@ class CodeServerService implements CodeServerPort {
 /// One running code-server process + its bookkeeping. NOT exposed via the port.
 class _CodeServerInstance {
   _CodeServerInstance({
-    required this.capability,
+    required this.bridgeId,
     required this.workspaceId,
     required this.spaceId,
     required this.repoId,
     required this.folderPath,
     required this.port,
     required this.process,
-    required this.refCount,
     required this.lastTouched,
-  }) : expiresAt = DateTime.now().add(_sessionTtl);
+  });
 
-  final String capability;
+  final String bridgeId;
   final String workspaceId;
 
   /// The conversation this worktree belongs to — carried on bridge open-reports
@@ -1460,9 +1546,10 @@ class _CodeServerInstance {
   final String folderPath;
   final int port;
   final Process process;
-  int refCount;
+  bool exited = false;
+  int refCount = 0;
   DateTime lastTouched;
-  final DateTime expiresAt;
+  final Map<String, String> byDevice = {};
 
   /// Reverse command space to the bridge extension: `{cmd, …}` maps the proxy
   /// relays over this session's `/__cc_commands__` SSE endpoint (e.g. a `save`
@@ -1472,6 +1559,22 @@ class _CodeServerInstance {
   // ignore: close_sinks
   final StreamController<Map<String, Object?>> commands =
       StreamController<Map<String, Object?>>.broadcast();
+}
+
+/// One device's unexpired authorization and open-tab references to a process.
+class _CodeServerBinding {
+  _CodeServerBinding({
+    required this.capability,
+    required this.deviceId,
+    required this.instance,
+    required this.expiresAt,
+  });
+
+  final String capability;
+  final String deviceId;
+  final _CodeServerInstance instance;
+  final DateTime expiresAt;
+  int refCount = 1;
 }
 
 /// Matches `http://127.0.0.1:<port>` in code-server's startup banner.

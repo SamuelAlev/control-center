@@ -2,7 +2,7 @@
 title: Nasazení a klienti
 description: Jak architektura tenkého klienta v Control Center odděluje server bez rozhraní od klientů na počítači, webu a v telefonu.
 slug: cs-CZ/prirucka/koncepty/nasazeni
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center není jeden program. Je to **architektura tenkého klienta**:
@@ -21,10 +21,12 @@ přežít okno, nebo co mají dva klienti vidět stejně, žije tam.
 
 Žádný klient neotevírá databázový soubor sám. Každý místo toho drží jednoho
 **`RemoteRpcClient`** a přes něj posílá operace nad repozitáři a odběry.
-Server spojení ověří proti předem sdílenému klíči spárovaného zařízení a pak
-už ho spojení nezajímá. **Relace není vázaná na pracovní prostor.** Dispečer
-je bezstavový: každé volání vázané na pracovní prostor nese ve svých
-argumentech vlastní `workspace_id` a volání, které ho vynechá, se odmítne.
+Přímé i zprostředkované relace shodně vyžadují podepsaný handshake Noise:
+předem sdílený klíč spárovaného zařízení ověřuje výměnu, zatímco čerstvé
+provozní klíče šifrují každou relaci. **Relace není vázaná na pracovní
+prostor.** Dispečer je bezstavový: každé volání vázané na pracovní prostor
+nese ve svých argumentech vlastní `workspace_id` a volání, které ho vynechá,
+se odmítne.
 
 Je to schválně. Díky tomu můžou dva klienti na jednom serveru sedět v různých
 pracovních prostorech a nemají serverem držený „aktuální pracovní prostor“,
@@ -88,11 +90,11 @@ Desktop se databázového souboru přímo nikdy nedotkne.
 Webové sestavení je ta samá aplikace ve Flutteru, přeložená pro prohlížeč a
 hostovaná na [app.usectrl.dev](https://app.usectrl.dev), takže není co
 instalovat. Prohlížeč neumí spustit podproces, takže webový klient je
-**vždy** vzdálený: naváže `cc_server` přes `wss://` a vykreslí plné desktopové
-rozhraní. Po připojení ukazuje tytéž obrazovky nad toutéž flotilou, protože je
-to tentýž kód nad týmž RPC. Mezery jsou ta hrstka míst, která potřebují
-nativní schopnost, kterou prohlížeč nemá. Hlavní je vrstva kvality záznamu
-schůzky níže, další jsou oznámení operačního systému.
+**vždy** vzdálený: naváže `cc_server` přes šifrovanou relaci WebSocket a
+vykreslí plné desktopové rozhraní. Po připojení ukazuje tytéž obrazovky nad
+toutéž flotilou, protože používá tentýž kód nad týmž RPC. Mezery jsou ta
+hrstka míst, která potřebují nativní schopnost, kterou prohlížeč nemá. Hlavní
+je vrstva kvality záznamu schůzky níže, další jsou oznámení operačního systému.
 
 Proto jsou „bez stahování“ a „bez serveru“ různá tvrzení. Webový klient
 odstraňuje instalaci, server ne. Kam se připojuje, může být `cc_server` na
@@ -113,25 +115,30 @@ seznamu `--allowed-origins`, který má výchozí hodnotu
 `https://app.usectrl.dev`, takže vlastní hostování balíku znamená přidat jeho
 origin.
 
-Média (avatary, obrázky kanálu, snímky PR) jdou přes proxy koncový bod
-serveru, ne přímo na upstream hostitele, takže prohlížeč nikdy nenačítá
-libovolný origin. Nasazený klient nastaví pro každý požadavek Content-Security
-Policy z necitlivé cookie, takže je povolený jen origin připojeného serveru.
+Média (avatary, obrázky kanálu, snímky PR), nahrávky, zálohy a HTTP/WebSockety
+vloženého editoru putují šifrovaným tunelem prostředků, ne přes čitelné
+veřejné HTTP cesty; podepsané cesty pořád vyžadují autorizaci. Důvěryhodný
+frontend editoru běží na vlastním originu webové aplikace. Jeho service worker
+vede požadavky editoru stávající šifrovanou relací k `cc_server`, který
+vlastní soubory i backend code-server. Prohlížeč potřebuje pro service workery
+HTTPS nebo zabezpečený kontext loopbacku. Nativní klienti používají fasádu
+loopback s rozsahem podle schopnosti.
 
 ### Telefonní společník (cc_remote)
 
 Aplikace **Remote** je samostatný, lehčí klient — webová PWA ve Flutteru na
 [remote.usectrl.dev](https://remote.usectrl.dev/). Schválně to **není** plná
-aplikace. Páruje se přes zprostředkované WebSocket relé zapečetěné od konce ke
-konci a mluví převážně čtecím výřezem plochy nástrojů: čte tickety, zprávy a
-kanál novinek; pošle odpověď nebo aktualizuje ticket.
+aplikace. Připojí se přímo, když to jde, nebo přes zprostředkované relé; obě
+cesty vyžadují šifrování od konce ke konci. Mluví převážně čtecím výřezem
+plochy nástrojů: čte tickety, zprávy a kanál novinek; pošle odpověď nebo
+aktualizuje ticket.
 
 Telefon je **subjekt s nižšími oprávněními** než místní agent. Politika
-nástrojů s výchozím zákazem, předem sdílený klíč, který zapečeťuje každý
-rámec, schopnost relace, která zamkne privilegované operace (třeba párování)
-mimo doprovodného klienta, kontroly role a oprávnění k repozitáři u každého
-volání výše a omezování četnosti brání tomu, aby schválené (nebo uniklé)
-párování znamenalo plné vzdálené ovládání. Viz
+nástrojů s výchozím zákazem, schopnost relace, která zamkne privilegované
+operace (třeba párování) mimo doprovodného klienta, kontroly role a oprávnění
+k repozitáři u každého volání výše a omezování četnosti brání tomu, aby
+schválené (nebo uniklé) párování znamenalo plné vzdálené ovládání. Šifrování
+přenosu neuděluje oprávnění. Viz
 [Vzdálené ovládání a mobil](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/)
 pro celý model zabezpečení.
 
@@ -209,26 +216,36 @@ akce kalendáře nahrát a propojit.
 
 ## Párování a důvěra
 
-Každý klient prokáže, kdo je, **předem sdíleným klíčem** zřízeným jednou:
+Každý klient používá **předem sdílený klíč** zřízený jednou, aby ověřil svůj
+podepsaný handshake Noise s `cc_server`, a to i přes loopback a relé:
 
 - Desktop v místním režimu vygeneruje při každém startu čerstvý klíč a předá
   ho spuštěnému serveru přes prostředí, takže na desktopu nezůstane nic
   tajného.
-- Vzdálení klienti (desktop na dálku, web, telefon) použijí klíč, který vydá
-  příkaz `pair` na serveru, a uloží ho do systémové klíčenky (na telefonu
-  místně).
+- Vzdálení klienti (desktop na dálku, web, telefon) použijí klíč vydaný
+  párovacím postupem serveru nebo příkazem `pair`. Nativní klienti používají
+  systémovou klíčenku; prohlížečoví klienti ukládají párování místně.
+
+Klient kontroluje podepsanou identitu serveru proti svému uloženému pinu
+otisku. Při prvním připojení ten otisk ověř přes důvěryhodný QR nebo jiný
+důvěryhodný kanál: podepsaný první kontakt sám nedokáže ověřit, kdo klíč
+poskytl. Když se identita změní, klient se uzavře; spáruj se znovu přes
+důvěryhodný kanál, místo aby nesoulad ignoroval. Starší klienti a otevřené
+RPC se připojit nemohou. TLS je pořád potřeba pro originy prohlížeče,
+bootstrap a veřejná metadata; `--insecure` ovlivňuje vnější posluchač serveru,
+ne povinnou šifrovanou relaci.
 
 Odvolání je **okamžité**, ne odložené. Server sleduje tabulku spárovaných
 zařízení a do několika sekund shodí každou otevřenou relaci, jejíž zařízení
 opustilo aktivní množinu, na přímé cestě WebSocket i na cestě relé. Nemusíš
 čekat, až se zařízení znovu připojí, abys ho odřízl.
 
-Klíč nikdy neputuje URL, kterou statický hostitel uvidí. Když přijde odkazem,
-na telefonu nebo v prohlížeči, veze se ve **fragmentu URL**, v části za `#`,
-kterou prohlížeč nikdy nepošle serveru hostujícímu stránku. To je invariant,
-který stojí za zapamatování, a platí pro obojí. Webový klient má dva další
-vstupy: formulář připojení, kam vložíš server a klíč přímo, a kód pozvánky,
-který vymění za pověření vydané jen pro ten prohlížeč.
+Když klíč přijde odkazem — na telefonu nebo v prohlížeči — veze se ve
+**fragmentu URL**, v části za `#`, kterou prohlížeče v požadavku na hostitele
+stránky neposílají. JavaScript stránky ho pořád přečíst umí, takže tomu
+hostiteli důvěřuj a odkaz drž v tajnosti. Webový klient má i formulář
+připojení, kam vložíš server a klíč přímo, a kód pozvánky, který vymění za
+pověření vydané jen pro ten prohlížeč.
 
 ## Související koncepty
 

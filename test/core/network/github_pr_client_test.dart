@@ -2,183 +2,48 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
 import 'package:cc_infra/src/network/models/github_check_run.dart';
 import 'package:cc_infra/src/network/models/github_review.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-class _FakeDio implements Dio {
-  _FakeDio();
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onGet;
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    CancelToken? cancelToken,
-    Options? options,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onPost;
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-  })?
-  onDelete;
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onPatch;
-
-  @override
-  Future<Response<T>> get<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onGet;
-    if (cb == null) {
-      throw UnimplementedError('onGet not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-      cancelToken: cancelToken,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  Future<Response<T>> post<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onPost;
-    if (cb == null) {
-      throw UnimplementedError('onPost not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      cancelToken: cancelToken,
-      options: options,
-      onSendProgress: onSendProgress,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  Future<Response<T>> delete<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-  }) {
-    final cb = onDelete;
-    if (cb == null) {
-      throw UnimplementedError('onDelete not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-      cancelToken: cancelToken,
-    );
-  }
-
-  @override
-  Future<Response<T>> patch<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onPatch;
-    if (cb == null) {
-      throw UnimplementedError('onPatch not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-      cancelToken: cancelToken,
-      onSendProgress: onSendProgress,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import 'package:rhttp/rhttp.dart';
 
 void main() {
-  late _FakeDio fakeDio;
+  late TestHttpClient fake;
   late GitHubPrClient client;
 
   setUp(() {
-    fakeDio = _FakeDio();
-    client = GitHubPrClient(fakeDio);
+    fake = TestHttpClient(
+      handler: (_) => throw StateError('no handler configured'),
+    );
+    // The redirectless hop only matters for `getJobLogs`; a `TestHttpClient`
+    // never follows redirects, and passing it here keeps every request on the
+    // fake so no native client is ever constructed.
+    client = GitHubPrClient(fake, redirectlessHttpClient: fake);
   });
 
-  RequestOptions ro() => RequestOptions();
+  /// Answers every request with [body] JSON-encoded (a String verbatim).
+  void respond(
+    Object? body, {
+    int statusCode = 200,
+    Map<String, String> headers = const {},
+  }) {
+    fake.handler = (request) => httpTextResponse(
+      request,
+      body,
+      statusCode: statusCode,
+      headers: headers,
+    );
+  }
+
+  /// The JSON body of the single request captured so far.
+  Map<String, dynamic> requestJsonBody() =>
+      (fake.requests.single.body! as HttpBodyJson).json as Map<String, dynamic>;
 
   group('listOpenPullRequests', () {
     test('returns list of open PRs', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {'number': 1, 'html_url': 'u'},
-                        {'number': 2, 'html_url': 'u'},
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {'number': 1, 'html_url': 'u'},
+        {'number': 2, 'html_url': 'u'},
+      ]);
 
       final result = await client.listOpenPullRequestsPage('owner', 'repo');
       expect(result.items.length, 2);
@@ -186,33 +51,14 @@ void main() {
     });
 
     test('returns empty list for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
 
       final result = await client.listOpenPullRequestsPage('owner', 'repo');
       expect(result.items, isEmpty);
     });
 
     test('returns empty list for non-list data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a list' as T?),
-          );
+      respond(42);
 
       final result = await client.listOpenPullRequestsPage('owner', 'repo');
       expect(result.items, isEmpty);
@@ -233,55 +79,23 @@ void main() {
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: [] as T?),
-            );
-          };
+      respond([]);
       final ct = CancelToken();
       await client.listOpenPullRequestsPage('owner', 'repo', cancelToken: ct);
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('rethrows DioExceptions of type cancel', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.listOpenPullRequestsPage('owner', 'repo'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'timeout');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'timeout');
       await expectLater(
         client.listOpenPullRequestsPage('owner', 'repo'),
         throwsA(isA<NetworkException>()),
@@ -289,68 +103,27 @@ void main() {
     });
 
     test('calls correct URL with query parameters', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualParams;
-      fakeDio.onGet =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            actualParams = queryParameters;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: [] as T?),
-            );
-          };
+      respond([]);
       await client.listOpenPullRequestsPage('owner', 'repo');
-      expect(actualUrl, '/repos/owner/repo/pulls');
-      expect(actualParams, containsPair('state', 'open'));
+      expect(fake.requests.single.url, '/repos/owner/repo/pulls');
+      expect(fake.requests.single.query, containsPair('state', 'open'));
     });
   });
 
   group('listRequestedReviews', () {
     test('returns PRs from search items', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'items': [
-                          {'number': 10, 'html_url': 'u'},
-                        ],
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'items': [
+          {'number': 10, 'html_url': 'u'},
+        ],
+      });
       final result = await client.listRequestedReviews('owner', 'repo');
       expect(result.length, 1);
       expect(result[0].number, 10);
     });
 
     test('returns empty list when items is null', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: <String, dynamic>{} as T?),
-          );
+      respond(<String, dynamic>{});
       expect(await client.listRequestedReviews('owner', 'repo'), isEmpty);
     });
 
@@ -361,35 +134,17 @@ void main() {
       );
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.listRequestedReviews('owner', 'repo'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'not found');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'not found');
       await expectLater(
         client.listRequestedReviews('owner', 'repo'),
         throwsA(isA<NetworkException>()),
@@ -399,50 +154,18 @@ void main() {
 
   group('getPullRequest', () {
     test('returns a PR when data is map', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data: {'number': 42, 'html_url': 'u'} as T?,
-            ),
-          );
+      respond({'number': 42, 'html_url': 'u'});
       final result = await client.getPullRequest('owner', 'repo', 42);
       expect(result!.number, 42);
     });
 
     test('returns null when data is not a map', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       expect(await client.getPullRequest('owner', 'repo', 42), isNull);
     });
 
     test('returns null for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
       expect(await client.getPullRequest('owner', 'repo', 42), isNull);
     });
 
@@ -451,36 +174,15 @@ void main() {
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: {'number': 1} as T?),
-            );
-          };
+      respond({'number': 1});
       final ct = CancelToken();
       await client.getPullRequest('owner', 'repo', 1, cancelToken: ct);
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('wraps DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'error');
+    test('wraps transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'error');
       await expectLater(
         client.getPullRequest('owner', 'repo', 1),
         throwsA(isA<NetworkException>()),
@@ -490,56 +192,23 @@ void main() {
 
   group('getPullRequestDiff', () {
     test('returns diff text', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'diff --git' as T?),
-          );
+      respond('diff --git');
       expect(
         await client.getPullRequestDiff('owner', 'repo', 42),
         'diff --git',
       );
     });
 
-    test('returns empty string for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+    test('returns empty string for empty body', () async {
+      respond('');
       expect(await client.getPullRequestDiff('owner', 'repo', 42), '');
     });
 
     test('sends Accept diff header', () async {
-      Options? receivedOptions;
-      fakeDio.onGet =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            receivedOptions = options;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: 'diff' as T?),
-            );
-          };
+      respond('diff');
       await client.getPullRequestDiff('owner', 'repo', 1);
       expect(
-        receivedOptions?.headers?['Accept'],
+        fake.requests.single.headers?[HttpHeaderName.accept],
         'application/vnd.github.diff',
       );
     });
@@ -551,35 +220,17 @@ void main() {
       );
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.getPullRequestDiff('owner', 'repo', 1),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'timeout');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'timeout');
       await expectLater(
         client.getPullRequestDiff('owner', 'repo', 1),
         throwsA(isA<NetworkException>()),
@@ -589,74 +240,36 @@ void main() {
 
   group('listPullRequestFiles', () {
     test('returns list of files', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'filename': 'lib/main.dart',
-                          'status': 'modified',
-                          'additions': 5,
-                          'deletions': 2,
-                          'changes': 7,
-                        },
-                        {
-                          'filename': 'lib/foo.dart',
-                          'status': 'added',
-                          'additions': 10,
-                          'deletions': 0,
-                          'changes': 10,
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'filename': 'lib/main.dart',
+          'status': 'modified',
+          'additions': 5,
+          'deletions': 2,
+          'changes': 7,
+        },
+        {
+          'filename': 'lib/foo.dart',
+          'status': 'added',
+          'additions': 10,
+          'deletions': 0,
+          'changes': 10,
+        },
+      ]);
       final result = await client.listPullRequestFiles('owner', 'repo', 42);
       expect(result.length, 2);
       expect(result[0].filename, 'lib/main.dart');
     });
 
     test('returns empty list for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
       expect(await client.listPullRequestFiles('owner', 'repo', 42), isEmpty);
     });
 
     test('sends per_page query parameter', () async {
-      Map<String, dynamic>? actualParams;
-      fakeDio.onGet =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            actualParams = queryParameters;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: [] as T?),
-            );
-          };
+      respond([]);
       await client.listPullRequestFiles('owner', 'repo', 1);
-      expect(actualParams, containsPair('per_page', 100));
+      expect(fake.requests.single.query, containsPair('per_page', '100'));
     });
 
     test('throws ArgumentError for empty owner', () {
@@ -667,55 +280,23 @@ void main() {
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: [] as T?),
-            );
-          };
+      respond([]);
       final ct = CancelToken();
       await client.listPullRequestFiles('owner', 'repo', 1, cancelToken: ct);
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.listPullRequestFiles('owner', 'repo', 1),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '404');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, '404');
       await expectLater(
         client.listPullRequestFiles('owner', 'repo', 1),
         throwsA(isA<NetworkException>()),
@@ -723,32 +304,17 @@ void main() {
     });
 
     test('filters out non-map items', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'filename': 'a.dart',
-                          'status': 'modified',
-                          'additions': 1,
-                          'deletions': 0,
-                          'changes': 1,
-                        },
-                        'not a map',
-                        42,
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'filename': 'a.dart',
+          'status': 'modified',
+          'additions': 1,
+          'deletions': 0,
+          'changes': 1,
+        },
+        'not a map',
+        42,
+      ]);
       final result = await client.listPullRequestFiles('owner', 'repo', 1);
       expect(result.length, 1);
       expect(result[0].filename, 'a.dart');
@@ -757,50 +323,26 @@ void main() {
 
   group('listPullRequestCommits', () {
     test('returns list of commits', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'sha': 'abc123',
-                          'commit': {
-                            'message': 'fix bug',
-                            'author': {
-                              'name': 'dev',
-                              'email': 'dev@test.com',
-                              'date': '2024-01-01T00:00:00Z',
-                            },
-                          },
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'sha': 'abc123',
+          'commit': {
+            'message': 'fix bug',
+            'author': {
+              'name': 'dev',
+              'email': 'dev@test.com',
+              'date': '2024-01-01T00:00:00Z',
+            },
+          },
+        },
+      ]);
       final result = await client.listPullRequestCommits('owner', 'repo', 42);
       expect(result.length, 1);
       expect(result[0].sha, 'abc123');
     });
 
     test('returns empty list for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
       expect(await client.listPullRequestCommits('owner', 'repo', 42), isEmpty);
     });
 
@@ -811,16 +353,9 @@ void main() {
       );
     });
 
-    test('wraps DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'timeout');
+    test('wraps transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'timeout');
       await expectLater(
         client.listPullRequestCommits('owner', 'repo', 1),
         throwsA(isA<NetworkException>()),
@@ -830,32 +365,17 @@ void main() {
 
   group('getCommitFiles', () {
     test('returns files from commit', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'files': [
-                          {
-                            'filename': 'src/app.ts',
-                            'status': 'modified',
-                            'additions': 3,
-                            'deletions': 1,
-                            'changes': 4,
-                          },
-                        ],
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'files': [
+          {
+            'filename': 'src/app.ts',
+            'status': 'modified',
+            'additions': 3,
+            'deletions': 1,
+            'changes': 4,
+          },
+        ],
+      });
       final result = await client.getCommitFiles('owner', 'repo', 'abc123');
       expect(result.length, 1);
       expect(result[0].filename, 'src/app.ts');
@@ -866,30 +386,12 @@ void main() {
     });
 
     test('returns empty list when data is not map', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       expect(await client.getCommitFiles('owner', 'repo', 'abc123'), isEmpty);
     });
 
     test('returns empty list when files is null', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(Response<T>(requestOptions: ro(), data: {} as T?));
+      respond({});
       expect(await client.getCommitFiles('owner', 'repo', 'abc123'), isEmpty);
     });
 
@@ -901,55 +403,23 @@ void main() {
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: {'files': []} as T?),
-            );
-          };
+      respond({'files': []});
       final ct = CancelToken();
       await client.getCommitFiles('owner', 'repo', 'sha', cancelToken: ct);
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.getCommitFiles('owner', 'repo', 'sha'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '404');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, '404');
       await expectLater(
         client.getCommitFiles('owner', 'repo', 'sha'),
         throwsA(isA<NetworkException>()),
@@ -959,45 +429,17 @@ void main() {
 
   group('listPullRequestReviews', () {
     test('returns list of reviews', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {'id': 1, 'state': 'APPROVED', 'body': 'LGTM'},
-                        {
-                          'id': 2,
-                          'state': 'CHANGES_REQUESTED',
-                          'body': 'Needs work',
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {'id': 1, 'state': 'APPROVED', 'body': 'LGTM'},
+        {'id': 2, 'state': 'CHANGES_REQUESTED', 'body': 'Needs work'},
+      ]);
       final result = await client.listPullRequestReviews('owner', 'repo', 42);
       expect(result.length, 2);
       expect(result[0].state, GitHubReviewState.approved);
     });
 
     test('returns empty list for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
       expect(await client.listPullRequestReviews('owner', 'repo', 42), isEmpty);
     });
 
@@ -1008,16 +450,9 @@ void main() {
       );
     });
 
-    test('wraps DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'reset');
+    test('wraps transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'reset');
       await expectLater(
         client.listPullRequestReviews('owner', 'repo', 1),
         throwsA(isA<NetworkException>()),
@@ -1027,29 +462,14 @@ void main() {
 
   group('listPullRequestReviewComments', () {
     test('returns list of review comments', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'id': 1,
-                          'body': 'Please fix',
-                          'path': 'src/main.dart',
-                          'diff_hunk': '@@...',
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'id': 1,
+          'body': 'Please fix',
+          'path': 'src/main.dart',
+          'diff_hunk': '@@...',
+        },
+      ]);
       final result = await client.listPullRequestReviewComments(
         'owner',
         'repo',
@@ -1060,16 +480,7 @@ void main() {
     });
 
     test('returns empty list for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
       expect(
         await client.listPullRequestReviewComments('owner', 'repo', 42),
         isEmpty,
@@ -1083,63 +494,28 @@ void main() {
       );
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.listPullRequestReviewComments('owner', 'repo', 1),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
   });
 
   group('listIssueComments', () {
     test('returns list of issue comments', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {'id': 1, 'body': 'Working'},
-                        {'id': 2, 'body': 'Done'},
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {'id': 1, 'body': 'Working'},
+        {'id': 2, 'body': 'Done'},
+      ]);
       final result = await client.listIssueComments('owner', 'repo', 42);
       expect(result.length, 2);
       expect(result[0].id, 1);
     });
 
     test('returns empty list for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+      respond(null);
       expect(await client.listIssueComments('owner', 'repo', 42), isEmpty);
     });
 
@@ -1150,16 +526,9 @@ void main() {
       );
     });
 
-    test('wraps DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'timeout');
+    test('wraps transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'timeout');
       await expectLater(
         client.listIssueComments('owner', 'repo', 1),
         throwsA(isA<NetworkException>()),
@@ -1169,33 +538,18 @@ void main() {
 
   group('listCheckRuns', () {
     test('returns check runs', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'check_runs': [
-                          {
-                            'id': 1,
-                            'name': 'build',
-                            'status': 'completed',
-                            'conclusion': 'success',
-                            'app': {'name': 'GitHub Actions'},
-                            'html_url': 'https://e.com',
-                          },
-                        ],
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'check_runs': [
+          {
+            'id': 1,
+            'name': 'build',
+            'status': 'completed',
+            'conclusion': 'success',
+            'app': {'name': 'GitHub Actions'},
+            'html_url': 'https://e.com',
+          },
+        ],
+      });
       final result = await client.listCheckRuns('owner', 'repo', 'abc123');
       expect(result.length, 1);
       expect(result[0].name, 'build');
@@ -1207,30 +561,12 @@ void main() {
     });
 
     test('returns empty list when data is not map', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       expect(await client.listCheckRuns('owner', 'repo', 'abc123'), isEmpty);
     });
 
     test('returns empty list when check_runs is null', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(Response<T>(requestOptions: ro(), data: {} as T?));
+      respond({});
       expect(await client.listCheckRuns('owner', 'repo', 'abc123'), isEmpty);
     });
 
@@ -1241,35 +577,17 @@ void main() {
       );
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.listCheckRuns('owner', 'repo', 'ref'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '404');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, '404');
       await expectLater(
         client.listCheckRuns('owner', 'repo', 'ref'),
         throwsA(isA<NetworkException>()),
@@ -1279,18 +597,7 @@ void main() {
 
   group('createPullRequest', () {
     test('returns created PR data', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: {'number': 99} as T?),
-          );
+      respond({'number': 99});
       final result = await client.createPullRequest(
         'owner',
         'repo',
@@ -1303,18 +610,7 @@ void main() {
     });
 
     test('returns empty map for non-map response', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       final result = await client.createPullRequest(
         'owner',
         'repo',
@@ -1327,24 +623,7 @@ void main() {
     });
 
     test('sends correct POST body', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            actualBody = data as Map<String, dynamic>?;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: {} as T?),
-            );
-          };
+      respond({});
       await client.createPullRequest(
         'owner',
         'repo',
@@ -1353,8 +632,9 @@ void main() {
         head: 'head',
         base: 'base',
       );
-      expect(actualUrl, '/repos/owner/repo/pulls');
-      expect(actualBody, {
+      expect(fake.requests.single.method.value, 'POST');
+      expect(fake.requests.single.url, '/repos/owner/repo/pulls');
+      expect(requestJsonBody(), {
         'title': 'Title',
         'body': 'Body',
         'head': 'head',
@@ -1378,22 +658,7 @@ void main() {
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: {} as T?),
-            );
-          };
+      respond({});
       final ct = CancelToken();
       await client.createPullRequest(
         'owner',
@@ -1404,23 +669,11 @@ void main() {
         base: 'b',
         cancelToken: ct,
       );
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.createPullRequest(
           'owner',
@@ -1430,21 +683,13 @@ void main() {
           head: 'h',
           base: 'b',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '422');
+    test('wraps other transport errors', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, '422');
       await expectLater(
         client.createPullRequest(
           'owner',
@@ -1461,89 +706,44 @@ void main() {
 
   group('fromJson round-trip', () {
     test('PR includes externalId and headRef', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'number': 1,
-                        'external_id': 'PR_nodeId',
-                        'head': {'sha': 'abc', 'ref': 'feature/x'},
-                        'user': {'login': 'dev', 'avatar_url': 'a'},
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'number': 1,
+        'external_id': 'PR_nodeId',
+        'head': {'sha': 'abc', 'ref': 'feature/x'},
+        'user': {'login': 'dev', 'avatar_url': 'a'},
+      });
       final result = await client.getPullRequest('owner', 'repo', 1);
       expect(result!.externalId, 'PR_nodeId');
       expect(result.headRef, 'feature/x');
     });
 
     test('PR file includes previousFilename for renames', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'filename': 'new.dart',
-                          'status': 'renamed',
-                          'additions': 0,
-                          'deletions': 0,
-                          'changes': 0,
-                          'previous_filename': 'old.dart',
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'filename': 'new.dart',
+          'status': 'renamed',
+          'additions': 0,
+          'deletions': 0,
+          'changes': 0,
+          'previous_filename': 'old.dart',
+        },
+      ]);
       final result = await client.listPullRequestFiles('owner', 'repo', 1);
       expect(result[0].previousFilename, 'old.dart');
     });
 
     test('review comment includes line and diffHunk', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'id': 5,
-                          'body': 'N',
-                          'path': 'f.dart',
-                          'diff_hunk': '@@',
-                          'line': 42,
-                          'original_line': 40,
-                          'start_line': 38,
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'id': 5,
+          'body': 'N',
+          'path': 'f.dart',
+          'diff_hunk': '@@',
+          'line': 42,
+          'original_line': 40,
+          'start_line': 38,
+        },
+      ]);
       final result = await client.listPullRequestReviewComments(
         'owner',
         'repo',
@@ -1554,35 +754,20 @@ void main() {
     });
 
     test('commit includes author and committedAt', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  [
-                        {
-                          'sha': 'def456',
-                          'commit': {
-                            'message': 'feat',
-                            'author': {
-                              'name': 'Alice',
-                              'email': 'a@t.com',
-                              'date': '2024-06-15T12:00:00Z',
-                            },
-                          },
-                          'author': {'login': 'alice', 'avatar_url': 'a'},
-                        },
-                      ]
-                      as T?,
-            ),
-          );
+      respond([
+        {
+          'sha': 'def456',
+          'commit': {
+            'message': 'feat',
+            'author': {
+              'name': 'Alice',
+              'email': 'a@t.com',
+              'date': '2024-06-15T12:00:00Z',
+            },
+          },
+          'author': {'login': 'alice', 'avatar_url': 'a'},
+        },
+      ]);
       final result = await client.listPullRequestCommits('owner', 'repo', 1);
       expect(result[0].authorName, 'Alice');
       expect(result[0].committedAt, DateTime.utc(2024, 6, 15, 12, 0, 0));
@@ -1591,28 +776,12 @@ void main() {
 
   group('postReviewComment', () {
     test('returns created review comment', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'id': 777,
-                        'body': 'New comment',
-                        'path': 'lib/main.dart',
-                        'diff_hunk': '@@...',
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'id': 777,
+        'body': 'New comment',
+        'path': 'lib/main.dart',
+        'diff_hunk': '@@...',
+      });
       final result = await client.postReviewComment(
         'owner',
         'repo',
@@ -1628,25 +797,7 @@ void main() {
     });
 
     test('includes startLine and startSide for multi-line comments', () async {
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualBody = data as Map<String, dynamic>?;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'id': 1, 'body': 'm'} as T?,
-              ),
-            );
-          };
+      respond({'id': 1, 'body': 'm'});
       await client.postReviewComment(
         'owner',
         'repo',
@@ -1659,30 +810,13 @@ void main() {
         startLine: 15,
         startSide: 'RIGHT',
       );
-      expect(actualBody?['start_line'], 15);
-      expect(actualBody?['start_side'], 'RIGHT');
+      final body = requestJsonBody();
+      expect(body['start_line'], 15);
+      expect(body['start_side'], 'RIGHT');
     });
 
     test('omits startLine when equal to line', () async {
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualBody = data as Map<String, dynamic>?;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'id': 1, 'body': 'm'} as T?,
-              ),
-            );
-          };
+      respond({'id': 1, 'body': 'm'});
       await client.postReviewComment(
         'owner',
         'repo',
@@ -1694,29 +828,11 @@ void main() {
         body: 'Single line',
         startLine: 10,
       );
-      expect(actualBody?.containsKey('start_line'), isFalse);
+      expect(requestJsonBody().containsKey('start_line'), isFalse);
     });
 
     test('posts to correct URL', () async {
-      String? actualUrl;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'id': 1, 'body': 'm'} as T?,
-              ),
-            );
-          };
+      respond({'id': 1, 'body': 'm'});
       await client.postReviewComment(
         'owner',
         'repo',
@@ -1727,25 +843,12 @@ void main() {
         side: 'RIGHT',
         body: 'Test',
       );
-      expect(
-        actualUrl,
-        '/repos/owner/repo/pulls/42/comments',
-      );
+      expect(fake.requests.single.method.value, 'POST');
+      expect(fake.requests.single.url, '/repos/owner/repo/pulls/42/comments');
     });
 
     test('throws for non-map response', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       await expectLater(
         client.postReviewComment(
           'owner',
@@ -1777,20 +880,8 @@ void main() {
       );
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.postReviewComment(
           'owner',
@@ -1802,26 +893,12 @@ void main() {
           side: 'RIGHT',
           body: 'Test',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-
-            response: Response(requestOptions: ro(), statusCode: 422),
-            message: 'Unprocessable Entity',
-          );
+    test('wraps other transport errors', () async {
+      respond({'message': 'Unprocessable Entity'}, statusCode: 422);
       await expectLater(
         client.postReviewComment(
           'owner',
@@ -1840,28 +917,12 @@ void main() {
 
   group('replyToReviewComment', () {
     test('returns comment from reply', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'id': 888,
-                        'body': 'Good point',
-                        'path': 'lib/main.dart',
-                        'diff_hunk': '@@...',
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'id': 888,
+        'body': 'Good point',
+        'path': 'lib/main.dart',
+        'diff_hunk': '@@...',
+      });
       final result = await client.replyToReviewComment(
         'owner',
         'repo',
@@ -1874,25 +935,7 @@ void main() {
     });
 
     test('posts to correct reply URL', () async {
-      String? actualUrl;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'id': 1, 'body': 'm'} as T?,
-              ),
-            );
-          };
+      respond({'id': 1, 'body': 'm'});
       await client.replyToReviewComment(
         'owner',
         'repo',
@@ -1901,24 +944,13 @@ void main() {
         body: 'Reply',
       );
       expect(
-        actualUrl,
+        fake.requests.single.url,
         '/repos/owner/repo/pulls/42/comments/100/replies',
       );
     });
 
     test('throws for non-map response', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       await expectLater(
         client.replyToReviewComment(
           'owner',
@@ -1931,22 +963,8 @@ void main() {
       );
     });
 
-    test('wraps DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-
-            response: Response(requestOptions: ro(), statusCode: 404),
-            message: 'Not Found',
-          );
+    test('wraps transport errors', () async {
+      respond({'message': 'Not Found'}, statusCode: 404);
       await expectLater(
         client.replyToReviewComment(
           'owner',
@@ -1962,9 +980,7 @@ void main() {
 
   group('deleteReviewComment', () {
     test('completes without error', () async {
-      fakeDio.onDelete =
-          <T>(_, {data, queryParameters, options, cancelToken}) =>
-              Future.value(Response<T>(requestOptions: ro(), data: {} as T?));
+      respond({});
       await expectLater(
         client.deleteReviewComment('owner', 'repo', commentId: 777),
         completes,
@@ -1972,25 +988,14 @@ void main() {
     });
 
     test('calls DELETE on correct URL', () async {
-      String? actualUrl;
-      fakeDio
-          .onDelete = <T>(path, {data, queryParameters, options, cancelToken}) {
-        actualUrl = path;
-        return Future.value(Response<T>(requestOptions: ro(), data: {} as T?));
-      };
+      respond({});
       await client.deleteReviewComment('owner', 'repo', commentId: 42);
-      expect(
-        actualUrl,
-        '/repos/owner/repo/pulls/comments/42',
-      );
+      expect(fake.requests.single.method.value, 'DELETE');
+      expect(fake.requests.single.url, '/repos/owner/repo/pulls/comments/42');
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onDelete = <T>(_, {data, queryParameters, options, cancelToken}) {
-        received = cancelToken;
-        return Future.value(Response<T>(requestOptions: ro(), data: {} as T?));
-      };
+      respond({});
       final ct = CancelToken();
       await client.deleteReviewComment(
         'owner',
@@ -1998,31 +1003,19 @@ void main() {
         commentId: 1,
         cancelToken: ct,
       );
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onDelete =
-          <T>(_, {data, queryParameters, options, cancelToken}) =>
-              throw DioException(
-                requestOptions: ro(),
-                type: DioExceptionType.cancel,
-              );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.deleteReviewComment('owner', 'repo', commentId: 1),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onDelete =
-          <T>(_, {data, queryParameters, options, cancelToken}) =>
-              throw DioException(
-                requestOptions: ro(),
-
-                response: Response(requestOptions: ro(), statusCode: 403),
-                message: 'Forbidden',
-              );
+    test('wraps other transport errors', () async {
+      respond({'message': 'Forbidden'}, statusCode: 403);
       await expectLater(
         client.deleteReviewComment('owner', 'repo', commentId: 1),
         throwsA(isA<NetworkException>()),
@@ -2032,28 +1025,12 @@ void main() {
 
   group('editReviewComment', () {
     test('returns edited review comment', () async {
-      fakeDio.onPatch =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'id': 999,
-                        'body': 'Updated comment',
-                        'path': 'lib/main.dart',
-                        'diff_hunk': '@@...',
-                      }
-                      as T?,
-            ),
-          );
+      respond({
+        'id': 999,
+        'body': 'Updated comment',
+        'path': 'lib/main.dart',
+        'diff_hunk': '@@...',
+      });
       final result = await client.editReviewComment(
         'owner',
         'repo',
@@ -2065,53 +1042,20 @@ void main() {
     });
 
     test('sends PATCH to correct URL with body', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPatch =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            actualBody = data as Map<String, dynamic>?;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'id': 1, 'body': 'm'} as T?,
-              ),
-            );
-          };
+      respond({'id': 1, 'body': 'm'});
       await client.editReviewComment(
         'owner',
         'repo',
         commentId: 42,
         body: 'Edited',
       );
-      expect(
-        actualUrl,
-        '/repos/owner/repo/pulls/comments/42',
-      );
-      expect(actualBody, {'body': 'Edited'});
+      expect(fake.requests.single.method.value, 'PATCH');
+      expect(fake.requests.single.url, '/repos/owner/repo/pulls/comments/42');
+      expect(requestJsonBody(), {'body': 'Edited'});
     });
 
     test('throws for non-map response', () async {
-      fakeDio.onPatch =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      respond([1, 2]);
       await expectLater(
         client.editReviewComment('owner', 'repo', commentId: 1, body: 'Edited'),
         throwsFormatException,
@@ -2126,25 +1070,7 @@ void main() {
     });
 
     test('propagates cancel token', () async {
-      CancelToken? received;
-      fakeDio.onPatch =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'id': 1, 'body': 'm'} as T?,
-              ),
-            );
-          };
+      respond({'id': 1, 'body': 'm'});
       final ct = CancelToken();
       await client.editReviewComment(
         'owner',
@@ -2153,45 +1079,19 @@ void main() {
         body: 'Edited',
         cancelToken: ct,
       );
-      expect(received, same(ct));
+      expect(fake.requests.single.cancelToken, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPatch =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.editReviewComment('owner', 'repo', commentId: 1, body: 'Edited'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPatch =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-
-            response: Response(requestOptions: ro(), statusCode: 403),
-            message: 'Forbidden',
-          );
+    test('wraps other transport errors', () async {
+      respond({'message': 'Forbidden'}, statusCode: 403);
       await expectLater(
         client.editReviewComment('owner', 'repo', commentId: 1, body: 'Edited'),
         throwsA(isA<NetworkException>()),

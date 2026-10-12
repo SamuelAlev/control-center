@@ -1,21 +1,24 @@
 ---
 title: Készségek telepítése és kezelése
-description: Adjon hozzá GitHub-tárolókat készségforrásként, böngéssze a katalógusaikat, és telepítsen, frissítsen vagy távolítson el készségeket az antivírus-vizsgálati kapun keresztül.
+description: Telepítsen és frissítsen munkaterületi készségeket a vizsgálati kapun keresztül, majd hasonlítson össze mentett verziókat költségkerethez kötött készségértékelésekkel.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/keszsegek-kezelese
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Ez az útmutató bemutatja, hogyan töltsön fel egy munkaterületet GitHubról
 származó készségekkel: adjon hozzá egy tárolót forrásként, telepítse belőle a
-kívánt készségeket, és tartsa őket naprakészen.
+kívánt készségeket, és tartsa őket naprakészen. Egy mentett verziót össze is
+vethet egy illesztett alapszinttel, mielőtt eldönti, hogy megtartja-e.
 
 A legfontosabb, amit kezdés előtt tudnia kell: **a forrástároló nem
 megbízható.** A nevét, a leírását és a csillagszámát az írja, aki birtokolja.
-Az egyetlen biztonsági jelzés, amelyben a Control Center megbízik, az
-antivírus-vizsgálat ítélete, amelyen minden telepítés átmegy, mielőtt bármi
-eljutna a lemezre vagy egy ügynökpromptba. Ha az indoklásra kíváncsi, olvassa el
-az [ügynökmodell készségekről szóló szakaszát](/hu-HU/kezikonyv/fogalmak/ugynokmodell/);
-ez az oldal a gyakorlatnál marad.
+Minden telepítés átmegy az antivírus-vizsgálati kapun, mielőtt bármi eljutna a
+lemezre vagy egy ügynökpromptba. Ez a verdikt beengedési ellenőrzés, nem
+bizonyíték arra, hogy a készség biztonságos vagy hasznos. A telepítési modellről
+olvassa el az [ügynökmodell készségekről szóló
+szakaszát](/hu-HU/kezikonyv/fogalmak/ugynokmodell/), arról pedig, hogy a
+viselkedési bizonyíték miben tér el egy vizsgálattól, a [Kiértékelések és
+minőség](/hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg/) oldalt.
 
 A készségek a **Beállítások → Munkaterület → Készségek** helyen találhatók
 (`/workspaces/<id>/settings/workspace/skills`). Munkaterület-hatókörűek: az itt
@@ -87,6 +90,92 @@ telepítés — egy olyan készséget, amelynek az új verziója karanténba ker
 elutasítanak, és a meglévő verzió a helyén marad. A régi verzió hashét
 visszaállítási hivatkozásként megőrzik a lockban.
 
+## Készség értékelése
+
+1. Nyissa meg a **Beállítások → Munkaterület → Készségek** oldalt, válassza ki a
+   telepített készséget, és mentse a módosításokat. A
+   **Készségértékelés** részben ellenőrizze a csomag hashét.
+2. Válassza az **Értékelés indítása** lehetőséget. Válasszon a készség céljához
+   illő **Feladatkészletet** és egy **Adaptert**. A beépített harness egy
+   beállított szolgáltatót és egy eszközhasználatra képes modellt használ. A
+   **Claude Code** az alapértelmezett felügyelt Claude-fiókot és egy konkrét
+   modellazonosítót használ; először jelentkezzen be a **Beállítások →
+   Adapterek** alatt. Nem kölcsönzi a szerverüzemeltető személyes
+   bejelentkezését.
+3. Válasszon **Összehasonlítást** az alábbi táblázatból.
+4. Állítsa be az **Ismétlések feladatonként** (1–20) és a
+   **Keret (amerikai cent)** értékét. A `100` például 1 amerikai dollárt jelent.
+   A fizetős szolgáltatói munka engedélyezéséhez válassza az
+   **Értékelés indítása** lehetőséget.
+5. Kövesse a kampányt a **Megfigyelhetőség → Minőség** oldalon, vagy térjen
+   vissza a készségpanel **Minőség megnyitása** elemén keresztül.
+
+A **Claude Code** és a **Codex OAuth** előfizetéseknél a keret egy
+**API-egyenértékű használati küszöbérték**, nem számlázási korlát és nem az
+előfizetési kvóta mértéke. A `100` 1 amerikai dolláros küszöböt enged meg: egy
+futó hívás túllépheti, de amint a jelentett használat eléri, több hívás nem
+indul. Az ismeretlen használat szintén leállítja a további hívásokat. Egy kis
+keret részlegessé teheti az összehasonlítást; nem ígéri meg a kiválasztott
+feladatkészlet befejezését.
+
+Az API-kulcsos szolgáltatók konzervatív, hívásonkénti foglalásokat tartanak
+fenn a dokumentált tokenkorlátok és árazás alapján. Előfordulhat, hogy a `100`
+keretet még a költés előtt elutasítják, ha egy biztonságosan fenntartott hívás
+többet igényel. A hiba azonosítja a kiválasztott modellt és a minimális
+foglalást; válasszon olcsóbb modellt, vagy növelje a keretet.
+
+| Összehasonlítás | Mire használható |
+| --- | --- |
+| **Hiányzó és elérhető** | Javítja-e az eredményt a készség szokásos felderítése és használata ahhoz képest, ha nem áll rendelkezésre? |
+| **Előző és jelenlegi** | Megőrzi-e vagy javítja-e a frissítés a viselkedést egy korábban rögzített verzióhoz képest? |
+| **Kényszerített betöltés és hiányzás** | Segíthet-e a tartalom, ha kifejezetten betöltik? Ez betöltési problémákat diagnosztizál; nem igazolja a szokásos felderítést. |
+| **Összetétel** | Segít-e a jelölt hozzáadása, vagy ütközik-e a kiválasztott környezeti készségekkel? Az alapszint ugyanazt a környezeti készletet tartja meg a jelölt nélkül. |
+
+Az **Előző és jelenlegi** összehasonlításhoz a kampányelőzményekből származó
+csomaghash kell. Ha alapszintként szeretné használni, a lecserélése előtt
+értékelje a verziót; tetszőleges Git-előzményeket nem importálnak.
+
+Nem mentett módosítások, egy nem elérhető hash és az írásvédett demómód letiltja
+az indítást. A szerver a munkaterület-/tárolóhozzáférést, a vizsgálati karantént,
+a műveleti szabályzatot, a modelltámogatást, az árazást és a végrehajtási
+elszigetelést is ellenőrzi. A sikertelen ellenőrzést inkább oldja meg, mintsem
+megkerülje. A szolgáltató és a modell azonosítóját rögzítik, de egy távoli
+modellálnév nem rögzíti a szolgáltató mögöttes súlyait.
+
+### Vizsgálat, megszakítás és exportálás
+
+A lefedettséget és a költést a feladatonkénti eredményekkel és a
+visszaesésekkel együtt olvassa. Nyissa meg az egyes próbálkozásokat a megfigyelt
+készségbetöltések, eszközesemények, hibák és ellenőrző bizonyítékok
+vizsgálatához. A **Részleges**, **Elavult** és **Nem dönthető el** eredmények
+nem jelentenek ajánlást egy verzió átvételére. Egy jelentés hashé a rögzített
+csomagot azonosítja, nem feltétlenül a jelenleg telepítettet.
+
+Kézben lévő vagy aktív munkához használja a **Futtatás megszakítása**
+lehetőséget. A befejezett próbálkozások láthatók maradnak; a megszakítás nem
+téríti vissza a már elvégzett szolgáltatói munkát. Az **Anonimizált JSON
+másolása** egy korlátozott bizonyítékexportot másol a vágólapra, nem egy teljes,
+privát forrású visszajátszási csomagot. A bizonyítékokról és a platform
+korlátairól lásd a [Kiértékelések és
+minőség](/hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg/) oldalt.
+
+### Újraértékelés frissítések után
+
+Az automatikus fizetős újraértékelés **alapértelmezés szerint ki van kapcsolva**.
+Miután értékelte a jelenlegi verziót, válasszon egy kampányt a **Frissítési
+szabályzat beállítása** részben, és válassza a **Frissítések értékelésének
+bekapcsolása** lehetőséget. Ennek a szabályzatnak a megváltoztatásához
+munkaterület-rendszergazdai jogosultság szükséges. A kiválasztott kampány adja a
+feladatkészletet, az adaptert, a szolgáltatót/modellt, az összehasonlítást, az
+ismétléseket és a keretet.
+
+A későbbi, beengedett tartalommódosítások költségkerethez kötött munkát
+ütemeznek; a változatlan hasheket deduplikálják. A **Frissítések értékelésének
+kikapcsolása** megakadályozza a jövőbeli automatikus beengedéseket. Egy már
+beengedett kampányhoz használja a **Futtatás megszakítása** lehetőséget. Az
+előzményjelentések az eredeti csomaghashjeikhez kapcsolódva maradnak; az
+újraértékelés nem tesz közzé, nem engedélyez és nem ír át egy készséget.
+
 ## Készség eltávolítása, tároló eltávolítása
 
 Az **Eltávolítás** (egy telepített készség részletes nézetében, vagy a
@@ -126,7 +215,8 @@ A repókészségek ugyanazon a hiba esetén elutasító vizsgálaton esnek át (
 beengedett; a `quarantine` visszatartott, ezen az útvonalon operátori felülírás
 nélkül.
 
-Lásd a [Repóhoz kötött készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills) és
+Lásd a [Repóhoz kötött
+készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repóhoz-kötött-készségek) és
 a [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/) oldalt.
 
 ## Kapcsolódó útmutatók
@@ -137,3 +227,4 @@ a [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/) oldalt.
 ## Kapcsolódó fogalmak
 
 - [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/)
+- [Kiértékelések és minőség](/hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg/)

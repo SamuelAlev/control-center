@@ -79,41 +79,30 @@ class _Broker {
   }
 }
 
-const _psk = 'test-psk-for-relay';
+final _psk = base64Url.encode(List<int>.generate(32, (i) => i + 1));
 const _room = 'room-relay';
 
-/// The owner/server half of the relay data plane, built from the same
-/// [ChunkedRelaySession] the client uses. It seals frames to the room and opens
-/// inbound sealed frames from the client.
+/// The fake broker forwards owner records without interpreting or sealing them.
+/// This exercises the raw adapter independently of the secure channel above it.
 class _OwnerSide {
-  _OwnerSide(this.broker);
-
-  final _Broker broker;
-  late final ChunkedRelaySession session;
-  final incoming = <Map<String, dynamic>>[];
-  final progress = <RelayTransferProgress>[];
-
-  void start() {
-    session = ChunkedRelaySession(
-      psk: _psk,
-      sendPayload: (payload) {
-        // Owner broadcasts the sealed payload back as a signal from itself.
-        broker.sendToLast({
-          'type': 'signal',
-          'from': 'owner-peer',
-          'kind': 'rpc',
-          'payload': payload,
-        });
-      },
-      onFrame: incoming.add,
-      onProgress: progress.add,
-      maxChunkChars: 16 * 1024,
-    );
+  _OwnerSide(this.broker) {
+    broker.frames.listen((frame) {
+      if (frame['type'] == 'signal' && frame['kind'] == 'rpc') {
+        final payload = frame['payload'];
+        if (payload is Map<String, dynamic>) incoming.add(payload);
+      }
+    });
   }
 
-  /// Routes a client-originated signal payload into the owner's session.
-  void handlePayload(Map<String, dynamic> payload) =>
-      session.handlePayload(payload.cast<String, dynamic>());
+  final _Broker broker;
+  final incoming = <Map<String, dynamic>>[];
+
+  void send(Map<String, dynamic> record) => broker.sendToLast({
+    'type': 'signal',
+    'from': 'owner-peer',
+    'kind': 'rpc',
+    'payload': record,
+  });
 }
 
 Future<void> _flush() async {
@@ -142,20 +131,7 @@ void main() {
     await broker.close();
   });
 
-  /// Joins with the owner already present and acknowledged. Drives inbound
-  /// signals from the owner into its [ChunkedRelaySession] so the client's
-  /// sealed frames are decrypted server-side.
-  _OwnerSide ownerPresentBroker() {
-    final owner = _OwnerSide(broker);
-    owner.start();
-    broker.frames.listen((frame) {
-      if (frame['type'] == 'signal' &&
-          frame['payload'] is Map<String, dynamic>) {
-        owner.handlePayload(frame['payload'] as Map<String, dynamic>);
-      }
-    });
-    return owner;
-  }
+  _OwnerSide ownerPresentBroker() => _OwnerSide(broker);
 
   group('RelayClientChannel.connect', () {
     test(
@@ -173,8 +149,7 @@ void main() {
             };
           },
         );
-        // Set up the owner data-plane listener (side effect only).
-        ownerPresentBroker();
+        // Raw transport is open even before any application records arrive.
 
         final channel = await RelayClientChannel.connect(
           signalingUrl: 'ws://127.0.0.1:${broker.port}/',
@@ -239,13 +214,7 @@ void main() {
           };
         },
       );
-      final owner = _OwnerSide(broker);
-      owner.start();
-      broker.frames.listen((frame) {
-        if (frame['type'] == 'signal' && frame['payload'] is Map) {
-          owner.handlePayload(frame['payload'] as Map<String, dynamic>);
-        }
-      });
+      // The owner need not open a data-plane session to announce presence.
 
       // The connect future resolves only after the owner joins. Subscribe to
       // the broker's join frames BEFORE starting the connect: `sendToLast`
@@ -339,7 +308,7 @@ void main() {
   });
 
   group('RelayClientChannel send/receive', () {
-    test('seals an outbound frame the owner can open and vice versa', () async {
+    test('routes raw records to the owner and back without transforming them', () async {
       broker = await _Broker.start(
         onJoin: (frame) async {
           return const {
@@ -358,26 +327,22 @@ void main() {
         psk: _psk,
       );
       addTearDown(channel.close);
-      await _flush();
-
-      // Client → owner: a sealed frame the owner decrypts. Delivery rides
-      // a real loopback socket (chunked: one signal frame per chunk), so
-      // WAIT for the frame rather than pumping a fixed turn count — a
-      // loaded runner can miss it inside 30 zero-delay turns.
-      await channel.send({'jsonrpc': '2.0', 'id': 1, 'method': 'ping'});
+      // Encryption belongs to SecureRpcChannel, not this broker adapter.
+      const outbound = {'jsonrpc': '2.0', 'id': 1, 'method': 'ping'};
+      await channel.send(outbound);
       await _until(() => owner.incoming.isNotEmpty);
-      expect(owner.incoming.last['method'], 'ping');
+      expect(owner.incoming.single, outbound);
 
-      // Owner → client: a sealed frame the client surfaces on `incoming`.
-      final clientFrames = <Map<String, dynamic>>[];
-      channel.incoming.listen(clientFrames.add);
-      await owner.session.sendFrame({
+      final clientGot = channel.incoming.first.timeout(
+        const Duration(seconds: 5),
+      );
+      const inbound = {
         'jsonrpc': '2.0',
         'method': 'notifications/pong',
         'params': {'ok': true},
-      });
-      await _until(() => clientFrames.isNotEmpty);
-      expect(clientFrames.last['method'], 'notifications/pong');
+      };
+      owner.send(inbound);
+      expect(await clientGot, inbound);
     });
 
     test('send throws when the channel is not open', () async {
@@ -402,7 +367,7 @@ void main() {
     });
 
     test(
-      'buffers frames until a listener attaches (no dropped handshake reply)',
+      'buffers a received record until a listener attaches',
       () async {
         broker = await _Broker.start(
           onJoin: (frame) async {
@@ -413,8 +378,6 @@ void main() {
             };
           },
         );
-        final owner = ownerPresentBroker();
-
         final channel = await RelayClientChannel.connect(
           signalingUrl: 'ws://127.0.0.1:${broker.port}/',
           room: _room,
@@ -422,28 +385,23 @@ void main() {
           psk: _psk,
         );
         addTearDown(channel.close);
-        await _flush();
-
-        // Owner sends before the client listens — the reply must be buffered.
-        await owner.session.sendFrame({
-          'jsonrpc': '2.0',
-          'method': 'buffered/hello',
-          'params': {},
+        // Same-socket ordering makes peer-left a barrier: when close arrives,
+        // the earlier owner record has already been buffered without a listener.
+        final closed = channel.state
+            .firstWhere((state) => state == RemoteChannelState.closed)
+            .timeout(const Duration(seconds: 5));
+        broker.sendToLast(const {
+          'type': 'signal',
+          'from': 'owner-peer',
+          'kind': 'rpc',
+          'payload': {'method': 'buffered/hello'},
         });
-        await _flush();
-        // Attach a listener after the frame was delivered; it should be flushed.
-        final clientFrames = <Map<String, dynamic>>[];
-        channel.incoming.listen(clientFrames.add);
-        // Wait for the frame itself, not a fixed turn count — on a loaded
-        // runner (macos-14 CI) the sealed frame needs longer than any fixed
-        // `_flush()` budget to arrive.
-        await _until(
-          () => clientFrames.any((f) => f['method'] == 'buffered/hello'),
+        broker.sendToLast(const {'type': 'peer-left', 'from': 'owner-peer'});
+        await closed;
+        final received = channel.incoming.first.timeout(
+          const Duration(seconds: 5),
         );
-        expect(
-          clientFrames.any((f) => f['method'] == 'buffered/hello'),
-          isTrue,
-        );
+        expect(await received, {'method': 'buffered/hello'});
       },
     );
   });
@@ -500,6 +458,39 @@ void main() {
       expect(channel.isOpen, isFalse);
     });
 
+    test('owner close delivers its last queued record before incoming done', () async {
+      broker = await _Broker.start(
+        onJoin: (_) async => const {
+          'type': 'joined',
+          'ownerPresent': true,
+          'ownerPeer': 'owner-peer',
+        },
+      );
+      final channel = await RelayClientChannel.connect(
+        signalingUrl: 'ws://127.0.0.1:${broker.port}/',
+        room: _room,
+        deviceId: 'dev-final',
+        psk: _psk,
+      );
+      addTearDown(channel.close);
+      final received = channel.incoming.toList();
+      broker.sendToLast(const {
+        'type': 'signal',
+        'from': 'owner-peer',
+        'kind': 'rpc',
+        'payload': {'type': 'secure', 'c': 'final-record'},
+      });
+      broker.sendToLast(const {
+        'type': 'signal',
+        'from': 'owner-peer',
+        'kind': 'close',
+      });
+      expect(await received.timeout(const Duration(seconds: 5)), [
+        {'type': 'secure', 'c': 'final-record'},
+      ]);
+      expect(channel.isOpen, isFalse);
+    });
+
     test('a peer-left from the owner closes the channel', () async {
       broker = await _Broker.start(
         onJoin: (frame) async {
@@ -529,20 +520,15 @@ void main() {
       expect(states, contains(RemoteChannelState.closed));
     });
 
-    test('transferProgress surfaces large multi-chunk sends', () async {
+    test('ignores signals from peers other than the owner', () async {
       broker = await _Broker.start(
-        onJoin: (frame) async {
-          return const {
-            'type': 'joined',
-            'ownerPresent': true,
-            'ownerPeer': 'owner-peer',
-          };
+        onJoin: (frame) async => const {
+          'type': 'joined',
+          'ownerPresent': true,
+          'ownerPeer': 'owner-peer',
         },
       );
-      // Owner data-plane listener consumes the chunked send (side effect).
-      // ignore: unused_local_variable
       final owner = ownerPresentBroker();
-
       final channel = await RelayClientChannel.connect(
         signalingUrl: 'ws://127.0.0.1:${broker.port}/',
         room: _room,
@@ -550,15 +536,17 @@ void main() {
         psk: _psk,
       );
       addTearDown(channel.close);
-      final progress = <RelayTransferProgress>[];
-      channel.transferProgress.listen(progress.add);
-      await _flush();
-
-      // Build a frame large enough to split into many chunks (16 KB each).
-      final big = List.filled(200000, 'x').join();
-      await channel.send({'jsonrpc': '2.0', 'id': 2, 'blob': big});
-      await _flush();
-      expect(progress, isNotEmpty);
+      final received = <Map<String, dynamic>>[];
+      channel.incoming.listen(received.add);
+      broker.sendToLast(const {
+        'type': 'signal',
+        'from': 'other-peer',
+        'kind': 'rpc',
+        'payload': {'foreign': true},
+      });
+      owner.send({'owner': true});
+      await _until(() => received.isNotEmpty);
+      expect(received, [{'owner': true}]);
     });
   });
 

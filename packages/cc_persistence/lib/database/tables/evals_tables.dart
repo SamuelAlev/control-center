@@ -264,3 +264,64 @@ class AgentConfigVersionsTable extends Table {
     {workspaceId, agentId, configHash},
   ];
 }
+
+/// Workspace-owned campaign index. Payload is the canonical domain wire JSON.
+@TableIndex(
+  name: 'idx_skill_eval_campaigns_skill_created',
+  columns: {#workspaceId, #skillKey, #createdAt},
+)
+@TableIndex(
+  name: 'idx_skill_eval_campaigns_status',
+  columns: {#workspaceId, #status},
+)
+class SkillEvalCampaignsTable extends Table {
+  @override
+  String get tableName => 'skill_eval_campaigns';
+
+  TextColumn get id => text()();
+  TextColumn get workspaceId => text()();
+  TextColumn get skillKey => text()();
+  TextColumn get status => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get payloadJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Attempt metadata and redacted evidence, never host filesystem paths.
+@TableIndex(
+  name: 'idx_skill_eval_attempts_campaign',
+  columns: {#workspaceId, #campaignId, #ordinal},
+)
+class SkillEvalAttemptsTable extends Table {
+  @override
+  String get tableName => 'skill_eval_attempts';
+
+  TextColumn get id => text()();
+  TextColumn get workspaceId => text()();
+  TextColumn get campaignId => text().references(SkillEvalCampaignsTable, #id)();
+  IntColumn get ordinal => integer()();
+  TextColumn get payloadJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Absence means disabled; enabling requires an explicit workspace-level opt-in.
+@TableIndex(
+  name: 'idx_skill_eval_policies_enabled',
+  columns: {#workspaceId, #enabled},
+)
+class SkillEvalPoliciesTable extends Table {
+  @override
+  String get tableName => 'skill_eval_policies';
+
+  TextColumn get workspaceId => text()();
+  TextColumn get skillKey => text()();
+  BoolColumn get enabled => boolean()();
+  TextColumn get payloadJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {workspaceId, skillKey};
+}

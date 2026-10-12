@@ -2,7 +2,7 @@
 title: Asociază un dispozitiv
 description: Asociază-ți telefonul (sau un al doilea browser ori desktop) cu serverul tău Control Center ca să poți urmări flota de la distanță.
 slug: ro-RO/manual/ghiduri-practice/asociaza-dispozitiv
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Acest ghid îți arată cum să asociezi un telefon cu Control Center, ca să poți citi
@@ -23,8 +23,9 @@ implementa pe Cloudflare Pages prin `wrangler.jsonc`, pe imaginea nginx
 `docker/cc_remote` sau pe orice gazdă statică cu HTTPS — service worker-ele și
 IndexedDB sunt condiționate de un context securizat) și releul
 (`apps/cc_signaling_server`, un singur binar Dart fără stare, care nu deține date
-ale aplicației și nu vede niciodată secretul de asociere — retransmite doar cadre
-sigilate cap la cap). Vezi README-urile lor pentru pașii de compilare și rulare.
+ale aplicației și nu poate decripta înregistrări criptate sau vedea secretul de
+asociere). Totuși vede IP-uri, identificatori de rutare, dimensiuni și temporizare
+și poate elimina trafic. Vezi README-urile lor pentru pașii de compilare și rulare.
 
 ## Pasul 1: Deschide panoul de asociere
 
@@ -50,14 +51,18 @@ identitate pentru PWA-ul Remote.
 
 Pe partea de telefon, deschiderea unui link de asociere nu asociază în silențiu.
 Remote afișează numele anunțat al serverului și îți cere confirmarea înainte de a
-stoca ceva, așa că un link falsificat nu poate deturna aplicația către serverul
-altcuiva.
+stoca ceva. Verifică amprenta din codul QR față de o sursă de încredere:
+confirmarea unui nume neverificat sau a unui QR falsificat nu demonstrează că
+serverul este al tău. Clientul fixează identitatea semnată și respinge o amprentă
+modificată la conexiunile ulterioare.
 
 :::caution[Un cod QR scanat acordă acces imediat]
 Nu există un pas de tip în așteptare-apoi-aprobare: un dispozitiv emis este activ
 din momentul creării, iar poarta de conectare verifică doar că credențialul este
 activ și neexpirat. Tratează codul QR și cheia de asociere ca pe o parolă și
-revocă tot ce nu ai vrut să oferi.
+revocă tot ce nu ai vrut să oferi. Atât sesiunile de client directe, cât și cele
+prin releu necesită criptare cap la cap; clienții mai vechi nu pot reveni la RPC
+în clar.
 :::
 
 ## Gestionează dispozitivele asociate

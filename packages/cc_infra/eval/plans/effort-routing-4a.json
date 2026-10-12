@@ -1,0 +1,61 @@
+{
+  "id": "effort-routing-4a",
+  "seed": 4104,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Pinned quality default"
+    },
+    {
+      "id": "effort-low",
+      "axis": "effort_routing",
+      "effortLevel": "low",
+      "label": "Low effort everywhere (the blunt version)"
+    },
+    {
+      "id": "routed",
+      "axis": "effort_routing",
+      "taskRoutePolicyId": "routine-effort-routing",
+      "label": "Task-boundary effort routing (opt-in)"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 32000,
+  "routePolicy": {
+    "id": "routine-effort-routing",
+    "version": 1,
+    "enabled": true,
+    "optedInBy": "operator",
+    "description": "Route lower effort onto task classes whose deliverable is independently checkable, keeping the pinned effort for the classes that need it. No route is defined for a task class the operator did not name, so those keep the quality default.",
+    "byTaskKind": {
+      "tool_heavy": {
+        "effortLevel": "low",
+        "note": "bounded work with an independent executable check"
+      },
+      "exploration": {
+        "effortLevel": "low",
+        "note": "read-only answer verified against the workspace"
+      },
+      "review": {
+        "effortLevel": "medium",
+        "note": "careful reading, but the finding is checked against a seeded defect"
+      }
+    }
+  },
+  "notes": "Report 4A. The `routed` arm only changes effort at task boundaries and only for the enumerated classes; the `baseline` arm exists so non-inferiority can be established before any default changes."
+}

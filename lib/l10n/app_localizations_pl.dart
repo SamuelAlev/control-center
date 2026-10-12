@@ -14351,6 +14351,32 @@ class AppLocalizationsPl extends AppLocalizations {
   String get composerDropToAttach => 'Upuść, aby załączyć';
 
   @override
+  String get composerAttachmentUploading => 'Przesyłanie…';
+
+  @override
+  String get composerAttachmentReady => 'Gotowe';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Nie udało się przesłać';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Plik przekracza limit $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable =>
+      'Nie udało się odczytać tego pliku';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Poczekaj na zakończenie przesyłania załączników';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Przed wysłaniem ponów przesyłanie nieudanych załączników lub je usuń';
+
+  @override
   String get attachmentUnavailable => 'Załącznik niedostępny';
 
   @override
@@ -15532,11 +15558,11 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Agent czeka na Ciebie';
+  String get notificationAgentAwaitingInput => 'Agent wymaga uwagi';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Gdy agent potrzebuje Twojej zgody, odpowiedzi lub działających danych logowania';
+      'Gdy agent potrzebuje zgody, odpowiedzi lub prawidłowych danych logowania albo reguły blokują działanie';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15609,4 +15635,384 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Serwer się zatrzymuje';
+
+  @override
+  String get skillEvalAbsent => 'Brak vs dostępność';
+
+  @override
+  String get skillEvalAmbient => 'Umiejętności dostępne w tle';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Odwołanie do artefaktu: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · powtórzenie $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Próby';
+
+  @override
+  String get skillEvalAvailableEvent => 'Dostępne';
+
+  @override
+  String get skillEvalBaseline => 'Hash poprzedniej wersji';
+
+  @override
+  String get skillEvalBodyLoad => 'Wczytano treść';
+
+  @override
+  String get skillEvalBudgetCents => 'Budżet (centy amerykańskie)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Płatna ocena korzysta z wybranego dostawcy i budżetu. Wyniki skanowania bezpieczeństwa są osobne.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Budżety subskrypcji śledzą użycie według równoważnych cen API, a nie kwoty faktur. Trwające wywołanie może przekroczyć budżet; po osiągnięciu limitu kolejne nie są uruchamiane. Skanowanie bezpieczeństwa jest niezależne.';
+
+  @override
+  String get skillEvalCancel => 'Anuluj przebieg';
+
+  @override
+  String get skillEvalCancelled => 'Anulowano';
+
+  @override
+  String get skillEvalCancelling => 'Anulowanie';
+
+  @override
+  String get skillEvalComparison => 'Porównanie';
+
+  @override
+  String get skillEvalCompleted => 'Ukończono';
+
+  @override
+  String get skillEvalComposition => 'Skład';
+
+  @override
+  String get skillEvalCorpus => 'Zestaw zadań';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString powtórzeń';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Zaobserwowano wszystkie zaplanowane próby';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Hash bieżącego pakietu: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Wyłącz oceny aktualizacji';
+
+  @override
+  String get skillEvalEnableUpdates => 'Włącz oceny aktualizacji';
+
+  @override
+  String get skillEvalExport => 'Kopiuj JSON z usuniętymi danymi wrażliwymi';
+
+  @override
+  String get skillEvalFailed => 'Niepowodzenie';
+
+  @override
+  String get skillEvalForced => 'Wymuszone wczytanie vs brak';
+
+  @override
+  String get skillEvalForcedEvent => 'Wymuszone wczytanie';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Hash pakietu jest niedostępny na tym serwerze. Ocena jest wyłączona.';
+
+  @override
+  String get skillEvalHistory => 'Historia wersji';
+
+  @override
+  String get skillEvalImproved => 'Poprawa';
+
+  @override
+  String get skillEvalIncomplete => 'Niekompletne';
+
+  @override
+  String get skillEvalInconclusive => 'Niejednoznaczne';
+
+  @override
+  String get skillEvalInferred => 'Wywnioskowane';
+
+  @override
+  String get skillEvalInterrupted => 'Przerwano';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Nie można zaobserwować wczytania umiejętności; brak zdarzenia nie dowodzi, że ją zignorowano.';
+
+  @override
+  String get skillEvalModel => 'Wybrany model';
+
+  @override
+  String get skillEvalNoAttempts => 'Nie ma jeszcze prób.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Brak dostępnych połączonych modeli. Najpierw połącz dostawcę w Ustawieniach.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Brak poprzedniego hasha w historii kampanii. Oceń poprzednią wersję przed jej zastąpieniem.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Nie ma jeszcze raportu; częściowe wyniki prób są dostępne.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Nie wybrano obszaru roboczego.';
+
+  @override
+  String get skillEvalNoTasks => 'Nie zgłoszono jeszcze zadań.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Nie zarejestrowano danych z weryfikacji.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Nie oceniono tych dokładnych bajtów. Skanowanie nie stanowi dowodu działania.';
+
+  @override
+  String get skillEvalNotVerified => 'Niezweryfikowane';
+
+  @override
+  String get skillEvalObserved => 'Zaobserwowane';
+
+  @override
+  String get skillEvalOpenQuality => 'Otwórz Jakość';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Domyślnie zapisanie umiejętności nie uruchamia płatnej oceny. Jeśli wyraźnie włączysz automatyczną ponowną ocenę po aktualizacji, zapis uruchomi płatną ponowną ocenę w ramach ustalonego budżetu.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Najpierw oceń wersję, aby skonfigurować zasady aktualizacji.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Konfiguracja zasad aktualizacji';
+
+  @override
+  String get skillEvalPartial => 'Częściowe dane; brak werdyktu o wdrożeniu';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString z $plannedString prób';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Dostawca: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Kampanie umiejętności w obszarze roboczym i dane dotyczące poszczególnych wersji.';
+
+  @override
+  String get skillEvalQueued => 'W kolejce';
+
+  @override
+  String get skillEvalReconnecting => 'Ponowne łączenie z migawkami kampanii…';
+
+  @override
+  String get skillEvalRefresh => 'Odśwież';
+
+  @override
+  String get skillEvalReferenceLoad => 'Wczytano odwołanie';
+
+  @override
+  String get skillEvalRepetitions => 'Powtórzenia na zadanie';
+
+  @override
+  String get skillEvalReport => 'Raport z wynikami';
+
+  @override
+  String get skillEvalRunning => 'W toku';
+
+  @override
+  String get skillEvalScriptExecution => 'Wykonano skrypt';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Wydano: $spent / budżet $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Rozpocznij ocenę';
+
+  @override
+  String get skillEvalStartTitle => 'Porównaj wersje umiejętności';
+
+  @override
+  String get skillEvalStale => 'Nieaktualne';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Nieaktualne: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Odrębne klastry zadań: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes zweryfikowanych) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Zadania według wariantu';
+
+  @override
+  String get skillEvalToolError => 'Błąd narzędzia';
+
+  @override
+  String get skillEvalTools => 'Zdarzenia narzędzi';
+
+  @override
+  String get skillEvalTitle => 'Ocena umiejętności';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Niedostępne: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Nieznane';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Niezapisane zmiany nie są uwzględniane. Zapisz je przed oceną.';
+
+  @override
+  String get skillEvalUncertainty => 'Przedział niepewności';
+
+  @override
+  String get skillEvalVerified => 'Zweryfikowane';
+
+  @override
+  String get skillEvalVerifiers => 'Weryfikacja';
+
+  @override
+  String get skillEvalVerdict => 'Werdykt';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Kopiowanie zakończone: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Naruszenie planu';
+
+  @override
+  String get skillEvalPreserved => 'Jakość zachowana';
+
+  @override
+  String get skillEvalPrevious => 'Poprzednia vs bieżąca';
+
+  @override
+  String get skillEvalRegressed => 'Potwierdzona regresja';
+
+  @override
+  String get skillEvalCostRegression => 'Regresja kosztów';
+
+  @override
+  String get skillEvalHarnessError => 'Błąd środowiska testowego';
+
+  @override
+  String get skillBehaviorRouting => 'Kierowanie umiejętności';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive oczekiwanych użyć · $falsePositive nieoczekiwanych użyć · $falseNegative pominiętych użyć · $trueNegative prawidłowych pominięć';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive niepewnych użyć · $negative niepewnych pominięć · $notOffered niezaoferowanych';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Zaobserwowana precyzja $precision · czułość $recall · odsetek fałszywie dodatnich $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Wymuszone ramię · tylko diagnostyka';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Wskaźniki obejmują tylko obserwowalne dostępy. Dostęp przez powłokę lub wyszukiwanie może pozostać nieznany; wczytanie umiejętności nie dowodzi jej zastosowania.';
+
+  @override
+  String get skillBehaviorSafety => 'Bezpieczeństwo syntetyczne';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts zaliczonych kontroli artefaktów · $denials odmów według zasad · $violations naruszeń chronionych plików';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Kontrole artefaktów są syntetyczne i nie odzwierciedlają częstości rzeczywistych ataków; rzeczywiste skutki uboczne nie są monitorowane.';
+
+  @override
+  String get skillBehaviorUtility => 'Użyteczność według rodziny';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts zweryfikowanych sukcesów';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Wszystkie próby wlicza się do mianownika użyteczności, również nieudane i nieukończone.';
 }

@@ -3,7 +3,7 @@ title: Arsitektur
 description: Bagaimana Control Center disusun dengan model server klien tipis, Clean Architecture yang mengutamakan fitur, serta port dan adapter.
 dateModified: 2026-09-19
 slug: id-ID/panduan-pengguna/konsep/arsitektur
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Ringkasan
@@ -26,7 +26,7 @@ Ini adalah **workspace Dart** dengan satu lockfile yang sudah diresolusi berisi 
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Lapisan domain**: entitas Dart murni, objek nilai, antarmuka repositori, port, dan layanan domain. Tanpa impor infrastruktur sama sekali (tanpa dio, drift, atau model jaringan).
+- **Lapisan domain**: entitas Dart murni, objek nilai, antarmuka repositori, port, dan layanan domain. Tanpa impor infrastruktur sama sekali (tanpa rhttp, drift, atau model jaringan).
 - **Lapisan presentasi**: layar, widget, notifier. Tidak ada akses langsung ke drift/DAO/lapisan data; semuanya melewati provider Riverpod → repositori.
 - **Lapisan infrastruktur**: implementasi konkret port domain dan antarmuka repositori. Bergantung pada domain, tidak pernah sebaliknya.
 
@@ -122,7 +122,7 @@ Kedua basis data dimiliki oleh `cc_persistence` dan hanya dibuka oleh `cc_server
 
 Semua HTTP eksternal berada di server. Klien tidak pernah menghubungi GitHub, Linear, atau Google secara langsung — mereka memanggil operasi RPC server dan bahkan media jarak jauh diambil melalui endpoint `/proxy/media` server, bukan dari origin hulu.
 
-- Klien **dio** di `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, dan `GoogleCalendarApiClient`
+- Klien **rhttp** di `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, dan `GoogleCalendarApiClient`
 - Penyuntikan token autentikasi melalui interceptor, termasuk interceptor Google OAuth per akun di `cc_server_core` yang menyegarkan token saat 401
 - Semua error dipetakan melalui `packages/cc_infra/lib/src/network/error_mapper.dart` → subclass `AppException` bertipe yang didefinisikan di `cc_domain`
 

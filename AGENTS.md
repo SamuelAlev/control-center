@@ -18,7 +18,7 @@ Keep this file for cross-cutting coding rules. Put subsystem details in the owni
 ## Boundaries
 
 - `cc_server` owns persistence, external APIs, business logic and execution. Desktop/web/phone clients render server state and forward actions; no database, forge API, sandbox or process logic in `lib/`. A local desktop hosts the server, not a second implementation. Fleet workers execute leased jobs without durable state, auth, approvals or budgets.
-- Dependency direction: presentation → providers/application → domain ← infrastructure. `cc_domain` is pure Dart: no Flutter, dio, drift, `dart:io` or FFI. Presentation never imports DAOs or feature data layers; core never imports feature data directories.
+- Dependency direction: presentation → providers/application → domain ← infrastructure. `cc_domain` is pure Dart: no Flutter, rhttp, drift, `dart:io` or FFI. Presentation never imports DAOs or feature data layers; core never imports feature data directories.
 - Domain owns repository interfaces, entities and ports; adapters implement them. Entities validate construction, implement equality/hashCode and use enums/sealed status types.
 - Shared domain lives in `packages/cc_domain/lib/core/domain/`; feature domain in `packages/cc_domain/lib/features/<name>/domain/`. Client features own `presentation/` and `providers/`. Keep screens under 250 lines and widgets under 300.
 - Riverpod owns client state (`Notifier`, `AsyncNotifier`, `FutureProvider`, `Provider`). Use `ref.read/watch`, never `ProviderScope.containerOf()`. Central infrastructure is in `lib/core/providers/`; repository bindings in `lib/di/`. MCP tools take typed dependencies, never `Ref`.

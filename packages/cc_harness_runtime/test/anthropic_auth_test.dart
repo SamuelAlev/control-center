@@ -17,6 +17,8 @@ class _CapturingHttp extends ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     this.headers = headers;
     this.body = body;

@@ -1,6 +1,6 @@
 /// Unified conversation message types for the built-in agent loop (harness).
 ///
-/// These types are pure Dart — no `dart:io`, `dio`, `drift`, or `flutter`
+/// These types are pure Dart — no `dart:io`, `rhttp`, `drift`, or `flutter`
 /// dependencies — so the agent loop can be unit-tested without HTTP or a
 /// filesystem. The format is provider-agnostic: a [HarnessMessage] converts
 /// cleanly to both the Anthropic Messages API and the OpenAI Chat Completions
@@ -8,6 +8,8 @@
 library;
 
 import 'dart:convert';
+
+import 'package:cc_harness/src/context/tool_output_reference.dart';
 
 /// Who authored a [HarnessMessage].
 enum HarnessRole {
@@ -54,6 +56,7 @@ sealed class HarnessContentBlock {
           input: (json['input'] as Map?)?.cast<String, dynamic>() ?? const {},
         );
       case 'tool_result':
+        final rawReference = json['output_reference'];
         return HarnessToolResultBlock(
           toolUseId: json['tool_use_id'] as String? ?? '',
           content: json['content'] as String? ?? '',
@@ -65,6 +68,17 @@ sealed class HarnessContentBlock {
                   data: raw['data'] as String? ?? '',
                   mediaType: raw['media_type'] as String? ?? '',
                 ),
+          ],
+          // Absent/null/non-map all mean "no handle": a transcript written
+          // before references existed must still load.
+          outputReference: rawReference is Map
+              ? ToolOutputReference.fromJson(
+                  rawReference.cast<String, dynamic>(),
+                )
+              : null,
+          toolReferences: [
+            for (final raw in (json['tool_references'] as List?) ?? const [])
+              if (raw is String) raw,
           ],
         );
       case 'image':
@@ -167,6 +181,8 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     required this.content,
     this.isError = false,
     this.images = const [],
+    this.outputReference,
+    this.toolReferences = const [],
   });
 
   /// The [HarnessToolUseBlock.id] this result answers.
@@ -188,6 +204,62 @@ class HarnessToolResultBlock extends HarnessContentBlock {
   /// provider follows the result with a `user` turn carrying the images).
   final List<HarnessImageBlock> images;
 
+  /// A durable handle to the tool's ORIGINAL output, when it was stored.
+  ///
+  /// Set when [content] is a bounded/compacted copy of something bigger and the
+  /// full text is still retrievable. This never travels on the provider wire —
+  /// the marker already inside [content] names the handle to the model, and an
+  /// unknown field would be rejected — so this exists for the transcript, the
+  /// compactor's accounting and the retrieval tool.
+  final ToolOutputReference? outputReference;
+
+  /// Names of tools this result ACTIVATED (Anthropic `tool_reference` blocks).
+  ///
+  /// A client-side tool search returns references instead of schemas so the
+  /// provider can expand them in place without rewriting the cached tools
+  /// prefix. Providers without a native reference mechanism render these as a
+  /// plain-text note (see [portableContent]) rather than failing or dropping
+  /// the activation, which would leave the model told about a tool it cannot
+  /// then find.
+  final List<String> toolReferences;
+
+  /// Returns a copy with selected fields overridden.
+  ///
+  /// [outputReference] and [toolReferences] are replaced when supplied — a
+  /// null [outputReference] cannot be expressed as "clear it" (use the
+  /// constructor for that), which matches every current caller: a store writes
+  /// a handle onto a block that had none.
+  HarnessToolResultBlock copyWith({
+    String? content,
+    bool? isError,
+    List<HarnessImageBlock>? images,
+    ToolOutputReference? outputReference,
+    List<String>? toolReferences,
+  }) => HarnessToolResultBlock(
+    toolUseId: toolUseId,
+    content: content ?? this.content,
+    isError: isError ?? this.isError,
+    images: images ?? this.images,
+    outputReference: outputReference ?? this.outputReference,
+    toolReferences: toolReferences ?? this.toolReferences,
+  );
+
+  /// [content] plus, when tools were activated, a plain-text note naming them.
+  ///
+  /// The portable form used by providers whose wire has no `tool_reference`
+  /// block (and by the OpenAI-compatible family generally): the model must
+  /// still learn that new tools became callable, and a `tool`/`function` message
+  /// carries text and nothing else.
+  String get portableContent {
+    if (toolReferences.isEmpty) {
+      return content;
+    }
+    final names = toolReferences.join(', ');
+    return content.isEmpty
+        ? 'Activated tools: $names.'
+        : '$content\n\nActivated tools: $names.';
+  }
+
   @override
   Map<String, dynamic> toJson() => {
     'type': 'tool_result',
@@ -195,6 +267,8 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     'content': content,
     'is_error': isError,
     if (images.isNotEmpty) 'images': [for (final i in images) i.toJson()],
+    if (outputReference != null) 'output_reference': outputReference!.toJson(),
+    if (toolReferences.isNotEmpty) 'tool_references': toolReferences,
   };
 
   @override
@@ -204,11 +278,31 @@ class HarnessToolResultBlock extends HarnessContentBlock {
           other.toolUseId == toolUseId &&
           other.content == content &&
           other.isError == isError &&
+          other.outputReference == outputReference &&
+          _sameStrings(other.toolReferences, toolReferences) &&
           _sameImages(other.images, images);
 
   @override
-  int get hashCode =>
-      Object.hash(toolUseId, content, isError, Object.hashAll(images));
+  int get hashCode => Object.hash(
+    toolUseId,
+    content,
+    isError,
+    outputReference,
+    Object.hashAll(toolReferences),
+    Object.hashAll(images),
+  );
+
+  static bool _sameStrings(List<String> a, List<String> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   static bool _sameImages(
     List<HarnessImageBlock> a,
@@ -296,6 +390,12 @@ final Expando<String> _textContentMemo = Expando<String>('harnessTextContent');
 final Expando<List<HarnessToolUseBlock>> _toolUsesMemo =
     Expando<List<HarnessToolUseBlock>>('harnessToolUses');
 
+/// The normalized (sorted) activation metadata of a [HarnessMessage], memoized
+/// so equality and hashing do not re-sort on every comparison.
+final Expando<List<String>> _activatedNamesMemo = Expando<List<String>>(
+  'harnessActivatedToolNames',
+);
+
 /// The serialized `input` of a [HarnessToolUseBlock], memoized: the providers
 /// re-`jsonEncode` every accumulated tool-call argument map on every turn,
 /// which is O(n²) over a run.
@@ -306,11 +406,22 @@ final Expando<String> _encodedInputMemo = Expando<String>(
 /// One message in the conversation history.
 class HarnessMessage {
   /// Creates a message from an explicit block list.
-  const HarnessMessage({required this.role, required this.content});
+  const HarnessMessage({
+    required this.role,
+    required this.content,
+    this.activatedToolNames = const [],
+    this.isSnapshotCarrier = false,
+  });
 
   /// Convenience: a single-text user turn.
-  factory HarnessMessage.user(String text) =>
-      HarnessMessage(role: HarnessRole.user, content: [HarnessTextBlock(text)]);
+  factory HarnessMessage.user(
+    String text, {
+    List<String> activatedToolNames = const [],
+  }) => HarnessMessage(
+    role: HarnessRole.user,
+    content: [HarnessTextBlock(text)],
+    activatedToolNames: activatedToolNames,
+  );
 
   /// Convenience: a single-text system turn.
   factory HarnessMessage.system(String text) => HarnessMessage(
@@ -325,8 +436,18 @@ class HarnessMessage {
   );
 
   /// Convenience: a message carrying one or more tool results (role `tool`).
-  factory HarnessMessage.toolResults(List<HarnessToolResultBlock> results) =>
-      HarnessMessage(role: HarnessRole.tool, content: results);
+  ///
+  /// [activatedToolNames] records the deferred tools this turn activated —
+  /// see [activatedToolNames] for why the activation cannot live only in the
+  /// result blocks.
+  factory HarnessMessage.toolResults(
+    List<HarnessToolResultBlock> results, {
+    List<String> activatedToolNames = const [],
+  }) => HarnessMessage(
+    role: HarnessRole.tool,
+    content: results,
+    activatedToolNames: activatedToolNames,
+  );
 
   /// Rebuilds a message from [toJson]'s output.
   ///
@@ -343,6 +464,13 @@ class HarnessMessage {
         if (raw is Map)
           HarnessContentBlock.fromJson(raw.cast<String, dynamic>()),
     ],
+    // Tolerant: an older transcript has no such key, and a non-string entry is
+    // ignored rather than failing the whole history load.
+    activatedToolNames: [
+      for (final raw in (json['activated_tool_names'] as List?) ?? const [])
+        if (raw is String) raw,
+    ],
+    isSnapshotCarrier: json['snapshot_carrier'] == true,
   );
 
   /// Author of the message.
@@ -350,6 +478,59 @@ class HarnessMessage {
 
   /// Ordered content blocks (1+).
   final List<HarnessContentBlock> content;
+
+  /// Deferred-tool names this message's turn made callable, as machine-read able
+  /// metadata rather than prose.
+  ///
+  /// **Why this is not derived from the content.** A native activation is
+  /// carried by a `tool_reference` inside the search tool's result, and a text
+  /// or snapshot FOLD replaces that whole result with a summary — so the
+  /// reference, the only thing the provider can expand into a schema, is gone.
+  /// The tool then stays nominally active while no request can obtain its
+  /// definition, and a restart from the compacted transcript cannot recover it
+  /// at all. Persisting the names on the message that activated them lets a
+  /// fold carry them forward as a union and lets the loop re-admit a real,
+  /// callable definition for a name whose reference was folded away.
+  ///
+  /// Internal metadata: it is persisted with the message but never serialized
+  /// to a provider wire (each provider builds its own request JSON).
+  final List<String> activatedToolNames;
+
+  /// Whether this message IS the snapshot page whose text the persisted
+  /// `HarnessTranscript.retainedSnapshotSource` describes.
+  ///
+  /// **Why an explicit identity.** The source must be cleared when the page it
+  /// describes leaves the history, and cleared only then. Counting images is
+  /// not the same question: a rewind can drop the page while keeping an
+  /// unrelated screenshot, and an image count then says "a carrier survived"
+  /// while the source is stale — so a later refusal rehydrates text the rewind
+  /// explicitly discarded. Which message is the page is a fact only the
+  /// producer knows, so the producer stamps it here and the kernel keys on the
+  /// stamp.
+  ///
+  /// Internal metadata: persisted with the message, never sent to a provider,
+  /// and set ONLY by the snapshot compactor that renders the page (a
+  /// rehydration builds a plain text message and therefore drops the marker,
+  /// which is what tells the kernel the page is gone).
+  final bool isSnapshotCarrier;
+
+  /// [activatedToolNames] in a stable order, memoized.
+  ///
+  /// Activation is a set semantically — the same tools activated in a different
+  /// order are the same activation — so equality and hashing compare this
+  /// normalized form, and it is computed once per message rather than on every
+  /// comparison.
+  List<String> get normalizedActivatedToolNames {
+    final cached = _activatedNamesMemo[this];
+    if (cached != null) {
+      return cached;
+    }
+    final value = activatedToolNames.length < 2
+        ? activatedToolNames
+        : ([...activatedToolNames]..sort());
+    _activatedNamesMemo[this] = value;
+    return value;
+  }
 
   /// All text blocks concatenated.
   ///
@@ -393,18 +574,43 @@ class HarnessMessage {
     return value;
   }
 
+  /// Returns a copy with selected fields overridden.
+  ///
+  /// [activatedToolNames] replaces the metadata when supplied, which is how a
+  /// fold hands the union of a whole folded span to its single replacement
+  /// message — without fabricating the assistant tool calls and results the
+  /// span contained.
+  HarnessMessage copyWith({
+    HarnessRole? role,
+    List<HarnessContentBlock>? content,
+    List<String>? activatedToolNames,
+    bool? isSnapshotCarrier,
+  }) => HarnessMessage(
+    role: role ?? this.role,
+    content: content ?? this.content,
+    activatedToolNames: activatedToolNames ?? this.activatedToolNames,
+    isSnapshotCarrier: isSnapshotCarrier ?? this.isSnapshotCarrier,
+  );
+
   /// JSON form for persistence / debugging.
   Map<String, dynamic> toJson() => {
     'role': role.name,
     'content': content.map((b) => b.toJson()).toList(),
+    if (activatedToolNames.isNotEmpty)
+      'activated_tool_names': activatedToolNames,
+    if (isSnapshotCarrier) 'snapshot_carrier': true,
   };
 
-  /// Value equality over the role and every block, in order.
+  /// Value equality over the role, every block in order, and the activation
+  /// metadata as a set.
   ///
   /// The blocks all defined `==`; the message did not, so two identical turns
   /// compared unequal and anything keyed on a message (a dedupe, a
   /// "did compaction change this?" diff, a test expectation) had to compare
-  /// `toJson()` strings instead.
+  /// `toJson()` strings instead. The activation metadata is part of that
+  /// identity: two histories whose messages differ only in which tools they
+  /// activated are NOT the same history, and a diff that ignored it would
+  /// report "no change" for a fold that silently dropped an activation.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) {
@@ -412,8 +618,19 @@ class HarnessMessage {
     }
     if (other is! HarnessMessage ||
         other.role != role ||
-        other.content.length != content.length) {
+        other.content.length != content.length ||
+        other.isSnapshotCarrier != isSnapshotCarrier) {
       return false;
+    }
+    final mine = normalizedActivatedToolNames;
+    final theirs = other.normalizedActivatedToolNames;
+    if (mine.length != theirs.length) {
+      return false;
+    }
+    for (var i = 0; i < mine.length; i++) {
+      if (mine[i] != theirs[i]) {
+        return false;
+      }
     }
     for (var i = 0; i < content.length; i++) {
       if (other.content[i] != content[i]) {
@@ -424,5 +641,10 @@ class HarnessMessage {
   }
 
   @override
-  int get hashCode => Object.hash(role, Object.hashAll(content));
+  int get hashCode => Object.hash(
+    role,
+    Object.hashAll(content),
+    Object.hashAll(normalizedActivatedToolNames),
+    isSnapshotCarrier,
+  );
 }

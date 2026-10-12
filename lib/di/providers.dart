@@ -66,11 +66,9 @@ import 'package:control_center/features/demo/demo_world.dart';
 import 'package:control_center/features/settings/data/privacy_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// NOTE: cc_domain repository interfaces / value objects are pure-Dart and
-// web-safe. The credentials/notification/calendar service classes named below
-// are likewise web-safe (keychain + dio); the desktop notification delivery
-// lives in `core/notifications/` (pure client-side rendering, no server
-// dependency — the events it renders come over RPC via `RpcNotificationMapper`).
+// Domain repository interfaces and value objects are pure Dart and web-safe.
+// Desktop notification rendering lives in `core/notifications/`; its events
+// arrive over RPC through `RpcNotificationMapper`.
 
 /// Provides the shared [SchemaValidatorPort] used by ticketing, dispatch and
 /// pipelines to validate structured agent output against declared contracts.

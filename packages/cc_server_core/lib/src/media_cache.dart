@@ -131,6 +131,14 @@ final class MediaCacheFailure extends MediaCacheResolution {
   const MediaCacheFailure();
 }
 
+/// Cancellation of a shared upstream fetch. It fires only if the last waiting
+/// consumer leaves *before* the fetch completes; one disconnected consumer
+/// cannot abort work another authorized consumer still needs.
+abstract interface class MediaFetchCancellation {
+  Future<void> get cancelled;
+  bool get isCancelled;
+}
+
 /// Persistent bounded disk cache for `/proxy/media` (key = hash of `(url, w)`).
 ///
 /// Layout: `<sha>.body` + `<sha>.json`. TTL from upstream `max-age` clamped to `[minTtl, maxTtl]`;
@@ -164,8 +172,9 @@ class MediaCache {
   final Duration _maxStaleAge;
   final DateTime Function() _clock;
 
-  /// In-flight upstream fetches, for single-flight dedup.
-  final Map<String, Future<MediaFetchOutcome>> _inflight = {};
+  /// In-flight upstream fetches, retained until the fetch actually finishes.
+  /// An abandoned fetch is never joined by new consumers.
+  final Map<String, _MediaFlight> _inflight = {};
   bool _sweepScheduled = false;
 
   /// Hit/miss/eviction counters, surfaced through `/healthz`. The media cache
@@ -219,57 +228,111 @@ class MediaCache {
   File _metaFile(String key) => File(p.join(_dir.path, '$key.json'));
 
   /// Resolves [key] to bytes the caller can serve, fetching upstream via
-  /// [fetch] only when the stored entry is missing or stale.
-  ///
-  /// [fetch] receives the stored validators (if any) so it can issue a
-  /// conditional request and returns exactly one [MediaFetchOutcome].
+  /// [fetch] only when the stored entry is missing or stale. [cancelled] is
+  /// the individual request's cancellation signal; [fetch] receives a separate
+  /// signal that fires if every consumer abandons the unfinished shared fetch.
   Future<MediaCacheResolution> resolve(
     String key,
-    Future<MediaFetchOutcome> Function({String? etag, String? lastModified})
-    fetch,
-  ) async {
-    // Two attempts cover the waiter-won-a-stream case (loop once to become
-    // the initiator); anything still failing after that is a plain failure.
+    Future<MediaFetchOutcome> Function({
+      String? etag,
+      String? lastModified,
+      required MediaFetchCancellation cancellation,
+    })
+    fetch, {
+    Future<void>? cancelled,
+    bool Function()? isCancelled,
+  }) async {
+    bool abandoned() => isCancelled?.call() ?? false;
+    // A stream can serve only the initiating consumer. Its waiters retry as
+    // independent initiators once the first flight has settled.
     for (var attempt = 0; attempt < 2; attempt++) {
+      if (abandoned()) return const MediaCacheFailure();
       final meta = await _readMeta(key);
+      if (abandoned()) return const MediaCacheFailure();
       if (meta != null &&
           meta.expiresAtMs > _clock().millisecondsSinceEpoch &&
           await _bodyFile(key).exists()) {
+        if (abandoned()) return const MediaCacheFailure();
         _touch(key);
-        // Counted only on the FIRST attempt: the retry loop exists for the
-        // waiter-won-a-stream case, and counting a second pass as another
-        // lookup would inflate both sides of the ratio.
-        if (attempt == 0) {
-          _stats.hit();
-        }
+        if (attempt == 0) _stats.hit();
         return MediaCacheHit(
           bodyFile: _bodyFile(key),
           contentType: meta.contentType,
         );
       }
-      if (attempt == 0) {
-        _stats.miss();
-      }
+      if (attempt == 0) _stats.miss();
+      if (abandoned()) return const MediaCacheFailure();
 
-      final initiated = !_inflight.containsKey(key);
-      // NOTE: the whenComplete action must use a BLOCK body — an arrow
-      // `() => _inflight.remove(key)` would RETURN the removed entry, i.e.
-      // the very future whenComplete produces and whenComplete waits on its
-      // action's returned future: a self-waiting deadlock.
-      final future = _inflight.putIfAbsent(
-        key,
-        () => fetch(etag: meta?.etag, lastModified: meta?.lastModified)
-            .whenComplete(() {
-              _inflight.remove(key);
-            }),
-      );
-      final MediaFetchOutcome outcome;
+      var flight = _inflight[key];
+      final initiated = flight == null || flight.isCancelled;
+      if (initiated) {
+        flight = _MediaFlight();
+        final active = flight;
+        _inflight[key] = active;
+        active.outcome =
+            Future.sync(
+                  () => fetch(
+                    etag: meta?.etag,
+                    lastModified: meta?.lastModified,
+                    cancellation: active,
+                  ),
+                )
+                .then<MediaFetchOutcome>(
+                  (value) async {
+                    active.finished = true;
+                    // Persist before releasing the flight: an arrival during disk I/O
+                    // must join these bytes, not launch a duplicate upstream fetch.
+                    if (value is MediaFetchBuffered &&
+                        value.cache &&
+                        value.bytes.length <= _maxEntryBytes &&
+                        !active.isCancelled) {
+                      active.diskWrite = _write(key, value).then((_) {
+                        _noteWritten(value.bytes.length);
+                      });
+                      await active.diskWrite!;
+                    }
+                    // A passthrough belongs to its initiator, not its waiters. If
+                    // that consumer left while fetching, nobody owns this socket.
+                    if (value is MediaFetchStream && active.ownerCancelled) {
+                      value.client.close(force: true);
+                    } else if (value is MediaFetchStream) {
+                      active.stream = value;
+                    }
+                    return value;
+                  },
+                  onError: (Object _, StackTrace __) {
+                    active.finished = true;
+                    return const MediaFetchFailed();
+                  },
+                )
+                .whenComplete(() {
+                  if (identical(_inflight[key], active)) _inflight.remove(key);
+                });
+      }
+      final active = flight;
+      active.join();
+      MediaFetchOutcome? outcome;
       try {
-        outcome = await future;
-      } catch (_) {
-        // A fetcher should report failure via MediaFetchFailed; a throw must
-        // not take the proxy down with it.
-        return await _staleOrFailure(key, meta);
+        outcome = cancelled == null
+            ? await active.outcome
+            : await Future.any<MediaFetchOutcome?>([
+                active.outcome,
+                cancelled.then((_) => null),
+              ]);
+      } finally {
+        if (initiated && (abandoned() || outcome == null)) {
+          active.cancelOwner();
+        }
+        active.leave();
+        if (outcome == null && active.isCancelled) {
+          // The final consumer holds its handler slot until the aborted
+          // outbound fetch really stops, not merely until it asks to stop.
+          await active.outcome;
+        }
+      }
+      if (abandoned() || outcome == null) {
+        if (initiated) active.cancelOwner();
+        return const MediaCacheFailure();
       }
 
       switch (outcome) {
@@ -277,8 +340,9 @@ class MediaCache {
           if (!cache || bytes.length > _maxEntryBytes) {
             return MediaCacheUncached(bytes: bytes, contentType: contentType);
           }
-          await _write(key, outcome);
-          _noteWritten(bytes.length);
+          // The flight has already persisted the shared result exactly once.
+          // If every consumer abandoned it, it was not stored or served.
+          if (abandoned()) return const MediaCacheFailure();
           return MediaCacheHit(
             bodyFile: _bodyFile(key),
             contentType: contentType,
@@ -286,24 +350,26 @@ class MediaCache {
         case MediaFetchNotModified():
           if (meta != null && await _bodyFile(key).exists()) {
             await _bumpExpiry(key, meta);
+            if (abandoned()) return const MediaCacheFailure();
             _touch(key);
             return MediaCacheHit(
               bodyFile: _bodyFile(key),
               contentType: meta.contentType,
             );
           }
-          // A 304 for an entry whose body is gone is nonsense upstream can't
-          // know about — drop the dangling meta and refetch unconditionally.
           await _deleteQuietly(_metaFile(key));
           continue;
         case MediaFetchStream():
           if (initiated) {
+            if (abandoned()) {
+              active.cancelOwner();
+              return const MediaCacheFailure();
+            }
             return MediaCachePassthrough(outcome);
           }
-          // The stream belongs to the initiating awaiter; loop to fetch again
-          // as the initiator (the in-flight entry is gone by now).
           continue;
         case MediaFetchFailed():
+          if (abandoned()) return const MediaCacheFailure();
           return _staleOrFailure(key, meta);
       }
     }
@@ -525,6 +591,36 @@ class MediaCache {
     }
     _approxTotalBytes = total;
     _stats.size(entries: -1, bytes: total);
+  }
+}
+
+final class _MediaFlight implements MediaFetchCancellation {
+  final Completer<void> _aborted = Completer<void>();
+  late Future<MediaFetchOutcome> outcome;
+  Future<void>? diskWrite;
+  MediaFetchStream? stream;
+  int _consumers = 0;
+  bool ownerCancelled = false;
+  bool finished = false;
+
+  @override
+  Future<void> get cancelled => _aborted.future;
+
+  @override
+  bool get isCancelled => _aborted.isCompleted;
+
+  void join() => _consumers++;
+
+  void leave() {
+    _consumers--;
+    if (_consumers == 0 && !finished && !_aborted.isCompleted) {
+      _aborted.complete();
+    }
+  }
+
+  void cancelOwner() {
+    ownerCancelled = true;
+    stream?.client.close(force: true);
   }
 }
 

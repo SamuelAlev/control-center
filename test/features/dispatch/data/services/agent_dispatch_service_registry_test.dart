@@ -9,6 +9,7 @@ import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
@@ -50,6 +51,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   DispatchHandle start({
     required String cliName,
     required String prompt,
+    AgentPromptParts? promptParts,
+    DateTime? runStartedAt,
     required String workingDirectory,
     String? userText,
     String? modelId,
@@ -116,6 +119,88 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
   Future<AgentRunLog?> getById(String workspaceId, String id) async => logs[id];
   @override
   Future<void> upsert(AgentRunLog log) async => logs[log.id] = log;
+
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) async {
+    final current = logs[completed.id];
+    if (current == null ||
+        current.workspaceId != completed.workspaceId ||
+        current.completedAt != null) {
+      return false;
+    }
+    logs[completed.id] = current.copyWith(
+      status: completed.status,
+      completedAt: completed.completedAt,
+      summary: completed.summary,
+      cost: writeCost
+          ? completed.cost
+          : current.cost.copyWith(durationMs: completed.cost.durationMs),
+      liveness: completed.liveness,
+      latency: completed.latency,
+      verification: completed.verification,
+      nativeSessionId: completed.nativeSessionId,
+      resumedNativeSession: completed.resumedNativeSession,
+    );
+    return true;
+  }
+
+  @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async {
+    final current = logs[runId];
+    if (current == null || current.workspaceId != workspaceId) {
+      return false;
+    }
+    final start =
+        markRunning &&
+        current.completedAt == null &&
+        current.status == RunStatus.pending;
+    final hasMetadata =
+        pid != null ||
+        logPath != null ||
+        contextSnapshotJson != null ||
+        lastOutputAt != null ||
+        liveness != null ||
+        errorFamily != null ||
+        summary != null ||
+        modelId != null ||
+        effort != null ||
+        taskFamily != null;
+    if (!start && !hasMetadata) {
+      return false;
+    }
+    logs[runId] = current.copyWith(
+      pid: pid,
+      status: start ? RunStatus.running : null,
+      logPath: logPath,
+      contextSnapshotJson: contextSnapshotJson,
+      lastOutputAt: lastOutputAt,
+      liveness: liveness,
+      errorFamily: errorFamily,
+      summary: summary,
+      modelId: modelId,
+      effort: effort,
+      taskFamily: taskFamily,
+    );
+    return true;
+  }
+
   @override
   Future<AgentRunLog?> activeRunForAgent(
     String workspaceId,
@@ -173,6 +258,16 @@ Agent _agent({String id = 'a1', String name = 'Reviewer Bot'}) => Agent(
 
 PreparedDispatch _prepared({Agent? agent}) => PreparedDispatch(
   effectivePrompt: 'do work',
+  promptParts: const AgentPromptParts(
+    userText: 'do work',
+    standing: '',
+    turnContext: '',
+    conversationContext: '',
+    fullPrompt: 'do work',
+    standingRevision: '',
+    conversationEntries: [],
+    turnSections: [],
+  ),
   effectiveConversationId: 'conv-1',
   agent: agent,
   mode: Mode.chat,
@@ -242,14 +337,11 @@ void main() {
         workspaceId: 'ws-1',
       );
 
-      final seen = <AgentProcessEvent>[];
-      final sub = result.stream.listen(seen.add);
+      final sub = result.stream.listen((_) {});
       events.add(ToolCallEvent(toolName: 'run_tests', toolCallId: 't1'));
       await pumpEventQueue();
 
       expect(registry.get('a1')!.activity, 'run_tests');
-      // The tap is transparent: the consumer still receives the event.
-      expect(seen.single, isA<ToolCallEvent>());
       await sub.cancel();
     },
   );

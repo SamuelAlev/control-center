@@ -310,6 +310,97 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
   Future<void> upsertLog(AgentRunLogsTableCompanion entry) =>
       into(agentRunLogsTable).insertOnConflictUpdate(entry);
 
+  /// Mutates only the own usage/timing columns, without an upsert that could
+  /// replace concurrent child rollups or terminal metadata.
+  Future<int> updateLogCost(
+    String workspaceId,
+    String runId,
+    AgentRunLogsTableCompanion cost,
+  ) => (update(agentRunLogsTable)
+        ..where(
+          (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
+        ))
+      .write(cost);
+
+  /// SQLite evaluates both assignments against the OLD row. Repeat the exact
+  /// new total expression for the cents projection (positive micro-USD rounds
+  /// to the nearest cent), widening legacy cents-only rows on their first add.
+  /// A single SQL statement prevents concurrent sibling writes losing deltas.
+  Future<int> addLogChildCostMicros(
+    String workspaceId,
+    String runId,
+    int amountMicros,
+  ) {
+    const total =
+        '(CASE WHEN child_cost_micros = 0 THEN child_cost_cents * 10000 '
+        'ELSE child_cost_micros END) + ?';
+    return customUpdate(
+      'UPDATE agent_run_logs SET '
+      'child_cost_micros = $total, '
+      'child_cost_cents = CAST(($total + 5000) / 10000 AS INTEGER) '
+      'WHERE id = ? AND workspace_id = ?',
+      variables: [
+        Variable.withInt(amountMicros),
+        Variable.withInt(amountMicros),
+        Variable.withString(runId),
+        Variable.withString(workspaceId),
+      ],
+      updates: {agentRunLogsTable},
+    );
+  }
+
+  /// Atomically applies supplied runtime fields while guarding ONLY the
+  /// pending→running status change. A late path/output write must survive even
+  /// if the run completed just before this call.
+  Future<int> updateLogRuntime(
+    String workspaceId,
+    String runId,
+    AgentRunLogsTableCompanion runtime, {
+    required bool hasMetadata,
+    required bool markRunning,
+  }) => transaction(() async {
+    var updated = 0;
+    if (hasMetadata) {
+      updated = await (update(agentRunLogsTable)
+            ..where(
+              (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
+            ))
+          .write(runtime);
+    }
+    if (markRunning) {
+      final started = await (update(agentRunLogsTable)
+            ..where(
+              (t) =>
+                  t.id.equals(runId) &
+                  t.workspaceId.equals(workspaceId) &
+                  t.completedAt.isNull() &
+                  t.status.equals('pending'),
+            ))
+          .write(
+            const AgentRunLogsTableCompanion(status: Value('running')),
+          );
+      if (started > 0) {
+        updated = started;
+      }
+    }
+    return updated;
+  });
+
+  /// Conditional partial terminal write; no descendant spend columns are
+  /// included, even when they change between preparing and applying the row.
+  Future<int> completeLogIfActive(
+    String workspaceId,
+    String runId,
+    AgentRunLogsTableCompanion terminal,
+  ) => (update(agentRunLogsTable)
+        ..where(
+          (t) =>
+              t.id.equals(runId) &
+              t.workspaceId.equals(workspaceId) &
+              t.completedAt.isNull(),
+        ))
+      .write(terminal);
+
   /// Deletes run logs by agent id.
   Future<int> deleteLogsByAgentId(String agentId) =>
       (delete(agentRunLogsTable)..where((t) => t.agentId.equals(agentId))).go();

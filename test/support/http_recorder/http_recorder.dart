@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart' show httpRequestUri;
+import 'package:rhttp/rhttp.dart';
 
 import 'cassette.dart';
 import 'cassette_matcher.dart';
@@ -31,17 +33,10 @@ enum RecordMode {
   passthrough,
 }
 
-/// Record/replay HTTP cassettes for a Dio client, so integration tests exercise
-/// real request shapes against deterministic, reviewable fixtures — no hand-
-/// written mocks, no flakes from upstream drift.
+/// Record/replay HTTP cassettes for rhttp clients.
 ///
-/// Redact-on-write, a hard secret-scanning gate, sequential-cursor replay with rich `requestDiff` diagnostics.
-///
-/// ```dart
-/// final recorder = await HttpRecorder.attach(dio, 'github/pr-files');
-/// // ... exercise the client ...
-/// await recorder.save();
-/// ```
+/// Redact-on-write, a hard secret-scanning gate, and sequential-cursor replay
+/// with request-diff diagnostics. Pass [interceptor] when creating the client.
 class HttpRecorder {
   HttpRecorder._({
     required this.name,
@@ -53,9 +48,7 @@ class HttpRecorder {
     this._metadata,
   });
 
-  /// The cassette name (`<name>.json` under the store directory).
   final String name;
-
   final RecordMode _mode;
   final CassetteStore _store;
   final Redactor _redactor;
@@ -65,14 +58,11 @@ class HttpRecorder {
   int _cursor = 0;
   bool _dirty = false;
 
-  /// The effective mode after `auto` resolution.
   RecordMode get mode => _mode;
+  late final Interceptor interceptor = _CassetteInterceptor(this);
 
-  /// Attaches a recorder to [dio] and returns it. Loads the cassette (for
-  /// replay) up front and resolves `auto` mode based on whether it exists and
-  /// whether we are in CI.
-  static Future<HttpRecorder> attach(
-    Dio dio,
+  /// Loads the cassette before the client's immutable interceptor list is built.
+  static Future<HttpRecorder> open(
     String name, {
     RecordMode mode = RecordMode.auto,
     String? directory,
@@ -92,171 +82,156 @@ class HttpRecorder {
         (existing != null || ci) ? RecordMode.replay : RecordMode.record,
       _ => mode,
     };
-    final cassette = resolved == RecordMode.record
-        ? Cassette(metadata: metadata)
-        : (existing ?? Cassette(metadata: metadata));
-    final recorder = HttpRecorder._(
+    return HttpRecorder._(
       name: name,
       mode: resolved,
       store: store,
       redactor: redactor ?? Redactor.defaults(),
       matcher: matcher ?? defaultRequestMatcher,
-      cassette: cassette,
+      cassette: resolved == RecordMode.record
+          ? Cassette(metadata: metadata)
+          : (existing ?? Cassette(metadata: metadata)),
       metadata: metadata,
     );
-    dio.interceptors.add(_CassetteInterceptor(recorder));
-    return recorder;
   }
 
-  /// Persists the recorded cassette to disk (record mode only). Throws
-  /// [UnsafeCassetteError] if it contains anything that looks like a secret.
+  /// Persists recorded traffic, refusing any cassette that still contains secrets.
   Future<void> save() async {
     if (_mode != RecordMode.record || !_dirty) {
       return;
     }
-    final withMeta = Cassette(
-      version: _cassette.version,
-      metadata: {'name': name, ...?_metadata},
-      interactions: _cassette.interactions,
-    );
-    await _store.write(name, withMeta);
-  }
-
-  // ---- interceptor hooks -------------------------------------------------
-
-  RequestSnapshot _snapshotRequest(RequestOptions options) {
-    final headers = <String, String>{
-      for (final entry in options.headers.entries)
-        entry.key.toLowerCase(): '${entry.value}',
-    };
-    return _redactor.redactRequest(
-      RequestSnapshot(
-        method: options.method.toUpperCase(),
-        url: options.uri.toString(),
-        headers: headers,
-        body: _encodeRequestBody(options.data),
+    await _store.write(
+      name,
+      Cassette(
+        version: _cassette.version,
+        metadata: {'name': name, ...?_metadata},
+        interactions: _cassette.interactions,
       ),
     );
   }
 
-  ResponseSnapshot _snapshotResponse(Response<dynamic> response) {
-    final headers = <String, String>{
-      for (final entry in response.headers.map.entries)
-        entry.key.toLowerCase(): entry.value.join(', '),
-    };
-    final data = response.data;
-    if (data is List<int>) {
-      return _redactor.redactResponse(
-        ResponseSnapshot(
-          status: response.statusCode ?? 0,
-          headers: headers,
-          body: base64Encode(data),
-          bodyEncoding: 'base64',
+  RequestSnapshot _snapshotRequest(HttpRequest request) =>
+      _redactor.redactRequest(
+        RequestSnapshot(
+          method: request.method.value,
+          url: httpRequestUri(request).toString(),
+          headers: {
+            for (final entry
+                in (request.headers?.toMapList() ?? <String, List<String>>{})
+                    .entries)
+              entry.key.toLowerCase(): entry.value.join(', '),
+          },
+          body: switch (request.body) {
+            null => '',
+            HttpBodyText body => body.text,
+            HttpBodyJson body => jsonEncode(body.json),
+            HttpBodyBytes body => base64Encode(body.bytes),
+            HttpBodyForm body => Uri(queryParameters: body.form).query,
+            final body => '$body',
+          },
         ),
       );
-    }
-    return _redactor.redactResponse(
-      ResponseSnapshot(
-        status: response.statusCode ?? 0,
+
+  ResponseSnapshot _snapshotResponse(HttpResponse response) =>
+      _redactor.redactResponse(
+        ResponseSnapshot(
+          status: response.statusCode,
+          headers: response.headerMap,
+          body: switch (response) {
+            HttpTextResponse() => response.body,
+            HttpBytesResponse() => base64Encode(response.body),
+            HttpStreamResponse() => throw UnsupportedError(
+              'Record buffered responses, not streams',
+            ),
+          },
+          bodyEncoding: response is HttpBytesResponse ? 'base64' : 'text',
+        ),
+      );
+
+  HttpResponse _buildResponse(HttpRequest request, ResponseSnapshot snapshot) {
+    final headers = [
+      for (final entry in snapshot.headers.entries) (entry.key, entry.value),
+    ];
+    if (request.expectBody == HttpExpectBody.text) {
+      return HttpTextResponse(
+        remoteIp: null,
+        request: request,
+        version: HttpVersion.http1_1,
+        statusCode: snapshot.status,
         headers: headers,
-        body: data is String ? data : jsonEncode(data),
-      ),
-    );
-  }
-
-  static String _encodeRequestBody(Object? data) {
-    if (data == null) {
-      return '';
+        body: snapshot.bodyEncoding == 'base64'
+            ? utf8.decode(base64Decode(snapshot.body))
+            : snapshot.body,
+      );
     }
-    if (data is String) {
-      return data;
-    }
-    if (data is Map || data is List) {
-      return jsonEncode(data);
-    }
-    return '$data';
-  }
-
-  Response<dynamic> _buildResponse(RequestOptions options, ResponseSnapshot s) {
-    final dynamic data;
-    if (s.bodyEncoding == 'base64') {
-      data = base64Decode(s.body);
-    } else if (options.responseType == ResponseType.json &&
-        _looksJson(s.headers['content-type'], s.body)) {
-      data = s.body.isEmpty ? null : jsonDecode(s.body);
-    } else {
-      data = s.body;
-    }
-    return Response<dynamic>(
-      requestOptions: options,
-      statusCode: s.status,
-      headers: Headers.fromMap({
-        for (final entry in s.headers.entries) entry.key: [entry.value],
-      }),
-      data: data,
-    );
-  }
-
-  static bool _looksJson(String? contentType, String body) {
-    if (contentType != null && contentType.toLowerCase().contains('json')) {
-      return true;
-    }
-    final trimmed = body.trimLeft();
-    return trimmed.startsWith('{') || trimmed.startsWith('[');
+    final Uint8List bytes = snapshot.bodyEncoding == 'base64'
+        ? base64Decode(snapshot.body)
+        : utf8.encode(snapshot.body);
+    return request.expectBody == HttpExpectBody.bytes
+        ? HttpBytesResponse(
+            remoteIp: null,
+            request: request,
+            version: HttpVersion.http1_1,
+            statusCode: snapshot.status,
+            headers: headers,
+            body: bytes,
+          )
+        : HttpStreamResponse(
+            remoteIp: null,
+            request: request,
+            version: HttpVersion.http1_1,
+            statusCode: snapshot.status,
+            headers: headers,
+            body: Stream.value(bytes),
+          );
   }
 }
 
 class _CassetteInterceptor extends Interceptor {
   _CassetteInterceptor(this._recorder);
-
   final HttpRecorder _recorder;
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final r = _recorder;
-    if (r._mode == RecordMode.passthrough || r._mode == RecordMode.record) {
-      handler.next(options);
-      return;
+  Future<InterceptorResult<HttpRequest>> beforeRequest(
+    HttpRequest request,
+  ) async {
+    final recorder = _recorder;
+    if (recorder._mode == RecordMode.passthrough ||
+        recorder._mode == RecordMode.record) {
+      return Interceptor.next();
     }
-    // Replay: match the next interaction in record order.
-    final incoming = r._snapshotRequest(options);
     final result = selectSequential(
-      r._cassette.interactions,
-      incoming,
-      r._matcher,
-      r._cursor,
+      recorder._cassette.interactions,
+      recorder._snapshotRequest(request),
+      recorder._matcher,
+      recorder._cursor,
     );
     if (result.interaction == null) {
-      handler.reject(
-        DioException(
-          requestOptions: options,
-          type: DioExceptionType.unknown,
-          error:
-              'Cassette "${r.name}" does not match the current request:\n'
-              '${result.detail}',
-        ),
+      throw RhttpUnknownException(
+        request,
+        'Cassette "${recorder.name}" does not match the current request:\n${result.detail}',
       );
-      return;
     }
-    r._cursor++;
-    handler.resolve(r._buildResponse(options, result.interaction!.response));
+    recorder._cursor++;
+    return Interceptor.resolve(
+      recorder._buildResponse(request, result.interaction!.response),
+    );
   }
 
   @override
-  void onResponse(
-    Response<dynamic> response,
-    ResponseInterceptorHandler handler,
-  ) {
-    final r = _recorder;
-    if (r._mode == RecordMode.record) {
-      r._cassette.interactions.add(
+  Future<InterceptorResult<HttpResponse>> afterResponse(
+    HttpResponse response,
+  ) async {
+    final recorder = _recorder;
+    if (recorder._mode == RecordMode.record) {
+      recorder._cassette.interactions.add(
         HttpInteraction(
-          request: r._snapshotRequest(response.requestOptions),
-          response: r._snapshotResponse(response),
+          request: recorder._snapshotRequest(response.request),
+          response: recorder._snapshotResponse(response),
         ),
       );
-      r._dirty = true;
+      recorder._dirty = true;
     }
-    handler.next(response);
+    return Interceptor.next();
   }
 }

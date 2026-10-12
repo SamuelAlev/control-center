@@ -2,7 +2,7 @@
 title: Bereitstellung und Clients
 description: Wie die Thin-Client-Architektur von Control Center einen Headless-Server von Desktop-, Web- und Smartphone-Clients trennt.
 slug: de-DE/handbuch/konzepte/bereitstellung
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center ist kein einzelnes Programm. Es ist eine **Thin-Client-Architektur**:
@@ -22,12 +22,14 @@ Orchestrierungs-Listener. Alles, was ein Fenster überdauern muss oder was zwei
 Clients identisch sehen sollen, liegt dort.
 
 Kein Client öffnet selbst eine Datenbankdatei. Jeder Client hält einen
-**`RemoteRpcClient`** und schickt darüber Repo-Operationen und Abonnements. Der
-Server authentifiziert die Verbindung mit dem Kopplungsschlüssel des gekoppelten
-Geräts, und danach spielt die Verbindung selbst keine Rolle mehr. **Eine
-Sitzung ist an keinen Arbeitsbereich gebunden.** Der Dispatcher ist
-zustandslos: jeder arbeitsbereichsbezogene Aufruf trägt seine eigene
-`workspace_id` in den Argumenten, und ein Aufruf ohne sie wird abgelehnt.
+**`RemoteRpcClient`** und schickt darüber Repo-Operationen und Abonnements.
+Direkte und über das Relay laufende Sitzungen erfordern gleichermaßen einen
+signierten Noise-Handshake: Der vorab geteilte Schlüssel des gekoppelten
+Geräts authentifiziert den Austausch, während frische Verkehrsschlüssel jede
+Sitzung verschlüsseln. **Eine Sitzung ist an keinen Arbeitsbereich gebunden.**
+Der Dispatcher ist zustandslos: jeder arbeitsbereichsbezogene Aufruf trägt
+seine eigene `workspace_id` in den Argumenten, und ein Aufruf ohne sie wird
+abgelehnt.
 
 Das ist so gewollt. Zwei Clients an einem Server können so in verschiedenen
 Arbeitsbereichen sitzen, ohne dass der Server einen „aktuellen Arbeitsbereich“
@@ -99,10 +101,11 @@ Die gesamte Oberfläche, jeder Bildschirm und jede Funktion, liest und schreibt
 Der Web-Build ist dieselbe Flutter-App, für den Browser übersetzt, gehostet
 unter [app.usectrl.dev](https://app.usectrl.dev), damit nichts zu installieren
 ist. Ein Browser kann keinen Subprozess starten. Der Web-Client ist deshalb
-**immer** entfernt: er baut eine Verbindung zu einem `cc_server` über `wss://`
-auf und zeichnet die vollständige Desktop-Oberfläche. Einmal verbunden zeigt
-er dieselben Bildschirme derselben Fleet, weil es derselbe Code über dasselbe
-RPC ist. Die Lücken sind die wenigen Stellen, die eine native Fähigkeit
+**immer** entfernt: er baut eine Verbindung zu einem `cc_server` über eine
+verschlüsselte WebSocket-Sitzung auf und zeichnet die vollständige
+Desktop-Oberfläche. Einmal verbunden zeigt er dieselben Bildschirme derselben
+Fleet, weil er denselben Code über dasselbe RPC nutzt. Die Lücken sind die
+wenigen Stellen, die eine native Fähigkeit
 brauchen, die ein Browser nicht hat. Die Qualitätsschicht der
 Besprechungsaufnahme weiter unten ist die wichtigste, Benachrichtigungen
 des Betriebssystems eine weitere.
@@ -128,28 +131,34 @@ es. Ein Server akzeptiert Browser-Origins nur auf seiner Liste
 `--allowed-origins`, die standardmäßig `https://app.usectrl.dev` enthält. Wer
 das Bundle selbst hostet, trägt dessen Origin dort ein.
 
-Medien (Avatare, Feed-Bilder, PR-Screenshots) laufen über den Proxy-Endpunkt
-des Servers, statt die vorgelagerten Hosts direkt anzufragen. Ein Browser ruft
-so keine beliebige Origin ab. Der ausgelieferte Client setzt bei jeder Anfrage
-eine Content-Security-Policy anhand eines nicht sensiblen Cookies, sodass nur
-die Origin des verbundenen Servers erlaubt ist.
+Medien (Avatare, Feed-Bilder, PR-Screenshots), Uploads, Sicherungen und
+HTTP/WebSockets des eingebetteten Editors laufen durch den verschlüsselten
+Ressourcen-Tunnel, nicht über lesbare öffentliche HTTP-Routen; signierte Pfade
+erfordern weiterhin eine Autorisierung. Das vertrauenswürdige Editor-Frontend
+läuft auf der eigenen Origin der Web-App. Sein Service Worker leitet
+Editor-Anfragen über die bestehende verschlüsselte Sitzung an `cc_server`
+weiter, der die Dateien und das code-server-Backend besitzt. Der Browser
+braucht HTTPS oder einen sicheren Loopback-Kontext für Service Worker. Native
+Clients nutzen eine Fassade mit Capability-Begrenzung auf Loopback.
 
 ### Smartphone-Begleiter (cc_remote)
 
 Die **Remote**-App ist ein eigener, schlankerer Client, eine Flutter-Web-PWA
 unter [remote.usectrl.dev](https://remote.usectrl.dev/). Sie deckt bewusst nur
-einen Ausschnitt ab. Sie koppelt sich über ein vermitteltes WebSocket-Relay,
-dessen Frames Ende zu Ende versiegelt sind, und spricht einen überwiegend
-lesenden Ausschnitt der Tool-Oberfläche: Tickets, Nachrichten und den Newsfeed
-lesen, eine Antwort senden oder ein Ticket aktualisieren.
+einen Ausschnitt ab. Sie verbindet sich, wenn möglich, direkt oder über ein
+vermitteltes Relay; beide Wege erfordern Ende-zu-Ende-Verschlüsselung. Sie
+spricht einen überwiegend lesenden Ausschnitt der Tool-Oberfläche: Tickets,
+Nachrichten und den Newsfeed lesen, eine Antwort senden oder ein Ticket
+aktualisieren.
 
 Ein Smartphone ist ein **Prinzipal mit weniger Rechten** als ein lokaler
-Agent. Eine Tool-Richtlinie mit Default-Deny, ein Kopplungsschlüssel, der jeden
-Frame versiegelt, eine Session-Capability, die privilegierte Operationen (die
-Kopplung zum Beispiel) aus einem Begleit-Client aussperrt, die Rollen- und
+Agent. Eine Tool-Richtlinie mit Default-Deny, eine Session-Capability, die
+privilegierte Operationen (die Kopplung zum Beispiel) aus einem Begleit-Client
+aussperrt, die Rollen- und
 Repo-Prüfungen pro Aufruf von oben und eine Begrenzung der Aufrufrate halten
 eine freigegebene oder durchgesickerte Kopplung davon ab, zur vollen
-Fernsteuerung zu werden. Das Sicherheitsmodell steht unter
+Fernsteuerung zu werden. Verschlüsselung während der Übertragung gewährt keine
+Berechtigungen. Das Sicherheitsmodell steht unter
 [Fernsteuerung und Mobil](/de-DE/handbuch/konzepte/fernsteuerung/).
 
 ### MCP-Clients
@@ -234,15 +243,28 @@ und die Kalenderaktion zum Aufnehmen und Verknüpfen.
 
 ## Kopplung und Vertrauen
 
-Jeder Client weist sich mit einem **Kopplungsschlüssel** aus, der einmal
-eingerichtet wird:
+Jeder Client nutzt einen **vorab geteilten Schlüssel**, der einmal eingerichtet
+wird, um seinen signierten Noise-Handshake mit `cc_server` zu authentifizieren,
+auch über Loopback und das Relay:
 
 - Der Desktop im lokalen Modus erzeugt bei jedem Start einen frischen Schlüssel
   und übergibt ihn dem gestarteten Server über die Umgebung. Auf dem Desktop
   bleibt nichts Geheimes gespeichert.
-- Entfernte Clients (entfernter Desktop, Web, Smartphone) verwenden einen
-  Schlüssel, den der Befehl `pair` des Servers ausstellt. Er liegt im
-  Schlüsselbund des Betriebssystems, auf dem Smartphone lokal.
+- Entfernte Clients (entfernter Desktop, Web, Smartphone) nutzen einen
+  Schlüssel, den der Kopplungsvorgang oder der Befehl `pair` des Servers
+  ausstellt. Native Clients nutzen den Schlüsselbund des Betriebssystems;
+  Browser-Clients speichern ihre Kopplung lokal.
+
+Der Client prüft die signierte Identität des Servers gegen seinen gespeicherten
+Fingerabdruck-Pin. Verifiziere diesen Fingerabdruck beim ersten Verbinden über
+einen vertrauenswürdigen QR-Code oder einen anderen vertrauenswürdigen Kanal:
+Ein erster signierter Kontakt allein kann nicht authentifizieren, wer den
+Schlüssel bereitgestellt hat. Ändert sich die Identität, fällt der Client
+geschlossen aus; koppele über einen vertrauenswürdigen Kanal neu, statt die
+Abweichung zu ignorieren. Ältere Clients und Klartext-RPC können sich nicht
+verbinden. TLS bleibt für Browser-Origins, Bootstrap und öffentliche Metadaten
+nötig; `--insecure` betrifft den äußeren Server-Listener, nicht die
+erforderliche verschlüsselte Sitzung.
 
 Der Widerruf ist **sofort**, nicht aufgeschoben. Der Server beobachtet die
 Tabelle der gekoppelten Geräte und trennt jede offene Sitzung, deren Gerät die
@@ -250,14 +272,13 @@ aktive Menge verlassen hat, innerhalb von Sekunden, auf dem direkten
 WebSocket-Pfad und auf dem Relay-Pfad gleichermaßen. Du musst nicht warten,
 bis sich das Gerät wieder verbindet, um es abzutrennen.
 
-Der Schlüssel läuft nie über eine URL, die ein statischer Host sehen kann.
-Kommt er über einen Link, auf dem Smartphone oder im Browser, reist er im
-**URL-Fragment**, dem Teil nach `#`, den der Browser nie an den Server
-schickt, der die Seite ausliefert. Diese Invariante gilt für beide, und sie
-ist die, die sich zu merken lohnt. Der Web-Client hat zwei weitere Einstiege.
-Im Verbindungsformular fügst du Server und Schlüssel direkt ein. Ein
-Einladungscode wird gegen eine Zugangsberechtigung eingelöst, die nur für
-diesen Browser ausgestellt wurde.
+Kommt der Schlüssel über einen Link, auf dem Smartphone oder im Browser, reist
+er im **URL-Fragment**, dem Teil nach `#`, den Browser nicht in der Anfrage an
+den Seitenhost schicken. Das JavaScript der Seite kann ihn trotzdem lesen,
+also vertraue diesem Host und halte den Link geheim. Der Web-Client hat
+außerdem ein Verbindungsformular, in dem du Server und Schlüssel direkt
+einfügst, und einen Einladungscode, den er gegen eine Zugangsberechtigung
+einlöst, die nur für diesen Browser ausgestellt wurde.
 
 ## Verwandte Konzepte
 

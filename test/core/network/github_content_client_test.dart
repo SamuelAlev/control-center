@@ -1,149 +1,23 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/network/github_content_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-class _FakeDio implements Dio {
-  _FakeDio();
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onGet;
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    CancelToken? cancelToken,
-    Options? options,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onPost;
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onPut;
-
-  @override
-  Future<Response<T>> get<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onGet;
-    if (cb == null) {
-      throw UnimplementedError('onGet not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-      cancelToken: cancelToken,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  Future<Response<T>> post<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onPost;
-    if (cb == null) {
-      throw UnimplementedError('onPost not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      cancelToken: cancelToken,
-      options: options,
-      onSendProgress: onSendProgress,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  Future<Response<T>> put<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onPut;
-    if (cb == null) {
-      throw UnimplementedError('onPut not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      cancelToken: cancelToken,
-      options: options,
-      onSendProgress: onSendProgress,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import 'package:rhttp/rhttp.dart';
 
 void main() {
-  late _FakeDio fakeDio;
+  late TestHttpClient fake;
   late GitHubContentClient client;
 
   setUp(() {
-    fakeDio = _FakeDio();
-    client = GitHubContentClient(fakeDio);
+    fake = TestHttpClient(handler: (_) => throw StateError('handler not set'));
+    client = GitHubContentClient(fake);
   });
-
-  RequestOptions ro() => RequestOptions();
 
   group('getFileContent', () {
     test('returns file content as string', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  'import "package:flutter/material.dart";\n\nvoid main() {}'
-                      as T?,
-            ),
-          );
+      const content =
+          'import "package:flutter/material.dart";\n\nvoid main() {}';
+      fake.handler = (request) => httpTextResponse(request, content);
       final result = await client.getFileContent(
         'owner',
         'repo',
@@ -153,68 +27,28 @@ void main() {
       expect(result, contains('package:flutter/material.dart'));
     });
 
-    test('returns empty string for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+    test('returns empty string for an empty body', () async {
+      fake.handler = (request) => httpTextResponse(request, '');
       expect(
         await client.getFileContent('owner', 'repo', 'path.dart', 'main'),
         '',
       );
     });
 
-    test('sends raw accept header and plain response type', () async {
-      Options? receivedOptions;
-      fakeDio.onGet =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            receivedOptions = options;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: 'content' as T?),
-            );
-          };
+    test('sends raw accept header', () async {
+      fake.handler = (request) => httpTextResponse(request, 'content');
       await client.getFileContent('owner', 'repo', 'path.dart', 'main');
-      expect(receivedOptions?.headers?['Accept'], 'application/vnd.github.raw');
-      expect(receivedOptions?.responseType, ResponseType.plain);
+      final request = fake.requests.single;
+      final headers = (request.headers as HttpHeaderRawMap).map;
+      expect(headers['Accept'], 'application/vnd.github.raw');
     });
 
     test('sends ref query parameter', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualParams;
-      fakeDio.onGet =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            actualParams = queryParameters;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: 'content' as T?),
-            );
-          };
+      fake.handler = (request) => httpTextResponse(request, 'content');
       await client.getFileContent('owner', 'repo', 'path.dart', 'develop');
-      expect(
-        actualUrl,
-        '/repos/owner/repo/contents/path.dart',
-      );
-      expect(actualParams, {'ref': 'develop'});
+      final request = fake.requests.single;
+      expect(request.url, '/repos/owner/repo/contents/path.dart');
+      expect(request.query, {'ref': 'develop'});
     });
 
     test('throws ArgumentError for empty owner', () {
@@ -233,20 +67,10 @@ void main() {
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: 'content' as T?),
-            );
-          };
+      fake.handler = (request) {
+        received = request.cancelToken;
+        return httpTextResponse(request, 'content');
+      };
       final ct = CancelToken();
       await client.getFileContent(
         'owner',
@@ -258,35 +82,25 @@ void main() {
       expect(received, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.getFileContent('owner', 'repo', 'path.dart', 'main'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'timeout');
+    test('wraps other exceptions', () async {
+      fake.handler = (request) => throw RhttpTimeoutException(request);
+      await expectLater(
+        client.getFileContent('owner', 'repo', 'path.dart', 'main'),
+        throwsA(isA<NetworkException>()),
+      );
+    });
+
+    test('wraps a failed status code', () async {
+      fake.handler = (request) =>
+          httpTextResponse(request, 'not found', statusCode: 404);
       await expectLater(
         client.getFileContent('owner', 'repo', 'path.dart', 'main'),
         throwsA(isA<NetworkException>()),
@@ -296,21 +110,8 @@ void main() {
 
   group('createBlob', () {
     test('returns blob SHA', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data: {'sha': 'abc123def456'} as T?,
-            ),
-          );
+      fake.handler = (request) =>
+          httpTextResponse(request, {'sha': 'abc123def456'});
       expect(
         await client.createBlob('owner', 'repo', 'aGVsbG8='),
         'abc123def456',
@@ -318,27 +119,15 @@ void main() {
     });
 
     test('sends base64 content with encoding', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            actualBody = data as Map<String, dynamic>?;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: {'sha': 'sha123'} as T?),
-            );
-          };
+      fake.handler = (request) => httpTextResponse(request, {'sha': 'sha123'});
       await client.createBlob('owner', 'repo', 'base64content');
-      expect(actualUrl, '/repos/owner/repo/git/blobs');
-      expect(actualBody, {'content': 'base64content', 'encoding': 'base64'});
+      final request = fake.requests.single;
+      expect(request.url, '/repos/owner/repo/git/blobs');
+      expect(request.method.value, 'POST');
+      expect((request.body as HttpBodyJson).json, {
+        'content': 'base64content',
+        'encoding': 'base64',
+      });
     });
 
     test('throws ArgumentError for empty owner', () async {
@@ -356,57 +145,26 @@ void main() {
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(requestOptions: ro(), data: {'sha': 'sha123'} as T?),
-            );
-          };
+      fake.handler = (request) {
+        received = request.cancelToken;
+        return httpTextResponse(request, {'sha': 'sha123'});
+      };
       final ct = CancelToken();
       await client.createBlob('owner', 'repo', 'content', cancelToken: ct);
       expect(received, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.createBlob('owner', 'repo', 'content'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '422');
+    test('wraps other exceptions', () async {
+      fake.handler = (request) =>
+          httpTextResponse(request, 'unprocessable', statusCode: 422);
       await expectLater(
         client.createBlob('owner', 'repo', 'content'),
         throwsA(isA<NetworkException>()),
@@ -416,28 +174,12 @@ void main() {
 
   group('createFileContent', () {
     test('returns download URL', () async {
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'content': {
-                          'download_url':
-                              'https://raw.githubusercontent.com/owner/repo/main/img.png',
-                        },
-                      }
-                      as T?,
-            ),
-          );
+      fake.handler = (request) => httpTextResponse(request, {
+        'content': {
+          'download_url':
+              'https://raw.githubusercontent.com/owner/repo/main/img.png',
+        },
+      });
       final url = await client.createFileContent(
         'owner',
         'repo',
@@ -449,21 +191,8 @@ void main() {
     });
 
     test('throws when download_url is null', () async {
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data: <String, dynamic>{'content': <String, dynamic>{}} as T?,
-            ),
-          );
+      fake.handler = (request) =>
+          httpTextResponse(request, {'content': <String, dynamic>{}});
       await expectLater(
         client.createFileContent(
           'owner',
@@ -483,25 +212,9 @@ void main() {
     });
 
     test('throws when download_url is empty', () async {
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'content': {'download_url': ''},
-                      }
-                      as T?,
-            ),
-          );
+      fake.handler = (request) => httpTextResponse(request, {
+        'content': {'download_url': ''},
+      });
       await expectLater(
         client.createFileContent(
           'owner',
@@ -521,18 +234,8 @@ void main() {
     });
 
     test('throws when content is null', () async {
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: <String, dynamic>{} as T?),
-          );
+      fake.handler = (request) =>
+          httpTextResponse(request, <String, dynamic>{});
       await expectLater(
         client.createFileContent(
           'owner',
@@ -552,31 +255,9 @@ void main() {
     });
 
     test('sends correct PUT body', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPut =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            actualBody = data as Map<String, dynamic>?;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data:
-                    {
-                          'content': {'download_url': 'https://e.com/img.png'},
-                        }
-                        as T?,
-              ),
-            );
-          };
+      fake.handler = (request) => httpTextResponse(request, {
+        'content': {'download_url': 'https://e.com/img.png'},
+      });
       await client.createFileContent(
         'owner',
         'repo',
@@ -584,11 +265,13 @@ void main() {
         'base64data',
         'Upload photo',
       );
-      expect(
-        actualUrl,
-        '/repos/owner/repo/contents/images/photo.png',
-      );
-      expect(actualBody, {'message': 'Upload photo', 'content': 'base64data'});
+      final request = fake.requests.single;
+      expect(request.url, '/repos/owner/repo/contents/images/photo.png');
+      expect(request.method.value, 'PUT');
+      expect((request.body as HttpBodyJson).json, {
+        'message': 'Upload photo',
+        'content': 'base64data',
+      });
     });
 
     test('throws ArgumentError for empty owner', () async {
@@ -600,28 +283,12 @@ void main() {
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data:
-                    {
-                          'content': {'download_url': 'https://e.com/img.png'},
-                        }
-                        as T?,
-              ),
-            );
-          };
+      fake.handler = (request) {
+        received = request.cancelToken;
+        return httpTextResponse(request, {
+          'content': {'download_url': 'https://e.com/img.png'},
+        });
+      };
       final ct = CancelToken();
       await client.createFileContent(
         'owner',
@@ -634,38 +301,17 @@ void main() {
       expect(received, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.createFileContent('owner', 'repo', 'file.txt', 'content', 'msg'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPut =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onSendProgress,
-            onReceiveProgress,
-          }) =>
-              throw DioException(requestOptions: ro(), message: '409 conflict');
+    test('wraps other exceptions', () async {
+      fake.handler = (request) =>
+          httpTextResponse(request, 'conflict', statusCode: 409);
       await expectLater(
         client.createFileContent('owner', 'repo', 'file.txt', 'content', 'msg'),
         throwsA(isA<NetworkException>()),
@@ -675,138 +321,53 @@ void main() {
 
   group('getAuthenticatedUser', () {
     test('returns GitHubUser', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(
-              requestOptions: ro(),
-              data:
-                  {
-                        'login': 'octocat',
-                        'avatar_url': 'https://avatars/octocat.png',
-                      }
-                      as T?,
-            ),
-          );
+      fake.handler = (request) => httpTextResponse(request, {
+        'login': 'octocat',
+        'avatar_url': 'https://avatars/octocat.png',
+      });
       final user = await client.getAuthenticatedUser();
       expect(user!.login, 'octocat');
     });
 
     test('returns null for non-map data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => Future.value(
-            Response<T>(requestOptions: ro(), data: 'not a map' as T?),
-          );
+      fake.handler = (request) => httpTextResponse(request, <dynamic>[1, 2, 3]);
       expect(await client.getAuthenticatedUser(), isNull);
     });
 
-    test('returns null for null data', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) =>
-              Future.value(Response<T>(requestOptions: ro(), data: null as T?));
+    test('returns null for an empty body', () async {
+      fake.handler = (request) => httpTextResponse(request, '');
       expect(await client.getAuthenticatedUser(), isNull);
     });
 
     test('calls correct endpoint', () async {
-      String? actualUrl;
-      fakeDio.onGet =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            actualUrl = path;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'login': 'u', 'avatar_url': 'a'} as T?,
-              ),
-            );
-          };
+      fake.handler = (request) =>
+          httpTextResponse(request, {'login': 'u', 'avatar_url': 'a'});
       await client.getAuthenticatedUser();
-      expect(actualUrl, '/user');
+      expect(fake.requests.single.url, '/user');
     });
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) {
-            received = cancelToken;
-            return Future.value(
-              Response<T>(
-                requestOptions: ro(),
-                data: {'login': 'u', 'avatar_url': 'a'} as T?,
-              ),
-            );
-          };
+      fake.handler = (request) {
+        received = request.cancelToken;
+        return httpTextResponse(request, {'login': 'u', 'avatar_url': 'a'});
+      };
       final ct = CancelToken();
       await client.getAuthenticatedUser(cancelToken: ct);
       expect(received, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
       await expectLater(
         client.getAuthenticatedUser(),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onGet =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            options,
-            cancelToken,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-
-            message: 'no connection',
-          );
+    test('wraps other exceptions', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'no connection');
       await expectLater(
         client.getAuthenticatedUser(),
         throwsA(isA<NetworkException>()),

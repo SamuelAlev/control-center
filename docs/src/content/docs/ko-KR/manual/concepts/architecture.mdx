@@ -3,7 +3,7 @@ title: 아키텍처
 description: 씬 클라이언트 서버 모델, 피처 우선 클린 아키텍처, 포트와 어댑터로 구성된 Control Center의 구조를 설명합니다.
 dateModified: 2026-09-19
 slug: ko-KR/매뉴얼/개념/아키텍처
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## 개요
@@ -26,7 +26,7 @@ RPC 계층 자체는 **무상태**입니다. 세션은 인증되지만 워크스
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **도메인 계층**: 순수 Dart 엔티티, 값 객체, 리포지토리 인터페이스, 포트, 도메인 서비스. 인프라 의존성이 전혀 없습니다(dio, drift, 네트워크 모델 없음).
+- **도메인 계층**: 순수 Dart 엔티티, 값 객체, 리포지토리 인터페이스, 포트, 도메인 서비스. 인프라 의존성이 전혀 없습니다(rhttp, drift, 네트워크 모델 없음).
 - **프레젠테이션 계층**: 화면, 위젯, 노티파이어. drift/DAO/데이터 계층에 직접 접근하지 않으며, 모든 것이 Riverpod 프로바이더 → 리포지토리를 거칩니다.
 - **인프라 계층**: 도메인 포트와 리포지토리 인터페이스의 구체적인 구현. 도메인에 의존하며, 그 반대는 없습니다.
 
@@ -122,7 +122,7 @@ Control Center는 멀티유저 시스템입니다. 사람과 에이전트는 `Pr
 
 모든 외부 HTTP는 서버에 있습니다. 클라이언트는 GitHub, Linear, Google에 직접 접속하지 않습니다. 서버 RPC 연산을 호출하며, 원격 미디어조차 업스트림 오리진이 아니라 서버의 `/proxy/media` 엔드포인트를 통해 가져옵니다.
 
-- `packages/cc_infra/lib/src/`의 **dio** 클라이언트: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, `GoogleCalendarApiClient`
+- `packages/cc_infra/lib/src/`의 **rhttp** 클라이언트: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, `GoogleCalendarApiClient`
 - 인터셉터를 통한 인증 토큰 주입. 401 응답 시 토큰을 갱신하는 `cc_server_core`의 계정별 Google OAuth 인터셉터도 포함됩니다
 - 모든 오류는 `packages/cc_infra/lib/src/network/error_mapper.dart`를 거쳐 `cc_domain`에 정의된 타입이 지정된 `AppException` 하위 클래스로 매핑됩니다
 

@@ -2,7 +2,7 @@
 title: Sikkerhetskopier og gjenopprett
 description: Ta et øyeblikksbilde av installasjonen, flytt et arbeidsområde mellom maskiner, gjenopprett ett arbeidsområde eller alle, og oppbevar kopier et annet sted.
 slug: nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Denne guiden dekker de fem tingene folk faktisk gjør med sikkerhetskopier: tar én, henter
@@ -17,7 +17,7 @@ Alt her ligger under **Innstillinger → Server → Sikkerhetskopi og gjenoppret
 - En **full klient** — skrivebords- eller nettappen. En telefon som er paret, kan ikke utløse noe av dette, og det er med vilje.
 - Å ta, liste opp, laste ned eller slette et **installasjonsøyeblikksbilde**: **eieren** av installasjonen.
 - For handlinger per arbeidsområde: **admin** i det arbeidsområdet for å eksportere, **eier** for å importere eller slette det.
-- For ned- og opplastinger: en **direkte** tilkobling til serveren. Det formidlede reléet bærer RPC-rammer, ikke filoverføringer, og overføringskontrollene slår seg av med et varsel når du er på ett.
+- For ned- og opplastinger: en paret fullklient, enten på en direkte eller en relébasert tilkobling. Begge veier frakter filbytene gjennom den samme autentiserte, ende-til-ende-krypterte ressurskanalen; reléet kan ikke lese dem.
 
 :::caution[Installasjonsøyeblikksbilder er manuelle]
 **Sikkerhetskopier nå** lager fortsatt et øyeblikksbilde av hele installasjonen bare på
@@ -26,7 +26,15 @@ sikkerhetskopi av en arbeidsområdedatabase én gang i uken og fjerne sikkerhets
 det arbeidsområdet som er eldre enn 30 dager. Den kopierer ikke `global.db`, andre
 arbeidsområder eller filer ved siden av databasen. Kopier utenfor maskinen holder du
 separat.
-:::
+::::
+
+::::caution[Sikkerhetskopier krypteres ikke i ro]
+Den krypterte overføringen slutter ved klienten din og `cc_server`.
+Øyeblikksbildemapper, arbeidsområdeeksporter, nedlastede filer og serverens
+databaser krypteres ikke i ro av Control Center. Beskytt serververten,
+nedlastingene dine og kopier utenfor maskinen med din egen lagringskryptering og
+dine egne tilgangskontroller.
+::::
 
 ## Hva en sikkerhetskopi dekker
 
@@ -322,7 +330,7 @@ lagres.
 
 | Symptom                                                                  | Årsak og løsning                                                                                                         |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Ned- og opplastingskontrollene er deaktivert med et varsel om et relé    | Du er tilkoblet gjennom det formidlede reléet, som ikke bærer filoverføringer. Koble til direkte                        |
+| Ned- eller opplasting mislykkes etter en endret tilkobling | Prøv på nytt på den aktive parede tilkoblingen. Både direkte og relé støtter kryptert filoverføring; ingen av dem tilbyr en klartekst-HTTP-reserve |
 | «Serveren nektet»                                                        | Rolle. Å ta eller liste opp et installasjonsøyeblikksbilde krever installasjonens operatør. Å laste ned et arbeidsområde krever admin, å gjenopprette ett krever eier, og en zip med et helt øyeblikksbilde krever installasjonens operatør |
 | «Denne serveren har ingen sikkerhetskopiflate»                           | Verten har ingen sikkerhetskopiport koblet opp — en demoserver. Operasjonene mangler i stedet for å bli avvist         |
 | «Filen er større enn serveren godtar»                                    | Opplastinger er begrenset til 8 GiB. Legg filen på serververten og bruk **Importer** → **Velg fil** i stedet            |
@@ -336,7 +344,7 @@ lagres.
 
 - [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): hvor datakatalogen kommer fra
 - [Koble til en ekstern server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/): direkte kontra relébaserte tilkoblinger
-- [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/): påloggingsdataene overføringsrutene signerer med
+- [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/): enhetslegitimasjonen til den parede enheten som den krypterte overføringen og dens signerte ressursforespørsler bruker
 
 ## Relaterte konsepter og referanse
 

@@ -104,13 +104,10 @@ class RemoteRpcSession {
   /// Wall-clock budget for ONE request's handler before the session answers
   /// [RpcErrorCodes.handlerTimeout] and frees its concurrency slot.
   ///
-  /// This is what makes the in-flight cap self-healing. The client's own RPC
-  /// timeout cancels nothing server-side, so before this existed a handler
-  /// awaiting something that never completes (a stalled socket past dio's
-  /// chunk-gap timeout, a dead process) pinned its slot FOREVER — enough of
-  /// them and the session refuses every request with `-32005` until restart.
-  /// The handler is abandoned, not cancelled; ops that legitimately outlive
-  /// this default declare their own budget via [RepoOp.timeout].
+  /// Client-side RPC timeouts do not cancel server handlers. This deadline
+  /// releases slots held by stalled sockets or processes so they cannot exhaust
+  /// the session's concurrency limit. The handler is abandoned, not cancelled;
+  /// operations needing more time declare their budget via [RepoOp.timeout].
   final Duration handlerTimeout;
 
   int _inFlight = 0;
@@ -224,6 +221,9 @@ class RemoteRpcSession {
   }
 
   Future<void> _onFrame(Map<String, dynamic> frame) async {
+    // The authenticated channel multiplexes bounded byte streams separately;
+    // their IDs are not JSON-RPC IDs and must never reach RPC dispatch.
+    if (frame['type'] == 'resource') return;
     final JsonRpcRequest request;
     try {
       request = JsonRpcRequest.fromJson(frame);

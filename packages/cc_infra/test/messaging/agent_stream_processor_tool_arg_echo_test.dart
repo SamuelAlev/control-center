@@ -6,6 +6,8 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
@@ -286,6 +288,10 @@ class FakeAgentDispatchService implements AgentDispatchService {
     AgentRunLog runLog,
     String? summary, {
     RunCost? cost,
+    RunLatencyProfile? latency,
+    RunVerification? verification,
+    String? nativeSessionId,
+    bool resumedNativeSession = false,
   }) async {}
 
   @override

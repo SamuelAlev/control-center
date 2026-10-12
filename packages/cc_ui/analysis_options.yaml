@@ -2,7 +2,7 @@
 #
 # cc_ui is a pure-Flutter UI package: it builds on package:flutter/widgets.dart
 # and MUST NOT import Material, Cupertino, Riverpod, go_router, l10n,
-# drift, dio, or the host app (package:control_center/...). That boundary is
+# drift, rhttp, or the host app (package:control_center/...). That boundary is
 # enforced by test/core/architecture_constraints_test.dart in the app.
 # ONE rule table. This file used to `include: package:flutter_lints/flutter.yaml`
 # plus a hand-copied SUBSET of the root rules, which meant it silently missed

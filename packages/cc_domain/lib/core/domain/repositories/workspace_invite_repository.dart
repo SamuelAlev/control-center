@@ -18,6 +18,10 @@ abstract class WorkspaceInviteRepository {
   /// this is deliberately not workspace-scoped.
   Future<WorkspaceInvite?> getByCodeHash(String codeHash);
 
+  /// Resolves a one-way public routing key to an invite without exposing the
+  /// stored code hash to the network. A missing route is a miss, never a scan.
+  Future<WorkspaceInvite?> getByRouteId(String routeId);
+
   /// Claims an open, unexpired code exactly once before provisioning a user.
   /// Returns false if it was used, revoked, expired, or deleted concurrently.
   Future<bool> consume(WorkspaceInvite invite, DateTime now);

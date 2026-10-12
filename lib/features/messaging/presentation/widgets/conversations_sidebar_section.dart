@@ -361,6 +361,7 @@ Future<void> showNewSpaceDialog(BuildContext context, WidgetRef ref) async {
   }
   final result = await showCcDialog<_SpaceSpec>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (_) => _CreateSpaceDialog(agents: agents, repos: repos),
   );
   if (result == null || result.name.isEmpty) {

@@ -5,6 +5,7 @@ library;
 export 'src/provider/effort_mapping.dart';
 export 'src/provider/harness_provider_info.dart';
 export 'src/provider/harness_providers.dart';
+export 'src/provider/llm_call_ledger.dart';
 export 'src/provider/llm_provider_port.dart';
 export 'src/provider/provider_credential.dart';
 export 'src/provider/provider_credential_refresher.dart';

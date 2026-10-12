@@ -1,27 +1,40 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
+import 'package:cc_natives/cc_natives.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart' as http;
 
 import 'http_recorder.dart';
 
 void main() {
   late Directory tempDir;
 
+  setUpAll(initializeRhttp);
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('cc_cassettes');
   });
-
   tearDown(() async {
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
   });
 
+  http.RhttpClient clientFor(HttpRecorder recorder) {
+    final client = http.RhttpClient.createSync(
+      settings: const http.ClientSettings(
+        proxySettings: http.ProxySettings.noProxy(),
+      ),
+      interceptors: [recorder.interceptor],
+    );
+    addTearDown(client.dispose);
+    return client;
+  }
+
   Future<HttpServer> startServer(void Function(HttpRequest) handle) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen(handle);
+    addTearDown(() => server.close(force: true));
     return server;
   }
 
@@ -30,121 +43,85 @@ void main() {
     () async {
       const payload = '{"login":"octocat","id":583231}';
       var serverHits = 0;
-      final server = await startServer((req) {
+      final server = await startServer((request) {
         serverHits++;
-        req.response
+        request.response
           ..statusCode = 200
           ..headers.contentType = ContentType.json
           ..write(payload);
-        req.response.close();
+        request.response.close();
       });
       final base = 'http://${server.address.address}:${server.port}';
-
-      // Record.
-      final recordDio = Dio(BaseOptions(responseType: ResponseType.plain));
-      final recorder = await HttpRecorder.attach(
-        recordDio,
+      final recorder = await HttpRecorder.open(
         'github/user',
         mode: RecordMode.record,
         directory: tempDir.path,
       );
-      final recorded = await recordDio.get<String>('$base/users/octocat');
+      final recorded = await clientFor(recorder).get('$base/users/octocat');
       await recorder.save();
-
       expect(serverHits, 1);
-      expect(recorded.data, payload);
-      expect(File('${tempDir.path}/github/user.json').existsSync(), isTrue);
-
-      // Shut the server down — replay must not touch the network.
+      expect(recorded.body, payload);
       await server.close(force: true);
 
-      final replayDio = Dio(BaseOptions(responseType: ResponseType.plain));
-      final replay = await HttpRecorder.attach(
-        replayDio,
+      final replay = await HttpRecorder.open(
         'github/user',
         mode: RecordMode.replay,
         directory: tempDir.path,
       );
-      expect(replay.mode, RecordMode.replay);
-      final replayed = await replayDio.get<String>('$base/users/octocat');
-
-      expect(replayed.data, payload, reason: 'replay should be byte-identical');
+      final replayed = await clientFor(replay).get('$base/users/octocat');
+      expect(replayed.body, payload);
       expect(replayed.statusCode, 200);
-      expect(serverHits, 1, reason: 'no extra upstream hit on replay');
+      expect(serverHits, 1, reason: 'replay must not contact upstream');
     },
   );
 
   test('auto mode records when missing then replays when present', () async {
-    final server = await startServer((req) {
-      req.response
-        ..statusCode = 200
-        ..write('ok');
-      req.response.close();
+    final server = await startServer((request) {
+      request.response.write('ok');
+      request.response.close();
     });
-    final base = 'http://${server.address.address}:${server.port}';
-
-    final dio1 = Dio(BaseOptions(responseType: ResponseType.plain));
-    final r1 = await HttpRecorder.attach(
-      dio1,
+    final url = 'http://${server.address.address}:${server.port}/ping';
+    final recorder = await HttpRecorder.open(
       'auto/probe',
       directory: tempDir.path,
       isCi: false,
     );
-    expect(r1.mode, RecordMode.record);
-    await dio1.get<String>('$base/ping');
-    await r1.save();
-
-    final dio2 = Dio(BaseOptions(responseType: ResponseType.plain));
-    final r2 = await HttpRecorder.attach(
-      dio2,
-      'auto/probe',
-      directory: tempDir.path,
-      isCi: false,
-    );
-    expect(r2.mode, RecordMode.replay);
-
+    await clientFor(recorder).get(url);
+    await recorder.save();
     await server.close(force: true);
+    final replay = await HttpRecorder.open(
+      'auto/probe',
+      directory: tempDir.path,
+      isCi: false,
+    );
+    expect((await clientFor(replay).get(url)).body, 'ok');
   });
 
-  test(
-    'replay surfaces a request diff when the cassette does not match',
-    () async {
-      // Hand-write a cassette expecting a different path.
-      final cassette = Cassette(
-        interactions: [
-          const HttpInteraction(
-            request: RequestSnapshot(
-              method: 'GET',
-              url: 'http://localhost/expected',
-              headers: {},
-              body: '',
-            ),
-            response: ResponseSnapshot(status: 200, headers: {}, body: 'x'),
+  test('replay rejects requests not present in the cassette', () async {
+    final cassette = Cassette(
+      interactions: [
+        const HttpInteraction(
+          request: RequestSnapshot(
+            method: 'GET',
+            url: 'http://localhost/expected',
+            headers: {},
+            body: '',
           ),
-        ],
-      );
-      await CassetteStore(directory: tempDir.path).write('mismatch', cassette);
-
-      final dio = Dio(BaseOptions(responseType: ResponseType.plain));
-      await HttpRecorder.attach(
-        dio,
-        'mismatch',
-        mode: RecordMode.replay,
-        directory: tempDir.path,
-      );
-
-      await expectLater(
-        dio.get<String>('http://localhost/actual'),
-        throwsA(
-          isA<DioException>().having(
-            (e) => '${e.error}',
-            'error',
-            contains('does not match'),
-          ),
+          response: ResponseSnapshot(status: 200, headers: {}, body: 'x'),
         ),
-      );
-    },
-  );
+      ],
+    );
+    await CassetteStore(directory: tempDir.path).write('mismatch', cassette);
+    final recorder = await HttpRecorder.open(
+      'mismatch',
+      mode: RecordMode.replay,
+      directory: tempDir.path,
+    );
+    await expectLater(
+      clientFor(recorder).get('http://localhost/actual'),
+      throwsA(isA<http.RhttpUnknownException>()),
+    );
+  });
 
   test('write-guard refuses a cassette containing a secret', () async {
     final cassette = Cassette(
@@ -165,69 +142,56 @@ void main() {
       ],
     );
     final store = CassetteStore(directory: tempDir.path);
-
     await expectLater(
       store.write('leaky', cassette),
       throwsA(isA<UnsafeCassetteError>()),
     );
-    expect(
-      File('${tempDir.path}/leaky.json').existsSync(),
-      isFalse,
-      reason: 'nothing should be written when a secret is found',
-    );
+    expect(File('${tempDir.path}/leaky.json').existsSync(), isFalse);
   });
 
   test('replays the committed GitHub cassette byte-identical', () async {
-    final dio = Dio(BaseOptions(responseType: ResponseType.json));
-    await HttpRecorder.attach(
-      dio,
+    final recorder = await HttpRecorder.open(
       'github/user-octocat',
       mode: RecordMode.replay,
       directory: 'test/fixtures/recordings',
     );
-    final res = await dio.get<dynamic>(
+    final response = await clientFor(recorder).get(
       'https://api.github.com/users/octocat',
-      options: Options(headers: {'accept': 'application/vnd.github+json'}),
+      headers: const http.HttpHeaders.rawMap({
+        'accept': 'application/vnd.github+json',
+      }),
     );
-    expect(res.statusCode, 200);
-    expect((res.data as Map)['login'], 'octocat');
-    expect((res.data as Map)['id'], 583231);
+    expect(response.statusCode, 200);
+    expect((response.bodyToJson as Map)['login'], 'octocat');
+    expect((response.bodyToJson as Map)['id'], 583231);
   });
 
   test('redacts the Authorization header before writing', () async {
-    final server = await startServer((req) {
-      req.response
-        ..statusCode = 200
-        ..write('{}');
-      req.response.close();
+    final server = await startServer((request) {
+      request.response.write('{}');
+      request.response.close();
     });
-    final base = 'http://${server.address.address}:${server.port}';
-
-    final dio = Dio(
-      BaseOptions(
-        responseType: ResponseType.plain,
-        headers: {'Authorization': 'Bearer super-secret-token-value-123'},
-      ),
-    );
-    final recorder = await HttpRecorder.attach(
-      dio,
+    final recorder = await HttpRecorder.open(
       'redacted/call',
       mode: RecordMode.record,
       directory: tempDir.path,
-      // Keep the header but scrub its value (default drops it entirely).
       redactor: Redactor.defaults(
         requestHeaderAllowList: ['content-type', 'accept', 'authorization'],
       ),
     );
-    await dio.get<String>('$base/me');
+    await clientFor(recorder).get(
+      'http://${server.address.address}:${server.port}/me',
+      headers: const http.HttpHeaders.rawMap({
+        'Authorization': 'Bearer super-secret-token-value-123',
+      }),
+    );
     await recorder.save();
-
     final raw = await File('${tempDir.path}/redacted/call.json').readAsString();
     final cassette = Cassette.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    final headers = cassette.interactions.first.request.headers;
-    expect(headers['authorization'], kRedacted);
+    expect(
+      cassette.interactions.first.request.headers['authorization'],
+      kRedacted,
+    );
     expect(raw.contains('super-secret-token-value-123'), isFalse);
-
-    await server.close(force: true);
   });
 }

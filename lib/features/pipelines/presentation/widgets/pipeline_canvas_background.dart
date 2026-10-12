@@ -1,42 +1,10 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:collection/collection.dart';
-import 'package:control_center/shared/widgets/dot_grid_background.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/pipeline_edge_geometry.dart';
 import 'package:flutter/widgets.dart';
-
-/// Horizontal cubic handle length used by [PipelineEdgesPainter]. Exposed so
-/// the editor's midpoint widgets land on the same curve the painter draws.
-const double kPipelineEdgeHandleOffset = 60;
-
-/// Point on a pipeline edge cubic at t = 0.5.
-///
-/// With the painter's ±[kPipelineEdgeHandleOffset] handles this equals
-/// `(start + 3·c1 + 3·c2 + end) / 8`.
-Offset pipelineEdgeCubicMidpoint(Offset start, Offset end) {
-  final c1 = Offset(start.dx + kPipelineEdgeHandleOffset, start.dy);
-  final c2 = Offset(end.dx - kPipelineEdgeHandleOffset, end.dy);
-  return (start + c1 * 3.0 + c2 * 3.0 + end) / 8.0;
-}
-
-/// Soft dot-grid background shared by the editor canvas and the run-detail
-/// canvas. Thin wrapper over the app-wide [DotGridBackground] so both pipeline
-/// canvases stay on the shared backdrop.
-class PipelineCanvasBackground extends StatelessWidget {
-  /// Creates a [PipelineCanvasBackground].
-  const PipelineCanvasBackground({super.key, this.offset = Offset.zero});
-
-  /// Pan offset applied to the dot grid so it scrolls in lockstep with the
-  /// nodes and edges above it.
-  final Offset offset;
-
-  @override
-  Widget build(BuildContext context) => DotGridBackground(offset: offset);
-}
 
 /// Painter that draws cubic-bezier edges between pipeline nodes. Shared by
 /// the editor canvas and the run-detail canvas.
-///
-/// New optional arguments are additive: the run canvas and existing tests
-/// construct this without them and get the original look.
 class PipelineEdgesPainter extends CustomPainter {
   /// Creates a [PipelineEdgesPainter].
   PipelineEdgesPainter({
@@ -52,7 +20,19 @@ class PipelineEdgesPainter extends CustomPainter {
     this.routeKeyFill,
     this.routeKeyColor,
     this.extraSegments = const [],
-  });
+    this.edgeCache,
+  }) {
+    // Resolved once, here, rather than on every paint: every field this
+    // painter reads is final, so the wires it resolves at construction
+    // describe it for as long as it is in the tree. Paint then does nothing
+    // but iterate them.
+    _segments = (edgeCache ?? PipelineEdgeGeometryCache()).sync(
+      steps: steps,
+      nodeWidths: nodeWidths,
+      nodeHeight: nodeHeight,
+      positions: positions,
+    );
+  }
 
   /// All steps in the rendered graph; the painter walks their triggers to
   /// emit edges.
@@ -97,66 +77,64 @@ class PipelineEdgesPainter extends CustomPainter {
   final Color? routeKeyColor;
 
   /// Extra cubics (trigger-proxy → successor) that are not implied by
-  /// [steps]' `StepTrigger`s. Each record is start, end, highlight.
+  /// [steps]' `StepTrigger`s. Each record is start, end, highlight. These are
+  /// already in scene space, so the scene translation is not applied to them.
   final List<(Offset start, Offset end, bool highlight)> extraSegments;
+
+  /// Resolved wire geometry, kept across paints. Owning one is what keeps a
+  /// drag off the size of the graph: the wires are rebuilt only where the ends
+  /// moved. Null falls back to a cache private to this painter.
+  final PipelineEdgeGeometryCache? edgeCache;
+
+  /// The wires to draw, resolved at construction. See the constructor.
+  late final List<PipelineEdgeSegment> _segments;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final byId = {for (final s in steps) s.id: s};
-    for (final step in steps) {
-      final stepTopLeft = _topLeft(step);
-      final to = Offset(
-        stepTopLeft.dx + offset.dx,
-        stepTopLeft.dy + offset.dy + nodeHeight / 2,
-      );
-      for (final trigger in step.triggers) {
-        for (final src in trigger.sourceStepIds) {
-          final from = byId[src];
-          if (from == null) {
-            continue;
-          }
-          final fromTopLeft = _topLeft(from);
-          final start = Offset(
-            fromTopLeft.dx + offset.dx + nodeWidths[from.id]!,
-            fromTopLeft.dy + offset.dy + nodeHeight / 2,
-          );
-          final highlighted =
-              highlightStepId != null &&
-              highlightColor != null &&
-              (highlightStepId == step.id || highlightStepId == from.id);
-          final paint = Paint()
-            ..color = highlighted ? highlightColor! : color
-            ..strokeWidth = highlighted ? 2 : 1.4
-            ..style = PaintingStyle.stroke
-            ..strokeCap = StrokeCap.round;
-          _drawArrow(canvas, paint, start, to);
-          final key = trigger.routeKey;
-          if (paintRouteKeys && key != null && key.isNotEmpty) {
-            _paintRouteKey(canvas, pipelineEdgeCubicMidpoint(start, to), key);
-          }
-        }
+    final highlight = highlightStepId;
+    final accent = highlightColor;
+    final accented = highlight != null && accent != null;
+
+    // One translation for the whole layer, applied here rather than folded
+    // into every wire: panning or re-basing the scene must not invalidate
+    // geometry.
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+    final base = _strokePaint(color, 1.4);
+    final hot = accent == null ? null : _strokePaint(accent, 2);
+    for (final segment in _segments) {
+      final lit =
+          accented &&
+          (highlight == segment.fromId || highlight == segment.toId);
+      _paintCubicArrow(canvas, lit ? hot! : base, segment.path, segment.end);
+      final key = segment.routeKey;
+      if (paintRouteKeys && key != null && key.isNotEmpty) {
+        _paintRouteKey(
+          canvas,
+          pipelineEdgeCubicMidpoint(segment.start, segment.end),
+          key,
+        );
       }
     }
+    canvas.restore();
+
     for (final segment in extraSegments) {
       final (start, end, highlighted) = segment;
-      final paint = Paint()
-        ..color = highlighted && highlightColor != null
-            ? highlightColor!
-            : color
-        ..strokeWidth = highlighted ? 2 : 1.4
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round;
-      _drawArrow(canvas, paint, start, end);
+      _paintCubicArrow(
+        canvas,
+        highlighted && hot != null ? hot : base,
+        pipelineEdgeCubicPath(start, end),
+        end,
+      );
     }
   }
 
-  /// Top-left of a node: the auto-layout position when supplied, otherwise the
-  /// step's stored editor coordinates.
-  Offset _topLeft(PipelineStepDefinition step) =>
-      positions?[step.id] ?? Offset(step.x ?? 0, step.y ?? 0);
-
-  void _drawArrow(Canvas canvas, Paint paint, Offset from, Offset to) =>
-      paintPipelineCubicArrow(canvas, paint, from, to);
+  /// Stroke style shared by every wire, accented or not.
+  static Paint _strokePaint(Color color, double width) => Paint()
+    ..color = color
+    ..strokeWidth = width
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round;
 
   void _paintRouteKey(Canvas canvas, Offset midpoint, String label) {
     final style = TextStyle(
@@ -184,7 +162,10 @@ class PipelineEdgesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PipelineEdgesPainter old) =>
-      old.steps != steps ||
+      // Content, not identity: the canvases rebuild the step list on every
+      // hover and every pointer move, and an identity compare here would
+      // repaint every wire on each of them for nothing.
+      !const ListEquality<PipelineStepDefinition>().equals(old.steps, steps) ||
       old.color != color ||
       old.offset != offset ||
       old.nodeHeight != nodeHeight ||
@@ -193,6 +174,7 @@ class PipelineEdgesPainter extends CustomPainter {
       old.paintRouteKeys != paintRouteKeys ||
       old.routeKeyFill != routeKeyFill ||
       old.routeKeyColor != routeKeyColor ||
+      old.edgeCache != edgeCache ||
       !const MapEquality<String, double>().equals(old.nodeWidths, nodeWidths) ||
       !const MapEquality<String, Offset>().equals(old.positions, positions) ||
       old.extraSegments != extraSegments;
@@ -204,18 +186,14 @@ void paintPipelineCubicArrow(
   Paint paint,
   Offset from,
   Offset to,
-) {
-  final path = Path()
-    ..moveTo(from.dx, from.dy)
-    ..cubicTo(
-      from.dx + kPipelineEdgeHandleOffset,
-      from.dy,
-      to.dx - kPipelineEdgeHandleOffset,
-      to.dy,
-      to.dx,
-      to.dy,
-    );
-  canvas.drawPath(path, paint);
+) => _paintCubicArrow(canvas, paint, pipelineEdgeCubicPath(from, to), to);
+
+/// Strokes a wire: its cubic, then the chevron tip pointing at [to].
+///
+/// Split out so a cached wire — whose cubic is already built — costs one
+/// [Canvas.drawPath] and the two head strokes, exactly as a fresh one does.
+void _paintCubicArrow(Canvas canvas, Paint paint, Path curve, Offset to) {
+  canvas.drawPath(curve, paint);
   const headLen = 8.0;
   final back = Offset(to.dx - headLen, to.dy);
   canvas.drawLine(to, back + const Offset(0, -4), paint);

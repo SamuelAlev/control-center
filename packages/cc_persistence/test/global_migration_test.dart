@@ -107,14 +107,21 @@ void main() {
     });
   });
 
-  test('a fresh file is created at the current version, no chain replayed', () async {
-    final db = open();
-    await db.userDao.upsert(
-      UsersTableCompanion.insert(id: 'u-1', handle: 'sam', displayName: 'Sam'),
-    );
-    expect((await db.userDao.getById('u-1'))!.onboardingFinishedAt, isNull);
-    expect(db.schemaVersion, greaterThanOrEqualTo(2));
-  });
+  test(
+    'a fresh file is created at the current version, no chain replayed',
+    () async {
+      final db = open();
+      await db.userDao.upsert(
+        UsersTableCompanion.insert(
+          id: 'u-1',
+          handle: 'sam',
+          displayName: 'Sam',
+        ),
+      );
+      expect((await db.userDao.getById('u-1'))!.onboardingFinishedAt, isNull);
+      expect(db.schemaVersion, greaterThanOrEqualTo(2));
+    },
+  );
 
   group('v3 -> v4: workspaces GitHub identity', () {
     test('adds github_auth_mode and github_app_id', () async {
@@ -131,9 +138,7 @@ void main() {
 
       final migrated = open();
       final columns =
-          (await migrated
-                  .customSelect("PRAGMA table_info('workspaces')")
-                  .get())
+          (await migrated.customSelect("PRAGMA table_info('workspaces')").get())
               .map((r) => r.read<String>('name'))
               .toSet();
       expect(columns, containsAll({'github_auth_mode', 'github_app_id'}));
@@ -142,5 +147,52 @@ void main() {
       expect(row!.githubAuthMode, 'inherit');
       expect(row.githubAppId, '');
     });
+  });
+
+  group('v5 -> v6: opt-in review publishing', () {
+    test(
+      'existing workspaces remain readable with publishing disabled',
+      () async {
+        final seeded = GlobalDatabase.forTesting(NativeDatabase(file));
+        await seeded.workspaceRegistryDao.upsertWorkspace(
+          WorkspacesTableCompanion.insert(
+            id: 'ws-1',
+            name: 'Alpha',
+            reviewConcurrency: const Value(7),
+          ),
+        );
+        await seeded.close();
+        sqlite3.sqlite3.open(file.path)
+          ..execute('ALTER TABLE workspaces DROP COLUMN auto_publish_review')
+          ..execute('PRAGMA user_version = 5')
+          ..close();
+
+        final row = (await open().workspaceRegistryDao.getById('ws-1'))!;
+        expect(row.name, 'Alpha');
+        expect(row.reviewConcurrency, 7);
+        expect(row.autoPublishReview, isFalse);
+      },
+    );
+
+    test(
+      'replaying the migration preserves an explicit publishing opt-in',
+      () async {
+        final seeded = GlobalDatabase.forTesting(NativeDatabase(file));
+        await seeded.workspaceRegistryDao.upsertWorkspace(
+          WorkspacesTableCompanion.insert(
+            id: 'ws-1',
+            name: 'Alpha',
+            autoPublishReview: const Value(true),
+          ),
+        );
+        await seeded.close();
+        sqlite3.sqlite3.open(file.path)
+          ..execute('PRAGMA user_version = 5')
+          ..close();
+
+        final row = (await open().workspaceRegistryDao.getById('ws-1'))!;
+        expect(row.autoPublishReview, isTrue);
+      },
+    );
   });
 }

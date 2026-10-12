@@ -35,7 +35,7 @@ import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/daos/review_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_server_core/src/pr_review/pr_cache_codec.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 class _Kind {
   static const prDetail = 'prDetail';
@@ -178,7 +178,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// at an `await`, its `finally` only runs once that await completes — so the
   /// request would finish (defeating the point) before being "cancelled". A
   /// [StreamController]'s `onCancel` fires as soon as the consumer unsubscribes,
-  /// so the token is cancelled right away and dio aborts the request.
+  /// so the token is cancelled right away and rhttp aborts the request.
   Stream<T> _cancellable<T>(Stream<T> Function(CancelToken cancelToken) build) {
     final cancelToken = CancelToken();
     final controller = StreamController<T>();
@@ -193,17 +193,20 @@ class CachedPrReviewRepository implements PrReviewRepository {
       }
       ..onCancel = () async {
         if (!cancelToken.isCancelled) {
-          cancelToken.cancel();
+          // Never awaited: the token's own `whenCancelRequested` (raced in
+          // [_nextSignal]) is what unblocks a suspended generator, and `cancel`
+          // otherwise only completes once a native request observes the token.
+          unawaited(cancelToken.cancel());
         }
         await sub?.cancel();
       };
     return controller.stream;
   }
 
-  /// Whether [error] is a dio request cancellation — the benign signal that a
-  /// subscriber unsubscribed (e.g. an `autoDispose` provider tearing down when
-  /// the user navigates away from, or presses back on, a PR), which fires the
-  /// [CancelToken] via [_cancellable]'s `onCancel`.
+  /// Whether [error] is an rhttp request cancellation — the benign signal that
+  /// a subscriber unsubscribed (e.g. an `autoDispose` provider tearing down
+  /// when the user navigates away from, or presses back on, a PR), which fires
+  /// the [CancelToken] via [_cancellable]'s `onCancel`.
   ///
   /// A cancellation must NEVER propagate as a stream error. The subscription is
   /// already gone, so it would surface as an unhandled error in the server's
@@ -211,8 +214,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// drift background isolate's sqlite finalizers into a `sqlite3_finalize`
   /// segfault. Every `await` on a [CancelToken]-driven call inside these
   /// generators is guarded with this check and a quiet `return`.
-  static bool _isCancellation(Object error) =>
-      error is DioException && error.type == DioExceptionType.cancel;
+  static bool _isCancellation(Object error) => error is RhttpCancelException;
 
   Stream<T> _swr<T>({
     required String kind,
@@ -312,18 +314,20 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Waits for the next change signal, returning null when the signal stream
   /// closes OR the subscriber cancels.
   ///
-  /// The race against [CancelToken.whenCancel] is load-bearing: an `async*`
+  /// The race against the token's cancellation is load-bearing: an `async*`
   /// generator only honors cancellation at a `yield`, so a bare
   /// `iterator.moveNext()` on a quiet signal stream would suspend the
   /// generator indefinitely and deadlock [_cancellable]'s `onCancel` (which
-  /// awaits the generator's teardown).
+  /// awaits the generator's teardown). `CancelToken.whenCancelRequested`
+  /// completes the moment `cancel()` is called, before the native-ref wait, so
+  /// racing it releases the generator immediately.
   static Future<PrChangeSignal?> _nextSignal(
     StreamIterator<PrChangeSignal> iterator,
     CancelToken cancelToken,
   ) async {
     final hasNext = await Future.any<bool>([
       iterator.moveNext(),
-      cancelToken.whenCancel.then((_) => false),
+      cancelToken.whenCancelRequested.then((_) => false),
     ]);
     if (!hasNext || cancelToken.isCancelled) {
       return null;
@@ -1343,10 +1347,20 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
     final baseStored = baseBytes == null
         ? null
-        : await store.put(_workspaceId, baseBytes, mediaType: mediaType);
+        : await store.put(
+            _workspaceId,
+            baseBytes,
+            mediaType: mediaType,
+            catalogArtifact: false,
+          );
     final headStored = headBytes == null
         ? null
-        : await store.put(_workspaceId, headBytes, mediaType: mediaType);
+        : await store.put(
+            _workspaceId,
+            headBytes,
+            mediaType: mediaType,
+            catalogArtifact: false,
+          );
 
     var overlayRef = null as String?;
     var changedPercent = 0.0;
@@ -1365,6 +1379,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
           _workspaceId,
           overlay,
           mediaType: 'image/png',
+          catalogArtifact: false,
         );
         overlayRef = stored?.ref;
       }

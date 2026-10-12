@@ -3,9 +3,10 @@
 /// Repository adapters that satisfy reads/writes over the `cc_rpc` client
 /// (`repo/call` + `sub/subscribe`) instead of a local database — the data
 /// source for the full web build and the desktop in REMOTE mode. They return
-/// the `cc_domain` wire DTOs and carry no `workspace_id`: the host binds the
-/// authoritative workspace per session, so isolation is enforced server-side.
-///
+/// shared-domain DTOs. Most legacy adapters use session-bound workspace scope;
+/// skill evaluation campaign calls carry an explicit `workspace_id`, and the
+/// server enforces membership per call.
+
 /// Web-safe — depends on `cc_domain` + `cc_rpc` + `cc_harness` (no `dart:io`/`dart:ffi`,
 /// no Flutter). Every client, including desktop LOCAL, uses these adapters.
 library;
@@ -123,3 +124,4 @@ export 'src/repositories/rpc_weather_repository.dart';
 export 'src/repositories/rpc_work_product_repository.dart';
 export 'src/repositories/rpc_workspace_filesystem_port.dart';
 export 'src/repositories/rpc_workspace_repository.dart';
+export 'src/repositories/skill_campaign_views.dart';

@@ -20,8 +20,9 @@ phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Page
 via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
 host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
 relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+app data and cannot decrypt encrypted records or see the pairing secret).
+It still sees IPs, routing identifiers, sizes and timing and can drop traffic.
+See their READMEs for build and run steps.
 
 ## Step 1: Open the pairing panel
 
@@ -44,14 +45,19 @@ client's connect form, while this QR carries the server's full connection
 descriptor and identity fingerprint for the Remote PWA.
 
 On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+the server's advertised name and asks you to confirm before it stores anything.
+Check the fingerprint in the QR against a trusted source: confirming an
+unverified name or a forged QR does not establish that the server is yours.
+The client pins the signed identity and rejects a changed fingerprint on
+subsequent connections.
 
 :::caution[A scanned QR grants access immediately]
 There is no pending-then-approve step: a minted device is active from the
 moment it is created and the connect gate checks only that the credential is
 active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+revoke anything you did not mean to hand out. Both direct and relayed client
+sessions require end-to-end encryption; older clients cannot fall back to
+plaintext RPC.
 :::
 
 ## Manage paired devices

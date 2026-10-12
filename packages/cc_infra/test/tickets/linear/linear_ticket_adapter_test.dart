@@ -1,33 +1,43 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/ports/remote_ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/ports/ticket_query.dart';
 import 'package:cc_infra/src/tickets/linear/linear_ticket_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
+
+/// The decoded JSON body of a captured request.
+Map<String, dynamic> jsonBody(HttpRequest request) =>
+    ((request.body! as HttpBodyJson).json as Map).cast<String, dynamic>();
 
 /// Exercises [LinearTicketAdapter] — the provider-port glue around the
 /// GraphQL client. Pins status normalization, capabilities, the teamId
 /// resolution rules (extras → default → throw) and the
 /// get-after-each-mutation pattern.
 void main() {
-  late FakeAdapter adapter;
+  late TestHttpClient fake;
   late LinearTicketAdapter ticketAdapter;
 
   /// Queues a Linear issue node returned by getIssue / createIssue /
   /// getAssignedIssues. We push responses in the order the adapter consumes
   /// them; the adapter issues GET-after-mutate so most methods need two
-  /// responses (mutate ack + refreshed issue).
+  /// responses (mutate ack + refreshed issue). An exhausted queue answers an
+  /// empty `data` envelope, as the old fake did.
+  final queue = <Object>[];
+
+  void nextBody(Object body) => queue.add(body);
+
   setUp(() {
-    adapter = FakeAdapter();
-    ticketAdapter = LinearTicketAdapter(
-      Dio()..httpClientAdapter = adapter,
-      defaultTeamId: 'default-team',
+    queue.clear();
+    fake = TestHttpClient(
+      handler: (request) => httpTextResponse(
+        request,
+        queue.isEmpty ? const <String, dynamic>{} : queue.removeAt(0),
+      ),
     );
+    ticketAdapter = LinearTicketAdapter(fake, defaultTeamId: 'default-team');
   });
 
   Map<String, dynamic> issueNode({
@@ -79,7 +89,7 @@ void main() {
   group('create', () {
     test('uses providerExtras teamId when present', () async {
       // createIssue mutation ack, then nothing else needed.
-      adapter.nextBody({
+      nextBody({
         'data': {
           'issueCreate': {'success': true, 'issue': issueNode()},
         },
@@ -94,30 +104,26 @@ void main() {
       expect(ticket.externalId, 'abc');
       // Verify the mutation carried the extras teamId.
       final input =
-          ((adapter.requests.first.data as Map)['variables'] as Map)['input']
-              as Map;
+          (jsonBody(fake.requests.first)['variables'] as Map)['input'] as Map;
       expect(input['teamId'], 'extras-team');
     });
 
     test('falls back to defaultTeamId when extras has no teamId', () async {
-      adapter.nextBody({
+      nextBody({
         'data': {
           'issueCreate': {'success': true, 'issue': issueNode()},
         },
       });
       await ticketAdapter.create(const RemoteTicketDraft(title: 'T'));
       final input =
-          ((adapter.requests.first.data as Map)['variables'] as Map)['input']
-              as Map;
+          (jsonBody(fake.requests.first)['variables'] as Map)['input'] as Map;
       expect(input['teamId'], 'default-team');
     });
 
     test(
       'throws StateError when neither extras teamId nor default is set',
       () async {
-        final noDefault = LinearTicketAdapter(
-          Dio()..httpClientAdapter = adapter,
-        );
+        final noDefault = LinearTicketAdapter(fake);
         expect(
           () => noDefault.create(const RemoteTicketDraft(title: 'T')),
           throwsA(isA<StateError>()),
@@ -126,7 +132,7 @@ void main() {
     );
 
     test('throws StateError when createIssue returns no issue', () async {
-      adapter.nextBody({'data': <String, dynamic>{}});
+      nextBody({'data': <String, dynamic>{}});
       expect(
         () => ticketAdapter.create(const RemoteTicketDraft(title: 'T')),
         throwsA(isA<StateError>()),
@@ -134,7 +140,7 @@ void main() {
     });
 
     test('priority is converted via toStorageInt', () async {
-      adapter.nextBody({
+      nextBody({
         'data': {
           'issueCreate': {'success': true, 'issue': issueNode()},
         },
@@ -147,20 +153,19 @@ void main() {
         ),
       );
       final input =
-          ((adapter.requests.first.data as Map)['variables'] as Map)['input']
-              as Map;
+          (jsonBody(fake.requests.first)['variables'] as Map)['input'] as Map;
       expect(input['priority'], TicketPriority.urgent.toStorageInt());
     });
   });
 
   group('getByExternalId', () {
     test('returns null when the client returns no issue', () async {
-      adapter.nextBody({'data': <String, dynamic>{}});
+      nextBody({'data': <String, dynamic>{}});
       expect(await ticketAdapter.getByExternalId('x'), isNull);
     });
 
     test('maps the issue into a RemoteTicket with normalized status', () async {
-      adapter.nextBody({
+      nextBody({
         'data': {'issue': issueNode(state: 'In Review')},
       });
       final t = await ticketAdapter.getByExternalId('x');
@@ -173,7 +178,7 @@ void main() {
 
   group('list', () {
     test('returns mapped tickets filtered by status and limited', () async {
-      adapter.nextBody({
+      nextBody({
         'data': {
           'issues': {
             'nodes': [
@@ -193,7 +198,7 @@ void main() {
     });
 
     test('returns all when no status filter is set', () async {
-      adapter.nextBody({
+      nextBody({
         'data': {
           'issues': {
             'nodes': [
@@ -211,23 +216,21 @@ void main() {
   group('update', () {
     test('issues updateIssue then re-fetches the issue', () async {
       // First: updateIssue ack (no GraphQL errors). Second: getIssue response.
-      adapter
-        ..nextBody({'data': <String, dynamic>{}})
-        ..nextBody({
-          'data': {'issue': issueNode(state: 'Done')},
-        });
+      nextBody({'data': <String, dynamic>{}});
+      nextBody({
+        'data': {'issue': issueNode(state: 'Done')},
+      });
       final t = await ticketAdapter.update(
         'abc',
         const RemoteTicketPatch(title: 'New'),
       );
       expect(t.status, TicketStatus.done);
-      expect(adapter.requests, hasLength(2));
+      expect(fake.requests, hasLength(2));
     });
 
     test('throws StateError when the re-fetch returns no issue', () async {
-      adapter
-        ..nextBody({'data': <String, dynamic>{}})
-        ..nextBody({'data': <String, dynamic>{}});
+      nextBody({'data': <String, dynamic>{}});
+      nextBody({'data': <String, dynamic>{}});
       expect(
         () =>
             ticketAdapter.update('abc', const RemoteTicketPatch(title: 'New')),
@@ -240,26 +243,25 @@ void main() {
     test(
       'picks a matching workflow state and calls updateIssueState',
       () async {
-        adapter
-          ..nextBody({
-            // getWorkflowStatesForIssue
-            'data': {
-              'issue': {
-                'team': {
-                  'states': {
-                    'nodes': [
-                      {'id': 's-todo', 'name': 'Todo'},
-                      {'id': 's-done', 'name': 'Done'},
-                    ],
-                  },
+        nextBody({
+          // getWorkflowStatesForIssue
+          'data': {
+            'issue': {
+              'team': {
+                'states': {
+                  'nodes': [
+                    {'id': 's-todo', 'name': 'Todo'},
+                    {'id': 's-done', 'name': 'Done'},
+                  ],
                 },
               },
             },
-          })
-          ..nextBody({'data': <String, dynamic>{}}) // updateIssueState ack
-          ..nextBody({
-            'data': {'issue': issueNode(state: 'Done')},
-          }); // getIssue
+          },
+        });
+        nextBody({'data': <String, dynamic>{}}); // updateIssueState ack
+        nextBody({
+          'data': {'issue': issueNode(state: 'Done')},
+        }); // getIssue
         final t = await ticketAdapter.transitionStatus(
           'abc',
           TicketStatus.done,
@@ -267,62 +269,58 @@ void main() {
         expect(t.status, TicketStatus.done);
         // The updateIssueState mutation should carry the matching state id.
         final stateMutationVars =
-            (adapter.requests[1].data as Map)['variables'] as Map;
+            jsonBody(fake.requests[1])['variables'] as Map;
         expect(stateMutationVars['stateId'], 's-done');
       },
     );
 
     test('skips updateIssueState when no state matches', () async {
-      adapter
-        ..nextBody({
-          'data': {
-            'issue': {
-              'team': {
-                'states': {
-                  'nodes': [
-                    {'id': 's-todo', 'name': 'Todo'},
-                  ],
-                },
+      nextBody({
+        'data': {
+          'issue': {
+            'team': {
+              'states': {
+                'nodes': [
+                  {'id': 's-todo', 'name': 'Todo'},
+                ],
               },
             },
           },
-        })
-        ..nextBody({
-          'data': {'issue': issueNode(state: 'Todo')},
-        }); // getIssue only
+        },
+      });
+      nextBody({
+        'data': {'issue': issueNode(state: 'Todo')},
+      }); // getIssue only
       final t = await ticketAdapter.transitionStatus('abc', TicketStatus.done);
       expect(t.status, TicketStatus.open); // 'Todo' has no keyword → open
-      expect(adapter.requests, hasLength(2));
+      expect(fake.requests, hasLength(2));
     });
   });
 
   group('assign', () {
     test('issues assignIssue then re-fetches', () async {
-      adapter
-        ..nextBody({'data': <String, dynamic>{}}) // assignIssue ack
-        ..nextBody({
-          'data': {'issue': issueNode()},
-        }); // getIssue
+      nextBody({'data': <String, dynamic>{}}); // assignIssue ack
+      nextBody({
+        'data': {'issue': issueNode()},
+      }); // getIssue
       final t = await ticketAdapter.assign('abc', 'u9');
       expect(t.externalId, 'abc');
-      expect(adapter.requests, hasLength(2));
+      expect(fake.requests, hasLength(2));
     });
 
     test('clears assignee when null is passed', () async {
-      adapter
-        ..nextBody({'data': <String, dynamic>{}})
-        ..nextBody({
-          'data': {'issue': issueNode()},
-        });
+      nextBody({'data': <String, dynamic>{}});
+      nextBody({
+        'data': {'issue': issueNode()},
+      });
       await ticketAdapter.assign('abc', null);
-      final vars = (adapter.requests.first.data as Map)['variables'] as Map;
+      final vars = jsonBody(fake.requests.first)['variables'] as Map;
       expect(vars['assigneeId'], isNull);
     });
 
     test('throws StateError when re-fetch returns nothing', () async {
-      adapter
-        ..nextBody({'data': <String, dynamic>{}})
-        ..nextBody({'data': <String, dynamic>{}});
+      nextBody({'data': <String, dynamic>{}});
+      nextBody({'data': <String, dynamic>{}});
       expect(
         () => ticketAdapter.assign('abc', null),
         throwsA(isA<StateError>()),
@@ -332,7 +330,7 @@ void main() {
 
   group('watchAssigned', () {
     test('emits one RemoteTicket per assigned issue then completes', () async {
-      adapter.nextBody({
+      nextBody({
         'data': {
           'issues': {
             'nodes': [
@@ -351,7 +349,7 @@ void main() {
     // Drive the normalization through the public getByExternalId path so we
     // exercise the real _normalizeStatus logic.
     Future<TicketStatus> statusFor(String stateName) async {
-      adapter.nextBody({
+      nextBody({
         'data': {'issue': issueNode(state: stateName)},
       });
       final t = await ticketAdapter.getByExternalId('x');
@@ -389,33 +387,4 @@ void main() {
       expect(await statusFor('Triage'), TicketStatus.open);
     });
   });
-}
-
-class FakeAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-  final List<Object> _queue = [];
-
-  void nextBody(Object body) => _queue.add(body);
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    final body = _queue.isEmpty
-        ? const <String, dynamic>{}
-        : _queue.removeAt(0);
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

@@ -1,21 +1,24 @@
 ---
 title: Installer og administrer skills
-description: Legg til GitHub-repoer som skill-kilder, bla gjennom katalogene deres, og installer, oppdater eller avinstaller skills gjennom antivirus-skanningsporten.
+description: Installer og oppdater skills i arbeidsområdet gjennom skanningsporten, og sammenlign deretter lagrede revisjoner med budsjetterte skillevalueringer.
 slug: nb-NO/handbok/slik-gjor-du/administrer-skills
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Denne veiledningen viser hvordan du fyller et arbeidsområde med skills fra
 GitHub: legg til et repo som kilde, installer skillene du vil ha fra det, og
-hold dem oppdatert over tid.
+hold dem oppdatert over tid. Du kan også evaluere en lagret revisjon mot en
+tilpasset referanse før du bestemmer deg for å beholde den.
 
 Det viktigste å vite før du begynner: **et kilderepo er ikke til å stole på.**
-Navnet, beskrivelsen og stjernetellingen er skrevet av den som eier det. Det
-eneste sikkerhetssignalet Control Center stoler på, er utfallet av
-antivirus-skanningen, som hver installasjon passerer før noe når disken eller
-en agentprompt. Vil du ha resonnementet, kan du lese
-[avsnittet om skills i agentmodellen](/nb-NO/handbok/konsepter/agentmodell/); denne siden
-holder seg til det praktiske.
+Navnet, beskrivelsen og stjernetellingen er skrevet av den som eier det. Hver
+installasjon passerer antivirus-skanningens port før noe når disken eller en
+agentprompt. Det utfallet er en adgangskontroll, ikke bevis for at en skill er
+trygg eller nyttig. Les
+[avsnittet om skills i agentmodellen](/nb-NO/handbok/konsepter/agentmodell/) for
+installasjonsmodellen, og [Evals og
+kvalitet](/nb-NO/handbok/konsepter/evals-og-kvalitet/) for hvordan
+atferdsdokumentasjon skiller seg fra en skanning.
 
 Skillene ligger under **Innstillinger → Arbeidsområde → Ferdigheter**
 (`/workspaces/<id>/settings/workspace/skills`). De er knyttet til
@@ -58,7 +61,7 @@ slug. Klikk på et kort for å åpne detaljvisningen. Den viser tre ting:
   `SKILL.md`.
 
 Forhåndsvisningen skanner nøyaktig de samme bytene som en installasjon ville
-skrive, så utfallet du ser, er utfallet installasjonen får; ingenting vurderes
+skrevet, så utfallet du ser, er utfallet installasjonen får; ingenting vurderes
 på nytt bak ryggen din.
 
 ## Installer en skill
@@ -85,6 +88,85 @@ En oppdatering passerer den samme skanningsporten som en installasjon — en
 skill der den nye versjonen settes i karantene, avvises, og versjonen du hadde,
 blir liggende. Hashen til den gamle versjonen beholdes som referanse for
 tilbakerulling i låsen.
+
+## Evaluer en skill
+
+1. Åpne **Innstillinger → Arbeidsområde → Ferdigheter**, velg den installerte
+   skillen og lagre eventuelle endringer. Under **Evaluering av ferdighet** kan
+   du kontrollere pakkehashen.
+2. Velg **Start evaluering**. Velg en **Oppgavesamling** som passer til skillens
+   formål, og en **Adapter**. Det innebygde harnesset bruker en konfigurert
+   leverandør og en verktøykyndig modell. **Claude Code** bruker den forvaltede
+   Claude-kontoen som standard og en konkret modellidentifikator; logg inn under
+   **Innstillinger → Adaptere** først. Den låner ikke serveroperatørens
+   personlige pålogging.
+3. Velg en **Sammenligning** fra tabellen nedenfor.
+4. Angi **Gjentakelser per oppgave** (1–20) og **Budsjett (US cents)**. For
+   eksempel betyr `100` 1 amerikansk dollar. Velg **Start evaluering** for å
+   godkjenne betalt arbeid hos leverandøren.
+5. Følg kampanjen under **Observabilitet → Kvalitet**, eller gå tilbake via
+   **Åpne Quality** i skillpanelet.
+
+For **Claude Code**- og **Codex OAuth**-abonnementer er budsjettet en
+**API-ekvivalent terskel for bruksstopp**, ikke en fakturagrense eller et mål på
+abonnementskvoten. `100` tillater en terskel på 1 amerikansk dollar: et kall som
+er i gang, kan overskride den, men ingen flere kall starter når rapportert bruk
+når den. Ukjent bruk stopper også videre kall. Et lite budsjett kan gjøre
+sammenligningen delvis; det lover ikke fullføring av den valgte oppgavesamlingen.
+
+Leverandører med API-nøkkel beholder konservative reservasjoner per kall basert
+på dokumenterte tokenbegrensninger og priser. De kan avvise `100` før de bruker
+penger når ett trygt reservert kall trenger mer. Feilen identifiserer den valgte
+modellen og minimumsreservasjonen; velg en billigere modell eller øk budsjettet.
+
+| Sammenligning | Bruk den til å svare på |
+| --- | --- |
+| **Fraværende kontra tilgjengelig** | Forbedrer vanlig oppdagelse og bruk av denne skillen resultatet sammenlignet med ikke å ha den? |
+| **Forrige kontra gjeldende** | Bevarer eller forbedrer oppdateringen atferden mot en tidligere fanget revisjon? |
+| **Tvungen innlasting kontra fraværende** | Kan innholdet hjelpe når det lastes inn eksplisitt? Dette diagnostiserer innlastingsproblemer; det viser ikke vanlig oppdagelse. |
+| **Sammensetning** | Hjelper det å legge til kandidaten, eller kommer det i konflikt med de valgte bakgrunnsskillene? Referansen beholder den samme bakgrunnsbeholdningen uten kandidaten. |
+
+**Forrige kontra gjeldende** trenger en pakkehash fra kampanjehistorikken.
+Evaluer en revisjon før du erstatter den hvis du vil bruke den som referanse;
+vilkårlig Git-historikk importeres ikke.
+
+Ulagrede endringer, en utilgjengelig hash og skrivebeskyttet demomodus
+deaktiverer start. Serveren kontrollerer også tilgang til arbeidsområde og repo,
+karantene fra skanningen, handlingsregler, modellstøtte, priser og
+kjøringsisolering. Løs en mislykket kontroll i stedet for å omgå den.
+Identiteten til leverandør og modell registreres, men et eksternt modellalias
+fryser ikke leverandørens underliggende vekter.
+
+### Undersøk, avbryt og eksporter
+
+Les dekning og forbruk sammen med resultatene per oppgave og tilbakegang. Åpne
+enkelte forsøk for å undersøke observerte skillinnlastinger, verktøyhendelser,
+feil og verifiseringsdokumentasjon. Resultater som er **delvis dokumentert**,
+**utdaterte** eller **ikke entydige** er ikke anbefalinger om å ta i bruk en
+revisjon. Hashen til en rapport identifiserer pakken som ble fanget, ikke
+nødvendigvis pakken som er installert nå.
+
+Bruk **Avbryt kjøring** for arbeid i kø eller aktivt arbeid. Fullførte forsøk
+forblir synlige; avbrudd refunderer ikke leverandørarbeid som allerede er
+utført. **Kopier sladdet JSON** kopierer en begrenset dokumentasjonseksport til
+utklippstavlen, ikke en fullstendig gjenskapingspakke for privat kildekode. Se
+[Evals og kvalitet](/nb-NO/handbok/konsepter/evals-og-kvalitet/) for
+dokumentasjon og plattformgrenser.
+
+### Reevaluer etter oppdateringer
+
+Automatisk betalt reevaluering er **av som standard**. Når du har evaluert den
+gjeldende revisjonen, velger du en kampanje under **Konfigurasjon av
+oppdateringsregler** og velger **Aktiver evaluering av oppdateringer**. Å endre
+denne regelen krever administratortillatelse i arbeidsområdet. Kampanjen du
+velger, leverer oppgavesamlingen, adapteren, leverandør/modell, sammenligningen,
+gjentakelsene og budsjettet.
+
+Senere innholdsendringer som slippes inn, planlegger budsjettert arbeid; uendrede
+hasher dedupliseres. **Deaktiver evaluering av oppdateringer** hindrer framtidige
+automatiske innslipp. Bruk **Avbryt kjøring** for en kampanje som allerede er
+sluppet inn. Historiske rapporter forblir knyttet til sine opprinnelige
+pakkehasher; reevaluering publiserer, aktiverer eller skriver ikke om en skill.
 
 ## Avinstaller en skill, fjern et repo
 
@@ -124,7 +206,8 @@ Repo-skills passerer den samme skanningen som feiler lukket (`pass` / `warn` /
 `quarantine`) før frontmatteren deres når en prompt. `warn` slippes inn;
 `quarantine` holdes tilbake, uten noen operatøroverstyring på den veien.
 
-Se [Repo-avgrensede skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills) og
+Se [Repo-avgrensede
+skills](/nb-NO/handbok/konsepter/agentmodell/#repo-avgrensede-skills) og
 [Skråstrekkommandoer](/nb-NO/handbok/referanse/skrastrekkommandoer/).
 
 ## Relaterte guider
@@ -135,3 +218,4 @@ Se [Repo-avgrensede skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-sk
 ## Relaterte konsepter
 
 - [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/)
+- [Evals og kvalitet](/nb-NO/handbok/konsepter/evals-og-kvalitet/)

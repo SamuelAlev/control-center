@@ -2,7 +2,7 @@
 title: Back up and restore
 description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
 slug: en-GB/manual/guides/back-up-and-restore
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 This guide covers the five things people actually do with backups: take one, collect it,
@@ -17,14 +17,21 @@ Everything here lives at **Settings → Server → Backup & restore**.
 - A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
 - To take, list, download or delete an **install snapshot**: the install's **owner**.
 - For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- For downloads and uploads: a paired full client on either a direct or brokered-relay connection. Both paths carry the file bytes through the same authenticated, end-to-end encrypted resource tunnel; the relay cannot read them.
 
 :::caution[Install snapshots are manual]
 **Back up now** still creates a whole-install snapshot only on request. The built-in
 **Workspace backup** pipeline can instead take a workspace database backup once a week
 and remove that workspace's backups older than 30 days. It does not copy `global.db`,
 other workspaces, or files beside the database. Keep off-machine copies separately.
-:::
+::::
+
+::::caution[Backups are not encrypted at rest]
+The encrypted transfer ends at your client and `cc_server`. Snapshot directories, workspace
+exports, downloaded files and the server's databases are not encrypted at rest by Control
+Center. Protect the server host, your downloads and off-machine copies with your own
+storage encryption and access controls.
+::::
 
 ## What a backup covers
 
@@ -310,7 +317,7 @@ Do this once when you set backups up, and again whenever you change where they a
 
 | Symptom                                                                  | Cause and fix                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
+| Download or upload fails after a connection changes                     | Retry on the active paired connection. Direct and relay both support encrypted file transfer; neither exposes a plaintext HTTP fallback |
 | "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
 | "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
 | "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
@@ -324,7 +331,7 @@ Do this once when you set backups up, and again whenever you change where they a
 
 - [Run a headless server](/en-GB/manual/guides/run-headless-server/): where the data directory comes from
 - [Connect to a remote server](/en-GB/manual/guides/connect-remote-server/): direct versus relayed connections
-- [Pair a device](/en-GB/manual/guides/pair-a-device/): the credential the transfer routes sign with
+- [Pair a device](/en-GB/manual/guides/pair-a-device/): the paired device credential used by the encrypted transfer and its signed resource requests
 
 ## Related concepts and reference
 

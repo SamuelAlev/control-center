@@ -90,6 +90,23 @@ class _UnusedRunLogRepo implements AgentRunLogRepository {
   Future<void> upsert(AgentRunLog log) async {}
 
   @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async => false;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

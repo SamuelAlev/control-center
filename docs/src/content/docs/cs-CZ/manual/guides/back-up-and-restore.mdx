@@ -2,7 +2,7 @@
 title: Záloha a obnovení
 description: Pořiď snímek instalace, přesuň pracovní prostor mezi stroji, obnov jeden pracovní prostor nebo všechny a drž kopie jinde.
 slug: cs-CZ/prirucka/navody/zaloha-a-obnoveni
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Zálohy se v praxi používají na pět věcí: pořídit snímek, stáhnout ho, přesunout
@@ -17,7 +17,7 @@ Všechno odsud je v **Nastavení → Server → Záloha a obnovení**.
 - **Plný klient**, tedy desktopová nebo webová aplikace. Spárovaný telefon z toho schválně nespustí nic.
 - Pořídit, vypsat, stáhnout nebo smazat **snímek instalace** smí **vlastník** instalace.
 - U akcí jednoho pracovního prostoru: **admin** toho prostoru pro export, **vlastník** pro import nebo smazání.
-- Stahování a nahrávání chce **přímé** spojení se serverem. Zprostředkované relé vozí rámce RPC, ne přenos souborů, a ovládací prvky přenosu se samy vypnou a ukážou poznámku, když jsi na něm.
+- Stahování a nahrávání chce spárovaný plný klient na přímém spojení nebo přes zprostředkované relé. Obě cesty přenesou bajty souboru stejným ověřeným, od konce ke konci šifrovaným tunelem prostředků; relé je nepřečte.
 
 :::caution[Snímky instalace jsou ruční]
 **Zálohovat teď** pořád vytvoří snímek celé instalace jen na vyžádání. Vestavěná
@@ -25,7 +25,14 @@ pipeline **Workspace backup** místo toho umí jednou týdně vzít zálohu data
 pracovního prostoru a smazat zálohy toho prostoru starší než 30 dní. Nekopíruje
 `global.db`, ostatní pracovní prostory ani soubory vedle databáze. Kopie mimo
 stroj si drž zvlášť.
-:::
+::::
+
+::::caution[Zálohy nejsou v klidu šifrované]
+Šifrovaný přenos končí u tvého klienta a `cc_server`. Adresáře se snímky,
+exporty pracovních prostorů, stažené soubory ani databáze serveru Control
+Center v klidu nešifruje. Hostitele serveru, svoje stažené soubory i kopie mimo
+stroj chraň vlastním šifrováním úložiště a řízením přístupu.
+::::
 
 ## Co záloha pokrývá
 
@@ -322,7 +329,7 @@ ukládají.
 
 | Příznak | Příčina a oprava |
 | --- | --- |
-| Ovládací prvky stahování a nahrávání jsou vypnuté a je u nich poznámka o relé | Jsi připojený přes zprostředkované relé, které nepřenáší soubory. Připoj se přímo |
+| Stažení nebo nahrání selže po změně spojení | Zkus to znovu na aktivním spárovaném spojení. Přímé i reléové spojení podporuje šifrovaný přenos souborů; ani jedno nevystavuje otevřenou HTTP variantu |
 | „Server odmítl“ | Role. Pořízení nebo výpis snímku instalace potřebuje operátora instalace. Stažení pracovního prostoru potřebuje admina, obnovení vlastníka a zip celého snímku operátora instalace |
 | „Tento server nemá povrch záloh“ | Hostitel nemá připojený port záloh. Je to demo server. Operace chybí, neodmítají se |
 | „Soubor je větší, než server přijímá“ | Nahrávání je omezené na 8 GiB. Dej soubor na hostitele serveru a použij **Importovat** → **Vybrat soubor** |
@@ -336,7 +343,7 @@ ukládají.
 
 - [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): odkud se bere datový adresář
 - [Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/): přímé spojení a spojení přes relé
-- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/): přihlašovací údaj, kterým se podepisují trasy přenosu
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/): pověření spárovaného zařízení, které používá šifrovaný přenos a jeho podepsané požadavky na prostředky
 
 ## Související koncepty a reference
 

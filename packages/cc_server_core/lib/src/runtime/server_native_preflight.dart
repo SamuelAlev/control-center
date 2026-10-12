@@ -9,6 +9,8 @@ import 'package:cc_natives/cc_natives.dart'
         inferenceLibraryBaseName,
         platformLibraryFileName,
         ptyLibraryBaseName,
+        resolveRhttpLibraryPath,
+        rhttpLibraryBaseName,
         samlLibraryBaseName,
         tryOpenFirst,
         watcherLibraryBaseName;
@@ -47,6 +49,15 @@ List<NativeRequirement> buildNativeRequirements({
           null;
 
   return [
+    // The HTTP engine first: without it `runCcServer` cannot even build the
+    // clients every other subsystem is handed, so a bundle missing `librhttp`
+    // must be refused before anything else is reported. `initializeRhttp()`
+    // opens the same file this resolves — the probe only stats, so a JIT host
+    // (dart test / dart run) cannot hang here.
+    nativeRequirement(
+      '${platformLibraryFileName(rhttpLibraryBaseName)} (HTTP transport)',
+      () async => resolveRhttpLibraryPath(appSupportRoot: dataDir) != null,
+    ),
     nativeRequirement(
       '${platformLibraryFileName(inferenceLibraryBaseName)} (semantic '
       'embeddings, meeting transcription, diarization, VAD, dictation)',

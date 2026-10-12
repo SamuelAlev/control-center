@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
 import 'package:cc_domain/features/newsfeed/domain/helpers/abp_parser.dart';
 import 'package:cc_domain/features/newsfeed/domain/tracking_param_stripper.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/app_network.dart';
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart';
 
 /// Downloads community ABP filter lists, parses them, and caches the merged
 /// rule list under the server data dir.
@@ -20,10 +21,10 @@ class FilterListService {
   /// restricted environments.
   FilterListService({
     required this.cacheDir,
-    Dio? dio,
+    RhttpClient? httpClient,
     this.allowNetwork = true,
     this.ttl = const Duration(hours: 24),
-  }) : _dio = dio ?? Dio();
+  }) : _httpClientOverride = httpClient;
 
   /// Directory under the server data dir (`<dataDir>/filter_lists`).
   final String cacheDir;
@@ -41,7 +42,25 @@ class FilterListService {
   static const _etagsFile = 'etags.json';
   static const _blocklistFile = 'blocklist_cached.json';
 
-  final Dio _dio;
+  final RhttpClient? _httpClientOverride;
+
+  /// The [RhttpClient] used to download a list, created on first use so a
+  /// cache-only service never touches the transport. Deliberately a plain
+  /// client (no retry/dedup/logging chain — a 403 challenge page never becomes
+  /// fetchable by retrying), bounded like the per-request timeouts it replaces
+  /// (15s to connect, 30s overall).
+  late final RhttpClient _httpClient =
+      _httpClientOverride ??
+      RhttpClient.createSync(
+        settings: httpClientSettings(
+          settings: const ClientSettings(
+            timeoutSettings: TimeoutSettings(
+              connectTimeout: Duration(seconds: 15),
+              timeout: Duration(seconds: 30),
+            ),
+          ),
+        ),
+      );
 
   static const _sources = [
     AbpSource(
@@ -255,38 +274,52 @@ class FilterListService {
       return null;
     }
     final etags = _readEtags();
-    final headers = <String, dynamic>{'User-Agent': _userAgent};
+    final headers = <String, String>{'User-Agent': _userAgent};
     final etag = etags[etagKey];
     if (etag != null && etag.isNotEmpty) {
       headers['If-None-Match'] = etag;
     }
 
     try {
-      final response = await _dio.get<String>(
+      final response = await _httpClient.getText(
         url,
-        options: Options(
-          headers: headers,
-          responseType: ResponseType.plain,
-          sendTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 30),
-          validateStatus: (status) =>
-              status != null && (status == 200 || status == 304),
-        ),
+        headers: HttpHeaders.rawMap(headers),
       );
 
       if (response.statusCode == 304) {
         return null;
       }
+      // Only a 200 carries a list; anything else non-error (a stray 3xx the
+      // transport did not follow) is treated as "no new list", exactly as the
+      // 200-or-304 status filter this replaces did.
+      if (response.statusCode != 200) {
+        return null;
+      }
 
-      final newEtag = response.headers.value('etag');
+      final newEtag = _responseHeader(response, 'etag');
       if (newEtag != null && newEtag.isNotEmpty) {
         etags[etagKey] = newEtag;
         _writeEtags(etags);
       }
-      return response.data;
+      return response.body;
     } on Object {
       return null;
     }
+  }
+
+  /// Case-insensitive lookup of [name] in a response's headers (reqwest
+  /// already lower-cases them; a canned test response may not).
+  static String? _responseHeader(HttpResponse response, String name) {
+    final direct = response.headerMap[name];
+    if (direct != null) {
+      return direct;
+    }
+    for (final entry in response.headerMap.entries) {
+      if (entry.key.toLowerCase() == name) {
+        return entry.value;
+      }
+    }
+    return null;
   }
 
   Directory _ensureCacheDir() {

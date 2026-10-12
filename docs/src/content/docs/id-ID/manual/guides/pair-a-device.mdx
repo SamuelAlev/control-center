@@ -2,7 +2,7 @@
 title: Pasangkan perangkat
 description: Pasangkan ponsel Anda (atau peramban atau desktop kedua) dengan server Control Center Anda agar Anda dapat mengikuti fleet dari jarak jauh.
 slug: id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Panduan ini menunjukkan cara memasangkan ponsel dengan Control Center, sehingga
@@ -22,9 +22,10 @@ ini: aplikasi ponsel (`apps/cc_remote`, PWA web Flutter yang dapat Anda deploy k
 Cloudflare Pages melalui `wrangler.jsonc`-nya, ke image nginx `docker/cc_remote`,
 atau ke host statis mana pun dengan HTTPS — service worker dan IndexedDB
 dibatasi oleh konteks aman) dan relay (`apps/cc_signaling_server`, biner Dart
-stateless tunggal yang tidak menyimpan data aplikasi apa pun dan tidak pernah
-melihat rahasia pemasangan — ia hanya meneruskan frame yang tersegel ujung ke
-ujung). Lihat README masing-masing untuk langkah build dan menjalankannya.
+stateless tunggal yang tidak menyimpan data aplikasi apa pun dan tidak dapat
+mendekripsi catatan terenkripsi atau melihat rahasia pemasangan). Namun ia tetap
+melihat IP, pengenal perutean, ukuran, dan waktu, serta dapat membuang lalu
+lintas. Lihat README masing-masing untuk langkah build dan menjalankannya.
 
 ## Langkah 1: Buka panel pemasangan
 
@@ -49,14 +50,18 @@ server dan sidik jari identitas untuk PWA Remote.
 
 Di sisi ponsel, membuka tautan pemasangan tidak memasangkan secara diam-diam.
 Remote menampilkan nama yang diumumkan server dan meminta Anda mengonfirmasi
-sebelum menyimpan apa pun, sehingga tautan palsu tidak dapat membajak aplikasi
-ke server orang lain.
+sebelum menyimpan apa pun. Periksa sidik jari di QR terhadap sumber tepercaya:
+mengonfirmasi nama yang belum terverifikasi atau QR palsu tidak membuktikan bahwa
+server itu milik Anda. Klien menyematkan identitas bertanda tangan dan menolak
+sidik jari yang berubah pada koneksi berikutnya.
 
 :::caution[QR yang dipindai langsung memberikan akses]
 Tidak ada langkah menunggu-lalu-menyetujui: perangkat yang dibuat langsung aktif
 sejak saat dibuat dan gerbang koneksi hanya memeriksa bahwa kredensialnya aktif
 dan belum kedaluwarsa. Perlakukan QR dan kunci pemasangan seperti kata sandi,
-lalu cabut apa pun yang tidak ingin Anda berikan.
+lalu cabut apa pun yang tidak ingin Anda berikan. Sesi klien langsung maupun
+melalui relay sama-sama memerlukan enkripsi ujung ke ujung; klien lama tidak dapat
+beralih ke RPC teks polos.
 :::
 
 ## Kelola perangkat yang dipasangkan

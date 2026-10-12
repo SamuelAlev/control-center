@@ -1,22 +1,25 @@
 ---
 title: Pasang dan urus kemahiran
-description: Tambah repositori GitHub sebagai sumber kemahiran, layari katalognya, dan pasang, kemas kini atau nyahpasang kemahiran melalui pintu imbasan antivirus.
+description: Pasang dan kemas kini kemahiran ruang kerja melalui pintu imbasan, kemudian bandingkan semakan tersimpan dengan penilaian kemahiran yang berbelanjawan.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-kemahiran
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Panduan ini menunjukkan cara mengisi ruang kerja dengan kemahiran daripada
 GitHub: tambah repositori sebagai sumber, pasang kemahiran yang anda mahu
-daripadanya, dan pastikan semuanya terkini dari semasa ke semasa.
+daripadanya, dan pastikan semuanya terkini dari semasa ke semasa. Anda juga
+boleh menilai semakan tersimpan terhadap garis dasar yang dipadankan sebelum
+memutuskan sama ada mahu menyimpannya.
 
 Perkara penting yang perlu anda tahu sebelum bermula: **repositori sumber tidak
 dipercayai.** Nama, penerangan dan bilangan bintangnya ditulis oleh sesiapa
-sahaja yang memilikinya. Satu-satunya isyarat keselamatan yang dipercayai oleh
-Control Center ialah keputusan imbasan antivirus, yang dilalui oleh setiap
-pemasangan sebelum apa-apa pun sampai ke cakera atau prompt ejen. Jika anda
-mahukan alasannya, baca
-[bahagian kemahiran dalam model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/);
-halaman ini kekal pada praktiknya.
+sahaja yang memilikinya. Setiap pemasangan melalui pintu imbasan antivirus
+sebelum apa-apa pun sampai ke cakera atau prompt ejen. Keputusan itu ialah
+semakan penerimaan, bukan bukti bahawa sesuatu kemahiran selamat atau berguna.
+Baca [bahagian kemahiran dalam model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/)
+untuk model pemasangan, dan [Evals dan
+kualiti](/ms-MY/manual-pengguna/konsep/evals-dan-kualiti/) untuk memahami
+perbezaan antara bukti tingkah laku dengan imbasan.
 
 Kemahiran berada di **Tetapan → Ruang kerja → Kemahiran**
 (`/workspaces/<id>/settings/workspace/skills`). Ia berskop ruang kerja: kemahiran
@@ -89,6 +92,87 @@ kemahiran yang versi baharunya dikuarantin akan ditolak dan versi yang anda
 miliki kekal tidak berubah. Hash versi lama disimpan sebagai rujukan rollback
 dalam fail lock itu.
 
+## Nilai kemahiran
+
+1. Buka **Tetapan → Ruang kerja → Kemahiran**, pilih kemahiran yang dipasang dan
+   simpan sebarang suntingan. Dalam **Penilaian kemahiran**, semak hash pakej.
+2. Pilih **Mulakan penilaian**. Pilih **Korpus tugas** yang sepadan dengan
+   tujuan kemahiran itu dan satu **Penyesuai**. Harness terbina dalam
+   menggunakan penyedia yang dikonfigurasikan dan model yang berkebolehan alat.
+   **Claude Code** menggunakan akaun Claude terurus lalai dan pengecam model
+   yang konkrit; log masuk dahulu di **Tetapan → Penyesuai**. Ia tidak meminjam
+   log masuk peribadi pengendali pelayan.
+3. Pilih **Perbandingan** daripada jadual di bawah.
+4. Tetapkan **Ulangan bagi setiap tugas** (1–20) dan **Bajet (sen AS)**. Sebagai
+   contoh, `100` bermakna AS$1. Pilih **Mulakan penilaian** untuk membenarkan
+   kerja penyedia berbayar.
+5. Ikuti kempen itu dalam **Kebolehcerapan → Kualiti**, atau kembali melalui
+   **Buka Kualiti** dalam panel kemahiran.
+
+Bagi langganan **Claude Code** dan **Codex OAuth**, bajet ialah **ambang
+pemberhentian penggunaan setara API**, bukan had invois atau ukuran kuota
+langganan. `100` membenarkan ambang AS$1: panggilan yang sedang berjalan boleh
+melebihinya, tetapi tiada panggilan selanjutnya bermula apabila penggunaan yang
+dilaporkan mencapainya. Penggunaan yang tidak diketahui juga menghentikan
+panggilan selanjutnya. Bajet yang kecil boleh menjadikan perbandingan separa; ia
+tidak menjanjikan penyempurnaan korpus tugas yang dipilih.
+
+Penyedia berkunci API mengekalkan tempahan setiap panggilan yang konservatif
+berdasarkan had token dan harga yang didokumenkan. Penyedia ini boleh menolak
+`100` sebelum berbelanja apabila satu panggilan yang ditempah secara selamat
+memerlukan lebih banyak. Ralat itu mengenal pasti model yang dipilih dan tempahan
+minimum; pilih model yang lebih murah atau tambah bajet tersebut.
+
+| Perbandingan | Gunakannya untuk menjawab |
+| --- | --- |
+| **Tiada lwn tersedia** | Adakah penemuan dan penggunaan biasa kemahiran ini menambah baik hasil berbanding tidak memilikinya? |
+| **Terdahulu lwn semasa** | Adakah kemas kini mengekalkan atau menambah baik tingkah laku berbanding semakan yang ditangkap sebelum ini? |
+| **Muat paksa lwn tiada** | Bolehkah kandungan itu membantu apabila dimuatkan secara eksplisit? Ini mendiagnosis masalah pemuatan; ia tidak membuktikan penemuan biasa. |
+| **Komposisi** | Adakah menambah calon membantu atau bercanggah dengan kemahiran latar yang dipilih? Garis dasar mengekalkan inventori latar yang sama tanpa calon itu. |
+
+**Terdahulu lwn semasa** memerlukan hash pakej daripada sejarah kempen. Nilai
+satu semakan sebelum menggantikannya jika anda mahu menggunakannya sebagai
+garis dasar; sejarah Git sewenang-wenangnya tidak diimport.
+
+Suntingan yang belum disimpan, hash yang tidak tersedia dan mod demo baca sahaja
+melumpuhkan pelancaran. Pelayan juga menyemak akses ruang kerja/repositori,
+kuarantin imbasan, dasar tindakan, sokongan model, harga dan pengasingan
+pelaksanaan. Selesaikan semakan yang gagal dan bukannya memintasnya. Identiti
+penyedia/model direkodkan, tetapi alias model jauh tidak membekukan pemberat
+asas penyedia itu.
+
+### Periksa, batalkan dan eksport
+
+Baca liputan dan perbelanjaan bersama hasil setiap tugas dan kemerosotan. Buka
+percubaan individu untuk memeriksa pemuatan kemahiran yang diperhatikan,
+peristiwa alat, ralat dan bukti pengesah. Keputusan **bukti separa**, **lapuk**
+dan **tiada kesimpulan** bukan cadangan untuk menerima pakai sesuatu semakan.
+Hash sesuatu laporan mengenal pasti pakej yang ditangkap, bukan semestinya pakej
+yang sedang dipasang.
+
+Gunakan **Batalkan proses** untuk kerja yang dalam baris gilir atau aktif.
+Percubaan yang selesai kekal kelihatan; pembatalan tidak memulangkan kerja
+penyedia yang sudah dilakukan. **Salin JSON yang telah disunting** menyalin
+eksport bukti yang terbatas ke papan keratan, bukan bundel main semula sumber
+peribadi yang lengkap. Lihat [Evals dan
+kualiti](/ms-MY/manual-pengguna/konsep/evals-dan-kualiti/) untuk had bukti dan
+platform.
+
+### Nilai semula selepas kemas kini
+
+Penilaian semula berbayar automatik **dimatikan secara lalai**. Selepas menilai
+semakan semasa, pilih kempen di bawah **Konfigurasi dasar kemas kini** dan pilih
+**Dayakan penilaian kemas kini**. Menukar dasar ini memerlukan kebenaran
+pentadbir ruang kerja. Kempen yang dipilih membekalkan korpus tugas, penyesuai,
+penyedia/model, perbandingan, ulangan dan bajet.
+
+Perubahan kandungan yang diterima selepas itu menjadualkan kerja berbelanjawan;
+hash yang tidak berubah dideduplikasi. **Lumpuhkan penilaian kemas kini**
+menghalang penerimaan automatik pada masa hadapan. Gunakan **Batalkan proses**
+untuk kempen yang sudah diterima. Laporan sejarah kekal terikat pada hash pakej
+asalnya; penilaian semula tidak menerbitkan, mendayakan atau menulis semula
+sesuatu kemahiran.
+
 ## Nyahpasang kemahiran, buang repositori
 
 **Nyahpasang** (pada paparan butiran kemahiran yang dipasang, atau padam dalam
@@ -127,8 +211,9 @@ Kemahiran repo melalui imbasan menolak secara lalai yang sama (`pass` / `warn` /
 `quarantine`) sebelum frontmatter-nya sampai ke prompt. `warn` diterima;
 `quarantine` ditahan, tanpa pengatasan operator pada laluan itu.
 
-Lihat [Kemahiran berskop repositori](/ms-MY/manual-pengguna/konsep/model-ejen/#repo-scoped-skills) dan
-[Perintah slash](/ms-MY/manual-pengguna/rujukan/perintah-slash/).
+Lihat [Kemahiran berskop
+repositori](/ms-MY/manual-pengguna/konsep/model-ejen/#kemahiran-berskop-repositori)
+dan [Perintah slash](/ms-MY/manual-pengguna/rujukan/perintah-slash/).
 
 ## Panduan berkaitan
 
@@ -138,3 +223,4 @@ Lihat [Kemahiran berskop repositori](/ms-MY/manual-pengguna/konsep/model-ejen/#r
 ## Konsep berkaitan
 
 - [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/)
+- [Evals dan kualiti](/ms-MY/manual-pengguna/konsep/evals-dan-kualiti/)

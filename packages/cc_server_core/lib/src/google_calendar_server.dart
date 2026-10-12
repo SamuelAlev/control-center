@@ -13,7 +13,7 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Builds the deterministic account id for a workspace + Google account email.
 /// Mirrors the client's `googleAccountId` so a row connected here is keyed the
@@ -145,18 +145,18 @@ class ServerGoogleTokenManager {
     required this._store,
     this._serverClient = const GoogleOAuthClient.none(),
     this._onInvalidGrant,
-    this._dioFactory,
+    this._httpClientFactory,
   });
 
   final FileGoogleCredentialsStore _store;
   final GoogleOAuthClient _serverClient;
   final Future<void> Function(String accountId)? _onInvalidGrant;
 
-  /// Supplies the [Dio] the refresh rides on; null means the default one
-  /// [GoogleDeviceAuthClient] builds. A seam so a test can assert which client
-  /// credentials a refresh actually sends, which is the whole point of the
-  /// built-in marker.
-  final Dio Function()? _dioFactory;
+  /// Supplies the [RhttpClient] the refresh rides on; null means the default
+  /// one [GoogleDeviceAuthClient] builds. A seam so a test can assert which
+  /// client credentials a refresh actually sends, which is the whole point of
+  /// the built-in marker.
+  final RhttpClient Function()? _httpClientFactory;
 
   final Map<String, Future<GoogleServerCredentials?>> _inFlight = {};
 
@@ -217,7 +217,7 @@ class ServerGoogleTokenManager {
       final auth = GoogleDeviceAuthClient(
         clientId: client.clientId,
         clientSecret: client.clientSecret,
-        dio: _dioFactory?.call(),
+        httpClient: _httpClientFactory?.call(),
       );
       final refreshed = await auth.refresh(current);
       await _store.save(accountId, refreshed);
@@ -238,72 +238,84 @@ class ServerGoogleTokenManager {
   }
 }
 
-/// Builds a [GoogleCalendarApiClient] whose [Dio] injects (and refreshes) the
-/// per-account Bearer token from [tokens]. Each Calendar request tags itself
-/// with the account id via [googleAccountIdExtraKey].
+/// Builds a [GoogleCalendarApiClient] whose [RhttpClient] injects (and
+/// refreshes) the per-account Bearer token from [tokens]. Each Calendar
+/// request tags itself with the account id via [googleAccountIdExtraKey].
 GoogleCalendarApiClient buildServerGoogleCalendarApiClient(
   ServerGoogleTokenManager tokens,
 ) {
-  final dio = createDio(baseUrl: googleCalendarApiBaseUrl);
-  dio.interceptors.add(_ServerGoogleAuthInterceptor(tokens, dio));
-  return GoogleCalendarApiClient(dio);
+  // The client's own URLs are absolute (they embed `googleCalendarApiBaseUrl`),
+  // so no baseUrl is set here — rhttp concatenates baseUrl + url rather than
+  // detecting absolute URLs.
+  final httpClient = createHttpClient(
+    interceptors: [_ServerGoogleAuthInterceptor(tokens)],
+  );
+  return GoogleCalendarApiClient(httpClient);
 }
 
 /// Attaches the per-account Bearer (refreshing proactively when expiring) and
 /// retries once on a 401. Refreshes are single-flighted inside the
 /// [ServerGoogleTokenManager].
-class _ServerGoogleAuthInterceptor extends QueuedInterceptor {
-  _ServerGoogleAuthInterceptor(this._tokens, this._dio);
+class _ServerGoogleAuthInterceptor extends Interceptor {
+  _ServerGoogleAuthInterceptor(this._tokens);
 
   final ServerGoogleTokenManager _tokens;
-  final Dio _dio;
+
+  static HttpRequest _withAuthorization(HttpRequest request, String token) =>
+      request.copyWith(
+        headers: (request.headers ?? HttpHeaders.empty).copyWithRaw(
+          name: 'Authorization',
+          value: 'Bearer $token',
+        ),
+      );
 
   @override
-  Future<void> onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
+  Future<InterceptorResult<HttpRequest>> beforeRequest(
+    HttpRequest request,
   ) async {
-    final accountId = options.extra[googleAccountIdExtraKey] as String?;
-    if (accountId != null) {
+    final accountId = request.additionalData[googleAccountIdExtraKey];
+    if (accountId is String && accountId.isNotEmpty) {
       try {
         final token = await _tokens.accessTokenFor(accountId);
         if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
+          return Interceptor.next(_withAuthorization(request, token));
         }
       } on Object catch (e) {
         CcHostLog.warning('calendar: could not attach Google token: $e');
       }
     }
-    handler.next(options);
+    return Interceptor.next(request);
   }
 
   @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
+  Future<InterceptorResult<RhttpException>> onError(
+    RhttpException exception,
   ) async {
-    final status = err.response?.statusCode;
-    final accountId =
-        err.requestOptions.extra[googleAccountIdExtraKey] as String?;
-    final alreadyRetried =
-        err.requestOptions.extra['googleAuthRetried'] == true;
-    if (status == 401 && accountId != null && !alreadyRetried) {
+    final status = exception is RhttpStatusCodeException
+        ? exception.statusCode
+        : null;
+    final request = exception.request;
+    final accountId = request.additionalData[googleAccountIdExtraKey];
+    final alreadyRetried = request.additionalData['googleAuthRetried'] == true;
+    if (status == 401 &&
+        accountId is String &&
+        accountId.isNotEmpty &&
+        !alreadyRetried) {
       final token = await _tokens.forceRefresh(accountId);
       if (token != null && token.isNotEmpty) {
-        final request = err.requestOptions;
-        request.extra['googleAuthRetried'] = true;
-        request.headers['Authorization'] = 'Bearer $token';
+        // Marked on the request BEFORE the copy so the retried attempt (which
+        // runs the full interceptor chain again) carries the marker and cannot
+        // loop on a second 401.
+        request.additionalData['googleAuthRetried'] = true;
         try {
-          final response = await _dio.fetch<dynamic>(request);
-          handler.resolve(response);
-          return;
-        } on DioException catch (retryError) {
-          handler.next(retryError);
-          return;
+          final response = await _withAuthorization(request, token).send();
+          return Interceptor.resolve(response);
+        } on RhttpException catch (retryError) {
+          return Interceptor.next(retryError);
         }
       }
     }
-    handler.next(err);
+    return Interceptor.next(exception);
   }
 }
 
@@ -599,7 +611,7 @@ class CalendarConnectService {
     required this._calendarRepository,
     this._serverClient = const GoogleOAuthClient.none(),
     this._onConnected,
-    this._dioFactory,
+    this._httpClientFactory,
   });
 
   final FileGoogleCredentialsStore _store;
@@ -607,11 +619,11 @@ class CalendarConnectService {
   final GoogleOAuthClient _serverClient;
   final Future<void> Function(String workspaceId)? _onConnected;
 
-  /// Supplies the [Dio] the device-code exchange rides on; null means the
-  /// default one [GoogleDeviceAuthClient] builds. A seam so a test can assert
-  /// what a built-in connect writes to the credential store without dialing
-  /// Google.
-  final Dio Function()? _dioFactory;
+  /// Supplies the [RhttpClient] the device-code exchange rides on; null means
+  /// the default one [GoogleDeviceAuthClient] builds. A seam so a test can
+  /// assert what a built-in connect writes to the credential store without
+  /// dialing Google.
+  final RhttpClient Function()? _httpClientFactory;
   final Map<String, _PendingConnect> _pending = {};
   final Random _random = Random.secure();
 
@@ -652,7 +664,7 @@ class CalendarConnectService {
     final auth = GoogleDeviceAuthClient(
       clientId: client.clientId,
       clientSecret: client.clientSecret,
-      dio: _dioFactory?.call(),
+      httpClient: _httpClientFactory?.call(),
     );
     final code = await auth.requestDeviceCode();
     final handle = _newHandle();

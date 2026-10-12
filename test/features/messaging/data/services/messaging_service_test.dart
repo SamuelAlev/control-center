@@ -8,13 +8,13 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
-import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
@@ -30,6 +30,7 @@ import 'package:cc_infra/src/messaging/messaging_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../fakes/fake_agent_repository.dart';
+import '../../../../fakes/fake_agent_run_log_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Fakes
@@ -42,10 +43,8 @@ import '../../../../fakes/fake_agent_repository.dart';
 const _ws = 'ws-1';
 
 class _FakeMessagingRepo implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -497,6 +496,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     required String cliName,
     required String prompt,
     required String workingDirectory,
+    AgentPromptParts? promptParts,
+    DateTime? runStartedAt,
     String? userText,
     String? modelId,
     String? agentId,
@@ -560,25 +561,14 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   Future<void> stop() async => _controller.close();
 }
 
-class _FakeRunLogRepo extends Fake implements AgentRunLogRepository {
-  @override
-  Future<List<AgentRunLog>> forPipelineStep(
-    String workspaceId,
-    String pipelineRunId,
-    String pipelineStepId,
-  ) async => const [];
-
+class _FakeRunLogRepo extends FakeAgentRunLogRepository {
   AgentRunLog? _runLog;
-  var _upsertCount = 0;
 
   @override
   Future<void> upsert(AgentRunLog runLog) async {
+    await super.upsert(runLog);
     _runLog = runLog;
-    _upsertCount++;
   }
-
-  @override
-  Future<AgentRunLog?> getById(String workspaceId, String id) async => _runLog;
 }
 
 class _FakeDispatchAgentUseCase extends Fake implements DispatchAgentUseCase {
@@ -595,6 +585,16 @@ class _FakeDispatchAgentUseCase extends Fake implements DispatchAgentUseCase {
   }) async {
     return PreparedDispatch(
       effectivePrompt: prompt,
+      promptParts: AgentPromptParts(
+        userText: prompt,
+        standing: '',
+        turnContext: '',
+        conversationContext: '',
+        fullPrompt: prompt,
+        standingRevision: 'empty-fixture',
+        conversationEntries: const [],
+        turnSections: const [],
+      ),
       effectiveConversationId: conversationId ?? spaceId,
       agent: null,
       mode: Mode.chat,
@@ -1058,20 +1058,6 @@ void main() {
       expect(msgs.any((m) => m.messageType == MessageType.agentTurn), isTrue);
     });
 
-    test('upserts run log when dispatching', () async {
-      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
-      dispatchPort.emitEvent(TextEvent(content: 'hello'));
-
-      await service.dispatchAgent(
-        workspaceId: _ws,
-        spaceId: space.id,
-        agentId: 'agent-1',
-        prompt: 'Do something',
-      );
-
-      expect(runLogRepo._upsertCount, greaterThanOrEqualTo(1));
-    });
-
     test('handles dispatch error gracefully', () async {
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
 
@@ -1103,20 +1089,6 @@ void main() {
       expect(runLogRepo._runLog?.workspaceId, _ws);
       final msgs = await repo.getMessages(_ws, space.id);
       expect(msgs.any((m) => m.messageType == MessageType.agentTurn), isTrue);
-    });
-
-    test('dispatch updates run log', () async {
-      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
-      dispatchPort.emitEvent(TextEvent(content: 'hello'));
-
-      await service.dispatchAgent(
-        workspaceId: _ws,
-        spaceId: space.id,
-        agentId: 'agent-1',
-        prompt: 'Do something',
-      );
-
-      expect(runLogRepo._upsertCount, greaterThanOrEqualTo(1));
     });
 
     test('uses agent name and directory from agent repo', () async {
@@ -1282,27 +1254,34 @@ void main() {
                 }) async => paths,
           );
 
-      test('replaces the reference in place with the materialized path', () async {
-        final svc = serviceWithAttachments({'shot.png': '/space/attach/shot.png'});
-        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
-        await svc.sendAndDispatch(
-          _ws,
-          space.id,
-          'compare @[file:shot.png] with the mock',
-          metadata: metadata(),
-        );
-        await pumpEventQueue();
+      test(
+        'replaces the reference in place with the materialized path',
+        () async {
+          final svc = serviceWithAttachments({
+            'shot.png': '/space/attach/shot.png',
+          });
+          final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+          await svc.sendAndDispatch(
+            _ws,
+            space.id,
+            'compare @[file:shot.png] with the mock',
+            metadata: metadata(),
+          );
+          await pumpEventQueue();
 
-        expect(
-          dispatchPort.lastPrompt,
-          'compare /space/attach/shot.png with the mock',
-        );
-      });
+          expect(
+            dispatchPort.lastPrompt,
+            'compare /space/attach/shot.png with the mock',
+          );
+        },
+      );
 
       test('stores the message with its reference intact', () async {
         // The transcript renders the token as the composer's chip; only the
         // prompt carries paths.
-        final svc = serviceWithAttachments({'shot.png': '/space/attach/shot.png'});
+        final svc = serviceWithAttachments({
+          'shot.png': '/space/attach/shot.png',
+        });
         final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
         await svc.sendAndDispatch(
           _ws,
@@ -1335,7 +1314,9 @@ void main() {
       });
 
       test('a non-picture is not sent as an image', () async {
-        final svc = serviceWithAttachments({'shot.png': '/space/attach/spec.pdf'});
+        final svc = serviceWithAttachments({
+          'shot.png': '/space/attach/spec.pdf',
+        });
         final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
         await svc.sendAndDispatch(
           _ws,
@@ -1943,7 +1924,8 @@ void main() {
       // rejected by the ownership check on stopRun/pauseRun/steer — i.e. an
       // unstoppable run. The conversation must be the failed turn's, not the
       // space's `main`.
-      final run = await runLogRepo.getById(_ws, 'any');
+      final runId = runLogRepo._runLog!.id;
+      final run = await runLogRepo.getById(_ws, runId);
       expect(run?.workspaceId, _ws);
       expect(run?.conversationId, 'conv-side');
     });

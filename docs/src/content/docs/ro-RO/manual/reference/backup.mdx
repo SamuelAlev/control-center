@@ -2,7 +2,7 @@
 title: Backup, export și import
 description: Structura snapshot-urilor, manifestul, fiecare operațiune de backup și rută de transfer și exact ce fișiere conține și ce fișiere nu conține un backup.
 slug: ro-RO/manual/referinta/backup
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Tot ce poate Control Center să copieze, să predea sau să adopte, și forma exactă a fiecărui
@@ -25,6 +25,12 @@ Există trei artefacte de copiere a bazei de date, cu sfere de aplicare și poli
 Toate sunt scrise cu SQLite `VACUUM INTO`, care este sigur față de o bază de date WAL
 activă: ia o tranzacție de citire, produce o copie defragmentată și consistentă
 tranzacțional și nu necesită niciodată oprirea serverului.
+
+Aceste fișiere și copiile descărcate **nu sunt criptate în repaus** de Control
+Center. Transferul criptat cap la cap protejează octeții în tranzit între un client
+asociat și `cc_server`-ul lui, pe conexiuni directe sau prin releu. Protejează
+separat stocarea locală și copiile din afara mașinii; serverul și orice destinatar
+autorizat pot citi fișierele bazei de date.
 
 ## Structura snapshot-ului
 
@@ -206,11 +212,16 @@ importat sunt populate, dar indexul lui poate fi învechit.
 
 ## Rute de transfer
 
-Fiecare operațiune de mai sus vorbește în căi de pe partea de server, ceea ce este un
-răspuns complet doar când serverul este propria ta mașină. Aceste trei transportă octeții,
-pe același canal semnat cu PSK pe care îl folosesc proxy-ul de media și depozitul de
-blob-uri. Apelantul semnează un șir țintă cu cheia pre-partajată a dispozitivului său și
-trece semnătura ca `s`.
+Operațiunile de export/import și de listare a snapshot-urilor de mai sus vorbesc în
+căi de pe partea de server, ceea ce este un răspuns complet doar când serverul este
+propria ta mașină. Aceste rute în formă de HTTP transportă octeții de backup **în
+interiorul aceluiași tunel de resurse autentificat și criptat cap la cap** ca alte
+resurse sensibile, fie că conexiunea RPC este directă, fie intermediată. Nu sunt
+puncte finale publice de transfer de fișiere HTTP: o cerere către una dintre ele pe
+listenerul public returnează `426 Upgrade Required`, chiar și de pe loopback. În
+tunelul criptat, dispozitivul autentificat cu Noise trebuie să corespundă cu `d`;
+handlerul verifică în plus semnătura dispozitivului peste șirul său țintă folosind
+PSK-ul de asociere și rolul de mai jos.
 
 | Rută                    | Metodă | Interogare      | Țintă semnată                  | Necesită                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -230,6 +241,7 @@ director pe care listarea nu l-ar fi arătat.
 | `404`  | Nu există un port de backup pe acest host sau fișierul de snapshot/spațiu de lucru numit nu există |
 | `405`  | `/backup/restore` apelat cu orice altceva decât `POST`                               |
 | `413`  | Corpul upload-ului depășește 8 GiB, după content-length declarat sau după octeții citiți efectiv |
+| `426`  | Orice cerere directă către o rută de transfer pe listenerul HTTP public; folosește tunelul de resurse criptat al unui client asociat |
 | `500`  | Exportul sau arhivarea a eșuat pe partea de server                                   |
 
 Ambele descărcări răspund cu `Cache-Control: no-store` și `Accept-Ranges: none`. Fiecare
@@ -246,12 +258,14 @@ ale aceluiași snapshot sunt aceeași arhivă.
 în buffer, îl limitează înainte și în timpul citirii și șterge fișierul pregătit pe
 **fiecare** cale de ieșire, inclusiv la un refuz.
 
-:::caution[O conexiune retransmisă prin releu nu are origine HTTP]
-Releul intermediat transportă cadre RPC, nu transferuri de fișiere. Tot ce vorbește în căi
-de pe partea de server continuă să funcționeze prin el; cele trei rute de transfer au
-nevoie de o conexiune directă, iar interfața le dezactivează cu o notă, în loc să eșueze la
-mijlocul descărcării.
-:::
+::::caution[Conexiunea directă și releul folosesc același transfer criptat]
+Releul transportă cereri de resurse, răspunsuri transmise în flux și octeți de
+upload ca text cifrat; nu poate citi conținutul backup-urilor. O cale de pe partea
+de server rămâne o cale pe gazda serverului, nu un fișier pe releu. Accesul
+necesită în continuare dispozitivul asociat, semnătura țintei și rolul aplicabil
+de spațiu de lucru sau de instalare. Niciunul dintre cele două transporturi nu
+criptează în repaus fișierele de backup rezultate.
+::::
 
 ## Căi și limite
 
@@ -262,7 +276,7 @@ mijlocul descărcării.
 | Exporturi de spațiu de lucru   | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Pregătire pentru transfer      | `<dataDir>/backups/transfer/` — un atelier, curățat de ruta care îl scrie |
 | Numele arhivei de snapshot     | `<snapshot directory name>.zip`                              |
-| Plafon de upload               | 8 GiB per `POST /backup/restore`                             |
+| Plafon de upload               | 8 GiB per upload criptat către `/backup/restore`             |
 | Retenție                       | Snapshot-uri de instalare: ștergere manuală. Backup-uri de spațiu de lucru: pipeline săptămânal, 30 de zile implicit |
 
 Directoarele `exports/`, `transfer/` și `workspace-backups/` nu sunt snapshot-uri de

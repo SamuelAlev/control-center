@@ -1,0 +1,42 @@
+{
+  "id": "tool-overlap-3e",
+  "seed": 3535,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Serial bounded waves (current behaviour)"
+    },
+    {
+      "id": "overlap",
+      "axis": "tool_overlap",
+      "toolOverlap": "overlap_read_only",
+      "label": "Work-conserving overlap of read-only tools (opt-in)"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 2
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 32000,
+  "overlapExperiment": {
+    "id": "read-only-overlap",
+    "enabled": true,
+    "mode": "overlap_read_only",
+    "maxParallel": 4,
+    "requiresBarrierCoverage": true,
+    "notes": "Report 3E. Only tools that declare speculativeReadSafe take part; barriers around mutations, dependencies, approvals and hooks stay in force, which is what the barrier-mutation-order corpus task checks."
+  },
+  "notes": "Opt-in tool-scheduling experiment. The corpus must contain the barrier task (tag: barrier) or the run is refused, because an overlap arm measured without its safety property would report a latency win it did not earn."
+}

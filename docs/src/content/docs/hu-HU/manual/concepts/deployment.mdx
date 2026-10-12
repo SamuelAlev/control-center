@@ -2,7 +2,7 @@
 title: Telepítés és kliensek
 description: Hogyan választja szét a Control Center vékonykliens-architektúrája a headless szervert az asztali, webes és mobil klienseitől.
 slug: hu-HU/kezikonyv/fogalmak/telepites
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 A Control Center nem egyetlen program. **Vékonykliens-architektúra**: egy
@@ -22,10 +22,11 @@ ablakot, vagy amit két kliensnek azonosan kell látnia, ott él.
 
 Egyetlen kliens sem nyitja meg maga az adatbázisfájlt. Helyette minden kliens
 egyetlen **`RemoteRpcClient`**-et tart fenn, és azon keresztül indít
-repóműveleteket és feliratkozásokat. A szerver a kapcsolatot egy párosított
-eszközhöz tartozó, előre megosztott kulccsal hitelesíti — aztán többé nem
-törődik a kapcsolattal. **Egy munkamenet nincs munkaterülethez kötve.** A
-dispatcher állapotmentes: minden munkaterület-hatókörű hívás a saját
+repóműveleteket és feliratkozásokat. A közvetlen és a relén átvezetett
+munkamenetek egyaránt aláírt Noise-kézfogást igényelnek: a párosított eszköz
+előre megosztott kulcsa hitelesíti a cserét, míg friss forgalmi kulcsok
+titkosítják az egyes munkameneteket. **Egy munkamenet nincs munkaterülethez
+kötve.** A dispatcher állapotmentes: minden munkaterület-hatókörű hívás a saját
 `workspace_id`-jét hordozza az argumentumaiban, és az olyan hívás, amelyből ez
 hiányzik, elutasításra kerül.
 
@@ -99,10 +100,11 @@ közvetlenül az adatbázisfájlhoz.
 A webes build ugyanaz a Flutter-alkalmazás böngészőben futóra fordítva, az
 [app.usectrl.dev](https://app.usectrl.dev) címen üzemeltetve, így nincs mit
 telepíteni. A böngésző nem indíthat alfolyamatot, ezért a webes kliens **mindig**
-távoli: `wss://`-en tárcsáz egy `cc_server`-t, és a teljes asztali felületet
-rendereli. Csatlakozás után ugyanazokat a képernyőket mutatja ugyanazon flotta
-ellenében, mert ugyanaz a kód fut ugyanazon az RPC-n. A hiányosságok azok a
-néhány hely, ahol olyan natív képesség kell, amivel a böngésző nem rendelkezik
+távoli: egy titkosított WebSocket-munkameneten tárcsáz egy `cc_server`-t, és a
+teljes asztali felületet rendereli. Csatlakozás után ugyanazokat a képernyőket
+mutatja ugyanazon flotta ellenében, mert ugyanazt a kódot használja ugyanazon az
+RPC-n. A hiányosságok azok a néhány hely, ahol olyan natív képesség kell, amivel
+a böngésző nem rendelkezik
 — ezek közül a legfontosabb a lentebb tárgyalt megbeszélésrögzítési minőségi
 réteg, és ide tartoznak az operációs rendszer értesítései is.
 
@@ -126,28 +128,34 @@ az `--allowed-origins` listáján szereplő böngésző-origineket fogadja el, a
 alapértelmezésben `https://app.usectrl.dev`, így a csomag saját üzemeltetése
 azt jelenti, hogy hozzá kell adni annak originjét.
 
-A média (profilképek, hírfolyamképek, PR-képernyőképek) a szerver
-proxyvégpontján keresztül halad, ahelyett hogy közvetlenül a felsőbb hosztokat
-érné el, így a böngésző soha nem tölt le tetszőleges origint. A telepített
-kliens kérésenkénti Content-Security Policy-t üt rá egy nem érzékeny cookie-ból,
-így csak a csatlakozott szerver originje engedélyezett.
+A média (profilképek, hírfolyamképek, PR-képernyőképek), a feltöltések, a
+biztonsági mentések és a beágyazott szerkesztő HTTP/WebSocket-forgalma a
+titkosított erőforrás-alagúton halad, nem olvasható nyilvános HTTP-útvonalakon;
+az aláírt útvonalak továbbra is engedélyezést igényelnek. A megbízható
+szerkesztő-frontend a webalkalmazás saját originjén fut. A Service Workere az
+erőforrás-kéréseket a meglévő titkosított munkameneten keresztül a `cc_server`
+felé irányítja, amely a fájlokat és a code-server-hátteret birtokolja. A
+böngészőnek HTTPS-re vagy biztonságos loopback-környezetre van szüksége a
+Service Workerekhez. A natív kliensek egy képesség-hatókörű
+loopback-homlokzatot használnak.
 
 ### Telefonos társalkalmazás (cc_remote)
 
 A **Remote** alkalmazás külön, könnyebb kliens — egy Flutter webes PWA a
 [remote.usectrl.dev](https://remote.usectrl.dev/) címen. Szándékosan **nem** a
-teljes alkalmazás. Egy brókeren keresztüli, végponttól végpontig lezárt
-WebSocket-relén párosít, és az eszközfelületnek egy túlnyomórészt olvasásra
-szolgáló szeletét beszéli: jegyek, üzenetek és a hírfolyam olvasása; válasz
-küldése vagy jegy frissítése.
+teljes alkalmazás. Ha lehetséges, közvetlenül csatlakozik, egyébként egy
+közvetített relén keresztül; mindkét útvonal végponttól végpontig terjedő
+titkosítást igényel. Az eszközfelületnek egy túlnyomórészt olvasásra szolgáló
+szeletét beszéli: jegyek, üzenetek és a hírfolyam olvasása; válasz küldése vagy
+jegy frissítése.
 
 A telefon **alacsonyabb jogosultságú szereplő**, mint egy helyi ügynök. Az
-alapértelmezés szerint tiltó eszközszabályzat, a minden keretet lezáró előre
-megosztott kulcs, egy munkamenet-képesség, amely a kiemelt műveleteket (például
-a párosítást) kizárja a társügyfélből, a fenti hívásonkénti szerep- és
-repóengedély-ellenőrzések, valamint a sebességkorlátozás együtt
-megakadályozzák, hogy egy jóváhagyott (vagy kiszivárgott) párosítás teljes körű
-távoli vezérléssé váljon. A teljes biztonsági modellt lásd a
+alapértelmezés szerint tiltó eszközszabályzat, egy munkamenet-képesség, amely a
+kiemelt műveleteket (például a párosítást) kizárja a társügyfélből, a fenti
+hívásonkénti szerep- és repóengedély-ellenőrzések, valamint a
+sebességkorlátozás együtt megakadályozzák, hogy egy jóváhagyott (vagy
+kiszivárgott) párosítás teljes körű távoli vezérléssé váljon. Az átvitel
+titkosítása nem ad jogosultságokat. A teljes biztonsági modellt lásd a
 [Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) oldalon.
 
 ### MCP-kliensek
@@ -232,15 +240,27 @@ naptár rögzítés és hivatkozás művelete.
 
 ## Párosítás és bizalom
 
-Minden kliens egy **előre megosztott kulccsal** igazolja magát, amelyet egyszer
-kell kiadni:
+Minden kliens egy **előre megosztott kulcsot** használ, amelyet egyszer kell
+kiadni ahhoz, hogy hitelesítse az aláírt Noise-kézfogását a `cc_server`-rel,
+loopbacken és a relén keresztül is:
 
 - Az asztali alkalmazás helyi módban minden indításkor friss kulcsot generál, és
   környezeti változókon keresztül adja át az elindított szervernek, így az
   asztali gépen nem tárolódik titok.
-- A távoli kliensek (távoli asztali, web, telefon) a szerver `pair` parancsa
-  által kibocsátott kulcsot használják, amelyet az operációs rendszer
-  kulcstárában (a telefonon pedig helyben) tárolnak.
+- A távoli kliensek (távoli asztali, web, telefon) a szerver párosítási
+  folyamata vagy `pair` parancsa által kibocsátott kulcsot használják. A natív
+  kliensek az operációs rendszer kulcstárát használják; a böngészőkliensek
+  helyben tárolják a párosításukat.
+
+A kliens ellenőrzi a szerver aláírt identitását a mentett ujjlenyomat-pinjével
+szemben. Az első csatlakozáskor ellenőrizze ezt az ujjlenyomatot egy megbízható
+QR-kódon vagy más megbízható csatornán keresztül: egy aláírt első kapcsolat
+önmagában nem hitelesítheti, ki biztosította a kulcsot. Ha az identitás
+megváltozik, a kliens zártan hibázik; párosítson újra egy megbízható csatornán
+keresztül, ahelyett hogy figyelmen kívül hagyná az eltérést. A régebbi kliensek
+és a nyílt szöveges RPC nem tudnak csatlakozni. A TLS továbbra is szükséges a
+böngésző-origineken, a bootstraphez és a nyilvános metaadatokhoz; a `--insecure`
+a szerver külső listenerjét érinti, nem a megkövetelt titkosított munkamenetet.
 
 A visszavonás **azonnali**, nem halasztott. A szerver figyeli a párosított
 eszközök tábláját, és másodperceken belül eldobja minden olyan nyitott
@@ -248,14 +268,13 @@ munkamenetet, amelynek eszköze kikerült az aktív halmazból — a közvetlen
 WebSocket-úton és a reléúton egyaránt. Nem kell megvárnia, hogy az eszköz
 újracsatlakozzon ahhoz, hogy elvágja.
 
-A kulcs soha nem halad át olyan URL-en, amelyet egy statikus hoszt láthat.
-Amikor hivatkozással érkezik — a telefonon vagy egy böngészőben —, az
-**URL-töredékben** utazik, a `#` utáni részben, amelyet a böngésző soha nem
-küld el az oldalt üzemeltető szervernek. Ez az az invariancia, amit érdemes
-megjegyezni, és mindkettőre érvényes. A webes kliensnek két másik belépési
-pontja van: a csatlakozási űrlap, ahol közvetlenül beilleszti a szervert és a
-kulcsot, valamint egy meghívókód, amelyet egy kizárólag ahhoz a böngészőhöz
-kibocsátott hitelesítő adatra vált be.
+Amikor a kulcs hivatkozással érkezik — a telefonon vagy egy böngészőben —, az
+**URL-töredékben** utazik, a `#` utáni részben, amelyet a böngészők nem küldenek
+el az oldalgazdagépnek küldött kérésben. Az oldal JavaScriptje így is el tudja
+olvasni, ezért bízzon meg abban a gazdagépben, és tartsa titokban a
+hivatkozást. A webes kliensnek van továbbá egy csatlakozási űrlapja, ahol
+közvetlenül beilleszti a szervert és a kulcsot, valamint egy meghívókód, amelyet
+egy kizárólag ahhoz a böngészőhöz kibocsátott hitelesítő adatra vált be.
 
 ## Kapcsolódó fogalmak
 

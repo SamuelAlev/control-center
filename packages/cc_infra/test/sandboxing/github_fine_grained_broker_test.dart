@@ -1,12 +1,10 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/auth/domain/entities/api_credentials.dart';
 import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
 import 'package:cc_infra/src/network/github/github_app_client.dart';
 import 'package:cc_infra/src/sandboxing/github_fine_grained_broker.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 // The same throwaway test key used by the minter test.
@@ -49,37 +47,16 @@ class _FakeCreds implements CredentialsRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions o,
-    Stream<Uint8List>? s,
-    Future<void>? c,
-  ) async {
-    requests.add(o);
-    return handler(o);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
 /// The server's GitHub App, answering `/app/installations` with ONE
 /// installation on `o` — so a mint for `o/r` resolves to id 9 the way it does
 /// in production, instead of being told an id up front.
 Future<GitHubAppClient?> Function({String? workspaceId}) _app(
-  _FakeAdapter fake,
+  TestHttpClient fake,
 ) {
-  final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-    ..httpClientAdapter = fake;
   final client = GitHubAppClient(
     appId: '1',
     privateKeyPem: _privatePem,
-    dio: dio,
+    httpClient: fake,
   );
   return ({workspaceId}) async => client;
 }
@@ -93,21 +70,28 @@ const _installations = [
   },
 ];
 
-/// Routes the two calls a scoped mint makes: list installations, then mint.
-ResponseBody Function(RequestOptions) _route(
-  ResponseBody Function(RequestOptions) mint,
-) =>
-    (options) => options.path == '/app/installations'
-    ? _ok(_installations)
-    : mint(options);
+/// Whether [request] asks for the app's installation list.
+bool _isInstallations(HttpRequest request) =>
+    _path(request) == '/app/installations';
 
-ResponseBody _ok(Object body, {int status = 200}) => ResponseBody.fromString(
-  jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
+/// The path of a captured request.
+String _path(HttpRequest request) => httpRequestUri(request).path;
+
+/// The decoded JSON body of a captured request.
+Map<String, dynamic> _jsonBody(HttpRequest request) =>
+    (request.body! as HttpBodyJson).json as Map<String, dynamic>;
+
+/// The `Authorization` header of a captured request.
+String? _authHeader(HttpRequest request) =>
+    (request.headers! as HttpHeaderRawMap).map['Authorization'];
+
+/// Routes the two calls a scoped mint makes: list installations, then mint.
+HttpResponse Function(HttpRequest) _route(
+  HttpResponse Function(HttpRequest) mint,
+) =>
+    (request) => _isInstallations(request)
+    ? httpTextResponse(request, _installations)
+    : mint(request);
 
 void main() {
   test('no app → falls back to the raw PAT', () async {
@@ -125,9 +109,9 @@ void main() {
   test(
     'with an app → mints a scoped token (write perms for a write scope)',
     () async {
-      final fake = _FakeAdapter(
-        _route(
-          (_) => _ok({
+      final fake = TestHttpClient(
+        handler: _route(
+          (request) => httpTextResponse(request, {
             'token': 'ghs_scoped',
             'expires_at': '2026-07-06T13:00:00Z',
           }),
@@ -148,20 +132,24 @@ void main() {
       expect(creds.environment['GH_TOKEN'], 'ghs_scoped');
       expect(creds.environment['GITHUB_TOKEN'], 'ghs_scoped');
       // The installation was RESOLVED from the owner, not configured.
-      expect(fake.requests.first.path, '/app/installations');
+      expect(_path(fake.requests.first), '/app/installations');
       final mintReq = fake.requests.last;
-      expect(mintReq.path, '/app/installations/9/access_tokens');
-      final perms = (mintReq.data as Map)['permissions'] as Map;
+      expect(_path(mintReq), '/app/installations/9/access_tokens');
+      final perms = _jsonBody(mintReq)['permissions'] as Map;
       expect(perms['contents'], 'write');
       // The gateway's push token only needs to push.
       expect(perms.containsKey('pull_requests'), isFalse);
-      expect((mintReq.data as Map)['repositories'], ['r']);
+      expect(_jsonBody(mintReq)['repositories'], ['r']);
       expect(creds.notes.join(' '), contains('installation token'));
     },
   );
 
   test('read scope mints contents:read + pull_requests:write', () async {
-    final fake = _FakeAdapter(_route((_) => _ok({'token': 'ghs_ro'})));
+    final fake = TestHttpClient(
+      handler: _route(
+        (request) => httpTextResponse(request, {'token': 'ghs_ro'}),
+      ),
+    );
     final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
     await broker.mint(
       conversationId: 'c1',
@@ -169,15 +157,19 @@ void main() {
       repoOwner: 'o',
       repoName: 'r',
     );
-    final perms = (fake.requests.last.data as Map)['permissions'] as Map;
+    final perms = _jsonBody(fake.requests.last)['permissions'] as Map;
     expect(perms['contents'], 'read');
     // Opening a PR is the policy's call, not the token's.
     expect(perms['pull_requests'], 'write');
   });
 
   test('mint failure → falls back to the raw PAT (fail-safe)', () async {
-    final fake = _FakeAdapter(
-      _route((_) => _ok({'message': 'Bad creds'}, status: 401)),
+    final fake = TestHttpClient(
+      handler: _route(
+        (request) => httpTextResponse(request, const {
+          'message': 'Bad creds',
+        }, statusCode: 401),
+      ),
     );
     final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
     final creds = await broker.mint(
@@ -191,11 +183,11 @@ void main() {
   });
 
   test('revoke DELETEs the minted installation token', () async {
-    final calls = <RequestOptions>[];
-    final fake = _FakeAdapter(
-      _route((o) {
-        calls.add(o);
-        return _ok({'token': 'ghs_scoped'});
+    final calls = <HttpRequest>[];
+    final fake = TestHttpClient(
+      handler: _route((request) {
+        calls.add(request);
+        return httpTextResponse(request, {'token': 'ghs_scoped'});
       }),
     );
     final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
@@ -207,24 +199,24 @@ void main() {
     );
     await broker.revoke(creds.handle);
 
-    final del = calls.where((o) => o.method == 'DELETE').toList();
+    final del = calls.where((r) => r.method.value == 'DELETE').toList();
     expect(del, hasLength(1));
-    expect(del.single.path, '/installation/token');
-    expect(del.single.headers['Authorization'], 'Bearer ghs_scoped');
+    expect(_path(del.single), '/installation/token');
+    expect(_authHeader(del.single), 'Bearer ghs_scoped');
   });
 
   test('an owner the app is not installed on falls back to the PAT', () async {
     // The app exists but covers another account — exactly the case a single
     // server-wide installation id could not express.
-    final fake = _FakeAdapter(
-      (o) => o.path == '/app/installations'
-          ? _ok(const [
+    final fake = TestHttpClient(
+      handler: (request) => _isInstallations(request)
+          ? httpTextResponse(request, const [
               {
                 'id': 9,
                 'account': {'login': 'someone-else'},
               },
             ])
-          : _ok({'token': 'ghs_should_not_be_used'}),
+          : httpTextResponse(request, {'token': 'ghs_should_not_be_used'}),
     );
     final broker = GitHubFineGrainedTokenBroker(_FakeCreds(), app: _app(fake));
 
@@ -237,7 +229,7 @@ void main() {
 
     expect(creds.environment['GH_TOKEN'], 'pat_raw');
     expect(
-      fake.requests.any((o) => o.path.contains('access_tokens')),
+      fake.requests.any((r) => _path(r).contains('access_tokens')),
       isFalse,
       reason: 'nothing should be minted for an installation we do not have',
     );
@@ -246,7 +238,11 @@ void main() {
   test(
     'no repo owner falls back — the installation cannot be resolved',
     () async {
-      final fake = _FakeAdapter(_route((_) => _ok({'token': 'ghs_x'})));
+      final fake = TestHttpClient(
+        handler: _route(
+          (request) => httpTextResponse(request, {'token': 'ghs_x'}),
+        ),
+      );
       final broker = GitHubFineGrainedTokenBroker(
         _FakeCreds(),
         app: _app(fake),

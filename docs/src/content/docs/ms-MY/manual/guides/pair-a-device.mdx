@@ -2,7 +2,7 @@
 title: Gandingkan peranti
 description: Gandingkan telefon anda (atau pelayar atau desktop kedua) dengan pelayan Control Center anda supaya anda boleh mengikuti armada dari jauh.
 slug: ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Panduan ini menunjukkan cara menggandingkan telefon dengan Control Center,
@@ -22,8 +22,9 @@ ini: aplikasi telefon (`apps/cc_remote`, PWA web Flutter yang boleh anda terapka
 ke Cloudflare Pages melalui `wrangler.jsonc`-nya, ke imej nginx `docker/cc_remote`,
 atau ke mana-mana hos statik dengan HTTPS — pekerja perkhidmatan dan IndexedDB
 terikat konteks selamat) dan geganti (`apps/cc_signaling_server`, satu binari Dart
-tanpa keadaan yang tidak menyimpan sebarang data aplikasi dan tidak pernah melihat
-rahsia penggandingan — ia hanya memajukan bingkai tersegel hujung ke hujung).
+tanpa keadaan yang tidak menyimpan sebarang data aplikasi dan tidak boleh
+menyahsulit rekod tersulit atau melihat rahsia penggandingan). Namun ia tetap
+melihat IP, pengecam penghalaan, saiz dan masa, serta boleh menggugurkan trafik.
 Lihat README masing-masing untuk langkah binaan dan larian.
 
 ## Langkah 1: Buka panel penggandingan
@@ -49,14 +50,18 @@ penuh pelayan dan cap jari identiti untuk PWA Remote.
 
 Di sisi telefon, membuka pautan penggandingan tidak menggandingkan secara senyap.
 Remote menunjukkan nama pelayan yang diiklankan dan meminta anda mengesahkan
-sebelum ia menyimpan apa-apa, jadi pautan palsu tidak boleh merampas aplikasi ke
-pelayan orang lain.
+sebelum ia menyimpan apa-apa. Semak cap jari dalam kod QR terhadap sumber
+dipercayai: mengesahkan nama yang belum disahkan atau kod QR palsu tidak
+membuktikan bahawa pelayan itu milik anda. Klien menyematkan identiti
+bertandatangan dan menolak cap jari yang berubah pada sambungan berikutnya.
 
 :::caution[Kod QR yang diimbas memberikan akses serta-merta]
 Tiada langkah menunggu-kemudian-lulus: peranti yang dijana sudah aktif dari saat
 ia dicipta dan gerbang sambungan hanya memeriksa bahawa kelayakan itu aktif dan
 belum tamat tempoh. Anggap kod QR dan kunci penggandingan seperti kata laluan dan
-tarik balik apa-apa yang tidak sepatutnya anda serahkan.
+tarik balik apa-apa yang tidak sepatutnya anda serahkan. Sesi klien langsung dan
+melalui geganti kedua-duanya memerlukan penyulitan hujung ke hujung; klien lama
+tidak boleh berpatah balik kepada RPC teks biasa.
 :::
 
 ## Urus peranti yang berganding

@@ -23,7 +23,7 @@ import 'package:cc_infra/src/network/bitbucket/bitbucket_api_client.dart';
 import 'package:cc_infra/src/network/bitbucket/bitbucket_pr_mapper.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Bitbucket Cloud adapter for [ForgePrClient].
 ///
@@ -179,8 +179,8 @@ class BitbucketForgePrClient implements ForgePrClient {
         'DECLINED' || 'SUPERSEDED' => false,
         _ => null,
       };
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       return null;
@@ -609,8 +609,8 @@ class BitbucketForgePrClient implements ForgePrClient {
         deletions: deletions,
         totalCommits: range.size ?? range.items.length,
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       return null;
@@ -1278,9 +1278,9 @@ class BitbucketForgePrClient implements ForgePrClient {
     }, cancelToken: token);
   }
 
-  /// Narrows the port's untyped cancellation handle to Dio's.
+  /// Narrows the port's untyped cancellation handle to rhttp's [CancelToken].
   ///
-  /// The port keeps it [Object] so `cc_domain` never learns about Dio; a
+  /// The port keeps it [Object] so `cc_domain` never learns about rhttp; a
   /// handle of any other type is simply not a cancellation this adapter can
   /// honour and is dropped rather than throwing.
   static CancelToken? _token(Object? cancelToken) =>

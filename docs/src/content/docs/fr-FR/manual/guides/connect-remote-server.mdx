@@ -2,7 +2,7 @@
 title: Se connecter à un serveur distant
 description: Pointez l'application de bureau ou le client web vers un cc_server exécuté ailleurs et basculez d'un serveur à l'autre sans redémarrer.
 slug: fr-FR/manuel/guides/connecter-serveur-distant
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Tout client est un moteur de rendu au-dessus d'un `cc_server` qui détient les
@@ -15,7 +15,7 @@ VM cloud, un serveur de build.
 ## Prérequis
 
 - Un `cc_server` en cours d'exécution. Si vous n'en avez pas, voir [Exécuter un serveur sans interface](/fr-FR/manuel/guides/executer-serveur-sans-interface/).
-- Soit les trois valeurs d'appairage émises par le serveur — l'**URL du serveur** (`ws://…/rpc` ou `wss://…/rpc`), un **identifiant d'appareil** et une **clé d'appairage** —, **soit** un **code d'invitation** à usage unique fourni par un administrateur de l'espace de travail. Utiliser une invitation provisionne votre utilisateur, enregistre votre appartenance et émet pour vous l'identifiant de ce client : vous n'avez donc jamais à manipuler un identifiant d'appareil ni une clé.
+- Soit les trois valeurs d'appairage émises par le serveur — l'**URL du serveur** (`ws://…/rpc` ou `wss://…/rpc`), un **identifiant d'appareil** et une **clé d'appairage** —, **soit** un **code d'invitation** à usage unique fourni par un administrateur de l'espace de travail. Utiliser une invitation provisionne votre utilisateur, enregistre votre appartenance et émet pour vous l'identifiant de ce client : vous n'avez donc jamais à manipuler un identifiant d'appareil ni une clé. Obtenez ces valeurs par un canal fiable et vérifiez l'empreinte du serveur par rapport à un QR code fiable ou à une épinglure connue lors de la première connexion.
 
 ### Vérifier que le serveur est joignable
 
@@ -30,7 +30,7 @@ lier à une adresse autre que la boucle locale sans TLS. Fournissez-lui l'un des
 éléments suivants :
 
 - un certificat directement, avec `--tls-cert` et `--tls-key`
-- un proxy inverse qui termine le TLS en amont, le serveur étant démarré avec `--insecure` (en clair derrière le proxy, sur un réseau de confiance uniquement)
+- un proxy inverse qui termine le TLS en amont, le serveur étant démarré avec `--insecure` (en clair entre le proxy et le serveur sur l'écouteur externe, sur un réseau de confiance uniquement ; cela ne désactive pas la session client chiffrée obligatoire)
 - un tunnel ou un VPN qui fournit le certificat — Tailscale, cloudflared ou équivalent. **Paramètres → Serveur → Connexion et état** propose l'activation du tunnel intégré sous **Partager ce serveur**.
 
 Deux réglages côté serveur sont faciles à manquer. Derrière un proxy, un NAT ou un
@@ -62,7 +62,9 @@ d'action **Basculer** ; le serveur local est la première ligne, intitulée
 **Exécuter dans cette application**.
 
 Une fois la bascule effectuée, le bureau ne détient plus de base de données.
-Chaque écran lit et écrit via le serveur distant par une connexion WebSocket.
+Chaque écran lit et écrit via le serveur distant par une session WebSocket
+signée et chiffrée de bout en bout ; la même protection s'applique en boucle
+locale et via le relais.
 
 ## Connecter le client web
 
@@ -74,13 +76,19 @@ La version web est toujours distante.
 
 Si un lien profond d'appairage figure dans l'URL, les champs sont préremplis. La
 clé d'appairage voyage dans le **fragment d'URL**, que les navigateurs n'envoient
-jamais au serveur qui héberge la page : l'hôte statique ne la voit donc jamais.
+jamais au serveur qui héberge la page. Traitez le lien comme un secret et faites
+confiance à la page qui sert le client web : le fragment ne protège pas contre du
+code de page malveillant.
 
-:::note[Médias et sécurité]
-Les médias (avatars, images du fil, captures d'écran de PR) passent par le serveur
-connecté, si bien que le navigateur ne récupère jamais directement un hôte en
-amont. Une Content-Security Policy par requête, apposée à partir d'un cookie non
-sensible, n'autorise que l'origine du serveur connecté.
+:::note[Médias, éditeurs et sécurité]
+Les médias (avatars, images du fil, captures d'écran de PR), les transferts de
+sauvegarde et le trafic de l'éditeur intégré passent par le tunnel de ressources
+chiffré, et non par des routes HTTP publiques lisibles. L'éditeur de navigateur
+de confiance s'exécute sur l'origine propre à l'application web ; son service
+worker achemine les requêtes par la session chiffrée authentifiée vers le backend
+code-server sur `cc_server`. Hébergez le client web en HTTPS ou sur une boucle
+locale sécurisée pour que les service workers soient disponibles. Les clients
+natifs utilisent une façade en boucle locale à portée de capacités.
 :::
 
 ### Ce que le navigateur ne fait pas
@@ -103,7 +111,8 @@ interface où aucun éditeur n'est installé.
 ## Résolution des problèmes
 
 - **La connexion expire** : le serveur doit être joignable depuis le client. Vérifiez la liaison (`--bind any`), l'ouverture du port et que `--public-url` désigne l'adresse que le client peut réellement joindre. Sur l'internet ouvert, TLS est obligatoire — une liaison en clair sur une adresse autre que la boucle locale est refusée au démarrage, sauf si le serveur a été démarré avec `--insecure` derrière un proxy.
-- **Le navigateur refuse de se connecter alors qu'un client natif fonctionne** : l'origine du navigateur ne figure pas dans la liste `--allowed-origins` du serveur. Par défaut, seule `https://app.usectrl.dev` est autorisée (plus la boucle locale).
+- **Le navigateur refuse de se connecter alors qu'un client natif fonctionne** : l'origine du navigateur ne figure pas dans la liste `--allowed-origins` du serveur. Par défaut, seule `https://app.usectrl.dev` est autorisée (plus la boucle locale).
+- **L'identité du serveur a changé** : le client rejette une empreinte qui diffère de son épinglure enregistrée. Vérifiez l'identité du serveur hors bande et associez de nouveau par un canal fiable ; n'ignorez pas l'avertissement et ne basculez pas vers un client plus ancien ou en clair.
 - **Clé d'appairage rejetée** : relancez `cc_server pair` sur le serveur pour renouveler la clé de cet appareil, puis saisissez la nouvelle. Un appareil révoqué constate la disparition de son identifiant et échoue en refusant l'accès ; la révocation coupe une session active en quelques secondes.
 - **Mauvais espace de travail** : l'espace de travail fait partie de l'URL (`/workspaces/:workspaceId/…`) et accompagne chaque appel, si bien que changer d'espace de travail dans un client ne modifie que votre propre vue. Vous ne pouvez atteindre que les espaces de travail dont vous êtes membre — tout le reste est refusé par « Not a member of this workspace ». Voir [Espaces de travail et isolation](/fr-FR/manuel/concepts/espaces-de-travail/).
 

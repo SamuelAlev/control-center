@@ -138,6 +138,63 @@ class ResolvedMention {
   final Map<String, dynamic>? payload;
 }
 
+final RegExp _uploadedBlobRef = RegExp(r'^blob:sha256:[0-9a-f]{64}$');
+
+/// Transfer state for a local draft attachment.
+enum AttachmentUploadState {
+  /// Bytes are being read or transferred.
+  uploading,
+
+  /// The server has durably stored the bytes and catalog entry.
+  ready,
+
+  /// The attachment remains available to retry or remove.
+  failed,
+}
+
+/// A recoverable failure shown on the attachment card.
+enum AttachmentUploadError {
+  /// The file exceeds the server's upload ceiling.
+  tooLarge,
+
+  /// The client cannot read the selected file.
+  unreadable,
+
+  /// The transport or server did not confirm a valid upload.
+  transfer,
+}
+
+/// Server identity of an eagerly uploaded attachment.
+@immutable
+class UploadedAttachment {
+  /// Records the server's successful upload receipt.
+  const UploadedAttachment({
+    required this.fileId,
+    required this.blobRef,
+    required this.bytes,
+    required this.mediaType,
+  });
+
+  /// Workspace-scoped logical file identity.
+  final String fileId;
+
+  /// Content-addressed bytes shared by identical uploads in the workspace.
+  final String blobRef;
+
+  /// Number of bytes accepted by the server.
+  final int bytes;
+
+  /// Media type recorded with the content.
+  final String mediaType;
+
+  /// Only canonical catalog responses may unlock sending.
+  bool get isValid =>
+      fileId.trim().isNotEmpty &&
+      _uploadedBlobRef.hasMatch(blobRef) &&
+      bytes >= 0 &&
+      mediaType.isNotEmpty;
+}
+
 /// An attachment selected by the user (file picker, drop, or scratchpad).
 @immutable
 class ComposerAttachment {
@@ -153,6 +210,10 @@ class ComposerAttachment {
     this.refName,
     this.sizeBytes,
     this.remoteUrl,
+    this.fileId,
+    this.blobRef,
+    this.uploadState,
+    this.uploadError,
   });
 
   /// `'file'`, `'image'`, `'scratchpad'`, `'note'`, etc.
@@ -200,6 +261,18 @@ class ComposerAttachment {
   /// shared-imports-features dependency the architecture test forbids.
   final String? remoteUrl;
 
+  /// Catalog identity and content ref, populated only after an upload succeeds.
+  final String? fileId;
+
+  /// Content-addressed server reference, never a client-local path.
+  final String? blobRef;
+
+  /// Null for existing server-side references and demo attachments.
+  final AttachmentUploadState? uploadState;
+
+  /// Localized failure category when [uploadState] is failed.
+  final AttachmentUploadError? uploadError;
+
   /// Whether the attachment is an image based on its mime type.
   bool get isImage => (mimeType ?? '').startsWith('image/');
 
@@ -210,17 +283,27 @@ class ComposerAttachment {
     int? sizeBytes,
     List<int>? bytes,
     String? remoteUrl,
+    String? fileId,
+    String? blobRef,
+    AttachmentUploadState? uploadState,
+    AttachmentUploadError? uploadError,
+    bool clearBytes = false,
+    bool clearPath = false,
   }) => ComposerAttachment(
     id: id,
     kind: kind,
     label: label,
-    path: path,
-    bytes: bytes ?? this.bytes,
+    path: clearPath ? null : path,
+    bytes: clearBytes ? null : (bytes ?? this.bytes),
     mimeType: mimeType ?? this.mimeType,
     payload: payload,
     refName: refName ?? this.refName,
     sizeBytes: sizeBytes ?? this.sizeBytes,
     remoteUrl: remoteUrl ?? this.remoteUrl,
+    fileId: fileId ?? this.fileId,
+    blobRef: blobRef ?? this.blobRef,
+    uploadState: uploadState ?? this.uploadState,
+    uploadError: uploadError,
   );
 }
 

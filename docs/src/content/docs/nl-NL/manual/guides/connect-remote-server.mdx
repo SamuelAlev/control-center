@@ -2,7 +2,7 @@
 title: Verbinden met een externe server
 description: Wijs de desktopapp of de webclient naar een cc_server die ergens anders draait en wissel tussen servers zonder opnieuw te starten.
 slug: nl-NL/handleiding/gidsen/externe-server-verbinden
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Elke client is een renderer bovenop een `cc_server` die de gegevens bezit. De
@@ -14,7 +14,7 @@ cloud-VM, een buildserver.
 ## Vereisten
 
 - Een draaiende `cc_server`. Heb je er geen, zie [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/).
-- Ofwel de drie koppelingswaarden die de server heeft aangemaakt — de **server-URL** (`ws://…/rpc` of `wss://…/rpc`), een **apparaat-id** en een **koppelingssleutel** — **ofwel** een eenmalige **uitnodigingscode** van een werkruimtebeheerder. Als je een uitnodiging inwisselt, wordt je gebruiker ingericht, je lidmaatschap vastgelegd en de referentie van deze client voor je aangemaakt, zodat je nooit zelf een apparaat-id of sleutel hoeft te verwerken.
+- Ofwel de drie koppelingswaarden die de server heeft aangemaakt — de **server-URL** (`ws://…/rpc` of `wss://…/rpc`), een **apparaat-id** en een **koppelingssleutel** — **ofwel** een eenmalige **uitnodigingscode** van een werkruimtebeheerder. Als je een uitnodiging inwisselt, wordt je gebruiker ingericht, je lidmaatschap vastgelegd en de referentie van deze client voor je aangemaakt, zodat je nooit zelf een apparaat-id of sleutel hoeft te verwerken. Verkrijg deze via een vertrouwd kanaal en controleer bij de eerste verbinding de vingerafdruk van de server aan de hand van een vertrouwde QR-code of een bekende pin.
 
 ### Zorg dat de server bereikbaar is
 
@@ -28,7 +28,7 @@ hij al vertrouwt — en `cc_server` weigert sowieso een niet-loopbackadres te bi
 zonder TLS. Geef hem een van de volgende:
 
 - een certificaat rechtstreeks, met `--tls-cert` en `--tls-key`
-- een TLS-beëindigende reverse proxy ervoor, met de server gestart met `--insecure` (plaintext achter de proxy, alleen op een vertrouwd netwerk)
+- een TLS-beëindigende reverse proxy ervoor, met de server gestart met `--insecure` (plaintext tussen de proxy en de server op de buitenste listener, alleen op een vertrouwd netwerk; dit schakelt de verplichte versleutelde clientsessie niet uit)
 - een tunnel of VPN die het certificaat levert — Tailscale, cloudflared of vergelijkbaar. **Instellingen → Server → Verbinding en status** heeft de ingebouwde tunneloptie onder **Deze server delen**.
 
 Twee instellingen aan de serverkant zijn makkelijk te missen. Stel achter een proxy,
@@ -58,7 +58,8 @@ en zie je de fout. De rij van de server waarop je zit heeft geen **Wisselen**-ac
 de lokale server is de eerste rij, met het label **In deze app uitvoeren**.
 
 Zodra je gewisseld bent, bezit de desktop geen database meer. Elk scherm leest en
-schrijft via de externe server over een WebSocket.
+schrijft via de externe server over een ondertekende, end-to-end-versleutelde
+WebSocket-sessie; dezelfde bescherming geldt via loopback en via de relay.
 
 ## De webclient verbinden
 
@@ -70,13 +71,19 @@ De webbuild is altijd extern.
 
 Als er een koppelingsdeeplink in de URL staat, zijn de velden al ingevuld. De
 koppelingssleutel reist mee in het **fragment** van de URL, dat browsers nooit naar
-de server sturen die de pagina host, zodat de statische host hem nooit te zien krijgt.
+de server sturen die de pagina host. Behandel de link als een geheim en vertrouw de
+pagina die de webclient serveert: het fragment beschermt niet tegen kwaadwillende
+pagina-code.
 
-:::note[Media en beveiliging]
-Media (avatars, feedafbeeldingen, PR-screenshots) wordt via de verbonden server
-geleid, zodat de browser nooit rechtstreeks een upstream-host benadert. Een
-Content-Security Policy per verzoek, afgeleid van een niet-gevoelige cookie, staat
-alleen de origin van de verbonden server toe.
+:::note[Media, editors en beveiliging]
+Media (avatars, feedafbeeldingen, PR-screenshots), back-upoverdrachten en verkeer
+van de ingebedde editor gebruiken de versleutelde brontunnel, niet leesbare
+openbare HTTP-routes. De vertrouwde browserseditor draait op de eigen origin van
+de webapp; zijn Service Worker voert verzoeken via de geauthenticeerde
+versleutelde sessie naar de code-server-backend op `cc_server`. Host de
+webclient via HTTPS of een veilige loopback-origin, zodat Service Workers
+beschikbaar zijn. Native clients gebruiken een tot capabilities beperkte
+loopback-façade.
 :::
 
 ### Wat de browser niet doet
@@ -99,6 +106,7 @@ editors verbergt de knop zichzelf.
 
 - **Verbinding krijgt een time-out**: de server moet vanaf de client bereikbaar zijn. Controleer de bind (`--bind any`), of de poort open is en of `--public-url` het adres noemt dat de client daadwerkelijk kan aanspreken. Over het open internet is TLS verplicht — een plaintext niet-loopbackbind wordt bij het opstarten geweigerd, tenzij de server achter een proxy met `--insecure` is gestart.
 - **De browser weigert te verbinden maar een native client werkt**: de origin van de browser staat niet in de `--allowed-origins`-lijst van de server. De standaardwaarde staat alleen `https://app.usectrl.dev` toe (plus loopback).
+- **Serveridentiteit gewijzigd**: de client weigert een vingerafdruk die afwijkt van zijn opgeslagen pin. Verifieer de identiteit van de server buiten de band en koppel opnieuw via een vertrouwd kanaal; negeer de waarschuwing niet en stap niet over op een oudere of plaintext-client.
 - **Koppelingssleutel geweigerd**: voer `cc_server pair` opnieuw uit op de server om de sleutel van dat apparaat te roteren en voer daarna de nieuwe in. Een ingetrokken apparaat merkt dat zijn referentie verdwenen is en faalt gesloten; intrekking verbreekt een live-sessie binnen enkele seconden.
 - **Verkeerde werkruimte**: de werkruimte maakt deel uit van de URL (`/workspaces/:workspaceId/…`) en reist mee met elke aanroep, dus van werkruimte wisselen in de ene client verandert alleen je eigen weergave. Je kunt alleen werkruimtes bereiken waarvan je lid bent — al het andere wordt geweigerd met "Not a member of this workspace". Zie [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/).
 

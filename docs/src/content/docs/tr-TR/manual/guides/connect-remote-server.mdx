@@ -2,7 +2,7 @@
 title: Uzak bir sunucuya bağlanma
 description: Masaüstü uygulamasını veya web istemcisini başka bir yerde çalışan bir cc_server’a yönlendirin ve sunucular arasında yeniden başlatmadan geçiş yapın.
 slug: tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Her istemci, verilerin sahibi olan bir `cc_server` üzerinde arayüz çizen bir
@@ -15,7 +15,7 @@ kutuya, bir bulut sanal makinesine, bir derleme sunucusuna — yönlendirir.
 ## Önkoşullar
 
 - Çalışan bir `cc_server`. Yoksa [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/) sayfasına bakın.
-- Sunucunun ürettiği üç eşleştirme değeri — **sunucu URL’si** (`ws://…/rpc` veya `wss://…/rpc`), bir **cihaz kimliği** ve bir **eşleştirme anahtarı** — **ya da** bir çalışma alanı yöneticisinden alınan tek kullanımlık bir **davet kodu**. Bir daveti kullanmak kullanıcınızı oluşturur, üyeliğinizi kaydeder ve bu istemcinin kimlik bilgisini sizin adınıza üretir; böylece bir cihaz kimliğini ya da anahtarı hiç elle işlemezsiniz.
+- Sunucunun ürettiği üç eşleştirme değeri — **sunucu URL’si** (`ws://…/rpc` veya `wss://…/rpc`), bir **cihaz kimliği** ve bir **eşleştirme anahtarı** — **ya da** bir çalışma alanı yöneticisinden alınan tek kullanımlık bir **davet kodu**. Bir daveti kullanmak kullanıcınızı oluşturur, üyeliğinizi kaydeder ve bu istemcinin kimlik bilgisini sizin adınıza üretir; böylece bir cihaz kimliğini ya da anahtarı hiç elle işlemezsiniz. Bu değerleri güvenilir bir kanaldan alın ve ilk bağlantıda sunucunun parmak izini güvenilir bir QR ya da bilinen bir sabitlemeyle karşılaştırın.
 
 ### Sunucunun erişilebilir olduğundan emin olun
 
@@ -29,7 +29,7 @@ sunulur, bu yüzden tarayıcı yalnızca zaten güvendiği bir sertifikaya sahip
 adrese bağlanmayı baştan reddeder. Şunlardan birini sağlayın:
 
 - doğrudan bir sertifika, `--tls-cert` ve `--tls-key` ile
-- önde TLS sonlandıran bir ters proxy, sunucu `--insecure` ile başlatılmış olarak (proxy’nin arkasında düz metin, yalnızca güvenilir bir ağda)
+- önde TLS sonlandıran bir ters proxy, sunucu `--insecure` ile başlatılmış olarak (dış dinleyicide proxy ile sunucu arasında düz metin, yalnızca güvenilir bir ağda; bu, zorunlu şifrelenmiş istemci oturumunu devre dışı bırakmaz)
 - sertifikayı sağlayan bir tünel veya VPN — Tailscale, cloudflared ya da benzeri. **Ayarlar → Sunucu → Bağlantı ve durum** içinde, **Bu sunucuyu paylaş** altında yerleşik tünel katılımı bulunur.
 
 Sunucu tarafındaki iki ayarın gözden kaçması kolaydır. Bir proxy, NAT veya
@@ -59,8 +59,10 @@ yeniden başlatma gerekmez. Bağlantı başarısız olursa geçerli sunucuda kal
 ve hatayı görürsünüz. Üzerinde bulunduğunuz sunucunun satırında **Geç** eylemi
 yoktur; yerel sunucu, **Bu uygulamada çalıştır** etiketiyle ilk satırdır.
 
-Geçiş yapıldıktan sonra masaüstü hiçbir veritabanına sahip olmaz. Her ekran
-okuma ve yazma işlemlerini uzak sunucu üzerinden, bir WebSocket ile yapar.
+Geçiş yapıldıktan sonra masaüstü hiçbir veritabanına sahip olmaz. Her ekran okuma
+ve yazma işlemlerini uzak sunucu üzerinden, imzalı ve uçtan uca şifrelenmiş bir
+WebSocket oturumuyla yapar; aynı koruma loopback'te ve aktarıcı üzerinden de
+geçerlidir.
 
 ## Web istemcisini bağlama
 
@@ -71,15 +73,19 @@ Web yapısı her zaman uzaktır.
 3. İstemci sunucuyu arar ve masaüstünün çizdiği aynı arayüzü çizer.
 
 URL’de bir eşleştirme derin bağlantısı varsa alanlar önceden doldurulur.
-Eşleştirme anahtarı URL’nin **fragment** kısmında taşınır; tarayıcılar bunu
-sayfayı barındıran sunucuya hiçbir zaman göndermez, böylece statik barındırıcı
-anahtarı hiç görmez.
+Eşleştirme anahtarı URL’nin **fragment** kısmında taşınır; tarayıcılar bunu sayfayı
+barındıran ana makineye yaptıkları istekte göndermez. Bağlantıyı bir sır olarak
+görün ve web istemcisini sunan sayfaya güvenin: fragment, sayfanın kötü niyetli
+koduna karşı koruma sağlamaz.
 
-:::note[Medya ve güvenlik]
-Medya (avatarlar, akış görselleri, PR ekran görüntüleri) bağlı sunucu üzerinden
-proxy’lenir, böylece tarayıcı hiçbir zaman doğrudan bir üst kaynak ana makineden
-içerik çekmez. Hassas olmayan bir çerezden damgalanan, istek başına bir İçerik
-Güvenliği Politikası yalnızca bağlı sunucunun kaynağına izin verir.
+:::note[Medya, düzenleyiciler ve güvenlik]
+Medya (avatarlar, akış görselleri, PR ekran görüntüleri), yedek aktarımları ve
+gömülü düzenleyici trafiği şifrelenmiş kaynak tünelini kullanır, okunabilir genel
+HTTP rotalarını değil. Güvenilir tarayıcı düzenleyicisi web uygulamasının kendi
+kaynağında çalışır; Service Worker'ı istekleri kimliği doğrulanmış şifreli oturum
+üzerinden `cc_server` üzerindeki code-server arka ucuna taşır. Service Worker'lar
+kullanılabilsin diye web istemcisini HTTPS ya da güvenli loopback üzerinden barındırın.
+Yerel istemciler yetenekle sınırlandırılmış bir loopback cephesi kullanır.
 :::
 
 ### Tarayıcının yapmadıkları
@@ -102,6 +108,7 @@ bir ana makinede düğme kendini gizler.
 
 - **Bağlantı zaman aşımına uğruyor**: sunucuya istemciden erişilebilmelidir. Bağlanmayı (`--bind any`), portun açık olduğunu ve `--public-url` ayarının istemcinin gerçekte arayabileceği adresi gösterdiğini denetleyin. Açık internette TLS zorunludur — sunucu bir proxy arkasında `--insecure` ile başlatılmadıysa, düz metin loopback dışı bağlanma başlangıçta reddedilir.
 - **Tarayıcı bağlanmayı reddediyor ama yerel bir istemci çalışıyor**: tarayıcının kaynağı sunucunun `--allowed-origins` listesinde değil. Varsayılan yalnızca `https://app.usectrl.dev` adresine izin verir (artı loopback).
+- **Sunucu kimliği değişti**: istemci, kayıtlı sabitlemesinden farklı bir parmak izini reddeder. Sunucu kimliğini bant dışı doğrulayın ve güvenilir bir kanal üzerinden yeniden eşleştirin; uyarıyı yok saymayın ya da daha eski veya düz metin bir istemciye geçmeyin.
 - **Eşleştirme anahtarı reddedildi**: o cihazın anahtarını döndürmek için sunucuda `cc_server pair` komutunu yeniden çalıştırın, ardından yenisini girin. İptal edilmiş bir cihaz kimlik bilgisinin yok olduğunu görür ve kapalıya düşer; iptal, canlı bir oturumu saniyeler içinde düşürür.
 - **Yanlış çalışma alanı**: çalışma alanı URL’nin bir parçasıdır (`/workspaces/:workspaceId/…`) ve her çağrıyla birlikte taşınır, bu yüzden bir istemcide çalışma alanı değiştirmek yalnızca kendi görünümünüzü değiştirir. Yalnızca üyesi olduğunuz çalışma alanlarına erişebilirsiniz — başka her şey "Not a member of this workspace" ile reddedilir. Bkz. [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
 

@@ -10,28 +10,34 @@ import 'dart:async';
 /// lost. This propagator wraps each parent run in a per-key
 /// [Future]-chain lock so updates to one parent are applied strictly serially,
 /// while different parents proceed concurrently.
-/// The store itself is injected via the [readChildCostCents] /
-/// [writeChildCostCents] hooks so this class stays pure-domain (no database
+/// The store itself is injected via the [readChildCostMicros] /
+/// [writeChildCostMicros] hooks so this class stays pure-domain (no database
 /// dependency). Each acquire chains onto the previous tail [Future] for the key, swallows that
 /// tail's errors so one failed link never wedges the chain and removes the map
 /// entry once it is the last link in the chain.
+///
+/// Amounts are MICRO-USD (`1e-6` USD), not cents. A whole-cent rollup rounds
+/// every sub-cent subagent to zero, so a parent that delegated a hundred small
+/// child calls recorded a child total of zero and its inclusive cost read the
+/// same as a run that delegated nothing.
 class SubagentCostPropagator {
   /// Creates a [SubagentCostPropagator] backed by the given store hooks.
   ///
-  /// * [readChildCostCents] returns the parent run's current accumulated child
-  ///   cost in US cents.
-  /// * [writeChildCostCents] persists the new accumulated child cost in US cents.
+  /// * [readChildCostMicros] returns the parent run's current accumulated child
+  ///   cost in micro-USD.
+  /// * [writeChildCostMicros] persists the new accumulated child cost in
+  ///   micro-USD.
   SubagentCostPropagator({
-    required this.readChildCostCents,
-    required this.writeChildCostCents,
+    required this.readChildCostMicros,
+    required this.writeChildCostMicros,
   });
 
-  /// Reads the parent run's current accumulated child cost, in US cents.
-  final Future<int> Function(String parentRunId) readChildCostCents;
+  /// Reads the parent run's current accumulated child cost, in micro-USD.
+  final Future<int> Function(String parentRunId) readChildCostMicros;
 
-  /// Writes the parent run's new accumulated child cost, in US cents.
-  final Future<void> Function(String parentRunId, int newChildCostCents)
-  writeChildCostCents;
+  /// Writes the parent run's new accumulated child cost, in micro-USD.
+  final Future<void> Function(String parentRunId, int newChildCostMicros)
+  writeChildCostMicros;
 
   /// Per-parent-key tail of the in-flight propagation chain.
   ///
@@ -40,19 +46,19 @@ class SubagentCostPropagator {
   /// the chain for that key drains, so idle keys hold no memory.
   final Map<String, Future<void>> _locks = <String, Future<void>>{};
 
-  /// Adds [amountCents] to the parent run's accumulated child cost, serialized
-  /// against any other propagation for the same [parentRunId].
+  /// Adds [amountMicros] to the parent run's accumulated child cost,
+  /// serialized against any other propagation for the same [parentRunId].
   ///
-  /// A non-positive [amountCents] is a no-op (subagents only ever add cost).
+  /// A non-positive [amountMicros] is a no-op (subagents only ever add cost).
   /// Concurrent calls for the **same** [parentRunId] run strictly one after the
   /// other — each reads the value the previous call wrote — so no update is
   /// lost. Calls for **different** parent keys do not block each other.
   ///
-  /// The returned [Future] completes when this call's read-modify-write has been
-  /// applied. A failing read or write rejects this call's [Future] but does not
+  /// The returned [Future] completes when this call's read-modify-write has
+  /// been applied. A failing read or write rejects this call's [Future] but does not
   /// wedge the chain: the next propagation for the same key still runs.
-  Future<void> propagate(String parentRunId, int amountCents) {
-    if (amountCents <= 0) {
+  Future<void> propagate(String parentRunId, int amountMicros) {
+    if (amountMicros <= 0) {
       return Future<void>.value();
     }
 
@@ -61,7 +67,7 @@ class SubagentCostPropagator {
     // one link's failure never wedges later links on the same key.
     final Future<void> previous = _locks[parentRunId] ?? Future<void>.value();
     final Future<void> work = previous.then(
-      (_) => _applyDelta(parentRunId, amountCents),
+      (_) => _applyDelta(parentRunId, amountMicros),
     );
 
     // The gate stored as the new tail swallows this link's error so the next
@@ -85,8 +91,8 @@ class SubagentCostPropagator {
   }
 
   /// Performs one read-modify-write of the parent run's child cost.
-  Future<void> _applyDelta(String parentRunId, int amountCents) async {
-    final int current = await readChildCostCents(parentRunId);
-    await writeChildCostCents(parentRunId, current + amountCents);
+  Future<void> _applyDelta(String parentRunId, int amountMicros) async {
+    final int current = await readChildCostMicros(parentRunId);
+    await writeChildCostMicros(parentRunId, current + amountMicros);
   }
 }

@@ -2,7 +2,7 @@
 title: Spárujte zařízení
 description: Spáruj telefon (nebo druhý prohlížeč či desktop) se serverem Control Center, ať flotilu sleduješ na dálku.
 slug: cs-CZ/prirucka/navody/parovani-zarizeni
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Tenhle návod ukazuje, jak spárovat telefon s Control Center, ať odkudkoli čteš
@@ -23,8 +23,9 @@ PWA, kterou nasadíš na Cloudflare Pages přes její `wrangler.jsonc`, do nginx
 image `docker/cc_remote`, nebo na libovolný statický hostitel s HTTPS —
 service workery a IndexedDB fungují jen v zabezpečeném kontextu) a relé
 (`apps/cc_signaling_server`, jeden bezstavový binární soubor v Dartu, který
-nedrží data aplikace a tajemství párování nikdy neuvidí — přeposílá jen rámce
-zapečetěné od konce ke konci). Postup sestavení a spuštění je v jejich README.
+nedrží data aplikace a neumí dešifrovat šifrované záznamy ani uvidět tajemství
+párování). Pořád však vidí IP adresy, směrovací identifikátory, velikosti
+a časování a může provoz zahazovat. Postup sestavení a spuštění je v jejich README.
 
 ## Krok 1: Otevři panel párování
 
@@ -47,14 +48,18 @@ webového klienta, zatímco tenhle QR veze úplný deskriptor spojení serveru
 a otisk identity pro PWA Remote.
 
 Na straně telefonu otevření párovacího odkazu nespáruje potichu. Remote ukáže
-inzerovaný název serveru a než cokoli uloží, požádá o potvrzení, takže
-podvržený odkaz nemůže aplikaci unést na cizí server.
+inzerovaný název serveru a než cokoli uloží, požádá o potvrzení. Otisk v QR
+zkontroluj proti důvěryhodnému zdroji: potvrzení neověřeného názvu nebo
+podvrženého QR nedokazuje, že server je tvůj. Klient si podepsanou identitu
+připne a při dalších připojeních změněný otisk odmítne.
 
 :::caution[Naskenovaný QR udělí přístup hned]
 Krok čekání na schválení tu není: vydané zařízení je aktivní od okamžiku
 vytvoření a brána připojení kontroluje jen to, že pověření je aktivní
 a nevypršelo. S QR i s párovacím klíčem zacházej jako s heslem a odvolej
-všechno, co jsi předat nechtěl.
+všechno, co jsi předat nechtěl. Přímé i zprostředkované klientské relace
+vyžadují šifrování od konce ke konci; starší klienti nemohou spadnout na
+otevřené RPC.
 :::
 
 ## Správa spárovaných zařízení

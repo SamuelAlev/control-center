@@ -10,8 +10,9 @@ import 'package:control_center/features/pr_review/presentation/utils/workflow_ma
 import 'package:control_center/features/pr_review/presentation/widgets/workflow_graph_layout.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/dot_grid_background.dart';
+import 'package:control_center/shared/widgets/canvas/graph_canvas_viewport.dart';
 import 'package:control_center/shared/widgets/graph_node_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -167,44 +168,46 @@ class WorkflowEdgesPainter extends CustomPainter {
   /// panned.
   final Offset offset;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke;
-    final byId = {for (final n in nodes) n.id: n};
+  late final Path _path = _buildPath();
+
+  Path _buildPath() {
+    final path = Path();
     for (final node in nodes) {
-      final nodeTopLeft = positions[node.id] ?? Offset.zero;
-      final to = Offset(
-        nodeTopLeft.dx + offset.dx,
-        nodeTopLeft.dy + offset.dy + nodeHeight / 2,
-      );
+      final end = positions[node.id];
+      if (end == null) {
+        continue;
+      }
+      final to = end + Offset(0, nodeHeight / 2);
       for (final need in node.needs) {
-        final from = byId[need];
-        if (from == null) {
+        final origin = positions[need];
+        if (origin == null) {
           continue;
         }
-        final fromTopLeft = positions[from.id] ?? Offset.zero;
-        final start = Offset(
-          fromTopLeft.dx + offset.dx + nodeWidth,
-          fromTopLeft.dy + offset.dy + nodeHeight / 2,
-        );
-        _drawArrow(canvas, paint, start, to);
+        final from = origin + Offset(nodeWidth, nodeHeight / 2);
+        path
+          ..moveTo(from.dx, from.dy)
+          ..cubicTo(from.dx + 60, from.dy, to.dx - 60, to.dy, to.dx, to.dy)
+          ..moveTo(to.dx, to.dy)
+          ..lineTo(to.dx - 8, to.dy - 4)
+          ..moveTo(to.dx, to.dy)
+          ..lineTo(to.dx - 8, to.dy + 4);
       }
     }
+    return path;
   }
 
-  void _drawArrow(Canvas canvas, Paint paint, Offset from, Offset to) {
-    final path = Path()
-      ..moveTo(from.dx, from.dy)
-      ..cubicTo(from.dx + 60, from.dy, to.dx - 60, to.dy, to.dx, to.dy);
-    canvas.drawPath(path, paint);
-    const headLen = 8.0;
-    final tip = to;
-    final back = Offset(to.dx - headLen, to.dy);
-    canvas.drawLine(tip, back + const Offset(0, -4), paint);
-    canvas.drawLine(tip, back + const Offset(0, 4), paint);
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+    canvas.drawPath(
+      _path,
+      Paint()
+        ..color = color
+        ..strokeWidth = 1.4
+        ..style = PaintingStyle.stroke,
+    );
+    canvas.restore();
   }
 
   @override
@@ -255,53 +258,66 @@ class WorkflowRunCanvas extends ConsumerStatefulWidget {
 }
 
 class _WorkflowRunCanvasState extends ConsumerState<WorkflowRunCanvas> {
-  Offset _panOffset = Offset.zero;
+  late Map<String, Offset> _layout;
+  Rect _bounds = Rect.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveLayout();
+  }
+
+  @override
+  void didUpdateWidget(WorkflowRunCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.nodes, widget.nodes)) {
+      _resolveLayout();
+    }
+  }
+
+  void _resolveLayout() {
+    _layout = WorkflowGraphLayout.compute(
+      widget.nodes,
+      nodeWidth: WorkflowRunCanvas.nodeWidth,
+      nodeHeight: WorkflowRunCanvas.nodeHeight,
+    );
+    Rect? bounds;
+    for (final position in _layout.values) {
+      final rect =
+          position &
+          const Size(WorkflowRunCanvas.nodeWidth, WorkflowRunCanvas.nodeHeight);
+      bounds = bounds?.expandToInclude(rect) ?? rect;
+    }
+    _bounds = bounds ?? Rect.zero;
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final layout = WorkflowGraphLayout.compute(
-          widget.nodes,
-          nodeWidth: WorkflowRunCanvas.nodeWidth,
-          nodeHeight: WorkflowRunCanvas.nodeHeight,
-        );
-        final baseOffset = _baseOffset(layout, constraints.biggest);
-        final translate = baseOffset + _panOffset;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onPanUpdate: (d) => setState(() => _panOffset += d.delta),
-          child: Container(
-            color: tokens.bgPrimary,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: DotGridBackground(offset: _panOffset),
+    return GraphCanvasViewport(
+      bounds: _bounds,
+      sceneBuilder: (shift) => Stack(
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: WorkflowEdgesPainter(
+                    nodes: widget.nodes,
+                    positions: _layout,
+                    color: tokens.borderSecondary,
+                    nodeWidth: WorkflowRunCanvas.nodeWidth,
+                    nodeHeight: WorkflowRunCanvas.nodeHeight,
+                    offset: shift,
                   ),
                 ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: WorkflowEdgesPainter(
-                        nodes: widget.nodes,
-                        positions: layout,
-                        color: tokens.borderSecondary,
-                        nodeWidth: WorkflowRunCanvas.nodeWidth,
-                        nodeHeight: WorkflowRunCanvas.nodeHeight,
-                        offset: translate,
-                      ),
-                    ),
-                  ),
-                ),
-                for (final node in widget.nodes)
-                  _buildNode(node, tokens, translate, layout[node.id]),
-              ],
+              ),
             ),
           ),
-        );
-      },
+          for (final node in widget.nodes)
+            _buildNode(node, tokens, shift, _layout[node.id]),
+        ],
+      ),
     );
   }
 
@@ -340,25 +356,28 @@ class _WorkflowRunCanvasState extends ConsumerState<WorkflowRunCanvas> {
         : statusWord;
 
     return Positioned(
+      key: ValueKey(node.id),
       left: position.dx,
       top: position.dy,
       width: WorkflowRunCanvas.nodeWidth,
       height: WorkflowRunCanvas.nodeHeight,
-      child: Semantics(
-        button: true,
-        selected: selected,
-        label: title,
-        value: statusWord,
-        child: CcTappable(
-          onPressed: () => widget.onSelect(node.id),
-          builder: (context, states) => GraphNodeCard(
-            glyph: _statusGlyph(status, sc.dot),
-            title: title,
-            subtitle: subtitle,
-            trailing: trailing,
-            trailingColor: duration == null ? sc.foreground : null,
-            selected: selected,
-            hovered: states.contains(WidgetState.hovered),
+      child: RepaintBoundary(
+        child: Semantics(
+          button: true,
+          selected: selected,
+          label: title,
+          value: statusWord,
+          child: CcTappable(
+            onPressed: () => widget.onSelect(node.id),
+            builder: (context, states) => GraphNodeCard(
+              glyph: _statusGlyph(status, sc.dot),
+              title: title,
+              subtitle: subtitle,
+              trailing: trailing,
+              trailingColor: duration == null ? sc.foreground : null,
+              selected: selected,
+              hovered: states.contains(WidgetState.hovered),
+            ),
           ),
         ),
       ),
@@ -391,43 +410,6 @@ class _WorkflowRunCanvasState extends ConsumerState<WorkflowRunCanvas> {
       _ => AppIcons.minusCircle,
     };
     return Icon(icon, size: 14, color: color);
-  }
-
-  /// Left margin between the viewport edge and the leftmost column at rest.
-  static const double _leftPadding = 48;
-
-  /// Base translation before the user's pan: center the graph vertically and
-  /// center it horizontally too when the whole graph fits the viewport —
-  /// otherwise pin the leftmost column near the left edge so the roots stay
-  /// visible and the operator pans right to follow the flow.
-  Offset _baseOffset(Map<String, Offset> positions, Size viewport) {
-    if (positions.isEmpty) {
-      return Offset.zero;
-    }
-    double minX = double.infinity;
-    double maxX = -double.infinity;
-    double minY = double.infinity;
-    double maxY = -double.infinity;
-    for (final p in positions.values) {
-      if (p.dx < minX) {
-        minX = p.dx;
-      }
-      if (p.dx + WorkflowRunCanvas.nodeWidth > maxX) {
-        maxX = p.dx + WorkflowRunCanvas.nodeWidth;
-      }
-      if (p.dy < minY) {
-        minY = p.dy;
-      }
-      if (p.dy + WorkflowRunCanvas.nodeHeight > maxY) {
-        maxY = p.dy + WorkflowRunCanvas.nodeHeight;
-      }
-    }
-    final width = maxX - minX;
-    final height = maxY - minY;
-    final fits = width + 2 * _leftPadding <= viewport.width;
-    final dx = fits ? (viewport.width - width) / 2 - minX : _leftPadding - minX;
-    final dy = (viewport.height - height) / 2 - minY;
-    return Offset(dx, dy);
   }
 
   /// Node color set keyed on the roll-up: the glyph dot and the status-word

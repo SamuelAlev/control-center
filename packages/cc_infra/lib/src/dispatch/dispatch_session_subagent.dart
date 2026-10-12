@@ -13,25 +13,6 @@ String _stripFrontmatter(String md) {
 }
 
 extension _DispatchSessionSubagent on DispatchSession {
-  Future<void> _updateSubagentCost({
-    required String runId,
-    required RunCost cost,
-    required AgentRunLogRepository? repo,
-  }) async {
-    final ws = workspaceId;
-    if (repo == null || ws == null || ws.isEmpty) {
-      return;
-    }
-    try {
-      final row = await repo.getById(ws, runId);
-      if (row != null) {
-        await repo.upsert(row.copyWith(cost: cost));
-      }
-    } catch (_) {
-      // Progress telemetry, not the run's result — never fail a run over it.
-    }
-  }
-
   Future<SubagentResult> _spawnSubagent(
     SubagentSpawnRequest req, {
     required int depth,
@@ -40,9 +21,19 @@ extension _DispatchSessionSubagent on DispatchSession {
     required Map<String, String> env,
     required LlmProviderPort parentProvider,
     required String parentProviderId,
+    required HarnessRunAccounting parentAccounting,
+    required HarnessRunConfig runConfig,
+    bool Function()? budgetExceeded,
     required String baseSystemPrompt,
     required ToolApprovalCallback? approval,
   }) async {
+    final childCancel = req.context.cancel ?? _cancelSource.token;
+    if (childCancel.isCancelled) {
+      return const SubagentResult(
+        text: 'Subagent cancelled before starting.',
+        isError: true,
+      );
+    }
     if (depth > maxSubagentDepth) {
       return SubagentResult(
         text:
@@ -65,6 +56,34 @@ extension _DispatchSessionSubagent on DispatchSession {
     final subProfile = custom?.resolve() ?? subagentProfileFor(req.type);
     final childRunId =
         '${runLogId ?? 'run'}-sub-${_subagentSeq++}-${const Uuid().v4()}';
+    final childAgentId = agentId ?? 'subagent';
+    final startedAt = DateTime.now();
+    final repo = deps.runLogRepo;
+    final ws = parentAccounting.workspaceId;
+    final recording = deps.runTranscriptRecorder?.begin(
+      runId: childRunId,
+      workspaceId: ws,
+      startedAt: startedAt,
+    );
+    int? childWindow;
+    late final HarnessRunAccounting childAccounting;
+    childAccounting = HarnessRunAccounting(
+      runId: childRunId,
+      workspaceId: ws,
+      conversationId: conversationId,
+      runStartedAt: startedAt,
+      parent: parentAccounting,
+      repository: deps.llmCallRecordRepo,
+      runLogRepository: repo,
+      priceLookup: (pid, model) =>
+          deps.modelResolver?.call('$pid/$model')?.cost,
+      onCall: (record) => _emitHarnessProviderCall(
+        record,
+        accounting: childAccounting,
+        emit: (event) => recording?.add(event),
+        contextWindow: childWindow,
+      ),
+    );
 
     final childRegistry = _buildHarnessRegistry(
       mode: subProfile.surface.maxTier == ToolApprovalTier.exec
@@ -80,7 +99,10 @@ extension _DispatchSessionSubagent on DispatchSession {
     if (override != null && override.isNotEmpty) {
       try {
         final factory = deps.harnessProviderFactory;
-        final parsed = factory.parseModel(override);
+        final parsed = factory.parseModel(
+          override,
+          defaultProvider: parentProviderId,
+        );
         final cred = await _resolveHarnessCredential(parsed.providerId);
         childProvider = await _buildHarnessProvider(
           factory: factory,
@@ -105,6 +127,10 @@ extension _DispatchSessionSubagent on DispatchSession {
       }
     }
     final childCredential = await _resolveHarnessCredential(childProviderId);
+    childProvider = childAccounting.observe(
+      childProvider,
+      providerId: childProviderId,
+    );
 
     final canSpawn = depth < maxSubagentDepth;
     if (canSpawn) {
@@ -120,6 +146,9 @@ extension _DispatchSessionSubagent on DispatchSession {
               env: env,
               parentProvider: childProvider,
               parentProviderId: childProviderId,
+              parentAccounting: childAccounting,
+              runConfig: runConfig,
+              budgetExceeded: budgetExceeded,
               baseSystemPrompt: baseSystemPrompt,
               approval: approval,
             ),
@@ -133,23 +162,21 @@ extension _DispatchSessionSubagent on DispatchSession {
     final childPartition = materializeHarnessToolSurface(
       registry: HarnessToolRegistry.of(childAdmitted),
       surface: const ToolSurfaceSpec.unrestricted(),
-      residency: DispatchSession._childResidency(enabled: deps.toolDeferralEnabled),
+      residency: DispatchSession._childResidency(
+        enabled: deps.toolDeferralEnabled,
+      ),
     );
     final childTools = childPartition.resident;
     final childDeferredTools = childPartition.deferred;
-
-    final childAgentId = agentId ?? 'subagent';
-    final startedAt = DateTime.now();
-    final repo = deps.runLogRepo;
-
-    final ws = workspaceId;
-    final recording = (ws != null && ws.isNotEmpty)
-        ? deps.runTranscriptRecorder?.begin(
-            runId: childRunId,
-            workspaceId: ws,
-            startedAt: startedAt,
-          )
-        : null;
+    final childModelId = childModel ?? childProvider.defaultModel;
+    final childModelInfo = deps.modelResolver?.call(
+      '$childProviderId/$childModelId',
+    );
+    childWindow = childModelInfo?.limits.context ?? 128000;
+    final childEffort = _resolveHarnessEffort(
+      childModelInfo,
+      override: req.effortOverride,
+    );
 
     if (repo != null) {
       try {
@@ -157,14 +184,17 @@ extension _DispatchSessionSubagent on DispatchSession {
           AgentRunLog(
             id: childRunId,
             agentId: childAgentId,
-            workspaceId: workspaceId,
+            workspaceId: ws,
             spaceId: spaceId,
             conversationId: conversationId,
             startedAt: startedAt,
             status: RunStatus.running,
             summary: req.label,
             adapter: 'harness',
-            modelId: childModel ?? childProviderId,
+            modelId:
+                '$childProviderId/${childModel ?? childProvider.defaultModel}',
+            effort: childEffort?.name ?? 'default',
+            taskFamily: subProfile.type.name,
             role: AgentRunRole.sub,
             parentRunId: parentRunId,
             spawnToolCallId: req.spawnToolCallId,
@@ -184,12 +214,6 @@ extension _DispatchSessionSubagent on DispatchSession {
       ),
     );
 
-    final costCalc = HarnessCostCalculator(
-      (pid, m) => deps.modelResolver?.call('$pid/$m')?.cost,
-    );
-    final childModelInfo = childModel == null
-        ? null
-        : deps.modelResolver?.call('$childProviderId/$childModel');
     final childGeneration =
         childCredential?.generation ?? const ProviderGenerationDefaults();
     final config = AgentLoopConfig(
@@ -198,52 +222,62 @@ extension _DispatchSessionSubagent on DispatchSession {
         canSpawn: canSpawn,
       ),
       model: childModel,
+      purpose: LlmCallPurpose.subagent,
+      callLedger: childAccounting.ledger,
+      tokenCalibration: deps.tokenCalibration,
+      externalBudgetExceeded: budgetExceeded,
+      overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
+      observationIngest: ToolObservationIngest(
+        store: deps.toolOutputStore,
+        retainMinTokens: runConfig.compaction.policy == CompactionPolicy.current
+            ? 0
+            : kToolOutputRetentionMinTokens,
+      ),
       maxTurns: subProfile.maxTurns,
       maxTokens: childGeneration.maxTokens ?? defaultHarnessMaxTokens,
       temperature: childGeneration.temperature,
       topP: childGeneration.topP,
       topK: childGeneration.topK,
-      effort: _resolveHarnessEffort(childModelInfo),
+      effort: childEffort,
       toolTimeout: const Duration(minutes: 30),
       approvalCallback: approval,
       autoApprove: false,
-      maxParallelToolCalls: 2,
+      maxParallelToolCalls: runConfig.maxParallelToolCalls < 2
+          ? runConfig.maxParallelToolCalls
+          : 2,
       pauseGate: _pauseGate,
-      contextWindow: childModelInfo?.limits.context ?? 128000,
-      compactor: DefaultHarnessCompactor(
-        summarizer: LlmHarnessSummarizer(childProvider),
+      contextWindow: childWindow,
+      compactor: SnapcompactCompactor(
+        fallback: DefaultHarnessCompactor(
+          summarizer: LlmHarnessSummarizer(childProvider),
+          config: runConfig.compaction,
+          calibration: deps.tokenCalibration,
+          providerId: childProviderId,
+          modelId: childModelId,
+          purpose: LlmCallPurpose.subagent,
+          economics: CompactionEconomics(
+            cache: ProviderCacheEconomics.forProvider(childProviderId),
+          ),
+        ),
+        modelId: '$childProviderId/$childModelId',
+        readerHasVision: childModelInfo?.supportsImageInput ?? false,
+        providerId: childProviderId,
+        preferSnapshots: runConfig.snapshotCompaction,
+        config: runConfig.compaction,
       ),
     );
     final childContext = HarnessToolContext(
       workingDirectory: agentDirHostPath,
       sharedRoots: _workspaceSharedRoots(),
       agentId: childAgentId,
-      workspaceId: workspaceId,
+      workspaceId: ws,
       conversationId: conversationId,
       spaceId: spaceId,
     );
 
     final buf = StringBuffer();
     var lastText = '';
-    var inputTokens = 0;
-    var outputTokens = 0;
-    var thoughtTokens = 0;
-    var cachedRead = 0;
-    var cachedWrite = 0;
-    var costCents = 0;
     var isError = false;
-
-    RunCost costSoFar({DateTime? completedAt}) => RunCost(
-      inputTokens: inputTokens,
-      outputTokens: outputTokens,
-      thoughtTokens: thoughtTokens,
-      cachedReadTokens: cachedRead,
-      cachedWriteTokens: cachedWrite,
-      estimatedCostCents: costCents,
-      durationMs: (completedAt ?? DateTime.now())
-          .difference(startedAt)
-          .inMilliseconds,
-    );
 
     final pilotKey =
         '${subProfile.type.name}|$childProviderId|'
@@ -254,9 +288,10 @@ extension _DispatchSessionSubagent on DispatchSession {
       ownedPilot = Completer<void>();
       _subagentPilots[pilotKey] = ownedPilot;
     } else {
-      await existingPilot.future
-          .timeout(DispatchSession._subagentPilotWait)
-          .catchError((Object _) {});
+      await Future.any([
+        existingPilot.future,
+        childCancel.whenCancelled,
+      ]).timeout(DispatchSession._subagentPilotWait).catchError((Object _) {});
     }
     void releasePilot() {
       if (ownedPilot != null && !ownedPilot.isCompleted) {
@@ -276,7 +311,7 @@ extension _DispatchSessionSubagent on DispatchSession {
         provider: childProvider,
         context: childContext,
         config: config,
-        cancel: _cancelSource.token,
+        cancel: childCancel,
       )) {
         releasePilot();
         switch (event) {
@@ -290,25 +325,9 @@ extension _DispatchSessionSubagent on DispatchSession {
             if (text.trim().isNotEmpty) {
               lastText = text;
             }
-          case LoopUsage(:final usage):
-            final rc = costCalc.cost(
-              providerId: childProviderId,
-              modelId: childModel ?? childProvider.defaultModel,
-              usage: usage,
-            );
-            inputTokens += usage.inputTokens;
-            outputTokens += usage.outputTokens;
-            thoughtTokens += usage.thoughtTokens;
-            cachedRead += usage.cacheReadTokens;
-            cachedWrite += usage.cacheWriteTokens;
-            costCents += rc.estimatedCostCents;
-            unawaited(
-              _updateSubagentCost(
-                runId: childRunId,
-                cost: costSoFar(),
-                repo: repo,
-              ),
-            );
+          case LoopUsage():
+            // Already recorded at each physical provider-call boundary.
+            break;
           case LoopToolCallStart(
             :final toolName,
             :final toolUseId,
@@ -348,6 +367,16 @@ extension _DispatchSessionSubagent on DispatchSession {
                 content: '[harness] subagent "${req.label}" error: $message',
               ),
             );
+          case LoopDone(:final reason):
+            if (reason != LoopDoneReason.completed) {
+              isError = true;
+              recording?.add(
+                ErrorEvent(
+                  content: 'Subagent stopped: ${reason.name}.',
+                  source: 'harness',
+                ),
+              );
+            }
           default:
             break;
         }
@@ -360,6 +389,7 @@ extension _DispatchSessionSubagent on DispatchSession {
       );
     } finally {
       releasePilot();
+      await childAccounting.flush();
     }
 
     await recording?.finish(
@@ -370,12 +400,12 @@ extension _DispatchSessionSubagent on DispatchSession {
         ? lastText.trim()
         : buf.toString().trim();
     final completedAt = DateTime.now();
-    final cost = costSoFar(completedAt: completedAt);
+    final cost = childAccounting.cost(
+      durationMs: completedAt.difference(startedAt).inMilliseconds,
+    );
 
-    final runLogWorkspaceId = workspaceId;
-    if (repo != null &&
-        runLogWorkspaceId != null &&
-        runLogWorkspaceId.isNotEmpty) {
+    final runLogWorkspaceId = ws;
+    if (repo != null) {
       try {
         final existing = await repo.getById(runLogWorkspaceId, childRunId);
         final base =
@@ -383,7 +413,7 @@ extension _DispatchSessionSubagent on DispatchSession {
             AgentRunLog(
               id: childRunId,
               agentId: childAgentId,
-              workspaceId: workspaceId,
+              workspaceId: ws,
               spaceId: spaceId,
               conversationId: conversationId,
               startedAt: startedAt,
@@ -392,7 +422,7 @@ extension _DispatchSessionSubagent on DispatchSession {
               parentRunId: parentRunId,
               spawnToolCallId: req.spawnToolCallId,
             );
-        await repo.upsert(
+        await repo.completeIfActive(
           base.copyWith(
             status: isError ? RunStatus.error : RunStatus.completed,
             completedAt: completedAt,
@@ -405,21 +435,6 @@ extension _DispatchSessionSubagent on DispatchSession {
           'Failed to write subagent completion run-log for "${req.label}": $e',
         );
       }
-    }
-
-    if (repo != null &&
-        runLogWorkspaceId != null &&
-        runLogWorkspaceId.isNotEmpty &&
-        parentRunId != null &&
-        costCents > 0) {
-      try {
-        final parent = await repo.getById(runLogWorkspaceId, parentRunId);
-        if (parent != null) {
-          await repo.upsert(
-            parent.copyWith(childCostCents: parent.childCostCents + costCents),
-          );
-        }
-      } catch (_) {}
     }
 
     addEvent(
@@ -642,9 +657,10 @@ extension _DispatchSessionSubagent on DispatchSession {
     return null;
   }
 
-  ReasoningEffort? _resolveHarnessEffort(ModelInfo? info) {
+  ReasoningEffort? _resolveHarnessEffort(ModelInfo? info, {String? override}) {
     final requested =
-        ReasoningEffort.fromId(effortLevel) ?? ReasoningEffort.medium;
+        ReasoningEffort.fromId(override ?? effortLevel) ??
+        ReasoningEffort.medium;
     if (info == null) {
       return requested;
     }

@@ -68,7 +68,7 @@ dependencies:
     path: packages/cc_rpc
   # Server-side VM-only infrastructure adapters. The thin client reaches a
   # handful of IO seams only (CcPaths, CcInfraLog, local cc_server spawn,
-  # Tailscale discovery, process-meeting collector) — never Drift, dio
+  # Tailscale discovery, process-meeting collector) — never Drift, HTTP
   # forges, or dispatch. Workspace member.
   cc_infra:
     path: packages/cc_infra
@@ -76,11 +76,6 @@ dependencies:
   # cc_rpc client. Every client (desktop LOCAL/REMOTE, web, phone) uses these.
   cc_data:
     path: packages/cc_data
-  # The MCP CLIENT — connects to EXTERNAL MCP servers and bridges their tools
-  # into the local registry. Pure Dart; links into both the desktop and the
-  # headless cc_server.
-  cc_mcp_client:
-    path: packages/cc_mcp_client
   # TextMate-grammar syntax highlighting (pure-Dart Shiki port; replaced the
   # unmaintained `highlight` hljs port). Themed by the custom CC theme and
   # wired through lib/shared/syntax/ — grammars, language table, tokenizer
@@ -91,10 +86,10 @@ dependencies:
   super_sliver_list: ^0.4.1
 
   # Routing
-  go_router: ^18.0.1
+  go_router: ^18.0.2
 
   # State Management
-  flutter_riverpod: ^3.4.2
+  flutter_riverpod: ^3.4.3
   # The app-support directory is the root every app path derives from, so the
   # plugin is a direct dependency rather than something inherited from whichever
   # media package happens to pull it. The platform interface is direct too, to
@@ -110,7 +105,6 @@ dependencies:
   web: ^1.1.1
 
   # Network
-  dio: ^5.11.0
   http: ^1.6.0
   # Zero-config LAN discovery of cc_server instances: the desktop
   # browses the `_ccserver._tcp.local` mDNS service the server advertises.
@@ -168,7 +162,7 @@ dependencies:
   # Secrets (GitHub/Linear tokens, remote-control PSKs): real OS keychain —
   # macOS/iOS Keychain, Windows Credential Manager, Linux libsecret. nativeapi's
   # SecureStorage is unimplemented, so this dedicated plugin backs SecureStore.
-  flutter_secure_storage: ^11.0.0
+  flutter_secure_storage: ^11.2.0
 
   # Utils
   crypto: ^3.0.7
@@ -188,23 +182,20 @@ dependencies:
   # dies when it crosses in. PointerInterceptor drops a transparent DOM element
   # above the iframe so events reach Flutter instead. No-op off-web (desktop
   # native platform views don't steal captured drags).
-  pointer_interceptor: ^0.10.1+2
-  record: ^7.1.1
+  pointer_interceptor: ^0.10.1+3
+  record: ^7.1.2
   # Driver-free system-output (loopback) audio capture for meeting notes.
   # Local plugin: Core Audio taps (macOS), WASAPI loopback (Windows), PipeWire/PulseAudio monitor (Linux).
   system_audio_capture:
     path: packages/system_audio_capture
-  video_player: ^2.14.0
-  chewie: ^1.14.1
-  # WebRTC for the remote-control transport (one DataChannel per paired phone carries JSON-RPC). DataChannel-only — no camera/mic. Heavy native xcframework; see macos Podfile minimum.
-  flutter_webrtc: ^1.6.0
+  video_player: ^2.14.1
+  chewie: ^1.17.2
   # QR matrix encoder behind the pairing/invite QR widget (lib/shared/widgets/qr_code_view.dart).
   qr: ^4.0.0
   flutter_svg: ^2.3.0
 
-  # Terminal emulator (xterm.dart) + host-side PTY
+  # Terminal renderer; the server owns the PTY through cc_natives.
   xterm: ^4.0.0
-  flutter_pty: ^0.4.2
 
   kalender: ^0.33.0
   # Desktop in-app updater: Sparkle 2 (macOS) + WinSparkle (Windows) behind one
@@ -219,10 +210,10 @@ dependencies:
   media_kit_libs_linux: ^1.2.1
   # Device position for soundscape weather on desktop and web. The host still
   # fetches the forecast; this only reads the OS or browser location.
-  geolocator: ^14.0.3
+  geolocator: ^14.1.1
 
-# The ONE override in this workspace, and it exists to break a `win32`
-# deadlock that has nothing to do with either package's behaviour:
+# The device-info override breaks a `win32` deadlock that has nothing to do
+# with either package's behaviour:
 # `super_native_extensions` still constrains `device_info_plus <12`, which
 # pins `win32 <6`, while `flutter_secure_storage 11` (the OS keychain — not
 # negotiable) needs `win32 ^6.0.1`. `device_info_plus 13` moved to `win32 ^6`
@@ -234,7 +225,7 @@ dependencies:
 # once upstream widens the constraint (`super_native_extensions 0.10.x`
 # already allows `<14.0.0`, but is a dev release).
 dependency_overrides:
-  device_info_plus: ^13.2.0
+  device_info_plus: ^13.3.0
   # sqlite_vector (latest 1.1.2) still constrains hooks/code_assets to ^1,
   # while nativeapi 0.5 (via cnativeapi) needs ^2. Its build hook only uses
   # build(), CodeAsset and OS/Architecture switches, which hooks 2 keeps. Drop
@@ -254,7 +245,6 @@ dev_dependencies:
     path: packages/cc_server_core
   cc_mcp:
     path: packages/cc_mcp
-  sentry_dart_plugin: ^3.4.0
   # Pure-Dart Ed25519 for the local updater harness (tool/fake_update_server.dart
   # signs a fake Sparkle appcast with a throwaway dev key). Already in the graph
   # transitively (cc_rpc's server identity); promoted to dev-direct for the tool.
@@ -266,15 +256,19 @@ dev_dependencies:
   # pub get, `fvm dart run patchwork apply` regenerates the gitignored
   # pubspec_overrides.yaml that points patched packages at their applied copy.
   patchwork: ^0.7.0
+  # Server HTTP adapters exercised by root tests; pinned for the headless patch.
+  rhttp: 0.18.0
+  # Match the pinned Rust bridge ABI used by rhttp's generated bindings.
+  flutter_rust_bridge: 2.12.0
 
   # Code generation — drift + json_serializable.
   #
   # No mocking package: every double in this repo is a hand-written fake
-  # (test/fakes/ and the per-suite ones like the Linear adapter's FakeDio).
+  # (test/fakes/ and cc_infra/testing/http_client.dart).
   # mockito was here for exactly one mock of one method; it never generated a
   # `.mocks.dart` and `@GenerateMocks` was never used, so it cost a dependency
   # and bought a `noSuchMethod` shim a 40-line class does better.
-  build_runner: ^2.16.0
+  build_runner: ^2.16.2
   # NOTE: the Web Worker generator (`isolate_manager_generator`) is intentionally
   # NOT a dev_dependency. Its newest release pins `analyzer ^10`, while
   # `build_runner >=2.15.2` requires `analyzer >=13.3.0` — so it is build_runner
@@ -286,13 +280,13 @@ dev_dependencies:
   # run it.
 
   test: any
-  riverpod: any
+  riverpod: ^3.4.3
   # Virtual clock for the update controllers' schedules (first check at T+60s,
   # the 24h cycle, the deferred-check retry, the stuck-check watchdog) — those
   # are the behaviours worth pinning and none of them can be tested in real
   # time. Already in the graph via flutter_test; promoted to dev-direct.
   fake_async: any
-  drift: any
+  drift: ^2.35.2
 flutter:
   uses-material-design: true
   generate: true
@@ -315,9 +309,3 @@ flutter:
     - assets/shaders/login_background_light.frag
     - assets/shaders/hero_background_dark.frag
     - assets/shaders/hero_background_light.frag
-
-sentry:
-  upload_debug_symbols: true
-  upload_source_maps: true
-  project: control-center
-  org: parced

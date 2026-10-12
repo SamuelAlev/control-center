@@ -64,9 +64,9 @@
 
 # performs no fetch).
 
-# \* connect-src 'self' wss: — same-origin asset fetches + the WebRTC
+# \* connect-src 'self' wss: — same-origin assets and encrypted WebSocket
 
-# signaling broker (wss). The broker host
+# sessions, direct or broker-relayed. The broker host
 
 # is operator-configured, so it can't be
 
@@ -110,8 +110,6 @@
 
 # hosts for the tightest deployment.
 
-# Note: STUN/TURN ICE is not governed by connect-src, so STUN needs no entry.
-
 # \* base-uri 'self' — REQUIRED, do NOT tighten to 'none'.
 
 # main.dart calls usePathUrlStrategy(), whose
@@ -134,13 +132,13 @@
 
 # hijacked to redirect relative URLs off-origin.
 
-/_
-Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' wss: https: http://localhost:_ http://127.0.0.1:\* https://www.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'
-X-Content-Type-Options: nosniff
-Referrer-Policy: no-referrer
-Permissions-Policy: camera=(), microphone=(self), display-capture=(self), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: credentialless
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' wss: https: http://localhost:* http://127.0.0.1:* https://www.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'self'; frame-ancestors 'none'; form-action 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(self), display-capture=(self), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
 
 # The version-orchestrating entry files must always revalidate, or a cached
 
@@ -149,12 +147,18 @@ Cross-Origin-Embedder-Policy: credentialless
 # /deploy.json is the update manifest the PWA polls to offer a refresh.
 
 /index.html
-Cache-Control: no-cache
+  Cache-Control: no-cache
 /flutter_bootstrap.js
-Cache-Control: no-cache
+  Cache-Control: no-cache
 /flutter_service_worker.js
-Cache-Control: no-cache
+  Cache-Control: no-cache
 /manifest.json
-Cache-Control: no-cache
+  Cache-Control: no-cache
 /deploy.json
-Cache-Control: no-cache
+  Cache-Control: no-cache
+/cc_resource_bridge.js
+  Cache-Control: no-cache
+/cc_resource_worker.js
+  Cache-Control: no-cache
+/cc_resource_ws_shim.js
+  Cache-Control: no-cache

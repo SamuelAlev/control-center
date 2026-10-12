@@ -384,3 +384,21 @@ NotificationFrame agentAwaitingInputFrame(AgentAwaitingInput event) => (
     if (event.agentName != null) 'agent_name': event.agentName,
   },
 );
+
+/// Policy refused an agent action without asking a human. A DIFFERENT method
+/// from [agentAwaitingInputFrame] on purpose: this is not a wait, so the bell
+/// must not offer it as one and the feed must never look for its end. The
+/// client renders the refusal (reason + the action that was refused) and links
+/// to the space the agent was working in — informational, nothing to approve.
+NotificationFrame agentActionBlockedFrame(AgentActionBlocked event) => (
+  method: 'notifications/agent_action_blocked',
+  params: {
+    'workspace_id': event.workspaceId,
+    'reason': event.reason,
+    'summary': event.actionSummary,
+    if (event.spaceId != null) 'space_id': event.spaceId,
+    if (event.agentId != null) 'agent_id': event.agentId,
+    if (event.agentName != null) 'agent_name': event.agentName,
+    if (event.source != null) 'source': event.source,
+  },
+);

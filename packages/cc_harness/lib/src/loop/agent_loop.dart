@@ -1,5 +1,7 @@
 import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/context/harness_compaction.dart';
+import 'package:cc_harness/src/context/token_calibration.dart';
+import 'package:cc_harness/src/context/tool_observation.dart';
 import 'package:cc_harness/src/loop/advisor.dart';
 import 'package:cc_harness/src/loop/agent_loop_hooks.dart';
 import 'package:cc_harness/src/loop/completion_contract.dart';
@@ -8,6 +10,7 @@ import 'package:cc_harness/src/loop/steering_queue.dart';
 import 'package:cc_harness/src/loop/stream_rules.dart';
 import 'package:cc_harness/src/loop/transcript_store.dart';
 import 'package:cc_harness/src/messages.dart';
+import 'package:cc_harness/src/provider/llm_call_ledger.dart';
 import 'package:cc_harness/src/provider/llm_provider_port.dart';
 import 'package:cc_harness/src/provider/reasoning_effort.dart';
 import 'package:cc_harness/src/tools/tool.dart';
@@ -316,6 +319,10 @@ class AgentLoopConfig {
     this.effort,
     this.cacheEnabled = true,
     this.cacheKey,
+    this.purpose = LlmCallPurpose.main,
+    this.callLedger,
+    this.tokenCalibration,
+    this.observationIngest,
     this.approvalCallback,
     this.autoApprove = true,
     this.budget = const HarnessBudget(),
@@ -323,6 +330,7 @@ class AgentLoopConfig {
     this.externalBudgetPressure,
     this.maxProviderRetries = 3,
     this.maxParallelToolCalls = 4,
+    this.overlapReadOnlyTools = false,
     this.toolTimeout,
     this.turnTimeout = const Duration(minutes: 30),
     this.contextWindow,
@@ -339,6 +347,8 @@ class AgentLoopConfig {
     this.transcriptStore,
     this.transcriptKey,
     this.initialCheckpoints = const {},
+    this.initialSnapshotSource,
+    this.transcriptMetadata = const {},
   });
 
   static const String _defaultSystemPrompt =
@@ -382,6 +392,20 @@ class AgentLoopConfig {
   /// Stable per-run cache key (forwarded to providers with explicit keys).
   final String? cacheKey;
 
+  /// Attribution for this loop's model turns; auxiliary calls set their own.
+  final LlmCallPurpose purpose;
+
+  /// The ledger shared by every observed provider serving this run. When
+  /// supplied, token budgets use it instead of adding streamed usage again.
+  final ProviderCallLedger? callLedger;
+
+  /// Per-provider/model prompt calibration shared with the compactor.
+  final TokenCalibration? tokenCalibration;
+
+  /// Model-facing observation shaping and durable original-output retention.
+  /// Raw tool completion events are never replaced by this compacted copy.
+  final ToolObservationIngest? observationIngest;
+
   /// Confirmation gate for write / exec tools.
   final ToolApprovalCallback? approvalCallback;
 
@@ -410,14 +434,20 @@ class AgentLoopConfig {
   /// Max retries on retryable provider errors (rate-limit / overloaded).
   final int maxProviderRetries;
 
-  /// How many parallel-safe tool calls from one turn run at a time. A wave of
-  /// cheap reads is happy to be wide; a wave of `task` calls is not — each
-  /// subagent is a full nested agent loop with its own provider traffic, so an
-  /// unbounded fan-out is how one turn trips a rate limit or saturates a local
-  /// endpoint. Excess calls run in the next wave, still concurrently and
-  /// results are always paired back in the model's original order. Values < 1
-  /// are treated as 1 (fully sequential).
+  /// How many parallel-safe tool calls from one turn run at a time. A free
+  /// slot immediately starts the next call in the same independent region;
+  /// effectful calls remain barriers. This also bounds subagent fan-out and
+  /// provider load. Completion events arrive as tools finish, while results
+  /// enter model history in their original call order. Values below one are
+  /// treated as one (fully sequential).
   final int maxParallelToolCalls;
+
+  /// Experimental overlap of explicitly safe read-only tools with the
+  /// remainder of a streaming model response. Off unless requested.
+  ///
+  /// Completed JSON, tool admission and effect checks still apply. An
+  /// effectful or invalid call blocks later overlap until the turn finishes.
+  final bool overlapReadOnlyTools;
 
   /// Wall-clock ceiling on ONE tool call, or null for no kernel-level bound.
   ///
@@ -525,6 +555,28 @@ class AgentLoopConfig {
   /// chose to seed, and a label indexing a list it does not index points at a
   /// different message — a rewind that discards work while reporting success.
   final Map<String, int> initialCheckpoints;
+
+  /// The snapshot source a resumed run starts with, restored from the persisted
+  /// transcript.
+  ///
+  /// A snapshot message holds glyphs; the text behind them is only in the
+  /// compactor's memory. Without this seed a restarted run hands the compactor a
+  /// history whose snapshot region it cannot describe, so a later refusal (page
+  /// cap, image ceiling, fit) folds that message by its CAPTION alone and
+  /// silently loses everything the page represented. The loop carries the value
+  /// forward (updating it from each compaction result) and writes it back with
+  /// the transcript, so recovery survives arbitrary restarts.
+  final String? initialSnapshotSource;
+
+  /// Host bookkeeping persisted with every transcript this run saves (a
+  /// delivered-context cursor, for instance).
+  ///
+  /// Passed through verbatim and never interpreted by the loop: the kernel has
+  /// no business knowing what a host tracks. The loop writes a COPY into each
+  /// saved record, so a host that changes its cursor after the run updates the
+  /// record itself (`HarnessTranscript.copyWith(metadata: …)`) rather than
+  /// expecting the kernel to know when its state changed.
+  final Map<String, Object?> transcriptMetadata;
 }
 
 /// The built-in agent loop: send messages → call the model → execute tools →

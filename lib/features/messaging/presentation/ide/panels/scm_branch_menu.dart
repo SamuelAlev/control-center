@@ -405,6 +405,7 @@ Future<String?> _askBranchName(
 }) {
   return showCcDialog<String>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (context) =>
         _BranchNameDialog(from: from, title: title, hint: hint),
   );
@@ -417,6 +418,7 @@ Future<WorktreeRefEntry?> _pickRef(
 ) {
   return showCcDialog<WorktreeRefEntry>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (context) => _RefPickDialog(title: title, refs: refs),
   );
 }

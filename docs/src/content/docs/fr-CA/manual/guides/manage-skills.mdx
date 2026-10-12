@@ -1,22 +1,26 @@
 ---
 title: Installer et gérer des skills
-description: Ajoutez des dépôts GitHub comme sources de skills, parcourez leurs catalogues et installez, mettez à jour ou désinstallez des skills en passant par la barrière de scan antivirus.
+description: Installez et mettez à jour les skills de l'espace de travail via la barrière de scan, puis comparez des révisions enregistrées à des évaluations de skills budgétées.
 slug: fr-CA/manuel/guides/gerer-skills
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Ce guide vous montre comment remplir un espace de travail de skills venus de
 GitHub : ajoutez un dépôt comme source, installez les skills que vous voulez
-depuis celui-ci et tenez-les à jour au fil du temps.
+depuis celui-ci et tenez-les à jour au fil du temps. Vous pouvez aussi évaluer
+une révision enregistrée par rapport à une base de référence appariée avant de
+décider de la conserver.
 
 Ce qu'il faut savoir avant de commencer : **un dépôt source n'est pas
 fiable.** Son nom, sa description et son nombre d'étoiles sont écrits par
-quiconque le possède. Le seul signal de sécurité auquel Control Center se fie
-est le verdict du scan antivirus, par lequel passe chaque installation avant
-que quoi que ce soit n'atteigne le disque ou le prompt d'un agent. Si vous
-voulez le raisonnement, lisez la
-[section sur les skills du modèle d'agent](/fr-CA/manuel/concepts/modele-agent/); cette page
-s'en tient à la pratique.
+quiconque le possède. Chaque installation passe par la barrière du scan
+antivirus avant que quoi que ce soit n'atteigne le disque ou le prompt d'un
+agent. Ce verdict est un contrôle d'admission, pas une preuve qu'un skill est
+sûr ou utile. Lisez la
+[section sur les skills du modèle d'agent](/fr-CA/manuel/concepts/modele-agent/)
+pour le modèle d'installation et [Évaluations et
+qualité](/fr-CA/manuel/concepts/evaluations-et-qualite/) pour savoir en quoi les
+preuves comportementales diffèrent d'un scan.
 
 Les skills se trouvent sous **Paramètres → Espace de travail → Compétences**
 (`/workspaces/<id>/settings/workspace/skills`). Ils sont limités à l'espace de
@@ -94,6 +98,93 @@ quarantaine est refusé et la version que vous aviez reste en place. L'empreinte
 de l'ancienne version est conservée comme référence de retour en arrière dans
 le fichier de verrouillage.
 
+## Évaluer un skill
+
+1. Ouvrez **Paramètres → Espace de travail → Compétences**, sélectionnez le
+   skill installé et enregistrez vos modifications. Dans **Évaluation de la
+   compétence**, vérifiez l'empreinte du paquet.
+2. Sélectionnez **Lancer l'évaluation**. Choisissez un **Corpus de tâches**
+   correspondant à l'usage du skill et un **adaptateur**. Le harnais intégré
+   utilise un fournisseur configuré et un modèle compatible avec les outils.
+   **Claude Code** utilise le compte géré par défaut de Claude et un
+   identifiant de modèle concret ; connectez-vous d'abord dans **Paramètres →
+   Adaptateurs**. Il n'emprunte pas la connexion personnelle de l'opérateur du
+   serveur.
+3. Choisissez une **Comparaison** dans le tableau ci-dessous.
+4. Réglez **Répétitions par tâche** (1–20) et **Budget (cents US)**. Par
+   exemple, `100` signifie 1 dollar US. Sélectionnez **Lancer l'évaluation**
+   pour autoriser le travail payant du fournisseur.
+5. Suivez la campagne dans **Observabilité → Qualité**, ou revenez via
+   **Ouvrir Qualité** dans le panneau du skill.
+
+Pour les abonnements Claude Code et Codex OAuth, le budget est un **seuil
+d'arrêt d'utilisation équivalente à l'API**, pas un plafond de facturation ni une
+mesure du quota d'abonnement. `100` admet un seuil de 1 dollar US : un appel en
+cours peut le dépasser, mais aucun autre appel ne démarre dès que l'utilisation
+déclarée l'atteint. Une utilisation inconnue arrête elle aussi les appels
+suivants. Un petit budget peut laisser la comparaison partielle ; il ne promet
+pas de terminer le corpus sélectionné.
+
+Les fournisseurs à clé API conservent des réservations prudentes par appel,
+fondées sur les limites de jetons et la tarification documentées. Ils peuvent
+refuser `100` avant toute dépense lorsqu'un seul appel réservé en toute sécurité
+a besoin de plus. L'erreur indique le modèle sélectionné et la réservation
+minimale ; choisissez un modèle moins cher ou augmentez ce budget.
+
+| Comparaison | Servez-vous-en pour répondre |
+| --- | --- |
+| **Absente ou disponible** | La découverte et l'usage normaux de ce skill améliorent-ils le résultat par rapport à son absence ? |
+| **Précédente ou actuelle** | La mise à jour préserve-t-elle ou améliore-t-elle le comportement par rapport à une révision capturée auparavant ? |
+| **Chargement forcé ou absence** | Le contenu peut-il aider lorsqu'il est chargé explicitement ? Cela diagnostique des problèmes de chargement ; cela ne démontre pas la découverte normale. |
+| **Composition** | L'ajout du candidat aide-t-il ou entre-t-il en conflit avec les skills ambiants sélectionnés ? La base de référence conserve ce même inventaire ambiant sans le candidat. |
+
+La comparaison **Précédente ou actuelle** exige une empreinte de paquet issue
+de l'historique des campagnes. Évaluez une révision avant de la remplacer si
+vous voulez l'utiliser comme base de référence ; l'historique Git arbitraire
+n'est pas importé.
+
+Les modifications non enregistrées, une empreinte indisponible et le mode démo
+en lecture seule désactivent le lancement. Le serveur vérifie aussi l'accès à
+l'espace de travail et au dépôt, la quarantaine du scan, la politique
+d'actions, la prise en charge des modèles, la tarification et le confinement de
+l'exécution. Résolvez une vérification échouée plutôt que de la contourner.
+L'identité du fournisseur et du modèle est consignée, mais un alias de modèle
+distant ne fige pas les poids sous-jacents du fournisseur.
+
+### Inspecter, annuler et exporter
+
+Lisez la couverture et les dépenses aux côtés des résultats par tâche et des
+régressions. Ouvrez les tentatives individuelles pour examiner les chargements
+de skills observés, les événements d'outils, les erreurs et les preuves des
+vérificateurs. Les résultats **Partiels**, **Obsolètes** et **Non concluants**
+ne sont pas des recommandations d'adopter une révision. L'empreinte d'un
+rapport identifie le paquet capturé, pas nécessairement le paquet actuellement
+installé.
+
+Utilisez **Annuler l'exécution** pour le travail en file ou actif. Les
+tentatives terminées restent visibles ; l'annulation ne rembourse pas le travail
+du fournisseur déjà effectué. **Copier le JSON expurgé** copie dans le
+presse-papiers un export de preuves borné, pas un paquet complet de relecture
+d'une source privée. Voir [Évaluations et
+qualité](/fr-CA/manuel/concepts/evaluations-et-qualite/) pour les preuves et les
+limites de la plateforme.
+
+### Réévaluer après les mises à jour
+
+La réévaluation automatique payante est **désactivée par défaut**. Après avoir
+évalué la révision actuelle, choisissez une campagne sous **Configuration de la
+politique de mise à jour** et sélectionnez **Activer les évaluations des mises
+à jour**. Modifier cette politique exige la permission d'administrateur de
+l'espace de travail. La campagne choisie fournit le corpus, l'adaptateur, le
+fournisseur/modèle, la comparaison, les répétitions et le budget.
+
+Les modifications de contenu admises par la suite planifient du travail
+budgété ; les empreintes inchangées sont dédupliquées. **Désactiver les
+évaluations des mises à jour** empêche les admissions automatiques futures.
+Utilisez **Annuler l'exécution** pour une campagne déjà admise. Les rapports
+historiques restent attachés aux empreintes de leurs paquets d'origine ; la
+réévaluation ne publie, n'active ni ne réécrit un skill.
+
 ## Désinstaller un skill, retirer un dépôt
 
 **Désinstaller** (dans la vue de détail d'un skill installé, ou en supprimant
@@ -144,3 +235,4 @@ Voir [Skills à portée de dépôt](/fr-CA/manuel/concepts/modele-agent/#repo-sc
 ## Concepts connexes
 
 - [Le modèle d'agent](/fr-CA/manuel/concepts/modele-agent/)
+- [Évaluations et qualité](/fr-CA/manuel/concepts/evaluations-et-qualite/)

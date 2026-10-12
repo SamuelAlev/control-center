@@ -3,7 +3,7 @@ title: Mimari
 description: Control Center’ın ince istemci sunucu modeli, özellik öncelikli Clean Architecture ile portlar ve adaptörler kullanılarak nasıl yapılandırıldığı.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/kavramlar/mimari
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Genel bakış
@@ -26,7 +26,7 @@ Bu, yirmi bir üyeli — on beş paket artı altı uygulama — tek bir çözüm
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Alan katmanı**: saf Dart varlıklar, değer nesneleri, depo arayüzleri, portlar ve alan hizmetleri. Hiç altyapı import’u yok (dio, drift ya da ağ modeli yok).
+- **Alan katmanı**: saf Dart varlıklar, değer nesneleri, depo arayüzleri, portlar ve alan hizmetleri. Hiç altyapı import’u yok (rhttp, drift ya da ağ modeli yok).
 - **Sunum katmanı**: ekranlar, widget’lar, notifier’lar. Doğrudan drift/DAO/veri katmanı erişimi yok; her şey Riverpod provider’ları → depolar üzerinden gider.
 - **Altyapı katmanı**: alan portlarının ve depo arayüzlerinin somut uygulamaları. Alana bağımlıdır, tersi asla.
 
@@ -122,7 +122,7 @@ Her iki veritabanının sahibi de `cc_persistence`tır ve yalnızca `cc_server` 
 
 Tüm harici HTTP sunucuda yaşar. İstemciler GitHub’a, Linear’a ya da Google’a asla doğrudan bağlanmaz — sunucu RPC işlemlerini çağırırlar ve uzak medya bile asıl kaynaktan değil, sunucunun `/proxy/media` uç noktası üzerinden getirilir.
 
-- `packages/cc_infra/lib/src/` içindeki **dio** istemcileri: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` ve `GoogleCalendarApiClient`
+- `packages/cc_infra/lib/src/` içindeki **rhttp** istemcileri: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` ve `GoogleCalendarApiClient`
 - Interceptor’lar aracılığıyla kimlik doğrulama token’ı enjeksiyonu; buna 401’de token’ları yenileyen, `cc_server_core` içindeki hesap başına bir Google OAuth interceptor’ı da dahildir
 - Tüm hatalar `packages/cc_infra/lib/src/network/error_mapper.dart` üzerinden eşlenir → `cc_domain` içinde tanımlı tipli `AppException` alt sınıflarına
 

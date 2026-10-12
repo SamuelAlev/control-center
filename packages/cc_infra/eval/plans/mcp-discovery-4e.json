@@ -1,0 +1,40 @@
+{
+  "id": "mcp-discovery-4e",
+  "seed": 4045,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Detected configuration (no discovery cache)"
+    },
+    {
+      "id": "mcp-cache",
+      "axis": "mcp_discovery_cache",
+      "mcpDiscoveryCache": "enabled",
+      "label": "MCP discovery cache enabled"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 32000,
+  "caveats": [
+    {
+      "code": "mcp_catalog_requires_explicit_configuration",
+      "message": "This campaign requires --mcp-config with at least one server; absent or empty catalogs are refused before spend. Connection statuses and the observed tool-surface identity are recorded per attempt."
+    }
+  ],
+  "notes": "Report 4E. Startup metadata time (initMetadataMs) and the MCP server statuses are recorded per attempt so discovery cost is measured separately from model latency; the discovery cache is only defensible when tool availability and permissions are handled correctly."
+}

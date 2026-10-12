@@ -2,7 +2,7 @@
 title: Sandaran, eksport dan import
 description: Susun atur snapshot, manifes, setiap operasi sandaran dan laluan pemindahan, serta dengan tepat fail yang terkandung dan tidak terkandung dalam sandaran.
 slug: ms-MY/manual-pengguna/rujukan/sandaran
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Semua yang boleh disalin, diserahkan atau diterima pakai oleh Control Center, dan bentuk
@@ -24,6 +24,13 @@ Terdapat tiga artifak salinan pangkalan data, dengan skop dan polisi pemadaman y
 Semuanya ditulis dengan SQLite `VACUUM INTO`, yang selamat terhadap pangkalan data WAL
 yang aktif: ia mengambil transaksi baca, menghasilkan salinan yang dinyahserpih dan
 konsisten dari segi transaksi, serta tidak pernah memerlukan pelayan dihentikan.
+
+Fail-fail ini dan salinan yang dimuat turun **tidak disulitkan semasa disimpan**
+oleh Control Center. Pemindahan tersulit hujung ke hujung melindungi bait semasa
+transit antara klien yang digandingkan dan `cc_server`-nya, sama ada pada
+sambungan langsung atau melalui geganti berperantara. Lindungi storan setempat dan
+salinan di luar mesin secara berasingan; pelayan dan mana-mana penerima yang
+dibenarkan boleh membaca fail pangkalan data itu.
 
 ## Susun atur snapshot
 
@@ -207,11 +214,16 @@ diisi tetapi indeksnya mungkin sudah basi.
 
 ## Laluan pemindahan
 
-Setiap operasi di atas bercakap dalam laluan sisi pelayan, yang merupakan jawapan lengkap
-hanya apabila pelayan itu mesin anda sendiri. Ketiga-tiga laluan ini membawa bait, pada
-jalur bertandatangan PSK yang sama yang digunakan oleh proksi media dan stor blob.
-Pemanggil menandatangani rentetan sasaran dengan kunci pra-kongsi perantinya dan menghantar
-tandatangan itu sebagai `s`.
+Operasi eksport/import dan penyenaraian snapshot di atas bercakap dalam laluan sisi
+pelayan, yang merupakan jawapan lengkap hanya apabila pelayan itu mesin anda
+sendiri. Laluan berbentuk HTTP ini membawa bait sandaran **di dalam terowong sumber
+yang disahkan dan disulitkan hujung ke hujung yang sama** dengan sumber sensitif
+lain, sama ada sambungan RPC itu langsung atau berperantara. Ia bukan titik akhir
+pemindahan fail HTTP awam: permintaan kepada salah satunya pada pendengar awam
+mengembalikan `426 Upgrade Required`, walaupun daripada loopback. Di dalam terowong
+tersulit, peranti yang disahkan Noise mesti sepadan dengan `d`; pengendali juga
+memeriksa tandatangan peranti pada rentetan sasarannya menggunakan PSK
+penggandingan dan peranan di bawah.
 
 | Laluan                  | Kaedah | Pertanyaan      | Sasaran bertandatangan           | Memerlukan                |
 | ----------------------- | ------ | --------------- | -------------------------------- | ------------------------- |
@@ -231,6 +243,7 @@ ditunjukkan oleh penyenaraian.
 | `404`  | Tiada port sandaran pada hos ini, atau snapshot/fail ruang kerja yang dinamakan tidak wujud |
 | `405`  | `/backup/restore` dipanggil dengan apa-apa selain `POST`                            |
 | `413`  | Badan muat naik melebihi 8 GiB, sama ada mengikut content-length yang diisytiharkan atau bait yang benar-benar dibaca |
+| `426`  | Apa-apa permintaan langsung ke laluan pemindahan pada pendengar HTTP awam; gunakan terowong sumber tersulit klien yang digandingkan |
 | `500`  | Eksport atau arkib gagal di sisi pelayan                                            |
 
 Kedua-dua muat turun membalas `Cache-Control: no-store` dengan `Accept-Ranges: none`.
@@ -247,12 +260,14 @@ snapshot yang sama ialah arkib yang sama.
 membatasinya sebelum dan semasa pembacaan, dan memadam fail yang dipentaskan pada
 **setiap** laluan keluar termasuk penolakan.
 
-:::caution[Sambungan yang direlai tiada origin HTTP]
-Relai yang diperantarakan membawa bingkai RPC, bukan pemindahan fail. Segala yang bercakap
-dalam laluan sisi pelayan terus berfungsi melaluinya; ketiga-tiga laluan pemindahan
-memerlukan sambungan langsung, dan UI menyahdayakannya dengan nota dan bukannya gagal
-di pertengahan muat turun.
-:::
+::::caution[Sambungan langsung dan geganti menggunakan pemindahan tersulit yang sama]
+Geganti membawa permintaan sumber, respons yang dialirkan dan bait muat naik
+sebagai teks sifer; ia tidak boleh membaca kandungan sandaran. Laluan sisi pelayan
+kekal sebagai laluan pada hos pelayan, bukan fail pada geganti. Akses tetap
+memerlukan peranti yang digandingkan, tandatangan sasaran dan peranan ruang kerja
+atau pemasangan yang berkenaan. Tiada pengangkutan menyulitkan fail sandaran yang
+terhasil semasa disimpan.
+::::
 
 ## Laluan dan had
 
@@ -263,7 +278,7 @@ di pertengahan muat turun.
 | Eksport ruang kerja            | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Pementasan pemindahan          | `<dataDir>/backups/transfer/` — meja kerja, disapu oleh laluan yang menulisnya |
 | Nama arkib snapshot            | `<snapshot directory name>.zip`                              |
-| Had muat naik                  | 8 GiB per `POST /backup/restore`                             |
+| Had muat naik                  | 8 GiB per muat naik tersulit ke `/backup/restore`            |
 | Pengekalan                     | Snapshot pemasangan: pemadaman manual. Sandaran ruang kerja: pipeline mingguan, lalai 30 hari |
 
 Direktori `exports/`, `transfer/`, dan `workspace-backups/` bukan snapshot pemasangan dan

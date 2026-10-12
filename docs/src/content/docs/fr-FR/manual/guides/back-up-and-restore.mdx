@@ -2,7 +2,7 @@
 title: Sauvegarder et restaurer
 description: Créez un instantané de l'installation, déplacez un espace de travail entre machines, restaurez un espace de travail ou tous, et conservez des copies ailleurs.
 slug: fr-FR/manuel/guides/sauvegarder-et-restaurer
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Ce guide couvre les cinq choses que l'on fait réellement avec les sauvegardes : en créer
@@ -17,7 +17,7 @@ Tout ce qui suit se trouve sous **Paramètres → Serveur → Sauvegarde et rest
 - Un **client complet** — l'application de bureau ou web. Un téléphone associé ne peut déclencher aucune de ces opérations, par conception.
 - Pour créer, lister, télécharger ou supprimer un **instantané de l'installation** : le **propriétaire** de l'installation.
 - Pour les actions par espace de travail : le rôle **admin** de cet espace de travail pour exporter, **propriétaire** pour l'importer ou le supprimer.
-- Pour les téléchargements et les envois : une connexion **directe** au serveur. Le relais intermédié transporte des trames RPC, pas des transferts de fichiers, et les contrôles de transfert se désactivent avec une note lorsque vous passez par un relais.
+- Pour les téléchargements et les envois : un client complet associé, sur une connexion directe ou via le relais intermédié. Les deux chemins transportent les octets du fichier par le même tunnel de ressources authentifié et chiffré de bout en bout ; le relais ne peut pas les lire.
 
 :::caution[Les instantanés de l'installation sont manuels]
 **Sauvegarder maintenant** ne crée toujours un instantané de toute l'installation que sur
@@ -26,7 +26,15 @@ de la base de données d'un espace de travail une fois par semaine et supprimer 
 sauvegardes de cet espace de travail de plus de 30 jours. Il ne copie pas `global.db`, les
 autres espaces de travail, ni les fichiers situés à côté de la base de données. Conservez
 les copies hors machine séparément.
-:::
+::::
+
+::::caution[Les sauvegardes ne sont pas chiffrées au repos]
+Le transfert chiffré se termine à votre client et à `cc_server`. Les répertoires
+d'instantanés, les exports d'espaces de travail, les fichiers téléchargés et les bases de
+données du serveur ne sont pas chiffrés au repos par Control Center. Protégez l'hôte du
+serveur, vos téléchargements et les copies hors machine au moyen de votre propre
+chiffrement de stockage et de vos contrôles d'accès.
+::::
 
 ## Ce que couvre une sauvegarde
 
@@ -335,7 +343,7 @@ que vous changez l'endroit où elles sont stockées.
 
 | Symptôme                                                                  | Cause et solution                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Les contrôles de téléchargement et d'envoi sont désactivés avec une note sur un relais | Vous êtes connecté via le relais intermédié, qui ne transporte aucun transfert de fichier. Connectez-vous directement       |
+| Le téléchargement ou l'envoi échoue après un changement de connexion | Réessayez sur la connexion associée active. La connexion directe comme celle du relais prennent en charge le transfert de fichiers chiffré ; aucune n'expose de repli HTTP en clair |
 | « Le serveur a refusé »                                                  | Rôle. Créer ou lister un instantané de l'installation exige l'opérateur de l'installation. Télécharger un espace de travail exige le rôle admin, en restaurer un exige le rôle propriétaire, et un zip d'instantané complet exige l'opérateur de l'installation |
 | « Ce serveur n'expose aucune surface de sauvegarde »                     | L'hôte n'a aucun port de sauvegarde câblé — un serveur de démonstration. Les opérations sont absentes plutôt que refusées   |
 | « Le fichier dépasse la taille acceptée par le serveur »                 | Les envois sont plafonnés à 8 GiB. Placez le fichier sur l'hôte du serveur et utilisez plutôt **Importer** → **Choisir un fichier** |
@@ -349,7 +357,7 @@ que vous changez l'endroit où elles sont stockées.
 
 - [Exécuter un serveur sans interface](/fr-FR/manuel/guides/executer-serveur-sans-interface/) : d'où vient le répertoire de données
 - [Se connecter à un serveur distant](/fr-FR/manuel/guides/connecter-serveur-distant/) : connexions directes ou relayées
-- [Associer un appareil](/fr-FR/manuel/guides/associer-appareil/) : l'identifiant avec lequel les routes de transfert signent
+- [Associer un appareil](/fr-FR/manuel/guides/associer-appareil/) : l'identifiant d'appareil associé utilisé par le transfert chiffré et ses requêtes de ressources signées
 
 ## Concepts et référence connexes
 

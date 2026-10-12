@@ -730,6 +730,8 @@ class _ScriptedHttp implements ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     lastBody = body;
     if (_throw != null) {
@@ -760,6 +762,8 @@ class _AuthScriptedHttp implements ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     bearers.add(headers['Authorization']);
     if (bearers.length <= unauthorizedCalls) {

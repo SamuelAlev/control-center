@@ -36,3 +36,23 @@ On a new data dir, pair **before** starting the server; `pair` opens the databas
 `pair` upserts an active device, mints a PSK, writes it to `<data-dir>/secrets.json` and prints the server address, device ID and key. With `--client-url`, it also prints a QR/deep link for the web client. `--device` defaults to `web-client`; `--label` and `--host` control the display name and reachable URL. Re-pairing rotates the PSK. The printed **v1** link pairs WebSocket-RPC web clients; the phone app requires a separate **v2** `PairingPayload` from the first-party pairing panel, including its full connection descriptor. Do not use the CLI's v1 QR for `cc_remote`.
 
 After pairing, start the server and connect a web client to `ws://localhost:9030/rpc`. The server also serves MCP tools, webhooks, proxies, scheduled RSS and vector search. Each workspace-scoped RPC call must carry `workspace_id`; access depends on membership and role, not merely possession of a PSK.
+
+## Encrypted client sessions
+
+First-party clients use the signed-identity Noise protocol on both direct
+WebSockets and the relay. Sensitive HTTP/binary routes return `426` on the
+public listener and are available through the encrypted resource tunnel,
+preserving their workspace/role/signature checks.
+
+The trusted browser editor runs on the web app's own origin. Its Service Worker
+passes HTTP and WebSocket requests through the authenticated encrypted session.
+`cc_server` decrypts those requests, forwards them to its local code-server
+backend, and encrypts the responses. Files and execution remain on the server.
+Web clients need HTTPS or secure loopback for Service Workers; their build
+scripts package the shared resource assets. Native clients use a
+capability-scoped loopback facade.
+
+The server-launched code-server extension receives a separate private loopback
+report/command URL. Never expose it through a public reverse proxy.
+See [SECURITY.md](../../SECURITY.md#network-boundaries) for metadata visibility,
+bootstrap trust and the boundaries this transport encryption does not cover.

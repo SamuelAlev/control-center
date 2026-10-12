@@ -2,7 +2,7 @@ import 'package:cc_domain/features/weather/domain/entities/weather_snapshot.dart
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Open-Meteo's keyless current-weather forecast endpoint.
 const String _kForecastUrl = 'https://api.open-meteo.com/v1/forecast';
@@ -24,16 +24,17 @@ const String _kIpGeoUrl = 'https://ipapi.co/json/';
 /// directly (the browser can't reach it cross-origin and no client should hold
 /// network I/O): the client drives `weather.*` over RPC and the host calls this.
 /// Open-Meteo requires no API key. Every network method wraps its call so a
-/// failure surfaces as a typed `NetworkException` (via [mapDioException]) the
+/// failure surfaces as a typed `NetworkException` (via [mapHttpException]) the
 /// caller can catch — except [ipGeolocate] and [nearestCity], which are
 /// best-effort and return null on any error.
 class WeatherApiClient {
-  /// Creates a [WeatherApiClient], optionally backed by a custom [dio]
-  /// (defaults to the shared [createDio]; no base URL, since the endpoints
-  /// live on different hosts).
-  WeatherApiClient({Dio? dio}) : _dio = dio ?? createDio();
+  /// Creates a [WeatherApiClient], optionally backed by a custom [httpClient]
+  /// (defaults to the shared [createHttpClient]; no base URL, since the
+  /// endpoints live on different hosts).
+  WeatherApiClient({RhttpClient? httpClient})
+    : _httpClient = httpClient ?? createHttpClient();
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Fetches the current weather at ([latitude], [longitude]).
   ///
@@ -48,19 +49,19 @@ class WeatherApiClient {
     String? label,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.getText(
         _kForecastUrl,
-        queryParameters: <String, dynamic>{
-          'latitude': latitude,
-          'longitude': longitude,
+        query: <String, String>{
+          'latitude': '$latitude',
+          'longitude': '$longitude',
           'current': 'temperature_2m,weather_code,is_day,wind_speed_10m',
           'daily': 'sunrise,sunset',
           'timezone': 'auto',
           'wind_speed_unit': 'kmh',
-          'forecast_days': 1,
+          'forecast_days': '1',
         },
       );
-      final body = _asMap(response.data);
+      final body = _asMap(httpJsonBody(response));
       final current = _asMap(body['current']);
       final daily = _asMap(body['daily']);
       return WeatherSnapshot(
@@ -77,8 +78,8 @@ class WeatherApiClient {
         sunset: _firstDateTime(daily['sunset']),
         observedAt: DateTime.now().toUtc(),
       );
-    } on DioException catch (e) {
-      throw mapDioException(e);
+    } on RhttpException catch (e) {
+      throw mapHttpException(e);
     }
   }
 
@@ -90,16 +91,16 @@ class WeatherApiClient {
     String name,
   ) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.getText(
         _kGeocodingUrl,
-        queryParameters: <String, dynamic>{
+        query: <String, String>{
           'name': name,
-          'count': 1,
+          'count': '1',
           'language': 'en',
           'format': 'json',
         },
       );
-      final body = _asMap(response.data);
+      final body = _asMap(httpJsonBody(response));
       final results = body['results'];
       if (results is! List || results.isEmpty) {
         return null;
@@ -115,8 +116,8 @@ class WeatherApiClient {
         longitude: longitude,
         label: _asString(first['name']),
       );
-    } on DioException catch (e) {
-      throw mapDioException(e);
+    } on RhttpException catch (e) {
+      throw mapHttpException(e);
     }
   }
 
@@ -130,17 +131,17 @@ class WeatherApiClient {
     required double longitude,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.getText(
         _kPhotonReverseUrl,
-        queryParameters: <String, dynamic>{
-          'lat': latitude,
-          'lon': longitude,
+        query: <String, String>{
+          'lat': '$latitude',
+          'lon': '$longitude',
           'layer': 'city',
           'lang': 'en',
         },
-        options: Options(headers: const {'User-Agent': 'control-center'}),
+        headers: const HttpHeaders.rawMap({'User-Agent': 'control-center'}),
       );
-      return _nearestCityFromPhoton(response.data);
+      return _nearestCityFromPhoton(httpJsonBody(response));
     } on Object catch (e) {
       CcInfraLog.warning('weather: nearest city lookup failed: $e');
       return null;
@@ -157,8 +158,8 @@ class WeatherApiClient {
   Future<({double latitude, double longitude, String? label})?>
   ipGeolocate() async {
     try {
-      final response = await _dio.get<dynamic>(_kIpGeoUrl);
-      final body = _asMap(response.data);
+      final response = await _httpClient.getText(_kIpGeoUrl);
+      final body = _asMap(httpJsonBody(response));
       final latitude = _asDouble(body['latitude']);
       final longitude = _asDouble(body['longitude']);
       if (latitude == null || longitude == null) {

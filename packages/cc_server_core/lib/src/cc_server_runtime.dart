@@ -89,6 +89,7 @@ import 'package:cc_domain/features/pr_review/domain/services/review_suppression_
 import 'package:cc_domain/features/pr_review/domain/value_objects/pr_search_query.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_cohort.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_egress_settings.dart';
@@ -128,6 +129,7 @@ import 'package:cc_natives/cc_natives.dart'
         nativeLibDirEnvVar,
         nativeLibraryCandidates,
         inferenceLibraryBaseName,
+        initializeRhttp,
         resolveInferenceLibraryPath,
         samlLibraryBaseName,
         samlLibraryEnvVar,
@@ -145,6 +147,7 @@ import 'package:cc_persistence/repositories/team_activity_repository_impl.dart';
 import 'package:cc_persistence/repositories/webhook_delivery_repository_impl.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/activity_log_persister.dart';
+import 'package:cc_server_core/src/agent_action_blocked_publisher.dart';
 import 'package:cc_server_core/src/agent_awaiting_input_publisher.dart';
 import 'package:cc_server_core/src/backup_archive.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
@@ -170,6 +173,8 @@ import 'package:cc_server_core/src/demo/demo_review_service.dart';
 import 'package:cc_server_core/src/demo/demo_world.dart'
     show kDemoPipelineTemplateIds;
 import 'package:cc_server_core/src/dotenv.dart';
+import 'package:cc_server_core/src/evals/skill_evaluation_rpc_ops.dart';
+import 'package:cc_server_core/src/evals/skill_evaluation_service.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/forge/forge_provider_factories.dart';
@@ -224,6 +229,7 @@ import 'package:cc_server_core/src/run_log_reader.dart';
 import 'package:cc_server_core/src/runtime/server_extra_ops.dart';
 import 'package:cc_server_core/src/runtime/server_fleet_wiring.dart';
 import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
+import 'package:cc_server_core/src/runtime/server_skill_evaluation_wiring.dart';
 import 'package:cc_server_core/src/server_mcp_client_control.dart';
 import 'package:cc_server_core/src/server_mcp_control.dart';
 import 'package:cc_server_core/src/server_mcp_registry.dart';
@@ -237,8 +243,9 @@ import 'package:cc_server_core/src/space_stack_service.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
 import 'package:cc_server_core/src/write_ledger_adapter.dart';
-import 'package:dio/dio.dart' show Dio, InterceptorsWrapper;
+import 'package:drift/drift.dart' show Variable;
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart';
 import 'package:uuid/uuid.dart';
 
 part 'runtime/cc_server_instance.dart';
@@ -314,10 +321,7 @@ Future<CcServer> runCcServer({
     );
   };
 
-  // Infra adapters (git, dio clients, the credential broker, sandboxing) log
-  // through their own façade; on the server it was previously unset, so those
-  // diagnostics vanished. Route it to the same tee so infra warnings/errors
-  // land in stdio + the rotating file.
+  // Route infrastructure diagnostics to stdio and the rotating log file.
   CcInfraLog.sink = (level, message, [error, stackTrace]) {
     final severity = _infraSeverity(level);
     if (severity.index < config.logLevel.index) {
@@ -330,9 +334,7 @@ Future<CcServer> runCcServer({
     );
   };
 
-  // Gates the debug tier the infra façade suppresses below the configured
-  // level (dio request/response lines, a code-graph index run that found
-  // nothing to do). From `--log-level` / `CC_SERVER_LOG_LEVEL`.
+  // Configure infrastructure traces from --log-level / CC_SERVER_LOG_LEVEL.
   CcInfraLog.level = switch (config.logLevel) {
     CcServerLogLevel.debug => CcInfraLogLevel.debug,
     CcServerLogLevel.info => CcInfraLogLevel.info,
@@ -346,6 +348,21 @@ Future<CcServer> runCcServer({
   // hung start. Emitted directly, bypassing the level filter (and its `[level]`
   // prefix): the lifecycle lines always print, whatever `--log-level` says.
   _emitLog(false, 'cc_server: booting (data: ${config.dataDir})…');
+
+  // Load the headless rhttp native library BEFORE any HTTP client exists:
+  // every `createHttpClient()` (and every cc_infra client built on one) rides
+  // the patched rhttp runtime, which must be resolved and initialized
+  // explicitly — there is no fallback transport. Idempotent per isolate.
+  //
+  // `appSupportRoot` is the SAME data dir the native preflight below resolves
+  // the other libs against (buildNativeRequirements(dataDir: config.dataDir)),
+  // so a staged/installed `librhttp.*` is found in the one place the preflight
+  // also looks. cc_natives deliberately never guesses the host's storage layout;
+  // the caller owns that knowledge.
+  await _bootStep(
+    'initializing the HTTP runtime',
+    () => initializeRhttp(appSupportRoot: config.dataDir),
+  );
 
   // Persistence is two halves. `global.db` holds only server-wide state (the
   // workspace registry, identity, the newsfeed, the fleet queue) and is the ONLY
@@ -732,9 +749,26 @@ Future<CcServer> runCcServer({
   // cannot be read across the isolation boundary — the same rule the database
   // split enforces structurally. The layout comes from `workspaceDirPath` so
   // there is one definition of where a workspace's files live.
+  final fileCatalog = DaoFileCatalogRepository(workspaceDbs);
+  var catalogInventoryComplete = false;
+  final failedCatalogInventories = <String>{};
   final blobStore = BlobStore(
     workspaceDir: (workspaceId) =>
         workspaceDirPath(config.dataDir, workspaceId),
+    onArtifactStored: (workspaceId, stored, creatorId) async {
+      await fileCatalog.recordArtifact(
+        workspaceId: workspaceId,
+        name: 'screenshot',
+        path: stored.ref,
+        mediaType: stored.mediaType,
+        bytes: stored.bytes,
+        creatorId: creatorId,
+      );
+    },
+    isProtectedHash: (workspaceId, hash) async =>
+        !catalogInventoryComplete ||
+        failedCatalogInventories.contains(workspaceId) ||
+        await fileCatalog.hasPath(workspaceId, 'blob:sha256:$hash'),
   );
   // The conversation's real history, so the next run continues it instead of
   // reading a `<context>` summary of it — and so a `checkpoint` label survives
@@ -742,6 +776,14 @@ Future<CcServer> runCcServer({
   // the workspace's own database and blobs, so deleting the workspace deletes
   // its transcripts with everything else.
   final transcriptStore = FileHarnessTranscriptStore(
+    workspaceDir: (workspaceId) =>
+        workspaceDirPath(config.dataDir, workspaceId),
+  );
+  final toolOutputStore = FileToolOutputStore(
+    workspaceDir: (workspaceId) =>
+        workspaceDirPath(config.dataDir, workspaceId),
+  );
+  final claudeSessionStore = FileClaudeNativeSessionStore(
     workspaceDir: (workspaceId) =>
         workspaceDirPath(config.dataDir, workspaceId),
   );
@@ -770,7 +812,7 @@ Future<CcServer> runCcServer({
   // tools (which are wired into the dispatch adapter a few hundred lines
   // below) can share the same resolver rather than growing a second one.
   final grammarManager = GrammarManager(
-    dio: createDio(),
+    httpClient: createHttpClient(),
     grammarsDir: paths.grammarsRoot,
     onLog: (tag, message, [error, stackTrace]) =>
         CcHostLog.warning('grammar[$tag]: $message'),
@@ -786,10 +828,10 @@ Future<CcServer> runCcServer({
   // composing the cc_infra RSS fetcher with the cc_persistence RSS DAO.
   final newsfeedRepository = DaoNewsfeedRepository(
     globalDb.rssDao,
-    RssFetcherService(createDio()),
+    RssFetcherService(createHttpClient()),
     // Feeds without a space image fall back to the site HTML's
     // <link rel="icon"> (e.g. lea.verou.me).
-    siteIcons: SiteIconResolver(createDio()),
+    siteIcons: SiteIconResolver(createHttpClient()),
   );
 
   final agentRepository = DaoAgentRepository(workspaceDbs);
@@ -798,6 +840,7 @@ Future<CcServer> runCcServer({
     agents: agentRepository,
   );
   final agentRunLogRepository = DaoAgentRunLogRepository(workspaceDbs);
+  final llmCallRecordRepository = DaoLlmCallRecordRepository(workspaceDbs);
   // Per-run activity timelines (subagent runs above all). Kept in its own table
   // so the run-log list watches never ship the fat segment payload.
   final runTranscriptRepository = DaoRunTranscriptRepository(workspaceDbs);
@@ -890,6 +933,166 @@ Future<CcServer> runCcServer({
     globalDb.workspaceRegistryDao,
     workspaceDbs,
   );
+  // CROSS-WORKSPACE BY DESIGN: a one-time migration inventory, not a request
+  // read. CrossWorkspaceQueries skips deleted registry rows and opens each
+  // workspace transiently, so a cold boot never pins every database open.
+  // Mark only after every source finishes; any failed file/DB read retries on
+  // the next boot. Existing paths and transcript bytes are never rewritten.
+  const catalogBackfillKey = 'file_catalog_backfill_v20';
+  final blobRefPattern = RegExp(r'blob:sha256:[0-9a-f]{64}');
+  unawaited(
+    CrossWorkspaceQueries(workspaceDbs)
+        .forEachWorkspace(
+          (db) async {
+            final ws = db.workspaceId;
+            if (await db.workspaceSettingDao.getValue(ws, catalogBackfillKey) ==
+                'complete') {
+              return;
+            }
+            final scopedCatalog = DaoFileCatalogRepository(
+              workspaceDbs,
+              database: db,
+            );
+            final logoPath = (await globalDb.workspaceRegistryDao.getById(
+              ws,
+            ))?.logoPath;
+            if (logoPath != null &&
+                File(logoPath).existsSync() &&
+                p.isWithin(workspaceDirPath(config.dataDir, ws), logoPath) &&
+                !await scopedCatalog.hasPath(ws, logoPath)) {
+              await scopedCatalog.recordArtifact(
+                workspaceId: ws,
+                name: p.basename(logoPath),
+                path: logoPath,
+                mediaType: 'application/octet-stream',
+                bytes: await File(logoPath).length(),
+              );
+            }
+            final referencedBlobs = <String>{};
+            final messages = await db
+                .customSelect(
+                  "SELECT metadata FROM conversation_messages WHERE metadata IS NOT NULL AND message_type IN ('agent_turn', 'text')",
+                )
+                .get();
+            for (final message in messages) {
+              referencedBlobs.addAll(
+                blobRefPattern
+                    .allMatches(message.read<String>('metadata'))
+                    .map((m) => m.group(0)!),
+              );
+            }
+            // FileHarnessTranscriptStore._fileFor writes one sanitized
+            // `<conversationId>#<agentId>.json` beneath this workspace's
+            // `transcripts/` directory; no recursive scan and no checkout paths.
+            final transcripts = Directory(
+              p.join(workspaceDirPath(config.dataDir, ws), 'transcripts'),
+            );
+            if (transcripts.existsSync()) {
+              await for (final entry in transcripts.list(followLinks: false)) {
+                if (entry is File && entry.path.endsWith('.json')) {
+                  referencedBlobs.addAll(
+                    blobRefPattern
+                        .allMatches(await entry.readAsString())
+                        .map((m) => m.group(0)!),
+                  );
+                }
+              }
+            }
+            for (final ref in referencedBlobs) {
+              if (await scopedCatalog.hasPath(ws, ref)) {
+                continue;
+              }
+              final hash = blobHashOf(ref)!;
+              final file = blobStore.fileFor(ws, hash);
+              if (file == null) {
+                continue;
+              }
+              await scopedCatalog.recordArtifact(
+                workspaceId: ws,
+                name: 'screenshot',
+                path: ref,
+                mediaType: await blobStore.mediaTypeFor(ws, hash),
+                bytes: await file.length(),
+              );
+            }
+            for (final meeting in await db.meetingDao.getByWorkspace(ws)) {
+              final dir = meeting.audioPath;
+              if (dir == null) {
+                continue;
+              }
+              for (final name in ['me.wav', 'them.wav', 'mixed.wav']) {
+                final file = File(p.join(dir, name));
+                if (file.existsSync() &&
+                    !await scopedCatalog.hasPath(ws, file.path)) {
+                  await scopedCatalog.recordArtifact(
+                    workspaceId: ws,
+                    name: name,
+                    path: file.path,
+                    mediaType: 'audio/wav',
+                    bytes: await file.length(),
+                  );
+                }
+              }
+            }
+            final snapshots = await db
+                .customSelect(
+                  'SELECT variants_json FROM visual_diff_snapshots WHERE workspace_id = ?',
+                  variables: [Variable<String>(ws)],
+                )
+                .get();
+            for (final snapshot in snapshots) {
+              final decoded = jsonDecode(
+                snapshot.read<String>('variants_json'),
+              );
+              if (decoded is! List) {
+                throw const FormatException('Invalid visual snapshot variants');
+              }
+              for (final variant in decoded.whereType<Map>()) {
+                for (final field in [
+                  'baseImageRef',
+                  'headImageRef',
+                  'diffImageRef',
+                ]) {
+                  final path = variant[field];
+                  if (path is! String ||
+                      !p.isWithin(
+                        p.join(paths.appSupportRoot, 'review_snapshots'),
+                        path,
+                      ) ||
+                      !File(path).existsSync() ||
+                      await scopedCatalog.hasPath(ws, path)) {
+                    continue;
+                  }
+                  await scopedCatalog.recordArtifact(
+                    workspaceId: ws,
+                    name: p.basename(path),
+                    path: path,
+                    mediaType: 'image/png',
+                    bytes: await File(path).length(),
+                  );
+                }
+              }
+            }
+            await db.workspaceSettingDao.setValue(
+              ws,
+              catalogBackfillKey,
+              'complete',
+            );
+          },
+          includeDeleted: false,
+          onError: (ws, error) {
+            failedCatalogInventories.add(ws);
+            CcHostLog.warning('Catalog backfill for $ws will retry: $error');
+          },
+        )
+        .then((_) {
+          // Never let cache eviction race the inventory of historic files.
+          catalogInventoryComplete = true;
+        })
+        .catchError((Object error) {
+          CcHostLog.warning('Catalog backfill iteration will retry: $error');
+        }),
+  );
   providerOAuth.workspaceApps = workspaceGitHub;
   providerOAuth.workspaceLookup = workspaceRepository.getById;
   // `owner/name` → workspace ids, for the notification poller's per-repo
@@ -974,7 +1177,7 @@ Future<CcServer> runCcServer({
   // Assigned after construction because each service needs the other: the
   // store reads the credential the OAuth service refreshes.
   forgeCredentials.refreshUserToken = providerOAuth.refresh;
-  final forgeDioFactory = ForgeDioFactory(
+  final forgeHttpClientFactory = ForgeHttpClientFactory(
     tokenLookup: forgeCredentials.tokenFor,
     bitbucketUsername: () => forgeCredentials.bitbucketEmail,
   );
@@ -988,7 +1191,7 @@ Future<CcServer> runCcServer({
   // permission grants either. Naming the owner takes the user lane instead, and
   // resolves null when nobody has signed in — which is the honest answer, not a
   // fallback to a token that cannot work.
-  final ownerForgeDioFactory = ForgeDioFactory(
+  final ownerForgeHttpClientFactory = ForgeHttpClientFactory(
     tokenLookup: (forge) =>
         forgeCredentials.tokenFor(forge, userId: ownerUserId),
     bitbucketUsername: () => forgeCredentials.bitbucketEmail,
@@ -1013,37 +1216,19 @@ Future<CcServer> runCcServer({
       '${connectedForges.map((f) => f.displayName).join(', ')}',
     );
   }
-  final githubDio = createDio();
-  // Cap the SERVER's GitHub calls well below the RPC client's 30s timeout
-  // (RemoteRpcClient._timeout): a dashboard-startup op (github.currentUser /
-  // pr.listOpenForWorkspace / searchReviewRequested) that hits a slow or
-  // unavailable GitHub must fail server-side and let the handler degrade
-  // (empty/null) so the thin client gets a prompt response — rather than both
-  // sides racing the same 30s deadline and the client throwing "RPC repo/call
-  // timed out". Only this GitHub client is shortened; createDio's 30s default
-  // stays for everything else.
-  githubDio.options
-    ..connectTimeout = const Duration(seconds: 12)
-    ..receiveTimeout = const Duration(seconds: 12)
-    ..sendTimeout = const Duration(seconds: 12);
-  // Resolved per request, like every other server-side GitHub call: a
-  // credential that arrives after boot (an app installed, a token pasted, the
-  // owner signing in) has to work without a restart.
-  githubDio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await forgeCredentials.tokenFor(ForgeHost.github);
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        handler.next(options);
-      },
-    ),
-  );
-  // The GitHub client now rides the per-forge factory so a token pasted into
-  // Settings applies to the next request instead of the next restart.
+  // The GitHub client rides the per-forge factory so a token pasted into
+  // Settings applies to the next request instead of the next restart, and the
+  // token is resolved per request (a credential that arrives after boot — an
+  // app installed, a token pasted, the owner signing in — works without a
+  // restart). The factory caps its calls at 12s, well below the RPC client's
+  // 30s timeout (RemoteRpcClient._timeout): a dashboard-startup op
+  // (github.currentUser / pr.listOpenForWorkspace / searchReviewRequested) that
+  // hits a slow or unavailable GitHub must fail server-side and let the handler
+  // degrade (empty/null) so the thin client gets a prompt response — rather
+  // than both sides racing the same 30s deadline and the client throwing
+  // "RPC repo/call timed out".
   final serverGitHubClient = GitHubApiClient(
-    forgeDioFactory.of(ForgeHost.github),
+    forgeHttpClientFactory.of(ForgeHost.github),
   );
 
   // Repo reads on behalf of a workspace resolve through that workspace's
@@ -1052,11 +1237,11 @@ Future<CcServer> runCcServer({
   // it answers with whichever install-App installation responded first, so a
   // private repo that App cannot see reads as 404 even when the workspace's
   // configured credential can.
-  final ownerScopedGitHubDios = <String, Dio>{};
-  Dio githubDioForOwner(String workspaceId, String owner) =>
-      ownerScopedGitHubDios.putIfAbsent(
+  final ownerScopedGitHubHttpClients = <String, RhttpClient>{};
+  RhttpClient githubHttpClientForOwner(String workspaceId, String owner) =>
+      ownerScopedGitHubHttpClients.putIfAbsent(
         '$workspaceId\u0000${owner.toLowerCase()}',
-        () => ForgeDioFactory(
+        () => ForgeHttpClientFactory(
           tokenLookup: (forge) => forgeCredentials.tokenForRepoOwner(
             forge,
             owner,
@@ -1068,7 +1253,7 @@ Future<CcServer> runCcServer({
   GitHubApiClient githubClientForOwner(String workspaceId, String owner) =>
       ownerScopedGitHubClients.putIfAbsent(
         '$workspaceId\u0000${owner.toLowerCase()}',
-        () => GitHubApiClient(githubDioForOwner(workspaceId, owner)),
+        () => GitHubApiClient(githubHttpClientForOwner(workspaceId, owner)),
       );
 
   // The composer's GIF picker runs on the host's Klipy app key (the thin client
@@ -1077,26 +1262,27 @@ Future<CcServer> runCcServer({
       ? null
       : KlipyApiClient(appKey: config.klipyAppKey);
 
-  // Per-actor forge Dio factories: UI-driven forge writes must be authored by
-  // that human. Process-wide `forgeDioFactory` prefers the app identity with no
-  // caller, so reviews landed as the app. Per-actor names the session user;
-  // their credential wins, app is fallback if they have not connected the forge.
+  // Per-actor forge HTTP clients: UI-driven forge writes must be authored by
+  // that human. Process-wide `forgeHttpClientFactory` prefers the app identity
+  // with no caller, so reviews landed as the app. Per-actor names the session
+  // user; their credential wins, app is fallback if they have not connected the
+  // forge.
   //
   // Memoized per user; token still read per request in the interceptor so
   // sign-in/out applies on the next call.
-  final actorDioFactories = <String, ForgeDioFactory>{};
-  ForgeDioFactory forgeDioFactoryForActor(
+  final actorHttpClientFactories = <String, ForgeHttpClientFactory>{};
+  ForgeHttpClientFactory forgeHttpClientFactoryForActor(
     String? userId, {
     String? workspaceId,
   }) {
     if ((userId == null || userId.isEmpty) &&
         (workspaceId == null || workspaceId.isEmpty)) {
-      return forgeDioFactory;
+      return forgeHttpClientFactory;
     }
     final key = '${userId ?? ''}\u0000${workspaceId ?? ''}';
-    return actorDioFactories.putIfAbsent(
+    return actorHttpClientFactories.putIfAbsent(
       key,
-      () => ForgeDioFactory(
+      () => ForgeHttpClientFactory(
         tokenLookup: (forge) => userId == null || userId.isEmpty
             ? forgeCredentials.tokenFor(forge, workspaceId: workspaceId)
             : forgeCredentials.tokenForActor(
@@ -1121,7 +1307,7 @@ Future<CcServer> runCcServer({
       actorGitHubClients.putIfAbsent(
         '$userId\u0000${workspaceId ?? ''}',
         () => GitHubApiClient(
-          forgeDioFactoryForActor(
+          forgeHttpClientFactoryForActor(
             userId,
             workspaceId: workspaceId,
           ).of(ForgeHost.github),
@@ -1137,7 +1323,7 @@ Future<CcServer> runCcServer({
       workspaceGitHubClients.putIfAbsent(
         workspaceId,
         () => GitHubApiClient(
-          forgeDioFactoryForActor(
+          forgeHttpClientFactoryForActor(
             null,
             workspaceId: workspaceId,
           ).of(ForgeHost.github),
@@ -1191,7 +1377,7 @@ Future<CcServer> runCcServer({
     String? workspaceId,
   }) => forgePrClientBuilder(
     repo.forge,
-    forgeDioFactoryForActor(
+    forgeHttpClientFactoryForActor(
       actingUserId,
       workspaceId: workspaceId,
     ).of(repo.forge),
@@ -1473,6 +1659,12 @@ Future<CcServer> runCcServer({
   // both safe and the pre-existing behaviour. Resolving through the registry
   // rather than a local timer is what clears the entry, so no stale prompt is
   // left on the operator's phone.
+  //
+  // Only the OUT-OF-SCOPE trees reach this port: the server's own disposable
+  // conversation worktrees carry implicit authority (see
+  // `SandboxExecGrantService.approvedRoots`), so a routine run asks nothing
+  // here — the question is what is left for the durable trees a session may
+  // still name.
   final execGrantConfirmationPort = RemoteConfirmationPort(
     pendingConfirmationRegistry,
     timeout: const Duration(seconds: 90),
@@ -1525,6 +1717,15 @@ Future<CcServer> runCcServer({
     policyFilePath: serverEnv[ManagedPolicyService.envVar],
     onWarn: (m) => CcHostLog.warning('managed policy: $m'),
   );
+  // The quiet half of the guard's audit stream: an audit records EVERY
+  // verdict (allows included), so this is fed all of them and keeps only the
+  // refusals no human was asked about. See the publisher — an answered
+  // approval already announced and ended its own wait, and must not surface
+  // again as a block.
+  final agentActionBlocked = AgentActionBlockedPublisher(
+    eventBus: eventBus,
+    agents: agentRepository,
+  );
   final actionGuard = ActionGuardService(
     repository: actionPolicyRepository,
     confirmationPort: confirmationPort,
@@ -1535,6 +1736,7 @@ Future<CcServer> runCcServer({
           'guardrail deny [${a.source}] ${a.actionSummary}: ${a.reason}',
         );
       }
+      agentActionBlocked.report(a);
       // Fire-and-forget: this runs on the hot path of every gated tool call,
       // so a slow append must never delay the agent — and a failed append is
       // logged, never raised into the caller's verdict.
@@ -1621,6 +1823,21 @@ Future<CcServer> runCcServer({
   // with the embedding model manager). A connected web/thin client resolves
   // these server-side paths + writes through them over the `fs.*` ops.
   final workspaceFilesystem = WorkspaceFilesystemService(paths);
+  workspaceFilesystem.onLogoPersisted = (workspaceId, path) async {
+    await fileCatalog.recordArtifact(
+      workspaceId: workspaceId,
+      name: p.basename(path),
+      path: path,
+      mediaType: switch (p.extension(path).toLowerCase()) {
+        '.png' => 'image/png',
+        '.jpg' || '.jpeg' => 'image/jpeg',
+        '.webp' => 'image/webp',
+        '.svg' => 'image/svg+xml',
+        _ => 'application/octet-stream',
+      },
+      bytes: await File(path).length(),
+    );
+  };
 
   // Content-addressed skill bundles: register install/verify/pin tools now that
   // filesystem + GitHub exist. Fail-closed scan gate: Layers 1–2 inline (pure);
@@ -1794,11 +2011,14 @@ Future<CcServer> runCcServer({
   WorkspaceSeeder? demoBaseSeeder;
   DemoMeetingService? demoMeeting;
   DemoReviewService? demoReview;
+  final demoLimits = demoBuilder == null
+      ? null
+      : DemoLimits.fromEnvironment(serverEnv);
   final demo = demoBuilder == null
       ? null
       : await demoBuilder(
           DemoRuntimeContext(
-            limits: DemoLimits.fromEnvironment(serverEnv),
+            limits: demoLimits!,
             dataDir: config.dataDir,
             publicUrl: config.publicUrl,
             signalingUrl: config.signalingUrl,
@@ -1889,7 +2109,7 @@ Future<CcServer> runCcServer({
   // A single shared registry (what this was) authored all of them as the
   // server's app identity, whoever clicked.
   //
-  // Memoized per user rather than per call: each registry holds three Dio
+  // Memoized per user rather than per call: each registry holds three HTTP
   // clients whose interceptors read the credential per request, so this caches
   // plumbing and never a token.
   final actorForgeRegistries = <String, ForgeProviderRegistry>{};
@@ -1904,7 +2124,10 @@ Future<CcServer> runCcServer({
         demo?.forgeRegistryFor(userId) ??
         buildForgeProviderRegistry(
           workspaceDbs: workspaceDbs,
-          dioFactory: forgeDioFactoryForActor(userId, workspaceId: workspaceId),
+          httpClientFactory: forgeHttpClientFactoryForActor(
+            userId,
+            workspaceId: workspaceId,
+          ),
           localGitSource: localGitPrDiffSource,
           eventBus: eventBus,
           changeSignals: prChangeSignals,
@@ -2154,6 +2377,9 @@ Future<CcServer> runCcServer({
     // True resume: the next run reads the model's own earlier reasoning and
     // the actual bytes its tools returned.
     transcriptStore: transcriptStore,
+    toolOutputStore: toolOutputStore,
+    claudeSessionStore: claudeSessionStore,
+    llmCallRecordRepository: llmCallRecordRepository,
     // The `debug` tool: a stopped frame answers every question about that
     // moment at once, where a print statement answers one and costs a run.
     debugSupervisor: debugSupervisor,
@@ -2451,7 +2677,7 @@ Future<CcServer> runCcServer({
   // reads to an operator as "no usage reported" on every account at once.
   final claudeUsageCache = ClaudeUsageCache(
     fetch: (configDir) => SubscriptionUsageService(
-      dio: createDio(),
+      httpClient: createHttpClient(),
     ).fetchClaudeForConfigDir(configDir),
   );
   claudeAccountStore = ClaudeAccountStore(
@@ -3503,6 +3729,15 @@ Future<CcServer> runCcServer({
       transcriber: meetingTranscriber,
       eventBus: eventBus,
       paths: paths,
+      onAudioPersisted: (workspaceId, path) async {
+        await fileCatalog.recordArtifact(
+          workspaceId: workspaceId,
+          name: p.basename(path),
+          path: path,
+          mediaType: 'audio/wav',
+          bytes: await File(path).length(),
+        );
+      },
       // The next recording reloads the model lazily while its first audio
       // window buffers.
       onIdle: scheduleSpeechRelease,
@@ -3992,6 +4227,15 @@ Future<CcServer> runCcServer({
   final visualDiffService = VisualDiffService(
     repository: visualDiffRepository,
     paths: paths,
+    onSnapshotWritten: (workspaceId, path, bytes) async {
+      await fileCatalog.recordArtifact(
+        workspaceId: workspaceId,
+        name: p.basename(path),
+        path: path,
+        mediaType: 'image/png',
+        bytes: bytes,
+      );
+    },
   );
   final reviewAxisService = ReviewAxisService(
     contractService: apiContractDiffService,
@@ -4638,9 +4882,8 @@ Future<CcServer> runCcServer({
     conversations: conversationRepository,
   )..start();
 
-  // §188: bound below (its dio adapters are built later in bootstrap). The
-  // `ticketSyncNow` closure passed to the catalog only dereferences it at
-  // request time, by which point bootstrap has assigned it.
+  // `ticketSyncNow` resolves this at request time, after bootstrap has built
+  // the HTTP adapters and assigned the engine.
   TicketSyncEngine? ticketSyncEngineRef;
 
   final fleet = buildFleetWiring(
@@ -4652,6 +4895,36 @@ Future<CcServer> runCcServer({
   final evalsRepository = fleet.evalsRepository;
   final fleetOps = fleet.ops;
   final fleetWatchQueries = fleet.watchQueries;
+  final skillEvaluationService = buildSkillEvaluationService(
+    repository: evalsRepository,
+    globalDb: globalDb,
+    memberships: membershipRepository,
+    roles: workspaceRoleRepository,
+    workspaces: workspaceRepository,
+    repositories: repoRepository,
+    filesystem: workspaceFilesystem,
+    bundles: skillBundles,
+    scanner: skillScanner,
+    actionGuard: actionGuard,
+    eventBus: eventBus,
+    credentials: harnessCreds,
+    claudeAccounts: claudeAccountStore,
+    refreshCredential: harnessOAuthBroker.refreshIfNeeded,
+    resolveModel: (qualified) async {
+      final catalog = await modelCatalogService.catalog();
+      return harnessModelOverrides.resolve(catalog.resolve, qualified);
+    },
+    dataDir: config.dataDir,
+    executionEnabled: demo == null && useNativeSandbox,
+    environment: serverEnv,
+    factory: demo?.harnessProviderFactory ?? const HarnessProviderFactory(),
+    onWarning: CcHostLog.warning,
+  );
+  await skillEvaluationService.start();
+  fleetOps.addAll(buildSkillEvaluationOps(skillEvaluationService));
+  fleetWatchQueries.addAll(
+    buildSkillEvaluationWatchQueries(skillEvaluationService),
+  );
   unawaited(fleetScheduler.ensureLocalWorker(_detectLocalWorkerCapabilities()));
 
   // PR workbench: idempotently ensure a PR has a backing space (mode review),
@@ -5262,7 +5535,7 @@ Future<CcServer> runCcServer({
   // in this list, with no change to the connector, the ops or the client.
   final chatConnector = ChatConnector(
     registry: ChatProviderRegistry([
-      SlackChatProviderPlugin(dioFactory: createDio),
+      SlackChatProviderPlugin(httpClientFactory: createHttpClient),
     ]),
     store: FileChatConnectionStore(dataDir: config.dataDir),
     // The SAME registry the dispatch stack publishes turn deltas into, so a chat
@@ -5443,6 +5716,7 @@ Future<CcServer> runCcServer({
     // store the agent's own screenshots land in, so both directions of the
     // image lane share one directory and one lifecycle.
     blobStore: blobStore,
+    fileCatalog: fileCatalog,
     // Space repo-selection teardown (`messaging.setSpaceRepos`): the same
     // provisioner that materializes a space's worktrees destroys the ones a
     // deselection orphans.
@@ -5988,23 +6262,23 @@ Future<CcServer> runCcServer({
     // githubstatus.com summary (token-less; always available). The thin client
     // parses the raw summary with `GitHubServiceStatus.fromSummaryJson`.
     fetchGitHubServiceStatus: () =>
-        ServiceStatusService(createDio()).fetchSummaryJson(),
+        ServiceStatusService(createHttpClient()).fetchSummaryJson(),
     // status.claude.com summary (token-less; same Statuspage v2 shape). The
     // thin client parses the raw summary with
     // `GitHubServiceStatus.fromSummaryJson`.
     fetchClaudeServiceStatus: () => ServiceStatusService(
-      createDio(),
+      createHttpClient(),
       summaryUrl: claudeStatusSummaryUrl,
     ).fetchSummaryJson(),
     // status.openai.com summary (token-less; same Statuspage v2 shape).
     fetchOpenAIServiceStatus: () => ServiceStatusService(
-      createDio(),
+      createHttpClient(),
       summaryUrl: openaiStatusSummaryUrl,
     ).fetchSummaryJson(),
     // status.moonshot.cn (Kimi) summary (token-less; same Statuspage v2
     // shape).
     fetchKimiServiceStatus: () => ServiceStatusService(
-      createDio(),
+      createHttpClient(),
       summaryUrl: kimiStatusSummaryUrl,
     ).fetchSummaryJson(),
     // Demo readings are fictional. Never collect CLI/harness credentials or
@@ -6016,7 +6290,7 @@ Future<CcServer> runCcServer({
               store: claudeAccountStore,
             );
             final all = await SubscriptionUsageService(
-              dio: createDio(),
+              httpClient: createHttpClient(),
               fetchClaudeCached: (configDir) =>
                   claudeUsageCache.get(configDir, force: force),
             ).fetchAll(accounts: [...accounts, ...claude]);
@@ -6536,61 +6810,75 @@ Future<CcServer> runCcServer({
   // JIRA_BASE_URL + JIRA_EMAIL + JIRA_API_TOKEN for Jira. Per-workspace, per-
   // vendor connections live in `ticket_sync_configs`.
   final env = serverEnv;
-  final linearSyncDio = createDio(baseUrl: 'https://api.linear.app/graphql');
-  // Read PER REQUEST from the app-credential store (which the environment
-  // seeds on first boot), not captured here: a key pasted in Settings has to
-  // work on the next sync, not after a restart.
-  linearSyncDio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final key = await providerApps.linearApiKey();
-        if (key.isNotEmpty) {
-          options.headers['Authorization'] = key;
-        }
-        handler.next(options);
-      },
-    ),
+  // Each vendor client resolves its credential PER REQUEST: the Linear key is
+  // read from the app-credential store (which the environment seeds on first
+  // boot) and the Jira/ClickUp secrets from the environment, so a key pasted in
+  // Settings applies on the next sync rather than after a restart.
+  HttpRequest withAuthHeader(HttpRequest request, String name, String value) =>
+      request.copyWith(
+        headers: (request.headers ?? HttpHeaders.empty).copyWithRaw(
+          name: name,
+          value: value,
+        ),
+      );
+  final linearSyncHttpClient = createHttpClient(
+    baseUrl: 'https://api.linear.app/graphql',
+    interceptors: [
+      SimpleInterceptor(
+        beforeRequest: (request) async {
+          final key = await providerApps.linearApiKey();
+          if (key.isEmpty) {
+            return Interceptor.next(request);
+          }
+          return Interceptor.next(
+            withAuthHeader(request, 'Authorization', key),
+          );
+        },
+      ),
+    ],
   );
-  final jiraSyncDio = createDio(baseUrl: env['JIRA_BASE_URL'] ?? '');
   final jiraEmail = env['JIRA_EMAIL'] ?? '';
   final jiraToken = env['JIRA_API_TOKEN'] ?? '';
-  if (jiraEmail.isNotEmpty && jiraToken.isNotEmpty) {
-    final basic = base64Encode(utf8.encode('$jiraEmail:$jiraToken'));
-    jiraSyncDio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          options.headers['Authorization'] = 'Basic $basic';
-          handler.next(options);
-        },
-      ),
-    );
-  }
-  final clickupSyncDio = createDio(baseUrl: 'https://api.clickup.com');
+  final jiraSyncHttpClient = createHttpClient(
+    baseUrl: env['JIRA_BASE_URL'] ?? '',
+    interceptors: [
+      if (jiraEmail.isNotEmpty && jiraToken.isNotEmpty)
+        SimpleInterceptor(
+          beforeRequest: (request) async {
+            final basic = base64Encode(utf8.encode('$jiraEmail:$jiraToken'));
+            return Interceptor.next(
+              withAuthHeader(request, 'Authorization', 'Basic $basic'),
+            );
+          },
+        ),
+    ],
+  );
   final clickupToken = env['CLICKUP_API_TOKEN'] ?? '';
-  if (clickupToken.isNotEmpty) {
-    // ClickUp personal tokens go in the Authorization header verbatim (no
-    // `Bearer` prefix).
-    clickupSyncDio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          options.headers['Authorization'] = clickupToken;
-          handler.next(options);
-        },
-      ),
-    );
-  }
+  final clickupSyncHttpClient = createHttpClient(
+    baseUrl: 'https://api.clickup.com',
+    interceptors: [
+      // ClickUp personal tokens go in the Authorization header verbatim (no
+      // `Bearer` prefix).
+      if (clickupToken.isNotEmpty)
+        SimpleInterceptor(
+          beforeRequest: (request) async => Interceptor.next(
+            withAuthHeader(request, 'Authorization', clickupToken),
+          ),
+        ),
+    ],
+  );
   final ticketSyncConfigRepository = DaoTicketSyncConfigRepository(
     workspaceDbs,
   );
   final ticketSyncEngine = TicketSyncEngine(
     adapters: [
-      LinearTicketSyncAdapter(linearSyncDio),
+      LinearTicketSyncAdapter(linearSyncHttpClient),
       GitHubIssuesTicketSyncAdapter.resolving(
         ({required String workspaceId, required String owner}) async =>
-            githubDioForOwner(workspaceId, owner),
+            githubHttpClientForOwner(workspaceId, owner),
       ),
-      JiraTicketSyncAdapter(jiraSyncDio),
-      ClickUpTicketSyncAdapter(clickupSyncDio),
+      JiraTicketSyncAdapter(jiraSyncHttpClient),
+      ClickUpTicketSyncAdapter(clickupSyncHttpClient),
     ],
     repository: ticketRepository,
     configRepository: ticketSyncConfigRepository,
@@ -6700,6 +6988,22 @@ Future<CcServer> runCcServer({
     // demo: claims a warm, pre-seeded workspace and returns the SAME envelope
     // shape, so the web client's existing auto-redeem path needs no changes.
     inviteRedeemer: demo != null ? demo.redeemVisitor : redeemInvite,
+    invitePskResolver: demo == null
+        ? inviteService.resolveInvitePsk
+        : (routeId) async {
+            // A configured 256-bit demo invitation can use the same
+            // invite-authenticated Noise path; weak public demo codes instead
+            // use the client-held sealed HTTP bootstrap.
+            final String hash;
+            try {
+              hash = InvitePairingProof.codeHash(demoLimits!.inviteCode);
+            } on FormatException {
+              return null;
+            }
+            return routeId == InvitePairingProof.routeIdFromHash(hash)
+                ? InvitePairingProof.pskFromHash(hash)
+                : null;
+          },
     // demo: the newsfeed reads REAL feeds, and a feed without its images is a
     // wall of grey placeholders — the one surface a screenshot is taken of.
     // Keeping the proxy is safe here because every protection it has applies
@@ -6811,7 +7115,17 @@ Future<CcServer> runCcServer({
         return null;
       }
       final file = File(clip.playablePath);
-      return file.existsSync() ? file : null;
+      if (!file.existsSync()) {
+        return null;
+      }
+      await fileCatalog.recordArtifact(
+        workspaceId: workspaceId,
+        name: 'mixed.wav',
+        path: file.path,
+        mediaType: 'audio/wav',
+        bytes: await file.length(),
+      );
+      return file;
     },
     // Serves a workspace's persisted logo over `/workspace/logo` for thin-
     // clients. Resolves the file only for the signed workspace (getById is
@@ -6843,19 +7157,35 @@ Future<CcServer> runCcServer({
     // composer. It arrives over HTTP because the RPC socket refuses a frame
     // this size — see [BlobWriter].
     blobPut:
-        ({required workspaceId, required bytes, required mediaType}) async {
-          final stored = await blobStore.put(
+        ({
+          required workspaceId,
+          required uploaderUserId,
+          required name,
+          required bytes,
+          required mediaType,
+        }) async {
+          return blobStore.putUpload(
             workspaceId,
             Uint8List.fromList(bytes),
             mediaType: mediaType,
+            register: (stored, ownedBytes) async {
+              final file = await fileCatalog.createUpload(
+                workspaceId: workspaceId,
+                uploaderUserId: uploaderUserId,
+                name: name,
+                path: stored.ref,
+                mediaType: stored.mediaType,
+                bytes: stored.bytes,
+                ownedBytes: ownedBytes,
+              );
+              return (
+                ref: stored.ref,
+                bytes: stored.bytes,
+                mediaType: stored.mediaType,
+                fileId: file.id,
+              );
+            },
           );
-          return stored == null
-              ? null
-              : (
-                  ref: stored.ref,
-                  bytes: stored.bytes,
-                  mediaType: stored.mediaType,
-                );
         },
     // The byte half of the backup surface. `workspace.export` returns a PATH
     // and `workspace.import` takes one, which is a complete answer only when
@@ -6959,6 +7289,9 @@ Future<CcServer> runCcServer({
     // session (capability authz): unknown / expired / foreign-workspace → 403.
     // demo: no editor proxy.
     codeServerLookup: demo != null ? null : codeServerSessions.lookup,
+    codeServerBridgeAllowed: demo != null
+        ? null
+        : codeServerSessions.lookupBridge,
     // /healthz's `codeGraph` block: whether background indexing is watching /
     // indexing / has runs pending. Pure in-memory snapshot, safe to expose —
     // counts only, no paths or workspace data.
@@ -7027,16 +7360,8 @@ Future<CcServer> runCcServer({
   // under `--port 0`, the desktop's ephemeral-port spawn).
   descriptorService.boundPort = server.boundPort;
 
-  // Now that the RPC server has bound a port, tell the code-server service where
-  // its bundled bridge extension should POST in-editor open-file reports — the
-  // server's own loopback base. (The port isn't known when the service is built
-  // above, so it's wired here.) The extension runs server-side, co-located with
-  // cc_server, so loopback + the bound port always reaches it.
-  {
-    final proxyScheme = securityContext != null ? 'https' : 'http';
-    codeServerSessions.resolveProxyBase = () =>
-        Uri.parse('$proxyScheme://127.0.0.1:${server.boundPort}');
-  }
+  // The editor bridge is server-internal IPC, not the public RPC listener.
+  codeServerSessions.resolveBridgeBase = () => server.codeServerBridgeBase;
 
   // Load the recognizer once (off the ready path, so it never delays boot)
   // when a voice model resolved, then UNLOAD it again. This surfaces — loudly,
@@ -7128,7 +7453,7 @@ Future<CcServer> runCcServer({
   // cc_server OWNS one N-way signaling room: it joins the broker as the room
   // owner, publishes the admission-hash set derived from every active paired
   // device and serves an authenticated RPC session per relayed client
-  // (desktop, web, or phone) over the E2E-encrypted chunked relay — the
+  // (desktop, web, or phone) over the Noise-secured relay —
   // guaranteed fallback when no direct path exists. Watching the device
   // table covers startup, mint and revoke uniformly (revocation evicts the
   // live broker connection too).
@@ -7141,6 +7466,7 @@ Future<CcServer> runCcServer({
     toolIsMutating: (name) => mcpRegistry.resolve(name)?.isMutating,
     devicesDao: globalDb.pairedDeviceDao,
     secrets: secrets,
+    sessionPolicy: ssoSettings.sessionPolicy,
     eventBus: eventBus,
     workspaceResolver: listWorkspaces,
     repoOps: repoOps,
@@ -7148,6 +7474,7 @@ Future<CcServer> runCcServer({
     // unreviewed watch query must be as unreachable as an unclassified op.
     watchQueries: demo?.profile.lockdownWatch(catalog.watch) ?? catalog.watch,
     rateLimiters: rateLimiterPool,
+    attachResources: server.attachResourceSession,
   );
   // `cc_server pair` writes the device row from its OWN process, and drift's
   // update notifications are in-process only — so `watchAll()` above (and the
@@ -7575,6 +7902,7 @@ Future<CcServer> runCcServer({
     );
   }
   final ccServer = CcServer._(globalDb, workspaceDbs, server, mcpControl)
+    .._skillEvaluation = skillEvaluationService
     .._meetingReconciler = meetingReconciler
     .._goalSupervisor = goalSupervisor
     .._meetingRecording = meetingRecording
@@ -7667,7 +7995,9 @@ Future<CcServer> runCcServer({
   // and a boot-time gate never started after late onboarding / never stopped
   // after sign-out.
   final githubActivityPoller = GitHubViewerActivityPollingService(
-    githubClient: GitHubApiClient(ownerForgeDioFactory.of(ForgeHost.github)),
+    githubClient: GitHubApiClient(
+      ownerForgeHttpClientFactory.of(ForgeHost.github),
+    ),
     shouldPoll: () async {
       final token = await forgeCredentials.tokenFor(
         ForgeHost.github,
@@ -7693,9 +8023,11 @@ Future<CcServer> runCcServer({
     viewerLogin: () =>
         forgeCredentials.viewerLogin(ForgeHost.github, userId: ownerUserId),
     commentFetch: GitHubViewerCommentFetchAdapter(
-      prClient: GitHubApiClient(ownerForgeDioFactory.of(ForgeHost.github)).pr,
+      prClient: GitHubApiClient(
+        ownerForgeHttpClientFactory.of(ForgeHost.github),
+      ).pr,
       graphqlClient: GitHubApiClient(
-        ownerForgeDioFactory.of(ForgeHost.github),
+        ownerForgeHttpClientFactory.of(ForgeHost.github),
       ).graphql,
     ),
     forUserId: ownerUserId,

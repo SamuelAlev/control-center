@@ -1,22 +1,26 @@
 ---
 title: Instalar e gerir skills
-description: Adicione repositórios do GitHub como fontes de skills, navegue pelos catálogos deles e instale, atualize ou desinstale skills através do portão de análise antivírus.
+description: Instale e atualize skills do espaço de trabalho através do portão de análise e compare depois revisões guardadas com avaliações de skills dentro de um orçamento.
 slug: pt-PT/manual/guias/gerir-skills
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Este guia mostra-lhe como encher um espaço de trabalho com skills do GitHub:
 adicione um repositório como fonte, instale as skills que quiser a partir dele e
-mantenha-as atualizadas ao longo do tempo.
+mantenha-as atualizadas ao longo do tempo. Também pode avaliar uma revisão
+guardada em relação a uma linha de base emparelhada antes de decidir se a
+mantém.
 
 O que é importante saber antes de começar: **um repositório de origem não é de
 confiança.** O nome, a descrição e o número de estrelas dele são escritos por
-quem é dono do repositório. O único sinal de segurança em que o Control Center
-confia é o veredicto da análise antivírus, pelo qual passa cada instalação antes
-de qualquer coisa chegar ao disco ou ao prompt de um agente. Se quiser o
-raciocínio, leia a
-[secção de skills do modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/); esta
-página fica-se pela prática.
+quem é dono do repositório. Cada instalação passa pelo portão de análise
+antivírus antes de qualquer coisa chegar ao disco ou ao prompt de um agente.
+Esse veredicto é uma verificação de admissão, não prova de que uma skill seja
+segura ou útil. Leia a
+[secção de skills do modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/)
+para o modelo de instalação e [Avaliações e
+qualidade](/pt-PT/manual/conceitos/avaliacoes-e-qualidade/) para perceber como
+as evidências de comportamento diferem de uma análise.
 
 As skills ficam em **Definições → Espaço de trabalho → Habilidades**
 (`/workspaces/<id>/settings/workspace/skills`). Têm âmbito de espaço de
@@ -91,6 +95,89 @@ instalação — uma skill cuja nova versão fica em quarentena é recusada e a 
 que tinha permanece no lugar. O hash da versão antiga é guardado como referência
 de reversão no ficheiro de lock.
 
+## Avaliar uma skill
+
+1. Abra **Definições → Espaço de trabalho → Habilidades**, selecione a skill
+   instalada e guarde as alterações. Em **Avaliação de skill**, confirme o hash
+   do pacote.
+2. Selecione **Iniciar avaliação**. Escolha um **Conjunto de tarefas** adequado
+   ao propósito da skill e um **Adaptador**. O harness integrado usa um
+   fornecedor configurado e um modelo capaz de usar ferramentas. O **Claude Code**
+   usa a conta Claude gerida predefinida e um identificador de modelo concreto;
+   inicie sessão primeiro em **Definições → Adaptadores**. Não toma de empréstimo
+   o início de sessão pessoal do operador do servidor.
+3. Escolha uma **Comparação** na tabela abaixo.
+4. Defina **Repetições por tarefa** (1–20) e **Orçamento (centavos de US$)**. Por
+   exemplo, `100` significa 1 dólar americano. Selecione **Iniciar avaliação**
+   para autorizar trabalho pago no fornecedor.
+5. Acompanhe a campanha em **Observabilidade → Qualidade**, ou regresse através
+   de **Abrir Qualidade** no painel da skill.
+
+Para subscrições do **Claude Code** e do **Codex OAuth**, o orçamento é um
+**limite de paragem de utilização equivalente à API**, não um limite de fatura
+nem uma medida da quota da subscrição. `100` admite um limite de 1 dólar
+americano: uma chamada em curso pode ultrapassá-lo, mas não começa nenhuma
+chamada nova quando a utilização comunicada o atinge. Utilização desconhecida
+também interrompe novas chamadas. Um orçamento pequeno pode deixar a comparação
+parcial; não promete a conclusão do conjunto de tarefas selecionado.
+
+Os fornecedores com chave de API mantêm reservas conservadoras por chamada, com
+base em limites de tokens e preços documentados. Podem recusar `100` antes de
+gastar quando uma única chamada reservada em segurança precisa de mais. O erro
+identifica o modelo selecionado e a reserva mínima; escolha um modelo mais barato
+ou aumente esse orçamento.
+
+| Comparação | Utilize-a para responder |
+| --- | --- |
+| **Ausente vs. disponível** | A descoberta e a utilização normais desta skill melhoram o resultado em comparação com não a ter? |
+| **Anterior vs. atual** | A atualização preserva ou melhora o comportamento em relação a uma revisão capturada anteriormente? |
+| **Carregamento forçado vs. ausente** | O conteúdo pode ajudar quando é carregado explicitamente? Isto diagnostica problemas de carregamento; não demonstra a descoberta normal. |
+| **Composição** | Acrescentar o candidato ajuda ou entra em conflito com as skills de ambiente selecionadas? A linha de base mantém o mesmo inventário de ambiente sem o candidato. |
+
+**Anterior vs. atual** precisa de um hash de pacote do histórico de campanhas.
+Avalie uma revisão antes de a substituir, se quiser usá-la como linha de base;
+histórico Git arbitrário não é importado.
+
+Alterações não guardadas, um hash indisponível e o modo de demonstração apenas
+de leitura desativam o arranque. O servidor também verifica o acesso ao espaço de
+trabalho e ao repositório, a quarentena da análise, a política de ações, o
+suporte de modelos, os preços e o isolamento da execução. Resolva uma verificação
+falhada em vez de a contornar. A identidade do fornecedor e do modelo é
+registada, mas um alias de modelo remoto não congela os pesos subjacentes do
+fornecedor.
+
+### Inspecionar, cancelar e exportar
+
+Leia a cobertura e o gasto a par dos resultados por tarefa e das regressões.
+Abra tentativas individuais para inspecionar carregamentos de skills observados,
+eventos de ferramentas, erros e evidências dos verificadores. Resultados
+**parciais**, **desatualizados** e **inconclusivos** não são recomendações para
+adotar uma revisão. O hash de um relatório identifica o pacote capturado, não
+necessariamente o pacote atualmente instalado.
+
+Use **Cancelar execução** para trabalho em fila ou ativo. As tentativas
+concluídas continuam visíveis; o cancelamento não reembolsa o trabalho já
+realizado no fornecedor. **Copiar JSON com dados ocultados** copia para a área de
+transferência uma exportação de evidências limitada, não um pacote completo de
+reprodução do código-fonte privado. Veja [Avaliações e
+qualidade](/pt-PT/manual/conceitos/avaliacoes-e-qualidade/) para evidências e
+limites da plataforma.
+
+### Reavaliar após atualizações
+
+A reavaliação paga automática está **desativada por predefinição**. Depois de
+avaliar a revisão atual, escolha uma campanha em **Configuração da política de
+atualização** e selecione **Ativar avaliações de atualização**. Alterar esta
+política exige permissão de administrador do espaço de trabalho. A campanha
+escolhida fornece o conjunto de tarefas, o adaptador, o fornecedor/modelo, a
+comparação, as repetições e o orçamento.
+
+Alterações de conteúdo admitidas depois disso agendam trabalho com orçamento;
+hashes inalterados são deduplicados. **Desativar avaliações de atualização**
+impede admissões automáticas futuras. Use **Cancelar execução** para uma campanha
+já admitida. Os relatórios históricos permanecem ligados aos hashes de pacote
+originais; a reavaliação não publica, não ativa nem reescreve uma skill.
+
 ## Desinstalar uma skill, remover um repositório
 
 **Desinstalar** (na vista de detalhes de uma skill instalada, ou eliminando no
@@ -130,8 +217,9 @@ As skills de repo passam pela mesma análise fail-closed (`pass` / `warn` /
 `quarantine`) antes de o respetivo frontmatter chegar a um prompt. `warn` é
 admitido; `quarantine` é retido, sem exceção por parte do operador nesse caminho.
 
-Consulte [Skills com âmbito de repo](/pt-PT/manual/conceitos/modelo-de-agentes/#repo-scoped-skills) e
-[Comandos slash](/pt-PT/manual/referencia/comandos-slash/).
+Consulte [Skills com âmbito de
+repo](/pt-PT/manual/conceitos/modelo-de-agentes/#skills-com-âmbito-de-repositório)
+e [Comandos slash](/pt-PT/manual/referencia/comandos-slash/).
 
 ## Guias relacionados
 
@@ -141,3 +229,4 @@ Consulte [Skills com âmbito de repo](/pt-PT/manual/conceitos/modelo-de-agentes/
 ## Conceitos relacionados
 
 - [O modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/)
+- [Avaliações e qualidade](/pt-PT/manual/conceitos/avaliacoes-e-qualidade/)

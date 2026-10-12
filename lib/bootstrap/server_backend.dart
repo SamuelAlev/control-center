@@ -7,7 +7,6 @@ import 'package:control_center/bootstrap/thin_client_boot.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/auth_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
-import 'package:control_center/core/server/server_entry_factory.dart';
 import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/sso_login.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
@@ -406,6 +405,13 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
     _url.addListener(_scheduleSsoProbe);
     _scheduleSsoProbe();
     pendingSsoPairLink.addListener(_onPendingPairLink);
+    if (pendingSsoPairLink.value != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onPendingPairLink();
+        }
+      });
+    }
   }
 
   @override
@@ -517,59 +523,43 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
   }
 
   Future<void> _resolvePairLink(String rawUrl) async {
-    final payload = decodeSsoPairLink(rawUrl);
-    if (payload == null) {
+    final payload = await decodeSsoPairLink(rawUrl);
+    if (payload == null || !mounted) {
       return;
     }
-    // A bounce for a round-trip THIS window started is expected; anything
-    // else (a cold-launch link, a forwarded/forged one) must be confirmed —
-    // the link carries a credential for whatever server it names and
-    // anyone can craft one.
-    if (!isSsoLoginInFlight()) {
+    if (payload.unsolicited) {
       final l10n = AppLocalizations.of(context);
-      final confirmed = await showCcConfirmDialog(
+      final approved = await showCcDialog<bool>(
         context: context,
-        title: l10n.ssoPairConfirmTitle,
-        message: l10n.ssoPairConfirmBody(payload.server),
-        confirmLabel: l10n.ssoPairConfirmConnect,
-        cancelLabel: l10n.ssoPairConfirmCancel,
+        builder: (dialogContext) => CcDialog(
+          title: l10n.ssoPairConfirmTitle,
+          content: Text(l10n.ssoPairConfirmBody(payload.server)),
+          actions: [
+            CcButton(
+              variant: CcButtonVariant.ghost,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.ssoPairConfirmCancel),
+            ),
+            CcButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.ssoPairConfirmConnect),
+            ),
+          ],
+        ),
       );
-      if (!confirmed) {
-        if (mounted) {
-          setState(() => _awaitingBrowser = false);
-        }
+      if (approved != true || !mounted) {
         return;
       }
     }
-    ssoLoginStartedAt.value = null; // Consumed by this bounce.
     setState(() => _busy = true);
     try {
-      final entry = await ServerEntryFactory.fromManualUrl(
-        rawUrl: payload.server,
-        deviceId: payload.deviceId,
-      );
-      if (entry == null) {
-        throw StateError(
-          'The SSO server did not answer its identity probe '
-          '(${payload.server})',
-        );
-      }
-      // Connect FIRST — this verifies the server's Ed25519 identity — then
-      // persist: a failed or impostor connect must never write an entry
-      // (the same invariant `pairWithServer` applies to manual pairing).
-      final connection = await connectToEntry(
+      final connection = await pairWithServer(
         store: widget.store,
-        entry: entry,
+        rawUrl: payload.server,
+        platform: 'desktop',
+        deviceId: payload.deviceId,
         psk: payload.psk,
       );
-      await widget.store.upsertEntry(
-        connection.supervisor.pinnedFingerprint.isNotEmpty
-            ? entry.withPin(connection.supervisor.pinnedFingerprint)
-            : entry,
-        psk: payload.psk,
-      );
-      await widget.store.setMode(ServerConnectionMode.remote);
-      await widget.store.setActiveServer(entry.serverId);
       _resolved = true;
       widget.onResolved(_remoteBackend(connection));
     } on Object catch (e) {

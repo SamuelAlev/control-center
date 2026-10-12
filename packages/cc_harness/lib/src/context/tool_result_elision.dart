@@ -1,6 +1,20 @@
 /// Replacement text for a tool result that carried no usable signal.
 const String elidedResultMarker = '[Uneventful result elided]';
 
+/// Normalizes a tool name for policy matching: lowercased, with an `mcp__`
+/// server prefix stripped (`mcp__fs__read` → `read`) so one policy covers a
+/// built-in tool and its MCP-wrapped twin.
+String normalizeHarnessToolName(String toolName) {
+  var name = toolName.toLowerCase();
+  if (name.startsWith('mcp__')) {
+    final lastSep = name.lastIndexOf('__');
+    if (lastSep >= 0 && lastSep + 2 < name.length) {
+      name = name.substring(lastSep + 2);
+    }
+  }
+  return name;
+}
+
 /// Tools whose output must never be elided or pruned — losing them would break
 /// the agent's working state (active skill instructions, plan file reads, the
 /// current todo list). Both underscore and non-underscore spellings are listed
@@ -165,14 +179,5 @@ class ToolResultElision {
         tailPhrase;
   }
 
-  String _normalize(String toolName) {
-    var name = toolName.toLowerCase();
-    if (name.startsWith('mcp__')) {
-      final lastSep = name.lastIndexOf('__');
-      if (lastSep >= 0 && lastSep + 2 < name.length) {
-        name = name.substring(lastSep + 2);
-      }
-    }
-    return name;
-  }
+  String _normalize(String toolName) => normalizeHarnessToolName(toolName);
 }

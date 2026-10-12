@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:cc_infra/cc_infra.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// [SlackChatAdapter] is where every Slack-shaped detail is supposed to stop.
@@ -893,8 +892,8 @@ Map<String, dynamic> _event(
   'subtype': ?subtype,
 };
 
-/// The adapter over a real [SlackApiClient] speaking to a recording HTTP
-/// adapter, so outbound payloads are exercised as Slack would see them.
+/// The adapter over a real [SlackApiClient] speaking to a [TestHttpClient], so
+/// outbound payloads are exercised as Slack would see them.
 class _Harness {
   _Harness() {
     api = _SlackApiStub();
@@ -957,17 +956,40 @@ class _Harness {
   }
 }
 
-/// A real [SlackApiClient] over a recording adapter: calls are observed as Slack
+/// A real [SlackApiClient] over a [TestHttpClient]: calls are observed as Slack
 /// would see them (method + JSON payload) and any method can be made to fail.
 class _SlackApiStub {
   _SlackApiStub() {
     client = SlackApiClient(
-      dio: Dio()..httpClientAdapter = _Adapter(this),
+      httpClient: TestHttpClient(handler: _respond),
       botToken: 'xoxb-1',
     );
   }
 
   late final SlackApiClient client;
+
+  /// Answers a captured request through [handle]. The method is the last
+  /// segment of a Slack API url; anything else is a slash-command reply to the
+  /// per-invocation `response_url`.
+  HttpResponse _respond(HttpRequest request) {
+    final url = request.url;
+    final method = url.startsWith('https://slack.com/api/')
+        ? url.split('/').last
+        : 'response_url';
+    final decoded = switch (request.body) {
+      HttpBodyJson(:final json) => json,
+      _ => null,
+    };
+    return httpTextResponse(
+      request,
+      handle(
+        method,
+        decoded is Map
+            ? Map<String, dynamic>.from(decoded)
+            : const <String, dynamic>{},
+      ),
+    );
+  }
 
   final List<String> calls = [];
   final List<Map<String, dynamic>> posted = [];
@@ -1021,42 +1043,4 @@ class _SlackApiStub {
         return {'ok': true};
     }
   }
-}
-
-class _Adapter implements HttpClientAdapter {
-  _Adapter(this.stub);
-
-  final _SlackApiStub stub;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    final raw = requestStream == null
-        ? const <int>[]
-        : await requestStream.expand((chunk) => chunk).toList();
-    final decoded = raw.isEmpty ? null : jsonDecode(utf8.decode(raw));
-    // A slash-command reply goes to Slack's per-invocation response_url, not to
-    // a named API method.
-    final method = options.path.startsWith('https://slack.com/api/')
-        ? options.path.split('/').last
-        : 'response_url';
-    return ResponseBody.fromString(
-      jsonEncode(
-        stub.handle(
-          method,
-          decoded is Map ? Map<String, dynamic>.from(decoded) : const {},
-        ),
-      ),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

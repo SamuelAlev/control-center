@@ -1,8 +1,8 @@
 ---
 title: Távoli vezérlés és mobil
-description: Hogyan éri el a telefon a szervert egy közvetített, végpontok között lezárt relén keresztül, peer-to-peer kapcsolat helyett, és milyen rétegzett hozzáférési modell tartja szűken ezt az elérést.
+description: Hogyan éri el a telefon a szervert közvetlen vagy közvetített, végponttól végpontig titkosított kapcsolatokon keresztül, és milyen rétegzett hozzáférési modell tartja szűken ezt az elérést.
 slug: hu-HU/kezikonyv/fogalmak/tavoli-vezerles
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 A Control Center asztali alkalmazás, de a munka, amelyet nyomon követ, nem áll
@@ -10,19 +10,19 @@ meg, amikor feláll az íróasztalától. A **távoli vezérlés** a
 **[Remote](https://remote.usectrl.dev/)** társalkalmazással párosítja a
 telefonját a `cc_server` példányával — a Remote a remote.usectrl.dev címen
 érhető el —, így onnan is követheti a flottát: elolvassa az üzeneteket és a
-jegyeket, válaszol egy ügynöknek, triázsolja a hírfolyamát, anélkül hogy a
-szerveren tárolt hanganyag, átirat, forráskód vagy hitelesítő adatok valaha
-elhagynák a szervert.
+jegyeket, válaszol egy ügynöknek, és végponttól végpontig titkosított
+kapcsolaton triázsolja a hírfolyamát. A telefon és a `cc_server` megbízható
+nyílt szövegű végpontok; a relé csak titkosított alkalmazásrekordokat szállít.
 
 Gondoljon rá úgy, mint a munkaasztal túlnyomórészt olvasásra szánt társára. Nem
 a teljes asztali kliens kiváltására készült.
 
-:::note[Két különböző távoli útvonal]
-A telefonos társalkalmazás egy **közvetített WebSocket-relén** keresztül
-párosítódik egy `cc_server` példányhoz, amely végpontok között lezárt JSON-RPC
-kereteket szállít. A teljes **webes build** (és egy távoli szerverre mutató
-asztali kliens) a másik távoli útvonal; ez WebSocketen keresztül hívja a
-`cc_server`-t, és a teljes alkalmazást jeleníti meg. A kettő különbségét lásd a
+:::note[Két különböző távoli kliens]
+A telefonos társalkalmazás és a teljes **webes build** (vagy egy távoli
+szerverre mutató asztali kliens) közvetlenül csatlakozhat a `cc_server`-hez,
+vagy használhat egy közvetített WebSocket-relét. Mindkét útvonal ugyanazt a
+titkosított munkamenetet igényli; a telefon az operációk kisebb halmazát teszi
+elérhetővé, mint a teljes kliens. A kliensek különbségét lásd a
 [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/) oldalon.
 :::
 
@@ -30,8 +30,9 @@ asztali kliens) a másik távoli útvonal; ez WebSocketen keresztül hívja a
 
 A telefon WebSocketen keresztül éri el a `cc_server`-t: vagy közvetlen
 kapcsolaton (loopback, LAN, tailnet vagy `wss://`), vagy egy jelzőközvetítőn
-lévő, meghívóval védett szobán keresztül, amely lezárt kereteket továbbít.
-Peer-to-peer adatcsatorna nincs.
+lévő, meghívóval védett szobán keresztül. Mindkét útvonal hitelesített,
+végponttól végpontig titkosított munkamenetet igényel; a közvetítő csak a
+titkosított rekordokat továbbítja. Peer-to-peer adatcsatorna nincs.
 
 ## Mit tud a telefon
 
@@ -55,23 +56,27 @@ szándék, hanem kikényszerített szabály, arról a
 
 ## Hogyan épül fel a kapcsolat
 
-A kapcsolat egy **közvetített relén** halad át: a szerver tulajdonosként belép
-egy meghívóval védett szobába egy `wss://` közvetítőn, és minden párosított
-kliens — asztali, webes, telefonos — ugyanabba a szobába lép be egy időben
-korlátozott belépési tokennel. Három elem áll össze:
+Amikor a telefon nem éri el közvetlenül a szervert, a kapcsolat egy
+**közvetített relét** használ: a szerver tulajdonosként belép egy meghívóval
+védett szobába egy `wss://` közvetítőn, a párosított kliensek pedig időben
+korlátozott belépési tokenekkel lépnek be. Három elem áll össze:
 
 | Elem | Szerep |
 | --- | --- |
 | **Remote (telefonos alkalmazás)** | A társ-webalkalmazás, amely alapértelmezés szerint a `remote.usectrl.dev` címen fut, de saját szerveren is hosztolható. Böngészőben töltődik be, és a párosítási rekordot IndexedDB-ben tárolja. |
-| **Relé-közvetítő** | Egy állapotmentes `wss://` relé (`cc_signaling_server`), amely N irányú szobákat szolgál ki. **Csak átlátszatlan kereteket** szállít: minden hasznos teher végpontok között le van zárva a telefon és a szerver között, így a közvetítő soha nem lát alkalmazásadatot vagy párosítási titkot, és soha nem értelmezi azt, amit továbbít. |
+| **Relé-közvetítő** | Egy állapotmentes `wss://` relé (`cc_signaling_server`), amely N irányú szobákat szolgál ki. Titkosított rekordokat továbbít a párosítási titok és az alkalmazás nyílt szövege nélkül, de látja az útvonal-azonosítókat, az IP-címeket, a rekordméreteket és az időzítést. |
 | **`cc_server`** | A szoba tulajdonosa. A telefon hívásaira ugyanazon a diszpécseren keresztül válaszol, amelyet minden más kliens is használ. |
 
 A párosítási ajánlat egy **kapcsolatleírót** szállít, amely felsorolja a
 szerverhez vezető összes útvonalat (LAN, tailnet, nyilvános `wss://`, relé),
 valamint az identitás-ujjlenyomatát. A telefon feloldója a legjobban elérhető
-útvonalat választja, és az első csatlakozáskor rögzíti az ujjlenyomatot (TOFU);
-a relé akkor is garantálja a kapcsolatot, ha egyetlen közvetlen útvonal sem
-létezik, miközben soha nem képes elolvasni a forgalmat.
+útvonalat választja. A szerver aláírja a titkosított kézfogást, a kliens pedig
+rögzíti annak ujjlenyomatát. Az első csatlakozáskor ellenőrizze az ujjlenyomatot
+egy QR-kóddal vagy egy másik megbízható forrással szemben: egy első aláírt
+identitás önmagában nem bizonyítja, melyik szervert érte el. A megváltozott
+pin elutasításra kerül, nem pedig csendben ismét megbízhatóvá válik. A relé
+titkosított szöveget szállít, ha nincs közvetlen útvonal, de a kapcsolatot
+továbbra is megszakíthatja vagy késleltetheti.
 
 ## Mi a párosítási csomag
 
@@ -84,26 +89,33 @@ https://<pwa-host>/#<payload>
 ```
 
 A hasznos teher az URL **töredékében** utazik — a `#` utáni részben, amelyet a
-böngészők soha nem küldenek el a szervernek —, így a PWA HTTPS-gazdagépe soha
-nem látja. Mindent tartalmaz, amire a telefonnak szüksége van ahhoz, hogy elérje
-a szervert és igazolja, ki ő: a kapcsolatleírót (minden útvonalat és az
+böngészők nem küldenek el a PWA-gazdagépnek küldött HTTP-kérésben. Mindent
+tartalmaz, amire a telefonnak szüksége van ahhoz, hogy elérje a szervert és
+igazolja, ki ő: a kapcsolatleírót (minden útvonalat és az
 identitás-ujjlenyomatot), egy frissen kiállított eszközazonosítót, egy 32 bájtos
 előre megosztott kulcsot és egy lejárati időbélyeget. A telefon dekódolja,
-helyben tárol egy párosítási rekordot, majd eltávolítja a töredéket, hogy a
-titok kikerüljön az URL-ből.
+helyben tárol egy párosítási rekordot, majd eltávolítja a töredéket az URL-ből.
+A webalkalmazás kódja olvasni tudja a töredéket, ezért használjon megbízható
+alkalmazásgazdagépet, és kezelje a hivatkozást titokként.
 
 Két csomagforma létezik, és ezek **nem felcserélhetők**. Az alkalmazáson belüli
 párosítási panelen kiállított telefonos QR a fenti v2 `PairingPayload`, amely a
-Remote PWA gazdagépére mutat. A `cc_server pair --client-url` egy másik, régebbi
-v1 hivatkozást bocsát ki (`{s, i, k}` — szerver URL, eszközazonosító, kulcs),
-amelyet kizárólag a **webes** klienshez szántak.
+Remote PWA gazdagépére mutat. A `cc_server pair --client-url` egy v1 hivatkozást
+bocsát ki (`{s, i, k}` — szerver URL, eszközazonosító, kulcs), amelyet kizárólag
+a **webes** klienshez szántak. Ezek párosításiadat-formátumok, nem átviteli
+tartalék megoldások: mindkét kliensnek támogatnia kell a jelenlegi titkosított
+munkamenet-protokollt.
 
 Az élettartamukban is különböznek, amit könnyű eltéveszteni:
 
 | Kiállítója | A hitelesítő adat lejárata |
 | --- | --- |
 | Alkalmazáson belüli párosítási panel (`pairing.mint`) | 30 nap, mindig |
-| `cc_server pair` a parancssorból | **Nincs** — a hitelesítő adat nem jár le |
+| `cc_server pair` a parancssorból | Nincs beágyazott lejárat; a szerver házirendjei továbbra is érvényesek |
+
+A szerver szintű maximális eszközkor- és tétlenségi időtúllépés-házirendek
+korábban is elutasíthatják bármelyik hitelesítő adatot. Egyik párosítási
+formátum sem kerüli meg ezeket a házirendeket.
 
 ## A hozzáférési modell
 
@@ -163,13 +175,15 @@ lévő tagságellenőrzés továbbra is érvényes. Ez ugyanaz a
 [munkaterület-elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/) invariáns, amelyet a termék
 többi része is érvényesít.
 
-### 5. Az előre megosztott kulccsal lezárt, végpontok közötti keretek
+### 5. Végponttól végpontig titkosítás közvetlen és relén átvezetett kapcsolatokon
 
-A telefon és a szerver közötti minden keret a párosítási kulccsal van lezárva; a
-belépési token csak bejuttatja a klienst a szobába, semmit nem fejt vissza. A
-közvetítő titkosított szöveget továbbít, és soha nem látja a kulcsot. Egy
-visszavont eszköz azt tapasztalja, hogy a hitelesítő adata már eltűnt, így
-újracsatlakozáskor **zártan hibázik**.
+Minden közvetlen vagy relén átvezetett kliensmunkamenet aláírt Noise-kézfogást
+igényel. A párosítási kulcs ezt a kézfogást hitelesíti; friss efemer kulcsok
+vezetik le a forgalmi kulcsokat, ahelyett hogy a párosítási kulcs zárolná le
+minden keretet. A szerver aláírja az identitását a cserébe, a kliens pedig
+ellenőrzi a mentett ujjlenyomat-pinjét. Nincs nyílt szöveges vagy régebbi
+kliensre vonatkozó tartalék megoldás. Egy relé belépési tokenje csak bejuttatja
+a klienst egy szobába; a rekordokat nem tudja visszafejteni.
 
 Az alkalmazás által kiállított hitelesítő adat 30 napra szól; ezen túl a
 csatlakozási kapu elutasítja, és a telefont újra kell párosítani. A visszavonás
@@ -186,21 +200,26 @@ alkorlát vonatkozik. A keret a **szereplőt illeti meg, nem a munkamenetet**: a
 tud több mozgásteret vásárolni magának további munkamenetek megnyitásával, és
 egy zajos tag sem tudja kizárni a többieket.
 
-### 7. Egy közvetítő, amely semmit nem tud meg
+### 7. Egy közvetítő, amely nem tudja elolvasni az alkalmazás tartalmát
 
-A relé-közvetítő szándékosan buta: szobákat üzemeltet, lezárt kereteket
-továbbít, és nem tart nyilván fiókokat, alkalmazásadatokat vagy kulcsokat. A
-szobák meghívóval védettek és átmenetiek. Az alkalmazásadatok, a hanganyag, az
-átirat, a forráskód és a hitelesítő adatok mind a szerveren maradnak.
+A relé-közvetítő átmeneti, meghívóval védett szobákat üzemeltet, és titkosított
+rekordokat továbbít az alkalmazás nyílt szövege és a párosítási kulcsok nélkül.
+Továbbra is látja az IP-címeket, a szoba- és társazonosítókat, a rekordméreteket,
+az időzítést és a kapcsolat élettartamát, és el is dobhatja vagy késleltetheti a
+forgalmat. A párosított kliens és a kiválasztott `cc_server` a nyílt szövegű
+végpontok; a szerver üzemeltetője és azok a szolgáltatások, amelyeknek tartalmat
+küld, látják azt a tartalmat. Az átvitel közbeni titkosítás nem titkosítja a
+szerveradatokat nyugalmi állapotban.
 
 ## Élő frissítések
 
 A párosítás után a telefon **élő frissítéseket** kap értesítési keretek
 formájában — új ügynöküzenetek, önhöz rendelt jegyek, állapotváltozások —,
-tükrözve az asztali kliens saját értesítéseit. A szerver ezeket a kereteket
-minden csatlakozott munkamenetnek szétküldi, a munkaterület-szűrést pedig a
-kliens alkalmazza, így az, amit lát, arra a munkaterületre korlátozódik, amelyet
-éppen néz.
+tükrözve az asztali kliens saját értesítéseit. A szerver ellenőrzi a
+munkaterület-tagságot, mielőtt továbbítana egy eseményt egy munkamenetnek. A
+kliens ezután ezeket a már engedélyezett eseményeket szűri arra a
+munkaterületre, amelyet éppen néz; ez a megjelenítési szűrő nem a hozzáférési
+határ.
 
 ## Hol található
 
@@ -213,9 +232,9 @@ alkalmazás számára is, nem csak telefonokhoz — a folyamat ugyanaz, csak a d
 link tér el.
 
 ::::note
-A távoli vezérlés szerveroldali, és MCP-n **nem** érhető el. A telefon a relén
-keresztül a szerver saját diszpécserével beszél; nem egy külső szerver
-MCP-kliense.
+A távoli vezérlés szerveroldali, és MCP-n **nem** érhető el. A telefon a
+titkosított közvetlen vagy relén átvezetett kapcsolatán keresztül a szerver saját
+diszpécserével beszél; nem egy külső szerver MCP-kliense.
 ::::
 
 ## Lásd még

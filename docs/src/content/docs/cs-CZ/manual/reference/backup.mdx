@@ -2,7 +2,7 @@
 title: Záloha, export a import
 description: Rozložení snímku, manifest, každá operace zálohy a trasa přenosu a přesně které soubory záloha obsahuje a které ne.
 slug: cs-CZ/prirucka/referencni-prirucka/zaloha
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Všechno, co Control Center umí zkopírovat, předat nebo převzít, a přesný tvar každého
@@ -23,6 +23,12 @@ Existují tři artefakty ve formě kopie databáze, s různým rozsahem a různo
 Všechny se zapisují přes SQLite `VACUUM INTO`, což je bezpečné vůči živé databázi ve WAL:
 vezme čtecí transakci, vytvoří defragmentovanou a transakčně konzistentní
 kopii a server kvůli tomu není třeba zastavovat.
+
+Tyto soubory ani stažené kopie nejsou v Control Center **v klidu šifrované**.
+Přenos šifrovaný od konce ke konci chrání bajty na cestě mezi spárovaným
+klientem a jeho `cc_server`, na přímých spojeních i přes zprostředkované relé.
+Místní úložiště a kopie mimo stroj chraň zvlášť; databázové soubory umí přečíst
+server i každý autorizovaný příjemce.
 
 ## Rozložení snímku
 
@@ -197,10 +203,16 @@ být zastaralý.
 
 ## Trasy přenosu
 
-Každá operace výše mluví v cestách na straně serveru, a to je úplná odpověď jen tehdy, když
-je server tvůj vlastní stroj. Tyhle tři nesou bajty po stejné lince podepsané PSK, kterou
-používá proxy médií a úložiště blobů. Volající podepíše cílový řetězec předem sdíleným klíčem svého zařízení
-a podpis předá jako `s`.
+Operace exportu, importu a výpisu snímků výše mluví v cestách na straně
+serveru, a to je úplná odpověď jen tehdy, když je server tvůj vlastní stroj.
+Tyto cesty ve tvaru HTTP nesou bajty záloh **uvnitř stejného ověřeného,
+od konce ke konci šifrovaného tunelu prostředků** jako ostatní citlivé
+prostředky, ať je spojení RPC přímé, nebo zprostředkované. Nejsou to veřejné
+HTTP koncové body pro přenos souborů: požadavek na některou z nich na veřejném
+posluchači vrátí `426 Upgrade Required`, a to i z loopbacku. V šifrovaném
+tunelu musí zařízení ověřené protokolem Noise odpovídat `d`; handler navíc
+zkontroluje podpis zařízení nad jeho cílovým řetězcem pomocí jeho párovacího
+PSK a roli níže.
 
 | Trasa                   | Metoda | Dotaz           | Podepsaný cíl                    | Vyžaduje                         |
 | ----------------------- | ------ | --------------- | -------------------------------- | -------------------------------- |
@@ -219,6 +231,7 @@ takže trasa nemůže mířit na adresář, který by výpis neukázal.
 | `404`  | Na tomhle hostiteli není port záloh, nebo pojmenovaný snímek či soubor pracovního prostoru neexistuje |
 | `405`  | `/backup/restore` zavolané jinak než `POST`                                             |
 | `413`  | Tělo nahrání přesahuje 8 GiB, podle deklarovaného content-length nebo podle bajtů, které se skutečně přečetly |
+| `426`  | Jakýkoli přímý požadavek na trasu přenosu na veřejném HTTP posluchači; použij šifrovaný tunel prostředků spárovaného klienta |
 | `500`  | Export nebo archiv selhal na straně serveru                                             |
 
 Obě stažení odpovídají `Cache-Control: no-store` a `Accept-Ranges: none`. Každý požadavek
@@ -234,11 +247,13 @@ archiv.
 omezí ho před čtením i během něj a přípravný soubor smaže na **každé** cestě ven,
 včetně odmítnutí.
 
-:::caution[Spojení přes relé nemá HTTP origin]
-Zprostředkované relé vozí rámce RPC, ne přenosy souborů. Všechno, co mluví v
-cestách na straně serveru, přes něj dál funguje. Tři trasy přenosu potřebují přímé
-spojení a rozhraní je vypne s poznámkou, místo aby stahování selhalo uprostřed.
-:::
+::::caution[Přímé spojení i relé používají stejný šifrovaný přenos]
+Relé vozí požadavky na prostředky, streamované odpovědi i bajty nahrání jako
+šifrový text; obsah záloh přečíst neumí. Cesta na straně serveru zůstává cestou
+na hostiteli serveru, ne souborem na relé. Přístup pořád vyžaduje spárované
+zařízení, podpis cíle a příslušnou roli v pracovním prostoru nebo instalaci.
+Ani jeden přenos nešifruje výsledné soubory záloh v klidu.
+::::
 
 ## Cesty a limity
 
@@ -249,7 +264,7 @@ spojení a rozhraní je vypne s poznámkou, místo aby stahování selhalo upros
 | Exporty pracovního prostoru        | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Příprava přenosu                   | `<dataDir>/backups/transfer/` — mezisklad, který uklidí trasa, jež do něj zapisuje |
 | Jméno archivu snímku               | `<snapshot directory name>.zip`                              |
-| Strop nahrání                      | 8 GiB na `POST /backup/restore`                              |
+| Strop nahrání                      | 8 GiB na šifrované nahrání `/backup/restore`                 |
 | Uchování                           | Snímky instalace: ruční smazání. Zálohy pracovního prostoru: týdenní pipeline, výchozí 30 dní |
 
 Adresáře `exports/`, `transfer/` a `workspace-backups/` nejsou

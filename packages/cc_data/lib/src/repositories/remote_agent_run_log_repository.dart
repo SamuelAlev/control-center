@@ -1,4 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// Reads/mutates agent run logs over the RPC client instead of a local
@@ -109,6 +111,92 @@ class RemoteAgentRunLogRepository {
     'agent_run_log.upsert',
     {'workspace_id': ?log.workspaceId, 'log': log.toJson()},
   );
+
+  /// Column-scoped own cost write on the host.
+  Future<void> updateCost(
+    String workspaceId,
+    String runId,
+    RunCost cost,
+  ) async {
+    await _client.call('agent_run_log.updateCost', {
+      'workspace_id': workspaceId,
+      'run_id': runId,
+      'cost': {
+        'input_tokens': cost.inputTokens,
+        'output_tokens': cost.outputTokens,
+        'thought_tokens': cost.thoughtTokens,
+        'cached_read_tokens': cost.cachedReadTokens,
+        'cached_write_tokens': cost.cachedWriteTokens,
+        'estimated_cost_cents': cost.estimatedCostCents,
+        'cost_micros': cost.costMicros,
+        'cost_basis': cost.costBasis.name,
+        'duration_ms': cost.durationMs,
+        'time_to_first_token_ms': cost.timeToFirstTokenMs,
+      },
+    });
+  }
+
+  /// Atomic host-side descendant cost increment.
+  Future<void> addChildCostMicros(
+    String workspaceId,
+    String runId,
+    int amountMicros,
+  ) async {
+    await _client.call('agent_run_log.addChildCostMicros', {
+      'workspace_id': workspaceId,
+      'run_id': runId,
+      'amount_micros': amountMicros,
+    });
+  }
+
+  /// Column-scoped host-side runtime metadata update.
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async {
+    final result = await _client.call('agent_run_log.updateRuntime', {
+      'workspace_id': workspaceId,
+      'run_id': runId,
+      if (pid != null) 'pid': pid,
+      if (markRunning) 'mark_running': true,
+      if (logPath != null) 'log_path': logPath,
+      if (contextSnapshotJson != null)
+        'context_snapshot_json': contextSnapshotJson,
+      if (lastOutputAt != null)
+        'last_output_at': lastOutputAt.toIso8601String(),
+      if (liveness != null) 'liveness': liveness.name,
+      if (errorFamily != null) 'error_family': errorFamily.name,
+      if (summary != null) 'summary': summary,
+      if (modelId != null) 'model_id': modelId,
+      if (effort != null) 'effort': effort,
+      if (taskFamily != null) 'task_family': taskFamily,
+    });
+    return result['updated'] == true;
+  }
+
+  /// Conditional host-side partial terminal update.
+  Future<bool> completeIfActive(
+    AgentRunLogDto completed, {
+    required bool writeCost,
+  }) async {
+    final result = await _client.call('agent_run_log.completeIfActive', {
+      'workspace_id': ?completed.workspaceId,
+      'log': completed.toJson(),
+      'write_cost': writeCost,
+    });
+    return result['completed'] == true;
+  }
 
   /// Live run logs for [agentId] in [workspaceId] — a fresh snapshot on every
   /// change, newest first.

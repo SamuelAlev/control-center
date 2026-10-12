@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:path/path.dart' as p;
 
 /// Opt-in on-disk harness config from `.agents/harness.json` (working tree or
 /// agent config dir). Absent file → defaults (stream rules, advisor, shell hooks
-/// off). Keys: `streamRules`, `advisor`, `hooks`.
+/// off). Also accepts `compaction` and `toolExecution` experiments; defaults
+/// preserve text compaction and post-response tool execution.
 class HarnessRunConfig {
   /// Creates a [HarnessRunConfig].
   const HarnessRunConfig({
@@ -15,13 +17,17 @@ class HarnessRunConfig {
     this.advisorModel,
     this.advisorEveryTurns = 3,
     this.advisorInstructions,
+    this.compaction = CompactionConfig.defaults,
+    this.snapshotCompaction = false,
+    this.maxParallelToolCalls = 4,
+    this.overlapReadOnlyTools = false,
     this.hookSessionStart,
     this.hookPreTool,
     this.hookPostTool,
     this.droppedHookBase,
   });
 
-  /// The empty config (all features off).
+  /// Baseline configuration; experimental features are off.
   static const HarnessRunConfig none = HarnessRunConfig();
 
   /// Course-correction rules.
@@ -39,6 +45,18 @@ class HarnessRunConfig {
 
   /// Optional extra instructions appended to the advisor's system prompt.
   final String? advisorInstructions;
+
+  /// Text observation and summary policy.
+  final CompactionConfig compaction;
+
+  /// Explicit screenshot-compaction experiment. Never enabled by overflow.
+  final bool snapshotCompaction;
+
+  /// Bounded concurrency within independent tool regions.
+  final int maxParallelToolCalls;
+
+  /// Opt-in overlap of audited read-only tools with model streaming.
+  final bool overlapReadOnlyTools;
 
   /// Absolute path to the session-start hook script, if configured.
   final String? hookSessionStart;
@@ -116,6 +134,10 @@ class HarnessRunConfig {
         advisorModel: advisorModel,
         advisorEveryTurns: advisorEveryTurns,
         advisorInstructions: advisorInstructions,
+        compaction: compaction,
+        snapshotCompaction: snapshotCompaction,
+        maxParallelToolCalls: maxParallelToolCalls,
+        overlapReadOnlyTools: overlapReadOnlyTools,
         droppedHookBase: droppedHookBase,
       );
 
@@ -157,6 +179,15 @@ class HarnessRunConfig {
         ? advisorInstructionsRaw.trim()
         : null;
 
+    final compaction = json['compaction'];
+    final policy = switch (compaction is Map ? compaction['policy'] : null) {
+      'masking' => CompactionPolicy.masking,
+      'hybrid' => CompactionPolicy.hybrid,
+      _ => CompactionPolicy.current,
+    };
+    final execution = json['toolExecution'];
+    final parallel = execution is Map ? execution['maxParallel'] : null;
+
     final hooks = json['hooks'];
     String? resolveHook(String key) {
       if (hooks is! Map) {
@@ -175,6 +206,11 @@ class HarnessRunConfig {
       advisorModel: advisorModel,
       advisorEveryTurns: advisorEveryTurns,
       advisorInstructions: advisorInstructions,
+      compaction: CompactionConfig.defaults.copyWith(policy: policy),
+      snapshotCompaction: compaction is Map && compaction['snapshots'] == true,
+      maxParallelToolCalls: parallel is int && parallel > 0 ? parallel : 4,
+      overlapReadOnlyTools:
+          execution is Map && execution['overlapReadOnly'] == true,
       hookSessionStart: resolveHook('sessionStart'),
       hookPreTool: resolveHook('preTool'),
       hookPostTool: resolveHook('postTool'),

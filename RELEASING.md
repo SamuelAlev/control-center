@@ -2,6 +2,8 @@
 
 [`.github/workflows/release.yml`](.github/workflows/release.yml) builds macOS (Apple Silicon), Windows (x64 and native ARM64) and Linux (x86_64) in parallel, then creates a **draft** GitHub Release. Review it before publishing; draft assets are invisible to the updater feeds.
 
+CI and release workflows use GitHub's [native background steps](https://github.blog/changelog/2026-06-25-actions-steps-can-now-be-run-in-parallel/) and [self-repository action references](https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax/).
+
 ## Cut a release
 
 1. Optionally update `version:` in `pubspec.yaml` (the build overrides the in-app version from the tag).
@@ -25,7 +27,49 @@
 
 **Native builds are mandatory.** All required FFI binaries are built/staged for both the desktop and server; `scripts/release/verify_natives.sh` and `cc_server_package.sh` reject incomplete artifacts, and `cc_server` refuses to boot without required libraries. macOS/Linux use copy-on-write `rift`; provision fails with `cow_unavailable` where CoW is unavailable, rather than writing to the source checkout via a fallback. Windows uses plain `git worktree`. `cc_inference` statically links one ONNX Runtime, avoiding a separately staged `onnxruntime.dll`; its sherpa-onnx archive is checksum-pinned under `scripts/lib/native_pins.env` and downloaded by `scripts/natives/build_inference.sh`, not Cargo. All external native source hosts must be allowed through the Linux build's blocking `harden-runner` policy (`extra-endpoints` on `.github/actions/setup-flutter/action.yml`). Only on-device models are fetched at runtime; semantic search remains FTS-only until its embedding model is available.
 
+`rhttp` is built from a checksum-pinned pub.dev archive by `scripts/natives/build_rhttp.sh`, independently of Flutter plugin builds. Update its Dart pin, headless patch and native archive version/checksum together, retain `pub.dev:443` in the native-build egress allowlist, and include `librhttp.dylib`, `librhttp.so` or `rhttp.dll` in the corresponding server bundle.
+
 **Linux runs on the host's glibc.** The AppImage and tarball are built on `ubuntu-22.04`, the oldest supported Ubuntu LTS, because [AppImageHub](https://appimage.github.io) only lists an AppImage that starts there with stock packages (its test runs it offline under Xvfb on that runner). `scripts/lib/linux_desktop.sh` records that floor (glibc 2.35, `GLIBCXX_3.4.30`) and what the host provides: GTK 3 and its closure, libcurl (a bundled copy would carry Debian's CA path) and libpulse. `bundle_linux_deps.sh` copies only the libraries listed there (today libnotify and libsecret), with their Debian copyright notices, and refuses anything else a new plugin links until it is reviewed. `lint_appdir.sh` fails the release on any ELF past the floor or with an unresolvable library. `natives.yml` and the `e2e` job run on the same runner, and the natives cache key carries the runner image, so a release never restores natives linked against a newer glibc. Media playback uses the system's libmpv, which a stock desktop lacks, so without it the desktop starts with playback hidden rather than failing to boot.
+
+## Encrypted client resources
+
+First-party desktop, web and phone sessions use the shared signed-identity Noise
+protocol for RPC, terminal traffic and streamed resources. Publish matching
+client, server and relay protocol revisions. The desktop embeds its server;
+standalone server and relay images are released alongside the client bundles.
+
+Web bundles include the canonical `cc_resource_bridge.js`,
+`cc_resource_worker.js` and `cc_resource_ws_shim.js` from `web/`.
+`scripts/build_web.sh`, hosted deployment workflows, the CI web builds and the
+release `containers` job stage these assets automatically. For a manual build,
+run the staging command from the repository root after compilation:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+node tool/stage_resource_assets.mjs apps/cc_remote/build/web
+```
+
+WebAssembly builds use `--enable-wasm-deferred-loading` with `--wasm`.
+This keeps the existing deferred syntax-grammar packs in separate modules,
+while Flutter generates their loader URLs and integrity hashes. The same
+24 MiB per-asset budget applies to the main module and every deferred module.
+
+The trusted browser editor runs on the app origin. Its Service Worker carries
+editor HTTP/WebSockets through the encrypted session to the server-owned
+code-server backend. Serve web clients over HTTPS or secure loopback, retain
+the shipped CSP/COEP headers, and revalidate the resource entry scripts.
+The Cloudflare and nginx configurations provide those headers and cache rules.
+
+The `browser-resources` CI job is required by the `build` gate and exercises
+capability routing, editor lifetime, worker rebind and streaming behavior:
+
+```bash
+node --test --test-concurrency=2 tool/resource_worker.test.mjs tool/resource_bridge.test.mjs
+```
+
+Before publishing, exercise pairing, terminal input/output, a resource transfer,
+and an editor save against the packaged server. Verify that sensitive public
+HTTP requests return `426` while authenticated encrypted transfers succeed.
 
 ## First-run trust
 
@@ -158,6 +202,25 @@ bash scripts/release/builtin_credentials.sh inject
 bash scripts/release/builtin_credentials.sh restore
 ```
 
+## Crash symbols and source maps
+
+`scripts/release/sentry_upload.sh` uses the checksum-pinned official `sentry-cli`
+from `scripts/lib/native_pins.env`. Desktop release jobs invoke it after the
+Flutter build and before packaging. It derives the release identity from the
+built artifact, uploads native debug files, and accepts `--split-debug-info`
+for Dart symbol files. Source-bundle uploads are not enabled.
+
+Configure the repository's `SENTRY_AUTH_TOKEN` Actions secret to upload to
+organization `parced`, project `control-center`. Pass the token through the
+environment, never command-line arguments or committed files. CI explicitly
+allows missing credentials: it emits a warning and uploads nothing. With a token
+configured, an upload failure fails the build. Direct script invocations require
+credentials unless `--allow-missing-credentials` is supplied.
+
+Web source maps are supported by `--platform web --web-dir build/web`; this
+injects matching debug IDs into JavaScript/maps before uploading. The current
+web entrypoints do not initialize Sentry, so web uploads are not enabled in CI.
+
 ## Third-party licenses
 
 Every artifact must carry `LICENSE` and generated `THIRD-PARTY-LICENSES.txt`: macOS under `.app/Contents/Resources/` **before signing**, Linux at bundle root, Windows beside executable, standalone archives at root. [`scripts/lib/third_party.sh`](scripts/lib/third_party.sh) defines components; [`third_party/licenses/`](third_party/licenses/) holds checked-in texts; `scripts/release/gen_third_party_licenses.sh` assembles notices without network access.
@@ -182,6 +245,7 @@ The workflow delegates to locally runnable scripts. Keep **every** `scripts/rele
 | `scripts/release/dry_run.sh` | Full local pipeline for one platform |
 | `scripts/release/verify_natives.sh` | Required-native bundle check |
 | `scripts/release/builtin_credentials.sh` | Inject/restore optional built-in credentials |
+| `scripts/release/sentry_upload.sh` | Pinned Sentry CLI uploads for native debug files and web source maps |
 | `scripts/release/fetch_code_server.sh` | Fetch pinned code-server |
 | `scripts/release/macos_package.sh`, `scripts/release/linux_package.sh`, `scripts/release/windows_package.sh` | Desktop staging, validation and packaging |
 | `scripts/release/bundle_linux_deps.sh`, `scripts/release/appimage_excludelist` | Copy the reviewed libraries a stock Linux desktop may lack, fix plugin RUNPATHs, append their licenses |

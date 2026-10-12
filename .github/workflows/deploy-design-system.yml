@@ -63,7 +63,7 @@ jobs:
 
       - name: Build web (SkWasm with CanvasKit fallback)
         working-directory: apps/cc_gallery
-        run: flutter build web --release --wasm
+        run: flutter build web --release --wasm --enable-wasm-deferred-loading
 
       # Cloudflare's per-asset cap is 25 MiB.
       - name: Check asset size budget

@@ -39,12 +39,13 @@ Future<void> runAppWithSentry(Widget Function() root) async {
     // Adds request headers and IP for users, for more info visit:
     // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
     options.sendDefaultPii = true;
-    // Set tracesSampleRate to 1.0 to capture 100% of spans for tracing.
-    // We recommend adjusting this value in production.
-    options.tracesSampleRate = 1.0;
-    // Configure Session Replay
-    options.replay.sessionSampleRate = 0.1;
-    options.replay.onErrorSampleRate = 1.0;
+    // Sample performance diagnostics without sampling away crash reports.
+    options.tracesSampleRate = 0.1;
+    options.replay.sessionSampleRate = 0.01;
+    options.replay.onErrorSampleRate = 0.1;
+    // Error replay still buffers before an error; lower sampling alone does
+    // not eliminate that capture cost. Low quality reduces capture/encode work.
+    options.replay.quality = SentryReplayQuality.low;
   }, appRunner: () => runWidget(root()));
 }
 

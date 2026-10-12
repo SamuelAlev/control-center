@@ -2,7 +2,7 @@
 title: Implantação e clientes
 description: Como a arquitetura de cliente leve do Control Center separa um servidor headless de seus clientes de desktop, web e celular.
 slug: pt-BR/manual/conceitos/implantacao
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 O Control Center não é um único programa. É uma **arquitetura de cliente leve**: um servidor headless que detém seus dados e um conjunto de clientes que renderizam uma interface por meio de uma única conexão RPC com ele. Entender essa divisão explica por que algumas coisas rodam onde rodam e o que cada cliente consegue ou não alcançar.
@@ -11,7 +11,7 @@ O Control Center não é um único programa. É uma **arquitetura de cliente lev
 
 Um processo chamado **`cc_server`** detém os bancos de dados — um pequeno `global.db` para o estado de todo o servidor, mais um arquivo SQLite por [espaço de trabalho](/pt-BR/manual/conceitos/espacos-de-trabalho/), abertos sob demanda — e executa o trabalho de longa duração: os mecanismos de pipeline, os reconciliadores, a superfície de ferramentas MCP e o ouvinte de orquestração. Tudo o que precisa sobreviver ao fechamento de uma janela, ou que dois clientes devem ver de forma idêntica, fica ali.
 
-Nenhum cliente abre um arquivo de banco de dados por conta própria. Em vez disso, cada cliente mantém um único **`RemoteRpcClient`** e emite, por meio dele, as operações de repositório e as assinaturas. O servidor autentica a conexão com base em uma chave pré-compartilhada de dispositivo emparelhado — e depois deixa de se importar com a conexão. **Uma sessão não está vinculada a um espaço de trabalho.** O despachante não mantém estado: toda chamada com escopo de espaço de trabalho carrega o próprio `workspace_id` em seus argumentos, e uma chamada que o omita é recusada.
+Nenhum cliente abre um arquivo de banco de dados por conta própria. Em vez disso, cada cliente mantém um único **`RemoteRpcClient`** e emite, por meio dele, as operações de repositório e as assinaturas. Sessões diretas e intermediadas exigem um handshake Noise assinado: a chave pré-compartilhada do dispositivo emparelhado autentica a troca, enquanto chaves de tráfego novas cifram cada sessão. **Uma sessão não está vinculada a um espaço de trabalho.** O despachante não mantém estado: toda chamada com escopo de espaço de trabalho carrega o próprio `workspace_id` em seus argumentos, e uma chamada que o omita é recusada.
 
 Isso é intencional, e é o que permite que dois clientes em um mesmo servidor fiquem em espaços de trabalho diferentes sem um “espaço de trabalho atual” mantido pelo servidor sobre o qual possam discordar. Em vez disso, o isolamento é aplicado por chamada, em quatro etapas:
 
@@ -47,19 +47,19 @@ Nos dois casos, o cliente RPC resultante substitui o provedor de dados do aplica
 
 ### Cliente web
 
-A build web é o mesmo aplicativo Flutter compilado para rodar em um navegador, hospedado em [app.usectrl.dev](https://app.usectrl.dev), então não há nada para instalar. Um navegador não pode criar um subprocesso, então o cliente web é **sempre** remoto: ele disca para um `cc_server` por `wss://` e renderiza a interface de desktop completa. Depois de conectado, ele mostra as mesmas telas contra a mesma frota, porque é o mesmo código sobre o mesmo RPC. As lacunas são o punhado de lugares que exigem uma capacidade nativa que um navegador não tem — a camada de qualidade da captura de reunião abaixo é a principal, e as notificações do sistema operacional são outra.
+A build web é o mesmo aplicativo Flutter compilado para rodar em um navegador, hospedado em [app.usectrl.dev](https://app.usectrl.dev), então não há nada para instalar. Um navegador não pode criar um subprocesso, então o cliente web é **sempre** remoto: ele disca para um `cc_server` por uma sessão WebSocket cifrada e renderiza a interface de desktop completa. Depois de conectado, ele mostra as mesmas telas contra a mesma frota, porque usa o mesmo código sobre o mesmo RPC. As lacunas são o punhado de lugares que exigem uma capacidade nativa que um navegador não tem — a camada de qualidade da captura de reunião abaixo é a principal, e as notificações do sistema operacional são outra.
 
 É por isso que “sem download” e “sem servidor” são afirmações diferentes. O cliente web elimina a instalação; ele não elimina o servidor. Aquilo a que ele se conecta pode ser um `cc_server` no mesmo notebook — `ws://localhost:9030`, que dispensa certificado porque os navegadores consideram o loopback confiável — ou um em outra máquina, que precisa ser acessível por `wss://` com um certificado em que o navegador confie. O `cc_server` se recusa a vincular um endereço que não seja de loopback sem TLS, então um servidor remoto significa ou um certificado próprio, ou um proxy que termina o TLS, ou um túnel ou VPN que forneça um.
 
 O bundle em si é hospedado separadamente do servidor com que conversa. Um `cc_server` autônomo serve o endpoint RPC, a superfície MCP e seus proxies, mas **não** um bundle web — o caminho de arquivos estáticos existe no servidor, mas nenhuma raiz web está configurada no binário autônomo, então ele não tem nada a servir em `/`. A imagem de contêiner `cc-webapp` publicada é o que hospeda o bundle, e `scripts/build_web.sh` é o que o compila. Um servidor só aceita origens de navegador que estejam em sua lista `--allowed-origins`, cujo padrão é `https://app.usectrl.dev`, então hospedar o bundle por conta própria significa adicionar a origem dele.
 
-Mídias (avatares, imagens do feed, capturas de tela de PR) passam pelo endpoint de proxy do servidor em vez de acessar diretamente os hosts upstream, então um navegador nunca busca uma origem arbitrária. O cliente implantado aplica uma Content-Security Policy por requisição a partir de um cookie não sensível, de modo que apenas a origem do servidor conectado seja permitida.
+Mídias (avatares, imagens do feed, capturas de tela de PR), uploads, backups e o HTTP/WebSocket do editor incorporado trafegam pelo túnel de recursos cifrado, não por rotas HTTP públicas legíveis; caminhos assinados ainda exigem autorização. O frontend do editor confiável roda na origem própria do app web. O seu service worker encaminha as requisições do editor pela sessão cifrada existente até o `cc_server`, que é dono dos arquivos e do backend code-server. O navegador precisa de HTTPS ou de um contexto de loopback seguro para os service workers. Clientes nativos usam uma fachada de loopback com escopo de capacidade.
 
 ### Companheiro de celular (cc_remote)
 
-O aplicativo **Remote** é um cliente separado e mais leve — uma PWA web em Flutter em [remote.usectrl.dev](https://remote.usectrl.dev/). Ele é intencionalmente **não** o aplicativo completo. Ele se emparelha por um relay WebSocket intermediado e selado de ponta a ponta e fala uma fatia predominantemente de leitura da superfície de ferramentas: ler tickets, mensagens e o feed de notícias; enviar uma resposta ou atualizar um ticket.
+O aplicativo **Remote** é um cliente separado e mais leve — uma PWA web em Flutter em [remote.usectrl.dev](https://remote.usectrl.dev/). Ele é intencionalmente **não** o aplicativo completo. Ele se conecta diretamente quando possível ou por um relay intermediado; os dois caminhos exigem criptografia de ponta a ponta. Fala uma fatia predominantemente de leitura da superfície de ferramentas: ler tickets, mensagens e o feed de notícias; enviar uma resposta ou atualizar um ticket.
 
-Um celular é um **principal com menos privilégios** do que um agente local. Uma política de ferramentas de negação por padrão, uma chave pré-compartilhada que sela cada frame, uma capacidade de sessão que exclui operações privilegiadas (o emparelhamento, por exemplo) de um cliente companheiro, as verificações de papel e de autorização por repositório a cada chamada descritas acima e a limitação de taxa impedem que um emparelhamento aprovado (ou vazado) se torne controle remoto total. Consulte [Controle remoto e mobile](/pt-BR/manual/conceitos/controle-remoto/) para ver o modelo de segurança completo.
+Um celular é um **principal com menos privilégios** do que um agente local. Uma política de ferramentas de negação por padrão, uma capacidade de sessão que exclui operações privilegiadas (o emparelhamento, por exemplo) de um cliente companheiro, as verificações de papel e de autorização por repositório a cada chamada descritas acima e a limitação de taxa impedem que um emparelhamento aprovado (ou vazado) se torne controle remoto total. A criptografia do transporte não concede permissões. Consulte [Controle remoto e mobile](/pt-BR/manual/conceitos/controle-remoto/) para ver o modelo de segurança completo.
 
 ### Clientes MCP
 
@@ -96,14 +96,16 @@ O cliente web também grava, algo que o formato da tabela pode obscurecer: ele c
 
 ## Emparelhamento e confiança
 
-Todo cliente prova quem é com uma **chave pré-compartilhada** provisionada uma única vez:
+Todo cliente usa uma **chave pré-compartilhada** provisionada uma única vez para autenticar o seu handshake Noise assinado com o `cc_server`, inclusive por loopback e pelo relay:
 
 - O desktop em modo local gera uma chave nova a cada inicialização e a entrega ao servidor iniciado por meio do ambiente, de modo que nenhum segredo é persistido no desktop.
-- Clientes remotos (desktop remoto, web, celular) usam uma chave emitida pelo comando `pair` do servidor e armazenada no cofre de chaves do sistema operacional (ou, no celular, localmente).
+- Clientes remotos (desktop remoto, web, celular) usam uma chave emitida pelo fluxo de emparelhamento do servidor ou pelo comando `pair`. Clientes nativos usam o cofre de chaves do sistema operacional; clientes de navegador guardam o emparelhamento localmente.
+
+O cliente verifica a identidade assinada do servidor contra o pin de impressão digital salvo. Na primeira conexão, verifique essa impressão digital por um QR confiável ou outro canal confiável: um primeiro contato assinado, por si só, não consegue autenticar quem forneceu a chave. Se a identidade mudar, o cliente falha fechado; emparelhe de novo por um canal confiável em vez de ignorar a divergência. Clientes mais antigos e RPC em texto claro não conseguem conectar. O TLS continua necessário para origens de navegador, bootstrap e metadados públicos; `--insecure` afeta o listener externo do servidor, não a sessão cifrada obrigatória.
 
 A revogação é **imediata**, não preguiçosa. O servidor observa sua tabela de dispositivos emparelhados e derruba, em segundos, qualquer sessão aberta cujo dispositivo tenha saído do conjunto ativo — tanto no caminho direto por WebSocket quanto no caminho do relay. Você não precisa esperar o dispositivo se reconectar para cortá-la.
 
-A chave nunca trafega por uma URL que um host estático possa ver. Quando ela chega por link — no celular ou no navegador —, viaja no **fragmento da URL**, a parte depois de `#`, que o navegador nunca envia ao servidor que hospeda a página. Esse é o invariante que vale a pena lembrar, e ele se aplica aos dois casos. O cliente web tem dois outros pontos de entrada: o formulário de conexão, onde você cola um servidor e uma chave diretamente, e um código de convite, que ele troca por uma credencial emitida exclusivamente para aquele navegador.
+Quando a chave chega por link — no celular ou no navegador —, ela viaja no **fragmento da URL**, a parte depois de `#` que os navegadores não enviam na requisição ao host da página. O JavaScript da página ainda consegue lê-lo, então confie nesse host e mantenha o link em segredo. O cliente web também tem um formulário de conexão, onde você cola um servidor e uma chave diretamente, e um código de convite, que ele troca por uma credencial emitida exclusivamente para aquele navegador.
 
 ## Conceitos relacionados
 

@@ -2,7 +2,7 @@
 title: Spazi di lavoro e isolamento
 description: Perché uno spazio di lavoro è un confine di tenant rigido, come la separazione dei database rende strutturale quel confine e cosa lo attraversa deliberatamente.
 slug: it-IT/manuale/concetti/spazi-di-lavoro
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Che cos'è uno spazio di lavoro?
@@ -120,13 +120,17 @@ Ciò che nessuna di esse trasporta è il resto della directory dello spazio di l
 
 ## Spostare un backup tra il server e il tuo dispositivo
 
-Tutte le operazioni precedenti parlano in termini di percorsi sul **server**, il che è una risposta completa solo quando il server è la tua macchina. Tre route HTTP firmate — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/it-IT/manuale/riferimento/backup/#transfer-routes) — trasportano i byte per ogni altra topologia, sulla stessa corsia autenticata già usata dal proxy dei media e dall'archivio delle immagini. Nella pagina questo si traduce in un pulsante **Scarica** accanto a ogni esportazione e a ogni istantanea (scegli tu dove finisce) e in **Scegli un file e caricalo** per ripristinare da un file che si trova sulla macchina che stai usando. Il caricamento è quello che funziona quando il server non è la tua macchina: `workspace.import` richiede che il file sia già sull'host, ed è così che ci arriva.
+Tutte le operazioni precedenti parlano in termini di percorsi sul **server**, il che è una risposta completa solo quando il server è la tua macchina. Tre route di trasferimento firmate — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/it-IT/manuale/riferimento/backup/#transfer-routes) — trasportano i byte per ogni altra topologia attraverso il tunnel delle risorse autenticato e cifrato, su connessioni dirette e tramite il relay. Le route HTTP pubbliche non servono byte di backup leggibili, e i percorsi firmati richiedono comunque l'autorizzazione. Nella pagina questo si traduce in un pulsante **Scarica** accanto a ogni esportazione e a ogni istantanea (scegli tu dove finisce) e in **Scegli un file e caricalo** per ripristinare da un file che si trova sulla macchina che stai usando. Il caricamento funziona quando il server non è la tua macchina: `workspace.import` richiede che il file sia già sull'host, ed è così che ci arriva.
 
 Vale la pena conoscere tre proprietà:
 
 - **Un download conia una copia nuova e il server non ne conserva nulla.** Scaricare non significa «recuperare il file creato dal pulsante di esportazione» — esporta di nuovo, trasmette quella copia in streaming e la elimina. La risposta è `no-store` con `Accept-Ranges: none` per lo stesso motivo: un intervallo ripreso unirebbe due esportazioni diverse in un unico file che sembra valido e non lo è.
 - **Un caricamento viene trasmesso in streaming su disco, mai bufferizzato**, su entrambe le estremità, e la copia in staging viene eliminata su ogni percorso in uscita — compreso un rifiuto. Un database di spazio di lavoro non è uno screenshot.
-- **Una connessione in relay non ha un'origine HTTP**, quindi i controlli di trasferimento sono disabilitati lì con una nota che ne spiega il motivo. Tutto ciò che parla in termini di percorsi lato server continua a funzionare sulla connessione relay; solo le corsie dei byte richiedono una connessione diretta.
+- **Il trasferimento funziona anche tramite relay.** Download e caricamenti usano lo stesso tunnel delle risorse cifrato delle connessioni dirette; non serve un'origine HTTP diretta.
+
+La crittografia protegge il trasferimento in transito, non il database lato
+server, la directory delle istantanee o una copia scaricata a riposo. L'operatore
+del server può accedere ai dati conservati su quell'host.
 
 :::note[Quali percorsi sono di chi]
 I percorsi che la pagina *mostra* — la directory dell'istantanea, il file scritto da un'esportazione, l'origine letta da un'importazione — sono sulla macchina che esegue `cc_server`. Il percorso indicato da un **download** è sulla macchina su cui sei seduto. Questa distinzione è il motivo per cui esistono entrambi: il primo è ciò di cui ha bisogno uno script di manutenzione o una sessione ssh, il secondo è ciò di cui ha bisogno una persona che raccoglie un backup.

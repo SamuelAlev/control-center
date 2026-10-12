@@ -80,6 +80,7 @@ class _Client {
 
   void send(Map<String, dynamic> frame) => _socket.add(jsonEncode(frame));
   void sendRaw(String text) => _socket.add(text);
+  void sendBinary(List<int> bytes) => _socket.add(bytes);
 
   Future<void> get closed => _closed.future;
 
@@ -132,7 +133,9 @@ Future<_Client> _joinOwner(
     'from': from,
     'owner': true,
     'ownerToken': ownerToken,
-    'admit': admit ?? [_hash(_tokenA), _hash(_tokenB), _hash(_tokenC), _hash(_tokenPhone)],
+    'admit':
+        admit ??
+        [_hash(_tokenA), _hash(_tokenB), _hash(_tokenC), _hash(_tokenPhone)],
   });
   await c.next((m) => m['type'] == 'joined');
   return c;
@@ -159,51 +162,48 @@ void main() {
   });
 
   group('peer-id eviction', () {
-    test(
-      'an admitted peer cannot evict another member on a loop',
-      () async {
-        // Peer ids ride in `peer-joined` frames, so every admitted client
-        // knows them. Rejoining as an existing id evicts the incumbent — the
-        // intended RECONNECT behaviour — but unbounded that is a free in-room
-        // denial of service against any member.
-        handle = await serveSignaling(host: 'localhost', port: 0);
-        final server = await _joinOwner(handle.port);
-        addTearDown(server.close);
-        var victim = await _joinClient(handle.port, from: 'A', token: _tokenA);
+    test('an admitted peer cannot evict another member on a loop', () async {
+      // Peer ids ride in `peer-joined` frames, so every admitted client
+      // knows them. Rejoining as an existing id evicts the incumbent — the
+      // intended RECONNECT behaviour — but unbounded that is a free in-room
+      // denial of service against any member.
+      handle = await serveSignaling(host: 'localhost', port: 0);
+      final server = await _joinOwner(handle.port);
+      addTearDown(server.close);
+      var victim = await _joinClient(handle.port, from: 'A', token: _tokenA);
 
-        // Three collisions are permitted (a real reconnect storm).
-        for (var i = 0; i < 3; i++) {
-          final impostor = await _Client.connect(handle.port);
-          impostor.send({
-            'type': 'join',
-            'room': 'alpha',
-            'from': 'A',
-            'token': _tokenA,
-          });
-          await impostor.next((m) => m['type'] == 'joined');
-          await victim.closed; // The incumbent was evicted.
-          victim = impostor;
-        }
-
-        // The fourth is refused, and the incumbent KEEPS its socket.
-        final blocked = await _Client.connect(handle.port);
-        blocked.send({
+      // Three collisions are permitted (a real reconnect storm).
+      for (var i = 0; i < 3; i++) {
+        final impostor = await _Client.connect(handle.port);
+        impostor.send({
           'type': 'join',
           'room': 'alpha',
           'from': 'A',
           'token': _tokenA,
         });
-        final err = await blocked.next((m) => m['type'] == 'error');
-        expect(err['error'], 'not admitted');
-        await blocked.closed;
-        expect(
-          victim.isClosed,
-          isFalse,
-          reason: 'the incumbent must survive a refused collision',
-        );
-        await victim.close();
-      },
-    );
+        await impostor.next((m) => m['type'] == 'joined');
+        await victim.closed; // The incumbent was evicted.
+        victim = impostor;
+      }
+
+      // The fourth is refused, and the incumbent KEEPS its socket.
+      final blocked = await _Client.connect(handle.port);
+      blocked.send({
+        'type': 'join',
+        'room': 'alpha',
+        'from': 'A',
+        'token': _tokenA,
+      });
+      final err = await blocked.next((m) => m['type'] == 'error');
+      expect(err['error'], 'not admitted');
+      await blocked.closed;
+      expect(
+        victim.isClosed,
+        isFalse,
+        reason: 'the incumbent must survive a refused collision',
+      );
+      await victim.close();
+    });
   });
 
   group('admission gating', () {
@@ -239,70 +239,64 @@ void main() {
       await server.close();
     });
 
+    test('a peer with a valid room id but no admission token is refused before '
+        'any frame is relayed (N-way denial)', () async {
+      handle = await serveSignaling(host: 'localhost', port: 0);
+      final server = await _joinOwner(handle.port);
+      final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+
+      // Attacker knows the room id but holds no invite-derived token.
+      final attacker = await _Client.connect(handle.port);
+      attacker.send({'type': 'join', 'room': 'alpha', 'from': 'X'});
+      final err = await attacker.next((m) => m['type'] == 'error');
+      expect(err['error'], 'not admitted');
+      await attacker.closed;
+
+      // A wrong token is refused identically.
+      final attacker2 = await _Client.connect(handle.port);
+      attacker2.send({
+        'type': 'join',
+        'room': 'alpha',
+        'from': 'X2',
+        'token': 'guessed-token',
+      });
+      final err2 = await attacker2.next((m) => m['type'] == 'error');
+      expect(err2['error'], 'not admitted');
+      await attacker2.closed;
+
+      // Frames relayed between legitimate members never reached attackers.
+      server.send({
+        'type': 'signal',
+        'room': 'alpha',
+        'from': 'server',
+        'to': 'A',
+        'kind': 'rpc',
+        'payload': {'e': 'ciphertext'},
+      });
+      await a.next((m) => m['type'] == 'signal');
+      expect(attacker.received.where((m) => m['type'] == 'signal'), isEmpty);
+      expect(attacker2.received.where((m) => m['type'] == 'signal'), isEmpty);
+
+      await a.close();
+      await server.close();
+    });
+
     test(
-      'a peer with a valid room id but no admission token is refused before '
-      'any frame is relayed (N-way denial)',
+      'a join to a nonexistent room gets the same uniform refusal',
       () async {
         handle = await serveSignaling(host: 'localhost', port: 0);
-        final server = await _joinOwner(handle.port);
-        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
-
-        // Attacker knows the room id but holds no invite-derived token.
-        final attacker = await _Client.connect(handle.port);
-        attacker.send({'type': 'join', 'room': 'alpha', 'from': 'X'});
-        final err = await attacker.next((m) => m['type'] == 'error');
-        expect(err['error'], 'not admitted');
-        await attacker.closed;
-
-        // A wrong token is refused identically.
-        final attacker2 = await _Client.connect(handle.port);
-        attacker2.send({
+        final c = await _Client.connect(handle.port);
+        c.send({
           'type': 'join',
-          'room': 'alpha',
-          'from': 'X2',
-          'token': 'guessed-token',
+          'room': 'no-such-room',
+          'from': 'A',
+          'token': _tokenA,
         });
-        final err2 = await attacker2.next((m) => m['type'] == 'error');
-        expect(err2['error'], 'not admitted');
-        await attacker2.closed;
-
-        // Frames relayed between legitimate members never reached attackers.
-        server.send({
-          'type': 'signal',
-          'room': 'alpha',
-          'from': 'server',
-          'to': 'A',
-          'kind': 'rpc',
-          'payload': {'e': 'ciphertext'},
-        });
-        await a.next((m) => m['type'] == 'signal');
-        expect(
-          attacker.received.where((m) => m['type'] == 'signal'),
-          isEmpty,
-        );
-        expect(
-          attacker2.received.where((m) => m['type'] == 'signal'),
-          isEmpty,
-        );
-
-        await a.close();
-        await server.close();
+        final err = await c.next((m) => m['type'] == 'error');
+        expect(err['error'], 'not admitted');
+        await c.closed;
       },
     );
-
-    test('a join to a nonexistent room gets the same uniform refusal', () async {
-      handle = await serveSignaling(host: 'localhost', port: 0);
-      final c = await _Client.connect(handle.port);
-      c.send({
-        'type': 'join',
-        'room': 'no-such-room',
-        'from': 'A',
-        'token': _tokenA,
-      });
-      final err = await c.next((m) => m['type'] == 'error');
-      expect(err['error'], 'not admitted');
-      await c.closed;
-    });
 
     test('admit add opens the door; admit remove evicts the live peer and '
         'blocks re-join', () async {
@@ -312,7 +306,10 @@ void main() {
       // Not yet admitted.
       final b0 = await _Client.connect(handle.port);
       b0.send({'type': 'join', 'room': 'alpha', 'from': 'B', 'token': _tokenB});
-      expect((await b0.next((m) => m['type'] == 'error'))['error'], 'not admitted');
+      expect(
+        (await b0.next((m) => m['type'] == 'error'))['error'],
+        'not admitted',
+      );
 
       server.send({
         'type': 'admit',
@@ -449,7 +446,11 @@ void main() {
       final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
       final b = await _joinClient(handle.port, from: 'B', token: _tokenB);
       final c = await _joinClient(handle.port, from: 'C', token: _tokenC);
-      final phone = await _joinClient(handle.port, from: 'P', token: _tokenPhone);
+      final phone = await _joinClient(
+        handle.port,
+        from: 'P',
+        token: _tokenPhone,
+      );
       expect(handle.broker.peerCount('alpha'), 5);
 
       // Server targets B only.
@@ -527,59 +528,69 @@ void main() {
       await server.close();
     });
 
-    test('a re-join with the same peer id evicts the stale connection', () async {
-      handle = await serveSignaling(host: 'localhost', port: 0);
-      final server = await _joinOwner(handle.port);
-      final a1 = await _joinClient(handle.port, from: 'A', token: _tokenA);
-      final a2 = await _joinClient(handle.port, from: 'A', token: _tokenA);
-      await a1.closed;
-      expect(handle.broker.peerCount('alpha'), 2);
-      await a2.close();
-      await server.close();
-    });
+    test(
+      'a re-join with the same peer id evicts the stale connection',
+      () async {
+        handle = await serveSignaling(host: 'localhost', port: 0);
+        final server = await _joinOwner(handle.port);
+        final a1 = await _joinClient(handle.port, from: 'A', token: _tokenA);
+        final a2 = await _joinClient(handle.port, from: 'A', token: _tokenA);
+        await a1.closed;
+        expect(handle.broker.peerCount('alpha'), 2);
+        await a2.close();
+        await server.close();
+      },
+    );
   });
 
   group('TURN credentials', () {
-    test('an admitted member gets HMAC credentials; a non-member is refused',
-        () async {
-      final broker = SignalingBroker(
-        turnSecret: 'coturn-shared-secret',
-        turnUris: const ['turn:turn.example.com:3478'],
-        turnTtl: const Duration(hours: 2),
-      )..start();
-      handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
-      final server = await _joinOwner(handle.port);
-      final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+    test(
+      'an admitted member gets HMAC credentials; a non-member is refused',
+      () async {
+        final broker = SignalingBroker(
+          turnSecret: 'coturn-shared-secret',
+          turnUris: const ['turn:turn.example.com:3478'],
+          turnTtl: const Duration(hours: 2),
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
 
-      a.send({'type': 'turn-request', 'room': 'alpha'});
-      final creds = await a.next((m) => m['type'] == 'turn-credentials');
-      expect(creds['uris'], ['turn:turn.example.com:3478']);
-      expect(creds['ttlSeconds'], 7200);
-      final username = creds['username'] as String;
-      final expiry = int.parse(username.split(':').first);
-      expect(
-        expiry,
-        greaterThan(DateTime.now().millisecondsSinceEpoch ~/ 1000),
-      );
-      // coturn static-auth-secret scheme: base64(HMAC-SHA1(secret, username)).
-      final expected = base64.encode(
-        Hmac(sha1, utf8.encode('coturn-shared-secret'))
-            .convert(utf8.encode(username))
-            .bytes,
-      );
-      expect(creds['credential'], expected);
+        a.send({'type': 'turn-request', 'room': 'alpha'});
+        final creds = await a.next((m) => m['type'] == 'turn-credentials');
+        expect(creds['uris'], ['turn:turn.example.com:3478']);
+        expect(creds['ttlSeconds'], 7200);
+        final username = creds['username'] as String;
+        final expiry = int.parse(username.split(':').first);
+        expect(
+          expiry,
+          greaterThan(DateTime.now().millisecondsSinceEpoch ~/ 1000),
+        );
+        // coturn static-auth-secret scheme: base64(HMAC-SHA1(secret, username)).
+        final expected = base64.encode(
+          Hmac(
+            sha1,
+            utf8.encode('coturn-shared-secret'),
+          ).convert(utf8.encode(username)).bytes,
+        );
+        expect(creds['credential'], expected);
 
-      final outsider = await _Client.connect(handle.port);
-      outsider.send({'type': 'turn-request', 'room': 'alpha'});
-      expect(
-        (await outsider.next((m) => m['type'] == 'error'))['error'],
-        'not a member',
-      );
-      await outsider.close();
+        final outsider = await _Client.connect(handle.port);
+        outsider.send({'type': 'turn-request', 'room': 'alpha'});
+        expect(
+          (await outsider.next((m) => m['type'] == 'error'))['error'],
+          'not a member',
+        );
+        await outsider.close();
 
-      await a.close();
-      await server.close();
-    });
+        await a.close();
+        await server.close();
+      },
+    );
 
     test('an unconfigured broker answers with empty uris', () async {
       handle = await serveSignaling(host: 'localhost', port: 0);
@@ -593,36 +604,345 @@ void main() {
   });
 
   group('hardening', () {
-    test('per-room aggregate rate cap drops the flood but keeps the room',
-        () async {
+    test(
+      'per-room control budget drops floods but preserves membership',
+      () async {
+        final broker = SignalingBroker(
+          maxFramesPerWindow: 1000,
+          maxRoomFramesPerWindow: 20,
+          rateWindow: const Duration(seconds: 10),
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+
+        // These are deliberately not secure records; legacy/control traffic
+        // still consumes the strict frame budget.
+        for (var i = 0; i < 60; i++) {
+          a.send({
+            'type': 'signal',
+            'room': 'alpha',
+            'from': 'A',
+            'to': 'server',
+            'kind': 'rpc',
+            'payload': {'e': 'flood-$i'},
+          });
+        }
+        // Give the flood time to be processed, then count what got through:
+        // strictly fewer than sent and the connection survives.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        final delivered = server.received
+            .where((m) => m['type'] == 'signal')
+            .length;
+        expect(delivered, lessThan(60));
+        expect(handle.broker.peerCount('alpha'), 2);
+
+        await a.close();
+        await server.close();
+      },
+    );
+
+    test(
+      'per-peer control budget does not consume encrypted data quota',
+      () async {
+        final broker = SignalingBroker(
+          maxFramesPerWindow: 4,
+          maxRoomFramesPerWindow: 100,
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final client = await _joinClient(
+          handle.port,
+          from: 'A',
+          token: _tokenA,
+        );
+        for (var i = 0; i < 20; i++) {
+          client.send({'type': 'turn-request', 'room': 'alpha'});
+        }
+        client.send({
+          'type': 'signal',
+          'to': 'server',
+          'kind': 'rpc',
+          'payload': {'type': 'secure', 'v': 1, 'c': 'opaque-record'},
+        });
+        final delivered = await server.next(
+          (m) => m['type'] == 'signal',
+          timeout: const Duration(seconds: 3),
+        );
+        expect(delivered['payload']['c'], 'opaque-record');
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(
+          client.received.where((m) => m['type'] == 'turn-credentials').length,
+          lessThan(20),
+        );
+        expect(broker.peerCount('alpha'), 2);
+        await client.close();
+        await server.close();
+      },
+    );
+
+    test(
+      'encrypted records pace FIFO while control and close remain readable',
+      () async {
+        final broker = SignalingBroker(
+          maxFrameBytes: 512,
+          dataBurstBytes: 512,
+          roomDataBurstBytes: 512,
+          dataBytesPerWindow: 512,
+          roomDataBytesPerWindow: 512,
+          rateWindow: const Duration(milliseconds: 120),
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+        final b = await _joinClient(handle.port, from: 'B', token: _tokenB);
+        final start = DateTime.now();
+        for (var i = 0; i < 12; i++) {
+          a.send({
+            'type': 'signal',
+            'to': 'server',
+            'kind': 'rpc',
+            'payload': {'type': 'secure', 'v': 1, 'c': 'a$i${'x' * 180}'},
+          });
+          b.send({
+            'type': 'signal',
+            'to': 'server',
+            'kind': 'rpc',
+            'payload': {'type': 'secure', 'v': 1, 'c': 'b$i${'y' * 180}'},
+          });
+        }
+        await _until(() => broker.pendingDataCount > 0);
+        expect(broker.pendingDataCount, lessThanOrEqualTo(2));
+        final received = <String, List<String>>{'A': [], 'B': []};
+        for (var i = 0; i < 24; i++) {
+          final frame = await server.next((m) => m['type'] == 'signal');
+          received[frame['from']]!.add(frame['payload']['c'] as String);
+        }
+        for (final entry in received.entries) {
+          final marker = entry.key == 'A' ? 'x' : 'y';
+          expect(entry.value, [
+            for (var i = 0; i < 12; i++)
+              '${entry.key.toLowerCase()}$i${marker * 180}',
+          ]);
+        }
+        expect(
+          DateTime.now().difference(start),
+          greaterThan(const Duration(milliseconds: 300)),
+        );
+        expect(broker.pendingDataCount, 0);
+        await a.close();
+        await b.close();
+        await server.close();
+      },
+    );
+
+    test(
+      'logical peer close follows paced ciphertext without blocking control',
+      () async {
+        final broker = SignalingBroker(
+          maxFrameBytes: 512,
+          dataBurstBytes: 512,
+          roomDataBurstBytes: 512,
+          dataBytesPerWindow: 512,
+          roomDataBytesPerWindow: 512,
+          rateWindow: const Duration(milliseconds: 120),
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final client = await _joinClient(
+          handle.port,
+          from: 'A',
+          token: _tokenA,
+        );
+        for (final payload in ['first', 'final']) {
+          server.send({
+            'type': 'signal',
+            'to': 'A',
+            'kind': 'rpc',
+            'payload': {'type': 'secure', 'v': 1, 'c': payload},
+          });
+        }
+        server.send({
+          'type': 'signal',
+          'to': 'A',
+          'kind': 'close',
+          'payload': {},
+        });
+        server.send({'type': 'turn-request'});
+        await server.next((frame) => frame['type'] == 'turn-credentials');
+        final received = <Map<String, dynamic>>[];
+        for (var i = 0; i < 3; i++) {
+          received.add(await client.next((frame) => frame['type'] == 'signal'));
+        }
+        expect(received.map((frame) => frame['kind']), ['rpc', 'rpc', 'close']);
+        expect(received.take(2).map((frame) => frame['payload']['c']), [
+          'first',
+          'final',
+        ]);
+        await client.close();
+        await server.close();
+      },
+    );
+
+    test(
+      'an admitted sender exceeding the data window is disconnected',
+      () async {
+        final broker = SignalingBroker(
+          maxFrameBytes: 512,
+          dataBurstBytes: 512,
+          roomDataBurstBytes: 512,
+          dataBytesPerWindow: 512,
+          roomDataBytesPerWindow: 512,
+          rateWindow: const Duration(seconds: 10),
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+        for (var i = 0; i < 300; i++) {
+          a.send({
+            'type': 'signal',
+            'to': 'server',
+            'kind': 'rpc',
+            'payload': {'type': 'secure', 'v': 1, 'c': 'x' * 300},
+          });
+        }
+        await a.closed.timeout(const Duration(seconds: 2));
+        await _until(
+          () =>
+              broker.pendingDataCount == 0 &&
+              broker.pendingDataBytes == 0 &&
+              broker.peerCount('alpha') == 1,
+        );
+        final b = await _joinClient(handle.port, from: 'B', token: _tokenB);
+        b.send({'type': 'turn-request', 'room': 'alpha'});
+        await b.next((frame) => frame['type'] == 'turn-credentials');
+        expect(b.isClosed, isFalse);
+        await b.close();
+        await server.close();
+      },
+    );
+
+    test(
+      'default broker relays ordered encrypted records across windows',
+      () async {
+        handle = await serveSignaling(host: 'localhost', port: 0);
+        final server = await _joinOwner(handle.port);
+        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+        // 1024 x 16 KiB ciphertext + base64/JSON overhead exceeds 20 MiB,
+        // and 1024 records exceed the old 200-per-window drop threshold.
+        final ciphertext = 'Z' * 21848;
+        // Match the production channel's bounded credit window. An admitted
+        // sender cannot fire an unbounded stream past the relay's memory cap.
+        for (var start = 0; start < 1024; start += 64) {
+          for (var i = start; i < start + 64; i++) {
+            a.send({
+              'type': 'signal',
+              'to': 'server',
+              'kind': 'rpc',
+              'payload': {'type': 'secure', 'v': 1, 'c': '$i:$ciphertext'},
+            });
+          }
+          for (var i = start; i < start + 64; i++) {
+            final frame = await server.next(
+              (m) => m['type'] == 'signal',
+              timeout: const Duration(seconds: 55),
+            );
+            expect(frame['payload']['c'], '$i:$ciphertext');
+          }
+        }
+        expect(a.isClosed, isFalse);
+        await a.close();
+        await server.close();
+      },
+      timeout: const Timeout(Duration(seconds: 65)),
+    );
+
+    test(
+      'revocation interrupts paused quota waits and removes queue state',
+      () async {
+        final broker = SignalingBroker(
+          maxFrameBytes: 512,
+          dataBurstBytes: 512,
+          roomDataBurstBytes: 512,
+          dataBytesPerWindow: 512,
+          roomDataBytesPerWindow: 512,
+          rateWindow: const Duration(seconds: 10),
+        )..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final server = await _joinOwner(handle.port);
+        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
+        for (var i = 0; i < 3; i++) {
+          a.send({
+            'type': 'signal',
+            'to': 'server',
+            'kind': 'rpc',
+            'payload': {'type': 'secure', 'v': 1, 'c': 'x' * 300},
+          });
+        }
+        await _until(() => broker.pendingDataCount == 1);
+        server.send({
+          'type': 'admit',
+          'room': 'alpha',
+          'remove': [_hash(_tokenA)],
+        });
+        await a.closed.timeout(const Duration(seconds: 2));
+        expect(broker.pendingDataCount, 0);
+        expect(broker.pendingDataBytes, 0);
+        expect(broker.peerCount('alpha'), 1);
+        await server.close();
+      },
+    );
+
+    test('remote close interrupts paused quota waits', () async {
       final broker = SignalingBroker(
-        maxFramesPerWindow: 1000,
-        maxRoomFramesPerWindow: 20,
+        maxFrameBytes: 512,
+        dataBurstBytes: 512,
+        roomDataBurstBytes: 512,
+        dataBytesPerWindow: 512,
+        roomDataBytesPerWindow: 512,
         rateWindow: const Duration(seconds: 10),
       )..start();
       handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
       final server = await _joinOwner(handle.port);
       final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
-
-      for (var i = 0; i < 60; i++) {
+      for (var i = 0; i < 3; i++) {
         a.send({
           'type': 'signal',
-          'room': 'alpha',
-          'from': 'A',
           'to': 'server',
           'kind': 'rpc',
-          'payload': {'e': 'flood-$i'},
+          'payload': {'type': 'secure', 'v': 1, 'c': 'x' * 300},
         });
       }
-      // Give the flood time to be processed, then count what got through:
-      // strictly fewer than sent and the connection survives.
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      final delivered =
-          server.received.where((m) => m['type'] == 'signal').length;
-      expect(delivered, lessThan(60));
-      expect(handle.broker.peerCount('alpha'), 2);
-
-      await a.close();
+      await _until(() => broker.pendingDataCount == 1);
+      await a.close().timeout(const Duration(seconds: 2));
+      await _until(
+        () => broker.peerCount('alpha') == 1 && broker.pendingDataCount == 0,
+        timeout: const Duration(seconds: 2),
+      );
       await server.close();
     });
 
@@ -632,6 +952,7 @@ void main() {
       handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
       final c = await _Client.connect(handle.port);
       c.sendRaw('this is not json');
+      c.sendBinary([0xff]); // Invalid UTF-8 still consumes control budget.
       c.sendRaw('x' * 1024);
       c.send({
         'type': 'signal',
@@ -652,46 +973,58 @@ void main() {
       await c.close();
     });
 
-    test('creating a new room past maxRooms is refused with server busy',
-        () async {
-      final broker = SignalingBroker(maxRooms: 1)..start();
-      handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
-      final first = await _joinOwner(handle.port, room: 'one');
-      final second = await _Client.connect(handle.port);
-      second.send({
-        'type': 'join',
-        'room': 'two',
-        'from': 'S2',
-        'owner': true,
-        'ownerToken': 'other',
-      });
-      expect(
-        (await second.next((m) => m['type'] == 'error'))['error'],
-        'server busy',
-      );
-      await second.closed;
-      await first.close();
-    });
+    test(
+      'creating a new room past maxRooms is refused with server busy',
+      () async {
+        final broker = SignalingBroker(maxRooms: 1)..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final first = await _joinOwner(handle.port, room: 'one');
+        final second = await _Client.connect(handle.port);
+        second.send({
+          'type': 'join',
+          'room': 'two',
+          'from': 'S2',
+          'owner': true,
+          'ownerToken': 'other',
+        });
+        expect(
+          (await second.next((m) => m['type'] == 'error'))['error'],
+          'server busy',
+        );
+        await second.closed;
+        await first.close();
+      },
+    );
 
-    test('a connection past maxConnections is refused with server busy',
-        () async {
-      final broker = SignalingBroker(maxConnections: 1)..start();
-      handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
-      final first = await _joinOwner(handle.port);
-      final second = await _Client.connect(handle.port);
-      second.send({
-        'type': 'join',
-        'room': 'alpha',
-        'from': 'B',
-        'token': _tokenA,
-      });
-      expect(
-        (await second.next((m) => m['type'] == 'error'))['error'],
-        'server busy',
-      );
-      await second.closed;
-      await first.close();
-    });
+    test(
+      'a connection past maxConnections is refused with server busy',
+      () async {
+        final broker = SignalingBroker(maxConnections: 1)..start();
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        final first = await _joinOwner(handle.port);
+        final second = await _Client.connect(handle.port);
+        second.send({
+          'type': 'join',
+          'room': 'alpha',
+          'from': 'B',
+          'token': _tokenA,
+        });
+        expect(
+          (await second.next((m) => m['type'] == 'error'))['error'],
+          'server busy',
+        );
+        await second.closed;
+        await first.close();
+      },
+    );
   });
 
   group('garbage collection', () {
@@ -722,26 +1055,32 @@ void main() {
       await leaver.close();
     });
 
-    test('a room that never gained an owner claim is reaped past its TTL',
-        () async {
-      var now = DateTime(2026, 7, 10, 12);
-      final broker = SignalingBroker(
-        neverClaimedTtl: const Duration(minutes: 5),
-        now: () => now,
-      );
-      handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
-      // No path creates an ownerless room via joins any more (client joins to
-      // a missing room are refused), so simulate the defensive sweep directly:
-      // an owner-created room whose owner disconnected before the sweep is
-      // covered by the idle TTL; the never-claimed TTL is the backstop for
-      // any future frame that creates rooms lazily. Assert the sweep is a
-      // no-op on a healthy claimed room instead.
-      final server = await _joinOwner(handle.port);
-      now = now.add(const Duration(minutes: 10));
-      expect(broker.sweep(), 0);
-      expect(broker.roomExists('alpha'), isTrue);
-      await server.close();
-    });
+    test(
+      'a room that never gained an owner claim is reaped past its TTL',
+      () async {
+        var now = DateTime(2026, 7, 10, 12);
+        final broker = SignalingBroker(
+          neverClaimedTtl: const Duration(minutes: 5),
+          now: () => now,
+        );
+        handle = await serveSignaling(
+          host: 'localhost',
+          port: 0,
+          broker: broker,
+        );
+        // No path creates an ownerless room via joins any more (client joins to
+        // a missing room are refused), so simulate the defensive sweep directly:
+        // an owner-created room whose owner disconnected before the sweep is
+        // covered by the idle TTL; the never-claimed TTL is the backstop for
+        // any future frame that creates rooms lazily. Assert the sweep is a
+        // no-op on a healthy claimed room instead.
+        final server = await _joinOwner(handle.port);
+        now = now.add(const Duration(minutes: 10));
+        expect(broker.sweep(), 0);
+        expect(broker.roomExists('alpha'), isTrue);
+        await server.close();
+      },
+    );
 
     test('outbound queue state does not outlive its connection', () async {
       // The outbox is keyed by the WebSocket, so a stale entry pins that

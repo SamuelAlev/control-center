@@ -1,4 +1,5 @@
 import 'package:cc_rpc/cc_rpc.dart';
+import 'skill_campaign_views.dart';
 
 DateTime? _date(Object? iso) => iso is String ? DateTime.tryParse(iso) : null;
 
@@ -209,6 +210,167 @@ class RpcEvalsClient {
     final data = await _client.call('evals.reliability', {'agent_id': agentId});
     return ReliabilityView.fromWire(
       (data['reliability'] as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+  }
+
+  /// Catalog and execution availability for this explicit workspace.
+  Future<SkillCorporaView> skillCorpora(String workspaceId) async =>
+      SkillCorporaView.fromWire(
+        await _client.call('evals.skillCorpora', {'workspace_id': workspaceId}),
+      );
+
+  /// Starts a server-owned, budgeted comparison. No work executes on the client.
+  Future<SkillCampaignView> startSkillCampaign({
+    required String workspaceId,
+    required String skillSlug,
+    required String corpusId,
+    required String providerId,
+    required String modelId,
+    required SkillCampaignComparison comparison,
+    required int repetitions,
+    required int budgetMicros,
+    String adapter = 'builtin',
+    String? baselineHash,
+    String? repoId,
+    String? skillPath,
+    List<String>? ambientSkillSlugs,
+  }) async {
+    final data = await _client.call('evals.startSkillCampaign', {
+      'workspace_id': workspaceId,
+      'skill_slug': skillSlug,
+      'corpus_id': corpusId,
+      'adapter': adapter,
+      'provider_id': providerId,
+      'model_id': modelId,
+      'comparison': comparison.name,
+      'repetitions': repetitions,
+      'budget_micros': budgetMicros,
+      if (baselineHash != null) 'baseline_hash': baselineHash,
+      if (repoId != null) 'repo_id': repoId,
+      if (skillPath != null) 'skill_path': skillPath,
+      if (ambientSkillSlugs != null) 'ambient_skill_slugs': ambientSkillSlugs,
+    });
+    return SkillCampaignView.fromWire(
+      (data['campaign'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<SkillCampaignView> cancelCampaign(
+    String workspaceId,
+    String campaignId,
+  ) async {
+    final data = await _client.call('evals.cancelCampaign', {
+      'workspace_id': workspaceId,
+      'campaign_id': campaignId,
+    });
+    return SkillCampaignView.fromWire(
+      (data['campaign'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  /// Full snapshots rehydrate after reconnect; null means no visible campaign.
+  Stream<SkillCampaignView?> watchCampaign(
+    String workspaceId,
+    String campaignId,
+  ) => _client
+      .subscribe('evals.watchCampaign', {
+        'workspace_id': workspaceId,
+        'campaign_id': campaignId,
+      })
+      .map(
+        (d) => d['campaign'] is Map
+            ? SkillCampaignView.fromWire(
+                (d['campaign'] as Map).cast<String, dynamic>(),
+              )
+            : null,
+      );
+
+  /// A null skill key requests the workspace-wide Quality history.
+  Stream<List<SkillCampaignView>> watchCampaignsForSkill(
+    String workspaceId, {
+    String? skillKey,
+  }) => _client
+      .subscribe('evals.watchCampaignsForSkill', {
+        'workspace_id': workspaceId,
+        if (skillKey != null) 'skill_key': skillKey,
+      })
+      .map(
+        (d) => List<SkillCampaignView>.unmodifiable(
+          _maps(d['campaigns']).map(SkillCampaignView.fromWire),
+        ),
+      );
+
+  Future<SkillAttemptView> getAttempt(
+    String workspaceId,
+    String campaignId,
+    String attemptId,
+  ) async {
+    final data = await _client.call('evals.getAttempt', {
+      'workspace_id': workspaceId,
+      'campaign_id': campaignId,
+      'attempt_id': attemptId,
+    });
+    return SkillAttemptView.fromWire(
+      (data['attempt'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<List<SkillAttemptView>> listAttempts(
+    String workspaceId,
+    String campaignId,
+  ) async {
+    final data = await _client.call('evals.listAttempts', {
+      'workspace_id': workspaceId,
+      'campaign_id': campaignId,
+    });
+    return List<SkillAttemptView>.unmodifiable(
+      _maps(data['attempts']).map(SkillAttemptView.fromWire),
+    );
+  }
+
+  Future<SkillCampaignExport> exportCampaign(
+    String workspaceId,
+    String campaignId,
+  ) async {
+    final data = await _client.call('evals.exportCampaign', {
+      'workspace_id': workspaceId,
+      'campaign_id': campaignId,
+    });
+    return SkillCampaignExport(
+      filename: data['filename'] as String,
+      content: data['content'] as String,
+    );
+  }
+
+  Future<SkillCampaignPolicyView?> skillPolicy(
+    String workspaceId,
+    String skillKey,
+  ) async {
+    final data = await _client.call('evals.skillPolicy', {
+      'workspace_id': workspaceId,
+      'skill_key': skillKey,
+    });
+    return data['policy'] is Map
+        ? SkillCampaignPolicyView.fromWire(
+            (data['policy'] as Map).cast<String, dynamic>(),
+          )
+        : null;
+  }
+
+  Future<SkillCampaignPolicyView> setSkillPolicy({
+    required String workspaceId,
+    required String skillKey,
+    required bool enabled,
+    required Map<String, dynamic> configuration,
+  }) async {
+    final data = await _client.call('evals.setSkillPolicy', {
+      'workspace_id': workspaceId,
+      'skill_key': skillKey,
+      'enabled': enabled,
+      'configuration': configuration,
+    });
+    return SkillCampaignPolicyView.fromWire(
+      (data['policy'] as Map).cast<String, dynamic>(),
     );
   }
 }

@@ -2,7 +2,7 @@
 title: Sao lưu, xuất và nhập
 description: Bố cục ảnh chụp, manifest, mọi thao tác sao lưu và tuyến truyền tải, cùng chính xác những tệp mà một bản sao lưu có và không chứa.
 slug: vi-VN/so-tay/tham-chieu/sao-luu
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Mọi thứ Control Center có thể sao chép, chuyển giao hoặc nhận, cùng hình dạng chính
@@ -23,6 +23,12 @@ Có ba tạo tác sao chép cơ sở dữ liệu, với phạm vi và chính sá
 Tất cả đều được ghi bằng `VACUUM INTO` của SQLite, an toàn với một cơ sở dữ liệu WAL
 đang chạy: nó mở một giao dịch đọc, tạo ra một bản sao đã chống phân mảnh và nhất quán
 về giao dịch, và không bao giờ đòi hỏi phải dừng máy chủ.
+
+Những tệp này và các bản sao đã tải xuống **không được mã hóa khi lưu trữ** bởi
+Control Center. Việc truyền đã mã hóa đầu-cuối bảo vệ các byte trên đường truyền
+giữa một máy khách đã ghép nối và `cc_server` của nó, trên cả kết nối trực tiếp lẫn
+qua relay môi giới. Hãy bảo vệ lưu trữ cục bộ và bản sao ngoài máy riêng biệt; máy
+chủ và bất kỳ người nhận được cấp quyền nào cũng có thể đọc các tệp cơ sở dữ liệu.
 
 ## Bố cục ảnh chụp
 
@@ -200,10 +206,15 @@ nhưng chỉ mục của nó có thể đã cũ.
 
 ## Các tuyến truyền tải
 
-Mọi thao tác ở trên đều nói bằng đường dẫn phía máy chủ, và đó là câu trả lời đầy đủ chỉ
-khi máy chủ chính là máy của bạn. Ba tuyến này mang các byte, trên cùng làn có chữ ký PSK
-mà proxy phương tiện và kho ảnh đang dùng. Bên gọi ký một chuỗi đích bằng khóa chia sẻ
-trước của thiết bị và truyền chữ ký dưới dạng `s`.
+Các thao tác xuất/nhập và liệt kê ảnh chụp ở trên đều nói bằng đường dẫn phía máy
+chủ, và đó là câu trả lời đầy đủ chỉ khi máy chủ chính là máy của bạn. Các tuyến có
+hình dạng HTTP này mang các byte sao lưu **bên trong cùng một đường hầm tài nguyên
+đã xác thực và mã hóa đầu-cuối** với các tài nguyên nhạy cảm khác, bất kể kết nối
+RPC là trực tiếp hay qua môi giới. Chúng không phải là các điểm cuối truyền tệp HTTP
+công khai: một yêu cầu tới một trong số đó trên trình lắng nghe công khai trả về
+`426 Upgrade Required`, ngay cả từ loopback. Trong đường hầm đã mã hóa, thiết bị đã
+được xác thực bằng Noise phải khớp với `d`; trình xử lý còn kiểm tra chữ ký của
+thiết bị trên chuỗi đích của nó bằng PSK ghép nối cùng vai trò bên dưới.
 
 | Tuyến                   | Phương thức | Truy vấn        | Đích được ký                   | Yêu cầu                 |
 | ----------------------- | ----------- | --------------- | ------------------------------ | ----------------------- |
@@ -223,6 +234,7 @@ hiển thị.
 | `404`      | Máy chủ này không có cổng sao lưu, hoặc ảnh chụp/tệp không gian làm việc được nêu tên không tồn tại |
 | `405`      | `/backup/restore` được gọi với phương thức khác `POST`                              |
 | `413`      | Phần thân tải lên vượt 8 GiB, theo content-length được khai báo hoặc theo số byte thực sự đọc được |
+| `426`      | Bất kỳ yêu cầu trực tiếp nào tới một đường dẫn truyền tải trên trình lắng nghe HTTP công khai; hãy dùng đường hầm tài nguyên đã mã hóa của máy khách đã ghép nối |
 | `500`      | Thao tác xuất hoặc lưu trữ thất bại phía máy chủ                                     |
 
 Cả hai thao tác tải xuống đều trả về `Cache-Control: no-store` cùng `Accept-Ranges: none`.
@@ -238,11 +250,13 @@ tệp.
 `/backup/restore` truyền thẳng phần thân xuống một tệp tạm thay vì đệm nó, đặt giới hạn
 trước và trong khi đọc, và xóa tệp tạm trên **mọi** lối ra kể cả khi bị từ chối.
 
-:::caution[Kết nối qua relay không có origin HTTP]
-Relay được môi giới truyền các khung RPC, không truyền tệp. Mọi thứ nói bằng đường dẫn
-phía máy chủ vẫn hoạt động qua nó; ba tuyến truyền tải cần kết nối trực tiếp, và giao
-diện vô hiệu hóa chúng kèm một ghi chú thay vì thất bại giữa lúc tải xuống.
-:::
+::::caution[Kết nối trực tiếp và qua relay dùng cùng một kiểu truyền đã mã hóa]
+Relay chở các yêu cầu tài nguyên, phản hồi được truyền phát và byte tải lên dưới
+dạng bản mã; nó không thể đọc nội dung sao lưu. Một đường dẫn phía máy chủ vẫn là
+đường dẫn trên máy chủ, không phải tệp trên relay. Việc truy cập vẫn cần thiết bị đã
+ghép nối, chữ ký đích và vai trò không gian làm việc hay bản cài đặt áp dụng. Không
+kiểu truyền nào mã hóa các tệp sao lưu thu được khi lưu trữ.
+::::
 
 ## Đường dẫn và giới hạn
 
@@ -253,7 +267,7 @@ diện vô hiệu hóa chúng kèm một ghi chú thay vì thất bại giữa l
 | Bản xuất không gian làm việc   | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Trung chuyển truyền tải        | `<dataDir>/backups/transfer/` — một bàn làm việc, được dọn bởi chính tuyến ghi vào nó |
 | Tên tệp lưu trữ ảnh chụp       | `<snapshot directory name>.zip`                              |
-| Giới hạn tải lên               | 8 GiB cho mỗi `POST /backup/restore`                         |
+| Giới hạn tải lên               | 8 GiB cho mỗi lần tải lên đã mã hóa tới `/backup/restore`    |
 | Lưu trữ                        | Ảnh chụp bản cài đặt: xóa thủ công. Bản sao lưu không gian làm việc: quy trình hằng tuần, mặc định 30 ngày |
 
 Các thư mục `exports/`, `transfer/` và `workspace-backups/` không phải ảnh chụp bản cài

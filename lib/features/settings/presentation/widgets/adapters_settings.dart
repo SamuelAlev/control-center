@@ -9,6 +9,7 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/settings/presentation/widgets/providers_models_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/usage_summary_card.dart';
 import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
+import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -117,6 +118,15 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
   ) {
     const insets = EdgeInsets.symmetric(horizontal: AppSpacing.lg);
     final readyCount = detected.where((d) => d.isFound).length;
+    final claudeSignInExpired =
+        detected.any(
+          (d) => d.isFound && d.adapter.transport == AdapterTransport.claudeCli,
+        ) &&
+        (ref
+                .watch(claudeAccountsProvider)
+                .value
+                ?.any((view) => view.account.isCredentialExpired()) ??
+            false);
 
     // Selection: the pinned id when it still exists, else the first found
     // runner, else the first catalog entry.
@@ -174,6 +184,7 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
                 SettingsMasterDetail(
                   rail: AdapterRail(
                     detected: detected,
+                    claudeSignInExpired: claudeSignInExpired,
                     query: _query,
                     onQueryChanged: (q) => setState(() => _query = q),
                     selectedId: selected?.adapter.id,
@@ -184,6 +195,10 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
                       : AdapterDetailPane(
                           key: ValueKey(selected.adapter.id),
                           detected: selected,
+                          signInExpired:
+                              selected.adapter.transport ==
+                                  AdapterTransport.claudeCli &&
+                              claudeSignInExpired,
                         ),
                 ),
               ],

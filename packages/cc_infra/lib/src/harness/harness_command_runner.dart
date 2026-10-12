@@ -10,7 +10,6 @@ import 'package:cc_domain/features/guardrails/domain/services/shell_action_class
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
-import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -34,7 +33,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     this._loopbackPorts = const [],
     this.sandboxManager,
     this.confirmationPort,
-    this.execGrantService,
+    this.execGrantRootsResolver,
     this.actionGuard,
     this.workspaceId,
     this.agentId,
@@ -68,13 +67,21 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// never reach. This is that wire.
   final ActionGuardService? actionGuard;
 
-  /// Asks whether programs may be run from inside the agent's worktree.
+  /// Answers which exec roots this RUN may execute from — the dispatch's own
+  /// resolution, so the harness `bash` tool and an external CLI profile get
+  /// equivalent scoped roots.
   ///
-  /// This runner rebuilds its sandbox profile PER COMMAND, so an approval takes
-  /// effect on the agent's very next attempt — unlike an external CLI adapter,
-  /// which runs under one profile for the whole dispatch. Null leaves the
+  /// A resolver rather than the command's cwd on purpose: the model names a
+  /// cwd (a subdirectory of one of these roots), and resolving per named cwd
+  /// made every `cd` a fresh, unknown tree that re-asked — or, worse, offered
+  /// to widen onto a path the server never supplied. The resolver ignores the
+  /// command entirely.
+  ///
+  /// This runner rebuilds its sandbox profile PER COMMAND, so an answer lands
+  /// on the agent's very next attempt — unlike an external CLI adapter, which
+  /// runs under one profile for the whole dispatch. Null leaves the
   /// writable-dir exec block fully closed.
-  final SandboxExecGrantService? execGrantService;
+  final Future<List<String>> Function()? execGrantRootsResolver;
 
   /// Workspace the run belongs to.
   final String? workspaceId;
@@ -330,21 +337,17 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     }
   }
 
-  /// Operator-approved exec roots for [cwd], asking once per undecided tree.
-  /// A failure here never fails the command: it falls back to the stricter,
-  /// pre-grant rules.
-  Future<List<String>> _execGrantRoots(String cwd) async {
-    final service = execGrantService;
-    final wsId = workspaceId ?? '';
-    if (service == null || wsId.isEmpty) {
+  /// The exec roots the dispatch resolved for this run (see
+  /// [execGrantRootsResolver]). Never derived from the command's cwd. A failure
+  /// here never fails the command: it falls back to the stricter, pre-grant
+  /// rules.
+  Future<List<String>> _execGrantRoots() async {
+    final resolve = execGrantRootsResolver;
+    if (resolve == null) {
       return const [];
     }
     try {
-      return await service.approvedRoots(
-        workspaceId: wsId,
-        candidateRoots: [cwd],
-        spaceId: spaceId,
-      );
+      return await resolve();
     } on Object catch (e) {
       CcInfraLog.warning(
         'harness command runner: exec-grant resolution failed, '
@@ -367,7 +370,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       networkEnabled: _networkEnabled,
       mode: _mode,
       protectedPaths: await _protectedPaths?.call() ?? const [],
-      execGrantRoots: await _execGrantRoots(cwd),
+      execGrantRoots: await _execGrantRoots(),
       loopbackPorts: _loopbackPorts,
     );
     final policy = const SandboxPolicyResolver().resolve(

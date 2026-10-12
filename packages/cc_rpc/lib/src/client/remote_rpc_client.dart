@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 import 'package:cc_rpc/src/client/server_build.dart';
+import 'package:cc_rpc/src/resources/resource_tunnel.dart';
 
 /// Thrown when a `repo/call` returns a JSON-RPC error. [code] is one of
 /// [RpcErrorCodes]; clients switch on it (e.g. roll back on a conflict).
@@ -55,7 +56,7 @@ class RemoteRpcClientClosedException implements Exception {
 
 /// The client half of the cc_rpc protocol — transport-agnostic.
 ///
-/// Drives any [RemoteRpcChannelPort] (in-process, WSS, or WebRTC): correlates
+/// Drives an authenticated secure or trusted in-process channel: correlates
 /// `id`-bearing requests to responses, routes `sub/*` pushes to subscription
 /// streams and surfaces server notifications. This is what a desktop in REMOTE
 /// mode and the full web build use to talk to a server; the same class is the
@@ -106,6 +107,7 @@ class RemoteRpcClient {
   StreamSubscription<Map<String, dynamic>>? _incomingSub;
   int _nextId = 0;
   bool _closing = false;
+  RemoteResourceClient? _resources;
 
   /// The workspace this client acts in. It is injected as `workspace_id` into
   /// every `call`/`subscribe` whose args don't already name one. The server is
@@ -133,6 +135,11 @@ class RemoteRpcClient {
 
   /// Whether the underlying transport is currently open.
   bool get isOpen => _channel.isOpen;
+
+  /// Authenticated resource streams on this single channel. No transfer is
+  /// rebound or replayed if the connection drops.
+  RemoteResources get resources =>
+      _resources ??= RemoteResourceClient(_channel);
 
   /// Begins consuming inbound frames. Idempotent.
   void start() {
@@ -702,32 +709,39 @@ class RemoteRpcClient {
     String method,
     Map<String, dynamic> params, {
     Duration? timeout,
-  }) async {
+  }) {
     final id = ++_nextId;
     final completer = Completer<Map<String, dynamic>>();
     _pending[id] = completer;
-    try {
-      await _channel.send({
-        'jsonrpc': '2.0',
-        'id': id,
-        'method': method,
-        'params': params,
-      });
-    } on Object {
-      // The frame never left: drop the entry instead of orphaning it in
-      // `_pending` for the client's lifetime (a dropped socket makes
-      // `send` throw, and this is exactly when it happens).
-      _pending.remove(id);
-      rethrow;
-    }
     final effectiveTimeout = timeout ?? _timeout;
-    return completer.future.timeout(
+    // Observe the response before starting an asynchronous encrypted send.
+    // Close can fail the pending request while that send is still flushing.
+    final response = completer.future.timeout(
       effectiveTimeout,
       onTimeout: () {
         _pending.remove(id);
         throw TimeoutException('RPC $method timed out', effectiveTimeout);
       },
     );
+    unawaited(
+      Future<void>.sync(
+        () => _channel.send({
+          'jsonrpc': '2.0',
+          'id': id,
+          'method': method,
+          'params': params,
+        }),
+      ).then<void>(
+        (_) {},
+        onError: (Object error, StackTrace stack) {
+          final pending = _pending.remove(id);
+          if (pending != null && !pending.isCompleted) {
+            pending.completeError(error, stack);
+          }
+        },
+      ),
+    );
+    return response;
   }
 
   _CancelableRequest _requestCancelable(
@@ -807,6 +821,7 @@ class RemoteRpcClient {
   }
 
   void _onFrame(Map<String, dynamic> frame) {
+    if (frame['type'] == 'resource') return;
     final id = frame['id'];
     if (id is int && _pending.containsKey(id)) {
       _pending.remove(id)!.complete(frame);
@@ -892,6 +907,7 @@ class RemoteRpcClient {
   /// Closes the client (cancels inbound, fails pending, closes subscriptions).
   Future<void> close() async {
     _closing = true;
+    await _resources?.close();
     await _incomingSub?.cancel();
     for (final c in _pending.values) {
       if (!c.isCompleted) {

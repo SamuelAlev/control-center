@@ -1,8 +1,8 @@
 ---
 title: Fernsteuerung und Mobil
-description: Wie das Telefon deinen Server über ein vermitteltes, Ende-zu-Ende versiegeltes Relay erreicht, statt über eine Peer-to-Peer-Verbindung, und das geschichtete Zugriffsmodell, das diesen Weg eng hält.
+description: Wie das Telefon deinen Server über direkte oder vermittelte Ende-zu-Ende-verschlüsselte Verbindungen erreicht und das geschichtete Zugriffsmodell, das diesen Weg eng hält.
 slug: de-DE/handbuch/konzepte/fernsteuerung
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center ist eine Desktop-App, aber die Arbeit, die sie verfolgt, hört
@@ -10,19 +10,20 @@ nicht auf, wenn du vom Schreibtisch weggehst. Die **Fernsteuerung** koppelt
 dein Telefon mit deinem `cc_server` über **[Remote](https://remote.usectrl.dev/)**,
 die Begleit-App auf remote.usectrl.dev. Von dort folgst du der Flotte:
 Nachrichten und Tickets lesen, einem Agenten antworten, deinen Newsfeed
-triagieren. Audio, Transkript, Quellcode und Zugangsdaten, die auf dem Server
-liegen, verlassen ihn dabei nie.
+triagieren — über eine Ende-zu-Ende-verschlüsselte Verbindung. Telefon und
+`cc_server` sind vertrauenswürdige Klartext-Endpunkte; ein Relay überträgt nur
+verschlüsselte Anwendungsdatensätze.
 
 Stell sie dir als Begleiter vor, der vor allem liest, neben der Arbeitsfläche.
 Den vollständigen Desktop-Client soll sie nicht ersetzen.
 
-:::note[Zwei verschiedene entfernte Wege]
-Die Telefon-Begleit-App koppelt sich mit einem `cc_server` über ein
-**vermitteltes WebSocket-Relay**, das Ende-zu-Ende versiegelte JSON-RPC-Frames
-trägt. Der vollständige **Web-Build** (und ein Desktop, der auf einen
-entfernten Server zeigt) ist der andere entfernte Weg: Er ruft `cc_server`
-über WebSocket an und stellt die vollständige App dar. Wie sich die beiden
-unterscheiden, steht unter
+:::note[Zwei verschiedene entfernte Clients]
+Die Telefon-Begleit-App und der vollständige **Web-Build** (oder ein Desktop,
+der auf einen entfernten Server zeigt) können sich direkt mit `cc_server`
+verbinden oder ein vermitteltes WebSocket-Relay nutzen. Beide Wege erfordern
+dieselbe verschlüsselte Sitzung; das Telefon bietet einen kleineren Satz von
+Operationen als der vollständige Client. Wie sich die Clients unterscheiden,
+steht unter
 [Bereitstellung und Clients](/de-DE/handbuch/konzepte/bereitstellung/).
 :::
 
@@ -30,8 +31,10 @@ unterscheiden, steht unter
 
 Das Telefon erreicht `cc_server` über eine WebSocket-Verbindung: entweder
 direkt (Loopback, LAN, Tailnet oder `wss://`) oder über einen
-einladungsgeschützten Raum auf einem Signalisierungs-Broker, der versiegelte
-Frames weiterleitet. Einen Peer-to-Peer-Datenkanal gibt es nicht.
+einladungsgeschützten Raum auf einem Signalisierungs-Broker. Beide Wege
+erfordern eine authentifizierte, Ende-zu-Ende-verschlüsselte Sitzung; der
+Broker leitet nur seine verschlüsselten Datensätze weiter. Einen
+Peer-to-Peer-Datenkanal gibt es nicht.
 
 ## Was das Telefon kann
 
@@ -57,23 +60,27 @@ das durchgesetzt wird, steht im
 
 ## Wie die Verbindung entsteht
 
-Die Verbindung läuft über ein **vermitteltes Relay**: Der Server betritt als
-Eigentümer einen einladungsgeschützten Raum auf einem `wss://`-Broker, und
-jeder gekoppelte Client — Desktop, Web, Telefon — betritt denselben Raum mit
-einem befristeten Einlass-Token. Drei Teile greifen ineinander:
+Wenn das Telefon den Server nicht direkt erreicht, nutzt die Verbindung ein
+**vermitteltes Relay**: Der Server betritt als Eigentümer einen
+einladungsgeschützten Raum auf einem `wss://`-Broker, und gekoppelte Clients
+betreten ihn mit befristeten Einlass-Tokens. Drei Teile greifen ineinander:
 
 | Teil | Aufgabe |
 | --- | --- |
 | **Remote (Telefon-App)** | Die Begleit-Web-App, standardmäßig auf `remote.usectrl.dev` gehostet oder selbst gehostet. Sie lädt im Browser und hält den Kopplungsdatensatz in IndexedDB. |
-| **Relay-Broker** | Ein zustandsloses `wss://`-Relay (`cc_signaling_server`) für Räume mit N Teilnehmern. Es trägt **nur opake Frames**: Jeder Payload ist Ende-zu-Ende zwischen Telefon und Server versiegelt, der Broker sieht deshalb nie App-Daten oder das Kopplungsgeheimnis und deutet nie, was er weiterleitet. |
+| **Relay-Broker** | Ein zustandsloses `wss://`-Relay (`cc_signaling_server`) für Räume mit N Teilnehmern. Es leitet verschlüsselte Datensätze weiter, ohne das Kopplungsgeheimnis oder App-Klartext, sieht aber Routing-IDs, IPs, Datensatzgrößen und Timing. |
 | **`cc_server`** | Eigentümer des Raums. Er beantwortet die Aufrufe des Telefons über denselben Dispatcher, den jeder andere Client nutzt. |
 
 Ein Kopplungsangebot trägt einen **Verbindungsdeskriptor**, der jeden Weg zum
 Server aufführt (LAN, Tailnet, öffentliches `wss://`, Relay) plus den
 Identitäts-Fingerabdruck. Der Resolver des Telefons wählt den besten
-erreichbaren Weg und legt den Fingerabdruck beim ersten Verbinden fest
-(TOFU). Das Relay sichert die Erreichbarkeit auch dann, wenn kein direkter
-Weg existiert, und kann den Verkehr nie lesen.
+erreichbaren Weg. Der Server signiert den verschlüsselten Handshake, und der
+Client legt dessen Fingerabdruck fest. Prüfe den Fingerabdruck beim ersten
+Verbinden gegen einen QR-Code oder eine andere vertrauenswürdige Quelle: Eine
+erste signierte Identität allein beweist nicht, welchen Server du erreicht
+hast. Ein geänderter Pin wird abgelehnt, statt still erneut vertraut zu
+werden. Das Relay trägt Chiffretext, wenn kein direkter Weg existiert, kann
+die Verbindung aber weiterhin unterbrechen oder verzögern.
 
 ## Was der Kopplungs-Payload ist
 
@@ -85,20 +92,23 @@ Hier zählt der Aufbau.
 https://<pwa-host>/#<payload>
 ```
 
-Der Payload liegt im URL-**Fragment**, dem Teil nach `#`, den Browser nie an
-den Server schicken. Der HTTPS-Host der PWA sieht ihn deshalb nie. Er trägt
-alles, was das Telefon braucht, um den Server zu erreichen und nachzuweisen,
-wer es ist: den Verbindungsdeskriptor (jeder Weg plus der
-Identitäts-Fingerabdruck), eine frisch ausgestellte Geräte-ID, einen vorab
-geteilten Schlüssel von 32 Byte und einen Ablaufstempel. Das Telefon
-dekodiert ihn, speichert einen Kopplungsdatensatz lokal und entfernt das
-Fragment, sodass das Geheimnis aus der URL verschwindet.
+Der Payload liegt im URL-**Fragment**, dem Teil nach `#`, den Browser nicht in
+der HTTP-Anfrage an den PWA-Host schicken. Er trägt alles, was das Telefon
+braucht, um den Server zu erreichen und nachzuweisen, wer es ist: den
+Verbindungsdeskriptor (jeder Weg plus der Identitäts-Fingerabdruck), eine
+frisch ausgestellte Geräte-ID, einen vorab geteilten Schlüssel von 32 Byte und
+einen Ablaufstempel. Das Telefon dekodiert ihn, speichert einen
+Kopplungsdatensatz lokal und entfernt das Fragment aus der URL. Der Code der
+Web-App kann das Fragment lesen. Nutze deshalb einen vertrauenswürdigen
+App-Host und behandle den Link wie ein Geheimnis.
 
 Es gibt zwei Payload-Formen, und sie sind **nicht austauschbar**. Der
 Telefon-QR aus dem Kopplungsbereich in der App ist der v2-`PairingPayload`
 oben und zeigt auf den Host der Remote-PWA. `cc_server pair --client-url`
-gibt einen anderen, älteren v1-Link aus (`{s, i, k}` — Server-URL,
-Geräte-ID, Schlüssel), nur für den **Web**-Client.
+gibt einen v1-Link aus (`{s, i, k}` — Server-URL,
+Geräte-ID, Schlüssel), der nur für den **Web**-Client gedacht ist. Dies sind
+Kopplungsdatenformate, keine Transport-Fallbacks: Beide Clients müssen das
+aktuelle verschlüsselte Sitzungsprotokoll unterstützen.
 
 Sie unterscheiden sich auch in der Lebensdauer, und das vertauscht man
 leicht:
@@ -106,7 +116,11 @@ leicht:
 | Ausgestellt von | Gültigkeit der Zugangsdaten |
 | --- | --- |
 | Kopplungsbereich in der App (`pairing.mint`) | immer 30 Tage |
-| `cc_server pair` auf der Kommandozeile | **Keine** — die Zugangsdaten laufen nicht ab |
+| `cc_server pair` auf der Kommandozeile | Kein Ablauf kodiert; Serverrichtlinien gelten weiterhin |
+
+Serverweite Richtlinien für das Höchstalter von Geräten und den
+Leerlauf-Timeout können beide Zugangsdaten früher ablehnen. Keines der beiden
+Kopplungsformate umgeht diese Richtlinien.
 
 ## Das Zugriffsmodell
 
@@ -167,13 +181,16 @@ Invariante der
 [Arbeitsbereichs-Isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/), die
 der Rest des Produkts durchsetzt.
 
-### 5. Ende-zu-Ende versiegelte Frames mit dem vorab geteilten Schlüssel
+### 5. Ende-zu-Ende-Verschlüsselung bei direkten und über das Relay laufenden Verbindungen
 
-Jeder Frame zwischen Telefon und Server ist mit dem Kopplungsschlüssel
-versiegelt. Das Einlass-Token lässt einen Client nur in den Raum, es
-entschlüsselt nichts. Der Broker leitet Chiffretext weiter und sieht den
-Schlüssel nie. Ein widerrufenes Gerät findet seine Zugangsdaten schon weg,
-deshalb **fällt es beim erneuten Verbinden geschlossen aus**.
+Jede direkte oder über das Relay laufende Client-Sitzung erfordert einen
+signierten Noise-Handshake. Der Kopplungsschlüssel authentifiziert diesen
+Handshake; frische ephemere Schlüssel leiten die Verkehrsschlüssel ab, statt
+mit dem Kopplungsschlüssel jeden Frame zu versiegeln. Der Server signiert
+seine Identität in den Austausch hinein, und der Client prüft seinen
+gespeicherten Fingerabdruck-Pin. Es gibt keinen Klartext- oder
+Altclient-Fallback. Ein Relay-Einlass-Token lässt einen Client nur in einen
+Raum; die Datensätze kann es nicht entschlüsseln.
 
 In der App ausgestellte Zugangsdaten sind auf 30 Tage befristet. Danach
 lehnt das Verbindungs-Gate sie ab, und das Telefon muss neu gekoppelt
@@ -190,21 +207,26 @@ Sitzung**: Drei deiner Geräte zehren von einem Kontingent. Ein gekaperter
 Client verschafft sich keinen Spielraum, indem er weitere Sitzungen öffnet,
 und ein lautes Mitglied kann den anderen das Kontingent nicht wegnehmen.
 
-### 7. Ein Broker, der nichts erfährt
+### 7. Ein Broker, der keine App-Inhalte lesen kann
 
-Der Relay-Broker ist absichtlich dumm: Er stellt Räume bereit, leitet
-versiegelte Frames weiter und hält keine Konten, keine App-Daten und keine
-Schlüssel. Räume sind einladungsgeschützt und flüchtig. App-Daten, Audio,
-Transkript, Quellcode und Zugangsdaten bleiben auf dem Server.
+Der Relay-Broker stellt flüchtige, einladungsgeschützte Räume bereit und
+leitet verschlüsselte Datensätze weiter, ohne App-Klartext oder
+Kopplungsschlüssel. Er sieht weiterhin IP-Adressen, Raum- und Peer-IDs,
+Datensatzgrößen, Timing und Lebensdauer der Verbindung und kann Verkehr
+verwerfen oder verzögern. Der gekoppelte Client und der gewählte `cc_server`
+sind die Klartext-Endpunkte; der Serverbetreiber und Dienste, an die er
+Inhalte sendet, können diese Inhalte sehen. Verschlüsselung während der
+Übertragung verschlüsselt keine Serverdaten im Ruhezustand.
 
 ## Live-Aktualisierungen
 
 Nach der Kopplung erhält das Telefon **Live-Aktualisierungen** als
 Benachrichtigungs-Frames — neue Agentennachrichten, dir zugewiesene Tickets,
 Statusänderungen — analog zu den Benachrichtigungen des Desktops. Der Server
-sendet diese Frames an jede verbundene Sitzung, und der Filter auf den
-Arbeitsbereich greift auf dem Client. Was du siehst, gilt für den
-Arbeitsbereich, den du gerade ansiehst.
+prüft die Arbeitsbereichsmitgliedschaft, bevor er ein Ereignis an eine Sitzung
+weiterleitet. Der Client filtert diese bereits autorisierten Ereignisse dann auf
+den Arbeitsbereich, den du gerade ansiehst; dieser Anzeigefilter ist nicht die
+Zugriffsgrenze.
 
 ## Wo es liegt
 
@@ -218,8 +240,9 @@ Deep Link unterscheidet sich.
 
 ::::note
 Die Fernsteuerung liegt auf dem Server und wird über MCP **nicht**
-bereitgestellt. Das Telefon spricht über das Relay mit dem eigenen Dispatcher
-des Servers. Es ist kein MCP-Client eines externen Servers.
+bereitgestellt. Das Telefon spricht über seine verschlüsselte direkte oder über
+das Relay laufende Verbindung mit dem eigenen Dispatcher des Servers. Es ist
+kein MCP-Client eines externen Servers.
 ::::
 
 ## Siehe auch

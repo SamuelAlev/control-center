@@ -1,21 +1,24 @@
 ---
 title: Skills installeren en beheren
-description: Voeg GitHub-repositories toe als skillbronnen, blader door hun catalogi en installeer, werk bij of verwijder skills via de antivirusscanpoort.
+description: Installeer en werk skills in de werkruimte bij via de scanpoort en vergelijk daarna opgeslagen revisies met geëvalueerde vaardigheidsevaluaties binnen een budget.
 slug: nl-NL/handleiding/gidsen/skills-beheren
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Deze gids laat zien hoe je een werkruimte vult met skills van GitHub: voeg een
 repository als bron toe, installeer de skills die je ervan wilt en houd ze in
-de loop van de tijd actueel.
+de loop van de tijd actueel. Je kunt ook een opgeslagen revisie tegen een
+bijpassende basislijn evalueren voordat je besluit of je die wilt houden.
 
 Wat je vóór je begint moet weten: **een bronrepository is onbetrouwbaar.** De
 naam, beschrijving en het aantal sterren zijn geschreven door wie de repository
-bezit. Het enige veiligheidssignaal dat Control Center vertrouwt, is het
-oordeel van de antivirusscan, waar elke installatie doorheen gaat voordat er
-iets de schijf of een agentprompt bereikt. Wil je de redenering erachter, lees
-dan de [skills-sectie van het agentmodel](/nl-NL/handleiding/concepten/agentmodel/); deze
-pagina blijft bij het doen.
+bezit. Elke installatie gaat door de antivirusscanpoort voordat er iets de
+schijf of een agentprompt bereikt. Dat oordeel is een toegangscontrole, geen
+bewijs dat een skill veilig of nuttig is. Lees de
+[skills-sectie van het agentmodel](/nl-NL/handleiding/concepten/agentmodel/)
+voor het installatiemodel en [Evals en
+kwaliteit](/nl-NL/handleiding/concepten/evals-en-kwaliteit/) voor het verschil
+tussen gedragsbewijs en een scan.
 
 Skills staan onder **Instellingen → Werkruimte → Vaardigheden**
 (`/workspaces/<id>/settings/workspace/skills`). Ze zijn werkruimtegebonden: de
@@ -90,6 +93,89 @@ installatie — een skill waarvan de nieuwe versie in quarantaine raakt, wordt
 geweigerd en de versie die je had blijft staan. De hash van de oude versie
 wordt als rollbackreferentie in de lock bewaard.
 
+## Een skill evalueren
+
+1. Open **Instellingen → Werkruimte → Vaardigheden**, selecteer de
+   geïnstalleerde skill en sla eventuele wijzigingen op. Controleer onder
+   **Vaardigheidsevaluatie** de pakkethash.
+2. Kies **Evaluatie starten**. Kies een **Takencorpus** dat bij het doel van de
+   skill past, en een **Adapter**. De ingebouwde harness gebruikt een
+   geconfigureerde provider en een model dat hulpmiddelen kan gebruiken.
+   **Claude Code** gebruikt het standaard beheerde Claude-account en een concrete
+   modelidentificatie; meld je eerst aan onder **Instellingen → Adapters**. Het
+   leent niet de persoonlijke aanmelding van de serverbeheerder.
+3. Kies een **Vergelijking** uit de tabel hieronder.
+4. Stel **Herhalingen per taak** (1–20) en **Budget (Amerikaanse centen)** in.
+   `100` betekent bijvoorbeeld US$ 1. Kies **Evaluatie starten** om betaald werk
+   bij de provider te autoriseren.
+5. Volg de campagne in **Observeerbaarheid → Kwaliteit**, of kom terug via
+   **Kwaliteit openen** in het skillpaneel.
+
+Voor **Claude Code**- en **Codex OAuth**-abonnementen is het budget een
+**API-equivalente drempel voor gebruik dat stopt**, geen factuurgrens of een
+maatstaf voor de abonnementsquota. `100` staat een drempel van US$ 1 toe: een
+aanroep die onderweg is, kan die overschrijden, maar er starten geen verdere
+aanroepen zodra het gerapporteerde gebruik die drempel bereikt. Onbekend gebruik
+stopt ook verdere aanroepen. Een klein budget kan de vergelijking gedeeltelijk
+laten; het belooft geen voltooiing van het geselecteerde takencorpus.
+
+Providers met een API-sleutel houden conservatieve reserveringen per aanroep aan
+op basis van gedocumenteerde tokenlimieten en prijsstelling. Ze kunnen `100`
+weigeren voordat er wordt uitgegeven wanneer één veilig gereserveerde aanroep
+meer nodig heeft. De fout vermeldt het geselecteerde model en de minimale
+reservering; kies een goedkoper model of verhoog dat budget.
+
+| Vergelijking | Gebruik je om te beantwoorden |
+| --- | --- |
+| **Afwezig vs beschikbaar** | Verbeteren de normale ontdekking en het normale gebruik van deze skill het resultaat ten opzichte van de situatie zonder die skill? |
+| **Vorige vs huidige** | Behoudt of verbetert de update het gedrag ten opzichte van een eerder vastgelegde revisie? |
+| **Geforceerd laden vs afwezig** | Kan de inhoud helpen wanneer die expliciet wordt geladen? Dit diagnosticeert laadproblemen; het toont normale ontdekking niet aan. |
+| **Samenstelling** | Helpt het toevoegen van de kandidaat, of botst die met de geselecteerde achtergrondvaardigheden? De basislijn houdt dezelfde achtergrondinventaris zonder de kandidaat aan. |
+
+**Vorige vs huidige** vereist een pakkethash uit de campagnegeschiedenis.
+Evalueer een revisie voordat je die vervangt, als je die als basislijn wilt
+gebruiken; willekeurige Git-geschiedenis wordt niet geïmporteerd.
+
+Niet-opgeslagen wijzigingen, een niet-beschikbare hash en de alleen-lezen
+demomodus schakelen starten uit. De server controleert ook de toegang tot
+werkruimte en repository, de quarantaine van de scan, het actiebeleid,
+modelondersteuning, prijsstelling en de isolatie van de uitvoering. Los een
+mislukte controle op in plaats van die te omzeilen. De identiteit van provider
+en model wordt vastgelegd, maar een externe modelalias bevriest de
+onderliggende gewichten van de provider niet.
+
+### Inspecteren, annuleren en exporteren
+
+Lees dekking en uitgaven samen met de resultaten per taak en de regressies. Open
+afzonderlijke pogingen om waargenomen skill-loads, toolgebeurtenissen, fouten en
+verificatiebewijs te bekijken. Resultaten die **gedeeltelijk**, **verouderd** of
+**zonder uitsluitsel** zijn, vormen geen aanbeveling om een revisie over te
+nemen. De hash van een rapport identificeert het vastgelegde pakket, niet
+noodzakelijk het pakket dat nu is geïnstalleerd.
+
+Gebruik **Uitvoering annuleren** voor werk in de wachtrij of actief werk.
+Voltooide pogingen blijven zichtbaar; annuleren vergoedt geen providerwerk dat
+al is uitgevoerd. **Bewerkte JSON kopiëren** kopieert een begrensde
+bewijsexport naar het klembord, geen volledige replaybundel van privébroncode.
+Zie [Evals en kwaliteit](/nl-NL/handleiding/concepten/evals-en-kwaliteit/) voor
+bewijs en platformgrenzen.
+
+### Herevalueren na updates
+
+Automatische betaalde herevaluatie staat **standaard uit**. Kies na het
+evalueren van de huidige revisie een campagne onder **Configuratie van
+updatebeleid** en selecteer **Update-evaluaties inschakelen**. Dit beleid
+wijzigen vereist beheerdersrechten voor de werkruimte. De gekozen campagne
+levert het takencorpus, de adapter, de provider/model, de vergelijking, de
+herhalingen en het budget.
+
+Latere toegelaten inhoudswijzigingen plannen werk binnen het budget; ongewijzigde
+hashes worden gededupliceerd. **Update-evaluaties uitschakelen** voorkomt
+toekomstige automatische toelatingen. Gebruik **Uitvoering annuleren** voor een
+campagne die al is toegelaten. Historische rapporten blijven gekoppeld aan hun
+oorspronkelijke pakkethashes; herevaluatie publiceert, activeert of herschrijft
+een skill niet.
+
 ## Een skill verwijderen, een repository verwijderen
 
 **Verwijderen** (op de detailweergave van een geïnstalleerde skill, of
@@ -130,7 +216,8 @@ Reposkills doorlopen dezelfde scan die bij twijfel weigert (`pass` / `warn` /
 toegelaten; `quarantine` wordt tegengehouden, zonder override van een operator
 op dat pad.
 
-Zie [Repo-gebonden skills](/nl-NL/handleiding/concepten/agentmodel/#repo-scoped-skills) en
+Zie [Repo-gebonden
+skills](/nl-NL/handleiding/concepten/agentmodel/#repo-gebonden-skills) en
 [Slash-commando’s](/nl-NL/handleiding/referentie/slash-commandos/).
 
 ## Gerelateerde gidsen
@@ -141,3 +228,4 @@ Zie [Repo-gebonden skills](/nl-NL/handleiding/concepten/agentmodel/#repo-scoped-
 ## Gerelateerde concepten
 
 - [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/)
+- [Evals en kwaliteit](/nl-NL/handleiding/concepten/evals-en-kwaliteit/)

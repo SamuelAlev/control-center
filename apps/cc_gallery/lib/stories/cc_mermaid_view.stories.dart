@@ -36,6 +36,15 @@ Widget ccMermaidStory(BuildContext context) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            SizedBox(
+              height: 280,
+              child: CcMermaidView(
+                source: mermaidSamples.first.$2,
+                style: style,
+                interactive: true,
+              ),
+            ),
+            const SizedBox(height: 24),
             for (final (title, source) in mermaidSamples) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),

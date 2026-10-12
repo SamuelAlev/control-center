@@ -1,45 +1,30 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart' show NetworkException;
 import 'package:cc_infra/src/network/google_calendar_api_client.dart';
 import 'package:cc_infra/src/network/network_constants.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
+GoogleCalendarApiClient _client(
+  FutureOr<HttpResponse> Function(HttpRequest request) handler,
+) => GoogleCalendarApiClient(TestHttpClient(handler: handler));
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => handler(options);
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(Object? body, {int status = 200}) => ResponseBody.fromString(
-  body == null ? '' : jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
-
-GoogleCalendarApiClient _client(ResponseBody Function(RequestOptions) h) {
-  final dio = Dio()..httpClientAdapter = _FakeAdapter(h);
-  return GoogleCalendarApiClient(dio);
+/// A [TestHttpClient] plus the client under test, so a test can assert on the
+/// captured request as well as the parsed result.
+({GoogleCalendarApiClient client, TestHttpClient fake}) _clientWithFake(
+  FutureOr<HttpResponse> Function(HttpRequest request) handler,
+) {
+  final fake = TestHttpClient(handler: handler);
+  return (client: GoogleCalendarApiClient(fake), fake: fake);
 }
 
 void main() {
   group('GoogleCalendarApiClient.listCalendars', () {
     test('lists calendars from a single page', () async {
       final client = _client(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'items': [
             {'id': 'cal-1', 'summary': 'Work'},
             {'id': 'cal-2', 'summary': 'Personal'},
@@ -55,17 +40,17 @@ void main() {
 
     test('follows nextPageToken across pages', () async {
       var call = 0;
-      final client = _client((options) {
+      final client = _client((request) {
         call++;
         if (call == 1) {
-          return _json({
+          return httpTextResponse(request, {
             'items': [
               {'id': 'cal-1', 'summary': 'A'},
             ],
             'nextPageToken': 'tok',
           });
         }
-        return _json({
+        return httpTextResponse(request, {
           'items': [
             {'id': 'cal-2', 'summary': 'B'},
           ],
@@ -79,14 +64,14 @@ void main() {
     });
 
     test('returns empty when items missing', () async {
-      final client = _client((_) => _json({}));
+      final client = _client((request) => httpTextResponse(request, {}));
       final calendars = await client.listCalendars(accountId: 'acct-1');
       expect(calendars, isEmpty);
     });
 
     test('drops non-map items', () async {
       final client = _client(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'items': [
             'str',
             {'id': 'x', 'summary': 'x'},
@@ -99,32 +84,24 @@ void main() {
       expect(calendars.single.id, 'x');
     });
 
-    test('stamps the account id as extra on the request', () async {
-      RequestOptions? captured;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((options) {
-          captured = options;
-          return _json({'items': []});
-        });
-      final client = GoogleCalendarApiClient(dio);
+    test('stamps the account id as metadata on the request', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {'items': []}),
+      );
 
       await client.listCalendars(accountId: 'my-acct');
 
-      expect(captured!.path, '$googleCalendarApiBaseUrl/users/me/calendarList');
-      expect(captured!.extra[googleAccountIdExtraKey], 'my-acct');
+      final request = fake.requests.single;
+      expect(
+        httpRequestUri(request).toString(),
+        '$googleCalendarApiBaseUrl/users/me/calendarList',
+      );
+      expect(request.additionalData[googleAccountIdExtraKey], 'my-acct');
     });
 
-    test('maps a DioException to NetworkException', () async {
+    test('maps a failed status to NetworkException', () async {
       final client = _client(
-        (options) => throw DioException(
-          requestOptions: options,
-          type: DioExceptionType.badResponse,
-          response: Response(
-            requestOptions: options,
-            statusCode: 500,
-            data: 'boom',
-          ),
-        ),
+        (request) => httpTextResponse(request, 'boom', statusCode: 500),
       );
       await expectLater(
         client.listCalendars(accountId: 'acct-1'),
@@ -132,16 +109,11 @@ void main() {
       );
     });
 
-    test('rethrows cancel exceptions unchanged', () async {
-      final client = _client(
-        (options) => throw DioException(
-          requestOptions: options,
-          type: DioExceptionType.cancel,
-        ),
-      );
+    test('rethrows cancellations unchanged', () async {
+      final client = _client((request) => throw RhttpCancelException(request));
       await expectLater(
         client.listCalendars(accountId: 'acct-1'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
   });
@@ -149,7 +121,7 @@ void main() {
   group('GoogleCalendarApiClient.listEvents', () {
     test('lists events in a window', () async {
       final client = _client(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'items': [
             {
               'id': 'e1',
@@ -174,13 +146,9 @@ void main() {
     });
 
     test('URL-encodes the calendar id', () async {
-      RequestOptions? captured;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((options) {
-          captured = options;
-          return _json({'items': []});
-        });
-      final client = GoogleCalendarApiClient(dio);
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {'items': []}),
+      );
 
       await client.listEvents(
         accountId: 'acct-1',
@@ -191,19 +159,15 @@ void main() {
 
       // Encoded calendar id appears in the path.
       expect(
-        captured!.path,
+        httpRequestUri(fake.requests.single).path,
         contains(Uri.encodeComponent('some.user@example.com')),
       );
     });
 
     test('passes timeMin/timeMax as ISO8601 UTC', () async {
-      RequestOptions? captured;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((options) {
-          captured = options;
-          return _json({'items': []});
-        });
-      final client = GoogleCalendarApiClient(dio);
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {'items': []}),
+      );
 
       await client.listEvents(
         accountId: 'acct-1',
@@ -212,25 +176,26 @@ void main() {
         timeMax: DateTime.utc(2025, 3, 5, 8, 9, 10),
       );
 
-      expect(captured!.queryParameters['timeMin'], '2025-03-04T05:06:07.000Z');
-      expect(captured!.queryParameters['timeMax'], '2025-03-05T08:09:10.000Z');
-      expect(captured!.queryParameters['singleEvents'], true);
-      expect(captured!.queryParameters['orderBy'], 'startTime');
+      final query = fake.requests.single.query!;
+      expect(query['timeMin'], '2025-03-04T05:06:07.000Z');
+      expect(query['timeMax'], '2025-03-05T08:09:10.000Z');
+      expect(query['singleEvents'], 'true');
+      expect(query['orderBy'], 'startTime');
     });
 
     test('follows nextPageToken across pages', () async {
       var call = 0;
-      final client = _client((_) {
+      final client = _client((request) {
         call++;
         if (call == 1) {
-          return _json({
+          return httpTextResponse(request, {
             'items': [
               {'id': 'e1', 'summary': 'A'},
             ],
             'nextPageToken': 'tok',
           });
         }
-        return _json({
+        return httpTextResponse(request, {
           'items': [
             {'id': 'e2', 'summary': 'B'},
           ],
@@ -249,7 +214,7 @@ void main() {
     });
 
     test('returns empty when items absent', () async {
-      final client = _client((_) => _json({}));
+      final client = _client((request) => httpTextResponse(request, {}));
       final events = await client.listEvents(
         accountId: 'acct-1',
         calendarId: 'primary',
@@ -259,17 +224,9 @@ void main() {
       expect(events, isEmpty);
     });
 
-    test('maps a DioException to NetworkException', () async {
+    test('maps a 401 to NetworkException', () async {
       final client = _client(
-        (options) => throw DioException(
-          requestOptions: options,
-          type: DioExceptionType.badResponse,
-          response: Response(
-            requestOptions: options,
-            statusCode: 401,
-            data: 'unauthorized',
-          ),
-        ),
+        (request) => httpTextResponse(request, 'unauthorized', statusCode: 401),
       );
       await expectLater(
         client.listEvents(
@@ -283,15 +240,60 @@ void main() {
     });
   });
 
+  group('GoogleCalendarApiClient.listEventsSync', () {
+    test('a 410 means the sync token expired', () async {
+      final client = _client(
+        (request) => httpTextResponse(request, 'gone', statusCode: 410),
+      );
+      await expectLater(
+        client.listEventsSync(accountId: 'acct-1', syncToken: 'tok'),
+        throwsA(isA<CalendarSyncTokenExpired>()),
+      );
+    });
+
+    test('an expired token is presented instead of the window', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {'items': []}),
+      );
+
+      await client.listEventsSync(
+        accountId: 'acct-1',
+        calendarId: 'primary',
+        timeMin: DateTime.utc(2025, 1, 1),
+        timeMax: DateTime.utc(2025, 1, 2),
+        syncToken: 'tok-1',
+      );
+
+      final query = fake.requests.single.query!;
+      expect(query['syncToken'], 'tok-1');
+      expect(query.containsKey('timeMin'), isFalse);
+      expect(query.containsKey('timeMax'), isFalse);
+    });
+
+    test('returns the nextSyncToken from the final page', () async {
+      final client = _client(
+        (request) => httpTextResponse(request, {
+          'items': [
+            {'id': 'e1', 'summary': 'A'},
+          ],
+          'nextSyncToken': 'tok-2',
+        }),
+      );
+      final result = await client.listEventsSync(
+        accountId: 'acct-1',
+        timeMin: DateTime.utc(2025, 1, 1),
+        timeMax: DateTime.utc(2025, 1, 2),
+      );
+      expect(result.events.map((e) => e.id), ['e1']);
+      expect(result.nextSyncToken, 'tok-2');
+    });
+  });
+
   group('GoogleCalendarApiClient.patchEventResponse', () {
     test('PATCHes the attendees array', () async {
-      RequestOptions? captured;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((options) {
-          captured = options;
-          return _json({});
-        });
-      final client = GoogleCalendarApiClient(dio);
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {}),
+      );
 
       await client.patchEventResponse(
         accountId: 'acct-1',
@@ -302,22 +304,20 @@ void main() {
         ],
       );
 
-      expect(captured!.method, 'PATCH');
+      final request = fake.requests.single;
+      expect(request.method.value, 'PATCH');
       // Path contains URL-encoded calendar + event ids.
-      expect(captured!.path, contains('primary'));
-      expect(captured!.path, contains('evt-123'));
-      expect((captured!.data as Map)['attendees'], hasLength(1));
-      expect(captured!.extra[googleAccountIdExtraKey], 'acct-1');
+      expect(httpRequestUri(request).path, contains('primary'));
+      expect(httpRequestUri(request).path, contains('evt-123'));
+      final body = request.body! as HttpBodyJson;
+      expect((body.json as Map)['attendees'], hasLength(1));
+      expect(request.additionalData[googleAccountIdExtraKey], 'acct-1');
     });
 
     test('URL-encodes the calendar and event ids', () async {
-      RequestOptions? captured;
-      final dio = Dio()
-        ..httpClientAdapter = _FakeAdapter((options) {
-          captured = options;
-          return _json({});
-        });
-      final client = GoogleCalendarApiClient(dio);
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {}),
+      );
 
       await client.patchEventResponse(
         accountId: 'acct-1',
@@ -326,21 +326,14 @@ void main() {
         attendees: const [],
       );
 
-      expect(captured!.path, contains(Uri.encodeComponent('me@example.com')));
-      expect(captured!.path, contains(Uri.encodeComponent('evt with space')));
+      final path = httpRequestUri(fake.requests.single).path;
+      expect(path, contains(Uri.encodeComponent('me@example.com')));
+      expect(path, contains(Uri.encodeComponent('evt with space')));
     });
 
-    test('maps a DioException to NetworkException', () async {
+    test('maps a failed status to NetworkException', () async {
       final client = _client(
-        (options) => throw DioException(
-          requestOptions: options,
-          type: DioExceptionType.badResponse,
-          response: Response(
-            requestOptions: options,
-            statusCode: 403,
-            data: 'forbidden',
-          ),
-        ),
+        (request) => httpTextResponse(request, 'forbidden', statusCode: 403),
       );
       await expectLater(
         client.patchEventResponse(

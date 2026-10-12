@@ -2,7 +2,7 @@
 title: Připojte se ke vzdálenému serveru
 description: Namiř aplikaci pro počítač nebo webového klienta na cc_server, který běží jinde, a přepínej mezi servery bez restartu.
 slug: cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Každý klient jen vykresluje `cc_server`, který vlastní data. Desktop si umí
@@ -14,7 +14,7 @@ který běží jinde: malý stroj, cloudové VM, sestavovací server.
 ## Než začneš
 
 - Běžící `cc_server`. Když žádný nemáš, viz [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
-- Buď tři párovací hodnoty, které server vydal, **URL serveru** (`ws://…/rpc` nebo `wss://…/rpc`), **ID zařízení** a **párovací klíč**, nebo jednorázový **kód pozvánky** od správce pracovního prostoru. Uplatnění pozvánky ti založí uživatele, zapíše členství a vydá pověření pro tohoto klienta, takže ID zařízení ani klíč do ruky nedostaneš.
+- Buď tři párovací hodnoty, které server vydal, **URL serveru** (`ws://…/rpc` nebo `wss://…/rpc`), **ID zařízení** a **párovací klíč**, nebo jednorázový **kód pozvánky** od správce pracovního prostoru. Uplatnění pozvánky ti založí uživatele, zapíše členství a vydá pověření pro tohoto klienta, takže ID zařízení ani klíč do ruky nedostaneš. Tyto hodnoty získej důvěryhodným kanálem a při prvním připojení zkontroluj otisk serveru proti důvěryhodnému QR kódu nebo známému pinu.
 
 ### Ověř, že je server dosažitelný
 
@@ -26,7 +26,7 @@ takže prohlížeč otevře jen socket `wss://` s certifikátem, kterému už d�
 a `cc_server` odmítne naslouchat na adrese mimo loopback bez TLS. Dej mu jedno z:
 
 - certifikát přímo, přes `--tls-cert` a `--tls-key`
-- reverzní proxy před ním, která ukončuje TLS, a server spuštěný s `--insecure` (nešifrovaně za proxy, jen v důvěryhodné síti)
+- reverzní proxy před ním, která ukončuje TLS, a server spuštěný s `--insecure` (nešifrovaně mezi proxy a serverem na vnějším posluchači, jen v důvěryhodné síti; nevypíná to povinnou šifrovanou klientskou relaci)
 - tunel nebo VPN, která certifikát dodá: Tailscale, cloudflared nebo podobné. **Nastavení → Server → Připojení a stav** má vestavěné zapnutí tunelu pod **Sdílet tento server**.
 
 Dvě nastavení na straně serveru se snadno přehlédnou. Za proxy, NAT nebo tunelem
@@ -56,7 +56,8 @@ uvidíš chybu. Řádek serveru, na kterém právě jsi, akci **Přepnout** nem�
 místní server je první řádek a nese popisek **Spustit v této aplikaci**.
 
 Po přepnutí desktop žádnou databázi nevlastní. Každá obrazovka čte a zapisuje
-přes vzdálený server po WebSocketu.
+přes vzdálený server po podepsané, od konce ke konci šifrované relaci
+WebSocket; stejná ochrana platí na loopbacku i přes relé.
 
 ## Připoj webového klienta
 
@@ -68,13 +69,18 @@ Webové sestavení je vždy vzdálené.
 
 Když je v URL odkaz na párování, pole jsou předvyplněná. Párovací klíč se veze
 ve **fragmentu** URL, který prohlížeč nikdy nepošle serveru hostujícímu
-stránku, takže ho statický hostitel neuvidí.
+stránku. S odkazem zacházej jako s tajemstvím a důvěřuj stránce, která
+webového klienta servíruje: fragment nechrání před škodlivým kódem stránky.
 
-:::note[Média a zabezpečení]
-Média (avatary, obrázky kanálu, snímky PR) jdou přes proxy připojeného
-serveru, takže prohlížeč nikdy nenačítá upstream hostitele přímo. Content-Security
-Policy se pro každý požadavek otiskne z necitlivé cookie a povolí jen origin
-připojeného serveru.
+:::note[Média, editory a zabezpečení]
+Média (avatary, obrázky kanálu, snímky PR), přenosy záloh a provoz vloženého
+editoru používají šifrovaný tunel prostředků, ne čitelné veřejné HTTP cesty.
+Důvěryhodný editor
+v prohlížeči běží na vlastním originu webové aplikace; jeho service worker
+vede požadavky stávající ověřenou šifrovanou relací k backendu code-server na
+`cc_server`. Webového klienta hostuj přes HTTPS nebo zabezpečený loopback, aby
+byly service workery dostupné. Nativní klienti používají fasádu loopback
+s rozsahem podle schopnosti.
 :::
 
 ### Co prohlížeč nedělá
@@ -96,6 +102,7 @@ proto schová, když je hostitel bez rozhraní a nemá nainstalovaný žádný e
 
 - **Spojení vyprší**: server musí být z klienta dosažitelný. Zkontroluj bind (`--bind any`), že je port otevřený a že `--public-url` jmenuje adresu, na kterou se klient skutečně připojí. Přes otevřený internet je TLS povinné. Nešifrovaný bind mimo loopback se při startu odmítne, pokud server nebyl spuštěný s `--insecure` za proxy.
 - **Prohlížeč se odmítne připojit, ale nativní klient funguje**: origin prohlížeče není na seznamu `--allowed-origins` serveru. Výchozí povoluje jen `https://app.usectrl.dev` (a k tomu loopback).
+- **Identita serveru se změnila**: klient odmítne otisk, který se liší od jeho uloženého pinu. Identitu serveru ověř mimo pásmo a spáruj se znovu přes důvěryhodný kanál; varování neignoruj a nepřepínej na staršího klienta ani na otevřené RPC.
 - **Párovací klíč odmítnut**: na serveru znovu spusť `cc_server pair`, ať se klíč toho zařízení obmění, a zadej nový. Odvolané zařízení najde pověření pryč a přístup se zavře. Odvolání shodí živou relaci do několika sekund.
 - **Špatný pracovní prostor**: pracovní prostor je součást URL (`/workspaces/:workspaceId/…`) a jede s každým voláním, takže přepnutí pracovního prostoru v jednom klientovi změní jen tvůj pohled. Dosáhneš jen na pracovní prostory, ve kterých jsi členem. Všechno ostatní se odmítne textem "Not a member of this workspace". Viz [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
 

@@ -17,11 +17,12 @@ the MCP tool surface and the orchestration listener. Everything that needs to
 outlive a window, or that two clients should see identically, lives there.
 
 No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+**`RemoteRpcClient`** and issues repo operations and subscriptions over it.
+Direct and relayed sessions alike require a signed Noise handshake: the
+paired-device pre-shared key authenticates the exchange, while fresh traffic
+keys encrypt each session. **A session is not bound to a workspace.** The
+dispatcher is stateless: every workspace-scoped call carries its own
+`workspace_id` in its arguments and a call that omits one is refused.
 
 That is deliberate and it is what lets two clients on one server sit in
 different workspaces without a server-held "current workspace" for them to
@@ -83,9 +84,10 @@ server. The desktop never touches the database file directly.
 The web build is the same Flutter app compiled to run in a browser, hosted at
 [app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
 browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
+dials a `cc_server` over an encrypted WebSocket session and renders the full
+desktop interface. Once connected it shows the same screens against the same
+fleet, because it uses the same code over the same RPC. The gaps are the
+handful of places that need a
 native capability a browser does not have — the meeting capture quality layer
 below is the main one and OS notifications are another.
 
@@ -107,26 +109,29 @@ the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
 browser origins on its `--allowed-origins` list, which defaults to
 `https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Media (avatars, feed images, PR screenshots), uploads, backups and embedded
+editor HTTP/WebSockets travel through the encrypted resource tunnel, not
+readable public HTTP routes; signed paths still require authorization. The
+trusted editor frontend runs on the web app's own origin. Its Service Worker
+routes editor requests through the existing encrypted session to `cc_server`,
+which owns the files and the code-server backend. The browser needs HTTPS or a
+secure loopback context for Service Workers. Native clients use a
+capability-scoped loopback facade.
 
 ### Phone companion (cc_remote)
 
 The **Remote** app is a separate, lighter client — a Flutter web PWA at
 [remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+the full app. It connects directly when possible or through a brokered relay;
+both paths require end-to-end encryption. It speaks a read-mostly slice of the
+tool surface: read tickets, messages and the newsfeed; send a reply or update
+a ticket.
 
 A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
+tool policy, a session capability that locks privileged ops (pairing, for
+instance) out of a companion client, the per-call role and repo-grant checks
+above and rate limiting keep an approved (or leaked) pairing from becoming
+full remote control. Transport encryption does not grant permissions. See
 [Remote control and mobile](/manual/concepts/remote-control/) for the full
 security model.
 
@@ -204,25 +209,35 @@ cancelling processing and the calendar's record-and-link action.
 
 ## Pairing and trust
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Every client uses a **pre-shared key** provisioned once to authenticate its
+signed Noise handshake with `cc_server`, including over loopback and the relay:
 
 - The desktop in local mode generates a fresh key each boot and hands it to the
   spawned server via environment, so nothing secret is persisted on the desktop.
 - Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+  pairing flow or `pair` command. Native clients use the OS keychain; browser
+  clients store their pairing locally.
+
+The client checks the server's signed identity against its saved fingerprint
+pin. On first connection, verify that fingerprint through a trusted QR or
+other trusted channel: a signed first contact alone cannot authenticate who
+provided the key. If the identity changes, the client fails closed; re-pair
+through a trusted channel instead of ignoring the mismatch. Older clients and
+plaintext RPC cannot connect. TLS is still needed for browser origins,
+bootstrap and public metadata; `--insecure` affects the outer server listener,
+not the required encrypted session.
 
 Revocation is **live**, not lazy. The server watches its paired-device table
 and drops any open session whose device has left the active set, within
 seconds — on the direct WebSocket path and the relay path alike. You do not
 have to wait for the device to reconnect to cut it off.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+When the key arrives by link — on the phone or in a browser — it rides in the
+**URL fragment**, the part after `#` that browsers do not send in the request
+to the page host. The page's JavaScript can still read it, so trust that host
+and keep the link secret. The web client also has a connect form, where you
+paste a server and key directly, and an invite code, which it redeems for a
+credential minted for that browser alone.
 
 ## Related concepts
 

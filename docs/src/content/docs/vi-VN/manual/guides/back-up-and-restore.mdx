@@ -2,7 +2,7 @@
 title: Sao lưu và khôi phục
 description: Tạo ảnh chụp bản cài đặt, chuyển một không gian làm việc giữa các máy, khôi phục một không gian làm việc hoặc toàn bộ, và giữ bản sao ở nơi khác.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Hướng dẫn này bao quát năm việc người ta thực sự làm với bản sao lưu: tạo một bản,
@@ -17,15 +17,23 @@ Mọi thứ ở đây nằm tại **Cài đặt → Máy chủ → Sao lưu và 
 - Một **máy khách đầy đủ** — ứng dụng desktop hoặc web. Một điện thoại đã ghép nối không kích hoạt được bất cứ phần nào trong số này, và đó là chủ đích.
 - Để tạo, liệt kê, tải xuống hoặc xóa một **ảnh chụp cài đặt**: **owner** của bản cài đặt.
 - Với các thao tác theo từng không gian làm việc: **admin** của không gian làm việc đó để xuất, **owner** để nhập hoặc xóa nó.
-- Với tải xuống và tải lên: một kết nối **trực tiếp** tới máy chủ. Relay được môi giới chở các khung RPC chứ không chở truyền tệp, và các điều khiển truyền tự vô hiệu hóa kèm một ghi chú khi bạn đang đi qua nó.
+- Với tải xuống và tải lên: một máy khách đầy đủ đã ghép nối, trên kết nối trực tiếp hoặc qua relay được môi giới. Cả hai đường đều chở các byte của tệp qua cùng một đường hầm tài nguyên đã xác thực và mã hóa đầu-cuối; relay không thể đọc chúng.
 
-:::caution[Ảnh chụp cài đặt là thao tác thủ công]
+::::caution[Ảnh chụp cài đặt là thao tác thủ công]
 **Sao lưu ngay** vẫn chỉ tạo ảnh chụp toàn bộ cài đặt khi có yêu cầu. Quy trình
 **Workspace backup** tích hợp thì có thể sao lưu cơ sở dữ liệu của một không gian
 làm việc mỗi tuần một lần và xóa các bản sao lưu của không gian làm việc đó cũ hơn
 30 ngày. Nó không sao chép `global.db`, các không gian làm việc khác, hay các tệp
 bên cạnh cơ sở dữ liệu. Hãy giữ bản sao ngoài máy ở nơi riêng.
-:::
+::::
+
+::::caution[Bản sao lưu không được mã hóa khi lưu trữ]
+Việc truyền tải đã mã hóa kết thúc tại máy khách của bạn và tại `cc_server`. Các
+thư mục ảnh chụp, bản xuất không gian làm việc, tệp đã tải xuống và cơ sở dữ liệu
+của máy chủ không được Control Center mã hóa khi lưu trữ. Hãy bảo vệ máy chủ, các
+tệp tải xuống và bản sao ngoài máy bằng mã hóa lưu trữ cùng các kiểm soát truy cập
+của riêng bạn.
+::::
 
 ## Bản sao lưu bao gồm những gì
 
@@ -319,7 +327,7 @@ lưu chúng.
 
 | Triệu chứng | Nguyên nhân và cách khắc phục |
 | --- | --- |
-| Điều khiển tải xuống và tải lên bị vô hiệu hóa kèm ghi chú về relay | Bạn đang kết nối qua relay được môi giới, vốn không chở truyền tệp. Hãy kết nối trực tiếp |
+| Tải xuống hoặc tải lên thất bại sau khi kết nối thay đổi | Hãy thử lại trên kết nối đã ghép nối đang hoạt động. Cả đường trực tiếp lẫn relay đều hỗ trợ truyền tệp đã mã hóa; không đường nào để lộ một lối lùi về HTTP bản rõ |
 | "Máy chủ từ chối" | Vai trò. Tạo hoặc liệt kê một ảnh chụp cài đặt cần operator của bản cài đặt. Tải xuống một không gian làm việc cần admin, khôi phục một không gian làm việc cần owner, một tệp zip toàn bộ ảnh chụp cần operator của bản cài đặt |
 | "Máy chủ này không có bề mặt sao lưu" | Máy chủ không có cổng sao lưu nào được nối — một máy chủ demo. Các thao tác vắng mặt thay vì bị từ chối |
 | "Tệp lớn hơn mức máy chủ chấp nhận" | Tải lên bị giới hạn ở 8 GiB. Hãy đặt tệp lên máy chủ và dùng **Nhập** → **Chọn tệp** thay thế |
@@ -333,7 +341,7 @@ lưu chúng.
 
 - [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): thư mục dữ liệu đến từ đâu
 - [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/): kết nối trực tiếp so với kết nối qua relay
-- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): thông tin xác thực mà các tuyến truyền dùng để ký
+- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): thông tin xác thực của thiết bị đã ghép nối mà việc truyền đã mã hóa cùng các yêu cầu tài nguyên đã ký của nó dùng
 
 ## Khái niệm và tham chiếu liên quan
 

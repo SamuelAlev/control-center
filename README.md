@@ -171,9 +171,11 @@ Follow live agents and inspect run costs, token use and latency in your workspac
 
 ### Skill and agent editors
 
-Edit workspace skills and configure each agent's model, instructions and permissions.
+Edit workspace skills and configure each agent's model, instructions and permissions. Run paired skill evaluations, inspect per-attempt evidence in Quality, and opt into revision-triggered reevaluation.
 
 [Manage skills →](https://usectrl.dev/manual/guides/manage-skills/)
+
+[Evaluate a skill →](https://usectrl.dev/manual/guides/manage-skills/#evaluate-a-skill)
 
 </td>
 <td width="50%">
@@ -279,6 +281,22 @@ do. Soft budgets warn, hard budgets pause the agent and every run keeps a log.
 
 [Read the architecture guide →](https://usectrl.dev/manual/concepts/architecture/) · [Sandbox security →](https://usectrl.dev/manual/concepts/sandbox-security/)
 
+### End-to-end encrypted on every connection
+
+Desktop, web and phone encrypt session content between your paired device and your
+Control Center server, whether connected directly or through the relay. RPC,
+terminal input/output, editor traffic, attachments and backup transfers use the same
+authenticated encrypted channel. The relay forwards ciphertext it cannot decrypt;
+server identity pins reject an unexpected server.
+
+Encryption is mandatory. Update the server and clients together:
+older clients and plaintext resource requests are rejected. Your server remains a
+trusted endpoint, and configured agents and model providers can read the content you
+send them. This does not encrypt stored databases or backups, or hide connection
+metadata.
+
+[Security and trust boundaries](SECURITY.md)
+
 ---
 
 ## Install
@@ -290,8 +308,8 @@ Make yourself at home. Your next developer day can start here, free and open sou
 | **macOS**   | [Apple Silicon `.dmg`](https://usectrl.dev/download/macos)                                   | macOS 13+. Signed and notarized. Intel Macs build from source |
 | **Windows** | [x64 installer](https://usectrl.dev/download/windows)                                        | Windows 10+. A portable `.zip` is on the releases page        |
 | **Linux**   | [x86_64 AppImage](https://usectrl.dev/download/linux)                                        | glibc 2.35+ and GTK 3 (Ubuntu 22.04+). Also a `.tar.gz`       |
-| **Web**     | [app.usectrl.dev](https://app.usectrl.dev)                                                   | Same app, nothing to install. Connect to a server you run     |
-| **Phone**   | [remote.usectrl.dev](https://remote.usectrl.dev)                                             | Pair with your server over a sealed relay                     |
+| **Web**     | [app.usectrl.dev](https://app.usectrl.dev)                                                   | Same app, nothing to install. Encrypted connection to your server |
+| **Phone**   | [remote.usectrl.dev](https://remote.usectrl.dev)                                             | Encrypted direct or relayed connection to your server        |
 
 Every build is on [GitHub Releases](https://github.com/SamuelAlev/control-center/releases/latest),
 along with standalone `cc_server` archives for all three platforms. `cc-server`,

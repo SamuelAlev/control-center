@@ -51,6 +51,8 @@ export 'package:cc_markdown/src/mermaid/render/mermaid_view.dart'
         clearMermaidSceneCache,
         mermaidSemanticLabel,
         resolveMermaidRenderPlan;
+export 'package:cc_markdown/src/mermaid/render/mermaid_viewport.dart'
+    show CcMermaidViewportController;
 
 // Parser.
 export 'package:cc_markdown/src/parser/emoji_shortcodes.dart';

@@ -2,7 +2,7 @@
 title: Penerapan dan klien
 description: Bagaimana seni bina klien nipis Control Center memisahkan pelayan tanpa kepala daripada klien desktop, web dan mudah alihnya.
 slug: ms-MY/manual-pengguna/konsep/penerapan
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center bukan satu program tunggal. Ia ialah **seni bina klien nipis**:
@@ -22,9 +22,10 @@ tetingkap, atau yang patut dilihat secara serupa oleh dua klien, tinggal di situ
 
 Tiada klien membuka sendiri fail pangkalan data. Sebaliknya, setiap klien
 memegang satu **`RemoteRpcClient`** dan mengeluarkan operasi repo serta
-langganan melaluinya. Pelayan mengesahkan sambungan itu terhadap kunci
-pra-kongsi peranti berpasangan — dan selepas itu tidak lagi mengambil berat
-tentang sambungan tersebut. **Sesi tidak terikat pada ruang kerja.** Penghantar
+langganan melaluinya. Sesi langsung dan sesi melalui geganti sama-sama memerlukan
+jabat tangan Noise yang ditandatangani: kunci pra-kongsi peranti berpasangan
+mengesahkan pertukaran itu, manakala kunci trafik yang baharu menyulitkan setiap
+sesi. **Sesi tidak terikat pada ruang kerja.** Penghantar
 itu tanpa keadaan: setiap panggilan berlingkup ruang kerja membawa
 `workspace_id` sendiri dalam argumennya, dan panggilan yang terlepas satu akan
 ditolak.
@@ -100,10 +101,11 @@ pelayan. Desktop tidak pernah menyentuh fail pangkalan data secara langsung.
 Binaan web ialah apl Flutter yang sama, dikompil untuk berjalan dalam penyemak
 imbas dan dihoskan di [app.usectrl.dev](https://app.usectrl.dev), jadi tiada apa
 yang perlu dipasang. Penyemak imbas tidak boleh melahirkan subproses, jadi klien
-web **sentiasa** jauh: ia mendail `cc_server` melalui `wss://` dan memaparkan
-antara muka desktop yang penuh. Sebaik sahaja bersambung, ia menunjukkan skrin
-yang sama terhadap armada yang sama, kerana ia kod yang sama melalui RPC yang
-sama. Jurangnya ialah segelintir tempat yang memerlukan keupayaan natif yang
+web **sentiasa** jauh: ia mendail `cc_server` melalui sesi WebSocket tersulit dan
+memaparkan antara muka desktop yang penuh. Sebaik sahaja bersambung, ia
+menunjukkan skrin yang sama terhadap armada yang sama, kerana ia menggunakan kod
+yang sama melalui RPC yang sama.
+Jurangnya ialah segelintir tempat yang memerlukan keupayaan natif yang
 tiada pada penyemak imbas — lapisan kualiti rakaman mesyuarat di bawah ialah
 yang utama, dan pemberitahuan OS ialah satu lagi.
 
@@ -127,28 +129,32 @@ yang membinanya. Pelayan hanya menerima asalan penyemak imbas yang tersenarai
 dalam `--allowed-origins`, yang lalai kepada `https://app.usectrl.dev`, jadi
 menghoskan bundel itu sendiri bermakna menambah asalannya.
 
-Media (avatar, imej suapan, tangkapan skrin PR) melalui titik akhir proksi
-pelayan dan bukan menghubungi hos huluan secara langsung, jadi penyemak imbas
-tidak pernah mengambil asalan sewenang-wenangnya. Klien yang diterapkan mengecop
-Content-Security Policy bagi setiap permintaan daripada kuki tidak sensitif,
-supaya hanya asalan pelayan yang bersambung dibenarkan.
+Media (avatar, imej suapan, tangkapan skrin PR), muat naik, sandaran dan
+HTTP/WebSocket editor terbenam melalui terowong sumber yang tersulit, bukan laluan
+HTTP awam yang boleh dibaca; laluan bertandatangan masih memerlukan kebenaran.
+Bahagian hadapan editor yang dipercayai berjalan pada asalan aplikasi web itu
+sendiri. Service Worker-nya menyalurkan permintaan editor melalui sesi tersulit yang
+sudah ada ke `cc_server`, yang memiliki fail dan backend code-server. Penyemak imbas
+memerlukan HTTPS atau konteks loopback yang selamat untuk Service Worker. Klien
+natif menggunakan fasad loopback yang dihadkan oleh keupayaan.
 
 ### Pendamping telefon (cc_remote)
 
 Aplikasi **Remote** ialah klien berasingan yang lebih ringan — PWA web Flutter di
 [remote.usectrl.dev](https://remote.usectrl.dev/). Ia sengaja **bukan** apl
-penuh. Ia mengganding melalui geganti WebSocket yang diuruskan oleh broker dan
-dimeterai hujung ke hujung, serta menuturkan hirisan permukaan alat yang
-sebahagian besarnya baca: baca tiket, mesej dan suapan berita; hantar balasan
-atau kemas kini tiket.
+penuh. Ia menyambung terus apabila boleh atau melalui geganti berperantara;
+kedua-dua laluan memerlukan penyulitan hujung ke hujung. Ia menuturkan hirisan
+permukaan alat yang sebahagian besarnya baca: baca tiket, mesej dan suapan berita;
+hantar balasan atau kemas kini tiket.
 
 Telefon ialah **prinsipal berkeistimewaan lebih rendah** daripada ejen setempat.
-Dasar alat yang menolak secara lalai, kunci pra-kongsi yang memeterai setiap
-rangka, keupayaan sesi yang mengunci operasi berkeistimewaan (penggandingan,
-misalnya) keluar daripada klien pendamping, pemeriksaan peranan dan kebenaran
-repo bagi setiap panggilan di atas, serta pengehadan kadar menghalang
-penggandingan yang diluluskan (atau bocor) daripada menjadi kawalan jauh penuh.
-Lihat [Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)
+Dasar alat yang menolak secara lalai, keupayaan sesi yang mengunci operasi
+berkeistimewaan (penggandingan, misalnya) keluar daripada klien pendamping,
+pemeriksaan peranan dan kebenaran repo bagi setiap panggilan di atas, serta
+pengehadan kadar menghalang penggandingan yang diluluskan (atau bocor) daripada
+menjadi kawalan jauh penuh. Penyulitan pengangkutan tidak memberi sebarang
+kebenaran. Lihat
+[Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)
 untuk model keselamatan yang penuh.
 
 ### Klien MCP
@@ -232,15 +238,26 @@ tindakan rakam-dan-paut kalendar.
 
 ## Penggandingan dan kepercayaan
 
-Setiap klien membuktikan identitinya dengan **kunci pra-kongsi** yang
-diperuntukkan sekali:
+Setiap klien menggunakan **kunci pra-kongsi** yang diperuntukkan sekali untuk
+mengesahkan jabat tangan Noise bertandatangan miliknya dengan `cc_server`,
+termasuk melalui loopback dan geganti:
 
 - Desktop dalam modus setempat menjana kunci baharu pada setiap but dan
   menyerahkannya kepada pelayan yang dilahirkan melalui persekitaran, jadi tiada
   apa-apa yang rahsia disimpan secara kekal pada desktop.
 - Klien jauh (desktop jauh, web, telefon) menggunakan kunci yang ditempa oleh
-  perintah `pair` pelayan dan disimpan dalam rantai kunci OS (atau, pada telefon,
-  secara setempat).
+  aliran penggandingan pelayan atau perintah `pair`. Klien natif menggunakan rantai
+  kunci OS; klien penyemak imbas menyimpan penggandingan mereka secara setempat.
+
+Klien memeriksa identiti bertandatangan pelayan terhadap sematan cap jari yang
+disimpannya. Pada sambungan pertama, sahkan cap jari itu melalui kod QR yang
+dipercayai atau saluran dipercayai yang lain: sentuhan pertama yang bertandatangan
+sahaja tidak dapat mengesahkan siapa yang membekalkan kunci itu. Jika identiti
+berubah, klien gagal secara tertutup; gandingkan semula melalui saluran dipercayai
+daripada mengabaikan ketidakpadanan itu. Klien lama dan RPC teks biasa tidak boleh
+bersambung. TLS masih diperlukan untuk asalan penyemak imbas, butstrap dan
+metadata awam; `--insecure` menjejaskan pendengar luar pelayan, bukan sesi tersulit
+yang diwajibkan.
 
 Penarikan balik adalah **langsung**, bukan malas. Pelayan memantau jadual peranti
 berpasangannya dan menggugurkan mana-mana sesi terbuka yang perantinya telah
@@ -248,14 +265,13 @@ keluar daripada set aktif, dalam beberapa saat — pada laluan WebSocket langsun
 dan laluan geganti sama-sama. Anda tidak perlu menunggu peranti itu menyambung
 semula untuk memutuskan aksesnya.
 
-Kunci itu tidak pernah melalui URL yang boleh dilihat oleh hos statik. Apabila ia
-tiba melalui pautan — pada telefon atau dalam penyemak imbas — ia menunggang
-dalam **serpihan URL**, bahagian selepas `#`, yang tidak pernah dihantar oleh
-penyemak imbas kepada pelayan yang menghoskan halaman itu. Itulah invarian yang
-wajar diingati, dan ia terpakai pada kedua-duanya. Klien web mempunyai dua lagi
-titik masuk: borang sambungan, tempat anda menampal pelayan dan kunci secara
-langsung, dan kod jemputan, yang ditebusnya untuk kelayakan yang ditempa khusus
-untuk penyemak imbas itu sahaja.
+Apabila kunci tiba melalui pautan — pada telefon atau dalam penyemak imbas — ia
+menunggang dalam **serpihan URL**, bahagian selepas `#` yang tidak dihantar oleh
+penyemak imbas dalam permintaan kepada hos halaman itu. Namun JavaScript halaman
+itu masih boleh membacanya, jadi percayai hos itu dan simpan pautan itu sebagai
+rahsia. Klien web juga mempunyai borang sambungan, tempat anda menampal pelayan dan
+kunci secara langsung, dan kod jemputan, yang ditebusnya untuk kelayakan yang
+ditempa khusus untuk penyemak imbas itu sahaja.
 
 ## Konsep berkaitan
 

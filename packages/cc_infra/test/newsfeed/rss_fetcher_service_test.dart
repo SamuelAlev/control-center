@@ -1,49 +1,47 @@
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:cc_infra/src/newsfeed/rss_fetcher_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises the RSS/Atom fetch + parse pipeline of [RssFetcherService]:
-/// envelope extraction (stripping server-prependend HTML), XML sanitization
+/// envelope extraction (stripping server-prepended HTML), XML sanitization
 /// (CDATA preservation, bare-ampersand / stray-`<` escaping, control-char
 /// stripping), Hacker News discussion preference, tracking-param stripping,
-/// and the primary→fallback format retry. Uses a stubbed [HttpClientAdapter].
+/// and the primary→fallback format retry. Uses a [TestHttpClient] so no
+/// native runtime or sockets are needed.
 
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
+/// The value of [name] on a captured request, matched case-insensitively.
+String? _header(HttpRequest request, String name) {
+  final headers = request.headers?.toMapList();
+  if (headers == null) {
+    return null;
   }
-
-  @override
-  void close({bool force = false}) {}
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == name.toLowerCase()) {
+      return entry.value.first;
+    }
+  }
+  return null;
 }
 
-ResponseBody _xmlBody(String body, {int status = 200}) =>
-    ResponseBody.fromString(
+HttpResponse _xmlBody(HttpRequest request, String body, {int status = 200}) =>
+    httpTextResponse(
+      request,
       body,
-      status,
-      headers: {
-        Headers.contentTypeHeader: ['application/rss+xml'],
-      },
+      statusCode: status,
+      headers: const {'content-type': 'application/rss+xml'},
     );
 
-typedef Handler = ResponseBody Function(RequestOptions o);
+typedef Handler = FutureOr<HttpResponse> Function(HttpRequest request);
 
-({RssFetcherService svc, _FakeAdapter fake}) build(Handler handler) {
-  final fake = _FakeAdapter(handler);
-  final dio = Dio()..httpClientAdapter = fake;
-  return (svc: RssFetcherService(dio), fake: fake);
+/// Builds the service with a single [TestHttpClient] backing both the feed
+/// client and the og:image page client, mirroring the pre-migration setup
+/// where one adapter served every request.
+({RssFetcherService svc, TestHttpClient fake}) build(Handler handler) {
+  final fake = TestHttpClient(handler: handler);
+  return (svc: RssFetcherService(fake, pageHttpClient: fake), fake: fake);
 }
 
 const _rssSingle = '''<?xml version="1.0"?>
@@ -79,7 +77,7 @@ const _atomSingle = '''<?xml version="1.0"?>
 void main() {
   group('RssFetcherService.fetchAndParse — RSS', () {
     test('parses items and strips tracking params from the link', () async {
-      final b = build((_) => _xmlBody(_rssSingle));
+      final b = build((r) => _xmlBody(r, _rssSingle));
       final articles = await b.svc.fetchAndParse(
         feedId: 'f1',
         url: 'https://example.com/feed',
@@ -94,7 +92,7 @@ void main() {
     });
 
     test('sends the configured User-Agent when provided', () async {
-      final b = build((_) => _xmlBody(_rssSingle));
+      final b = build((r) => _xmlBody(r, _rssSingle));
       await b.svc.fetchAndParse(
         feedId: 'f1',
         url: 'https://x',
@@ -102,20 +100,20 @@ void main() {
       );
       // The first request is the feed; the image-less item triggers a
       // second (og:image fallback) request for its page.
-      expect(b.fake.requests.first.headers['User-Agent'], 'MyReader/2.0');
+      expect(_header(b.fake.requests.first, 'User-Agent'), 'MyReader/2.0');
     });
 
     test('falls back to the default User-Agent when none provided', () async {
-      final b = build((_) => _xmlBody(_rssSingle));
+      final b = build((r) => _xmlBody(r, _rssSingle));
       await b.svc.fetchAndParse(feedId: 'f1', url: 'https://x');
       expect(
-        b.fake.requests.first.headers['User-Agent'],
+        _header(b.fake.requests.first, 'User-Agent'),
         contains('ControlCenter'),
       );
     });
 
     test('returns [] for an empty body', () async {
-      final b = build((_) => _xmlBody(''));
+      final b = build((r) => _xmlBody(r, ''));
       expect(
         await b.svc.fetchAndParse(feedId: 'f1', url: 'https://x'),
         isEmpty,
@@ -125,7 +123,7 @@ void main() {
 
   group('RssFetcherService.fetchAndParse — Atom', () {
     test('parses Atom entries', () async {
-      final b = build((_) => _xmlBody(_atomSingle));
+      final b = build((r) => _xmlBody(r, _atomSingle));
       final articles = await b.svc.fetchAndParse(
         feedId: 'f2',
         url: 'https://example.com/atom',
@@ -142,7 +140,7 @@ void main() {
   group('RssFetcherService — envelope extraction', () {
     test('strips HTML prepended before the RSS envelope', () async {
       const body = '<html><body>error page</body></html>\n$_rssSingle';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final articles = await b.svc.fetchAndParse(
         feedId: 'f1',
         url: 'https://x',
@@ -152,7 +150,9 @@ void main() {
     });
 
     test('throws when no RSS/Atom envelope is present', () async {
-      final b = build((_) => _xmlBody('<html><body>not a feed</body></html>'));
+      final b = build(
+        (r) => _xmlBody(r, '<html><body>not a feed</body></html>'),
+      );
       await expectLater(
         b.svc.fetchAndParse(feedId: 'f1', url: 'https://x'),
         throwsA(isA<FormatException>()),
@@ -169,7 +169,7 @@ void main() {
   <link>https://example.com/cdata</link>
 </item>
 </channel></rss>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final articles = await b.svc.fetchAndParse(
         feedId: 'f1',
         url: 'https://x',
@@ -187,7 +187,7 @@ void main() {
   <link>https://example.com/tj</link>
 </item>
 </channel></rss>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final articles = await b.svc.fetchAndParse(
         feedId: 'f1',
         url: 'https://x',
@@ -206,7 +206,7 @@ void main() {
   <comments>https://news.ycombinator.com/item?id=1</comments>
 </item>
 </channel></rss>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final articles = await b.svc.fetchAndParse(
         feedId: 'hn',
         url: 'https://x',
@@ -225,7 +225,7 @@ void main() {
   <comments>https://other.com/thread</comments>
 </item>
 </channel></rss>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final articles = await b.svc.fetchAndParse(
         feedId: 'hn',
         url: 'https://x',
@@ -241,7 +241,7 @@ void main() {
   <link>https://externalsite.com/story</link>
 </item>
 </channel></rss>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final articles = await b.svc.fetchAndParse(
         feedId: 'hn',
         url: 'https://x',
@@ -263,7 +263,7 @@ void main() {
   <media:thumbnail url="https://example.com/thumb.jpg"/>
 </item>
 </channel></rss>''';
-        final b = build((_) => _xmlBody(body));
+        final b = build((r) => _xmlBody(r, body));
         final articles = await b.svc.fetchAndParse(
           feedId: 'f1',
           url: 'https://x',
@@ -283,7 +283,7 @@ void main() {
   <description>&lt;p&gt;&lt;img src="https://example.com/desc.jpg"/&gt;text&lt;/p&gt;</description>
 </item>
 </channel></rss>''';
-        final b = build((_) => _xmlBody(body));
+        final b = build((r) => _xmlBody(r, body));
         final articles = await b.svc.fetchAndParse(
           feedId: 'f1',
           url: 'https://x',
@@ -294,12 +294,10 @@ void main() {
   });
 
   group('RssFetcherService — og:image fallback', () {
-    ResponseBody htmlBody(String body) => ResponseBody.fromString(
+    HttpResponse htmlBody(HttpRequest request, String body) => httpTextResponse(
+      request,
       body,
-      200,
-      headers: {
-        Headers.contentTypeHeader: ['text/html'],
-      },
+      headers: const {'content-type': 'text/html'},
     );
 
     test('uses the page og:image when the item has no image', () async {
@@ -312,9 +310,10 @@ void main() {
 </item>
 </channel></rss>''';
       final b = build(
-        (o) => o.path == 'https://example.com/feed'
-            ? _xmlBody(feed)
+        (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+            ? _xmlBody(r, feed)
             : htmlBody(
+                r,
                 '<html><head><meta property="og:image" '
                 'content="https://example.com/og.png"/></head><body></body></html>',
               ),
@@ -325,7 +324,7 @@ void main() {
       );
       expect(articles.single.imageUrl, 'https://example.com/og.png');
       expect(
-        b.fake.requests.map((r) => r.path),
+        b.fake.requests.map((r) => httpRequestUri(r).toString()),
         contains('https://example.com/post'),
       );
     });
@@ -339,9 +338,10 @@ void main() {
 </item>
 </channel></rss>''';
       final b = build(
-        (o) => o.path == 'https://example.com/feed'
-            ? _xmlBody(feed)
+        (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+            ? _xmlBody(r, feed)
             : htmlBody(
+                r,
                 '<html><head><meta property="og:image" '
                 'content="/assets/og.png"/></head></html>',
               ),
@@ -362,9 +362,9 @@ void main() {
 </item>
 </channel></rss>''';
       final b = build(
-        (o) => o.path == 'https://example.com/feed'
-            ? _xmlBody(feed)
-            : htmlBody('<html><head><title>x</title></head></html>'),
+        (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+            ? _xmlBody(r, feed)
+            : htmlBody(r, '<html><head><title>x</title></head></html>'),
       );
       final articles = await b.svc.fetchAndParse(
         feedId: 'f1',
@@ -383,7 +383,7 @@ void main() {
   <media:thumbnail url="https://example.com/thumb.jpg"/>
 </item>
 </channel></rss>''';
-      final b = build((_) => _xmlBody(feed));
+      final b = build((r) => _xmlBody(r, feed));
       final articles = await b.svc.fetchAndParse(
         feedId: 'f1',
         url: 'https://example.com/feed',
@@ -404,9 +404,9 @@ void main() {
 </item>
 </channel></rss>''';
         final b = build(
-          (o) => o.path == 'https://example.com/feed'
-              ? _xmlBody(feed)
-              : ResponseBody.fromString('boom', 500),
+          (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+              ? _xmlBody(r, feed)
+              : httpTextResponse(r, 'boom', statusCode: 500),
         );
         final articles = await b.svc.fetchAndParse(
           feedId: 'f1',
@@ -426,17 +426,18 @@ void main() {
   <comments>https://news.ycombinator.com/item?id=1</comments>
 </item>
 </channel></rss>''';
-      final b = build((o) {
-        if (o.path == 'https://example.com/feed') {
-          return _xmlBody(feed);
+      final b = build((r) {
+        if (httpRequestUri(r).toString() == 'https://example.com/feed') {
+          return _xmlBody(r, feed);
         }
-        if (o.path == 'https://externalsite.com/story') {
+        if (httpRequestUri(r).toString() == 'https://externalsite.com/story') {
           return htmlBody(
+            r,
             '<html><head><meta property="og:image" '
             'content="https://externalsite.com/cover.png"/></head></html>',
           );
         }
-        fail('unexpected request to ${o.path}');
+        fail('unexpected request to ${httpRequestUri(r)}');
       });
       final articles = await b.svc.fetchAndParse(
         feedId: 'hn',
@@ -448,7 +449,7 @@ void main() {
       // …but the cover image comes from the external story's og:image.
       expect(a.imageUrl, 'https://externalsite.com/cover.png');
       expect(
-        b.fake.requests.map((r) => r.path),
+        b.fake.requests.map((r) => httpRequestUri(r).toString()),
         isNot(contains(startsWith('https://news.ycombinator.com'))),
       );
     });
@@ -456,10 +457,16 @@ void main() {
 
   group('RssFetcherService — error handling', () {
     test('a non-2xx response (validation failure) throws', () async {
-      final b = build((_) => _xmlBody('not found', status: 404));
+      final b = build((r) => _xmlBody(r, 'not found', status: 404));
       await expectLater(
         b.svc.fetchAndParse(feedId: 'f1', url: 'https://x'),
-        throwsA(isA<Object>()),
+        throwsA(
+          isA<RhttpStatusCodeException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            404,
+          ),
+        ),
       );
     });
   });
@@ -486,7 +493,7 @@ void main() {
     </item>
   </channel>
 </rss>''';
-        final b = build((_) => _xmlBody(body));
+        final b = build((r) => _xmlBody(r, body));
         final parsed = await b.svc.fetchAndParseFeed(
           feedId: 'tc',
           url: 'https://techcrunch.com/feed/',
@@ -501,7 +508,7 @@ void main() {
     );
 
     test('a feed without a channel image reports no iconUrl', () async {
-      final b = build((_) => _xmlBody(_rssSingle));
+      final b = build((r) => _xmlBody(r, _rssSingle));
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'f1',
         url: 'https://example.com/feed',
@@ -524,7 +531,7 @@ void main() {
     <published>2026-01-02T03:04:05Z</published>
   </entry>
 </feed>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'a1',
         url: 'https://blog.example.com/feed.xml',
@@ -546,7 +553,7 @@ void main() {
     <published>2026-01-02T03:04:05Z</published>
   </entry>
 </feed>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'a2',
         url: 'https://blog.example.com/feed.xml',
@@ -567,7 +574,7 @@ void main() {
     <published>2026-01-02T03:04:05Z</published>
   </entry>
 </feed>''';
-      final b = build((_) => _xmlBody(body));
+      final b = build((r) => _xmlBody(r, body));
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'a3',
         url: 'https://lea.verou.me/feed.xml',

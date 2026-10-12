@@ -2,7 +2,7 @@
 title: Cadangkan dan pulihkan
 description: Ambil snapshot instalasi, pindahkan ruang kerja antar mesin, pulihkan satu ruang kerja atau semuanya, dan simpan salinannya di tempat lain.
 slug: id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Panduan ini membahas lima hal yang sebenarnya dilakukan orang dengan cadangan: membuatnya,
@@ -17,14 +17,21 @@ Semua yang ada di sini berada di **Pengaturan → Server → Cadangan & pemuliha
 - **Klien penuh** — aplikasi desktop atau web. Ponsel yang dipasangkan tidak bisa memicu satu pun dari tindakan ini, memang begitu desainnya.
 - Untuk membuat, menampilkan daftar, mengunduh, atau menghapus **snapshot instalasi**: **pemilik** instalasi.
 - Untuk tindakan per ruang kerja: **admin** ruang kerja itu untuk mengekspor, **pemilik** untuk mengimpor atau menghapusnya.
-- Untuk pengunduhan dan pengunggahan: koneksi **langsung** ke server. Relay dengan perantara membawa frame RPC, bukan transfer file, dan kontrol transfer menonaktifkan dirinya sendiri dengan catatan saat Anda melewatinya.
+- Untuk pengunduhan dan pengunggahan: klien penuh yang dipasangkan, baik pada koneksi langsung maupun melalui relay dengan perantara. Kedua jalur membawa byte file melalui terowongan sumber daya terautentikasi dan terenkripsi ujung ke ujung yang sama; relay tidak dapat membacanya.
 
-:::caution[Snapshot instalasi bersifat manual]
+::::caution[Snapshot instalasi bersifat manual]
 **Cadangkan sekarang** tetap hanya membuat snapshot seluruh instalasi saat diminta. Pipeline bawaan
 **Workspace backup** sebagai gantinya bisa membuat cadangan basis data ruang kerja sekali seminggu
 dan menghapus cadangan ruang kerja itu yang lebih tua dari 30 hari. Pipeline ini tidak menyalin `global.db`,
 ruang kerja lain, atau file di samping basis data. Simpan salinan di luar mesin secara terpisah.
-:::
+::::
+
+::::caution[Cadangan tidak dienkripsi saat tersimpan]
+Transfer terenkripsi berakhir di klien Anda dan di `cc_server`. Direktori snapshot,
+ekspor ruang kerja, file yang diunduh, dan basis data server tidak dienkripsi saat
+tersimpan oleh Control Center. Lindungi host server, unduhan Anda, dan salinan di
+luar mesin dengan enkripsi penyimpanan serta kontrol akses Anda sendiri.
+::::
 
 ## Apa yang dicakup cadangan
 
@@ -321,7 +328,7 @@ penyimpanannya.
 
 | Gejala                                                                  | Penyebab dan perbaikan                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Kontrol unduh dan unggah dinonaktifkan dengan catatan tentang relay      | Anda terhubung melalui relay dengan perantara, yang tidak membawa transfer file. Hubungkan secara langsung                          |
+| Unduhan atau unggahan gagal setelah koneksi berubah                   | Coba lagi pada koneksi terpasang yang aktif. Jalur langsung dan relay sama-sama mendukung transfer file terenkripsi; keduanya tidak membuka fallback HTTP teks polos                          |
 | "Server menolak"                                                     | Peran. Membuat atau menampilkan daftar snapshot instalasi memerlukan operator instalasi. Mengunduh ruang kerja memerlukan admin, memulihkannya memerlukan pemilik, zip seluruh snapshot memerlukan operator instalasi |
 | "Server ini tidak punya permukaan cadangan"                                      | Host tidak memiliki port cadangan yang terpasang — server demo. Operasinya tidak ada alih-alih ditolak                          |
 | "File lebih besar dari yang diterima server"                             | Unggahan dibatasi 8 GiB. Letakkan file di host server dan gunakan **Impor** → **Pilih file** sebagai gantinya                 |
@@ -335,7 +342,7 @@ penyimpanannya.
 
 - [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): dari mana direktori data berasal
 - [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/): koneksi langsung versus melalui relay
-- [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): kredensial yang dipakai rute transfer untuk menandatangani
+- [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): kredensial perangkat yang dipasangkan yang dipakai transfer terenkripsi beserta permintaan sumber daya bertanda tangannya
 
 ## Konsep dan referensi terkait
 

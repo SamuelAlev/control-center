@@ -2,7 +2,7 @@
 title: Arbeitsbereiche und Isolation
 description: Warum ein Arbeitsbereich eine harte Mandantengrenze ist, wie die Aufteilung der Datenbanken diese Grenze strukturell macht und was sie absichtlich überschreitet.
 slug: de-DE/handbuch/konzepte/arbeitsbereiche
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Was ist ein Arbeitsbereich?
@@ -118,13 +118,15 @@ Was keine von ihnen mitnimmt, ist der Rest des Arbeitsbereichsverzeichnisses. Ei
 
 ## Eine Sicherung zwischen dem Server und deinem Gerät verschieben
 
-Jede Operation oben spricht in Pfaden auf dem **Server**, und das ist nur dann eine vollständige Antwort, wenn der Server dein eigener Rechner ist. Drei signierte HTTP-Routen — [`/backup/workspace`, `/backup/snapshot` und `/backup/restore`](/de-DE/handbuch/referenz/backup/#transfer-routen) — transportieren die Bytes für jede andere Topologie, auf derselben authentifizierten Bahn, die der Medien-Proxy und der Bildspeicher schon nutzen. Auf der Seite ist das ein Knopf **Herunterladen** neben jedem Export und jedem Snapshot (du wählst, wo die Datei landet), und **Datei auswählen und hochladen**, um aus einer Datei wiederherzustellen, die auf dem Rechner liegt, den du gerade benutzt. Der Upload ist der Weg, der funktioniert, wenn der Server nicht dein Rechner ist: `workspace.import` braucht die Datei schon auf dem Host, und so kommt sie dorthin.
+Jede Operation oben spricht in Pfaden auf dem **Server**, und das ist nur dann eine vollständige Antwort, wenn der Server dein eigener Rechner ist. Drei signierte Transfer-Routen — [`/backup/workspace`, `/backup/snapshot` und `/backup/restore`](/de-DE/handbuch/referenz/backup/#transfer-routen) — transportieren die Bytes für jede andere Topologie durch den authentifizierten, verschlüsselten Ressourcen-Tunnel, auf direkten Verbindungen und über das Relay. Die öffentlichen HTTP-Routen liefern keine lesbaren Sicherungsbytes aus, und signierte Pfade erfordern weiterhin eine Autorisierung. Auf der Seite ist das ein Knopf **Herunterladen** neben jedem Export und jedem Snapshot (du wählst, wo die Datei landet), und **Datei auswählen und hochladen**, um aus einer Datei wiederherzustellen, die auf dem Rechner liegt, den du gerade benutzt. Der Upload funktioniert, wenn der Server nicht dein Rechner ist: `workspace.import` braucht die Datei schon auf dem Host, und so kommt sie dorthin.
 
 Drei Eigenschaften solltest du kennen:
 
 - **Ein Download erzeugt eine frische Kopie, und der Server behält nichts davon.** Herunterladen heißt nicht „hol die Datei, die der Export-Knopf erzeugt hat“ — er exportiert erneut, streamt das und löscht es. Die Antwort ist `no-store` mit `Accept-Ranges: none` aus demselben Grund: ein fortgesetzter Range würde zwei verschiedene Exporte zu einer Datei zusammenfügen, die gültig aussieht und es nicht ist.
 - **Ein Upload wird auf die Festplatte gestreamt, nie gepuffert**, an beiden Enden, und die bereitgestellte Kopie wird auf jedem Weg nach draußen gelöscht — auch bei einer Ablehnung. Eine Arbeitsbereichsdatenbank ist kein Screenshot.
-- **Eine Verbindung über das Relay hat keinen HTTP-Origin**, deshalb sind die Transfer-Steuerelemente dort deaktiviert, mit einem Hinweis, warum. Alles, was in serverseitigen Pfaden spricht, funktioniert weiter über das Relay; nur die Byte-Bahnen brauchen eine direkte Verbindung.
+- **Der Transfer funktioniert auch über das Relay.** Downloads und Uploads nutzen denselben verschlüsselten Ressourcen-Tunnel wie direkte Verbindungen; eine direkte HTTP-Origin ist nicht erforderlich.
+
+Verschlüsselung schützt den Transfer während der Übertragung, nicht die serverseitige Datenbank, das Snapshot-Verzeichnis oder eine heruntergeladene Kopie im Ruhezustand. Der Serverbetreiber kann auf die auf diesem Host liegenden Daten zugreifen.
 
 :::note[Welche Pfade wem gehören]
 Die Pfade, die die Seite *zeigt* — das Snapshot-Verzeichnis, die Datei, die ein Export geschrieben hat, die Quelle, die ein Import liest — liegen auf dem Rechner, auf dem `cc_server` läuft. Der Pfad, den ein **Herunterladen** meldet, liegt auf dem Rechner, an dem du sitzt. Diese Unterscheidung ist der Grund, warum es beide gibt: das Erste braucht ein Wartungsskript oder eine ssh-Sitzung, das Zweite jemand, der eine Sicherung abholt.

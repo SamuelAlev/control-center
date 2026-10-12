@@ -174,6 +174,28 @@ void main() {
       expect(run.totalTokCache, 75);
     });
 
+    test('unpriced trial keeps aggregate cost unknown', () {
+      final run = runWith(const [
+        BenchmarkTrial(name: 'known', status: TrialStatus.pass, reward: 1, costMicros: 4200),
+        BenchmarkTrial(name: 'unknown', status: TrialStatus.fail, costCents: null),
+      ]);
+      expect(run.totalCostMicros, isNull);
+      expect(run.totalCostCents, isNull);
+      expect(const BenchmarkScorer().successAdjustedCostCents(run), isNull);
+      expect(const BenchmarkScorer().markdownReport(run), contains('spend — (unpriced attempts)'));
+    });
+
+    test('micro-dollar costs aggregate before cent rounding', () {
+      final run = runWith(const [
+        BenchmarkTrial(name: 'a', status: TrialStatus.pass, reward: 1, costMicros: 4200),
+        BenchmarkTrial(name: 'b', status: TrialStatus.fail, costMicros: 4200),
+      ]);
+      expect(run.totalCostMicros, 8400);
+      expect(run.totalCostCents, 1);
+      expect(const BenchmarkScorer().successAdjustedCostCents(run), 0.84);
+      expect(const BenchmarkScorer().markdownReport(run), contains('spend \$0.008400'));
+    });
+
     test('structural equality and hashCode over trial list', () {
       final a = runWith([
         const BenchmarkTrial(name: 'a', status: TrialStatus.pass, reward: 1.0),

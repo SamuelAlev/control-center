@@ -7,6 +7,8 @@ class HarnessTranscript {
     required this.messages,
     this.checkpoints = const {},
     this.turns = 0,
+    this.retainedSnapshotSource,
+    this.metadata = const {},
   });
 
   /// Rebuilds from [toJson]'s output.
@@ -35,10 +37,24 @@ class HarnessTranscript {
         }
       }
     }
+    final metadata = <String, Object?>{};
+    final rawMetadata = json['metadata'];
+    if (rawMetadata is Map) {
+      for (final entry in rawMetadata.entries) {
+        // Keys are strings by construction (JSON); a null VALUE is meaningful
+        // ("no cursor yet"), so it is kept rather than dropped.
+        metadata['${entry.key}'] = entry.value;
+      }
+    }
+    final source = json['retained_snapshot_source'];
     return HarnessTranscript(
       messages: messages,
       checkpoints: checkpoints,
       turns: json['turns'] is int ? json['turns'] as int : 0,
+      retainedSnapshotSource: source is String && source.isNotEmpty
+          ? source
+          : null,
+      metadata: metadata,
     );
   }
 
@@ -55,12 +71,91 @@ class HarnessTranscript {
   /// How many model turns produced it.
   final int turns;
 
+  /// The plain text a surviving snapshot page was rendered from.
+  ///
+  /// A snapshot message holds GLYPHS; the text behind them lives only here (and
+  /// in the compactor's memory). Persisting it is what lets a later fold of that
+  /// message — or a restart followed by one — recover the conversation instead
+  /// of silently keeping an image whose source is gone.
+  final String? retainedSnapshotSource;
+
+  /// Host-owned bookkeeping that must survive a restart (delivered-context
+  /// cursors and similar), opaque to the harness.
+  ///
+  /// Deliberately untyped: the kernel has no business knowing what a host
+  /// tracks, and a typed field per host concern would make every host change a
+  /// kernel change.
+  final Map<String, Object?> metadata;
+
+  /// Returns a copy with selected fields overridden.
+  HarnessTranscript copyWith({
+    List<HarnessMessage>? messages,
+    Map<String, int>? checkpoints,
+    int? turns,
+    String? retainedSnapshotSource,
+    Map<String, Object?>? metadata,
+  }) => HarnessTranscript(
+    messages: messages ?? this.messages,
+    checkpoints: checkpoints ?? this.checkpoints,
+    turns: turns ?? this.turns,
+    retainedSnapshotSource:
+        retainedSnapshotSource ?? this.retainedSnapshotSource,
+    metadata: metadata ?? this.metadata,
+  );
+
   /// Serializes for storage.
   Map<String, dynamic> toJson() => {
     'messages': [for (final m in messages) m.toJson()],
     'checkpoints': checkpoints,
     'turns': turns,
+    if (retainedSnapshotSource != null)
+      'retained_snapshot_source': retainedSnapshotSource,
+    if (metadata.isNotEmpty) 'metadata': metadata,
   };
+}
+
+/// Remaps checkpoint indices across a fold of the span
+/// `[foldedFromIndex, foldedFromIndex + messagesFolded)`, which collapsed into
+/// ONE replacement message at [foldedFromIndex].
+///
+/// **The index convention.** A checkpoint is a GAP index into the message list
+/// (the boundary a rewind truncates to, `0..length`), not the index of a
+/// specific message — that is what the `checkpoint` tool records (the pre-turn
+/// length) and what `_firstTaskIndex` returns. So:
+///
+/// * a boundary strictly before the fold keeps its number — the head is
+///   untouched, which is exactly what a remap assuming a LEADING fold gets
+///   wrong for a snapshot;
+/// * a boundary at or inside the folded span moves to just after the
+///   replacement (`foldedFromIndex + 1`): the messages it named are gone, and
+///   the boundary that survives closest to them is the replacement's end. This
+///   is the original leading-fold rule (`index < messagesFolded → 1`) for a
+///   span starting at 0, so a text fold behaves exactly as before;
+/// * a boundary after the span shifts left by `messagesFolded - 1`.
+///
+/// A fold does not always start at 0: a SNAPSHOT keeps a verbatim head and
+/// collapses a region after it, so a remap that assumed a leading fold moved
+/// every head checkpoint by the wrong amount — a rewind to a label then landed
+/// on a different message while reporting success.
+void remapCheckpointsAcrossFold(
+  Map<String, int> checkpoints, {
+  required int foldedFromIndex,
+  required int messagesFolded,
+}) {
+  if (messagesFolded <= 0 || checkpoints.isEmpty) {
+    return;
+  }
+  final foldStart = foldedFromIndex < 0 ? 0 : foldedFromIndex;
+  final foldEnd = foldStart + messagesFolded;
+  checkpoints.updateAll((_, index) {
+    if (index < foldStart) {
+      return index;
+    }
+    if (index < foldEnd) {
+      return foldStart + 1;
+    }
+    return index - messagesFolded + 1;
+  });
 }
 
 /// Persists a run's history for real resume (not a `<context>` summary),
@@ -164,5 +259,12 @@ HarnessTranscript trimTranscriptForResume(
     messages: kept,
     checkpoints: remapped,
     turns: transcript.turns,
+    // Carried through unchanged. Dropping the source here would silently cost
+    // the recoverable text of a snapshot that survived the trim (rehydration
+    // only rewrites a snapshot message that is actually present, so one whose
+    // region was trimmed away is simply inert), and dropping the host's
+    // bookkeeping would lose a cursor that has nothing to do with the trim.
+    retainedSnapshotSource: transcript.retainedSnapshotSource,
+    metadata: transcript.metadata,
   );
 }

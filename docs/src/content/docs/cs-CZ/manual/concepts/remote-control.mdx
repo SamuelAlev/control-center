@@ -1,34 +1,36 @@
 ---
 title: Vzdálené ovládání a mobil
-description: Jak telefon dosáhne na tvůj server přes zprostředkované relé zapečetěné od konce ke konci, ne přes spojení peer-to-peer, a vrstvený model přístupu, který ten dosah drží úzký.
+description: Jak telefon dosáhne na tvůj server přes přímá nebo zprostředkovaná spojení šifrovaná od konce ke konci a vrstvený model přístupu, který ten dosah drží úzký.
 slug: cs-CZ/prirucka/koncepty/vzdalene-ovladani
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center je aplikace pro počítač, ale práce, kterou sleduje, neskončí, když
 odejdeš od stolu. **Vzdálené ovládání** spáruje telefon s `cc_server` přes
 **[Remote](https://remote.usectrl.dev/)**, doprovodnou aplikaci na
 remote.usectrl.dev, takže odtamtud sleduješ flotilu: čteš zprávy a tickety,
-odpovíš agentovi, vytřídíš kanál novinek, a zvuk, přepis, zdrojový kód ani
-přihlašovací údaje, které žijí na serveru, ho nikdy neopustí.
+odpovíš agentovi a vytřídíš kanál novinek přes spojení šifrované od konce
+ke konci. Telefon a `cc_server` jsou důvěryhodné koncové body v otevřeném
+textu; relé veze jen šifrované záznamy aplikace.
 
 Ber ho jako společníka stolu, který skoro jen čte. Plného klienta na počítači
 nahradit nemá.
 
-:::note[Dvě různé vzdálené cesty]
-Telefonní společník se s `cc_server` páruje přes **zprostředkované WebSocket
-relé**, které vozí rámce JSON-RPC zapečetěné od konce ke konci. Plné **webové
-sestavení** (a desktop namířený na vzdálený server) je druhá vzdálená cesta:
-volá `cc_server` přes WebSocket a vykreslí celou aplikaci. Jak se liší, popisuje
-[Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/).
+:::note[Dva různí vzdálení klienti]
+Telefonní společník i plné **webové sestavení** (nebo desktop namířený na
+vzdálený server) se k `cc_server` mohou připojit přímo, nebo použít
+zprostředkované WebSocket relé. Obě cesty vyžadují stejnou šifrovanou relaci;
+telefon vystavuje menší sadu operací než plný klient. Jak se klienti liší,
+popisuje [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/).
 :::
 
 ## Přenos
 
 Telefon dosáhne na `cc_server` přes WebSocket: buď přímým spojením (loopback,
 LAN, tailnet nebo `wss://`), nebo místností za pozvánkou na signalizačním
-zprostředkovateli, který přepojuje zapečetěné rámce. Datový kanál peer-to-peer
-tu není.
+zprostředkovateli. Obě cesty vyžadují ověřenou relaci šifrovanou od konce ke
+konci; zprostředkovatel přeposílá jen její šifrované záznamy. Datový kanál
+peer-to-peer tu není.
 
 ## Co telefon umí
 
@@ -49,22 +51,25 @@ ani zakládat pracovní prostory. Jak se to vynucuje, a ne jen zamýšlí, popis
 
 ## Jak spojení vzniká
 
-Spojení jede po **zprostředkovaném relé**: server vstoupí do jedné místnosti
-za pozvánkou na zprostředkovateli `wss://` jako její vlastník a každý spárovaný
-klient — desktop, web, telefon — vstoupí do stejné místnosti s časově omezeným
-vstupním tokenem. Sejdou se tři díly:
+Když telefon na server nedosáhne přímo, spojení použije **zprostředkované
+relé**: server vstoupí do jedné místnosti za pozvánkou na zprostředkovateli
+`wss://` jako její vlastník a spárovaní klienti vstoupí s časově omezenými
+vstupními tokeny. Sejdou se tři díly:
 
 | Díl | Úloha |
 | --- | --- |
 | **Remote (telefonní aplikace)** | Doprovodná webová aplikace, ve výchozím stavu hostovaná na `remote.usectrl.dev`, nebo u tebe. Načte se v prohlížeči a záznam párování drží v IndexedDB. |
-| **Zprostředkovatel relé** | Bezstavové relé `wss://` (`cc_signaling_server`), které hostuje místnosti pro N stran. Vozí **jen neprůhledné rámce**: každý payload je zapečetěný od konce ke konci mezi telefonem a serverem, takže zprostředkovatel nikdy neuvidí data aplikace ani tajemství párování a nikdy nevykládá, co přeposílá. |
+| **Zprostředkovatel relé** | Bezstavové relé `wss://` (`cc_signaling_server`), které hostuje místnosti pro N stran. Přeposílá šifrované záznamy bez tajemství párování a bez otevřeného textu aplikace, ale vidí směrovací identifikátory, IP adresy, velikosti záznamů a časování. |
 | **`cc_server`** | Vlastník místnosti. Na volání telefonu odpovídá stejným dispečerem, kterého používá každý jiný klient. |
 
 Nabídka párování nese **deskriptor spojení**, který vypisuje každou cestu
 k serveru (LAN, tailnet, veřejné `wss://`, relé) a otisk identity. Resolver
-telefonu vybere nejlepší dosažitelnou cestu a při prvním spojení připne otisk
-(TOFU); relé zaručí spojení i tam, kde přímá cesta není, a provoz nikdy
-nepřečte.
+telefonu vybere nejlepší dosažitelnou cestu. Server podepisuje šifrovaný
+handshake a klient si připne jeho otisk. Při prvním spojení otisk zkontroluj
+proti QR kódu nebo jinému důvěryhodnému zdroji: první podepsaná identita sama
+neprokazuje, na který server jsi se dostal. Změněný pin se odmítne, místo aby
+mu bylo znovu tiše důvěřováno. Relé veze šifrový text, když přímá cesta
+neexistuje, ale spojení pořád může přerušit nebo zpozdit.
 
 ## Co je párovací payload
 
@@ -76,24 +81,31 @@ záleží na tom, z čeho se skládá.
 https://<pwa-host>/#<payload>
 ```
 
-Payload jede ve **fragmentu** URL, v části za `#`, kterou prohlížeč nikdy
-nepošle serveru, takže HTTPS hostitel PWA ho neuvidí. Veze všechno, co telefon
-potřebuje, aby na server dosáhl a prokázal, kdo je: deskriptor spojení (každá
-cesta plus otisk identity), čerstvě vydané id zařízení, 32bajtový předem
-sdílený klíč a razítko platnosti. Telefon ho dekóduje, záznam párování uloží
-místně a fragment odebere, takže tajemství z URL zmizí.
+Payload jede ve **fragmentu** URL, v části za `#`, kterou prohlížeč v HTTP
+požadavku na hostitele PWA neposílá. Veze všechno, co telefon potřebuje, aby
+na server dosáhl a prokázal, kdo je: deskriptor spojení (každá cesta plus otisk
+identity), čerstvě vydané id zařízení, 32bajtový předem sdílený klíč a razítko
+platnosti. Telefon ho dekóduje, záznam párování uloží místně a fragment z URL
+odebere. Kód webové aplikace fragment přečíst umí, takže používej
+důvěryhodného hostitele aplikace a s odkazem zacházej jako s tajemstvím.
 
 Jsou dva tvary payloadu a **nejdou zaměnit**. QR telefonu vydaný z panelu
 párování v aplikaci je v2 `PairingPayload` výše a míří na hostitele PWA
-Remote. `cc_server pair --client-url` vydá jiný, starší odkaz v1 (`{s, i, k}`
-— URL serveru, id zařízení, klíč) jen pro **webového** klienta.
+Remote. `cc_server pair --client-url` vydá odkaz v1 (`{s, i, k}` — URL
+serveru, id zařízení, klíč) určený jen pro **webového** klienta. Jsou to
+formáty párovacích dat, ne záložní varianty přenosu: oba klienti musí
+podporovat současný protokol šifrované relace.
 
 Liší se i životností, a to se snadno splete:
 
 | Vydal | Platnost pověření |
 | --- | --- |
 | Panel párování v aplikaci (`pairing.mint`) | vždy 30 dní |
-| `cc_server pair` na příkazovém řádku | **Žádná** — pověření nevyprší |
+| `cc_server pair` na příkazovém řádku | Platnost není zakódovaná; politiky serveru pořád platí |
+
+Celoserverové politiky maximálního stáří zařízení a vypršení nečinnosti mohou
+odmítnout kterékoli z pověření dřív. Ani jeden z formátů párování tyto politiky
+neobchází.
 
 ## Model přístupu
 
@@ -147,12 +159,15 @@ nesklouzne a pojmenovat cizí pracovní prostor taky nepomůže, protože kontro
 [izolace pracovních prostorů](/cs-CZ/prirucka/koncepty/pracovni-prostory/),
 který vynucuje zbytek produktu.
 
-### 5. Rámce zapečetěné od konce ke konci předem sdíleným klíčem
+### 5. Šifrování od konce ke konci u přímých i zprostředkovaných spojení
 
-Každý rámec mezi telefonem a serverem je zapečetěný párovacím klíčem; vstupní
-token klienta jen pustí do místnosti a nic neodšifruje. Zprostředkovatel
-přeposílá šifrový text a klíč nikdy neuvidí. Odvolané zařízení najde své
-pověření už pryč, takže se při opětovném připojení **uzavře**.
+Každá přímá i zprostředkovaná klientská relace vyžaduje podepsaný handshake
+Noise. Párovací klíč ten handshake ověřuje; provozní klíče se odvozují
+z čerstvých efemérních klíčů, místo aby se párovacím klíčem zapečetil každý
+rámec. Server do výměny podepíše svou identitu a klient zkontroluje svůj
+uložený pin otisku. Neexistuje otevřený text ani záložní varianta pro starší
+klienty. Vstupní token relé klienta jen pustí do místnosti; záznamy dešifrovat
+neumí.
 
 Pověření vydané aplikací je časově omezené na 30 dní; po nich ho brána
 připojení odmítne a telefon se musí spárovat znovu. Odvolání je živé: server
@@ -167,20 +182,24 @@ Rozpočet patří **principálovi, ne relaci**: tři tvá zařízení čerpají 
 přídělu, takže unesený klient nezíská víc prostoru tím, že otevře další
 relace, a jeden hlučný člen nemůže ostatním kapacitu sebrat.
 
-### 7. Zprostředkovatel, který se nic nedozví
+### 7. Zprostředkovatel, který nepřečte obsah aplikace
 
-Zprostředkovatel relé je schválně hloupý: hostuje místnosti, přeposílá
-zapečetěné rámce a nedrží účty, data aplikace ani klíče. Místnosti jsou za
-pozvánkou a dočasné. Data aplikace, zvuk, přepis, zdrojový kód i přihlašovací
-údaje zůstávají na serveru.
+Zprostředkovatel relé hostuje dočasné místnosti za pozvánkou a přeposílá
+šifrované záznamy bez otevřeného textu aplikace a bez párovacích klíčů. Pořád
+však vidí IP adresy, identifikátory místností a protistran, velikosti záznamů,
+časování a dobu trvání spojení a může provoz zahazovat nebo zpožďovat.
+Otevřenými koncovými body jsou spárovaný klient a zvolený `cc_server`; obsah
+vidí operátor serveru a služby, kterým server obsah posílá. Šifrování při
+přenosu nešifruje data serveru v klidu.
 
 ## Živé aktualizace
 
 Po spárování dostává telefon **živé aktualizace** jako oznamovací rámce — nové
 zprávy agentů, tickety přidělené tobě, změny stavu — ve stejném duchu jako
-oznámení na desktopu. Server ty rámce rozešle každé připojené relaci a filtr
-pracovního prostoru se použije na klientovi, takže vidíš to, co patří
-k pracovnímu prostoru, na který se díváš.
+oznámení na desktopu. Server před přeposláním události relaci zkontroluje
+členství v pracovním prostoru. Klient pak tyto autorizované události filtruje
+na pracovní prostor, na který se díváš; ten zobrazovací filtr není hranicí
+přístupu.
 
 ## Kde to najdeš
 
@@ -193,8 +212,8 @@ ne jen pro telefony — postup je stejný, liší se jen přímý odkaz.
 
 ::::note
 Vzdálené ovládání je na straně serveru a přes MCP **se nevystavuje**. Telefon
-mluví s vlastním dispečerem serveru přes relé; není to MCP klient vnějšího
-serveru.
+mluví s vlastním dispečerem serveru přes své šifrované přímé nebo
+zprostředkované spojení; není to MCP klient vnějšího serveru.
 ::::
 
 ## Viz také

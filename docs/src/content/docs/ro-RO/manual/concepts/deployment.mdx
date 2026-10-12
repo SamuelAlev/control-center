@@ -2,7 +2,7 @@
 title: Implementare și clienți
 description: Cum separă arhitectura thin-client a Control Center un server headless de clienții săi desktop, web și mobil.
 slug: ro-RO/manual/concepte/implementare
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center nu este un singur program. Este o **arhitectură thin-client**: un
@@ -23,8 +23,9 @@ doi clienți se află acolo.
 
 Niciun client nu deschide singur un fișier de bază de date. În schimb, fiecare
 client deține un **`RemoteRpcClient`** și emite prin el operațiuni pe repo-uri și
-abonamente. Serverul autentifică conexiunea pe baza unei chei prepartajate de
-dispozitiv asociat — iar apoi nu se mai preocupă de conexiune. **O sesiune nu
+abonamente. Atât sesiunile directe, cât și cele intermediate necesită un handshake
+Noise semnat: cheia prepartajată a dispozitivului asociat autentifică schimbul,
+iar chei de trafic noi criptează fiecare sesiune. **O sesiune nu
 este legată de un spațiu de lucru.** Dispecerul este fără stare: fiecare apel
 care vizează un spațiu de lucru își transmite propriul `workspace_id` în
 argumente, iar un apel care îl omite este respins.
@@ -100,12 +101,12 @@ de date.
 Versiunea web este aceeași aplicație Flutter compilată pentru a rula într-un
 browser, găzduită la [app.usectrl.dev](https://app.usectrl.dev), așa că nu ai
 nimic de instalat. Un browser nu poate lansa un subproces, așa că clientul web
-este **întotdeauna** remote: apelează un `cc_server` prin `wss://` și randează
-întreaga interfață desktop. Odată conectat, afișează aceleași ecrane pentru
-aceeași flotă, pentru că este același cod peste același RPC. Lipsurile sunt cele
-câteva locuri care au nevoie de o capabilitate nativă pe care un browser nu o are
-— stratul de calitate al capturii întâlnirilor, descris mai jos, este principalul,
-iar notificările sistemului de operare sunt altul.
+este **întotdeauna** remote: apelează un `cc_server` printr-o sesiune WebSocket
+criptată și randează întreaga interfață desktop. Odată conectat, afișează aceleași
+ecrane pentru aceeași flotă, pentru că folosește același cod peste același RPC.
+Lipsurile sunt cele câteva locuri care au nevoie de o capabilitate nativă pe care
+un browser nu o are — stratul de calitate al capturii întâlnirilor, descris mai
+jos, este principalul, iar notificările sistemului de operare sunt altul.
 
 De aceea „fără descărcare" și „fără server" sunt afirmații diferite. Clientul web
 elimină instalarea; nu elimină serverul. Ceea ce apelează poate fi un `cc_server`
@@ -126,28 +127,31 @@ server acceptă origini de browser doar din lista sa `--allowed-origins`, care
 implicit este `https://app.usectrl.dev`, așa că auto-găzduirea pachetului înseamnă
 adăugarea originii acestuia.
 
-Conținutul media (avataruri, imagini din flux, capturi de ecran din PR-uri) trece
-prin punctul final de proxy al serverului în loc să lovească direct gazdele din
-amonte, astfel încât un browser nu preia niciodată o origine arbitrară. Clientul
-implementat aplică, pentru fiecare cerere, o politică de securitate a conținutului
-generată dintr-un cookie nesensibil, astfel încât este permisă doar originea
-serverului conectat.
+Conținutul media (avataruri, imagini din flux, capturi de ecran din PR-uri),
+încărcările, backupurile și HTTP/WebSocket-urile editorului integrat trec prin
+tunelul de resurse criptat, nu prin rute HTTP publice care pot fi citite; căile
+semnate necesită în continuare autorizare. Frontendul editorului de încredere
+rulează pe propria origine a aplicației web. Service worker-ul său direcționează
+cererile editorului prin sesiunea criptată existentă către `cc_server`, care
+deține fișierele și backendul code-server. Browserul are nevoie de HTTPS sau de
+un context loopback securizat pentru service worker-e. Clienții nativi folosesc o
+fațadă de loopback cu arie de capabilitate.
 
 ### Companionul pentru telefon (cc_remote)
 
 Aplicația **Remote** este un client separat, mai ușor — o PWA Flutter web la
 [remote.usectrl.dev](https://remote.usectrl.dev/). Intenționat, **nu** este
-aplicația completă. Se asociază printr-un releu WebSocket intermediat și sigilat
-cap la cap și vorbește o felie preponderent de citire a suprafeței de instrumente:
-citește tichete, mesaje și fluxul de știri; trimite un răspuns sau actualizează un
-tichet.
+aplicația completă. Se conectează direct când este posibil sau printr-un releu
+intermediat; ambele căi necesită criptare cap la cap. Vorbește o felie preponderent
+de citire a suprafeței de instrumente: citește tichete, mesaje și fluxul de știri;
+trimite un răspuns sau actualizează un tichet.
 
 Un telefon este un **principal cu privilegii mai reduse** decât un agent local. O
-politică de instrumente cu refuz implicit, o cheie prepartajată care sigilează
-fiecare cadru, o capabilitate de sesiune care scoate operațiunile privilegiate
-(asocierea, de exemplu) din aria unui client companion, verificările de rol și de
-autorizare per repo la fiecare apel, descrise mai sus, și limitarea ratei
-împiedică o asociere aprobată (sau scursă) să devină control remote complet. Vezi
+politică de instrumente cu refuz implicit, o capabilitate de sesiune care scoate
+operațiunile privilegiate (asocierea, de exemplu) din aria unui client companion,
+verificările de rol și de autorizare per repo la fiecare apel, descrise mai sus, și
+limitarea ratei împiedică o asociere aprobată (sau scursă) să devină control remote
+complet. Criptarea transportului nu acordă permisiuni. Vezi
 [Control remote și mobil](/ro-RO/manual/concepte/control-remote/) pentru modelul
 complet de securitate.
 
@@ -231,15 +235,26 @@ legare din calendar.
 
 ## Asociere și încredere
 
-Fiecare client își dovedește identitatea cu o **cheie prepartajată**, provisionată
-o singură dată:
+Fiecare client folosește o **cheie prepartajată**, provisionată o singură dată,
+pentru a-și autentifica handshake-ul Noise semnat cu `cc_server`, inclusiv prin
+loopback și prin releu:
 
 - Desktopul în modul local generează o cheie nouă la fiecare pornire și o
   transmite serverului lansat prin variabile de mediu, astfel încât nimic
   confidențial nu este persistat pe desktop.
-- Clienții remote (desktop remote, web, telefon) folosesc o cheie emisă de comanda
-  `pair` a serverului și stocată în keychain-ul sistemului de operare (sau, pe
-  telefon, local).
+- Clienții remote (desktop remote, web, telefon) folosesc o cheie emisă de fluxul
+  de asociere al serverului sau de comanda `pair`. Clienții nativi folosesc
+  keychain-ul sistemului de operare; clienții de browser își stochează asocierea
+  local.
+
+Clientul verifică identitatea semnată a serverului față de fixarea amprentei
+salvate. La prima conectare, verifică acea amprentă printr-un cod QR de încredere
+sau un alt canal de încredere: un prim contact semnat, singur, nu poate
+autentifica cine a furnizat cheia. Dacă identitatea se schimbă, clientul eșuează
+închis; asociază din nou printr-un canal de încredere, în loc să ignori
+neconcordanța. Clienții mai vechi și RPC-ul în clar nu se pot conecta. TLS rămâne
+necesar pentru originile de browser, bootstrap și metadatele publice; `--insecure`
+afectează listenerul extern al serverului, nu sesiunea criptată obligatorie.
 
 Revocarea este **live**, nu întârziată. Serverul supraveghează tabelul
 dispozitivelor asociate și închide orice sesiune deschisă al cărei dispozitiv a
@@ -247,14 +262,12 @@ părăsit setul activ, în câteva secunde — atât pe calea directă WebSocket
 pe calea releului. Nu trebuie să aștepți ca dispozitivul să se reconecteze pentru
 a-l deconecta.
 
-Cheia nu călătorește niciodată printr-un URL pe care o gazdă statică îl poate
-vedea. Când ajunge printr-un link — pe telefon sau într-un browser — ea
-călătorește în **fragmentul URL**, partea de după `#`, pe care browserul nu o
-trimite niciodată serverului care găzduiește pagina. Aceasta este invarianța care
-merită reținută și se aplică în ambele cazuri. Clientul web are alte două puncte
-de intrare: formularul de conectare, unde lipești direct un server și o cheie, și
-un cod de invitație, pe care îl răscumpără pentru o acreditare emisă doar pentru
-acel browser.
+Când cheia ajunge printr-un link — pe telefon sau într-un browser — ea călătorește
+în **fragmentul URL**, partea de după `#` pe care browserele nu o trimit în cererea
+către gazda paginii. JavaScriptul paginii o poate citi totuși, așa că ai încredere
+în acea gazdă și păstrează linkul secret. Clientul web are și un formular de
+conectare, unde lipești direct un server și o cheie, și un cod de invitație, pe
+care îl răscumpără pentru o acreditare emisă doar pentru acel browser.
 
 ## Concepte conexe
 

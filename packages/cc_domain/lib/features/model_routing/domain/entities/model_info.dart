@@ -52,14 +52,41 @@ enum ModelModality {
   };
 }
 
+/// A context-priced tier that starts above [thresholdTokens].
+class ModelContextCostTier {
+  /// Creates a documented context pricing tier.
+  const ModelContextCostTier({
+    required this.thresholdTokens,
+    required this.cost,
+  });
+
+  /// Context token count above which [cost] applies.
+  final int thresholdTokens;
+
+  /// Published prices for this tier.
+  final ModelCost cost;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ModelContextCostTier &&
+          thresholdTokens == other.thresholdTokens &&
+          cost == other.cost;
+
+  @override
+  int get hashCode => Object.hash(thresholdTokens, cost);
+}
+
 /// Per-million-token pricing for a model. All fields are USD per 1M tokens.
 class ModelCost {
-  /// Creates a [ModelCost].
   const ModelCost({
     this.input = 0,
     this.output = 0,
     this.cacheRead = 0,
     this.cacheWrite = 0,
+    this.reservationCeiling,
+    this.contextTiers = const [],
+    this.pricingComplete = true,
   });
 
   /// Non-cached input tokens.
@@ -74,24 +101,50 @@ class ModelCost {
   /// Cache-write tokens.
   final double cacheWrite;
 
+  /// Highest documented rate for each category across context/pricing tiers.
+  /// Null means the base rates apply throughout the documented context window.
+  /// Only conservative admission reservations use this; [estimate] selects
+  /// the published context tier matching observed usage instead.
+  final ModelCost? reservationCeiling;
+
+  /// Documented thresholds for ordinary usage-based estimates.
+  final List<ModelContextCostTier> contextTiers;
+
+  /// False when a documented tier cannot be priced from its published fields.
+  /// Such a model cannot be admitted to a strict-spend evaluation.
+  final bool pricingComplete;
+
+  /// A rate ceiling for a call that may traverse any documented pricing tier.
+  ModelCost get reservationRates => reservationCeiling ?? this;
+
   /// The blended input+output rate used by the small-model heuristic.
   double get blended => input + output;
 
   /// Whether any non-zero rate is known (a free/unknown model scores 0).
   bool get isKnown => input > 0 || output > 0;
 
-  /// Estimates the USD cost of a request given token counts.
+  /// Estimates request cost at the applicable documented context-price tier.
+  /// Input and cache counts are disjoint. Context-price thresholds apply to
+  /// the full input prompt, not the generated output.
   double estimate({
     int inputTokens = 0,
     int outputTokens = 0,
     int cacheReadTokens = 0,
     int cacheWriteTokens = 0,
-  }) =>
-      (inputTokens * input +
-          outputTokens * output +
-          cacheReadTokens * cacheRead +
-          cacheWriteTokens * cacheWrite) /
-      1000000.0;
+  }) {
+    final tokens = inputTokens + cacheReadTokens + cacheWriteTokens;
+    var rate = this;
+    for (final tier in contextTiers) {
+      if (tokens > tier.thresholdTokens) {
+        rate = tier.cost;
+      }
+    }
+    return (inputTokens * rate.input +
+            outputTokens * rate.output +
+            cacheReadTokens * rate.cacheRead +
+            cacheWriteTokens * rate.cacheWrite) /
+        1000000.0;
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -100,10 +153,24 @@ class ModelCost {
           input == other.input &&
           output == other.output &&
           cacheRead == other.cacheRead &&
-          cacheWrite == other.cacheWrite;
+          cacheWrite == other.cacheWrite &&
+          reservationCeiling == other.reservationCeiling &&
+          const ListEquality<ModelContextCostTier>().equals(
+            contextTiers,
+            other.contextTiers,
+          ) &&
+          pricingComplete == other.pricingComplete;
 
   @override
-  int get hashCode => Object.hash(input, output, cacheRead, cacheWrite);
+  int get hashCode => Object.hash(
+    input,
+    output,
+    cacheRead,
+    cacheWrite,
+    reservationCeiling,
+    const ListEquality<ModelContextCostTier>().hash(contextTiers),
+    pricingComplete,
+  );
 }
 
 /// Token limits for a model.

@@ -1,9 +1,9 @@
 ---
 title: Kjør en headless server
 description: Kjør den headless binærfilen cc_server eller Docker-imaget dens, par en klient til den og konfigurer den med hele flagg- og miljøflaten i CLI-et.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: nb-NO/handbok/slik-gjor-du/kjor-headless-server
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Kjør `cc_server` på en maskin som står på hele tiden, og koble deg deretter til
@@ -25,7 +25,7 @@ trenger ingen utsjekking av kildekoden. Fest en versjonstagg
 | `ghcr.io/samuelalev/cc-server`            | Backend-en: database, agenter, MCP, webhooker | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`            | Nettklienten (statisk nginx)                 | `-p 8080:8080`   |
 | `ghcr.io/samuelalev/cc-remote`            | Telefonfølgeappen (PWA, statisk nginx)       | `-p 8081:8080`   |
-| `ghcr.io/samuelalev/cc-signaling-server`  | WebRTC-paringsreléet (valgfritt)             | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`  | Det krypterte tilkoblingsreléet (valgfritt)  | `-p 8788:8788`   |
 
 Hele stakken som en compose-fil:
 
@@ -56,12 +56,16 @@ volumes:
 Noen ting det er verdt å vite før du eksponerer noe av dette utenfor loopback:
 
 - **`cc-server`-imaget leveres med `CC_SERVER_INSECURE=1`** (det må binde
-  `0.0.0.0` for å ta imot trafikk på publiserte porter), noe som bare er trygt
-  bak en TLS-avsluttende omvendt proxy — Caddy, Traefik, nginx eller en
-  Cloudflare Tunnel — på et klarert nettverk. Vil du avslutte TLS i prosessen i
-  stedet, monterer du et sertifikat og setter `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` (og fjerner deretter `CC_SERVER_INSECURE`). Alt kan
-  overstyres med `docker run -e …` eller `environment:`-blokken i compose.
+  `0.0.0.0` for å ta imot trafikk på publiserte porter). Bruk en
+  TLS-avsluttende omvendt proxy — Caddy, Traefik, nginx eller en
+  Cloudflare Tunnel — på et klarert nettverk, eller monter et sertifikat og sett
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (og fjern deretter
+  `CC_SERVER_INSECURE`). Denne innstillingen styrer bare serverens ytre
+  HTTP/WebSocket-lytter. Den slår aldri av den obligatoriske
+  ende-til-ende-krypterte klientøkten. TLS beskytter fortsatt
+  innloggings-/oppstartstrafikk, tilkoblingsmetadata, offentlige endepunkter og
+  levering av nettklienten. Alt kan overstyres med `docker run -e …` eller
+  `environment:`-blokken i compose.
 - **`/data` er den eneste tilstanden.** SQLite-databasene, hemmelighetene til
   parede enheter, nedlastede modeller og møtelyd ligger alle i volumet —
   sikkerhetskopier det, og containeren blir engangs.
@@ -73,14 +77,18 @@ Noen ting det er verdt å vite før du eksponerer noe av dette utenfor loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **De to klientimagene er statiske nginx-verter** — ingenting å konfigurere ved
-  kjøring; hver klients tilkoblingsskjema tar imot server-URL-en, enhets-id-en og
-  paringsnøkkelen din. Relémegleren trenger på samme måte bare porten sin
-  (`SIGNALING_HOST` / `SIGNALING_PORT` kan overstyres); den er tilstandsløs,
-  oppbevarer ingen hemmeligheter og er en **reserve** — en telefon bruker
-  loopback, LAN, tailnet eller en direkte `wss://`-vei når en slik er
-  tilgjengelig, og faller bare tilbake til reléet når ingen er det. Hopp over
-  den hvis klientene dine alltid når serveren direkte.
+- **De to klientimagene er statiske nginx-verter.** Innebygde
+  nettlesereditorer bruker den samme app-origin og den samme krypterte
+  tilkoblingen, som beskrevet [nedenfor](#nettlesereditor-ressurser). Hver klients
+  tilkoblingsskjema tar imot server-URL-en, enhets-id-en og paringsnøkkelen din.
+  Relémegleren trenger bare porten sin (`SIGNALING_HOST` / `SIGNALING_PORT` kan
+  overstyres); den er tilstandsløs, oppbevarer ingen paringsnøkler og er en
+  **reserve** — en telefon bruker loopback, LAN, tailnet eller en direkte
+  `wss://`-vei når en slik er tilgjengelig, og faller bare tilbake til reléet
+  når ingen er det. Hopp over den hvis klientene dine alltid når serveren
+  direkte. Megleren kan se ruteidentifikatorer, IP-adresser, størrelser og
+  timing, og kan avbryte trafikk; den kan ikke dekryptere ressursstrømmen
+  mellom klienten og serveren.
 
 Resten av denne veiledningen bygger serveren fra kildekoden; flaggene og
 oppførselen den dekker, er de samme som imagets miljøvariabler styrer.
@@ -178,6 +186,14 @@ En legitimasjon utstedt av `cc_server pair` har **ingen utløpstid**; en som er
 utstedt i appen, utløper alltid etter 30 dager. Tilbakekall en enhet utstedt fra
 CLI-et fra **Innstillinger → Deg → Dine enheter** når du er ferdig med den.
 
+Paringsnøkkelen autentiserer det obligatoriske Noise-håndtrykket; hver økt utleder
+ferske trafikknøkler og sjekker serverens signerte identitet. Beskytt
+paringsnøkkelen og hent den fra en klarert kilde (inkludert en klarert QR-kode),
+og verifiser deretter et nytt serverfingeravtrykk gjennom en separat klarert kanal
+eller mot en kjent pin. Ikke godta en endret pin i det stille: par på nytt gjennom
+en klarert kanal hvis du bevisst bytter serveridentitet. TLS alene kan ikke
+fastslå denne ende-til-ende-identitetspinen.
+
 ## Trinn 4: Start serveren
 
 På loopback — standarden, og alt du trenger for en klient på samme maskin:
@@ -204,8 +220,13 @@ klartekstbinding bak den:
 ```
 
 `--insecure` ignoreres når både `--tls-cert` og `--tls-key` er satt — TLS vinner
-alltid. Serveren annonserer klarteksttilstanden som `insecure: true` i
-`GET /healthz`, og klienter merker en slik tilkobling som usikker.
+alltid. Serveren annonserer den ytre lytterens klarteksttilstand som
+`insecure: true` i `GET /healthz`. Dette slår ikke av Noise-krypteringen på
+`/rpc`, enten klienten kobler til direkte eller gjennom reléet. Oppgrader
+serveren, reléet og klientene sammen: gamle klartekst-RPC-klienter avvises, uten
+kompatibilitetsreserve. Offentlige forespørsler til sensitive ruter for
+ressurser (inkludert sikkerhetskopioverføringer) får HTTP `426`, også fra
+loopback; parede klienter bruker i stedet den krypterte tunnelen.
 
 Serveren kjører til `SIGINT`/`SIGTERM`, og avsluttes deretter ryddig.
 
@@ -226,6 +247,33 @@ nettopp det). En nettleserorigin som ikke er loopback, må stå på
 standardlisten er `https://app.usectrl.dev`, og `localhost` / `127.0.0.1` er
 alltid tillatt.
 :::
+
+### Nettlesereditor-ressurser
+
+Editor-frontenden er klarert applikasjonskode og kjører på nettappens egen
+origin. Service Workeren dens fører HTTP- og WebSocket-trafikk gjennom den
+samme autentiserte krypterte økten som resten av klienten. `cc_server` dekrypterer
+hver forespørsel, videresender den til sin lokale code-server-backend og
+krypterer svaret tilbake til klienten. Filene forblir eid av serveren.
+
+Vert nettklienten over HTTPS eller en sikker loopback-origin, slik at Service
+Workere kan kjøre. Det vanlige nettbygget og utgivelsesskriptene inkluderer de
+delte ressursfilene. Hvis du bygger et bygg manuelt, klargjør du disse filene
+etterpå fra repoets rot:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+For telefonens nettbygg bruker du `apps/cc_remote/build/web` i stedet. Det
+kopierer `cc_resource_bridge.js`, `cc_resource_worker.js` og
+`cc_resource_ws_shim.js` inn i appbygget.
+
+Native editortrafikk bruker i stedet en kapabilitetsavgrenset
+loopback-fasade. Ikke eksponer den private loopback-porten for rapport og
+kommando fra editorutvidelsen serveren starter, gjennom en offentlig proxy.
+Følsomme offentlige HTTP-forespørsler avvises; ressurser krever en autentisert
+kryptert økt.
 
 ## Trinn 6: Koble til en Google Calendar (valgfritt)
 
@@ -286,7 +334,7 @@ Hvert arbeidsområdespesifikt kall bærer sin egen `workspace_id`, og tilgang
 avgjøres av medlemskapet og rollen den som kaller har i arbeidsområdet — ikke av
 å holde en paringsnøkkel.
 
-To ting du bør vite før du eksponerer porten utenfor loopback:
+To ting du bør vite før du eksponerer porten utenfor loopback (TLS alene gir ikke den parede klientens ende-til-ende-kryptering eller autoriserer ressurser):
 
 - **MCP svikter lukket utenfor verten.** En MCP-flate uten token svarer bare på loopback. Å binde `any` utvider den ikke — en forespørsel utenfra avvises med «MCP requires a bearer token to answer non-loopback clients» til du konfigurerer ett (`mcp.setToken`, eller **Innstillinger → Server → MCP-servere**).
 - **`GET /healthz` er uautentisert med vilje**, med jokertegn i CORS, og publiserer serverens id, navn, identitetsfingeravtrykk og byggeversjon. Klienter trenger fingeravtrykket for å feste serveren, så dette er med vilje — men det betyr at enhver `cc_server` som kan nås, avslører så mye til hvem som helst som spør.

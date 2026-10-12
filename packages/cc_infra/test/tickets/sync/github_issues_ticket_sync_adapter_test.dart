@@ -1,26 +1,32 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart';
 import 'package:cc_infra/src/tickets/sync/github_issues_ticket_sync_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
+/// The decoded JSON body of a captured request.
+Map<String, dynamic> jsonBody(HttpRequest request) =>
+    ((request.body! as HttpBodyJson).json as Map).cast<String, dynamic>();
+
 /// Exercises [GitHubIssuesTicketSyncAdapter]. The adapter is pure
-/// vendor-shape translation over an injectable [Dio], so a fake adapter pins
-/// the REST paths, the PR-vs-issue filter, the status mapping and the
-/// push-change branches without touching GitHub.
+/// vendor-shape translation over an injectable [RhttpClient], so a
+/// [TestHttpClient] pins the REST paths, the PR-vs-issue filter, the status
+/// mapping and the push-change branches without touching GitHub.
 void main() {
-  late RecordingAdapter adapter;
-  late Dio dio;
+  late TestHttpClient httpClient;
   late GitHubIssuesTicketSyncAdapter sync;
+  Object? next = <Object?>[];
+
+  void nextJson(Object body) => next = body;
 
   setUp(() {
-    adapter = RecordingAdapter();
-    dio = Dio()..httpClientAdapter = adapter;
-    sync = GitHubIssuesTicketSyncAdapter(dio);
+    next = <Object?>[];
+    httpClient = TestHttpClient(
+      handler: (request) => httpTextResponse(request, next),
+    );
+    sync = GitHubIssuesTicketSyncAdapter(httpClient);
   });
 
   Ticket ticket({
@@ -82,7 +88,7 @@ void main() {
 
   group('pullChanges', () {
     test('GETs the issues endpoint and excludes PRs', () async {
-      adapter.nextJson([
+      nextJson([
         {'number': 1, 'title': 'issue one', 'state': 'open'},
         // A PR — has a `pull_request` key — must be filtered out.
         {
@@ -110,9 +116,9 @@ void main() {
         workspaceId: 'ws',
         vendorProjectId: 'acme/widget',
       );
-      expect(adapter.requests.single.path, '/repos/acme/widget/issues');
-      expect(adapter.requests.single.queryParameters['state'], 'all');
-      expect(adapter.requests.single.queryParameters['per_page'], 100);
+      expect(httpClient.requests.single.url, '/repos/acme/widget/issues');
+      expect(httpClient.requests.single.query!['state'], 'all');
+      expect(httpClient.requests.single.query!['per_page'], '100');
       expect(deltas, hasLength(2));
       expect(deltas[0].externalId, '1');
       expect(deltas[0].externalKey, '#1');
@@ -128,20 +134,20 @@ void main() {
     });
 
     test('forwards the `since` cursor as an ISO UTC timestamp', () async {
-      adapter.nextJson(const []);
+      nextJson(const []);
       await sync.pullChanges(
         workspaceId: 'ws',
         vendorProjectId: 'o/r',
         since: DateTime.utc(2026, 3, 3, 4, 5, 6),
       );
       expect(
-        adapter.requests.single.queryParameters['since'],
+        httpClient.requests.single.query!['since'],
         '2026-03-03T04:05:06.000Z',
       );
     });
 
     test('tolerates missing/odd fields', () async {
-      adapter.nextJson([
+      nextJson([
         {'number': null, 'state': null},
         'not-a-map',
       ]);
@@ -159,19 +165,16 @@ void main() {
 
   group('pushChange — create', () {
     test('POSTs to the issues endpoint and reads the number', () async {
-      adapter.nextJson({
-        'number': 42,
-        'html_url': 'https://github.com/o/r/issues/42',
-      });
+      nextJson({'number': 42, 'html_url': 'https://github.com/o/r/issues/42'});
       final outcome = await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(title: 'New', description: 'body', labels: ['bug']),
         changeType: TicketChangeType.created,
         vendorProjectId: 'o/r',
       );
-      expect(adapter.requests.single.method, 'POST');
-      expect(adapter.requests.single.path, '/repos/o/r/issues');
-      final data = adapter.requests.single.data as Map;
+      expect(httpClient.requests.single.method.value, 'POST');
+      expect(httpClient.requests.single.url, '/repos/o/r/issues');
+      final data = jsonBody(httpClient.requests.single);
       expect(data['title'], 'New');
       expect(data['body'], 'body');
       expect(data['labels'], ['bug']);
@@ -181,19 +184,19 @@ void main() {
     });
 
     test('omits body/labels when empty', () async {
-      adapter.nextJson({'number': 1});
+      nextJson({'number': 1});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(title: 't'),
         changeType: TicketChangeType.created,
         vendorProjectId: 'o/r',
       );
-      final data = adapter.requests.single.data as Map;
+      final data = jsonBody(httpClient.requests.single);
       expect(data.keys, ['title']);
     });
 
     test('returns an empty externalId when the API omits number', () async {
-      adapter.nextJson({});
+      nextJson({});
       final outcome = await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(),
@@ -228,7 +231,7 @@ void main() {
 
   group('pushChange — update existing', () {
     test('statusChanged patches only the state', () async {
-      adapter.nextJson(const {});
+      nextJson(const {});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(status: TicketStatus.done),
@@ -236,14 +239,14 @@ void main() {
         externalId: '7',
         vendorProjectId: 'o/r',
       );
-      final req = adapter.requests.single;
-      expect(req.method, 'PATCH');
-      expect(req.path, '/repos/o/r/issues/7');
-      expect(req.data, {'state': 'closed', 'state_reason': 'completed'});
+      final req = httpClient.requests.single;
+      expect(req.method.value, 'PATCH');
+      expect(req.url, '/repos/o/r/issues/7');
+      expect(jsonBody(req), {'state': 'closed', 'state_reason': 'completed'});
     });
 
     test('cancelled status maps to not_planned', () async {
-      adapter.nextJson(const {});
+      nextJson(const {});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(status: TicketStatus.cancelled),
@@ -251,14 +254,14 @@ void main() {
         externalId: '7',
         vendorProjectId: 'o/r',
       );
-      expect(adapter.requests.single.data, {
+      expect(jsonBody(httpClient.requests.single), {
         'state': 'closed',
         'state_reason': 'not_planned',
       });
     });
 
     test('a non-terminal status patches to state:open', () async {
-      adapter.nextJson(const {});
+      nextJson(const {});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(status: TicketStatus.inProgress),
@@ -266,11 +269,11 @@ void main() {
         externalId: '7',
         vendorProjectId: 'o/r',
       );
-      expect(adapter.requests.single.data, {'state': 'open'});
+      expect(jsonBody(httpClient.requests.single), {'state': 'open'});
     });
 
     test('updated patches title/body/labels', () async {
-      adapter.nextJson(const {});
+      nextJson(const {});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(title: 'T2', description: 'd', labels: ['x']),
@@ -278,14 +281,14 @@ void main() {
         externalId: '7',
         vendorProjectId: 'o/r',
       );
-      final data = adapter.requests.single.data as Map;
+      final data = jsonBody(httpClient.requests.single);
       expect(data['title'], 'T2');
       expect(data['body'], 'd');
       expect(data['labels'], ['x']);
     });
 
     test('deleted closes the issue as not_planned', () async {
-      adapter.nextJson(const {});
+      nextJson(const {});
       final outcome = await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(),
@@ -293,8 +296,8 @@ void main() {
         externalId: '7',
         vendorProjectId: 'o/r',
       );
-      expect(adapter.requests.single.method, 'PATCH');
-      expect(adapter.requests.single.data, {
+      expect(httpClient.requests.single.method.value, 'PATCH');
+      expect(jsonBody(httpClient.requests.single), {
         'state': 'closed',
         'state_reason': 'not_planned',
       });
@@ -303,7 +306,7 @@ void main() {
     });
 
     test('commented / assigned are no-ops (no request issued)', () async {
-      adapter.nextJson(const {});
+      nextJson(const {});
       for (final ct in [
         TicketChangeType.commented,
         TicketChangeType.assigned,
@@ -316,7 +319,7 @@ void main() {
           vendorProjectId: 'o/r',
         );
       }
-      expect(adapter.requests, isEmpty);
+      expect(httpClient.requests, isEmpty);
     });
   });
 
@@ -328,9 +331,9 @@ void main() {
         required String owner,
       }) async {
         seen.add((workspaceId: workspaceId, owner: owner));
-        return dio;
+        return httpClient;
       });
-      adapter.nextJson(const []);
+      nextJson(const []);
       await resolving.pullChanges(
         workspaceId: 'ws-a',
         vendorProjectId: 'acme/widget',
@@ -338,32 +341,4 @@ void main() {
       expect(seen, [(workspaceId: 'ws-a', owner: 'acme')]);
     });
   });
-}
-
-
-class RecordingAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-
-  Object _nextBody = <dynamic>[];
-  void nextJson(Object body) => _nextBody = body;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    final body = _nextBody;
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

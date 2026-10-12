@@ -3,7 +3,7 @@ title: Seni bina
 description: Bagaimana Control Center distrukturkan dengan model pelayan klien nipis, Clean Architecture berteraskan ciri serta port dan penyesuai.
 dateModified: 2026-09-19
 slug: ms-MY/manual-pengguna/konsep/seni-bina
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Gambaran keseluruhan
@@ -26,7 +26,7 @@ Ini ialah **ruang kerja Dart** dengan satu fail kunci yang telah diselesaikan, t
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Lapisan domain**: entiti Dart tulen, objek nilai, antara muka repositori, port dan perkhidmatan domain. Sifar import infrastruktur (tiada dio, drift atau model rangkaian).
+- **Lapisan domain**: entiti Dart tulen, objek nilai, antara muka repositori, port dan perkhidmatan domain. Sifar import infrastruktur (tiada rhttp, drift atau model rangkaian).
 - **Lapisan persembahan**: skrin, widget, pemberitahu. Tiada akses terus drift/DAO/lapisan data; semuanya melalui pembekal Riverpod → repositori.
 - **Lapisan infrastruktur**: pelaksanaan konkrit bagi port domain dan antara muka repositori. Bergantung pada domain, tidak pernah sebaliknya.
 
@@ -122,7 +122,7 @@ Kedua-dua pangkalan data dimiliki oleh `cc_persistence` dan dibuka hanya oleh `c
 
 Semua HTTP luaran hidup dalam pelayan. Klien tidak pernah mendail GitHub, Linear atau Google secara langsung — mereka memanggil operasi RPC pelayan malah media jauh diambil melalui titik akhir `/proxy/media` pelayan dan bukan daripada asal huluan.
 
-- Klien **dio** dalam `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` dan `GoogleCalendarApiClient`
+- Klien **rhttp** dalam `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` dan `GoogleCalendarApiClient`
 - Suntikan token pengesahan melalui pencegat, termasuk pencegat Google OAuth bagi setiap akaun dalam `cc_server_core` yang menyegarkan token pada 401
 - Semua ralat dipetakan melalui `packages/cc_infra/lib/src/network/error_mapper.dart` → subkelas `AppException` bertip yang ditakrifkan dalam `cc_domain`
 

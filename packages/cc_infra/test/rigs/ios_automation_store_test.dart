@@ -104,6 +104,42 @@ void main() {
     },
   );
 
+  test(
+    'extracts every entry of a many-file archive with its exact contents',
+    () async {
+      // A real runner carries hundreds of files, and the extraction reads them
+      // from a file-backed stream rather than one buffered copy of the zip.
+      // Walk enough entries to catch the offsets sliding under each other.
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile.string(
+            'WebDriverAgentRunner-Runner.app/Info.plist',
+            '<plist/>',
+          )..mode = 0,
+        );
+      const count = 128;
+      for (var i = 0; i < count; i++) {
+        archive.addFile(
+          ArchiveFile.string(
+            'WebDriverAgentRunner-Runner.app/Frameworks/Nested$i/file$i.txt',
+            'contents-$i',
+          )..mode = 0,
+        );
+      }
+      final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+
+      final store = storeFor(bytes);
+      final app = await store.install();
+
+      expect(store.isInstalled, isTrue);
+      for (var i = 0; i < count; i++) {
+        final file = File(p.join(app, 'Frameworks', 'Nested$i', 'file$i.txt'));
+        expect(file.existsSync(), isTrue, reason: 'file$i extracted');
+        expect(file.readAsStringSync(), 'contents-$i');
+      }
+    },
+  );
+
   test('checksum mismatch deletes partial bytes and adopts nothing', () async {
     final store = storeFor(archiveBytes(), expectedHash: '0' * 64);
     await expectLater(store.install(), throwsA(isA<IosAutomationException>()));

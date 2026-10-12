@@ -1,9 +1,16 @@
 ---
 title: Ewaluacje i jakość
-description: Zestawy ewaluacyjne, startowy zestaw zasiewany w każdym obszarze roboczym oraz miejsce, w którym pojawiają się w Obserwowalności.
+description: Zestawy ewaluacyjne i przypięte do wersji kampanie umiejętności oraz sposoby interpretacji ich danych.
 slug: pl-PL/podrecznik/koncepcje/ewaluacje-i-jakosc
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Obserwowalność → Jakość** zawiera zarówno zestawy ewaluacyjne dla pojedynczych
+zadań, jak i parowane kampanie umiejętności. Kampania umiejętności mierzy pakiet
+w użyciu przez konkretny model i harness, a nie jakość samego
+Markdownu.
+
+## Zestawy ewaluacyjne
 
 **Zestaw ewaluacyjny** to definicja zadania do uruchomienia na agencie, działająca w
 zakresie obszaru roboczego: prompt, docelowy agent i tryb, opcjonalna konfiguracja
@@ -18,7 +25,7 @@ zgłoszenia. Zasiewanie nasłuchuje zdarzenia `WorkspaceCreated` (`workspace.ups
 `workspace.create`), pomija nazwę, która już istnieje, i nie uzupełnia wstecz
 starszych obszarów roboczych.
 
-## Gdzie się pojawiają
+### Gdzie się pojawiają
 
 **Obserwowalność → Jakość** (`/workspaces/<id>/observability`) wyświetla każdy zestaw
 w obszarze roboczym.
@@ -27,10 +34,118 @@ Twórz, wyświetlaj, edytuj i usuwaj zestawy przez `evals.upsertSuite`,
 `evals.deleteSuite` i `evals.watchSuites`. Karta Jakość jest listą; te operacje to
 edytor.
 
+## Kampanie umiejętności
+
+Kampania porównuje dwa ramiona w tych samych warunkach zadania i konfiguracji
+wykonania. Kandydat jest nieobecny, normalnie dostępny, jawnie wczytany albo
+porównywany z wcześniejszą wersją lub stałym zestawem umiejętności tła. Te warianty
+odpowiadają na różne pytania; wymuszone wczytanie to diagnostyka, a nie wynik dla
+normalnego wykrycia. [Poradnik o
+skillach](/pl-PL/podrecznik/poradniki/zarzadzanie-skillami/#oceń-umiejętność)
+wyjaśnia, jak wybrać porównanie i autoryzować przebieg w ramach budżetu.
+
+Dane należą do dokładnego **hasha całego pakietu**: `SKILL.md`, metadanych, skryptów,
+referencji i zasobów. Serwer rejestruje przeskanowane, niezmienne pakiety i przypina
+zestaw zadań, adapter, identyfikator dostawcy/natywnego modelu, protokół, schematy
+narzędzi oraz zestaw tła. Natywne kampanie Claude przypinają także zarządzane konto
+i zaobserwowaną wersję CLI. Edycja referencji unieważnia bieżące dane, nawet jeśli
+`SKILL.md` się nie zmienił. Alias modelu zapisuje to, o co poproszono, a nie niezmienne wagi
+dostawcy.
+
+Każda próba otrzymuje świeży kontekst, świeży katalog domowy i świeży stan fixture.
+Parowane ramiona używają tych samych zasad i warunków zadania poza zadeklarowaną
+interwencją umiejętności. Brak celu oznacza, że metadane i pliki kandydata są
+niedostępne, a nie że usunięto wszystkie instrukcje tła lub umiejętności. Prompty
+zadań nie mogą wymieniać kandydata w porównaniu normalnego wykrycia.
+
+Serwer odpowiada za autoryzację, wykonanie, budżety i trwałość obszaru roboczego.
+Klienci wybierają ustawienia i prezentują dane. Postęp przetrwa ponowne połączenie;
+anulowanie zachowuje częściowe wyniki, a restart oznacza niedokończoną pracę jako
+przerwaną, zamiast po cichu powtarzać płatne wywołania. Te kampanie nie dostarczają
+odrębnego kontraktu wykonawcy dla dowolnych zestawów ewaluacyjnych.
+
+## Czytaj dane ostrożnie
+
+- **O poprawności decydują wyniki.** Niezależni, typowani weryfikatorzy sprawdzają
+  artefakty i wynikające z nich zachowanie, a nie twierdzenie agenta, że odniósł
+  sukces. Oczekiwane odpowiedzi pozostają poza ogrodzeniem kandydata; wygenerowany
+  kod jest oceniany w osobno izolowanej kopii.
+- **Wczytanie i użyteczność to dwie różne rzeczy.** Dostępność, wczytania treści i
+  referencji oraz zaobserwowane użycie skryptów wyjaśniają wykonanie. Odczytanie
+  pliku nie dowodzi, że model poszedł za jego instrukcjami; niedostrzegalny dostęp
+  pozostaje nieznany.
+- **Zachowaj dopasowany poziom odniesienia.** Sam udany przebieg kandydata nie
+  ustala korzyści. Uwzględnij próby, w których dostępna umiejętność została
+  zignorowana, próby nieudane i ich koszty; nie zachowuj tylko najlepszej powtórki.
+- **Powtórzenia to nie nowe zadania.** Raporty grupują niepewność według zadania.
+  Małe próbki, brakujące pokrycie, dryf tożsamości i nieznane wydatki nie mogą
+  uzasadniać rekomendacji wdrożenia. Ukończona kampania wciąż może być
+  niejednoznaczna; brak wykazanej poprawy nie jest dowodem równoważności ani
+  regresji.
+- **Sprawdzaj pojedyncze regresje.** Zbiorcze zyski nie mogą ukrywać zadania,
+  któremu zaszkodzono, ani nieautoryzowanego efektu ubocznego. Skanowanie
+  bezpieczeństwa, obserwacje bezpieczeństwa w czasie wykonania i użyteczność
+  pozostają odrębne; tańsze wykonanie nie rekompensuje brakujących danych o
+  jakości lub bezpieczeństwie.
+- **Nie łącz niezgodnych wyników.** Inny model, harness, zasady,
+  fixture lub kombinacja umiejętności to inna konfiguracja. Dane o transferze i
+  składzie trzymane w odstawce oddzielaj od przypadków rozwojowych.
+
+Dziewięć lokalnie przygotowanych korpusów pilotażowych zawiera 108 pozycji
+zadaniowych z zakresu użyteczności, trasowania/bezpieczeństwa właściwego dla
+rodziny oraz odłożonego transferu/składu. Wybierz rodzinę pasującą do celu
+umiejętności. Rozwiązania referencyjne i znane błędne wyniki sprawdzają
+weryfikatorów; te fixtures nie są reprodukcją publicznego benchmarku ani dowodem,
+że jakakolwiek zainstalowana umiejętność jest użyteczna. Przebiegi dymne
+implementacji ze skryptowanymi odpowiedziami dostawcy nie są pomiarami jakości
+umiejętności na żywym modelu.
+
+## Ograniczenia wykonania i danych
+
+Wspierane są kontrolowany **wbudowany harness** i adapter **Claude Code**. Izolacja
+i aktywne poświadczenia muszą przejść kontrolę przed wykonaniem. Wbudowani dostawcy
+wymagają udokumentowanej obsługi narzędzi, limitów tokenów i cennika; **Codex
+OAuth** uwierzytelnia własne konto, zamiast wymagać osobnego klucza API OpenAI.
+**Claude Code** używa domyślnego zarządzanego konta, konkretnego identyfikatora
+modelu i własnego raportu kosztów w przeliczeniu na API.
+
+**Claude Code** i **Codex OAuth** używają **progu zatrzymania użycia**: trwające
+wywołanie może przekroczyć budżet, po czym kolejne wywołania się zatrzymują. Nie
+są to rozliczane wydatki subskrypcji ani twardy pułap faktury. Dostawcy korzystający
+z klucza API zachowują konserwatywne rezerwacje przed wywołaniem. Nieznany
+zaobserwowany wydatek zatrzymuje kolejne wywołania u każdego adaptera; niepełne
+pokrycie pozostaje częściowe lub niejednoznaczne.
+
+**Claude** uruchamia własną natywną pętlę modelu w prywatnym katalogu kontrolera,
+z wyłączonymi wbudowanymi narzędziami i umiejętnościami tła. Jego jedynymi
+narzędziami są uwierzytelniony most MCP należący do serwera do tego samego
+ograniczonego gościa, którego używa wbudowany harness. Poświadczenia pozostają poza
+tym gościem. Zmieniona tożsamość CLI lub powierzchnia narzędzi unieważnia próbę,
+zamiast po cichu zmieniać wykonawcę. Ocena floty i Windows nie są wspierane. Udana
+sonda Git workera lub echo promptu nie liczą się jako ocena.
+
+Izolacja w systemie macOS odmawia sieci gościa i dostępu do zewnętrznego systemu
+plików, blokuje odłączanie procesów, ogranicza CPU, pliki i wyjście oraz sprząta
+należące do niej procesy potomne, ale **nie egzekwuje twardego limitu pamięci**.
+Linux wymaga bubblewrap i stosuje limit przestrzeni adresowej. Wstępna walidacja
+izolacji objęła macOS, a nie Linux. Brak izolacji nigdy nie powoduje powrotu do
+powłoki hosta. Poświadczenia dostawcy pozostają na serwerze, poza narzędziami
+gościa.
+
+Dane prób są usuwane z danych wrażliwych i ograniczone do 256 KiB; eksport jest
+ograniczony do 16 MiB. Duże eksporty zachowują zwięzłe podsumowania wyników i
+kosztów dla wszystkich dopuszczonych prób i jawnie raportują pominiętą lub
+zsumowaną treść śladu. Ani eksport, ani raport nie zawiera pełnego pakietu
+odtworzeniowego prywatnego źródła. Syntetyczne kontrole bezpieczeństwa nie ustalają
+rzeczywistej odporności na eksfiltrację, nie unieważniają kwarantanny i nie
+certyfikują umiejętności jako bezpiecznej.
+
 ## Zobacz też
 
 - [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/): konfiguracja, którą
   przypina zestaw
+- [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/):
+  izolacja i granice uprawnień
 - [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/): pokrętło autonomii
 - [Zarządzaj kosztami i budżetami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/):
   wydatki rejestrowane razem z uruchomieniem

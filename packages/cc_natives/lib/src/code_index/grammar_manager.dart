@@ -6,8 +6,8 @@ import 'package:cc_natives/src/native_library_paths.dart'
     show dartBuildBundleLibDir;
 import 'package:cc_natives/src/native_runtime.dart';
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart' show CancelToken, HttpMethod, RhttpClient;
 
 /// Resolved on-disk paths to the tree-sitter natives for a language.
 class GrammarPaths {
@@ -77,18 +77,18 @@ class GrammarInstallException implements Exception {
 class GrammarManager {
   /// Creates a [GrammarManager].
   ///
-  /// [_dio] downloads grammar natives; [_grammarsDir] resolves the install
-  /// directory (`<app-support>/grammars`, populated by
+  /// [_httpClient] downloads grammar natives; [_grammarsDir] resolves the
+  /// install directory (`<app-support>/grammars`, populated by
   /// `scripts/natives/build_tree_sitter.sh` in dev or by [install] when
   /// downloaded). [onLog] receives diagnostics; defaults to silent. The host
   /// injects all three so `cc_natives` stays a leaf package.
   GrammarManager({
-    required this._dio,
+    required this._httpClient,
     required this._grammarsDir,
     NativeLog? onLog,
   }) : _log = onLog;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final NativeDirResolver _grammarsDir;
   final NativeLog? _log;
 
@@ -301,11 +301,14 @@ class GrammarManager {
         (p) => onProgress?.call(0.5 + p * 0.5, 'downloading'),
       );
     } catch (e) {
+      // Best-effort cleanup of both targets AND their staging files: the
+      // runtime may already be installed, and a leftover `<dest>.part` must
+      // never survive as something a later resolve could mistake for a library.
+      // Quiet about failures so the real error below is not replaced by a
+      // cleanup error.
       for (final path in [runtimePath, grammarPath]) {
-        final f = File(path);
-        if (f.existsSync()) {
-          await f.delete();
-        }
+        await _deleteQuietly(File(path));
+        await _deleteQuietly(File('$path.part'));
       }
       if (e is GrammarInstallException) {
         rethrow;
@@ -317,6 +320,11 @@ class GrammarManager {
     return resolve(languageId);
   }
 
+  /// Downloads [url] to [dest], verifies it against [expectedSha256] and only
+  /// then publishes it at [dest].
+  ///
+  /// Bytes are staged at `<dest>.part` and renamed after checksum verification,
+  /// so [resolve] only sees complete, verified libraries.
   Future<void> _download(
     String url,
     String dest,
@@ -324,30 +332,49 @@ class GrammarManager {
     CancelToken? cancelToken,
     void Function(double) onProgress,
   ) async {
-    await _dio.download(
-      url,
-      dest,
+    final response = await _httpClient.requestBytes(
+      method: HttpMethod.get,
+      url: url,
       cancelToken: cancelToken,
       onReceiveProgress: (received, total) {
+        // total is -1 when the server sends no Content-Length; there is no
+        // meaningful progress fraction then, so stay quiet rather than
+        // reporting a bogus 0%.
         if (total > 0) {
           onProgress((received / total).clamp(0.0, 1.0));
         }
       },
-      options: Options(followRedirects: true, responseType: ResponseType.bytes),
     );
-    // Always verified — there is no "no checksum configured" path any more.
-    final actual = sha256.convert(await File(dest).readAsBytes()).toString();
-    if (actual.toLowerCase() != expectedSha256.toLowerCase()) {
-      // Delete the unverified bytes: leaving them on disk invites a later
-      // resolve() from picking them up as a locally-present lib.
-      try {
-        await File(dest).delete();
-      } on Object {
-        // Best-effort.
+
+    final staged = File('$dest.part');
+    try {
+      await staged.writeAsBytes(response.body, flush: true);
+      // Always verified — there is no "no checksum configured" path any more.
+      final actual = sha256.convert(await staged.readAsBytes()).toString();
+      if (actual.toLowerCase() != expectedSha256.toLowerCase()) {
+        // Delete the unverified bytes: leaving them on disk invites a later
+        // resolve() from picking them up as a locally-present lib.
+        await _deleteQuietly(staged);
+        throw GrammarInstallException(
+          'checksum mismatch for $url (expected $expectedSha256, got $actual)',
+        );
       }
-      throw GrammarInstallException(
-        'checksum mismatch for $url (expected $expectedSha256, got $actual)',
-      );
+      await staged.rename(dest);
+    } catch (_) {
+      await _deleteQuietly(staged);
+      rethrow;
+    }
+  }
+
+  /// Deletes [file] when it exists, never throwing: callers use it to drop
+  /// unverified bytes, and a failed cleanup must not replace the real error.
+  Future<void> _deleteQuietly(File file) async {
+    try {
+      if (file.existsSync()) {
+        await file.delete();
+      }
+    } on Object {
+      // Best-effort.
     }
   }
 

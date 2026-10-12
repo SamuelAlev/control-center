@@ -420,7 +420,7 @@ void main() {
       expect(result.medianRunTokens, 1.5);
     });
 
-    test('median counts every token axis via RunCost.totalTokens', () {
+    test('reasoning does not inflate the median token count', () {
       final result = aggregator.aggregate([
         _run(
           cost: _cost(
@@ -432,7 +432,7 @@ void main() {
           ),
         ),
       ]);
-      expect(result.medianRunTokens, 5.0);
+      expect(result.medianRunTokens, 4.0);
     });
 
     test('median is unaffected by input ordering (sorts a copy)', () {

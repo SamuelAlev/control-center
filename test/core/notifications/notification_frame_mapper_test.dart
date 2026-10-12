@@ -11,29 +11,26 @@ void main() {
   group('mapNotificationFrame', () {
     test('unknown methods (task lifecycle, ticket_reassigned) render null', () {
       expect(
-        mapNotificationFrame(
-          'notifications/task_failed',
-          const {'workspace_id': 'ws-1'},
-          l10n: l10n,
-        ),
+        mapNotificationFrame('notifications/task_failed', const {
+          'workspace_id': 'ws-1',
+        }, l10n: l10n),
         isNull,
       );
       expect(
-        mapNotificationFrame(
-          'notifications/ticket_reassigned',
-          const {'ticket_id': 't-1', 'workspace_id': 'ws-1'},
-          l10n: l10n,
-        ),
+        mapNotificationFrame('notifications/ticket_reassigned', const {
+          'ticket_id': 't-1',
+          'workspace_id': 'ws-1',
+        }, l10n: l10n),
         isNull,
       );
     });
 
     test('maps pr_merged with workspace-scoped route', () {
-      final n = mapNotificationFrame(
-        'notifications/pr_merged',
-        const {'pr_id': 'pr-1', 'agent_id': 'a-1', 'workspace_id': 'ws-1'},
-        l10n: l10n,
-      );
+      final n = mapNotificationFrame('notifications/pr_merged', const {
+        'pr_id': 'pr-1',
+        'agent_id': 'a-1',
+        'workspace_id': 'ws-1',
+      }, l10n: l10n);
       expect(n, isNotNull);
       expect(n!.category, NotificationCategory.prMerged);
       expect(n.workspaceId, 'ws-1');
@@ -159,20 +156,16 @@ void main() {
       // Centre-only on purpose: a banner is for something time-critical AND
       // directly actionable, and re-reviewing is a choice you make when you
       // next open the pull request.
-      final n = mapNotificationFrame(
-        'notifications/review_stale',
-        const {
-          'workspace_id': 'ws-1',
-          'space_id': 'sp-1',
-          'repo_owner': 'acme',
-          'repo_name': 'widget',
-          'pr_number': 42,
-          'pr_title': 'Add the thing',
-          'reviewed_head_sha': 'aaa1111',
-          'head_sha': 'bbb2222',
-        },
-        l10n: l10n,
-      );
+      final n = mapNotificationFrame('notifications/review_stale', const {
+        'workspace_id': 'ws-1',
+        'space_id': 'sp-1',
+        'repo_owner': 'acme',
+        'repo_name': 'widget',
+        'pr_number': 42,
+        'pr_title': 'Add the thing',
+        'reviewed_head_sha': 'aaa1111',
+        'head_sha': 'bbb2222',
+      }, l10n: l10n);
       expect(n, isNotNull);
       expect(n!.category, NotificationCategory.reviewStale);
       expect(n.presentation, NotificationPresentation.centerOnly);
@@ -186,30 +179,23 @@ void main() {
     test('review_stale survives a frame with no repo coordinates', () {
       // Degrades to the PR list rather than rendering nothing: a notification
       // that cannot be built is one the person never learns about.
-      final n = mapNotificationFrame(
-        'notifications/review_stale',
-        const {
-          'workspace_id': 'ws-1',
-          'pr_number': 42,
-          'pr_title': 'Add the thing',
-        },
-        l10n: l10n,
-      );
+      final n = mapNotificationFrame('notifications/review_stale', const {
+        'workspace_id': 'ws-1',
+        'pr_number': 42,
+        'pr_title': 'Add the thing',
+      }, l10n: l10n);
       expect(n, isNotNull);
       expect(n!.route, contains('ws-1'));
     });
 
     test('meeting_starting_soon is banner-class', () {
-      final n = mapNotificationFrame(
-        'notifications/meeting_starting_soon',
-        const {
-          'event_id': 'ev-1',
-          'title': 'Standup',
-          'start_time': '2026-08-16T10:00:00Z',
-          'workspace_id': 'ws-1',
-        },
-        l10n: l10n,
-      );
+      final n =
+          mapNotificationFrame('notifications/meeting_starting_soon', const {
+            'event_id': 'ev-1',
+            'title': 'Standup',
+            'start_time': '2026-08-16T10:00:00Z',
+            'workspace_id': 'ws-1',
+          }, l10n: l10n);
       expect(n!.presentation, NotificationPresentation.banner);
     });
 
@@ -295,24 +281,16 @@ void main() {
     });
 
     test('a reap distinguishes a TTL expiry from an idle reclaim', () {
-      final ttl = mapNotificationFrame(
-        'notifications/rig_reaped',
-        const {
-          'rig_id': 'rig-1',
-          'workspace_id': 'ws-1',
-          'reason': 'ttlExpired',
-        },
-        l10n: l10n,
-      );
-      final idle = mapNotificationFrame(
-        'notifications/rig_reaped',
-        const {
-          'rig_id': 'rig-1',
-          'workspace_id': 'ws-1',
-          'reason': 'idleTimeout',
-        },
-        l10n: l10n,
-      );
+      final ttl = mapNotificationFrame('notifications/rig_reaped', const {
+        'rig_id': 'rig-1',
+        'workspace_id': 'ws-1',
+        'reason': 'ttlExpired',
+      }, l10n: l10n);
+      final idle = mapNotificationFrame('notifications/rig_reaped', const {
+        'rig_id': 'rig-1',
+        'workspace_id': 'ws-1',
+        'reason': 'idleTimeout',
+      }, l10n: l10n);
       expect(ttl, isNotNull);
       expect(idle, isNotNull);
       expect(ttl!.body, isNot(idle!.body));
@@ -320,15 +298,11 @@ void main() {
     });
 
     test('a rig that died under an agent renders as a failure', () {
-      final n = mapNotificationFrame(
-        'notifications/rig_closed',
-        const {
-          'rig_id': 'rig-1',
-          'workspace_id': 'ws-1',
-          'reason': 'backendFailure',
-        },
-        l10n: l10n,
-      );
+      final n = mapNotificationFrame('notifications/rig_closed', const {
+        'rig_id': 'rig-1',
+        'workspace_id': 'ws-1',
+        'reason': 'backendFailure',
+      }, l10n: l10n);
       expect(n, isNotNull);
       expect(n!.category, NotificationCategory.rigStatusChanged);
       expect(n.workspaceId, 'ws-1');
@@ -386,6 +360,22 @@ void main() {
         expect(n.route, contains('ws-1'));
       });
     });
+
+    group('agent_action_blocked', () {
+      AppNotification? map(Map<String, dynamic> extra) =>
+          mapNotificationFrame('notifications/agent_action_blocked', {
+            'workspace_id': 'ws-1',
+            'reason': 'Pushing to main is denied by workspace policy',
+            'summary': 'git push origin main',
+            ...extra,
+          }, l10n: l10n);
+
+      test('opens the space the agent was stopped in', () {
+        final n = map({'space_id': 'space-1', 'agent_name': 'Ada'})!;
+        expect(n.route, contains('ws-1'));
+        expect(n.route, contains('space-1'));
+      });
+    });
   });
 
   // ==========================================================================
@@ -418,7 +408,9 @@ void main() {
 
   group('merge readiness', () {
     test('ready renders under prMergeReadiness and links to the PR', () {
-      final n = map('notifications/pr_ready_to_merge', const {'reason': 'none'});
+      final n = map('notifications/pr_ready_to_merge', const {
+        'reason': 'none',
+      });
       expect(n, isNotNull);
       expect(n!.category, NotificationCategory.prMergeReadiness);
       expect(n.route, '/workspaces/ws-1/pull-requests/acme/widgets/42');
@@ -576,8 +568,10 @@ void main() {
         'notifications/pr_thread_resolved',
       ]) {
         expect(
-          map(method, const {'comment_id': 7, 'author_login': 'hubot'})!
-              .category,
+          map(method, const {
+            'comment_id': 7,
+            'author_login': 'hubot',
+          })!.category,
           NotificationCategory.prThreadActivity,
           reason: method,
         );
@@ -599,22 +593,20 @@ void main() {
   group('principal routing', () {
     test('a frame addressed to someone else is dropped', () {
       expect(
-        map(
-          'notifications/pr_ready_to_merge',
-          const {'reason': 'none', 'for_user_id': 'user-2'},
-          currentUserId: 'user-1',
-        ),
+        map('notifications/pr_ready_to_merge', const {
+          'reason': 'none',
+          'for_user_id': 'user-2',
+        }, currentUserId: 'user-1'),
         isNull,
       );
     });
 
     test('a frame addressed to me is kept', () {
       expect(
-        map(
-          'notifications/pr_ready_to_merge',
-          const {'reason': 'none', 'for_user_id': 'user-1'},
-          currentUserId: 'user-1',
-        ),
+        map('notifications/pr_ready_to_merge', const {
+          'reason': 'none',
+          'for_user_id': 'user-1',
+        }, currentUserId: 'user-1'),
         isNotNull,
       );
     });
@@ -622,11 +614,9 @@ void main() {
     test('an older server sending no for_user_id still notifies', () {
       // Degrade to notifying: silently swallowing is the worse failure.
       expect(
-        map(
-          'notifications/pr_ready_to_merge',
-          const {'reason': 'none'},
-          currentUserId: 'user-1',
-        ),
+        map('notifications/pr_ready_to_merge', const {
+          'reason': 'none',
+        }, currentUserId: 'user-1'),
         isNotNull,
       );
     });
@@ -841,19 +831,20 @@ void main() {
       // `mergedBy` is null for a deleted account — unknown must degrade to
       // notifying, never to a silent drop.
       expect(
-        map('notifications/external_pr_merged', const {}, viewerLogins: {
-          'octocat',
-        }),
+        map(
+          'notifications/external_pr_merged',
+          const {},
+          viewerLogins: {'octocat'},
+        ),
         isNotNull,
       );
     });
 
     test('no connected forge means nothing is suppressed', () {
       expect(
-        map(
-          'notifications/external_pr_merged',
-          const {'merged_by_login': 'octocat'},
-        ),
+        map('notifications/external_pr_merged', const {
+          'merged_by_login': 'octocat',
+        }),
         isNotNull,
       );
     });
@@ -862,9 +853,11 @@ void main() {
       // The gate reads only the actor keys; a checks failure has none, so it
       // must survive whatever the viewer is called.
       expect(
-        map('notifications/pr_checks_failed', const {}, viewerLogins: {
-          'octocat',
-        }),
+        map(
+          'notifications/pr_checks_failed',
+          const {},
+          viewerLogins: {'octocat'},
+        ),
         isNotNull,
       );
     });

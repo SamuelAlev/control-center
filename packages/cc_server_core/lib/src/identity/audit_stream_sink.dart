@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/cc_infra.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Streams authorization audit rows to an external SIEM.
 ///
@@ -26,9 +27,9 @@ class AuditStreamSink {
     this.batchSize = 50,
     this.flushInterval = const Duration(seconds: 10),
     this.maxBuffered = 1000,
-    Dio? client,
+    RhttpClient? httpClient,
     this._onWarn,
-  }) : _dio = client ?? Dio();
+  }) : _httpClient = httpClient ?? createHttpClient();
 
   /// The HTTPS endpoint batches are POSTed to.
   final String endpoint;
@@ -47,7 +48,7 @@ class AuditStreamSink {
   /// copy is on disk either way.
   final int maxBuffered;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final void Function(String message)? _onWarn;
   final List<GuardDecision> _buffer = [];
   Timer? _timer;
@@ -93,16 +94,14 @@ class AuditStreamSink {
         final batch = _buffer.take(batchSize).toList();
         final body = batch.map((d) => jsonEncode(_toEvent(d))).join('\n');
         try {
-          await _dio.post<void>(
+          await _httpClient.post(
             endpoint,
-            data: body,
-            options: Options(
-              headers: {
-                'content-type': 'application/x-ndjson',
-                if (token != null && token!.isNotEmpty)
-                  'authorization': 'Bearer $token',
-              },
-            ),
+            headers: HttpHeaders.rawMap({
+              'content-type': 'application/x-ndjson',
+              if (token != null && token!.isNotEmpty)
+                'authorization': 'Bearer $token',
+            }),
+            body: HttpBody.text(body),
           );
         } catch (e) {
           _onWarn?.call('audit stream delivery failed ($e); will retry');

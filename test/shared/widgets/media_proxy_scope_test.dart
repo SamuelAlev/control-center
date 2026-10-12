@@ -9,39 +9,36 @@ void main() {
   const psk = 'test-pre-shared-key';
   const deviceId = 'web-client-1';
 
-  MediaProxyConfig config({String server = 'wss://cc.example.com:9030/rpc'}) =>
-      MediaProxyConfig.fromConnection(
-        serverUri: Uri.parse(server),
-        deviceId: deviceId,
-        psk: psk,
-      )!;
+  MediaProxyConfig config() => MediaProxyConfig(
+    httpBase: Uri.parse('http://127.0.0.1:9030/_cc_resource/test-cap/'),
+    deviceId: deviceId,
+    psk: psk,
+  );
 
-  group('MediaProxyConfig.fromConnection', () {
-    test('maps wss → https and ws → http, preserving host:port', () {
-      expect(config().httpBase.toString(), 'https://cc.example.com:9030');
-      expect(
-        config(server: 'ws://localhost:9030/rpc').httpBase.toString(),
-        'http://localhost:9030',
-      );
-    });
-
-    test('returns null for non-ws schemes or blank creds', () {
-      expect(
-        MediaProxyConfig.fromConnection(
-          serverUri: Uri.parse('https://cc.example.com/rpc'),
-          deviceId: deviceId,
-          psk: psk,
-        ),
-        isNull,
-      );
-      expect(
-        MediaProxyConfig.fromConnection(
-          serverUri: Uri.parse('wss://cc.example.com/rpc'),
-          deviceId: '',
-          psk: psk,
-        ),
-        isNull,
-      );
+  group('capability-preserving routes', () {
+    test('all bulk routes retain the local capability prefix and signed query', () {
+      final c = config();
+      final routes = [
+        c.workspaceLogoUrl(workspaceId: 'workspace'),
+        c.meetingAudioUrl(workspaceId: 'workspace', meetingId: 'meeting'),
+        c.blobUploadUrl(workspaceId: 'workspace'),
+        c.backupWorkspaceUrl(workspaceId: 'workspace'),
+        c.backupSnapshotUrl(name: 'snapshot'),
+        c.backupRestoreUrl(workspaceId: 'workspace'),
+        c.fontUrl(family: 'Inter', weight: 400, italic: false),
+        c.rigStreamUrl(workspaceId: 'workspace', rigId: 'rig', width: 500, height: 300),
+        c.rigFilesUrl(workspaceId: 'workspace', rigId: 'rig'),
+        c.rigMicrophoneUrl(workspaceId: 'workspace', rigId: 'rig'),
+        c.soundscapeStreamUrl(workspaceId: 'workspace', mood: 'calm'),
+        c.soundscapePlaylistUrl(workspaceId: 'workspace', mood: 'calm'),
+      ];
+      for (final value in routes) {
+        final uri = Uri.parse(value);
+        expect(uri.path, startsWith('/_cc_resource/test-cap/'));
+        expect(uri.host, '127.0.0.1');
+        expect(uri.queryParameters['d'], deviceId);
+        expect(uri.queryParameters['s'], isNotEmpty);
+      }
     });
   });
 
@@ -61,10 +58,10 @@ void main() {
       const raw = 'https://news.example.org/a/cover.jpg?w=600&token=abc';
       final proxied = Uri.parse(config().resolve(raw));
 
-      expect(proxied.scheme, 'https');
-      expect(proxied.host, 'cc.example.com');
+      expect(proxied.scheme, 'http');
+      expect(proxied.host, '127.0.0.1');
       expect(proxied.port, 9030);
-      expect(proxied.path, '/proxy/media');
+      expect(proxied.path, '/_cc_resource/test-cap/proxy/media');
       expect(proxied.queryParameters['d'], deviceId);
 
       // The encoded target round-trips back to the exact original URL...
@@ -106,8 +103,8 @@ void main() {
           '?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.payload-segment.sig-segment';
       final proxied = Uri.parse(config().resolve(raw));
 
-      expect(proxied.host, 'cc.example.com');
-      expect(proxied.path, '/proxy/media');
+      expect(proxied.host, '127.0.0.1');
+      expect(proxied.path, '/_cc_resource/test-cap/proxy/media');
       final decoded = utf8.decode(
         base64Url.decode(proxied.queryParameters['u']!),
       );
@@ -173,7 +170,7 @@ void main() {
         c.rigMicrophoneUrl(workspaceId: 'ws-1', rigId: 'rig-1', end: true),
       );
 
-      expect(chunk.path, '/rig/stream/rig-1');
+      expect(chunk.path, '/_cc_resource/test-cap/rig/stream/rig-1');
       expect(chunk.queryParameters['lane'], 'microphone');
       expect(chunk.queryParameters['rate'], '16000');
       expect(chunk.queryParameters['channels'], '1');
@@ -185,7 +182,7 @@ void main() {
 
   group('MediaProxyScope.urlOf', () {
     testWidgets(
-      'returns the raw URL when no scope is present (not connected)',
+      'does not load remote HTTP media without a live facade',
       (tester) async {
         late String resolved;
         await tester.pumpWidget(
@@ -196,7 +193,7 @@ void main() {
             },
           ),
         );
-        expect(resolved, 'https://x/y.png');
+        expect(resolved, isEmpty);
       },
     );
 
@@ -215,7 +212,7 @@ void main() {
           ),
         ),
       );
-      expect(resolved, startsWith('https://cc.example.com:9030/proxy/media?'));
+      expect(resolved, startsWith('http://127.0.0.1:9030/_cc_resource/test-cap/proxy/media?'));
     });
   });
 }

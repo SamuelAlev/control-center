@@ -330,6 +330,7 @@ class SsoLoginResult {
     required this.psk,
     this.groups = const [],
     this.clientOrigin,
+    this.recipientPublicKey,
   });
 
   /// The signed-in user.
@@ -349,4 +350,8 @@ class SsoLoginResult {
   /// tracker, validated against the server's origin allow-list at handoff).
   /// Null for the same-tab and desktop flows.
   final String? clientOrigin;
+
+  /// Public key of the client that initiated this login. Never trust an
+  /// unsealed device credential to a browser completion page.
+  final String? recipientPublicKey;
 }

@@ -4,10 +4,9 @@ extension _SpaceComposer on _SpaceScreenState {
   Future<void> _attach() async {
     final picked = await pickAttachments();
     if (picked.isEmpty || !mounted) return;
-    final hasHttp = ref.read(mediaEndpointProvider).value != null;
     final tooBig = picked
         .where(
-          (a) => !attachmentFitsLane(a.bytes.length, hasHttpOrigin: hasHttp),
+          (a) => !attachmentFitsLane(a.bytes.length),
         )
         .toList();
     final l10n = AppLocalizations.of(context);
@@ -16,9 +15,7 @@ extension _SpaceComposer on _SpaceScreenState {
       _pending.addAll(picked.where((a) => !tooBig.contains(a)));
       _attachError = tooBig.isEmpty
           ? null
-          : (hasHttp
-                ? l10n.attachmentsTooLarge(tooBig.length, names)
-                : l10n.attachmentsTooLargeRelay(tooBig.length, names));
+          : l10n.attachmentsTooLarge(tooBig.length, names);
     });
   }
 
@@ -40,7 +37,6 @@ extension _SpaceComposer on _SpaceScreenState {
       final stored = await uploadAttachments(
         picked: outgoing,
         workspaceId: workspaceId,
-        client: client,
         endpoint: ref.read(mediaEndpointProvider).value,
       );
       if (outgoing.isNotEmpty && stored.isEmpty && text.isEmpty) {

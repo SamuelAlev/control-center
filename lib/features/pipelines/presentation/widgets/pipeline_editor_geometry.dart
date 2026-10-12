@@ -4,7 +4,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_defin
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
-import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas_background.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/pipeline_edge_geometry.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter/widgets.dart';
 

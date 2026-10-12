@@ -11,8 +11,7 @@ import 'package:path/path.dart' as p;
 const String kIosAutomationVersion = 'v16.14.2';
 
 /// Source commit corresponding to [kIosAutomationVersion].
-const String kIosAutomationCommit =
-    'd15c0b2dbaa850fa712fba817e51cf8d5026d9f2';
+const String kIosAutomationCommit = 'd15c0b2dbaa850fa712fba817e51cf8d5026d9f2';
 
 /// A byte source used to test installation without network access.
 typedef IosAutomationSource = Future<Stream<List<int>>> Function(Uri uri);
@@ -135,10 +134,8 @@ class IosAutomationStore {
   String get installDirectory => p.join(_root, artifact.architecture);
 
   /// Installed runner application path.
-  String get runnerAppPath => p.join(
-    installDirectory,
-    'WebDriverAgentRunner-Runner.app',
-  );
+  String get runnerAppPath =>
+      p.join(installDirectory, 'WebDriverAgentRunner-Runner.app');
 
   /// Whether a structurally valid runner is already installed.
   bool get isInstalled => _validRunnerAt(installDirectory);
@@ -294,8 +291,30 @@ class IosAutomationStore {
     required String stagePath,
   }) {
     final stage = Directory(stagePath)..createSync(recursive: true);
-    final bytes = File(archivePath).readAsBytesSync();
-    final archive = ZipDecoder().decodeBytes(bytes, verify: true);
+    // Read the zip through a file-backed stream instead of loading it whole:
+    // the central directory is reached by seeking and each entry's bytes are
+    // decoded on demand against the open file, so a large archive no longer
+    // needs `readAsBytesSync` + `decodeBytes` (the entire zip, plus every
+    // entry's decompressed content, resident at once). The stream has to stay
+    // open until the last entry is written and validated.
+    final input = InputFileStream(archivePath);
+    try {
+      return _unpackZip(input, stage);
+    } finally {
+      input.closeSync();
+    }
+  }
+
+  /// Writes every entry of the zip behind [input] under [stage] and checks the
+  /// runner it must contain, returning the entries that need exec permission.
+  ///
+  /// Separate from [_extractAndValidateArchive] so the file-backed [input] is
+  /// closed on every path, including a rejected archive.
+  static List<(String, String)> _unpackZip(
+    InputFileStream input,
+    Directory stage,
+  ) {
+    final archive = ZipDecoder().decodeStream(input, verify: true);
     final zip = p.Context(style: p.Style.posix);
     final links = <ArchiveFile>[];
     final executablePaths = <(String, String)>[];
@@ -330,7 +349,20 @@ class IosAutomationStore {
         continue;
       }
       Directory(p.dirname(output)).createSync(recursive: true);
-      File(output).writeAsBytesSync(entry.content, flush: true);
+      final sink = OutputFileStream(output);
+      try {
+        entry.writeContent(sink);
+      } finally {
+        sink.closeSync();
+      }
+      // OutputFileStream drains its buffer on close but exposes no fsync.
+      // Preserve the previous flush:true before adopting the staged tree.
+      final handle = File(output).openSync(mode: FileMode.append);
+      try {
+        handle.flushSync();
+      } finally {
+        handle.closeSync();
+      }
       final mode = entry.unixPermissions;
       if (mode != 0) {
         executablePaths.add((mode.toRadixString(8).padLeft(3, '0'), output));
@@ -347,22 +379,16 @@ class IosAutomationStore {
     }
 
     final info = File(
-      p.join(
-        stage.path,
-        'WebDriverAgentRunner-Runner.app',
-        'Info.plist',
-      ),
+      p.join(stage.path, 'WebDriverAgentRunner-Runner.app', 'Info.plist'),
     );
     if (!info.existsSync() || info.lengthSync() == 0) {
       throw const IosAutomationException(
         'The WebDriverAgent archive has no runner Info.plist.',
       );
     }
-    File(p.join(stage.path, 'LICENSE.webdriveragent.txt')).writeAsStringSync(
-      _licenseNotice,
-      encoding: utf8,
-      flush: true,
-    );
+    File(
+      p.join(stage.path, 'LICENSE.webdriveragent.txt'),
+    ).writeAsStringSync(_licenseNotice, encoding: utf8, flush: true);
     return executablePaths;
   }
 
@@ -380,11 +406,7 @@ class IosAutomationStore {
 
   static bool _validRunnerAt(String directory) {
     final info = File(
-      p.join(
-        directory,
-        'WebDriverAgentRunner-Runner.app',
-        'Info.plist',
-      ),
+      p.join(directory, 'WebDriverAgentRunner-Runner.app', 'Info.plist'),
     );
     return info.existsSync() && info.lengthSync() > 0;
   }

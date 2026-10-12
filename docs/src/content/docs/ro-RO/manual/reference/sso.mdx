@@ -2,7 +2,7 @@
 title: Referință pentru configurarea SSO
 description: Fiecare opțiune, endpoint, operație și cod de eroare al autentificării unice.
 slug: ro-RO/manual/referinta/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Tot ce este configurabil la autentificarea unică, într-un singur loc. Valorile stau
@@ -23,7 +23,7 @@ cu care ecranul de setări poate intra în contradicție).
 | `displayNameAttribute` | SAML         | `displayName`   | atributul numelui afișat                                                                                                                                  |
 | `groupsAttribute`      | SAML         | `groups`        | atributul numelor de grup                                                                                                                                 |
 | `clockSkewSeconds`     | SAML         | 90              | marja permisă pentru decalajul de ceas la validarea duratei de viață                                                                                      |
-| `allowIdpInitiated`    | SAML         | oprit           | acceptă răspunsuri nesolicitate (fără `InResponseTo`)                                                                                                     |
+| `allowIdpInitiated`    | SAML         | oprit           | acceptă răspunsuri nesolicitate valide (fără `InResponseTo`); browserul trebuie să revendice o autorizare de scurtă durată înainte de a primi un credențial sigilat pentru destinatar |
 | `wantResponseSigned`   | SAML         | oprit           | cere o semnătură la rădăcina răspunsului (semnăturile aserțiunilor sunt mereu obligatorii)                                                                |
 | `issuer`               | OIDC         | —               | URL-ul de bază al emitentului (obligatoriu pentru activare)                                                                                               |
 | `clientId`             | OIDC         | —               | id-ul de client public (obligatoriu pentru activare)                                                                                                      |
@@ -36,28 +36,62 @@ cu care ecranul de setări poate intra în contradicție).
 
 ## Configurarea procesului
 
-Conexiunile SSO nu se inițializează din mediu. Un singur steag de proces rămas se
-referă la **predarea către browser**, nu la rândul conexiunii:
+Conexiunile SSO nu se inițializează din mediu. Un singur steag de proces rămas
+alege unde deschide browserul clientul web după un callback SSO:
 
 | Variabilă / steag                        | Semnificație                                                                                                         |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | originea către care redirecționează browserul callback-urile SSO (credențialul călătorește în fragmentul URL-ului). Nesetată, predarea rămâne pe aceeași origine. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | URL-ul clientului web pentru o predare de credențial sigilat; nesetat, predarea rămâne pe aceeași origine (util doar dacă clientul web este servit acolo). Pentru o autentificare `web-popup`, are prioritate un `client_origin` permis din tab-ul care o inițiază. |
 
 URL-ul emitentului în sine trebuie să fie `https` (`http` este acceptat doar pentru
-emitenți pe loopback: `localhost`, `127.0.0.1` și `::1`).
+emitenți pe loopback: `localhost`, `127.0.0.1` și `::1`). Folosește TLS de
+încredere pentru callback-ul IdP și gazda clientului web: pagina care generează
+cheia destinatarului și JavaScriptul pe care îl livrează fac parte din granița de
+încredere. HTTPS protejează acel bootstrap; după asociere, sesiunile `/rpc`
+directe și cele intermediate necesită ambele criptare Noise și o identitate de
+server fixată.
 
 ## Endpoint-uri HTTP
 
 | Endpoint                                         | Autentificare       | Scop                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | fără (redirecționare) | pornește autentificarea inițiată de SP; `relay=desktop` predă aplicației, `relay=web-popup` trimite prin postMessage către tab-ul de conectare în așteptare (care își declară `client_origin`, onorat doar când lista de permisiuni a originilor îl consideră de încredere) |
-| `POST /saml/acs`                                 | fără (POST de la IdP) | consumatorul de aserțiuni — verifică, provisionează, emite                                                                                                                                                     |
+| `GET /saml/login?relay=…&handoff_key=…`          | fără (redirecționare) | pornește autentificarea inițiată de SP cu o cheie de destinatar X25519 deținută de client; `relay=desktop` predă aplicației, `relay=web-popup` trimite prin postMessage către tab-ul de conectare în așteptare (al cărui `client_origin` este onorat doar când lista de permisiuni a originilor îl consideră de încredere) |
+| `POST /saml/acs`                                 | fără (POST de la IdP) | verifică aserțiunea și provisionează utilizatorul; autentificarea inițiată de SP sigilează credențialul de dispozitiv emis pe cheia destinatarului care a inițiat-o; SAML-ul nesolicitat permis produce în schimb o revendicare legată de browser |
+| `POST /saml/claim`                               | autorizare de browser pe aceeași origine | răscumpără o autorizare SAML nesolicitată de unică folosință cu cookie-ul ei și o `handoff_key` nouă; returnează un credențial sigilat pentru destinatar, niciodată o cheie de asociere în text clar |
 | `GET /saml/metadata`                             | fără                | `EntityDescriptor`-ul nostru de SP                                                                                                                                                                               |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | fără                | ciclul dus-întors OIDC; `relay=desktop` predă aplicației, `relay=web-popup` tab-ului de conectare în așteptare (aceeași convenție `client_origin`)                                                               |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | fără | ciclul dus-întors OIDC; autentificarea necesită cheia destinatarului deținută de client; `relay=desktop` predă aplicației, `relay=web-popup` tab-ului de conectare în așteptare (aceeași convenție `client_origin`) |
 | `GET /auth/providers`                            | fără, CORS `*`      | sonda ecranului de conectare: conexiunile SSO oferite (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                    |
 | `/scim/v2/Users…`                                | Bearer (token SCIM) | Users: creare/obținere/listare+filtrare/PUT/PATCH/DELETE                                                                                                                                                         |
 | `/scim/v2/Groups`                                | Bearer              | doar citire; push-ul de grupuri răspunde 501 prin proiectare                                                                                                                                                     |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | documentul de capabilități                                                                                                                                                                                       |
+
+Pentru SAML și OIDC inițiate de SP, URL-ul de pornire a autentificării necesită un
+`handoff_key` valid (cheia publică X25519 a clientului care o inițiază). Serverul
+păstrează acea cheie împreună cu autentificarea în așteptare și sigilează
+credențialul de dispozitiv emis la callback folosind X25519 efemer, HKDF-SHA256 și
+AES-256-GCM legate de originea serverului. Predarea către desktop folosește
+`control-center://pair`, predarea web în același tab folosește un fragment de URL,
+iar `web-popup` trimite un postMessage către `client_origin`-ul permis, dacă este
+furnizat (altfel către URL-ul configurat al clientului web sau originea
+callback-ului). Plicul sigilat, și nu o cheie de asociere în text clar, călătorește
+în acel fragment sau mesaj popup. Clientul care a inițiat păstrează cheia privată
+corespunzătoare pentru a-l deschide. Acest plic este distinct de sesiunea Noise
+obligatorie stabilită după asociere.
+
+Un răspuns SAML inițiat de IdP (când este activat) nu are un destinatar care să îl
+ințieze. În schimb, ACS setează un cookie de browser de cinci minute, HttpOnly și
+SameSite=Strict, și prezintă opțiunea **Deschide clientul web** / **Deschide
+aplicația desktop**. Acea pagină generează o cheie nouă de destinatar și publică
+jumătatea ei publică și identificatorul autorizării la `POST /saml/claim` din
+aceeași origine. Claim necesită cookie-ul și originea corespunzătoare (o graniță
+CSRF), consumă autorizarea o dată și returnează doar un plic sigilat pentru
+destinatar. Fragmentul ulterior de web/desktop transportă acel plic și materialul
+cheii private al destinatarului, astfel încât clientul destinație să îl poată
+deschide, **nu** un credențial de dispozitiv în text clar. Un alt browser sau o
+autorizare expirată nu îl pot răscumpăra. Originea clientului web de destinație
+poate accesa fragmentul și îl poate decripta; o pagină de callback sau o origine de
+client web compromise pot fura credențiale. Criptarea nu face codul servit
+netrustabil sigur.
 
 ## Operații RPC
 

@@ -168,10 +168,9 @@ class RemoteSession {
   // when the server re-publishes its descriptor or the fingerprint is pinned.
   PairingRecord? _record;
 
-  // The signed-media origin of the LIVE path, or null when there is none (not
-  // connected, or connected through the broker relay — which carries RPC
-  // frames, not byte ranges). Recomputed on every `connected` status because a
-  // failover can land on a different address than the QR carried.
+  // One local capability survives transport failover; the resource callback
+  // selects the currently authenticated secure RPC channel for each request.
+  LocalResourceProxy? _resourceProxy;
   RemoteMediaEndpoint? _mediaEndpoint;
   final StreamController<RemoteMediaEndpoint?> _mediaController =
       StreamController<RemoteMediaEndpoint?>.broadcast();
@@ -220,8 +219,7 @@ class RemoteSession {
   String? get activeWorkspaceId => _activeWorkspaceId;
   Stream<String?> get activeWorkspaceStream => _workspaceController.stream;
 
-  /// The signed-media origin for the live connection, or null when there is
-  /// none. See [RemoteMediaEndpoint] for why a relayed session has none.
+  /// Signed resources on this session's local encrypted facade.
   RemoteMediaEndpoint? get mediaEndpoint => _mediaEndpoint;
 
   /// [mediaEndpoint], plus subsequent changes (connect, failover, drop).
@@ -480,12 +478,23 @@ class RemoteSession {
       _lastError = null;
       final client = ResilientRpcClient(supervisor);
       _client = client;
-      await _resolveActiveWorkspace(client);
-      client.activeWorkspaceId = _activeWorkspaceId;
-      if (!_clientController.isClosed) {
-        _clientController.add(client);
+      try {
+        _resourceProxy = await createLocalResourceProxy(() => client.resources);
+        if (_disposed || !_paired) {
+          await _teardownConnection();
+          return;
+        }
+        _setMediaEndpoint(_endpointFor(_resourceProxy!.baseUri));
+        await _resolveActiveWorkspace(client);
+        client.activeWorkspaceId = _activeWorkspaceId;
+        if (!_clientController.isClosed) {
+          _clientController.add(client);
+        }
+        rlog('rpc', 'client ready (workspace=$_activeWorkspaceId)');
+      } catch (_) {
+        await _teardownConnection();
+        rethrow;
       }
-      rlog('rpc', 'client ready (workspace=$_activeWorkspaceId)');
     } finally {
       _connecting = false;
     }
@@ -513,7 +522,9 @@ class RemoteSession {
           'connected via ${path?.toJson()['t']} '
               '(relayed=${status.relayed}, latency=${status.latency?.inMilliseconds}ms)',
         );
-        _setMediaEndpoint(_endpointFor(path));
+        _setMediaEndpoint(_resourceProxy == null
+            ? null
+            : _endpointFor(_resourceProxy!.baseUri));
         _setState(const RemoteUiState.connected());
       case ServerConnectionPhase.reconnecting:
         if (status.attempt >= _failureThreshold) {
@@ -541,25 +552,14 @@ class RemoteSession {
     }
   }
 
-  /// Builds the signed-media origin for [path], or null when this path has no
-  /// HTTP origin (the broker relay) or no pairing credential is loaded.
-  RemoteMediaEndpoint? _endpointFor(ConnectionPath? path) {
-    final probe = path?.probeUri;
+  /// A stable local URL remains valid through direct/relay path changes.
+  RemoteMediaEndpoint? _endpointFor(Uri localBase) {
     final record = _record;
-    if (probe == null || record == null) {
-      return null;
-    }
-    if (record.deviceId.isEmpty || record.psk.isEmpty) {
+    if (record == null || record.deviceId.isEmpty || record.psk.isEmpty) {
       return null;
     }
     return RemoteMediaEndpoint(
-      // `probeUri` carries the origin plus (for a wss path) a path prefix we
-      // must not keep — the media routes are absolute on the server.
-      httpBase: Uri(
-        scheme: probe.scheme,
-        host: probe.host,
-        port: probe.hasPort ? probe.port : null,
-      ),
+      httpBase: localBase,
       deviceId: record.deviceId,
       psk: record.psk,
     );
@@ -604,16 +604,15 @@ class RemoteSession {
   Future<void> _teardownConnection({bool keepState = false}) async {
     await _statusSub?.cancel();
     _statusSub = null;
-    // The signed URLs were minted against a path that is going away (and, on
-    // unpair, against a credential that is being destroyed). Drop them so no
-    // surface keeps fetching from a dead origin.
     _setMediaEndpoint(null);
+    final proxy = _resourceProxy;
+    _resourceProxy = null;
+    await proxy?.close();
     final client = _client;
     final supervisor = _supervisor;
     _client = null;
     _supervisor = null;
     if (client != null) {
-      // Closing the resilient client also closes its supervisor.
       await client.close();
     } else if (supervisor != null) {
       await supervisor.close();

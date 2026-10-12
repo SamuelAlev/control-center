@@ -2,7 +2,7 @@
 title: Referentie voor de SSO-configuratie
 description: Elke instelknop, elk endpoint, elke bewerking en elke foutcode van eenmalige aanmelding.
 slug: nl-NL/handleiding/referentie/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Alles wat instelbaar is aan eenmalige aanmelding, op één plek. De waarden
@@ -24,7 +24,7 @@ kan zijn).
 | `displayNameAttribute` | SAML       | `displayName`   | attribuut voor de weergavenaam                                                                                                                                                               |
 | `groupsAttribute`      | SAML       | `groups`        | attribuut voor groepsnamen                                                                                                                                                                   |
 | `clockSkewSeconds`     | SAML       | 90              | toegestane klokafwijking bij de levensduurvalidatie                                                                                                                                          |
-| `allowIdpInitiated`    | SAML       | uit             | accepteer ongevraagde Responses (geen `InResponseTo`)                                                                                                                                        |
+| `allowIdpInitiated`    | SAML       | uit             | accepteer geldige ongevraagde Responses (geen `InResponseTo`); de browser moet een kortstondige grant claimen voordat hij een voor de ontvanger verzegeld inloggegeven ontvangt |
 | `wantResponseSigned`   | SAML       | uit             | eist een handtekening op de Response-root (assertion-handtekeningen zijn altijd vereist)                                                                                                     |
 | `issuer`               | OIDC       | —               | basis-URL van de issuer (vereist om in te schakelen)                                                                                                                                         |
 | `clientId`             | OIDC       | —               | id van de public client (vereist om in te schakelen)                                                                                                                                         |
@@ -38,27 +38,61 @@ kan zijn).
 ## Procesconfiguratie
 
 SSO-verbindingen worden niet vanuit de omgeving gevuld. Eén resterende
-procesflag gaat over de **browseroverdracht**, niet over de verbindingsrij:
+procesflag kiest waar de browser de webclient opent na een SSO-callback:
 
 | Variabele / flag                                | Betekenis                                                                                                                                                                     |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | de origin waarheen SSO-callbacks de browser terugsturen (het inloggegeven reist mee in het URL-fragment). Is hij niet ingesteld, dan blijft de overdracht op dezelfde origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | webclient-URL voor een verzegelde overdracht van inloggegevens; zonder waarde blijft de overdracht op dezelfde origin (alleen nuttig als de webclient daar wordt geserveerd). Voor een `web-popup`-aanmelding krijgt een toegestane `client_origin` van het startende tabblad voorrang. |
 
 De issuer-URL zelf moet `https` zijn (`http` wordt alleen geaccepteerd voor
-loopback-issuers `localhost`, `127.0.0.1` en `::1`).
+loopback-issuers `localhost`, `127.0.0.1` en `::1`). Gebruik vertrouwd TLS voor
+de IdP-callback en de webclient-host: de pagina die de ontvangersleutel
+genereert en de JavaScript die hij levert, maken deel uit van de
+vertrouwensgrens. HTTPS beschermt die bootstrap; na het koppelen vereisen zowel
+rechtstreekse als via een relay verlopen `/rpc`-sessies Noise-versleuteling en
+een vastgepinde serveridentiteit.
 
 ## HTTP-endpoints
 
 | Endpoint                                         | Auth                | Doel                                                                                                                                                                                                                                                                                        |
 | ------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | geen (redirect)     | start een door de SP geïnitieerde aanmelding; `relay=desktop` draagt over aan de app, `relay=web-popup` stuurt een postMessage naar het wachtende verbindingstabblad (dat zijn `client_origin` opgeeft, wat alleen wordt gehonoreerd wanneer de lijst met toegestane origins die vertrouwt) |
-| `POST /saml/acs`                                 | geen (IdP-POST)     | de assertion consumer — verifieert, provisioneert en maakt het inloggegeven aan                                                                                                                                                                                                             |
+| `GET /saml/login?relay=…&handoff_key=…`         | geen (redirect)     | start een door de SP geïnitieerde aanmelding met een door de client vastgehouden X25519-ontvangersleutel; `relay=desktop` draagt over aan de app, `relay=web-popup` stuurt een postMessage naar het wachtende verbindingstabblad (zijn `client_origin` wordt alleen gehonoreerd wanneer de lijst met toegestane origins die vertrouwt) |
+| `POST /saml/acs`                                 | geen (IdP-POST)     | verifieert de assertion en provisioneert de gebruiker; een door de SP geïnitieerde aanmelding verzegelt het aangemaakte apparaatgegeven voor de startende ontvangersleutel; toegestane ongevraagde SAML levert in plaats daarvan een aan de browser gebonden claim |
+| `POST /saml/claim`                               | browser-grant op dezelfde origin | lost een eenmalige ongevraagde SAML-grant in met zijn cookie en een verse `handoff_key`; retourneert een voor de ontvanger verzegeld inloggegeven, nooit een plaintext koppelingssleutel |
 | `GET /saml/metadata`                             | geen                | onze SP-`EntityDescriptor`                                                                                                                                                                                                                                                                  |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | geen                | de OIDC-roundtrip; `relay=desktop` draagt over aan de app, `relay=web-popup` aan het wachtende verbindingstabblad (dezelfde `client_origin`-conventie)                                                                                                                                      |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | geen | de OIDC-roundtrip; de aanmelding vereist de door de client vastgehouden ontvangersleutel; `relay=desktop` draagt over aan de app, `relay=web-popup` aan het wachtende verbindingstabblad (dezelfde `client_origin`-conventie) |
 | `GET /auth/providers`                            | geen, CORS `*`      | de probe van het verbindingsscherm: aangeboden SSO-verbindingen (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                                                                                    |
 | `/scim/v2/Users…`                                | Bearer (SCIM-token) | Users: aanmaken, ophalen, list+filter, PUT, PATCH en DELETE                                                                                                                                                                                                                                 |
 | `/scim/v2/Groups`                                | Bearer              | alleen-lezen; een groep-push antwoordt bewust met 501                                                                                                                                                                                                                                       |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | capaciteitsdocument                                                                                                                                                                                                                                                                         |
+
+Voor door de SP geïnitieerde SAML en OIDC vereist de login-start-URL een geldige
+`handoff_key` (de X25519-publiekssleutel van de startende client). De server
+bewaart die sleutel bij de openstaande aanmelding en verzegelt het aangemaakte
+apparaatgegeven bij de callback met efemere X25519, HKDF-SHA256 en AES-256-GCM,
+gebonden aan de serverorigin. De overdracht naar de desktop gebruikt
+`control-center://pair`, de weboverdracht in hetzelfde tabblad gebruikt een
+URL-fragment, en `web-popup` stuurt een postMessage naar de toegestane
+`client_origin` indien opgegeven (anders de geconfigureerde webclient-URL of de
+callback-origin). De verzegelde envelop, niet een plaintext koppelingssleutel,
+reist mee in dat fragment of popupbericht. De startende client bewaart de
+bijbehorende privésleutel om hem te openen. Deze envelop verschilt van de
+verplichte Noise-sessie die na het koppelen tot stand komt.
+
+Een door de IdP geïnitieerde SAML-Respons (indien ingeschakeld) heeft geen
+startende ontvanger. In plaats daarvan zet de ACS een vijf minuten durende,
+HttpOnly, SameSite=Strict browsercookie en toont hij de keuze **Webclient
+openen** / **Desktopapp openen**. Die pagina genereert een verse ontvangersleutel
+en stuurt zijn publieke helft en de grant-handle naar `POST /saml/claim` vanaf
+dezelfde origin. Het innen vereist de bijbehorende cookie en origin (een
+CSRF-grens), verbruikt de grant één keer en retourneert alleen een voor de
+ontvanger verzegelde envelop. Het daaropvolgende web-/desktopfragment draagt die
+envelop en het privésleutelmateriaal van de ontvanger, zodat de doelclient hem
+kan openen, **niet** een plaintext apparaatgegeven. Een andere browser of een
+verlopen grant kan hem niet innen. De webclient-origin van het doel kan het
+fragment benaderen en ontsleutelen; een gecompromitteerde callbackpagina of
+webclient-origin kan inloggegevens stelen. Versleuteling maakt niet-vertrouwde,
+geserveerde code niet veilig.
 
 ## RPC-bewerkingen
 

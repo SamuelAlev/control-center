@@ -4,6 +4,7 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
+import 'package:control_center/shared/widgets/markdown/mermaid_viewer.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -269,10 +270,11 @@ class _AppMermaidFigureState extends ConsumerState<AppMermaidFigure> {
           constraints: BoxConstraints(
             maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.75,
           ),
-          child: CcMermaidView(
+          child: AppMermaidViewer(
             source: widget.source,
-            style: appMermaidStyle(dialogContext, codeFontFamily: codeFont),
-            interactive: true,
+            style:
+                widget.style ??
+                appMermaidStyle(dialogContext, codeFontFamily: codeFont),
           ),
         ),
       ),

@@ -2,7 +2,7 @@
 title: Mentés, exportálás és importálás
 description: A pillanatkép felépítése, a manifest, minden mentési művelet és átviteli útvonal, valamint pontosan azok a fájlok, amelyeket egy biztonsági mentés tartalmaz, és amelyeket nem.
 slug: hu-HU/kezikonyv/referencia/mentes
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Minden, amit a Control Center másolni, átadni vagy átvenni képes, és az egyes
@@ -25,6 +25,13 @@ Mindegyik SQLite `VACUUM INTO` utasítással íródik, amely egy futó WAL-adatb
 szemben is biztonságos: olvasási tranzakciót indít, töredezettségmentesített és
 tranzakcionálisan konzisztens másolatot készít, és soha nem teszi szükségessé a szerver
 leállítását.
+
+Ezeket a fájlokat és a letöltött másolatokat a Control Center **nem titkosítja
+nyugalmi állapotban**. A végponttól végpontig titkosított átvitel a bájtokat a
+párosított kliens és a `cc_server` közötti menet közben védi, akár közvetlen,
+akár közvetített relés kapcsolaton. A helyi tárolót és a gépen kívüli másolatokat
+külön védje; az adatbázisfájlokat a szerver és minden jogosult címzett el tudja
+olvasni.
 
 ## A pillanatkép felépítése
 
@@ -208,11 +215,16 @@ tartalomtáblái feltöltöttek, de az indexe elavult lehet.
 
 ## Átviteli útvonalak
 
-A fenti műveletek mindegyike szerveroldali útvonalakkal dolgozik, ami csak akkor teljes
-válasz, ha a szerver a saját gépe. Az alábbi három viszi át a bájtokat, ugyanazon a
-PSK-val aláírt sávon, amelyet a médiaproxy és a blobtár használ. A hívó az eszköze
-előzetesen megosztott kulcsával írja alá a célkarakterláncot, és az aláírást `s` néven
-adja át.
+A fenti exportálási/importálási és pillanatkép-listázási műveletek szerveroldali
+útvonalakkal dolgoznak, ami csak akkor teljes válasz, ha a szerver a saját gépe.
+Ezek a HTTP formájú útvonalak **ugyanazon a hitelesített, végponttól végpontig
+titkosított erőforrás-alagúton** belül szállítják a biztonsági mentési bájtokat,
+mint más bizalmas erőforrások, akár közvetlen, akár közvetített az RPC-kapcsolat.
+Nem nyilvános HTTP-fájlátviteli végpontok: egy rájuk irányuló kérés a nyilvános
+listeneren `426 Upgrade Required` választ ad, loopbackről is. A titkosított
+alagúton belül a Noise által hitelesített eszköznek meg kell egyeznie `d`-vel; a
+kezelő ezenfelül a kliens célkarakterlánc feletti aláírását is ellenőrzi a
+párosítási PSK-jával, valamint az alábbi szerepkört.
 
 | Útvonal             | Metódus | Lekérdezés    | Aláírt cél                       | Szükséges                 |
 | ------------------- | ------- | ------------- | -------------------------------- | ------------------------- |
@@ -232,6 +244,7 @@ amelyet a listázás nem mutatott volna.
 | `404`   | Nincs mentési port ezen a gazdagépen, vagy a megnevezett pillanatkép- vagy munkaterület-fájl nem létezik               |
 | `405`   | A `/backup/restore` hívása `POST`-on kívül bármi mással                                                                 |
 | `413`   | A feltöltés törzse meghaladja a 8 GiB-ot, akár a megadott content-length, akár a ténylegesen beolvasott bájtok szerint |
+| `426`   | Bármely közvetlen kérés egy átviteli útvonalra a nyilvános HTTP-listeneren; használja egy párosított kliens titkosított erőforrás-alagútját |
 | `500`   | Az exportálás vagy az archiválás szerveroldalon meghiúsult                                                             |
 
 Mindkét letöltés `Cache-Control: no-store`, illetve `Accept-Ranges: none` fejléccel
@@ -248,12 +261,15 @@ A `/backup/restore` a törzset egyenesen egy előkészítő fájlba streameli, a
 pufferelné, a beolvasás előtt és közben is korlátot szab neki, és **minden** kivezető úton
 törli az előkészített fájlt, az elutasítást is beleértve.
 
-:::caution[Egy továbbított kapcsolatnak nincs HTTP-eredete]
-A brókerezett továbbító RPC-kereteket szállít, nem fájlátvitelt. Minden, ami szerveroldali
-útvonalakkal dolgozik, továbbra is működik rajta; a három átviteli útvonal közvetlen
-kapcsolatot igényel, ezért a felhasználói felület letiltja őket egy megjegyzéssel,
-ahelyett hogy a letöltés közepén hibázna.
-:::
+::::caution[A közvetlen és a relés átvitel ugyanazt a titkosítást használja]
+A relé titkosított szövegként szállítja az erőforráskéréseket, a streamelt
+válaszokat és a feltöltési bájtokat; a biztonsági mentés tartalmát nem tudja
+elolvasni. Egy szerveroldali útvonal továbbra is a szervergépen lévő útvonal
+marad, nem egy fájl a relén. A hozzáféréshez továbbra is a párosított eszköz, a
+célaláírás és az alkalmazandó munkaterület- vagy telepítési szerepkör kell. Egyik
+átviteli mód sem titkosítja nyugalmi állapotban az elkészült biztonsági mentési
+fájlokat.
+::::
 
 ## Útvonalak és korlátok
 
@@ -264,7 +280,7 @@ ahelyett hogy a letöltés közepén hibázna.
 | Munkaterület-exportok           | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`                              |
 | Átviteli előkészítés            | `<dataDir>/backups/transfer/` — egy munkapad, amelyet az őt író útvonal söpör ki      |
 | A pillanatkép-archívum neve     | `<snapshot directory name>.zip`                                                       |
-| Feltöltési felső korlát         | 8 GiB `POST /backup/restore`-onként                                                   |
+| Feltöltési felső korlát         | 8 GiB titkosított `/backup/restore`-feltöltésenként                                    |
 | Megőrzés                        | Telepítési pillanatképek: kézi törlés. Munkaterület-mentések: heti pipeline, alapértelmezésben 30 nap |
 
 Az `exports/`, a `transfer/` és a `workspace-backups/` könyvtár nem telepítési

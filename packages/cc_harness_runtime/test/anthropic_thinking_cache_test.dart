@@ -17,6 +17,8 @@ class _ThinkingHttp extends ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     this.body = body;
     SseMessage ev(Map<String, dynamic> m) =>

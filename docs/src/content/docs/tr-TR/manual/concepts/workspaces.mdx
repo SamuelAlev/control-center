@@ -2,7 +2,7 @@
 title: Çalışma alanları ve yalıtım
 description: Bir çalışma alanının neden katı bir kiracı sınırı olduğu, veritabanı bölünmesinin bu sınırı nasıl yapısal kıldığı ve onu bilinçli olarak neyin aştığı.
 slug: tr-TR/kilavuz/kavramlar/calisma-alanlari
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Çalışma alanı nedir?
@@ -119,13 +119,15 @@ Hiçbirinin taşımadığı şey, çalışma alanı dizininin geri kalanıdır. 
 
 ## Yedeği sunucu ile cihazınız arasında taşıma
 
-Yukarıdaki her işlem **sunucudaki** yollarla konuşur; bu, yalnızca sunucu kendi makinenizse eksiksiz bir yanıttır. İmzalı üç HTTP rotası — [`/backup/workspace`, `/backup/snapshot` ve `/backup/restore`](/tr-TR/kilavuz/referans/yedekleme/#transfer-routes) — diğer tüm topolojiler için baytları taşır; medya proxy'sinin ve görsel deposunun zaten kullandığı aynı kimliği doğrulanmış hat üzerinden. Sayfada bu, her dışa aktarmanın ve her anlık görüntünün yanındaki bir **İndir** düğmesidir (nereye ineceğini siz seçersiniz) ve kullandığınız makinede duran bir dosyadan geri yüklemek için **Bir dosya seçin ve yükleyin**. Sunucu sizin makineniz olmadığında işleyen yol, yüklemedir: `workspace.import` dosyanın ana makinede zaten bulunmasını gerektirir ve dosya oraya bu şekilde ulaşır.
+Yukarıdaki her işlem **sunucudaki** yollarla konuşur; bu, yalnızca sunucu kendi makinenizse eksiksiz bir yanıttır. İmzalı üç aktarım rotası — [`/backup/workspace`, `/backup/snapshot` ve `/backup/restore`](/tr-TR/kilavuz/referans/yedekleme/#aktarım-rotaları) — diğer tüm topolojiler için baytları kimliği doğrulanmış ve şifrelenmiş kaynak tüneli üzerinden taşır; hem doğrudan bağlantılarda hem de aktarıcı üzerinden. Genel HTTP rotaları okunabilir yedek baytları sunmaz ve imzalı yollar yine de yetkilendirme gerektirir. Sayfada bu, her dışa aktarmanın ve her anlık görüntünün yanındaki bir **İndir** düğmesidir (nereye ineceğini siz seçersiniz) ve kullandığınız makinede duran bir dosyadan geri yüklemek için **Bir dosya seçin ve yükleyin**. Yükleme, sunucu sizin makineniz olmadığında işler: `workspace.import` dosyanın ana makinede zaten bulunmasını gerektirir ve dosya oraya bu şekilde ulaşır.
 
 Bilinmeye değer üç özellik var:
 
 - **İndirme yeni bir kopya üretir ve sunucu ondan hiçbir şey saklamaz.** İndirmek, "dışa aktarma düğmesinin oluşturduğu dosyayı getir" demek değildir — yeniden dışa aktarır, onu akıtır ve siler. Yanıt da aynı nedenle `no-store` ve `Accept-Ranges: none` taşır: kaldığı yerden devam eden bir aralık, iki farklı dışa aktarmayı geçerli görünen ama geçerli olmayan tek bir dosyada birleştirirdi.
 - **Bir yükleme, iki uçta da diske akıtılır, asla arabelleğe alınmaz** ve hazırlanan kopya, her çıkış yolunda — bir ret dahil — silinir. Bir çalışma alanı veritabanı bir ekran görüntüsü değildir.
-- **Aktarılan bir bağlantının HTTP kaynağı yoktur**; bu yüzden aktarım denetimleri orada, nedenini söyleyen bir notla devre dışıdır. Sunucu tarafı yollarla konuşan her şey aktarım üzerinden çalışmaya devam eder; yalnızca bayt hatları doğrudan bir bağlantı gerektirir.
+- **Aktarım aktarıcı üzerinden de çalışır.** İndirmeler ve yüklemeler, doğrudan bağlantılarla aynı şifrelenmiş kaynak tünelini kullanır; doğrudan bir HTTP kaynağı gerekmez.
+
+Şifreleme, aktarımı yol boyunca korur; sunucu tarafındaki veritabanını, anlık görüntü dizinini ya da indirilen bir kopyayı durağan hâlde korumaz. Sunucu operatörü o ana makinede tutulan verilere erişebilir.
 
 :::note[Hangi yollar kime ait]
 Sayfanın *gösterdiği* yollar — anlık görüntü dizini, bir dışa aktarmanın yazdığı dosya, bir içe aktarmanın okuduğu kaynak — `cc_server` çalıştıran makinededir. Bir **indirmenin** bildirdiği yol ise oturduğunuz makinededir. İkisinin de var olmasının nedeni bu ayrımdır: ilki bir bakım betiğinin ya da bir ssh oturumunun ihtiyacı olan şeydir, ikincisi ise yedek toplayan bir kişinin ihtiyacı olan.

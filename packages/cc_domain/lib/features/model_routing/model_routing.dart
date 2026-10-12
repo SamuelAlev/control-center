@@ -2,7 +2,7 @@
 ///
 /// A pure-Dart model-management module: a unified provider/model catalog
 /// (assembled from models.dev), provider-governance policy, a small-model
-/// router and usage/quota tracking. No `dart:io` / `drift` / `dio` / Flutter —
+/// router and usage/quota tracking. No `dart:io` / `drift` / `rhttp` / Flutter —
 /// every piece is unit testable in isolation.
 library;
 

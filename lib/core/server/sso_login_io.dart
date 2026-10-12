@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/server/auth_providers.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/shared/utils/open_url.dart';
@@ -43,11 +44,10 @@ Future<AuthProvidersSnapshot?> probeAuthProvidersImpl(String origin) async {
   }
 }
 
-/// Desktop round-trip: hand the login URL to the SYSTEM browser (an embedded
-/// webview would defeat the IdP's own device trust and MFA) and let the
-/// server's bounce page return the credential as a `control-center://pair`
-/// deep link. That link arrives on the app's URL channel rather than here,
-/// so this always resolves to null.
+/// Desktop round-trip: use the SYSTEM browser for IdP trust/MFA and hand it
+/// only a public recipient key. The server returns a sealed credential in a
+/// `control-center://pair` deep link; this app holds the decryption key. The
+/// deep-link handler, not this future, receives the result.
 Future<SsoPairPayload?> startSsoLoginImpl({
   required AuthProviderInfo provider,
   required String origin,
@@ -57,9 +57,14 @@ Future<SsoPairPayload?> startSsoLoginImpl({
   // Marked BEFORE the browser opens: a fast IdP (an existing session, no
   // prompt) can bounce back before this call even returns, and an unmarked
   // pair link is refused as unbidden.
-  markSsoLoginStarted();
-  if (!openExternalUrl(provider.loginUrl(origin, relay: 'desktop'))) {
-    ssoLoginStartedAt.value = null; // Nothing started; do not leave it armed.
+  final recipient = await CredentialSeal.newRecipient();
+  beginSealedSsoLogin(origin: origin, privateKey: recipient.privateKey);
+  if (!openExternalUrl(provider.loginUrl(
+    origin,
+    relay: 'desktop',
+    handoffPublicKey: recipient.publicKey,
+  ))) {
+    clearSealedSsoLogin(); // Nothing started; do not leave it armed.
     throw const SsoBrowserOpenException();
   }
   onAwaiting?.call();

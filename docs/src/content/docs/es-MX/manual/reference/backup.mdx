@@ -2,7 +2,7 @@
 title: Respaldo, exportación e importación
 description: La estructura de la instantánea, el manifiesto, cada operación de respaldo y ruta de transferencia, y exactamente qué archivos contiene y no contiene un respaldo.
 slug: es-MX/manual/referencia/respaldo
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Todo lo que Control Center puede copiar, entregar o adoptar, y la forma exacta de cada
@@ -25,6 +25,13 @@ eliminación distintos.
 Todos se escriben con `VACUUM INTO` de SQLite, que es seguro frente a una base de datos
 WAL activa: toma una transacción de lectura, produce una copia desfragmentada y
 transaccionalmente consistente, y nunca requiere detener el servidor.
+
+Estos archivos y las copias descargadas **no están cifrados en reposo** por
+Control Center. La transferencia cifrada de extremo a extremo protege los bytes
+en tránsito entre un cliente emparejado y su `cc_server`, tanto en conexiones
+directas como a través del relevo. Protege por separado el almacenamiento local
+y las copias fuera de la máquina; el servidor y cualquier destinatario
+autorizado pueden leer los archivos de base de datos.
 
 ## Estructura de la instantánea
 
@@ -212,11 +219,17 @@ desactualizado.
 
 ## Rutas de transferencia
 
-Todas las operaciones anteriores hablan en rutas del lado del servidor, lo que es una
-respuesta completa solo cuando el servidor es tu propia máquina. Estas tres transportan los
-bytes, en el mismo carril firmado con PSK que usan el proxy de medios y el almacén de
-blobs. El llamador firma una cadena de destino con la clave precompartida de su dispositivo
-y pasa la firma como `s`.
+Las operaciones de exportación/importación y de listado de instantáneas anteriores
+hablan en rutas del lado del servidor, lo que es una respuesta completa solo
+cuando el servidor es tu propia máquina. Estas rutas con forma de HTTP
+transportan los bytes del respaldo **dentro del mismo túnel de recursos
+autenticado y cifrado de extremo a extremo** que otros recursos sensibles, tanto
+si la conexión RPC es directa como si pasa por el relevo. No son endpoints
+públicos de transferencia de archivos HTTP: una solicitud a uno de ellos en el
+listener público devuelve `426 Upgrade Required`, incluso desde loopback. Dentro
+del túnel cifrado, el dispositivo autenticado con Noise debe coincidir con `d`;
+el manejador además verifica la firma del dispositivo sobre su cadena de destino
+usando su PSK de emparejamiento y el rol de más abajo.
 
 | Ruta                    | Método | Consulta        | Destino firmado                  | Requiere                             |
 | ----------------------- | ------ | --------------- | -------------------------------- | ------------------------------------ |
@@ -236,6 +249,7 @@ directorio que el listado no habría mostrado.
 | `404`  | No hay puerto de respaldo en este host, o la instantánea o el archivo de espacio de trabajo indicado no existe |
 | `405`  | Se llamó a `/backup/restore` con algo distinto de `POST`                                 |
 | `413`  | El cuerpo de la subida supera los 8 GiB, ya sea por el content-length declarado o por los bytes realmente leídos |
+| `426`  | Cualquier solicitud directa a una ruta de transferencia en el listener HTTP público; usa el túnel de recursos cifrado de un cliente emparejado |
 | `500`  | La exportación o el archivado falló en el servidor                                       |
 
 Ambas descargas responden `Cache-Control: no-store` con `Accept-Ranges: none`. Cada
@@ -252,12 +266,15 @@ comprimidos de la misma instantánea son el mismo archivo.
 almacenarlo en búfer, lo acota antes y durante la lectura, y elimina el archivo preparado
 en **todas** las salidas, incluido un rechazo.
 
-:::caution[Una conexión relevada no tiene origen HTTP]
-El relevo intermediado transporta tramas RPC, no transferencias de archivos. Todo lo que
-habla en rutas del lado del servidor sigue funcionando a través de él; las tres rutas de
-transferencia necesitan una conexión directa, y la interfaz las desactiva con una nota en
-lugar de fallar a mitad de la descarga.
-:::
+::::caution[La conexión directa y el relevo usan la misma transferencia cifrada]
+El relevo transporta solicitudes de recursos, respuestas en streaming y bytes de
+subida como texto cifrado; no puede leer el contenido de los respaldos. Una ruta
+del lado del servidor sigue siendo una ruta en el host del servidor, no un
+archivo en el relevo. El acceso sigue requiriendo el dispositivo emparejado, la
+firma del destino y el rol aplicable de espacio de trabajo o de instalación.
+Ninguno de los dos transportes cifra los archivos de respaldo resultantes en
+reposo.
+::::
 
 ## Rutas de archivos y límites
 
@@ -268,7 +285,7 @@ lugar de fallar a mitad de la descarga.
 | Exportaciones de espacio de trabajo | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Preparación de transferencias       | `<dataDir>/backups/transfer/` — un banco de trabajo, barrido por la ruta que lo escribe |
 | Nombre del archivo comprimido de la instantánea | `<snapshot directory name>.zip`                   |
-| Límite de subida                    | 8 GiB por `POST /backup/restore`                             |
+| Límite de subida                    | 8 GiB por subida cifrada a `/backup/restore`                 |
 | Retención                           | Instantáneas de la instalación: eliminación manual. Respaldos de espacio de trabajo: pipeline semanal, 30 días de forma predeterminada |
 
 Los directorios `exports/`, `transfer/` y `workspace-backups/` no son

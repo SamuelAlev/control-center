@@ -7,6 +7,8 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart'
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
+    show AgentPromptParts;
 
 /// Handle returned by `AgentDispatchPort.start`, allowing per-dispatch
 /// lifecycle control without affecting other concurrent dispatches.
@@ -43,6 +45,16 @@ abstract interface class AgentDispatchPort {
   /// `/loop`, `/skill:<name>`). [prompt] arrives wrapped in `<context>`, so a
   /// leading-slash test against it never matches; null [userText] falls back
   /// to [prompt].
+  /// [promptParts] is the same prompt split into its standing brief, per-turn
+  /// delta and conversation window, with a revision fingerprint of each. A
+  /// runner that resumes a stored native session sends a delta built from it
+  /// ([AgentPromptParts.deltaPromptFor]) instead of [prompt]; a runner with no
+  /// matching stored session MUST fall back to [prompt], so passing it can
+  /// never lose context. Adapters that do not resume natively ignore it.
+  /// [runStartedAt] is when the RUN started — the shared epoch every stage
+  /// timing is measured against, so a CLI adapter's offsets line up with the
+  /// run log's `startedAt` instead of restarting the clock after whatever
+  /// happened before it launched.
   /// [costCapCents] is the priced spend cap (a goal run passes its remaining
   /// budget). Null keeps the dispatcher default; adapters that cannot price
   /// usage ignore it.
@@ -58,6 +70,8 @@ abstract interface class AgentDispatchPort {
     required String cliName,
     required String prompt,
     required String workingDirectory,
+    AgentPromptParts? promptParts,
+    DateTime? runStartedAt,
     String? userText,
     String? modelId,
     String? agentId,

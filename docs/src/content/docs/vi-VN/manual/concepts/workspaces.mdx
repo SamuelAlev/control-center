@@ -2,7 +2,7 @@
 title: Không gian làm việc và cô lập
 description: Vì sao không gian làm việc là một ranh giới tenant cứng, cách việc tách cơ sở dữ liệu biến ranh giới đó thành cấu trúc và điều gì chủ đích vượt qua nó.
 slug: vi-VN/so-tay/khai-niem/khong-gian-lam-viec
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Không gian làm việc là gì?
@@ -110,13 +110,15 @@ Các thao tác sao lưu nằm dưới **Cài đặt → Máy chủ → Sao lưu 
 
 ## Di chuyển bản sao lưu giữa máy chủ và thiết bị của bạn
 
-Mọi thao tác ở trên đều nói bằng đường dẫn trên **máy chủ**, và đó là câu trả lời đầy đủ chỉ khi máy chủ chính là máy của bạn. Ba tuyến HTTP có chữ ký — [`/backup/workspace`, `/backup/snapshot` và `/backup/restore`](/vi-VN/so-tay/tham-chieu/sao-luu/#transfer-routes) — mang các byte cho mọi mô hình triển khai khác, trên cùng làn đã xác thực mà proxy phương tiện và kho ảnh đang dùng. Trên trang, đây là nút **Tải xuống** bên cạnh mỗi lần xuất và mỗi ảnh chụp (bạn chọn nơi nó hạ cánh), và **Chọn tệp và tải lên** để khôi phục từ một tệp nằm trên máy bạn đang dùng. Thao tác tải lên chính là cái hoạt động khi máy chủ không phải máy của bạn: `workspace.import` cần tệp đã nằm trên host, và đây là cách nó đến được đó.
+Mọi thao tác ở trên đều nói bằng đường dẫn trên **máy chủ**, và đó là câu trả lời đầy đủ chỉ khi máy chủ chính là máy của bạn. Ba tuyến truyền tải có chữ ký — [`/backup/workspace`, `/backup/snapshot` và `/backup/restore`](/vi-VN/so-tay/tham-chieu/sao-luu/#các-tuyến-truyền-tải) — mang các byte cho mọi mô hình triển khai khác qua đường hầm tài nguyên đã xác thực và mã hóa, trên cả kết nối trực tiếp lẫn qua relay. Các tuyến HTTP công khai không phục vụ byte sao lưu đọc được, và các đường dẫn đã ký vẫn cần được cấp quyền. Trên trang, đây là nút **Tải xuống** bên cạnh mỗi lần xuất và mỗi ảnh chụp (bạn chọn nơi nó hạ cánh), và **Chọn tệp và tải lên** để khôi phục từ một tệp nằm trên máy bạn đang dùng. Thao tác tải lên hoạt động khi máy chủ không phải máy của bạn: `workspace.import` cần tệp đã nằm trên host, và đây là cách nó đến được đó.
 
 Ba đặc tính đáng để biết:
 
 - **Một lần tải xuống tạo ra một bản sao mới và máy chủ không giữ lại gì.** Tải xuống không phải là "lấy tệp mà nút xuất đã tạo" — nó xuất lại lần nữa, truyền phát bản đó rồi xóa nó. Phản hồi là `no-store` với `Accept-Ranges: none` vì cùng lý do: một dải được tiếp tục sẽ nối hai lần xuất khác nhau thành một tệp trông có vẻ hợp lệ mà lại không hợp lệ.
 - **Một lần tải lên được truyền phát thẳng xuống đĩa, không bao giờ được đệm**, ở cả hai đầu, và bản sao tạm được xóa trên mọi lối ra — kể cả khi bị từ chối. Cơ sở dữ liệu của một không gian làm việc không phải là một ảnh chụp màn hình.
-- **Một kết nối qua relay không có origin HTTP**, nên các điều khiển truyền tải bị vô hiệu ở đó kèm ghi chú giải thích lý do. Mọi thứ nói bằng đường dẫn phía máy chủ vẫn hoạt động qua relay; chỉ các làn byte mới cần kết nối trực tiếp.
+- **Truyền tải cũng hoạt động qua relay.** Các lần tải xuống và tải lên dùng cùng đường hầm tài nguyên đã mã hóa như kết nối trực tiếp; không cần một origin HTTP trực tiếp.
+
+Mã hóa bảo vệ việc truyền tải trên đường truyền, không bảo vệ cơ sở dữ liệu phía máy chủ, thư mục ảnh chụp hay một bản sao đã tải xuống khi lưu trữ. Người vận hành máy chủ có thể truy cập dữ liệu nằm trên host đó.
 
 :::note[Đường dẫn nào thuộc về ai]
 Những đường dẫn mà trang *hiển thị* — thư mục ảnh chụp, tệp mà một lần xuất đã ghi, nguồn mà một lần nhập đọc — nằm trên máy đang chạy `cc_server`. Đường dẫn mà một lần **tải xuống** báo cáo nằm trên máy bạn đang ngồi. Sự phân biệt đó là lý do cả hai cùng tồn tại: cái thứ nhất là thứ mà một script bảo trì hay một phiên ssh cần, cái thứ hai là thứ mà một người đang thu thập bản sao lưu cần.

@@ -100,6 +100,13 @@ class JobExecutor {
       _emit(DebugEvent(
         content: 'worker accepted job ${lease.jobId} (kind=${lease.kind})',
       ));
+      final kind = JobKind.fromWire(lease.kind);
+      if (kind == JobKind.evalBatch || kind == JobKind.benchmark) {
+        throw UnsupportedError(
+          'This worker does not implement verified evaluation execution. '
+          'Run skill campaigns through the controlled server evaluator.',
+        );
+      }
       final workDir = await _materialize();
       final outcome = await _execute(workDir);
       success = outcome.success;
@@ -221,9 +228,10 @@ class JobExecutor {
       case JobKind.pipelineStep:
       case JobKind.codeIndex:
       case JobKind.goldenRender:
+        return _executeProbe(workDir, kind);
       case JobKind.benchmark:
       case JobKind.evalBatch:
-        return _executeProbe(workDir, kind);
+        throw UnsupportedError('Verified evaluation execution is unavailable');
     }
   }
 

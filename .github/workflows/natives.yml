@@ -73,8 +73,9 @@ jobs:
       # Linux-only block sibling would install this allowlist on macOS and
       # Windows and then no-op the real audit step. block is Linux-only.
       # Hosts: apt (Azure mirror + archive/security fallbacks), GitHub release
-      # assets, crates/rustup, freedesktop + wrapdb (aec), PyPI (meson),
-      # SourceForge (LAME), Azure blobs (actions/cache).
+      # assets, crates/rustup, freedesktop + wrapdb (aec), PyPI (meson), pub.dev
+      # (the checksum-pinned rhttp source archive), SourceForge (LAME), Azure
+      # blobs (actions/cache).
       - name: Harden runner
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
@@ -93,6 +94,7 @@ jobs:
             gitlab.freedesktop.org:443
             index.crates.io:443
             objects.githubusercontent.com:443
+            pub.dev:443
             pypi.org:443
             release-assets.githubusercontent.com:443
             security.ubuntu.com:443

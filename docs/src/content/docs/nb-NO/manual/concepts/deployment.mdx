@@ -2,7 +2,7 @@
 title: Drift og klienter
 description: Hvordan tynnklientarkitekturen i Control Center skiller en headless server fra skrivebords-, nett- og mobilklientene.
 slug: nb-NO/handbok/konsepter/drift
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center er ikke ett program. Det er en **tynnklientarkitektur**: en
@@ -22,11 +22,12 @@ skal se identisk, bor der.
 
 Ingen klient åpner en databasefil selv. I stedet holder hver klient én
 **`RemoteRpcClient`** og utfører repo-operasjoner og abonnementer over den.
-Serveren autentiserer tilkoblingen mot en forhåndsdelt nøkkel for parede
-enheter — og slutter deretter å bry seg om tilkoblingen. **En økt er ikke
-bundet til et arbeidsområde.** Dispatcheren er tilstandsløs: hvert
-arbeidsområde-avgrensede kall bærer sin egen `workspace_id` i argumentene, og
-et kall som utelater det, avvises.
+Både direkte og reléerte økter krever et signert Noise-håndtrykk: den
+forhåndsdelt nøkkelen til den parede enheten autentiserer utvekslingen, mens
+ferske trafikknøkler krypterer hver økt. **En økt er ikke bundet til et
+arbeidsområde.** Dispatcheren er tilstandsløs: hvert arbeidsområde-avgrensede
+kall bærer sin egen `workspace_id` i argumentene, og et kall som utelater det,
+avvises.
 
 Det er med vilje, og det er det som lar to klienter på én server sitte i ulike
 arbeidsområder uten et serverlagret «gjeldende arbeidsområde» de kan være
@@ -95,9 +96,10 @@ gjennom serveren. Skrivebordsappen tar aldri på databasefilen direkte.
 Nettbygget er den samme Flutter-appen kompilert for å kjøre i en nettleser,
 hostet på [app.usectrl.dev](https://app.usectrl.dev), så det er ingenting å
 installere. En nettleser kan ikke starte en delprosess, så nettklienten er
-**alltid** ekstern: den ringer opp en `cc_server` over `wss://` og tegner hele
-skrivebordsgrensesnittet. Når den er tilkoblet, viser den de samme skjermene
-mot den samme flåten, fordi det er den samme koden over den samme RPC-en.
+**alltid** ekstern: den ringer opp en `cc_server` over en kryptert
+WebSocket-økt og tegner hele skrivebordsgrensesnittet. Når den er tilkoblet,
+viser den de samme skjermene mot den samme flåten, fordi den bruker den samme
+koden over den samme RPC-en.
 Hullene er de få stedene som trenger en innebygd egenskap nettleseren ikke har —
 kvalitetslaget for møteopptak nedenfor er det viktigste, og varsler fra
 operativsystemet er et annet.
@@ -122,26 +124,31 @@ godtar bare nettleser-origins som står på `--allowed-origins`-listen, som
 standard er `https://app.usectrl.dev`, så egen hosting av nettpakken betyr å
 legge til dens origin.
 
-Medier (avatarer, bilder i strømmen, PR-skjermbilder) går gjennom serverens
-proxy-endepunkt i stedet for å treffe oppstrømsverter direkte, slik at en
-nettleser aldri henter en vilkårlig origin. Den utrullede klienten setter en
-per-forespørsel Content-Security Policy ut fra en ikke-sensitiv
-informasjonskapsel, slik at bare origin til den tilkoblede serveren tillates.
+Medier (avatarer, bilder i strømmen, PR-skjermbilder), opplastinger,
+sikkerhetskopier og HTTP/WebSockets for den innebygde editoren går gjennom den
+krypterte ressurskanalen, ikke lesbare offentlige HTTP-ruter; signerte stier
+krever fortsatt autorisasjon. Editor-frontenden er klarert og kjører på
+nettappens egen origin. Service Workeren dens ruter editorforespørsler gjennom
+den eksisterende krypterte økten til `cc_server`, som eier filene og
+code-server-backenden. Nettleseren trenger HTTPS eller en sikker
+loopback-kontekst for Service Workere. Native klienter bruker en
+kapabilitetsavgrenset loopback-fasade.
 
 ### Telefonfølgesvenn (cc_remote)
 
 **Remote**-appen er en egen, lettere klient — en Flutter-nett-PWA på
 [remote.usectrl.dev](https://remote.usectrl.dev/). Den er med vilje **ikke**
-hele appen. Den pares over et meglet WebSocket-relé med
-ende-til-ende-forsegling og snakker en overveiende lesende del av verktøyflaten:
-les saker, meldinger og nyhetsstrømmen; send et svar eller oppdater en sak.
+hele appen. Den kobler direkte når det er mulig, ellers gjennom et formidlet
+relé; begge veier krever ende-til-ende-kryptering. Den snakker en overveiende
+lesende del av verktøyflaten: les saker, meldinger og nyhetsstrømmen; send et
+svar eller oppdater en sak.
 
 En telefon er en **aktor med lavere privilegier** enn en lokal agent. En
-verktøypolicy med standardavvisning, en forhåndsdelt nøkkel som forsegler hver
-ramme, en øktkapabilitet som stenger privilegerte operasjoner (for eksempel
-parring) ute fra en følgesvennklient, sjekkene av rolle og repo-tilgang per kall
-beskrevet ovenfor, og hastighetsbegrensning hindrer at en godkjent (eller
-lekket) parring blir full fjernstyring. Se
+verktøypolicy med standardavvisning, en øktkapabilitet som stenger privilegerte
+operasjoner (for eksempel parring) ute fra en følgesvennklient, sjekkene av
+rolle og repo-tilgang per kall beskrevet ovenfor, og hastighetsbegrensning
+hindrer at en godkjent (eller lekket) parring blir full fjernstyring.
+Transportkryptering gir ingen rettigheter. Se
 [Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/) for hele
 sikkerhetsmodellen.
 
@@ -224,28 +231,39 @@ handling for opptak og kobling.
 
 ## Parring og tillit
 
-Hver klient beviser hvem den er med en **forhåndsdelt nøkkel** som legges inn én
-gang:
+Hver klient bruker en **forhåndsdelt nøkkel** som legges inn én gang, til å
+autentisere sitt signerte Noise-håndtrykk med `cc_server`, også over loopback og
+reléet:
 
 - Skrivebordsappen i lokal modus genererer en fersk nøkkel ved hver oppstart og
   gir den til den startede serveren via miljøet, slik at ingenting hemmelig
   lagres på skrivebordet.
 - Eksterne klienter (ekstern skrivebordsapp, nett, telefon) bruker en nøkkel
-  utstedt av serverens `pair`-kommando og lagret i OS-nøkkelringen (eller
-  lokalt på telefonen).
+  utstedt av serverens paringsflyt eller `pair`-kommando. Native klienter bruker
+  OS-nøkkelringen; nettleserklienter lagrer paringen sin lokalt.
+
+Klienten kontrollerer serverens signerte identitet mot sin lagrede
+fingeravtrykk-pin. Ved første tilkobling bør du verifisere det fingeravtrykket
+gjennom en klarert QR-kode eller en annen klarert kanal: en signert
+førstekontakt alene kan ikke autentisere hvem som skaffet nøkkelen. Hvis
+identiteten endres, svikter klienten lukket; par på nytt gjennom en klarert
+kanal i stedet for å ignorere avviket. Eldre klienter og klartekst-RPC kan ikke
+koble til. TLS trengs fortsatt for nettleser-origins, oppstart og offentlige
+metadata; `--insecure` påvirker serverens ytre lytter, ikke den påkrevde
+krypterte økten.
 
 Tilbakekalling er **umiddelbar**, ikke utsatt. Serveren overvåker tabellen over
 parede enheter og avslutter enhver åpen økt der enheten har forlatt det aktive
 settet, innen sekunder — både på den direkte WebSocket-stien og på relé-stien.
 Du trenger ikke vente på at enheten kobler til på nytt for å kutte den.
 
-Nøkkelen går aldri gjennom en URL som en statisk vert kan se. Når den kommer
-via en lenke — på telefonen eller i en nettleser — ligger den i
-**URL-fragmentet**, delen etter `#`, som nettleseren aldri sender til serveren
-som hoster siden. Det er invarianten som er verdt å huske, og den gjelder for
-begge. Nettklienten har to andre innganger: tilkoblingsskjemaet, der du limer
-inn en server og en nøkkel direkte, og en invitasjonskode, som den løser inn
-mot en legitimasjon utstedt bare for den nettleseren.
+Når nøkkelen kommer via en lenke — på telefonen eller i en nettleser — ligger
+den i **URL-fragmentet**, delen etter `#` som nettlesere ikke sender i
+forespørselen til sideverten. Sidens JavaScript kan likevel lese det, så stol på
+den verten og hold lenken hemmelig. Nettklienten har også et
+tilkoblingsskjema, der du limer inn en server og en nøkkel direkte, og en
+invitasjonskode, som den løser inn mot en legitimasjon utstedt bare for den
+nettleseren.
 
 ## Relaterte konsepter
 

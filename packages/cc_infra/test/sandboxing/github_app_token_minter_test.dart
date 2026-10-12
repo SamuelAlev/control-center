@@ -1,9 +1,7 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_infra/src/sandboxing/github_app_token_minter.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 // A throwaway 2048-bit RSA keypair generated solely for this test — NOT a
@@ -50,33 +48,6 @@ zCb4bPu/hbWDbsxuKyuCtNnSwLkW0lpczxRqQPtH3xZsnWx7EvOTfhY/g6iH2+7L
 TwIDAQAB
 -----END PUBLIC KEY-----''';
 
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(Object body, {int status = 200}) => ResponseBody.fromString(
-  jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
-
 void main() {
   const config = GitHubAppConfig(
     appId: '12345',
@@ -84,18 +55,19 @@ void main() {
     installationId: '99',
   );
 
-  ({GitHubAppTokenMinter minter, _FakeAdapter fake}) build(
-    ResponseBody Function(RequestOptions) handler,
+  ({GitHubAppTokenMinter minter, TestHttpClient fake}) build(
+    HttpResponse Function(HttpRequest) handler,
   ) {
-    final fake = _FakeAdapter(handler);
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-      ..httpClientAdapter = fake;
-    return (minter: GitHubAppTokenMinter(dio: dio, config: config), fake: fake);
+    final fake = TestHttpClient(handler: handler);
+    return (
+      minter: GitHubAppTokenMinter(httpClient: fake, config: config),
+      fake: fake,
+    );
   }
 
   group('GitHubAppTokenMinter', () {
     test('buildAppJwt signs a verifiable RS256 JWT with the right claims', () {
-      final b = build((_) => _json(const {}));
+      final b = build((req) => httpTextResponse(req, const {}));
       final jwt = b.minter.buildAppJwt();
 
       // Verifiable with the matching public key → the signature is valid RS256.
@@ -113,7 +85,7 @@ void main() {
       'mint POSTs the installation-token endpoint with repos + perms',
       () async {
         final b = build(
-          (_) => _json({
+          (req) => httpTextResponse(req, {
             'token': 'ghs_scoped123',
             'expires_at': '2026-07-06T13:00:00Z',
           }),
@@ -124,10 +96,12 @@ void main() {
         );
 
         final req = b.fake.requests.single;
-        expect(req.method, 'POST');
-        expect(req.path, '/app/installations/99/access_tokens');
-        expect('${req.headers['Authorization']}', startsWith('Bearer '));
-        final body = req.data as Map<String, dynamic>;
+        expect(req.method.value, 'POST');
+        expect(httpRequestUri(req).path, '/app/installations/99/access_tokens');
+        final headers = (req.headers! as HttpHeaderRawMap).map;
+        expect(headers['Authorization'], startsWith('Bearer '));
+        expect(headers['Accept'], 'application/vnd.github+json');
+        final body = (req.body! as HttpBodyJson).json as Map<String, dynamic>;
         expect(body['repositories'], ['my-repo']);
         expect((body['permissions'] as Map)['contents'], 'write');
         expect(minted.token, 'ghs_scoped123');
@@ -137,7 +111,9 @@ void main() {
 
     test('mint throws when the response carries no token', () async {
       final b = build(
-        (_) => _json(const {'message': 'Bad credentials'}, status: 401),
+        (req) => httpTextResponse(req, const {
+          'message': 'Bad credentials',
+        }, statusCode: 401),
       );
       await expectLater(
         b.minter.mint(repositories: ['r']),
@@ -146,12 +122,15 @@ void main() {
     });
 
     test('revoke DELETEs /installation/token authed with the token', () async {
-      final b = build((_) => _json(const {}, status: 204));
+      final b = build(
+        (req) => httpTextResponse(req, const {}, statusCode: 204),
+      );
       await b.minter.revoke('ghs_scoped123');
       final req = b.fake.requests.single;
-      expect(req.method, 'DELETE');
-      expect(req.path, '/installation/token');
-      expect(req.headers['Authorization'], 'Bearer ghs_scoped123');
+      expect(req.method.value, 'DELETE');
+      expect(httpRequestUri(req).path, '/installation/token');
+      final headers = (req.headers! as HttpHeaderRawMap).map;
+      expect(headers['Authorization'], 'Bearer ghs_scoped123');
     });
   });
 }

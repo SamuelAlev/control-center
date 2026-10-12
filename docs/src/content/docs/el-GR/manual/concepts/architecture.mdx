@@ -3,7 +3,7 @@ title: Αρχιτεκτονική
 description: Πώς είναι δομημένο το Control Center, με μοντέλο λεπτού πελάτη πάνω από διακομιστή, Καθαρή Αρχιτεκτονική με προτεραιότητα στα χαρακτηριστικά και θύρες και προσαρμογείς.
 dateModified: 2026-09-19
 slug: el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Επισκόπηση
@@ -26,7 +26,7 @@ sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Επίπεδο τομέα**: οντότητες καθαρής Dart, αντικείμενα τιμής, διεπαφές αποθετηρίων, θύρες και υπηρεσίες τομέα. Μηδενικές εισαγωγές από την υποδομή (χωρίς dio, drift ή μοντέλα δικτύου).
+- **Επίπεδο τομέα**: οντότητες καθαρής Dart, αντικείμενα τιμής, διεπαφές αποθετηρίων, θύρες και υπηρεσίες τομέα. Μηδενικές εισαγωγές από την υποδομή (χωρίς rhttp, drift ή μοντέλα δικτύου).
 - **Επίπεδο παρουσίασης**: οθόνες, widgets, notifiers. Καμία άμεση πρόσβαση σε drift/DAO/επίπεδο δεδομένων· τα πάντα περνούν από παρόχους Riverpod → αποθετήρια.
 - **Επίπεδο υποδομής**: συγκεκριμένες υλοποιήσεις των θυρών τομέα και των διεπαφών αποθετηρίων. Εξαρτάται από τον τομέα, ποτέ το αντίστροφο.
 
@@ -122,7 +122,7 @@ feature_name/
 
 Όλο το εξωτερικό HTTP ζει στον διακομιστή. Οι πελάτες δεν καλούν ποτέ απευθείας το GitHub, τη Linear ή την Google — καλούν λειτουργίες RPC του διακομιστή, και ακόμη και τα απομακρυσμένα πολυμέσα ανακτώνται μέσω του σημείου πρόσβασης `/proxy/media` του διακομιστή και όχι από την αρχική πηγή.
 
-- Πελάτες **dio** στο `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` και `GoogleCalendarApiClient`
+- Πελάτες **rhttp** στο `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` και `GoogleCalendarApiClient`
 - Έγχυση token ταυτοποίησης μέσω interceptors, συμπεριλαμβανομένου ενός interceptor Google OAuth ανά λογαριασμό στο `cc_server_core` που ανανεώνει τα token στο 401
 - Όλα τα σφάλματα αντιστοιχίζονται μέσω του `packages/cc_infra/lib/src/network/error_mapper.dart` → τυποποιημένες υποκλάσεις `AppException` που ορίζονται στο `cc_domain`
 

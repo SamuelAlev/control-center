@@ -1,15 +1,17 @@
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/cc_infra.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-class _NullDio implements Dio {
+/// Never touches the network: the fake below overrides every method under
+/// test, so this client only satisfies the constructor.
+class _NullRhttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeContentClient extends GitHubContentClient {
-  _FakeContentClient() : super(_NullDio());
+  _FakeContentClient() : super(_NullRhttpClient());
 
   /// The viewer served on the next call; null answers "no viewer".
   GitHubUser? viewer = const GitHubUser(login: 'viewer', avatarUrl: '');

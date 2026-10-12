@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 
 /// Agent run log repository.
 abstract class AgentRunLogRepository {
@@ -105,4 +106,41 @@ abstract class AgentRunLogRepository {
   /// Upserts [log]. The workspace comes from [AgentRunLog.workspaceId]; a run
   /// log with no workspace cannot be stored and is rejected.
   Future<void> upsert(AgentRunLog log);
+
+  /// Updates only this run's own usage and timing; never writes descendant cost
+  /// or terminal/metadata fields. A missing run in this workspace is a no-op.
+  Future<void> updateCost(String workspaceId, String runId, RunCost cost);
+
+  /// Adds exact descendant spend atomically, projecting the new total to cents.
+  /// A missing run in this workspace is a no-op.
+  Future<void> addChildCostMicros(
+    String workspaceId,
+    String runId,
+    int amountMicros,
+  );
+
+  /// Writes only explicitly supplied runtime/observability columns. Returns
+  /// false for a missing row, an empty update, or a rejected [markRunning]
+  /// transition. Only pending, nonterminal rows can become running.
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  });
+
+  /// Conditionally stamps a terminal run using only terminal/observability
+  /// columns. Returns false if this run was missing or already terminal.
+  /// [writeCost] is false when the caller has no final usage report: a separate
+  /// in-flight [updateCost] must not be replaced by a stale run snapshot.
+  Future<bool> completeIfActive(AgentRunLog completed, {bool writeCost = true});
 }

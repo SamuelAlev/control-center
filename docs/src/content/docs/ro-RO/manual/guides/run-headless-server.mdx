@@ -1,9 +1,9 @@
 ---
 title: Rulează un server headless
 description: Rulează binarul headless cc_server sau imaginea lui Docker, asociază un client la el și configurează-l cu întreaga suprafață de flaguri CLI și variabile de mediu.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: ro-RO/manual/ghiduri-practice/ruleaza-server-headless
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Rulează `cc_server` pe o mașină care rămâne pornită, apoi conectează-te la el de
@@ -25,7 +25,7 @@ versiune (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) sau mergi pe `latest`.
 | `ghcr.io/samuelalev/cc-server`                    | Backendul: baza de date, agenții, MCP, webhook-uri | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | Clientul web (nginx static)                        | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | PWA-ul companion de pe telefon (nginx static)      | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Releul de asociere WebRTC (opțional)               | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Releul de conexiune criptată (opțional)            | `-p 8788:8788`   |
 
 Tot stackul ca fișier compose:
 
@@ -57,12 +57,15 @@ Lucruri pe care merită să le știi înainte de a expune toate acestea dincolo 
 loopback:
 
 - **Imaginea `cc-server` vine cu `CC_SERVER_INSECURE=1`** (trebuie să se lege la
-  `0.0.0.0` ca să primească traficul din porturile publicate), ceea ce este sigur
-  doar în spatele unui proxy invers care termină TLS — Caddy, Traefik, nginx sau
-  un Cloudflare Tunnel —, într-o rețea de încredere. Ca să termini TLS în proces,
-  montează în schimb un certificat și setează `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` (apoi scoate `CC_SERVER_INSECURE`). Totul poate fi
-  suprascris cu `docker run -e …` sau cu blocul `environment:` din compose.
+  `0.0.0.0` ca să primească traficul din porturile publicate). Folosește un proxy
+  invers care termină TLS — Caddy, Traefik, nginx sau un Cloudflare Tunnel —,
+  într-o rețea de încredere, sau montează un certificat și setează
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (apoi scoate `CC_SERVER_INSECURE`).
+  Această setare controlează doar listenerul HTTP/WebSocket extern al serverului.
+  Nu dezactivează niciodată sesiunea de client criptată cap la cap obligatorie. TLS
+  protejează în continuare traficul de login/bootstrap, metadatele conexiunii,
+  punctele finale publice și livrarea clientului web. Totul poate fi suprascris cu
+  `docker run -e …` sau cu blocul `environment:` din compose.
 - **`/data` este singura stare.** Bazele de date SQLite, secretele
   dispozitivelor asociate, modelele descărcate și audio-ul întâlnirilor stau
   toate în volum — fă-i un backup, iar containerul devine eliminabil.
@@ -74,15 +77,18 @@ loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Cele două imagini de client sunt gazde nginx statice** — nimic de configurat
-  la runtime; formularul de conectare al fiecărui client preia URL-ul serverului,
-  ID-ul de dispozitiv și cheia de asociere. Releul de semnalizare, la fel, are
-  nevoie doar de portul său (`SIGNALING_HOST` / `SIGNALING_PORT` pot fi
-  suprascrise); este fără stare, nu ține niciun secret și este o **soluție de
-  rezervă** — un telefon folosește loopback, LAN-ul, tailnet-ul sau o cale
-  `wss://` directă atunci când una este accesibilă și trece pe releu doar când
-  niciuna nu este. Sari peste el dacă clienții tăi ajung întotdeauna direct la
-  server.
+- **Cele două imagini de client sunt gazde nginx statice.** Editoarele de browser
+  integrate folosesc aceeași origine a aplicației și aceeași conexiune criptată,
+  după cum se descrie [mai jos](#resursele-editorului-de-browser). Formularul de
+  conectare al fiecărui client preia URL-ul serverului, ID-ul de dispozitiv și
+  cheia de asociere. Releul de semnalizare are nevoie doar de portul său (`SIGNALING_HOST` /
+  `SIGNALING_PORT` pot fi suprascrise); este fără stare, nu ține chei de asociere
+  și este o **soluție de rezervă** — un telefon folosește loopback, LAN-ul,
+  tailnet-ul sau o cale `wss://` directă atunci când una este accesibilă și trece
+  pe releu doar când niciuna nu este. Sari peste el dacă clienții tăi ajung
+  întotdeauna direct la server. Brokerul vede identificatori de rutare, adrese IP,
+  dimensiuni și temporizare și poate întrerupe trafic; nu poate decripta fluxul de
+  resurse dintre client și server.
 
 Restul acestui ghid construiește serverul din surse; flagurile și comportamentul
 pe care le acoperă sunt aceleași pe care le alimentează variabilele de mediu ale
@@ -183,6 +189,15 @@ O acreditare emisă de `cc_server pair` nu are **nicio expirare**; una emisă î
 aplicație expiră întotdeauna după 30 de zile. Revocă un dispozitiv emis din CLI
 din **Setări → Tu → Dispozitivele tale** când ai terminat cu el.
 
+Cheia de asociere autentifică handshake-ul Noise obligatoriu; fiecare sesiune
+derivă chei de trafic noi și verifică identitatea semnată a serverului. Protejează
+cheia de asociere și obține-o dintr-o sursă de încredere (inclusiv un cod QR de
+încredere), apoi verifică o amprentă nouă a serverului printr-un canal de
+încredere separat sau față de o fixare cunoscută. Nu accepta în tăcere o fixare
+modificată: asociază din nou printr-un canal de încredere dacă înlocuiești
+intenționat identitatea serverului. Doar TLS nu poate stabili acea fixare de
+identitate cap la cap.
+
 ## Pasul 4: Pornește serverul
 
 Pe loopback — valoarea implicită și tot ce ai nevoie pentru un client de pe
@@ -211,9 +226,13 @@ optează pentru o legare în text simplu în spatele lui:
 ```
 
 `--insecure` este ignorat când `--tls-cert` și `--tls-key` sunt ambele setate —
-TLS câștigă întotdeauna. Serverul anunță starea de text simplu ca
-`insecure: true` în `GET /healthz`, iar clienții marchează o astfel de conexiune
-ca nesigură.
+TLS câștigă întotdeauna. Serverul anunță starea de text simplu a listenerului
+extern ca `insecure: true` în `GET /healthz`. Aceasta nu dezactivează criptarea
+Noise pe `/rpc`, fie că clientul se conectează direct, fie prin releu.
+Actualizează serverul, releul și clienții împreună: clienții vechi de RPC în clar
+sunt respinși, fără variantă de compatibilitate. Cererile publice către rute de
+resurse sensibile (inclusiv transferurile de backup) primesc HTTP `426`, chiar și
+de pe loopback; clienții asociați folosesc în schimb tunelul criptat.
 
 Serverul rulează până la `SIGINT`/`SIGTERM`, apoi se oprește curat.
 
@@ -234,6 +253,34 @@ trebuie să fie în `--allowed-origins`, altfel upgrade-ul WebSocket către `/rp
 este refuzat; lista implicită este `https://app.usectrl.dev`, iar `localhost` /
 `127.0.0.1` sunt întotdeauna permise.
 :::
+
+### Resursele editorului de browser
+
+Frontendul editorului este cod de aplicație de încredere și rulează pe propria
+origine a aplicației web. Service worker-ul său direcționează traficul HTTP și
+WebSocket prin aceeași sesiune criptată autentificată ca restul clientului.
+`cc_server` decriptează fiecare cerere, o transmite backendului său local
+code-server și criptează răspunsul înapoi către client. Fișierele rămân în
+proprietatea serverului.
+
+Găzduiește clientul web prin HTTPS sau pe o origine loopback securizată, ca
+service worker-ele să poată rula. Build-ul web obișnuit și scripturile de
+publicare includ resursele partajate. Dacă construiești un pachet manual, adaugă
+acele resurse ulterior din rădăcina depozitului:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Pentru build-ul web de pe telefon, înlocuiește cu `apps/cc_remote/build/web`. Asta
+copiază `cc_resource_bridge.js`, `cc_resource_worker.js` și
+`cc_resource_ws_shim.js` în pachetul aplicației.
+
+Traficul editorului nativ folosește în schimb o fațadă de loopback cu arie de
+capabilitate. Nu expune poarta privată de raportare/comenzi prin loopback a
+extensiei de editor lansate de server printr-un proxy public. Cererile HTTP
+publice sensibile sunt respinse; resursele necesită o sesiune criptată
+autentificată.
 
 ## Pasul 6: Conectează un Google Calendar (opțional)
 
@@ -297,7 +344,8 @@ sesiune. Fiecare apel limitat la un spațiu de lucru își poartă propriul
 `workspace_id`, iar accesul este decis de apartenența și rolul apelantului în
 spațiul de lucru — nu de deținerea unei chei de asociere.
 
-Două lucruri de știut înainte de a expune portul dincolo de loopback:
+Două lucruri de știut înainte de a expune portul dincolo de loopback (doar TLS nu
+furnizează criptarea cap la cap a clientului asociat și nu autorizează resurse):
 
 - **MCP eșuează închis în afara gazdei.** O suprafață MCP fără token răspunde doar pe loopback. Legarea la `any` nu o lărgește — o cerere din afara gazdei este refuzată cu „MCP requires a bearer token to answer non-loopback clients” până când configurezi unul (`mcp.setToken`, sau **Setări → Server → Servere MCP**).
 - **`GET /healthz` este neautentificat prin proiectare**, cu CORS wildcard, și publică ID-ul, numele, amprenta de identitate și versiunea de build ale serverului. Clienții au nevoie de amprentă ca să fixeze serverul, deci este deliberat — dar înseamnă că orice `cc_server` accesibil dezvăluie atât oricui întreabă.

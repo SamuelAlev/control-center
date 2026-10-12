@@ -24,12 +24,12 @@ class ParsedModel {
 ///
 /// New providers plug in here; the agent loop stays provider-agnostic:
 /// Anthropic (native, API key or OAuth), OpenAI (native, API key or OAuth),
-  /// the OpenAI-compatible family (OpenRouter, Google Gemini compat,
-  /// DeepSeek, Mistral, xAI, z.ai, the GLM Coding Plan, Kimi), Cursor
-  /// (subscription, HTTP/2 AgentService), plus user-defined **custom
-  /// providers** — any OpenAI- or Anthropic-compatible endpoint whose
-  /// credential carries a [ProviderCredential.dialect] and base URL (Ollama,
-  /// LM Studio, vLLM, private deployments, …), with an optional API key.
+/// the OpenAI-compatible family (OpenRouter, Google Gemini compat,
+/// DeepSeek, Mistral, xAI, z.ai, the GLM Coding Plan, Kimi), Cursor
+/// (subscription, HTTP/2 AgentService), plus user-defined **custom
+/// providers** — any OpenAI- or Anthropic-compatible endpoint whose
+/// credential carries a [ProviderCredential.dialect] and base URL (Ollama,
+/// LM Studio, vLLM, private deployments, …), with an optional API key.
 class HarnessProviderFactory {
   /// Creates a [HarnessProviderFactory].
   const HarnessProviderFactory();
@@ -104,7 +104,8 @@ class HarnessProviderFactory {
           apiKey: apiKey ?? oauthToken,
           tokenResolver: isOAuth ? tokenResolver : null,
           accountId: credential?.accountId,
-          baseUrl: baseUrl ??
+          baseUrl:
+              baseUrl ??
               (isOAuth ? CodexOAuth.backendApi : CodexOAuth.apiKeyBase),
           chatgpt: isOAuth,
           defaultModel: model ?? 'gpt-5.5',
@@ -221,6 +222,10 @@ class HarnessProviderFactory {
                 apiKey: apiKey,
                 baseUrl: baseUrl,
                 defaultModel: model ?? '',
+                // A user-defined Anthropic-compatible endpoint accepts the
+                // Messages shape, not tool search. Keeping `defer_loading` off
+                // avoids a request such an endpoint rejects outright.
+                nativeToolSearch: false,
               );
             case CustomProviderDialect.openai:
               return OpenAiProvider(

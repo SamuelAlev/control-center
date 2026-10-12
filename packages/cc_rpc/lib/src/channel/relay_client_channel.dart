@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cc_rpc/src/channel/chunked_relay_codec.dart';
 import 'package:cc_rpc/src/channel/relay_signaling_channel.dart';
 import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 import 'package:cc_rpc/src/crypto/remote_control_crypto.dart';
@@ -8,22 +7,21 @@ import 'package:cc_rpc/src/crypto/remote_control_crypto.dart';
 /// The client half of the broker-relayed RPC path — the guaranteed
 /// NAT-traversal fallback (PRD 15 §2/§3).
 ///
-/// Joins the server's relay room with the PSK-derived admission token,
-/// addresses every frame to the room **owner** (the cc_server), seals frames
-/// end-to-end ([ChunkedRelaySession]) and presents the standard
-/// [RemoteRpcChannelPort] so `authenticateRemoteChannel` + `RemoteRpcClient`
-/// run over it unchanged. Works on the VM, web and the phone PWA.
+/// Joins with the PSK-derived admission token and addresses records to the
+/// room owner. `SecureRpcChannel` owns encryption and flow control above this
+/// raw record adapter, exactly as it does above a direct WebSocket.
 class RelayClientChannel implements RemoteRpcChannelPort {
-  RelayClientChannel._(this._signaling, this._psk);
+  RelayClientChannel._(this._signaling);
 
   /// Connects through [signalingUrl]'s broker into the server's relay [room].
   ///
   /// Derives the admission token from [psk] + [room]; when the server is not
   /// yet in the room (a restart gap), waits up to [ownerWait] for it to
   /// appear before failing. Once the owner is present, announces [deviceId]
-  /// with a cleartext `hello` so the server can bind this peer to its PSK —
-  /// routing information only; authentication is the sealed PSK handshake
-  /// that follows. Throws [RelaySignalingException] on refusal
+  /// with a cleartext `hello` so the server can locate its stored PSK.
+  /// This is routing metadata only; the Noise handshake authenticates the
+  /// device and server before application records may flow. Throws
+  /// [RelaySignalingException] on broker refusal
   /// (`not admitted` = the device was revoked or the room rotated).
   static Future<RelayClientChannel> connect({
     required String signalingUrl,
@@ -41,7 +39,7 @@ class RelayClientChannel implements RemoteRpcChannelPort {
       peerId: peerId,
       timeout: timeout,
     );
-    final channel = RelayClientChannel._(signaling, psk);
+    final channel = RelayClientChannel._(signaling);
     try {
       await channel._start(ownerWait);
       channel._signaling.sendSignal(
@@ -57,9 +55,6 @@ class RelayClientChannel implements RemoteRpcChannelPort {
   }
 
   final RelaySignalingChannel _signaling;
-  final String _psk;
-
-  late ChunkedRelaySession _session;
   String? _ownerPeer;
   StreamSubscription<Map<String, dynamic>>? _sub;
 
@@ -76,17 +71,14 @@ class RelayClientChannel implements RemoteRpcChannelPort {
       StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<RemoteChannelState> _state =
       StreamController<RemoteChannelState>.broadcast();
-  final StreamController<RelayTransferProgress> _progress =
-      StreamController<RelayTransferProgress>.broadcast();
   final List<Map<String, dynamic>> _pending = [];
+  Timer? _pendingEofTimer;
+  bool _pendingEof = false;
   bool _open = false;
 
   /// Cap on frames buffered before a listener attaches (mirrors the server's
   /// `WsRemoteTransport._maxPendingFrames`).
   static const int _maxPendingFrames = 64;
-
-  /// Progress of large transfers over this relayed link (bulk fallback UI).
-  Stream<RelayTransferProgress> get transferProgress => _progress.stream;
 
   Future<void> _start(Duration ownerWait) async {
     var ownerPeer = _signaling.joinAck.ownerPeer;
@@ -95,10 +87,9 @@ class RelayClientChannel implements RemoteRpcChannelPort {
     _sub = _signaling.incoming.listen(
       events.add,
       onDone: () {
-        if (!events.isClosed) {
-          events.close();
-        }
-        _onClosed();
+        // The fan-out can still have queued RPC records. Its ordered onDone,
+        // rather than the signaling state, is the safe EOF boundary.
+        unawaited(events.close());
       },
     );
 
@@ -121,35 +112,30 @@ class RelayClientChannel implements RemoteRpcChannelPort {
     }
     _ownerPeer = ownerPeer;
 
-    _session = ChunkedRelaySession(
-      psk: _psk,
-      sendPayload: (payload) =>
-          _signaling.sendSignal(to: _ownerPeer, payload: payload),
-      onFrame: (frame) {
-        if (_incoming.hasListener) {
-          _incoming.add(frame);
-        } else if (_pending.length >= _maxPendingFrames) {
-          // Bounded like the server side: buffer-until-listener protects the
-          // handshake's first reply, it is not a place to accumulate a stream.
-          _onClosed();
-        } else {
-          _pending.add(frame);
-        }
-      },
-      onProgress: (p) {
-        if (!_progress.isClosed) {
-          _progress.add(p);
-        }
-      },
-    );
     _incoming.onListen = _flushPending;
 
     _eventsSub = events.stream.listen((frame) {
       final type = frame['type'];
-      if (type == 'signal' && frame['from'] == _ownerPeer) {
+      if (type == 'signal' &&
+          frame['from'] == _ownerPeer &&
+          frame['kind'] == 'close') {
+        _onClosed();
+        unawaited(_signaling.close());
+        return;
+      }
+      if (type == 'signal' &&
+          frame['from'] == _ownerPeer &&
+          frame['kind'] == 'rpc') {
         final payload = frame['payload'];
         if (payload is Map) {
-          _session.handlePayload(payload.cast<String, dynamic>());
+          final record = payload.cast<String, dynamic>();
+          if (_incoming.hasListener) {
+            _incoming.add(record);
+          } else if (_pending.length >= _maxPendingFrames) {
+            unawaited(close());
+          } else {
+            _pending.add(record);
+          }
         }
         return;
       }
@@ -159,20 +145,21 @@ class RelayClientChannel implements RemoteRpcChannelPort {
         // over; the resolver owns reconnecting.
         _onClosed();
       }
-    });
+    }, onDone: _onClosed);
 
     _open = true;
     _state.add(RemoteChannelState.open);
   }
 
   void _flushPending() {
-    if (_pending.isEmpty) {
-      return;
+    for (final frame in _pending) {
+      _incoming.add(frame);
     }
-    final buffered = List<Map<String, dynamic>>.of(_pending);
     _pending.clear();
-    for (final f in buffered) {
-      _incoming.add(f);
+    if (_pendingEof) {
+      _pendingEofTimer?.cancel();
+      _pendingEof = false;
+      unawaited(_incoming.close());
     }
   }
 
@@ -190,30 +177,26 @@ class RelayClientChannel implements RemoteRpcChannelPort {
     if (!_open) {
       throw StateError('RelayClientChannel is not open');
     }
-    await _session.sendFrame(frame);
+    _signaling.sendSignal(to: _ownerPeer, payload: frame);
   }
 
   @override
   Future<void> close() async {
-    _onClosed();
+    _onClosed(abort: true);
     await _signaling.close();
-    if (!_incoming.isClosed) {
-      await _incoming.close();
-    }
-    if (!_progress.isClosed) {
-      await _progress.close();
-    }
-    if (!_state.isClosed) {
-      await _state.close();
-    }
   }
 
-  void _onClosed() {
+  void _onClosed({bool abort = false}) {
     if (!_open) {
+      if (abort && _pendingEof) {
+        _pendingEofTimer?.cancel();
+        _pendingEof = false;
+        _pending.clear();
+        unawaited(_incoming.close());
+      }
       return;
     }
     _open = false;
-    _session.close();
     unawaited(_sub?.cancel());
     _sub = null;
     // Release the internal fan-out too — see the field docs: cancelling `_sub`
@@ -228,6 +211,20 @@ class RelayClientChannel implements RemoteRpcChannelPort {
     if (!_state.isClosed) {
       _state.add(RemoteChannelState.closed);
     }
+    if (abort) _pending.clear();
+    if (!abort && _pending.isNotEmpty) {
+      // A pre-listener record remains bounded and available to its first
+      // listener, even when the peer leaves in the same socket burst.
+      _pendingEof = true;
+      _pendingEofTimer = Timer(const Duration(seconds: 5), () {
+        _pendingEof = false;
+        _pending.clear();
+        unawaited(_incoming.close());
+      });
+    } else {
+      unawaited(_incoming.close());
+    }
+    unawaited(_state.close());
   }
 
   /// Probes the relay path: joins the room with the admission token, reads

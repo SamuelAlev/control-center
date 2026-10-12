@@ -1,26 +1,18 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_infra/src/git/github_profile_activity_adapter.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-class _FakeAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    final body = options.data as Map<String, dynamic>;
+/// Serves the two GraphQL queries the adapter issues (counts, then the
+/// detailed search) and records every request.
+TestHttpClient _fake() => TestHttpClient(
+  handler: (request) {
+    final body = (request.body as HttpBodyJson).json as Map<String, dynamic>;
     final variables = body['variables'] as Map;
     if (variables.containsKey('open')) {
-      return _json({
+      return httpTextResponse(request, {
         'data': {
           'open': {'issueCount': 1},
           'draft': {'issueCount': 0},
@@ -29,7 +21,7 @@ class _FakeAdapter implements HttpClientAdapter {
         },
       });
     }
-    return _json({
+    return httpTextResponse(request, {
       'data': {
         'search': {
           'issueCount': 1001,
@@ -55,11 +47,8 @@ class _FakeAdapter implements HttpClientAdapter {
         },
       },
     });
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
+  },
+);
 
 Map<String, dynamic> _node({
   required int number,
@@ -97,21 +86,12 @@ Map<String, dynamic> _node({
   'repository': {'nameWithOwner': 'acme/app'},
 };
 
-ResponseBody _json(Object body) => ResponseBody.fromString(
-  jsonEncode(body),
-  200,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
-
 void main() {
   test(
     'computes nearest-rank delivery percentiles from the detailed sample',
     () async {
-      final fake = _FakeAdapter();
-      final dio = Dio()..httpClientAdapter = fake;
-      final adapter = GitHubProfileActivityAdapter(GitHubApiClient(dio));
+      final fake = _fake();
+      final adapter = GitHubProfileActivityAdapter(GitHubApiClient(fake));
       final repo = Repo(
         id: 'repo-1',
         name: 'acme/app',

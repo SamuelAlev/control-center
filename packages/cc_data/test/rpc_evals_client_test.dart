@@ -1,4 +1,4 @@
-import 'package:cc_data/src/repositories/rpc_evals_client.dart';
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
@@ -194,8 +194,45 @@ void main() {
       expect(r.recommended, 'act_with_approval');
       expect(host.lastCall('evals.reliability')!.args['agent_id'], 'a-1');
     });
+
+    test(
+      'full campaign snapshots preserve unknown cost and null deletion',
+      () async {
+        host.snapshotFor('evals.watchCampaignsForSkill', {
+          'campaigns': [_campaignWire()],
+        });
+        host.snapshotFor('evals.watchCampaign', {'campaign': null});
+        final c = RpcEvalsClient(client);
+        final history = await c.watchCampaignsForSkill('w1').first;
+        expect(history.single.spentMicros, isNull);
+        expect(await c.watchCampaign('w1', 'run1').first, isNull);
+      },
+    );
   });
 }
+
+Map<String, dynamic> _campaignWire() => {
+  'id': 'run1',
+  'workspaceId': 'w1',
+  'skillKey': 'workspace:serializer',
+  'skillSlug': 'serializer',
+  'skillHash': 'sha256:1',
+  'corpusId': 'utility',
+  'providerId': 'anthropic',
+  'modelId': 'anthropic/sonnet',
+  'configurationHash': 'config1',
+  'comparison': 'composition',
+  'status': 'running',
+  'repetitions': 3,
+  'budgetMicros': 700000,
+  'plannedAttempts': 12,
+  'completedAttempts': 2,
+  'spentMicros': null,
+  'createdAt': '2026-10-11T00:00:00.000Z',
+  'actor': 'user:u1',
+  'triggeredBy': 'manual',
+  'configuration': <String, dynamic>{},
+};
 
 /// Records a `repo/call` invocation.
 class _Call {

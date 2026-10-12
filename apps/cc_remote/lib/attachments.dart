@@ -1,9 +1,5 @@
-// Phone attachment upload: bytes must reach the server before the message.
-//
-// HTTP `POST /blob` when the pairing has an origin — the RPC WebSocket caps
-// inbound frames at 256 KB and closes past that. RPC `blob.put` on brokered
-// relay (no HTTP origin): `ChunkedRelaySession` carries large frames; slower,
-// lower ceiling than the store.
+// Phone attachment uploads use the local encrypted resource capability on
+// direct and relay paths. No remote HTTP endpoint or base64 RPC upload lane.
 library;
 
 import 'dart:async';
@@ -15,7 +11,6 @@ import 'package:cc_domain/core/domain/value_objects/file_reference.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_remote/debug_log.dart';
 import 'package:cc_remote/media_proxy.dart';
-import 'package:cc_rpc/cc_rpc.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
@@ -23,13 +18,6 @@ import 'package:web/web.dart' as web;
 /// ceiling so the refusal happens before the bytes cross the wire.
 const int kMaxAttachmentBytes = 24 * 1024 * 1024;
 
-/// Largest attachment carried over the brokered relay.
-///
-/// Deliberately far below [kMaxAttachmentBytes]: base64 adds a third, the relay
-/// moves it in 16 KB sealed chunks, and a phone on a bad link would sit on a
-/// spinner for minutes with no way to tell whether anything was happening.
-/// Refusing loudly at 4 MB is the better failure.
-const int kMaxRelayAttachmentBytes = 4 * 1024 * 1024;
 
 /// A file the person picked, held as bytes because a browser tab has nothing
 /// else to hold.
@@ -130,7 +118,6 @@ Future<List<PickedAttachment>> _readFiles(web.HTMLInputElement input) async {
 Future<List<MessageAttachment>> uploadAttachments({
   required List<PickedAttachment> picked,
   required String workspaceId,
-  required RemoteRpcClient client,
   required RemoteMediaEndpoint? endpoint,
 }) async {
   final out = <MessageAttachment>[];
@@ -139,7 +126,6 @@ Future<List<MessageAttachment>> uploadAttachments({
     final ref = await _upload(
       attachment: attachment,
       workspaceId: workspaceId,
-      client: client,
       endpoint: endpoint,
     );
     if (ref == null) {
@@ -163,38 +149,24 @@ Future<List<MessageAttachment>> uploadAttachments({
   return out;
 }
 
-/// Whether [bytes] is small enough for the lane this connection has.
-///
-/// Public so the picker can refuse before anything is uploaded and say which
-/// ceiling applies — "too large" is unhelpful when the limit moves with the
-/// path the phone happens to be on.
-bool attachmentFitsLane(int bytes, {required bool hasHttpOrigin}) =>
-    bytes > 0 &&
-    bytes <= (hasHttpOrigin ? kMaxAttachmentBytes : kMaxRelayAttachmentBytes);
+/// Bounded by the server's blob store, regardless of direct or relay path.
+bool attachmentFitsLane(int bytes) => bytes > 0 && bytes <= kMaxAttachmentBytes;
 
 Future<String?> _upload({
   required PickedAttachment attachment,
   required String workspaceId,
-  required RemoteRpcClient client,
   required RemoteMediaEndpoint? endpoint,
 }) async {
-  if (!attachmentFitsLane(
-    attachment.bytes.length,
-    hasHttpOrigin: endpoint != null,
-  )) {
+  if (!attachmentFitsLane(attachment.bytes.length)) {
     rlog(
       'attachments',
       '${attachment.name} is ${attachment.bytes.length}B — over the '
-          '${endpoint != null ? 'HTTP' : 'relay'} ceiling; dropped',
+          'encrypted upload ceiling; dropped',
     );
     return null;
   }
   if (endpoint == null) {
-    return _uploadOverRpc(
-      attachment: attachment,
-      workspaceId: workspaceId,
-      client: client,
-    );
+    return null;
   }
   try {
     final response = await http.post(
@@ -218,26 +190,3 @@ Future<String?> _upload({
   }
 }
 
-/// The relay lane: `blob.put`, carrying the bytes as base64 in a JSON-RPC
-/// argument and chunked by `ChunkedRelaySession` on the way across.
-///
-/// Only reached on a connection with no HTTP origin — see the library comment
-/// for why this must never be attempted on a WebSocket one.
-Future<String?> _uploadOverRpc({
-  required PickedAttachment attachment,
-  required String workspaceId,
-  required RemoteRpcClient client,
-}) async {
-  try {
-    final result = await client.call('blob.put', {
-      'workspace_id': workspaceId,
-      'data': base64Encode(attachment.bytes),
-      'media_type': attachment.mediaType,
-    });
-    final ref = result['ref'];
-    return ref is String && ref.isNotEmpty ? ref : null;
-  } on Object catch (e) {
-    rlog('attachments', 'relay upload of ${attachment.name} failed: $e');
-    return null;
-  }
-}

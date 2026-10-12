@@ -71,10 +71,60 @@ class AgentRunLogsTable extends Table {
   IntColumn get estimatedCostCents =>
       integer().withDefault(const Constant(0))();
 
+  /// Exact cost in MICRO-USD (`1e-6` USD) for this run, or 0 when no precise
+  /// figure was recorded.
+  ///
+  /// Whole cents is not enough precision: a sub-cent priced request rounded to
+  /// `estimatedCostCents = 0`, so hundreds of small auxiliary calls summed to a
+  /// persisted total of zero with nothing on the row to say the cost was
+  /// actually unknown. Micro-USD keeps the arithmetic exact.
+  IntColumn get costMicros => integer().withDefault(const Constant(0))();
+
+  /// How the cost was obtained: `estimated` | `providerReported` |
+  /// `subscription` | `mixed`. Nullable; null on legacy rows (read as
+  /// estimated).
+  TextColumn get costBasis => text().nullable()();
+
   /// Cost in US cents rolled up from this run's subagent (child) runs, summed
   /// as each child completes. `estimatedCostCents + childCostCents` is the
   /// run's total spend including everything it delegated. Zero for leaf runs.
   IntColumn get childCostCents => integer().withDefault(const Constant(0))();
+
+  /// Exact child rollup in micro-USD — the precise companion to
+  /// [childCostCents], which rounds sub-cent children to zero.
+  IntColumn get childCostMicros => integer().withDefault(const Constant(0))();
+
+  /// Reasoning-effort level the run actually executed at, when recorded. Null
+  /// means unknown (not "the default"): latency percentiles group by this and
+  /// an unknown must form its own bucket.
+  TextColumn get effort => text().nullable()();
+
+  /// Caller-assigned task-family label, when recorded. Null means
+  /// unclassified.
+  TextColumn get taskFamily => text().nullable()();
+
+  /// The adapter's OWN session/thread id for this run, when it has one (e.g. a
+  /// Claude CLI session id). Stored as data so the evaluation's resume-vs-fresh
+  /// stratum is queryable rather than parseable out of a log line.
+  TextColumn get nativeSessionId => text().nullable()();
+
+  /// Whether this run RESUMED [nativeSessionId] rather than starting fresh.
+  BoolColumn get resumedNativeSession =>
+      boolean().withDefault(const Constant(false))();
+
+  /// JSON array of observed run-stage timings (`RunLatencyProfile.toJson`).
+  /// Nullable: a run from before stage instrumentation has no timings at all,
+  /// which is unknown rather than zero.
+  TextColumn get latencyJson => text().nullable()();
+
+  /// Independent verification verdict: `passed` | `failed` | `unverified`.
+  /// Nullable; null on legacy rows (read as unverified). Distinct from
+  /// [status]: a run can complete and fail verification.
+  TextColumn get verificationStatus => text().nullable()();
+
+  /// JSON detail for [verificationStatus] (`RunVerification.toJson`): who
+  /// verified, when, and any notes.
+  TextColumn get verificationJson => text().nullable()();
 
   /// The role this run played in the agent tree for per-role cost attribution:
   /// `main` | `sub` | `advisor`. Nullable; null/legacy rows attribute to main.

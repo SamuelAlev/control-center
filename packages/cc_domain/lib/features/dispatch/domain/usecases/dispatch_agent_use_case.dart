@@ -31,6 +31,7 @@ class PreparedDispatch {
   /// Creates a [PreparedDispatch] with the given resolved values.
   const PreparedDispatch({
     required this.effectivePrompt,
+    required this.promptParts,
     required this.effectiveConversationId,
     required this.agent,
     required this.mode,
@@ -40,7 +41,18 @@ class PreparedDispatch {
   });
 
   /// The fully-built prompt text, including all layers.
+  ///
+  /// Identical to `promptParts.fullPrompt`; kept as its own field because
+  /// every existing dispatch callsite reads it.
   final String effectivePrompt;
+
+  /// The same prompt split into its standing brief and per-turn delta.
+  ///
+  /// A native-resumed turn sends `promptParts.resumePrompt` — the new message
+  /// plus the new per-turn context only — instead of [effectivePrompt], so the
+  /// standing instructions and the conversation the session already holds are
+  /// never replayed.
+  final AgentPromptParts promptParts;
 
   /// The user's message verbatim, before any context layering.
   ///
@@ -121,19 +133,54 @@ class DispatchAgentUseCase {
 
     final effectiveConversationId = conversationId ?? spaceId;
 
-    final mode = await _resolveMode(workspaceId, spaceId);
+    // The authorization boundary is the agent lookup above: `workspaceId`
+    // scopes it, so an agent id from another workspace resolves to nothing and
+    // every read below is scoped to THIS workspace (memory to the agent's own
+    // workspace, which is never null; history and the roster to
+    // `workspaceId`). Past that boundary the four reads are independent, so
+    // they run CONCURRENTLY — the dispatch waits on the slowest, not their
+    // sum. Each read keeps its own try/catch, so one failing (memory store
+    // down, roster lookup error) yields an empty layer and logs, and never
+    // aborts the others: the prompt still assembles.
+    final results = await Future.wait<Object?>([
+      _resolveMode(workspaceId, spaceId),
+      _loadMemoryContext(agent, prompt),
+      _loadConversationContext(agent, workspaceId, spaceId, prompt),
+      _loadTeammates(agent),
+    ]);
 
-    final effectivePrompt = await _buildEffectivePrompt(
-      workspaceId: workspaceId,
+    final mode = results[0]! as Mode;
+    final memoryContext = results[1] as String?;
+    final conversationParts = results[2] as ConversationContextParts?;
+    final teammates = results[3]! as List<TeammateBrief>;
+
+    final modeContext = mode == Mode.plan
+        ? ModePromptContext(planGoal: prompt)
+        : null;
+
+    // One assembly produces the flattened prompt AND its standing/per-turn
+    // split. Order is fixed by the builder, never by which concurrent read
+    // finished first. [wakeContext] rides the per-turn half: the execution
+    // procedure tells the agent to check the "Why you were woken" section, so
+    // it must actually reach the prompt rather than being dropped here.
+    final promptParts = _buildPrompt.buildParts(
       prompt: prompt,
       agent: agent,
-      spaceId: spaceId,
+      memoryContext: memoryContext,
+      conversationContext: conversationParts?.text,
+      conversationEntries: conversationParts?.entries,
       mode: mode,
+      modeContext: modeContext,
       mentionContext: mentionContext,
+      wakeContext: wakeContext,
+      locale: _locale,
+      teammates: teammates,
+      transport: resolvedAdapter.transport,
     );
 
     return PreparedDispatch(
-      effectivePrompt: effectivePrompt,
+      effectivePrompt: promptParts.fullPrompt,
+      promptParts: promptParts,
       effectiveConversationId: effectiveConversationId,
       agent: agent,
       mode: mode,
@@ -153,98 +200,94 @@ class DispatchAgentUseCase {
     return resolver.resolveForConversation(workspaceId, spaceId);
   }
 
-  Future<String> _buildEffectivePrompt({
-    required String workspaceId,
-    required String prompt,
-    required Agent? agent,
-    String? spaceId,
-    Mode mode = Mode.chat,
-    MentionContext? mentionContext,
-  }) async {
-    // The agent is the authority for its workspace (Agent.workspaceId is never
-    // null), so memory is scoped to the agent's own workspace whenever the
-    // agent is known — no more "skipped because workspaceId was null".
-    final agentId = agent?.id;
-    String? memoryContext;
+  /// Loads the agent's memory context, scoped to the agent's own workspace
+  /// (`Agent.workspaceId` is never null). Best-effort: a failure logs and
+  /// yields null rather than aborting the dispatch.
+  Future<String?> _loadMemoryContext(Agent? agent, String prompt) async {
     if (_memoryContextUseCase == null) {
       _log('Memory context: skipped (use case not wired)');
-    } else if (agent == null) {
-      _log('Memory context: skipped (agent not found)');
-    } else {
-      final workspaceId = agent.workspaceId;
-      try {
-        memoryContext = await _memoryContextUseCase.execute(
-          workspaceId: workspaceId,
-          agentId: agent.id,
-          taskDescription: prompt,
-        );
-        if (memoryContext.isEmpty) {
-          _log(
-            'Memory context: returned empty for '
-            'workspace=$workspaceId agent=${agent.id}',
-          );
-        } else {
-          _log(
-            'Memory context: ${memoryContext.length} chars loaded for '
-            'workspace=$workspaceId agent=${agent.id}',
-          );
-        }
-      } catch (e, st) {
-        _log('Memory context: build failed — $e\n$st');
-      }
+      return null;
     }
+    if (agent == null) {
+      _log('Memory context: skipped (agent not found)');
+      return null;
+    }
+    final workspaceId = agent.workspaceId;
+    try {
+      final memoryContext = await _memoryContextUseCase.execute(
+        workspaceId: workspaceId,
+        agentId: agent.id,
+        taskDescription: prompt,
+      );
+      if (memoryContext.isEmpty) {
+        _log(
+          'Memory context: returned empty for '
+          'workspace=$workspaceId agent=${agent.id}',
+        );
+      } else {
+        _log(
+          'Memory context: ${memoryContext.length} chars loaded for '
+          'workspace=$workspaceId agent=${agent.id}',
+        );
+      }
+      return memoryContext;
+    } catch (e, st) {
+      _log('Memory context: build failed — $e\n$st');
+      return null;
+    }
+  }
 
-    String? conversationContext;
+  /// Loads the conversation-history block, scoped to [workspaceId] and
+  /// [spaceId]. Best-effort: a failure logs and yields null.
+  Future<ConversationContextParts?> _loadConversationContext(
+    Agent? agent,
+    String workspaceId,
+    String? spaceId,
+    String prompt,
+  ) async {
+    final agentId = agent?.id;
     if (_conversationContextUseCase == null ||
         spaceId == null ||
         agentId == null) {
       _log('Conversation context: skipped');
-    } else {
-      try {
-        // Older history is retrieved on demand via the get_messages MCP tool,
-        // and the use case still surfaces semantically-relevant older
-        // messages. The context inspection sizes the same block.
-        final characterBudget = conversationCharacterBudget(agent?.contextSize);
-        conversationContext = await _conversationContextUseCase.execute(
-          workspaceId: workspaceId,
-          spaceId: spaceId,
-          selfAgentId: agentId,
-          selfAgentName: agent?.name ?? agentId,
-          taskDescription: prompt,
-          characterBudget: characterBudget,
-        );
-        if (conversationContext.isEmpty) {
-          _log('Conversation context: empty');
-        } else {
-          _log('Conversation context: ${conversationContext.length} chars');
-        }
-      } catch (e, st) {
-        _log('Conversation context: build failed — $e\n$st');
-      }
+      return null;
     }
-
-    final modeContext = mode == Mode.plan
-        ? ModePromptContext(planGoal: prompt)
-        : null;
-
-    return _buildPrompt.execute(
-      prompt: prompt,
-      agent: agent,
-      memoryContext: memoryContext,
-      conversationContext: conversationContext,
-      mode: mode,
-      modeContext: modeContext,
-      mentionContext: mentionContext,
-      locale: _locale,
-      teammates: agent == null ? const [] : await _loadTeammates(agent),
-    );
+    try {
+      // Older history is retrieved on demand via the get_messages MCP tool,
+      // and the use case still surfaces semantically-relevant older
+      // messages. The context inspection sizes the same block.
+      final characterBudget = conversationCharacterBudget(agent?.contextSize);
+      final context = await _conversationContextUseCase.executeStructured(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        selfAgentId: agentId,
+        selfAgentName: agent?.name ?? agentId,
+        taskDescription: prompt,
+        characterBudget: characterBudget,
+      );
+      if (context.text.isEmpty) {
+        _log('Conversation context: empty');
+      } else {
+        _log(
+          'Conversation context: ${context.text.length} chars, '
+          '${context.entries.length} entries',
+        );
+      }
+      return context;
+    } catch (e, st) {
+      _log('Conversation context: build failed — $e\n$st');
+      return null;
+    }
   }
 
   /// The workspace's other agents, for the prompt's staffing decision.
   ///
   /// Best-effort: a roster lookup must never block a dispatch and an agent with
   /// no roster simply falls back to doing the work itself.
-  Future<List<TeammateBrief>> _loadTeammates(Agent agent) async {
+  Future<List<TeammateBrief>> _loadTeammates(Agent? agent) async {
+    if (agent == null) {
+      return const [];
+    }
     try {
       final agents = await _agentRepo.watchByWorkspace(agent.workspaceId).first;
       final mates = [

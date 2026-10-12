@@ -5,11 +5,9 @@ enum NotificationCategory {
   /// An agent finished a run in a workspace.
   agentRunCompleted,
 
-  /// An agent stopped and is waiting on the user: an action needs approval,
-  /// it asked a question, or its credential cannot serve the run. One
-  /// category for all three because the operator question is the same — "is
-  /// something stuck on me?" — and muting one kind of wait while keeping the
-  /// others leaves runs silently parked.
+  /// An agent needs attention: approval, an answer, working credentials, or a
+  /// policy change after an action was blocked. A policy block is informational,
+  /// not a pending approval.
   agentAwaitingInput,
 
   /// A pull request was published by an agent.
@@ -187,6 +185,7 @@ class AppNotification {
     required this.workspaceId,
     this.spaceId,
     this.presentation = NotificationPresentation.centerOnly,
+    this.suppressWhenViewingTarget = true,
   });
 
   /// Which notification category this belongs to.
@@ -208,9 +207,8 @@ class AppNotification {
 
   /// Optional space/conversation ID for space-level suppression.
   ///
-  /// When set, the notification service checks whether the user is
-  /// currently viewing this specific space and suppresses the
-  /// notification (and sound) if so.
+  /// When [suppressWhenViewingTarget] is true, the notification service
+  /// suppresses delivery only while this specific space is being viewed.
   final String? spaceId;
 
   /// How prominently this notification surfaces. Defaults to
@@ -218,6 +216,10 @@ class AppNotification {
   /// promote only time-critical, actionable events to
   /// [NotificationPresentation.banner].
   final NotificationPresentation presentation;
+
+  /// Whether viewing the target already exposes this event. Policy refusals
+  /// have no inline approval card, so they still notify on the active route.
+  final bool suppressWhenViewingTarget;
 
   @override
   bool operator ==(Object other) =>
@@ -229,7 +231,8 @@ class AppNotification {
           route == other.route &&
           workspaceId == other.workspaceId &&
           spaceId == other.spaceId &&
-          presentation == other.presentation;
+          presentation == other.presentation &&
+          suppressWhenViewingTarget == other.suppressWhenViewingTarget;
 
   @override
   int get hashCode => Object.hash(
@@ -240,5 +243,6 @@ class AppNotification {
     workspaceId,
     spaceId,
     presentation,
+    suppressWhenViewingTarget,
   );
 }

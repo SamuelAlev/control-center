@@ -2,7 +2,7 @@
 title: Deployment e client
 description: Come l'architettura thin client di Control Center separa un server headless dai suoi client desktop, web e mobile.
 slug: it-IT/manuale/concetti/deployment
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center non è un unico programma. È un'**architettura thin client**: un
@@ -23,8 +23,9 @@ in modo identico, risiede lì.
 
 Nessun client apre da sé un file di database. Ogni client, invece, tiene un solo
 **`RemoteRpcClient`** e attraverso di esso esegue operazioni di repository e
-sottoscrizioni. Il server autentica la connessione contro una chiave precondivisa
-di dispositivo associato — e poi smette di preoccuparsi della connessione.
+sottoscrizioni. Le sessioni dirette e quelle intermediarie richiedono entrambe un
+handshake Noise firmato: la chiave precondivisa del dispositivo associato
+autentica lo scambio, mentre chiavi di traffico nuove cifrano ogni sessione.
 **Una sessione non è vincolata a uno spazio di lavoro.** Il dispatcher è privo di
 stato: ogni chiamata con ambito di spazio di lavoro porta con sé il proprio
 `workspace_id` nei suoi argomenti, e una chiamata che lo omette viene rifiutata.
@@ -100,12 +101,12 @@ database.
 La build web è la stessa app Flutter compilata per girare in un browser,
 ospitata su [app.usectrl.dev](https://app.usectrl.dev), quindi non c'è nulla da
 installare. Un browser non può avviare un sottoprocesso, perciò il client web è
-**sempre** remoto: contatta un `cc_server` tramite `wss://` e renderizza l'intera
-interfaccia desktop. Una volta connesso mostra le stesse schermate sulla stessa
-flotta, perché è lo stesso codice sullo stesso RPC. Le lacune sono quel pugno di
-punti che richiedono una capacità nativa che un browser non ha: il livello di
-qualità della cattura delle riunioni descritto più avanti è il principale, e le
-notifiche del sistema operativo sono un altro.
+**sempre** remoto: contatta un `cc_server` tramite una sessione WebSocket cifrata
+e renderizza l'intera interfaccia desktop. Una volta connesso mostra le stesse
+schermate sulla stessa flotta, perché usa lo stesso codice sullo stesso RPC. Le
+lacune sono quel pugno di punti che richiedono una capacità nativa che un browser
+non ha: il livello di qualità della cattura delle riunioni descritto più avanti è
+il principale, e le notifiche del sistema operativo sono un altro.
 
 Ecco perché «nessun download» e «nessun server» sono affermazioni diverse. Il
 client web elimina l'installazione; non elimina il server. Ciò che contatta può
@@ -127,28 +128,32 @@ dei browser solo nella sua lista `--allowed-origins`, che per impostazione
 predefinita è `https://app.usectrl.dev`, quindi ospitare il bundle per conto
 proprio significa aggiungere la sua origine.
 
-I media (avatar, immagini del feed, screenshot delle PR) passano attraverso
-l'endpoint proxy del server invece di contattare direttamente gli host a monte,
-così un browser non scarica mai un'origine arbitraria. Il client distribuito
-applica a ogni richiesta una Content-Security Policy presa da un cookie non
-sensibile, in modo che sia consentita solo l'origine del server connesso.
+I media (avatar, immagini del feed, screenshot delle PR), i caricamenti, i backup
+e il traffico HTTP/WebSocket dell'editor incorporato viaggiano attraverso il
+tunnel delle risorse cifrato, non attraverso rotte HTTP pubbliche leggibili; i
+percorsi firmati richiedono comunque l'autorizzazione. Il frontend dell'editor
+attendibile gira sull'origine propria dell'app web. Il suo service worker
+instrada le richieste dell'editor attraverso la sessione cifrata esistente verso
+`cc_server`, che possiede i file e il backend code-server. Il browser necessita
+di HTTPS o di un contesto loopback sicuro per i service worker. I client nativi
+usano una facade loopback con ambito di capacità.
 
 ### App complementare per il telefono (cc_remote)
 
 L'app **Remote** è un client separato e più leggero: una PWA web Flutter su
 [remote.usectrl.dev](https://remote.usectrl.dev/). Di proposito **non** è l'app
-completa. Si associa tramite un relay WebSocket negoziato e sigillato
-end-to-end, e parla una porzione prevalentemente di lettura della superficie
-degli strumenti: leggere ticket, messaggi e notizie; inviare una risposta o
-aggiornare un ticket.
+completa. Si connette direttamente quando possibile o tramite un relay
+intermediato; entrambi i percorsi richiedono la crittografia end-to-end. Parla una
+porzione prevalentemente di lettura della superficie degli strumenti: leggere
+ticket, messaggi e notizie; inviare una risposta o aggiornare un ticket.
 
 Un telefono è un **principal con privilegi inferiori** rispetto a un agente
 locale. Una policy degli strumenti che nega per impostazione predefinita, una
-chiave precondivisa che sigilla ogni frame, una capacità di sessione che esclude
-un client complementare dalle operazioni privilegiate (l'associazione, ad
-esempio), i controlli di ruolo e di concessione per repository a ogni chiamata
-descritti sopra e il rate limiting impediscono che un'associazione approvata (o
-trapelata) diventi un controllo remoto completo. Vedi
+capacità di sessione che esclude un client complementare dalle operazioni
+privilegiate (l'associazione, ad esempio), i controlli di ruolo e di concessione
+per repository a ogni chiamata descritti sopra e il rate limiting impediscono che
+un'associazione approvata (o trapelata) diventi un controllo remoto completo. La
+crittografia del trasporto non concede autorizzazioni. Vedi
 [Controllo remoto e mobile](/it-IT/manuale/concetti/controllo-remoto/) per il
 modello di sicurezza completo.
 
@@ -232,15 +237,27 @@ calendario.
 
 ## Associazione e fiducia
 
-Ogni client prova la propria identità con una **chiave precondivisa** fornita una
-volta sola:
+Ogni client usa una **chiave precondivisa** fornita una volta sola per autenticare
+il proprio handshake Noise firmato con `cc_server`, anche su loopback e tramite il
+relay:
 
 - Il desktop in modalità locale genera una chiave nuova a ogni avvio e la passa
   al server avviato tramite l'ambiente, così sul desktop non viene persistito
   nulla di segreto.
 - I client remoti (desktop remoto, web, telefono) usano una chiave emessa dal
-  comando `pair` del server e conservata nel portachiavi del sistema operativo
-  (o, sul telefono, localmente).
+  flusso di associazione del server o dal comando `pair`. I client nativi usano il
+  portachiavi del sistema operativo; i client browser conservano l'associazione in
+  locale.
+
+Il client verifica l'identità firmata del server rispetto al pin dell'impronta
+salvato. Alla prima connessione, verifica quella impronta tramite un QR
+attendibile o un altro canale attendibile: un primo contatto firmato, da solo, non
+può autenticare chi ha fornito la chiave. Se l'identità cambia, il client fallisce
+in modo restrittivo; riassocia tramite un canale attendibile invece di ignorare la
+discrepanza. I client più vecchi e l'RPC in chiaro non possono connettersi. TLS
+resta necessario per le origini dei browser, il bootstrap e i metadati pubblici;
+`--insecure` riguarda il listener esterno del server, non la sessione cifrata
+obbligatoria.
 
 La revoca è **immediata**, non pigra. Il server tiene sotto controllo la sua
 tabella dei dispositivi associati e chiude qualsiasi sessione aperta il cui
@@ -248,13 +265,12 @@ dispositivo abbia lasciato l'insieme attivo, entro pochi secondi: sia sul
 percorso WebSocket diretto sia su quello del relay. Non devi aspettare che il
 dispositivo si riconnetta per tagliarlo fuori.
 
-La chiave non viaggia mai in un URL che un host statico possa vedere. Quando
-arriva tramite link — sul telefono o in un browser — viaggia nel **frammento
-dell'URL**, la parte dopo `#`, che il browser non invia mai al server che ospita
-la pagina. Questa è l'invariante da ricordare, e vale per entrambi. Il client web
-ha altri due punti di ingresso: il modulo di connessione, dove incolli
-direttamente server e chiave, e un codice di invito, che riscatta con una
-credenziale emessa solo per quel browser.
+Quando la chiave arriva tramite link — sul telefono o in un browser — viaggia nel
+**frammento dell'URL**, la parte dopo `#` che i browser non inviano nella
+richiesta all'host della pagina. Il JavaScript della pagina può comunque leggerlo,
+quindi fidati di quell'host e mantieni il link segreto. Il client web ha anche un
+modulo di connessione, dove incolli direttamente server e chiave, e un codice di
+invito, che riscatta con una credenziale emessa solo per quel browser.
 
 ## Concetti correlati
 

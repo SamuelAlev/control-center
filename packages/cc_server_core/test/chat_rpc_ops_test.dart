@@ -16,7 +16,7 @@ import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_provider_plugin.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
 import 'package:cc_server_core/src/chat/slack_chat_provider_plugin.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// The chat ops' contract with the client.
@@ -403,10 +403,9 @@ void main() {
         'profile': {'appName': 'Ops bot', 'command': '/OPS'},
       });
 
-      final manifest =
-          Uri.parse(
-            result['url']! as String,
-          ).queryParameters['manifest_json']!;
+      final manifest = Uri.parse(
+        result['url']! as String,
+      ).queryParameters['manifest_json']!;
       expect(manifest, contains('Ops bot'));
       // Normalized on the way through, exactly as the token path normalizes it,
       // so the two setup routes cannot produce differently-named commands.
@@ -464,12 +463,26 @@ void main() {
   });
 }
 
+/// A client nothing here dials: the ops only read a plugin's descriptor and its
+/// setup-link rules, so refusing to serve keeps an accidental request loud.
+class _NullHttpClient implements RhttpClient {
+  const _NullHttpClient();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// Records what each op forwarded, so the tests assert the handler's contract
 /// rather than a provider's behaviour (that is covered against the API client).
 class _FakeConnector implements ChatConnector {
   _FakeConnector({List<ChatProviderPlugin>? plugins})
     : registry = ChatProviderRegistry(
-        plugins ?? [SlackChatProviderPlugin(dioFactory: Dio.new)],
+        plugins ??
+            [
+              SlackChatProviderPlugin(
+                httpClientFactory: () => const _NullHttpClient(),
+              ),
+            ],
       );
 
   final List<Map<String, String>> connected = [];

@@ -9,10 +9,11 @@ import 'package:cc_rpc/cc_rpc.dart'
     show RemoteRpcClient, RemoteRpcClientClosedException;
 import 'package:cc_ui/cc_ui.dart' show CcToastScope, CcToastVariant;
 import 'package:control_center/app/app_windows.dart'
-    show AppWindows, runBootFailureWindow;
+    show AppWindows, runBootFailureWindow, runServerSetupWindow;
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_visibility_guard.dart';
+import 'package:control_center/bootstrap/desktop_boot_app.dart';
 import 'package:control_center/bootstrap/server_backend.dart';
 import 'package:control_center/core/deep_link/deep_link_handler.dart';
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
@@ -31,7 +32,7 @@ import 'package:control_center/core/providers/server_switch_provider.dart';
 import 'package:control_center/core/providers/shutdown_progress_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
-import 'package:control_center/core/server/server_entry_factory.dart';
+import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/core/storage/app_support_path_provider.dart';
 import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
@@ -107,11 +108,8 @@ Future<void> bootstrapAndRun() async {
   try {
     await _prepareDesktop();
   } on Object catch (error, stack) {
-    // Everything above happens while the app owns NO window, so a throw here
-    // reaches nobody: `PlatformDispatcher.onError` logs it to a terminal the
-    // operator may not be watching, the engine keeps its run loop alive, and
-    // the app becomes a running process with nothing on screen. Put the
-    // failure in a window instead — it is the only surface left.
+    // Startup can fail before the first window or while the localized boot
+    // surface is visible. Replace either state with an actionable error.
     AppLog.e('main', 'desktop bootstrap failed: $error', error, stack);
     // The bootstrap may have got far enough to start polling window geometry.
     // Nothing about an error window is worth remembering, and it has no reason
@@ -123,29 +121,12 @@ Future<void> bootstrapAndRun() async {
   await runAppWithSentry(() => const _DesktopAppHost());
 }
 
-/// Everything the desktop must do BEFORE it can render: storage, window
-/// chrome, and the connection to the `cc_server` that owns all state.
+/// Paints a dependency-light boot surface, then prepares the authenticated app.
 ///
 /// Separated from [bootstrapAndRun] so a failure in here is distinguishable
 /// from one thrown after the app tree is mounted — only the former may replace
 /// the app with the boot-failure window.
 Future<void> _prepareDesktop() async {
-  // Load the libmpv-backed player (media_kit) before any Player is created —
-  // every playback surface (soundscape, meeting audio, rig listen,
-  // notification sounds) depends on it. Linux takes libmpv from the system and
-  // a stock desktop has none, so there the app starts without playback rather
-  // than not at all. macOS and Windows bundle it: a failure there is a broken
-  // build and still stops the boot.
-  try {
-    MediaKit.ensureInitialized();
-  } on Object catch (error) {
-    if (!Platform.isLinux) {
-      rethrow;
-    }
-    _mediaPlaybackAvailable = false;
-    AppLog.w('main', 'media playback disabled, no libmpv: $error');
-  }
-
   // Cap the engine image cache well below Flutter's default (~100MB / 1000
   // images). The desktop shows mostly small avatars and feed thumbnails
   // (already downscaled via ResizeImage); decoded bitmaps stay resident
@@ -154,50 +135,15 @@ Future<void> _prepareDesktop() async {
     ..maximumSize = 400
     ..maximumSizeBytes = 32 << 20;
 
-  // Route the client-resident packages' log seams (cc_infra device adapters /
-  // dio clients + cc_domain) into AppLog before anything else starts. The
-  // connected `cc_server` installs its own logging for the server packages.
+  // Route client-resident infrastructure and domain log seams into AppLog.
+  // The connected server installs its own logging for server packages.
   installCcInfraLogging();
   installCcDomainLogging();
-
-  // Pre-warm the shiki highlighter (CC themes + the hottest grammars) so the
-  // first visible code block doesn't pay the one-time grammar compile.
-  // Registration itself is lazy — this only warms.
-  initializeShikiHighlighting();
 
   // The focus pill and meeting-recording toolbar are sibling windows in this
   // same isolate (Flutter native multi-window) — there is no separate sub-window
   // engine to dispatch to. They are declared in `AppWindows` and styled in the
   // `setWillShowHook` below.
-
-  // Captures the real Application Support directory — the root every app path
-  // derives from. Must run before any code that reads app paths.
-  await AppSupportPathProvider.install();
-
-  // The engine's ImageCache above is memory-only and dies with the process, and
-  // `NetworkImage` on dart:io has no HTTP disk cache at all — so a desktop
-  // paired to a REMOTE server re-downloaded every avatar, favicon and feed
-  // thumbnail on each launch. (On loopback the server's own MediaCache already
-  // covers it; on web the browser's HTTP cache does.) Installed here, right
-  // after the app-support root resolves and before any surface can paint.
-  //
-  // A sweep on boot rather than on first write: it is what adopts the
-  // running-total the write path then maintains, and it is when dropping a
-  // month of expired entries is free.
-  final mediaCache = MediaDiskCache(
-    root: Directory(
-      '${AppSupportPathProvider.realAppSupportDir.path}'
-      '${Platform.pathSeparator}media-cache',
-    ),
-  );
-  installMediaDiskCache(mediaCache);
-  unawaited(mediaCache.sweep());
-
-  // macOS delivers notifications via the native UNUserNotificationCenter channel
-  // (see MacOsNotifier.swift); local_notifier is the Windows/Linux path.
-  if (!Platform.isMacOS) {
-    await localNotifier.setup(appName: 'Control Center');
-  }
 
   FlutterError.onError = (details) {
     // Recover from a known Flutter macOS bug where the engine misses a KeyUp
@@ -279,8 +225,6 @@ Future<void> _prepareDesktop() async {
   };
 
   final prefs = AppPreferences(desktopPrefsBackend);
-  await removeLegacyCalendarSnapshots(prefs);
-  final secureStore = SecureStore.keychain();
 
   // Multi-window chrome: nativeapi observes and controls the windows that
   // Flutter's windowing layer creates (see `AppWindows`). Style each window the
@@ -340,6 +284,64 @@ Future<void> _prepareDesktop() async {
     persist: (snapshot) => persistWindowSnapshot(prefs, snapshot),
   )..start();
 
+  // This reuses the pre-app setup window, so first-run setup replaces only its
+  // contents. No authenticated providers or cached workspace data are mounted.
+  runServerSetupWindow(const DesktopBootApp());
+  // The native runner begins headless and may still report `hidden`. Force the
+  // first frame rather than waiting for a vsync that disabled frames suppress.
+  WidgetsBinding.instance.scheduleForcedFrame();
+  await WidgetsBinding.instance.endOfFrame;
+
+  // Load the libmpv-backed player (media_kit) before any Player is created —
+  // every playback surface (soundscape, meeting audio, rig listen,
+  // notification sounds) depends on it. Linux takes libmpv from the system and
+  // a stock desktop has none, so there the app starts without playback rather
+  // than not at all. macOS and Windows bundle it: a failure there is a broken
+  // build and still stops the boot.
+  try {
+    MediaKit.ensureInitialized();
+  } on Object catch (error) {
+    if (!Platform.isLinux) {
+      rethrow;
+    }
+    _mediaPlaybackAvailable = false;
+    AppLog.w('main', 'media playback disabled, no libmpv: $error');
+  }
+
+  // Pre-warm the shiki highlighter (CC themes + the hottest grammars) so the
+  // first visible code block doesn't pay the one-time grammar compile.
+  // Registration itself is lazy — this only warms.
+  initializeShikiHighlighting();
+  // Captures the real Application Support directory — the root every app path
+  // derives from. Must run before any code that reads app paths.
+  await AppSupportPathProvider.install();
+
+  // The engine's ImageCache above is memory-only and dies with the process, and
+  // `NetworkImage` on dart:io has no HTTP disk cache at all — so a desktop
+  // paired to a REMOTE server re-downloaded every avatar, favicon and feed
+  // thumbnail on each launch. (On loopback the server's own MediaCache already
+  // covers it; on web the browser's HTTP cache does.) Installed here, right
+  // after the app-support root resolves and before any surface can paint.
+  //
+  // A sweep on boot rather than on first write: it is what adopts the
+  // running-total the write path then maintains, and it is when dropping a
+  // month of expired entries is free.
+  final mediaCache = MediaDiskCache(
+    root: Directory(
+      '${AppSupportPathProvider.realAppSupportDir.path}'
+      '${Platform.pathSeparator}media-cache',
+    ),
+  );
+  installMediaDiskCache(mediaCache);
+  unawaited(mediaCache.sweep());
+
+  // macOS delivers notifications via the native UNUserNotificationCenter channel
+  // (see MacOsNotifier.swift); local_notifier is the Windows/Linux path.
+  if (!Platform.isMacOS) {
+    await localNotifier.setup(appName: 'Control Center');
+  }
+  await removeLegacyCalendarSnapshots(prefs);
+  final secureStore = SecureStore.keychain();
   // Thin-client flip: the desktop opens NO database. It connects to a
   // `cc_server` that owns the data over loopback/WSS RPC — the same path the web
   // build uses. The user's persisted choice decides which server:
@@ -356,11 +358,17 @@ Future<void> _prepareDesktop() async {
     secureStore: secureStore,
   );
 
-  final session = await DesktopBackendSession.build(
-    backend: backend,
-    prefs: prefs,
-    secureStore: secureStore,
-  );
+  final DesktopBackendSession session;
+  try {
+    session = await DesktopBackendSession.build(
+      backend: backend,
+      prefs: prefs,
+      secureStore: secureStore,
+    );
+  } on Object {
+    await backend.dispose();
+    rethrow;
+  }
   DesktopServerSwitcher.instance._adopt(session, prefs, secureStore);
 
   // Tear the spawned server down on a clean app exit so it does not orphan and
@@ -446,54 +454,59 @@ class DesktopBackendSession {
       ],
     );
 
-    // Initialise the app-wide logger from persisted preferences.
-    container.read(appLogLevelProvider);
+    try {
+      // Initialise the app-wide logger from persisted preferences.
+      container.read(appLogLevelProvider);
 
-    // Bind the RPC session to the active workspace BEFORE the UI subscribes to
-    // any workspace-scoped op and re-bind on every workspace switch. The
-    // thin-client desktop opens no database, so (like `bootstrap_web`) the
-    // workspace set comes from the connected `cc_server`: without this the
-    // server session stays unbound and every workspace-scoped query fails with
-    // "No workspace bound to this session" / "Missing workspace_id".
-    await _bindActiveWorkspace(container, backend.client);
+      // Bind the RPC session to the active workspace BEFORE the UI subscribes to
+      // any workspace-scoped op and re-bind on every workspace switch. The
+      // thin-client desktop opens no database, so (like `bootstrap_web`) the
+      // workspace set comes from the connected `cc_server`: without this the
+      // server session stays unbound and every workspace-scoped query fails with
+      // "No workspace bound to this session" / "Missing workspace_id".
+      await _bindActiveWorkspace(container, backend.client);
 
-    // Pre-load any system fonts selected by the user so they are available
-    // to Flutter's text engine before the first frame renders.
-    final fontNotifier = container.read(fontSettingsProvider.notifier);
-    final fontSettings = container.read(fontSettingsProvider);
-    if (fontSettings.appFontSelection.source == FontSource.system) {
-      await fontNotifier.loadSystemFont(fontSettings.appFontSelection);
+      // Pre-load any system fonts selected by the user so they are available
+      // to Flutter's text engine before the first frame renders.
+      final fontNotifier = container.read(fontSettingsProvider.notifier);
+      final fontSettings = container.read(fontSettingsProvider);
+      if (fontSettings.appFontSelection.source == FontSource.system) {
+        await fontNotifier.loadSystemFont(fontSettings.appFontSelection);
+      }
+      if (fontSettings.codeFontSelection.source == FontSource.system) {
+        await fontNotifier.loadSystemFont(fontSettings.codeFontSelection);
+      }
+
+      final session = DesktopBackendSession._(backend, container);
+
+      // OS notifications: maps the connected server's pushed `notifications/*`
+      // frames (RemoteEventForwarder) to AppNotifications. Retained for the
+      // session's lifetime via the RPC subscription created in its constructor.
+      session._notificationMapper = RpcNotificationMapper(
+        client: backend.client,
+        notificationPort: container.read(notificationServiceProvider),
+        localizations: () => lookupAppLocalizations(
+          container.read(localeProvider) ?? PlatformDispatcher.instance.locale,
+        ),
+        activeWorkspaceId: () => container.read(activeWorkspaceIdProvider),
+        // Read lazily (like `activeWorkspaceId`) so the mapper always sees the
+        // freshest identity even though it may still be loading at construction
+        // time (`currentUserIdProvider` is null until `identity.me` resolves).
+        currentUserId: () => container.read(currentUserIdProvider),
+        // Read lazily for the same reason: a mute toggled in Settings must take
+        // effect on the next frame, not on the next launch.
+        mutedRepos: () =>
+            container.read(mutedReposProvider).asData?.value ?? const {},
+        // Read lazily for the same reason again: the forge connections resolve
+        // over RPC after construction, and connecting one mid-session must start
+        // suppressing that account's own actions on the next frame.
+        viewerLogins: () => container.read(viewerLoginSetProvider),
+      );
+      return session;
+    } on Object {
+      container.dispose();
+      rethrow;
     }
-    if (fontSettings.codeFontSelection.source == FontSource.system) {
-      await fontNotifier.loadSystemFont(fontSettings.codeFontSelection);
-    }
-
-    final session = DesktopBackendSession._(backend, container);
-
-    // OS notifications: maps the connected server's pushed `notifications/*`
-    // frames (RemoteEventForwarder) to AppNotifications. Retained for the
-    // session's lifetime via the RPC subscription created in its constructor.
-    session._notificationMapper = RpcNotificationMapper(
-      client: backend.client,
-      notificationPort: container.read(notificationServiceProvider),
-      localizations: () => lookupAppLocalizations(
-        container.read(localeProvider) ?? PlatformDispatcher.instance.locale,
-      ),
-      activeWorkspaceId: () => container.read(activeWorkspaceIdProvider),
-      // Read lazily (like `activeWorkspaceId`) so the mapper always sees the
-      // freshest identity even though it may still be loading at construction
-      // time (`currentUserIdProvider` is null until `identity.me` resolves).
-      currentUserId: () => container.read(currentUserIdProvider),
-      // Read lazily for the same reason: a mute toggled in Settings must take
-      // effect on the next frame, not on the next launch.
-      mutedRepos: () =>
-          container.read(mutedReposProvider).asData?.value ?? const {},
-      // Read lazily for the same reason again: the forge connections resolve
-      // over RPC after construction, and connecting one mid-session must start
-      // suppressing that account's own actions on the next frame.
-      viewerLogins: () => container.read(viewerLoginSetProvider),
-    );
-    return session;
   }
 
   // Held for the session's lifetime (subscription created in its ctor).
@@ -538,15 +551,8 @@ class DesktopServerSwitcher {
   /// Bumped on every adopted session; the host listens and remounts.
   ValueListenable<int> get generation => _generation;
 
-  /// Adopts an SSO login bounce-back (`control-center://pair#<b64url
-  /// {s: origin, i: deviceId, k: psk}>` — the same payload shape the web
-  /// client's URL fragment carries): probes the server for its published
-  /// identity, persists the entry + credential and live-switches to it.
-  ///
-  /// The link arrives from the server's ACS bounce page after a browser SSO
-  /// round-trip; the credential inside is one-time-use-shaped (a freshly
-  /// minted device PSK), so leaking the link leaks nothing beyond that
-  /// device's own session.
+  /// Adopts only an expected, client-held decrypted SSO handoff. The browser
+  /// deep link contains ciphertext, never the minted device credential.
   Future<void> adoptPairLink(String rawUrl) async {
     final prefs = _prefs;
     final secure = _secure;
@@ -560,41 +566,28 @@ class DesktopServerSwitcher {
       pendingSsoPairLink.value = rawUrl;
       return;
     }
-    final payload = decodeSsoPairLink(rawUrl);
+    if (isIdpInitiatedSsoPairLink(rawUrl)) {
+      // A valid IdP-initiated credential is still unbidden to this running
+      // session. The setup window asks for explicit server approval.
+      pendingSsoPairLink.value = rawUrl;
+      unawaited(returnToSetup());
+      return;
+    }
+    final payload = await decodeSsoPairLink(rawUrl);
     if (payload == null) {
-      AppLog.w('deep-link', 'pair link fragment is malformed');
+      AppLog.w('deep-link', 'ignoring invalid or unbidden SSO handoff');
       return;
     }
-    // Only an EXPECTED bounce is auto-adopted: a pair link arriving with no
-    // SSO round-trip in flight was not started by this app — anyone can
-    // forge a `control-center://pair` link and adopting one would silently
-    // re-home the session to an impostor server (one-click MITM). Refuse it
-    // loudly in the log; the user can still pair manually.
-    if (!isSsoLoginInFlight()) {
-      AppLog.w(
-        'deep-link',
-        'ignoring unbidden pair link (no SSO round-trip in flight): '
-            '${payload.server}',
-      );
-      return;
-    }
-    ssoLoginStartedAt.value = null; // Consumed by this bounce.
-    final entry = await ServerEntryFactory.fromManualUrl(
+    final store = ServerConnectionStore(prefs, secure);
+    final connection = await pairWithServer(
+      store: store,
       rawUrl: payload.server,
+      platform: 'desktop',
       deviceId: payload.deviceId,
+      psk: payload.psk,
     );
-    if (entry == null) {
-      AppLog.w(
-        'deep-link',
-        'pair link server did not answer /healthz: ${payload.server}',
-      );
-      return;
-    }
-    await ServerConnectionStore(
-      prefs,
-      secure,
-    ).upsertEntry(entry, psk: payload.psk);
-    await switchTo(entry.serverId);
+    await connection.dispose();
+    await switchTo(connection.entry.serverId);
   }
 
   void _adopt(

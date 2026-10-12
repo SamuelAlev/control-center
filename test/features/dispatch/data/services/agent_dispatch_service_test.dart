@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_registry.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
@@ -91,6 +92,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   DispatchHandle start({
     required String cliName,
     required String prompt,
+    AgentPromptParts? promptParts,
+    DateTime? runStartedAt,
     required String workingDirectory,
     String? userText,
     String? modelId,
@@ -205,6 +208,7 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
 
   final Map<String, AgentRunLog> _logs = {};
   final List<AgentRunLog> upserted = [];
+  Future<void> Function()? beforeTerminal;
 
   @override
   Future<AgentRunLog?> getById(String workspaceId, String id) async =>
@@ -214,6 +218,114 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
   Future<void> upsert(AgentRunLog log) async {
     _logs[log.id] = log;
     upserted.add(log);
+  }
+
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) async {
+    await beforeTerminal?.call();
+    final existing = _logs[completed.id];
+    if (existing == null ||
+        existing.completedAt != null ||
+        existing.workspaceId != completed.workspaceId) {
+      return false;
+    }
+    final updated = existing.copyWith(
+      completedAt: completed.completedAt,
+      status: completed.status,
+      summary: completed.summary,
+      cost: writeCost
+          ? completed.cost
+          : existing.cost.copyWith(durationMs: completed.cost.durationMs),
+      liveness: completed.liveness,
+      verification: completed.verification,
+      latency: completed.latency,
+      nativeSessionId: completed.nativeSessionId,
+      resumedNativeSession: completed.resumedNativeSession,
+    );
+    await upsert(updated);
+    return true;
+  }
+
+  @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async {
+    final current = _logs[runId];
+    if (current == null || current.workspaceId != workspaceId) {
+      return false;
+    }
+    final start =
+        markRunning &&
+        current.completedAt == null &&
+        current.status == RunStatus.pending;
+    final hasMetadata =
+        pid != null ||
+        logPath != null ||
+        contextSnapshotJson != null ||
+        lastOutputAt != null ||
+        liveness != null ||
+        errorFamily != null ||
+        summary != null ||
+        modelId != null ||
+        effort != null ||
+        taskFamily != null;
+    if (!start && !hasMetadata) {
+      return false;
+    }
+    await upsert(
+      current.copyWith(
+        pid: pid,
+        status: start ? RunStatus.running : null,
+        logPath: logPath,
+        contextSnapshotJson: contextSnapshotJson,
+        lastOutputAt: lastOutputAt,
+        liveness: liveness,
+        errorFamily: errorFamily,
+        summary: summary,
+        modelId: modelId,
+        effort: effort,
+        taskFamily: taskFamily,
+      ),
+    );
+    return true;
+  }
+
+  @override
+  Future<void> addChildCostMicros(
+    String workspaceId,
+    String runId,
+    int amountMicros,
+  ) async {
+    final current = _logs[runId];
+    if (current == null || current.workspaceId != workspaceId) {
+      return;
+    }
+    final micros =
+        (current.childCostMicros != 0
+            ? current.childCostMicros
+            : current.childCostCents * 10000) +
+        amountMicros;
+    await upsert(
+      current.copyWith(
+        childCostMicros: micros,
+        childCostCents: (micros / 10000).round(),
+      ),
+    );
   }
 
   @override
@@ -344,8 +456,20 @@ class _FakeRepoProvisioner implements RepoWorkspaceProvisionerPort {
   Future<int> sweepStale({required String workspaceId}) async => 0;
 }
 
+const _testPromptParts = AgentPromptParts(
+  userText: 'test prompt',
+  standing: '',
+  turnContext: '',
+  conversationContext: '',
+  fullPrompt: 'test prompt',
+  standingRevision: '',
+  conversationEntries: [],
+  turnSections: [],
+);
+
 PreparedDispatch _cannedDispatch() => const PreparedDispatch(
   effectivePrompt: 'test prompt',
+  promptParts: _testPromptParts,
   effectiveConversationId: null,
   agent: null,
   mode: Mode.chat,
@@ -790,6 +914,7 @@ void main() {
         dispatchUseCase = _FakeDispatchUseCase(
           PreparedDispatch(
             effectivePrompt: 'test prompt',
+            promptParts: _testPromptParts,
             effectiveConversationId: null,
             agent: agent,
             mode: Mode.chat,
@@ -940,6 +1065,29 @@ void main() {
         final completed = runLogRepo.upserted.last;
         expect(completed.status, RunStatus.completed);
         expect(completed.completedAt, isNotNull);
+      },
+    );
+
+    test(
+      'completeRun preserves child cost added after its initial read',
+      () async {
+        final service = createService();
+        final original = _pendingRunLog();
+        await runLogRepo.upsert(original);
+        runLogRepo.beforeTerminal = () async {
+          await runLogRepo.addChildCostMicros(_workspaceId, original.id, 1250);
+        };
+
+        await service.completeRun(
+          original,
+          'done',
+          cost: const RunCost(inputTokens: 5, costMicros: 230),
+        );
+
+        final persisted = runLogRepo._logs[original.id]!;
+        expect(persisted.status, RunStatus.completed);
+        expect(persisted.childCostMicros, 1250);
+        expect(persisted.cost.inputTokens, 5);
       },
     );
 

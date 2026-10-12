@@ -38,12 +38,14 @@ class RemoteRelayHost {
     required this.devicesDao,
     required this.secrets,
     required this.eventBus,
+    this.sessionPolicy,
     required this.workspaceResolver,
     this.repoOps,
     this.watchQueries,
     this.workspaceExists,
     this.resolveRole,
     this.toolIsMutating,
+    this.attachResources,
     RemoteRateLimiterPool? rateLimiters,
     RelayOwnerJoin? ownerJoin,
   }) : rateLimiters = rateLimiters ?? RemoteRateLimiterPool(),
@@ -79,6 +81,10 @@ class RemoteRelayHost {
   /// Per-device PSK secure store.
   final PairedDeviceSecretsPort secrets;
 
+  /// Install-wide session expiry bounds, re-read during secure admission.
+  final Future<({int maxAgeMinutes, int idleTimeoutMinutes})> Function()?
+  sessionPolicy;
+
   /// Domain event bus for push.
   final DomainEventBus eventBus;
 
@@ -106,6 +112,15 @@ class RemoteRelayHost {
 
   /// Reactive watch-query registry (`sub/subscribe`).
   final WatchQueryRegistry? watchQueries;
+
+  /// Binds byte streams to this same authenticated session, including relay.
+  final void Function(
+    SecureRpcChannel channel,
+    String deviceId,
+    String userId,
+    DateTime? expiresAt,
+  )?
+  attachResources;
 
   /// Per-user shared rate limiters (one budget across a user's sessions,
   /// shared with the direct-WSS path when the runtime passes one pool).
@@ -302,7 +317,7 @@ class RemoteRelayHost {
         // Frames racing ahead of the transport's construction are buffered
         // per peer and replayed once the PSK is resolved.
         final pending = _peers[from];
-        if (pending != null && pending.session == null) {
+        if (pending != null && pending.transport == null) {
           final payload = frame['payload'];
           if (payload is Map && pending.buffer.length < 64) {
             pending.buffer.add(payload.cast<String, dynamic>());
@@ -347,7 +362,6 @@ class RemoteRelayHost {
     final transport = RelayRemoteTransport(
       signaling: signaling,
       peer: peerId,
-      psk: psk,
       replay: List.of(pending.buffer),
     );
     pending.buffer.clear();
@@ -357,12 +371,16 @@ class RemoteRelayHost {
       transport,
       devicesDao: devicesDao,
       secrets: secrets,
+      sessionPolicy: sessionPolicy,
       identity: identity,
       warn: _w,
     );
-    if (auth == null || auth.row.id != deviceId) {
-      // Fail closed — the peer could not prove the PSK it claimed.
-      await transport.close();
+    if (auth == null ||
+        auth.row.id != deviceId ||
+        _stopped ||
+        !identical(_peers[peerId], pending) ||
+        !auth.channel.isOpen) {
+      await (auth?.channel ?? transport).close();
       if (identical(_peers[peerId], pending)) {
         _peers.remove(peerId);
       }
@@ -371,16 +389,28 @@ class RemoteRelayHost {
     final userId = auth.row.userId;
     if (userId == null || userId.isEmpty) {
       _w('Rejecting relay session for ${auth.row.id} — no bound user');
-      await transport.close();
+      await auth.channel.close();
       if (identical(_peers[peerId], pending)) {
         _peers.remove(peerId);
       }
       return;
     }
+    try {
+      attachResources?.call(
+        auth.channel,
+        auth.row.id,
+        userId,
+        auth.row.expiresAt,
+      );
+    } catch (_) {
+      await auth.channel.close();
+      await _endPeer(pending);
+      return;
+    }
     final rpc = RemoteRpcSession(
       deviceId: auth.row.id,
       userId: userId,
-      space: transport,
+      space: auth.channel,
       dispatcher: dispatcher,
       workspaceResolver: workspaceResolver,
       workspaceExists: workspaceExists,
@@ -394,7 +424,7 @@ class RemoteRelayHost {
     final roleResolver = resolveRole;
     final forwarder = RemoteEventForwarder(
       eventBus: eventBus,
-      space: transport,
+      space: auth.channel,
       deviceId: auth.row.id,
       userId: userId,
       isMember: roleResolver == null
@@ -403,7 +433,7 @@ class RemoteRelayHost {
                 await roleResolver(workspaceId, userId) != null,
     );
     pending.session = _LiveSession(
-      transport: transport,
+      transport: auth.channel,
       rpc: rpc,
       forwarder: forwarder,
     );
@@ -411,11 +441,11 @@ class RemoteRelayHost {
     forwarder.start();
     await devicesDao.markSeen(auth.row.id, DateTime.now());
     try {
-      await transport.send(const {'type': 'approved'});
+      await auth.channel.send(const {'type': 'approved'});
     } catch (_) {
       // Best effort.
     }
-    pending.session!.stateSub = transport.state.listen((s) {
+    pending.session!.stateSub = auth.channel.state.listen((s) {
       if (s == RemoteChannelState.closed) {
         unawaited(_endPeer(pending));
       }
@@ -523,7 +553,7 @@ class _LiveSession {
     required this.forwarder,
   });
 
-  final RelayRemoteTransport transport;
+  final SecureRpcChannel transport;
   final RemoteRpcSession rpc;
   final RemoteEventForwarder forwarder;
   StreamSubscription<RemoteChannelState>? stateSub;

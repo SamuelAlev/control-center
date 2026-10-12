@@ -224,6 +224,9 @@ class _ArticleGridState extends ConsumerState<ArticleGrid> {
       controller: _scrollController,
       child: CustomScrollView(
         controller: _scrollController,
+        // Build only nearby tiles so their tiny previews are ready before
+        // scrolling. ProxiedImage keeps full-size loads behind first paint.
+        scrollCacheExtent: const ScrollCacheExtent.viewport(1),
         slivers: [
           if (layout == NewsfeedLayout.grid)
             _gridSliver(context, articles, feedsById)

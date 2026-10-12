@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_connection.dart';
 import 'package:cc_infra/cc_infra.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:test/test.dart';
 
 /// [SlackSocketModeClient]: the envelope protocol and the reconnect policy.
@@ -189,17 +188,21 @@ void main() {
 
   test('a transient open failure keeps retrying', () async {
     var opens = 0;
-    final dio = Dio()
-      ..httpClientAdapter = _ScriptedAdapter(() {
+    final httpClient = TestHttpClient(
+      handler: (request) {
         opens++;
-        return opens == 1
-            ? {'ok': false, 'error': 'ratelimited'}
-            : {'ok': true, 'url': 'wss://slack.test/ws'};
-      });
+        return httpTextResponse(
+          request,
+          opens == 1
+              ? {'ok': false, 'error': 'ratelimited'}
+              : {'ok': true, 'url': 'wss://slack.test/ws'},
+        );
+      },
+    );
     final client = SlackSocketModeClient(
       workspaceId: 'ws-1',
       appToken: 'xapp-1',
-      api: SlackApiClient(dio: dio, botToken: 'xoxb-1'),
+      api: SlackApiClient(httpClient: httpClient, botToken: 'xoxb-1'),
       onEnvelope: (_) async {},
       connector: (url) async => _FakeSocket(url: url),
     );
@@ -313,39 +316,18 @@ SlackSocketModeClient _client(
 );
 
 SlackApiClient _api({String? error}) => SlackApiClient(
-  dio: Dio()
-    ..httpClientAdapter = _ScriptedAdapter(
-      () => error != null
+  httpClient: TestHttpClient(
+    handler: (request) => httpTextResponse(
+      request,
+      error != null
           ? {'ok': false, 'error': error}
           : {'ok': true, 'url': 'wss://slack.test/ws?ticket=${_ticket++}'},
     ),
+  ),
   botToken: 'xoxb-1',
 );
 
 int _ticket = 0;
-
-/// Answers every Slack call from one closure, so a test can flip the reply.
-class _ScriptedAdapter implements HttpClientAdapter {
-  _ScriptedAdapter(this.body);
-
-  final Map<String, dynamic> Function() body;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => ResponseBody.fromString(
-    jsonEncode(body()),
-    200,
-    headers: const {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    },
-  );
-
-  @override
-  void close({bool force = false}) {}
-}
 
 /// An in-memory Socket Mode socket: tests push frames down and read acks back
 /// without standing up a TLS WebSocket server.

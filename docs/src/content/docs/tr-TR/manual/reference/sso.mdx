@@ -2,7 +2,7 @@
 title: SSO yapılandırması referansı
 description: Tek oturum açmanın her ayarı, uç noktası, işlemi ve hata kodu.
 slug: tr-TR/kilavuz/referans/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Tek oturum açmayla ilgili yapılandırılabilir her şey tek bir yerde. Değerler
@@ -23,7 +23,7 @@ ayarlar ekranının çelişebileceği bir bağlantıdır).
 | `displayNameAttribute` | SAML           | `displayName`   | görünen ad özniteliği                                                                                                                                 |
 | `groupsAttribute`      | SAML           | `groups`        | grup adları özniteliği                                                                                                                                |
 | `clockSkewSeconds`     | SAML           | 90              | yaşam süresi doğrulaması için saat kayması payı                                                                                                       |
-| `allowIdpInitiated`    | SAML           | kapalı          | istem dışı Response'ları kabul et (`InResponseTo` yok)                                                                                                |
+| `allowIdpInitiated`    | SAML           | kapalı          | geçerli istem dışı Response'ları kabul et (`InResponseTo` yok); tarayıcı, alıcıya yönelik mühürlenmiş kimlik bilgisini almadan önce kısa ömürlü bir hak talebinde bulunmalıdır |
 | `wantResponseSigned`   | SAML           | kapalı          | Response kökünde imza zorunlu kıl (assertion imzaları her zaman zorunludur)                                                                           |
 | `issuer`               | OIDC           | —               | issuer temel URL'si (etkinleştirmek için gerekli)                                                                                                     |
 | `clientId`             | OIDC           | —               | herkese açık istemci kimliği (etkinleştirmek için gerekli)                                                                                            |
@@ -36,28 +36,60 @@ ayarlar ekranının çelişebileceği bir bağlantıdır).
 
 ## Süreç yapılandırması
 
-SSO bağlantıları ortamdan beslenmez. Geriye kalan tek süreç bayrağı, bağlantı
-satırıyla değil **tarayıcı devri** ile ilgilidir:
+SSO bağlantıları ortamdan beslenmez. Geriye kalan tek süreç bayrağı, bir SSO geri
+çağırmasından sonra tarayıcının web istemcisini nerede açacağını seçer:
 
 | Değişken / bayrak                               | Anlamı                                                                                                                        |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | SSO geri çağırmalarının tarayıcıyı yönlendirdiği origin (kimlik bilgisi URL fragment'ında taşınır). Ayarlanmazsa devir aynı origin'de kalır. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | Mühürlenmiş kimlik bilgisi devri için web istemcisi URL'si; ayarlanmazsa devir aynı origin'de kalır (yalnızca web istemcisi orada sunuluyorsa yararlıdır). `web-popup` oturum açmalarında, başlatan sekmeden gelen izinli bir `client_origin` önceliklidir. |
 
 Issuer URL'sinin kendisi `https` olmalıdır (`http` yalnızca loopback
-issuer'ları `localhost`, `127.0.0.1` ve `::1` için kabul edilir).
+issuer'ları `localhost`, `127.0.0.1` ve `::1` için kabul edilir). IdP geri
+çağırması ve web istemcisi ana makinesi için güvenilir TLS kullanın: alıcı
+anahtarını üreten sayfa ve onun teslim ettiği JavaScript güven sınırının bir
+parçasıdır. HTTPS bu önyüklemeyi korur; eşleştirmeden sonra hem doğrudan hem
+aktarıcı üzerinden `/rpc` oturumları Noise şifrelemesi ve sabitlenmiş bir sunucu
+kimliği gerektirir.
 
 ## HTTP uç noktaları
 
 | Uç nokta                                         | Kimlik doğrulama    | Amaç                                                                                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | yok (yönlendirme)   | SP tarafından başlatılan oturum açmayı başlatır; `relay=desktop` uygulamaya devreder, `relay=web-popup` bekleyen bağlanma sekmesine postMessage gönderir (sekme kendi `client_origin` değerini bildirir; yalnızca origin izin listesi ona güveniyorsa dikkate alınır)              |
-| `POST /saml/acs`                                 | yok (IdP POST)      | assertion tüketicisi — doğrular, sağlar, üretir                                                                                                                                                                                                                                  |
+| `GET /saml/login?relay=…&handoff_key=…`                        | yok (yönlendirme)   | SP tarafından başlatılan oturum açmayı, istemcinin elindeki X25519 alıcı anahtarıyla başlatır; `relay=desktop` uygulamaya devreder, `relay=web-popup` bekleyen bağlanma sekmesine postMessage gönderir (`client_origin` değeri yalnızca origin izin listesi ona güveniyorsa dikkate alınır) |
+| `POST /saml/acs`                                 | yok (IdP POST)      | assertion'ı doğrular ve kullanıcıyı sağlar; SP tarafından başlatılan oturum açma, üretilen cihaz kimlik bilgisini başlatan alıcı anahtarına mühürler; izin verilen istem dışı SAML bunun yerine tarayıcıya bağlı bir hak üretir |
+| `POST /saml/claim`                               | aynı origin tarayıcı hakkı | tek kullanımlık istem dışı bir SAML hakkını çerezi ve yeni bir `handoff_key` ile kullanır; alıcı için mühürlenmiş kimlik bilgisi döndürür, asla düz metin bir eşleştirme anahtarı değil |
 | `GET /saml/metadata`                             | yok                 | SP `EntityDescriptor`'ımız                                                                                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | yok                 | OIDC gidiş-dönüşü; `relay=desktop` uygulamaya devreder, `relay=web-popup` bekleyen bağlanma sekmesine (aynı `client_origin` kuralı)                                                                                                                                               |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | yok                 | OIDC gidiş-dönüşü; oturum açma, istemcinin elindeki alıcı anahtarını gerektirir; `relay=desktop` uygulamaya devreder, `relay=web-popup` bekleyen bağlanma sekmesine (aynı `client_origin` kuralı) |
 | `GET /auth/providers`                            | yok, CORS `*`       | bağlanma ekranı yoklaması: sunulan SSO bağlantıları (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                                                                                      |
 | `/scim/v2/Users…`                                | Bearer (SCIM token'ı) | Users oluşturma/get/listeleme+filtreleme/PUT/PATCH/DELETE                                                                                                                                                                                                                      |
 | `/scim/v2/Groups`                                | Bearer              | salt okunur; grup push'u tasarım gereği 501 yanıtı verir                                                                                                                                                                                                                         |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | yetenek belgesi                                                                                                                                                                                                                                                                  |
+
+SP tarafından başlatılan SAML ve OIDC için oturum açma başlatma URL'si geçerli bir
+`handoff_key` gerektirir (başlatan istemcinin X25519 ortak anahtarı). Sunucu bu
+anahtarı bekleyen oturum açmayla birlikte saklar ve geri çağırmada üretilen cihaz
+kimlik bilgisini sunucu origin'ine bağlı geçici X25519, HKDF-SHA256 ve AES-256-GCM
+ile mühürler. Masaüstü devri `control-center://pair` kullanır, aynı sekmeden web
+devri bir URL fragment'ı kullanır ve `web-popup` verilmişse izinli `client_origin`
+adresine postMessage gönderir (verilmemişse yapılandırılmış web istemcisi URL'sine
+ya da geri çağırma origin'ine). O fragmentta ya da popup iletisinde düz metin bir
+eşleştirme anahtarı değil, mühürlenmiş zarf gider. Başlatan istemci, onu açmak için
+karşılık gelen özel anahtarı saklar. Bu zarf, eşleştirmeden sonra kurulan zorunlu
+Noise oturumundan ayrıdır.
+
+IdP tarafından başlatılan bir SAML Response'un (etkinleştirildiğinde) başlatan bir
+alıcısı yoktur. Bunun yerine ACS beş dakikalık, HttpOnly, SameSite=Strict bir
+tarayıcı çerezi ayarlar ve **Open web client** / **Open desktop app** seçeneğini
+sunar. O sayfa yeni bir alıcı anahtarı üretir ve ortak yarısını ve hak tutamacını
+aynı origin'den `POST /saml/claim` adresine gönderir. Claim, eşleşen çerezi ve
+origin'i gerektirir (bir CSRF sınırı), hakkı bir kez kullanır ve yalnızca alıcı
+için mühürlenmiş bir zarf döndürür. Sonraki web/masaüstü fragmentı, hedef istemcinin
+açabilmesi için o zarfı ve alıcının özel anahtar malzemesini taşır; **düz metin bir
+cihaz kimlik bilgisini değil**. Başka bir tarayıcı ya da süresi dolmuş bir hak onu
+kullanamaz. Hedef web istemcisi origin'i fragmenta erişebilir ve şifresini
+çözebilir; ele geçirilmiş bir geri çağırma sayfası ya da web istemcisi origin'i
+kimlik bilgilerini çalabilir. Şifreleme, güvenilmeyen biçimde sunulan kodu güvenli
+hâle getirmez.
 
 ## RPC işlemleri
 

@@ -1,0 +1,45 @@
+{
+  "id": "paired-default",
+  "seed": 20261011,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Pinned quality default (untouched)"
+    },
+    {
+      "id": "effort-low",
+      "axis": "effort_routing",
+      "effortLevel": "low",
+      "label": "Lower reasoning effort on the whole corpus"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 2
+    },
+    {
+      "stratum": "post_idle",
+      "repetitions": 1,
+      "idleMinutes": 30
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 32000,
+  "caveats": [
+    {
+      "code": "post_idle_is_an_estimate",
+      "message": "Provider cache expiry is not observable; the idle duration is an operator guess recorded here."
+    }
+  ],
+  "notes": "The canonical paired campaign: the quality default against a cheaper configuration, across cold, warm and post-idle cache strata. A cheaper arm can only be recommended when it is non-inferior on matched pairs AND no individual task regresses."
+}

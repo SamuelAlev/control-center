@@ -95,6 +95,7 @@ void showCommandPalette(
 ) {
   showCcDialog<void>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (dialogContext) {
       final ds = dialogContext.designSystem ?? DesignSystemTokens.light();
       final size = MediaQuery.sizeOf(dialogContext);
@@ -130,7 +131,6 @@ void showCommandPalette(
     },
   );
 }
-
 
 /// Moves the palette selection by [delta] rows (+1 down, -1 up).
 class _NavigateIntent extends Intent {
@@ -393,10 +393,7 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SearchHeader(
-              controller: _controller,
-              onSubmit: _executeSelected,
-            ),
+            _SearchHeader(controller: _controller, onSubmit: _executeSelected),
             const CcDivider(),
             ValueListenableBuilder<_PaletteView>(
               valueListenable: _view,
@@ -475,7 +472,6 @@ class _PaletteView {
   int get hashCode => Object.hash(query, selectedIndex);
 }
 
-
 class _PaletteEntry {
   const _PaletteEntry._({this.header, this.command, this.cmdIndex});
 
@@ -490,7 +486,6 @@ class _PaletteEntry {
 
   bool get isHeader => header != null;
 }
-
 
 class _SearchHeader extends StatelessWidget {
   const _SearchHeader({required this.controller, required this.onSubmit});
@@ -532,7 +527,6 @@ class _SearchHeader extends StatelessWidget {
   }
 }
 
-
 class _CategoryHeader extends StatelessWidget {
   const _CategoryHeader({required this.label});
 
@@ -566,7 +560,6 @@ class _CategoryHeader extends StatelessWidget {
     );
   }
 }
-
 
 class _CommandRow extends StatelessWidget {
   const _CommandRow({
@@ -604,16 +597,15 @@ class _CommandRow extends StatelessWidget {
             // identity. A full-bleed bar on a 64px row was the gray slab.
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: wash,
-              borderRadius: AppRadii.brSm,
-            ),
+            decoration: BoxDecoration(color: wash, borderRadius: AppRadii.brSm),
             child: Row(
               children: [
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: Center(child: _Leading(cmd: cmd, color: iconColor)),
+                  child: Center(
+                    child: _Leading(cmd: cmd, color: iconColor),
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
@@ -689,10 +681,7 @@ class _Leading extends StatelessWidget {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     return ClipOval(
       child: Image.network(
-        MediaProxyScope.urlOf(
-          context,
-          sizedGitHubAvatarUrl(url, 20, dpr),
-        ),
+        MediaProxyScope.urlOf(context, sizedGitHubAvatarUrl(url, 20, dpr)),
         width: 20,
         height: 20,
         cacheWidth: (20 * dpr).round(),
@@ -703,7 +692,6 @@ class _Leading extends StatelessWidget {
     );
   }
 }
-
 
 class _EmptyResults extends StatelessWidget {
   const _EmptyResults();
@@ -725,7 +713,6 @@ class _EmptyResults extends StatelessWidget {
     );
   }
 }
-
 
 class _HighlightedText extends StatelessWidget {
   const _HighlightedText({

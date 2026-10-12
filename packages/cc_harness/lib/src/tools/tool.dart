@@ -193,6 +193,15 @@ abstract class HarnessTool {
   /// defeats the point of asking for parallel subagents.
   bool get parallelSafe => approvalTier == ToolApprovalTier.read && !selfGuards;
 
+  /// Explicit opt-in for execution after a complete tool-use block arrives,
+  /// while the provider is still generating the rest of its response.
+  ///
+  /// Only bounded, read-only operations with no external side effects may
+  /// opt in. The loop still requires read tier, no effect classes, no
+  /// self-guard, parallel safety and an uninterrupted prefix of safe calls.
+  /// Merely being parallel-safe (for example a subagent) is not sufficient.
+  bool get speculativeReadSafe => false;
+
   /// The unified-guardrail effect classes this tool can produce (PRD 24 §1).
   /// Every tool DECLARES its worst-case classes; a ratchet test holds the line.
   /// The default is derived conservatively from [approvalTier] (exec ⇒ process

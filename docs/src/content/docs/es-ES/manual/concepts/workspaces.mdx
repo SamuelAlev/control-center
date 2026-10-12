@@ -2,7 +2,7 @@
 title: Espacios de trabajo y aislamiento
 description: Por qué un espacio de trabajo es una frontera de inquilino infranqueable, cómo la separación de bases de datos hace que esa frontera sea estructural y qué la cruza de forma deliberada.
 slug: es-ES/manual/conceptos/espacios-de-trabajo
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## ¿Qué es un espacio de trabajo?
@@ -118,13 +118,17 @@ Lo que ninguno de ellos transporta es el resto del directorio del espacio de tra
 
 ## Mover una copia de seguridad entre el servidor y tu dispositivo
 
-Todas las operaciones anteriores hablan en rutas del **servidor**, lo cual es una respuesta completa solo cuando el servidor es tu propia máquina. Tres rutas HTTP firmadas —[`/backup/workspace`, `/backup/snapshot` y `/backup/restore`](/es-ES/manual/referencia/copia-de-seguridad/#transfer-routes)— transportan los bytes para cualquier otra topología, por el mismo carril autenticado que ya usan el proxy de medios y el almacén de imágenes. En la página esto es un botón **Descargar** junto a cada exportación y cada instantánea (tú eliges dónde acaba) y **Elegir un archivo y subirlo** para restaurar desde un archivo que esté en la máquina que estás usando. La subida es la que funciona cuando el servidor no es tu máquina: `workspace.import` necesita que el archivo ya esté en el host, y así es como llega hasta allí.
+Todas las operaciones anteriores hablan en rutas del **servidor**, lo cual es una respuesta completa solo cuando el servidor es tu propia máquina. Tres rutas de transferencia firmadas —[`/backup/workspace`, `/backup/snapshot` y `/backup/restore`](/es-ES/manual/referencia/copia-de-seguridad/#transfer-routes)— transportan los bytes para cualquier otra topología por el túnel de recursos autenticado y cifrado, tanto en conexiones directas como a través del relé. Las rutas HTTP públicas no sirven bytes de copia de seguridad legibles, y las rutas firmadas siguen requiriendo autorización. En la página esto es un botón **Descargar** junto a cada exportación y cada instantánea (tú eliges dónde acaba) y **Elegir un archivo y subirlo** para restaurar desde un archivo que esté en la máquina que estás usando. La subida funciona cuando el servidor no es tu máquina: `workspace.import` necesita que el archivo ya esté en el host, y así es como llega hasta allí.
 
 Merece la pena conocer tres propiedades:
 
 - **Una descarga crea una copia nueva y el servidor no conserva nada de ella.** Descargar no es «traer el archivo que creó el botón de exportación»: exporta de nuevo, transmite eso y lo elimina. La respuesta es `no-store` con `Accept-Ranges: none` por la misma razón: reanudar un rango empalmaría dos exportaciones distintas en un único archivo que parece válido y no lo es.
 - **Una subida se transmite a disco en streaming y nunca se almacena en búfer**, en ambos extremos, y la copia preparada se elimina en todas las salidas posibles, incluido un rechazo. La base de datos de un espacio de trabajo no es una captura de pantalla.
-- **Una conexión retransmitida no tiene origen HTTP**, así que allí los controles de transferencia están deshabilitados con una nota que explica por qué. Todo lo que habla en rutas del lado del servidor sigue funcionando a través del relé; solo los carriles de bytes necesitan una conexión directa.
+- **La transferencia también funciona por el relé.** Las descargas y las subidas usan el mismo túnel de recursos cifrado que las conexiones directas; no hace falta un origen HTTP directo.
+
+El cifrado protege la transferencia en tránsito, no la base de datos del lado
+del servidor, el directorio de instantáneas ni una copia descargada en reposo. El
+operador del servidor puede acceder a los datos que residen en ese host.
 
 :::note[Qué rutas son de quién]
 Las rutas que la página *muestra* —el directorio de la instantánea, el archivo que escribió una exportación, el origen que lee una importación— están en la máquina que ejecuta `cc_server`. La ruta que informa una **descarga** está en la máquina en la que estás sentado. Esa distinción es la razón de que existan ambas: la primera es lo que necesita un script de mantenimiento o una sesión de ssh, y la segunda es lo que necesita una persona que recopila una copia de seguridad.

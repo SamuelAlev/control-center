@@ -1,21 +1,31 @@
 import 'dart:async';
+import 'dart:js_interop';
+
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
 
-/// Web "simple web browser" surface: embeds [src] directly in an `<iframe>`.
-/// Pages that send `X-Frame-Options` / CSP `frame-ancestors` (Google, YouTube, GitHub, …)
-/// refuse to render; that is the inherent limit of a plain web iframe and is expected here.
-/// This file is web-only: it is reached through a `dart.library.js_interop` conditional
-/// import (the io build gets the stub), so the `dart:ui_web` / `package:web` imports never
-/// reach the desktop VM build.
+@JS('ccResourceBridge.attachEditor')
+external JSPromise<JSString> _attachEditor(
+  web.HTMLIFrameElement iframe,
+  JSString source,
+);
+
+@JS('ccResourceBridge.detachEditor')
+external void _detachEditor(web.HTMLIFrameElement iframe);
+
+/// Plain browser panes embed their URL directly. Trusted code-server panes
+/// attach through the app-origin resource facade, which owns their lifetime
+/// and carries HTTP/WebSocket traffic over the authenticated encrypted session.
 class BrowserWebView extends StatefulWidget {
   /// Creates a [BrowserWebView].
   const BrowserWebView({
     super.key,
     required this.src,
     required this.reloadToken,
+    this.codeServerResource = false,
+    this.onError,
   });
 
   /// The absolute URL to load directly in the iframe.
@@ -23,6 +33,10 @@ class BrowserWebView extends StatefulWidget {
 
   /// Monotonic reload trigger; changing it reloads [src].
   final int reloadToken;
+
+  /// Whether this iframe uses the authenticated code-server resource facade.
+  final bool codeServerResource;
+  final VoidCallback? onError;
 
   @override
   State<BrowserWebView> createState() => _BrowserWebViewState();
@@ -45,7 +59,6 @@ class _BrowserWebViewState extends State<BrowserWebView> {
       ..style.border = 'none'
       ..style.width = '100%'
       ..style.height = '100%'
-      ..setAttribute('credentialless', '')
       ..setAttribute('allow', 'clipboard-read; clipboard-write; fullscreen');
     ui_web.platformViewRegistry.registerViewFactory(
       _viewType,
@@ -69,18 +82,40 @@ class _BrowserWebViewState extends State<BrowserWebView> {
     }
     _appliedSrc = url;
     _appliedToken = widget.reloadToken;
+    if (widget.codeServerResource) {
+      _iframe.removeAttribute('credentialless');
+    } else {
+      _iframe.setAttribute('credentialless', '');
+    }
+    if (widget.codeServerResource) {
+      _iframe.src = 'about:blank';
+      unawaited(
+        _attachEditor(_iframe, url.toJS).toDart.then((_) {}).catchError((
+          Object _,
+        ) {
+          if (mounted) widget.onError?.call();
+        }),
+      );
+      return;
+    }
     if (urlChanged) {
       _iframe.src = url;
       return;
     }
-    // Same URL, explicit reload: bounce through about:blank so the navigation
-    // actually re-runs (re-assigning the identical src can be a no-op).
+    // Same URL, explicit reload: bounce through about:blank so navigation runs.
     _iframe.src = 'about:blank';
     Future.microtask(() {
       if (mounted && _appliedSrc == url) {
         _iframe.src = url;
       }
     });
+  }
+
+  @override
+  void dispose() {
+    if (widget.codeServerResource) _detachEditor(_iframe);
+    _iframe.src = 'about:blank';
+    super.dispose();
   }
 
   @override

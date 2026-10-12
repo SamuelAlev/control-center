@@ -563,6 +563,7 @@ void main() {
         redirectUri: Uri.parse('https://app/cb'),
         relay: 'web-popup',
         clientOrigin: 'https://app.example.com',
+        recipientPublicKey: 'A' * 43,
       );
       final result = await service.handleCallback(
         requestUri: beginUrl.replace(
@@ -571,6 +572,7 @@ void main() {
         redirectUri: Uri.parse('https://app/cb'),
       );
       expect(result.clientOrigin, 'https://app.example.com');
+      expect(result.recipientPublicKey, 'A' * 43);
     });
 
     test('drops the declared client origin on non-popup flows', () async {

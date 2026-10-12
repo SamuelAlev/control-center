@@ -8,6 +8,7 @@ import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
+import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:test/test.dart';
 
 /// Proof of `/proxy/font`: a client asks for one variant BY NAME and the host
@@ -22,12 +23,13 @@ void main() {
     late Directory tmp;
     late HttpServer upstream;
     late LocalRpcServer server;
-    late int serverPort;
+    late RemoteRpcClient client;
+    late String psk;
     late List<String> resolved;
     late int upstreamHits;
 
     const deviceId = 'device-a';
-    const psk = 'test-psk-12345';
+    const userId = 'user-a';
     final fontBytes = Uint8List.fromList([
       0x00, 0x01, 0x00, 0x00, // a TrueType version tag
       ...List<int>.filled(64, 0x42),
@@ -35,10 +37,18 @@ void main() {
 
     setUp(() async {
       tmp = Directory.systemTemp.createTempSync('cc_font_proxy_test');
+      addTearDown(() {
+        try {
+          tmp.deleteSync(recursive: true);
+        } catch (_) {}
+      });
+      psk = RemoteControlCrypto.generatePsk();
+      final identity = await ServerIdentityStore.load(tmp.path);
       resolved = [];
       upstreamHits = 0;
 
       upstream = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => upstream.close(force: true));
       upstream.listen((req) async {
         upstreamHits++;
         req.response
@@ -50,9 +60,12 @@ void main() {
 
       server = LocalRpcServer(
         dispatcher: _StubDispatcher(),
-        devicesDao: _StubDevicesDao(deviceId: deviceId),
+        devicesDao: _StubDevicesDao(deviceId: deviceId, userId: userId),
         secrets: _StubSecrets(psk: psk),
         eventBus: DomainEventBus(),
+        identity: identity,
+        workspaceExists: (_) async => false,
+        resolveRole: (_, _) async => null,
         workspaceResolver: (_) async => const [],
         fontCacheDir: '${tmp.path}/font_cache',
         // Stands in for the catalogue: only 'Inter' exists and the snapped
@@ -75,16 +88,15 @@ void main() {
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
+      addTearDown(server.stop);
       await server.start();
-      serverPort = server.boundPort;
-    });
-
-    tearDown(() async {
-      await server.stop();
-      await upstream.close(force: true);
-      try {
-        tmp.deleteSync(recursive: true);
-      } catch (_) {}
+      client = await connectRemoteRpc(
+        uri: Uri.parse('ws://127.0.0.1:${server.boundPort}/rpc'),
+        deviceId: deviceId,
+        psk: psk,
+        insecureAllowed: true,
+      );
+      addTearDown(() => client.close());
     });
 
     /// Mirrors `MediaProxyConfig.fontUrl`.
@@ -111,43 +123,46 @@ void main() {
       ).toString();
     }
 
-    Future<HttpClientResponse> get(String path) async {
-      final client = HttpClient();
-      addTearDown(() => client.close(force: true));
-      return (await client.getUrl(
-        Uri.parse('http://127.0.0.1:$serverPort$path'),
-      )).close();
-    }
+    Future<RemoteResourceResponse> get(String path) =>
+        client.resources.request('GET', Uri.parse(path));
 
     test('serves the resolved font bytes verbatim', () async {
       final resp = await get(signedUrl());
-      final bytes = await resp.expand((chunk) => chunk).toList();
+      final bytes = await resp.body.expand((chunk) => chunk).toList();
 
       expect(resp.statusCode, 200);
       expect(bytes, fontBytes);
-      expect(resp.headers.contentType?.mimeType, 'font/ttf');
+      expect(
+        ContentType.parse(
+          resp.headers[HttpHeaders.contentTypeHeader]!.single,
+        ).mimeType,
+        'font/ttf',
+      );
     });
 
     test('passes the requested variant to the resolver', () async {
       await (await get(
         signedUrl(weight: 700, style: 'italic', subset: 'cyrillic'),
-      )).drain<void>();
+      )).body.drain<void>();
 
       expect(resolved, ['Inter/cyrillic/700/true']);
     });
 
-    test('caches the file, so a second client costs no upstream fetch', () async {
-      // A font is not an image; without the buffering opt-in it would stream
-      // straight through and never be stored.
-      await (await get(signedUrl())).drain<void>();
-      await (await get(signedUrl())).drain<void>();
+    test(
+      'caches the file, so a second client costs no upstream fetch',
+      () async {
+        // A font is not an image; without the buffering opt-in it would stream
+        // straight through and never be stored.
+        await (await get(signedUrl())).body.drain<void>();
+        await (await get(signedUrl())).body.drain<void>();
 
-      expect(upstreamHits, 1);
-    });
+        expect(upstreamHits, 1);
+      },
+    );
 
     test('403 for a bad signature', () async {
       final resp = await get(signedUrl(signature: 'bogus'));
-      await resp.drain<void>();
+      await resp.body.drain<void>();
       expect(resp.statusCode, 403);
     });
 
@@ -158,13 +173,13 @@ void main() {
         psk,
       );
       final resp = await get(signedUrl(weight: 700, signature: forWeight400));
-      await resp.drain<void>();
+      await resp.body.drain<void>();
       expect(resp.statusCode, 403);
     });
 
     test('403 for an unknown device', () async {
       final resp = await get(signedUrl(device: 'ghost-device'));
-      await resp.drain<void>();
+      await resp.body.drain<void>();
       expect(resp.statusCode, 403);
     });
 
@@ -172,14 +187,14 @@ void main() {
       // The ownership check: an OS-installed family, or an injected URL, has no
       // catalogue entry and therefore no upstream.
       final resp = await get(signedUrl(family: 'Menlo'));
-      await resp.drain<void>();
+      await resp.body.drain<void>();
       expect(resp.statusCode, 404);
       expect(upstreamHits, 0);
     });
 
     test('400 for missing parameters', () async {
-      final resp = await get('/proxy/font?f=Inter');
-      await resp.drain<void>();
+      final resp = await get('/proxy/font?f=Inter&d=$deviceId');
+      await resp.body.drain<void>();
       expect(resp.statusCode, 400);
     });
 
@@ -190,7 +205,7 @@ void main() {
         signedUrl(style: 'oblique'),
       ]) {
         final resp = await get(url);
-        await resp.drain<void>();
+        await resp.body.drain<void>();
         expect(resp.statusCode, 400, reason: url);
       }
       expect(resolved, isEmpty, reason: 'rejected before resolving');
@@ -199,40 +214,65 @@ void main() {
     test('404 when no font resolver is wired', () async {
       final noResolver = LocalRpcServer(
         dispatcher: _StubDispatcher(),
-        devicesDao: _StubDevicesDao(deviceId: deviceId),
+        devicesDao: _StubDevicesDao(deviceId: deviceId, userId: userId),
         secrets: _StubSecrets(psk: psk),
         eventBus: DomainEventBus(),
         workspaceResolver: (_) async => const [],
+        identity: await ServerIdentityStore.load(tmp.path),
+        workspaceExists: (_) async => false,
+        resolveRole: (_, _) async => null,
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
       addTearDown(noResolver.stop);
       await noResolver.start();
 
-      final client = HttpClient();
-      addTearDown(() => client.close(force: true));
-      final resp = await (await client.getUrl(
-        Uri.parse('http://127.0.0.1:${noResolver.boundPort}${signedUrl()}'),
+      final noResolverClient = await connectRemoteRpc(
+        uri: Uri.parse('ws://127.0.0.1:${noResolver.boundPort}/rpc'),
+        deviceId: deviceId,
+        psk: psk,
+        insecureAllowed: true,
+      );
+      addTearDown(noResolverClient.close);
+      final resp = await noResolverClient.resources.request(
+        'GET',
+        Uri.parse(signedUrl()),
+      );
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 404);
+    });
+
+    test('public HTTP refuses signed font URLs even on loopback', () async {
+      final publicClient = HttpClient();
+      addTearDown(() => publicClient.close(force: true));
+      final resp = await (await publicClient.getUrl(
+        Uri.parse('http://127.0.0.1:${server.boundPort}${signedUrl()}'),
       )).close();
       await resp.drain<void>();
 
-      expect(resp.statusCode, 404);
+      expect(resp.statusCode, HttpStatus.upgradeRequired);
+      expect(upstreamHits, 0);
+      expect(resolved, isEmpty);
     });
   });
 }
 
-/// Minimal no-op RPC dispatcher (the font route never dispatches RPC).
+/// Answers session initialization; resource handlers are exercised separately.
 class _StubDispatcher implements RpcDispatcher {
   @override
   Future<Map<String, dynamic>> handleRequest(JsonRpcRequest request) async =>
-      const {};
+      request.id == null
+      ? const {}
+      : {'jsonrpc': '2.0', 'id': request.id, 'result': <String, dynamic>{}};
 }
 
 /// Returns a valid, non-expired [PairedDevicesTableData] for [deviceId].
 class _StubDevicesDao implements PairedDeviceDao {
-  _StubDevicesDao({required this.deviceId});
+  _StubDevicesDao({required this.deviceId, required this.userId});
 
   final String deviceId;
+  final String userId;
 
   @override
   Stream<List<PairedDevicesTableData>> watchAll() => const Stream.empty();
@@ -244,6 +284,7 @@ class _StubDevicesDao implements PairedDeviceDao {
     }
     return PairedDevicesTableData(
       id: id,
+      userId: userId,
       label: 'Test',
       pskRef: 'paired_device_psk_$id',
       status: PairedDeviceStatus.active,
@@ -254,10 +295,13 @@ class _StubDevicesDao implements PairedDeviceDao {
   }
 
   @override
+  Future<int> markSeen(String id, DateTime at) async => id == deviceId ? 1 : 0;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Returns [psk] for any device (the test signs URLs with the same PSK).
+/// Returns the paired device's PSK for signing and authenticating test requests.
 class _StubSecrets implements PairedDeviceSecretsPort {
   _StubSecrets({required this.psk});
 

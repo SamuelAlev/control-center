@@ -12,6 +12,8 @@ import 'package:cc_domain/features/guardrails/domain/value_objects/action_decisi
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/harness/harness_command_runner.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:test/test.dart';
 
 /// Exercises [SandboxedHarnessCommandRunner] along its no-sandbox fallback
@@ -33,6 +35,8 @@ void main() {
   SandboxedHarnessCommandRunner runner({
     ConfirmationPort? confirmationPort,
     ActionGuardService? actionGuard,
+    SandboxManager? sandboxManager,
+    Future<List<String>> Function()? execGrantRootsResolver,
     Map<String, String> baseEnv = const {},
     int maxOutputChars = 16000,
   }) => SandboxedHarnessCommandRunner(
@@ -40,6 +44,8 @@ void main() {
     networkEnabled: false,
     confirmationPort: confirmationPort,
     actionGuard: actionGuard,
+    sandboxManager: sandboxManager,
+    execGrantRootsResolver: execGrantRootsResolver,
     workspaceId: 'ws',
     agentId: 'a',
     conversationId: 'conv-1',
@@ -232,6 +238,63 @@ void main() {
     });
   });
 
+  group('SandboxedHarnessCommandRunner — exec-grant roots', () {
+    test(
+      'the run\'s server roots go into the profile, not the command cwd',
+      () async {
+        final manager = _CapturingSandboxManager();
+        const root = '/nonexistent/cc/managed/space';
+        var resolves = 0;
+        final r = runner(
+          sandboxManager: manager,
+          execGrantRootsResolver: () async {
+            resolves++;
+            return const [root];
+          },
+        );
+
+        final outer = await r.run('echo one', workdir: cwd.path);
+        expect(outer.exitCode, 0);
+        // The SAME roots for a command in a subdirectory: the model's cwd never
+        // becomes a candidate, so a `cd` cannot re-ask or widen.
+        final subdir = Directory('${cwd.path}/pkg')..createSync();
+        final inner = await r.run('echo two', workdir: subdir.path);
+        expect(inner.exitCode, 0);
+
+        expect(
+          resolves,
+          2,
+          reason:
+              'the profile is rebuilt per command, so the answer can land '
+              'on the next one',
+        );
+        expect(manager.lastConfig?.allowedExecRoots, contains(root));
+        expect(manager.lastConfig?.policy?.execGrantRoots, contains(root));
+      },
+    );
+
+    test('with no resolver wired the exec block stays closed', () async {
+      final manager = _CapturingSandboxManager();
+      final r = runner(sandboxManager: manager);
+      final res = await r.run('echo hi', workdir: cwd.path);
+      expect(res.exitCode, 0);
+      expect(manager.lastConfig?.allowedExecRoots, isEmpty);
+    });
+
+    test('a failing resolver falls back to the pre-grant rules', () async {
+      final manager = _CapturingSandboxManager();
+      final r = runner(
+        sandboxManager: manager,
+        execGrantRootsResolver: () async => throw StateError('lookup down'),
+      );
+      final res = await r.run('echo hi', workdir: cwd.path);
+
+      expect(res.denied, isFalse);
+      expect(res.exitCode, 0);
+      expect(manager.lastConfig?.allowedExecRoots, isEmpty);
+    });
+  });
+
   group('SandboxedHarnessCommandRunner — timeout + cancellation', () {
     test('a command exceeding timeoutSeconds is killed (exit 124)', () async {
       final res = await runner().run(
@@ -263,6 +326,27 @@ class _Approver implements ConfirmationPort {
   final bool approve;
   @override
   Future<bool> requestApproval(ConfirmationRequest request) async => approve;
+}
+
+/// Records the [SandboxConfig] the runner would have wrapped, then spawns the
+/// command unchanged — so a test can read exactly which exec roots reached the
+/// profile without a real Seatbelt/bwrap layer.
+class _CapturingSandboxManager extends SandboxManager {
+  SandboxConfig? lastConfig;
+
+  @override
+  Future<SandboxWrapResult> wrap({
+    required SandboxConfig config,
+    required List<String> argv,
+    String? workingDirectory,
+  }) async {
+    lastConfig = config;
+    return SandboxWrapResult(
+      executable: argv.first,
+      argv: argv.skip(1).toList(),
+      environment: const {},
+    );
+  }
 }
 
 class _Rules implements ActionPolicyRepository {

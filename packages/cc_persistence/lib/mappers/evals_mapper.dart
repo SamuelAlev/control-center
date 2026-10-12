@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cc_domain/features/evals/domain/entities/evals_entities.dart';
+import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
@@ -187,5 +190,70 @@ class EvalsMapper {
     promotedBy: Value(v.promotedBy),
     promotedAt: Value(v.promotedAt),
     createdAt: Value(v.createdAt),
+  );
+  // ── Skill evaluation campaigns ──
+
+  SkillEvaluationCampaign skillCampaignFromRow(SkillEvalCampaignsTableData row) {
+    final campaign = SkillEvaluationCampaign.fromJson(
+      jsonDecode(row.payloadJson) as Map<String, dynamic>,
+    );
+    if (campaign.id != row.id || campaign.workspaceId != row.workspaceId ||
+        campaign.skillKey != row.skillKey ||
+        campaign.status.name != row.status) {
+      throw StateError('Skill campaign index and payload disagree');
+    }
+    return campaign;
+  }
+
+  SkillEvalCampaignsTableCompanion skillCampaignToCompanion(
+    SkillEvaluationCampaign campaign,
+  ) => SkillEvalCampaignsTableCompanion(
+    id: Value(campaign.id),
+    workspaceId: Value(campaign.workspaceId),
+    skillKey: Value(campaign.skillKey),
+    status: Value(campaign.status.name),
+    createdAt: Value(campaign.createdAt),
+    payloadJson: Value(jsonEncode(campaign.toJson())),
+  );
+
+  SkillEvaluationAttemptRecord skillAttemptFromRow(SkillEvalAttemptsTableData row) {
+    final attempt = SkillEvaluationAttemptRecord.fromJson(
+      jsonDecode(row.payloadJson) as Map<String, dynamic>,
+    );
+    if (attempt.id != row.id || attempt.workspaceId != row.workspaceId ||
+        attempt.campaignId != row.campaignId || attempt.ordinal != row.ordinal) {
+      throw StateError('Skill attempt index and payload disagree');
+    }
+    return attempt;
+  }
+
+  SkillEvalAttemptsTableCompanion skillAttemptToCompanion(
+    SkillEvaluationAttemptRecord attempt,
+  ) => SkillEvalAttemptsTableCompanion(
+    id: Value(attempt.id),
+    workspaceId: Value(attempt.workspaceId),
+    campaignId: Value(attempt.campaignId),
+    ordinal: Value(attempt.ordinal),
+    payloadJson: Value(jsonEncode(attempt.toJson())),
+  );
+
+  SkillEvaluationPolicy skillPolicyFromRow(SkillEvalPoliciesTableData row) {
+    final policy = SkillEvaluationPolicy.fromJson(
+      jsonDecode(row.payloadJson) as Map<String, dynamic>,
+    );
+    if (policy.workspaceId != row.workspaceId || policy.skillKey != row.skillKey ||
+        policy.enabled != row.enabled) {
+      throw StateError('Skill policy index and payload disagree');
+    }
+    return policy;
+  }
+
+  SkillEvalPoliciesTableCompanion skillPolicyToCompanion(
+    SkillEvaluationPolicy policy,
+  ) => SkillEvalPoliciesTableCompanion(
+    workspaceId: Value(policy.workspaceId),
+    skillKey: Value(policy.skillKey),
+    enabled: Value(policy.enabled),
+    payloadJson: Value(jsonEncode(policy.toJson())),
   );
 }

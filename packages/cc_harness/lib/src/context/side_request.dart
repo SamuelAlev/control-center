@@ -28,6 +28,7 @@ class SideRequest {
     String? cacheKey,
     int maxTokens = 4096,
     ReasoningEffort? effort,
+    LlmCallPurpose purpose = LlmCallPurpose.sideRequest,
     Duration timeout = const Duration(minutes: 3),
   }) async {
     // A snapshot, plus one trailing turn. Copying the list rather than
@@ -48,6 +49,11 @@ class SideRequest {
           effort: effort,
           // Same key as the live run, so the shared prefix is a cache HIT.
           cacheKey: cacheKey,
+          // Attributed even though the caller never sees it: a handoff
+          // document or a `/btw` answer is real spend, and leaving it untagged
+          // is what let an earlier probe bill 918 input tokens across a
+          // summarization plus a main request while the loop accounted 17.
+          purpose: purpose,
         ),
       );
       await for (final event in stream.timeout(timeout)) {

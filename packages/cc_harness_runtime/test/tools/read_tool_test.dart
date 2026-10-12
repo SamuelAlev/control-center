@@ -263,6 +263,47 @@ void main() {
       expect(result.isError, isFalse);
       expect(result.content, contains('hi'));
     });
+
+    test('states the omitted tail with an exact continuation offset', () async {
+      write('big.txt', List.generate(300, (i) => 'l$i').join('\n'));
+      final result = await ReadTool().execute({
+        'path': 'big.txt',
+        'limit': 10,
+      }, _ctx(temp.path));
+      expect(result.isError, isFalse);
+      expect(result.content, contains('1\tl0'));
+      expect(result.content, contains('10\tl9'));
+      expect(result.content, contains('showing lines 1-10 of 300'));
+      expect(
+        result.content,
+        contains('lines 11-300 omitted, continue with offset=11'),
+      );
+      expect(result.content, isNot(contains('11\tl10')));
+    });
+
+    test('states the omitted head when the window starts mid-file', () async {
+      write('big.txt', List.generate(50, (i) => 'l$i').join('\n'));
+      final result = await ReadTool().execute({
+        'path': 'big.txt',
+        'offset': 11,
+        'limit': 5,
+      }, _ctx(temp.path));
+      expect(result.content, contains('showing lines 11-15 of 50'));
+      expect(result.content, contains('lines 1-10 omitted'));
+      expect(
+        result.content,
+        contains('lines 16-50 omitted, continue with offset=16'),
+      );
+    });
+
+    test('adds no omission marker when the whole file is returned', () async {
+      write('small.txt', 'l1\nl2\nl3');
+      final result = await ReadTool().execute({
+        'path': 'small.txt',
+      }, _ctx(temp.path));
+      expect(result.content, isNot(contains('showing lines')));
+      expect(result.content, isNot(contains('omitted')));
+    });
   });
 }
 

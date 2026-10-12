@@ -22,6 +22,12 @@ All are written with SQLite `VACUUM INTO`, which is safe against a live WAL data
 it takes a read transaction, produces a defragmented and transactionally consistent
 copy, and never requires stopping the server.
 
+These files and downloaded copies are **not encrypted at rest** by Control Center.
+The end-to-end encrypted transfer protects bytes in transit between a paired client
+and its `cc_server`, on either direct or brokered-relay connections. Protect local
+storage and off-machine copies separately; the server and any authorized recipient
+can read the database files.
+
 ## Snapshot layout
 
 ```
@@ -197,10 +203,15 @@ be stale.
 
 ## Transfer routes
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+The export/import and snapshot listing operations above speak in server-side
+paths, which is a complete answer only when the server is your own machine.
+These HTTP-shaped routes carry backup bytes **inside the same authenticated,
+end-to-end encrypted resource tunnel** as other sensitive resources,
+whether the RPC connection is direct or brokered. They are
+not public HTTP file-transfer endpoints: a request to one on the public listener
+returns `426 Upgrade Required`, even from loopback. In the encrypted tunnel, the
+Noise-authenticated device must match `d`; the handler additionally checks the
+device's signature over its target string using its pairing PSK and the role below.
 
 | Route                   | Method | Query           | Signed target                  | Requires                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -219,6 +230,7 @@ root, so the route cannot be aimed at a directory the listing would not have sho
 | `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
 | `405`  | `/backup/restore` called with anything but `POST`                                   |
 | `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
+| `426`  | Any direct request to a transfer path on the public HTTP listener; use a paired client's encrypted resource tunnel |
 | `500`  | The export or archive failed server-side                                            |
 
 Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
@@ -234,11 +246,13 @@ archive.
 bounds it before and during the read, and deletes the staged file on **every** path out
 including a refusal.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
-:::
+::::caution[Direct and relay use the same encrypted transfer]
+The relay carries resource requests, streamed responses and upload bytes as
+ciphertext; it cannot read backup contents. A server-side path remains a path
+on the server host, not a file on the relay. Access still requires the paired
+device, target signature and applicable workspace or install role. Neither
+transport encrypts the resulting backup files at rest.
+::::
 
 ## Paths and limits
 
@@ -249,7 +263,7 @@ connection, and the UI disables them with a note rather than failing mid-downloa
 | Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
 | Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
+| Upload ceiling                 | 8 GiB per encrypted `/backup/restore` upload                |
 | Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
 
 The `exports/`, `transfer/`, and `workspace-backups/` directories are not

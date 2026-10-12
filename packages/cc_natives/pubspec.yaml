@@ -31,7 +31,7 @@ dependencies:
   ffi: ^2.2.0
   path: ^1.9.1
   crypto: ^3.0.7
-  dio: ^5.11.0
+  rhttp: 0.18.0
   meta: any
   # Pure-Dart shared contracts. The relocated on-device-inference impls
   # (TextEmbedder / SherpaOnnxTranscriber / VAD / diarization) implement

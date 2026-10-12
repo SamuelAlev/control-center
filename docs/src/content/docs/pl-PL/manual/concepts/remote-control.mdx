@@ -1,8 +1,8 @@
 ---
 title: Zdalne sterowanie i mobile
-description: Jak telefon dociera do Twojego serwera przez brokerski, szyfrowany end-to-end przekaźnik, a nie łącze peer-to-peer, oraz warstwowy model dostępu, który utrzymuje ten zasięg wąskim.
+description: Jak telefon dociera do Twojego serwera przez bezpośrednie lub brokerskie połączenia szyfrowane end-to-end, oraz warstwowy model dostępu, który utrzymuje ten zasięg wąskim.
 slug: pl-PL/podrecznik/koncepcje/zdalne-sterowanie
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center to aplikacja desktopowa, ale praca, którą śledzi, nie zatrzymuje
@@ -10,27 +10,29 @@ się, gdy odchodzisz od biurka. **Zdalne sterowanie** paruje Twój telefon
 z Twoim `cc_server`, korzystając z aplikacji towarzyszącej
 **[Remote](https://remote.usectrl.dev/)** pod adresem remote.usectrl.dev, dzięki
 czemu możesz śledzić flotę stamtąd: czytać wiadomości i zgłoszenia, odpowiadać
-agentowi, przeglądać newsfeed — a dźwięk, transkrypcja, kod źródłowy ani
-poświadczenia znajdujące się na serwerze nigdy go nie opuszczają.
+agentowi i przeglądać newsfeed przez połączenie szyfrowane end-to-end. Telefon
+i `cc_server` to zaufane punkty końcowe tekstu jawnego; przekaźnik przenosi
+wyłącznie zaszyfrowane rekordy aplikacji.
 
 Traktuj ją jako towarzysza głównego widoku, nastawionego głównie na czytanie. Nie
 ma zastępować pełnego klienta desktopowego.
 
-:::note[Dwie różne zdalne ścieżki]
-Aplikacja towarzysząca na telefonie paruje się z `cc_server` przez **brokerski
-przekaźnik WebSocket**, który przenosi szyfrowane end-to-end ramki JSON-RPC.
-Pełna **kompilacja webowa** (oraz desktop wskazany na zdalny serwer) to druga
-zdalna ścieżka; łączy się z `cc_server` przez WebSocket i renderuje kompletną
-aplikację. Zobacz [Wdrażanie i klienci](/pl-PL/podrecznik/koncepcje/wdrazanie/),
-aby poznać różnice między nimi.
+:::note[Dwóch różnych klientów zdalnych]
+Aplikacja towarzysząca na telefonie oraz pełna **kompilacja webowa** (albo
+desktop wskazany na zdalny serwer) mogą łączyć się z `cc_server`
+bezpośrednio lub przez brokerski przekaźnik WebSocket. Obie ścieżki wymagają tej
+samej szyfrowanej sesji; telefon udostępnia mniejszy zestaw operacji niż pełny
+klient. Zobacz [Wdrażanie i klienci](/pl-PL/podrecznik/koncepcje/wdrazanie/),
+aby poznać różnice między klientami.
 :::
 
 ## Transport
 
 Telefon dociera do `cc_server` przez WebSocket: albo bezpośrednim połączeniem
 (loopback, LAN, tailnet lub `wss://`), albo przez pokój dostępny na zaproszenie
-w brokerze sygnalizacyjnym, który przekazuje zapieczętowane ramki. Nie ma
-kanału danych peer-to-peer.
+w brokerze sygnalizacyjnym. Obie ścieżki wymagają uwierzytelnionej sesji
+szyfrowanej end-to-end; broker przekazuje wyłącznie swoje zaszyfrowane rekordy.
+Nie ma kanału danych peer-to-peer.
 
 ## Co potrafi telefon
 
@@ -55,24 +57,27 @@ a nie tylko zamierzone.
 
 ## Jak powstaje połączenie
 
-Połączenie opiera się na **brokerskim przekaźniku**: serwer dołącza jako
-właściciel do jednego pokoju dostępnego na zaproszenie w brokerze `wss://`,
-a każdy sparowany klient — desktop, web, telefon — dołącza do tego samego pokoju
-z tokenem dopuszczenia o ograniczonym czasie ważności. Składają się na to trzy
+Gdy telefon nie może dotrzeć do serwera bezpośrednio, połączenie korzysta
+z **brokerskiego przekaźnika**: serwer dołącza jako właściciel do jednego pokoju
+dostępnego na zaproszenie w brokerze `wss://`, a sparowani klienci dołączają
+z tokenami dopuszczenia o ograniczonym czasie ważności. Składają się na to trzy
 elementy:
 
 | Element                        | Rola                                                                                                                                                                                                                                                                                     |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote (aplikacja na telefon)** | Aplikacja webowa towarzysząca, domyślnie hostowana pod `remote.usectrl.dev`, albo hostowana samodzielnie. Ładuje się w przeglądarce, przechowuje rekord parowania w IndexedDB.                                                                                                        |
-| **Broker przekaźnika**         | Bezstanowy przekaźnik `wss://` (`cc_signaling_server`) hostujący pokoje N-kierunkowe. Przenosi **wyłącznie nieprzezroczyste ramki**: każdy ładunek jest szyfrowany end-to-end między telefonem a serwerem, więc broker nigdy nie widzi danych aplikacji ani sekretu parowania i nigdy nie interpretuje tego, co przekazuje. |
+| **Broker przekaźnika**         | Bezstanowy przekaźnik `wss://` (`cc_signaling_server`) hostujący pokoje N-kierunkowe. Przekazuje zaszyfrowane rekordy bez sekretu parowania i bez tekstu jawnego aplikacji, ale widzi identyfikatory routingu, adresy IP, rozmiary rekordów i czasy. |
 | **`cc_server`**                | Właściciel pokoju. Odpowiada na wywołania telefonu przez ten sam dyspozytor, którego używa każdy inny klient.                                                                                                                                                                           |
 
 Oferta parowania zawiera **deskryptor połączenia** wyliczający każdą ścieżkę do
 serwera (LAN, tailnet, publiczny `wss://`, przekaźnik) oraz odcisk tożsamości
-serwera. Resolver telefonu wybiera najlepszą osiągalną ścieżkę i przypina odcisk
-przy pierwszym połączeniu (TOFU); przekaźnik gwarantuje łączność nawet wtedy,
-gdy nie istnieje żadna bezpośrednia ścieżka, nie mogąc przy tym nigdy odczytać
-ruchu.
+serwera. Resolver telefonu wybiera najlepszą osiągalną ścieżkę. Serwer podpisuje
+szyfrowany uścisk dłoni, a klient przypina jego odcisk. Przy pierwszym połączeniu
+sprawdź odcisk na podstawie kodu QR albo innego zaufanego źródła: sama pierwsza
+podpisana tożsamość nie dowodzi, do którego serwera dotarłeś. Zmienione
+przypięcie jest odrzucane, a nie po cichu ponownie zaufane. Przekaźnik przenosi
+szyfrogram, gdy nie istnieje bezpośrednia ścieżka, ale wciąż może przerwać albo
+opóźnić połączenie.
 
 ## Czym jest ładunek parowania
 
@@ -85,25 +90,32 @@ https://<pwa-host>/#<payload>
 ```
 
 Ładunek jedzie we **fragmencie** adresu URL, czyli w części po `#`, której
-przeglądarki nigdy nie wysyłają do serwera, więc host HTTPS PWA nigdy go nie
-widzi. Zawiera wszystko, czego telefon potrzebuje, by dotrzeć do serwera
-i udowodnić, kim jest: deskryptor połączenia (wszystkie ścieżki plus odcisk
-tożsamości), świeżo utworzony identyfikator urządzenia, 32-bajtowy wstępnie
-współdzielony klucz oraz znacznik wygaśnięcia. Telefon dekoduje go, zapisuje
-lokalnie rekord parowania i usuwa fragment, aby sekret zniknął z adresu URL.
+przeglądarki nie wysyłają w żądaniu HTTP do hosta PWA. Zawiera wszystko, czego
+telefon potrzebuje, by dotrzeć do serwera i udowodnić, kim jest: deskryptor
+połączenia (wszystkie ścieżki plus odcisk tożsamości), świeżo utworzony
+identyfikator urządzenia, 32-bajtowy wstępnie współdzielony klucz oraz znacznik
+wygaśnięcia. Telefon dekoduje go, zapisuje lokalnie rekord parowania i usuwa
+fragment z adresu URL. Kod aplikacji webowej może odczytać fragment, więc
+korzystaj z zaufanego hosta aplikacji i traktuj link jak sekret.
 
 Istnieją dwa kształty ładunku i **nie są wymienne**. Kod QR dla telefonu
 tworzony w panelu parowania w aplikacji to opisany wyżej `PairingPayload`
 w wersji v2, wskazujący na host PWA Remote. `cc_server pair --client-url`
-emituje inny, starszy link v1 (`{s, i, k}` — adres URL serwera, identyfikator
-urządzenia, klucz), przeznaczony wyłącznie dla klienta **webowego**.
+emituje link v1 (`{s, i, k}` — adres URL serwera, identyfikator
+urządzenia, klucz), przeznaczony wyłącznie dla klienta **webowego**. To formaty
+danych parowania, a nie mechanizmy zastępcze dla transportu: oba klienty muszą
+obsługiwać bieżący protokół szyfrowanej sesji.
 
 Różnią się też czasem życia, co łatwo pomylić:
 
 | Tworzone przez                        | Ważność poświadczenia                     |
 | ------------------------------------- | ----------------------------------------- |
 | Panel parowania w aplikacji (`pairing.mint`) | 30 dni, zawsze                      |
-| `cc_server pair` w wierszu poleceń    | **Brak** — poświadczenie nie wygasa       |
+| `cc_server pair` w wierszu poleceń    | Brak zakodowanego wygaśnięcia; zasady serwera nadal obowiązują |
+
+Ogólnoserwerowe zasady maksymalnego wieku urządzenia i przekroczenia czasu
+bezczynności mogą odrzucić każde z tych poświadczeń wcześniej. Żaden z formatów
+parowania nie omija tych zasad.
 
 ## Model dostępu
 
@@ -164,13 +176,15 @@ z bramy 1. To ten sam niezmiennik
 [izolacji obszarów roboczych](/pl-PL/podrecznik/koncepcje/obszary-robocze/),
 którego egzekwuje reszta produktu.
 
-### 5. Ramki szyfrowane end-to-end kluczem wstępnie współdzielonym
+### 5. Szyfrowanie end-to-end w połączeniach bezpośrednich i przez przekaźnik
 
-Każda ramka między telefonem a serwerem jest zapieczętowana kluczem parowania;
-token dopuszczenia jedynie wpuszcza klienta do pokoju, niczego nie odszyfrowuje.
-Broker przekazuje szyfrogram i nigdy nie widzi klucza. Urządzenie, które zostało
-unieważnione, zastaje swoje poświadczenie już usunięte, więc przy ponownym
-połączeniu **odmawia domyślnie**.
+Każda sesja klienta, bezpośrednia lub przez przekaźnik, wymaga podpisanego
+uścisku dłoni Noise. Klucz parowania uwierzytelnia ten uścisk dłoni; świeże
+klucze efemeryczne wyprowadzają klucze ruchu, zamiast używać klucza parowania do
+pieczętowania każdej ramki. Serwer podpisuje swoją tożsamość w tej wymianie,
+a klient sprawdza swoje zapisane przypięcie odcisku. Nie ma mechanizmu
+zastępczego z tekstem jawnym ani dla starszych klientów. Token dopuszczenia
+przekaźnika jedynie wpuszcza klienta do pokoju; nie może odszyfrować rekordów.
 
 Poświadczenie utworzone przez aplikację ma ważność ograniczoną do 30 dni; po tym
 czasie brama połączenia je odrzuca i telefon musi sparować się ponownie.
@@ -187,21 +201,24 @@ z jednego przydziału, więc przejęty klient nie może kupić sobie zapasu,
 otwierając więcej sesji, a jeden hałaśliwy członek nie może zagłodzić
 pozostałych.
 
-### 7. Broker, który niczego się nie dowiaduje
+### 7. Broker, który nie może odczytać treści aplikacji
 
-Broker przekaźnika jest celowo głupi: hostuje pokoje, przekazuje zapieczętowane
-ramki i nie przechowuje żadnych kont, danych aplikacji ani kluczy. Pokoje są
-dostępne na zaproszenie i tymczasowe. Dane aplikacji, dźwięk, transkrypcja, kod
-źródłowy i poświadczenia pozostają na serwerze.
+Broker przekaźnika hostuje tymczasowe pokoje dostępne na zaproszenie i przekazuje
+zaszyfrowane rekordy bez tekstu jawnego aplikacji i bez kluczy parowania. Wciąż
+widzi adresy IP, identyfikatory pokoi i peerów, rozmiary rekordów, czasy oraz
+czas życia połączenia, i może odrzucać albo opóźniać ruch. Sparowany klient
+i wybrany `cc_server` to punkty końcowe tekstu jawnego; operator serwera
+i usługi, do których wysyła treści, mogą je widzieć. Szyfrowanie w tranzycie nie
+szyfruje danych serwera w spoczynku.
 
 ## Aktualizacje na żywo
 
 Po sparowaniu telefon otrzymuje **aktualizacje na żywo** w postaci ramek
 powiadomień — nowe wiadomości agentów, przypisane do Ciebie zgłoszenia, zmiany
-statusu — odzwierciedlające powiadomienia samego desktopu. Serwer rozgłasza te
-ramki do każdej połączonej sesji, a filtr obszaru roboczego jest stosowany po
-stronie klienta, więc to, co widzisz, jest ograniczone do obszaru roboczego, na
-który patrzysz.
+statusu — odzwierciedlające powiadomienia samego desktopu. Serwer sprawdza
+członkostwo w obszarze roboczym, zanim przekaże zdarzenie do sesji. Klient
+następnie filtruje te już autoryzowane zdarzenia do obszaru roboczego, na który
+patrzysz; ten filtr wyświetlania nie jest granicą dostępu.
 
 ## Gdzie to znajdziesz
 
@@ -215,8 +232,9 @@ link bezpośredni.
 
 ::::note
 Zdalne sterowanie działa po stronie serwera i **nie** jest udostępniane przez
-MCP. Telefon rozmawia z własnym dyspozytorem serwera przez przekaźnik; nie jest
-klientem MCP zewnętrznego serwera.
+MCP. Telefon rozmawia z własnym dyspozytorem serwera przez swoje szyfrowane
+połączenie bezpośrednie albo przez przekaźnik; nie jest klientem MCP
+zewnętrznego serwera.
 ::::
 
 ## Zobacz też

@@ -10,6 +10,7 @@ import 'package:cc_domain/core/domain/services/cache_stats.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart'
     show RigPort, RigStreamUnavailable;
@@ -38,6 +39,7 @@ import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:cc_server_core/src/redeem_capacity_exception.dart';
 import 'package:cc_server_core/src/relay/paired_peer_auth.dart';
 import 'package:cc_server_core/src/remote_event_forwarder.dart';
+import 'package:cc_server_core/src/secure_resource_host.dart';
 import 'package:cc_server_core/src/server_mcp_control.dart';
 import 'package:path/path.dart' as p;
 
@@ -48,6 +50,7 @@ part 'local_rpc_server_auth.dart';
 part 'local_rpc_server_backup.dart';
 part 'local_rpc_server_codeserver.dart';
 part 'local_rpc_server_media.dart';
+part 'local_rpc_server_resources.dart';
 part 'local_rpc_server_rig.dart';
 
 // Diagnostics go through cc_host's log sink; this file needs no Flutter logger.
@@ -119,8 +122,11 @@ typedef BlobResolver =
 /// proxy, meeting audio, rig files), which also spares the server's main
 /// isolate a multi-megabyte JSON parse and the 33% base64 tax.
 typedef BlobWriter =
-    Future<({String ref, int bytes, String mediaType})?> Function({
+    Future<({String ref, int bytes, String mediaType, String fileId})?>
+    Function({
       required String workspaceId,
+      required String uploaderUserId,
+      required String name,
       required List<int> bytes,
       required String mediaType,
     });
@@ -349,14 +355,13 @@ bool mcpRemoteClientAllowed({
   required bool hasToken,
 }) => hasToken || (remote?.isLoopback ?? false);
 
-/// Reachable-server WebSocket JSON-RPC transport (`wss://…/rpc` or
-/// `ws://localhost:<port>`). Same paired-device PSK and shared
-/// `RpcDispatcher` / `RemoteRpcSession` as the WebRTC path; TLS replaces DTLS.
+/// Reachable-server WebSocket transport (`wss://…/rpc` or loopback `ws://`).
+/// Direct and relayed clients use the same signed-identity Noise session and
+/// shared `RpcDispatcher` / `RemoteRpcSession`.
 ///
-/// Security: non-loopback bind requires a [SecurityContext] (else `start`
-/// throws); browser `Origin` checked against `allowedOrigins` (loopback
-/// always allowed, never reflected); active-device PSK HMAC challenge before
-/// any RPC.
+/// Non-loopback binds require a [SecurityContext]. Browser origins are checked
+/// before upgrade; active-device and session-policy admission precede encrypted
+/// RPC and resources. Public sensitive HTTP routes cannot bypass that session.
 class LocalRpcServer implements McpHostServer {
   /// Creates a [LocalRpcServer].
   LocalRpcServer({
@@ -389,11 +394,13 @@ class LocalRpcServer implements McpHostServer {
     this.webhookHandler,
     this.ticketWebhookHandler,
     this.codeServerLookup,
+    this.codeServerBridgeAllowed,
     this.codeServerReport,
     this.codeServerReportDirty,
     this.codeServerCommandStream,
     this.codeGraphStatus,
     this.inviteRedeemer,
+    this.invitePskResolver,
     this.mediaProxyEnabled = true,
     this.mediaProxyMaxBytes,
     this.isDemo = false,
@@ -420,10 +427,8 @@ class LocalRpcServer implements McpHostServer {
     this.onRunningChanged,
   }) : rateLimiters = rateLimiters ?? RemoteRateLimiterPool();
 
-  /// The server's Ed25519 identity (PRD 15 §9). When present, the auth
-  /// handshake signs each client's nonce (TOFU fingerprint pinning) and
-  /// `/healthz` reports the server id + fingerprint so resolvers can verify
-  /// which server answered at an address. Null only in minimal test setups.
+  /// Ed25519 identity required for every remote secure session. Null is allowed
+  /// only for HTTP-only test hosts, which cannot authenticate RPC clients.
   final ServerIdentity? identity;
 
   /// Repo-RPC dispatcher exposed to connected clients (`repo/call` / `op/list`).
@@ -455,7 +460,7 @@ class LocalRpcServer implements McpHostServer {
   /// Hard ceiling on one `POST /blob` body, checked before the bytes are
   /// buffered. Sits above the blob store's own 24 MB limit so the store — not
   /// the socket — is what reports an over-sized image.
-  static const int _maxBlobUploadBytes = 32 * 1024 * 1024;
+  static const int _maxBlobUploadBytes = 24 * 1024 * 1024;
 
   /// Writes one workspace's database for `GET /backup/workspace`. Null on a
   /// host with no backup port (a demo server) — the route then 404s.
@@ -545,6 +550,9 @@ class LocalRpcServer implements McpHostServer {
   /// code-server — the route then 404s.
   final CodeServerSessionResolver? codeServerLookup;
 
+  /// Server-only editor instance lookup for the private report/command lane.
+  final bool Function(String instanceId)? codeServerBridgeAllowed;
+
   /// Snapshot of the background code-graph indexer for the `/healthz`
   /// `codeGraph` block ("is it still indexing?" — the operational question a
   /// slow host raises). Null on a host without code-graph indexing — the
@@ -565,10 +573,8 @@ class LocalRpcServer implements McpHostServer {
   /// `/proxy/vscode/<sid>/__cc_commands__`. Null on a host without code-server.
   final CodeServerCommandStreamResolver? codeServerCommandStream;
 
-  /// Handles `POST /invites/redeem` — the pre-auth invite redemption that
-  /// JIT-provisions a user and mints their first device credential. The
-  /// one-time invite code in the body is the proof. Null on a host without
-  /// identity wiring — the route then 404s.
+  /// Redeems an invite received inside the authenticated pairing channel,
+  /// provisioning a user and their first device credential.
   ///
   /// `remoteIp` is the caller's address, supplied so a redeemer can apply a
   /// per-address concurrency cap of its own. The route already rate-limits
@@ -578,6 +584,10 @@ class LocalRpcServer implements McpHostServer {
     String? remoteIp,
   })?
   inviteRedeemer;
+
+  /// Resolves a public invite routing ID to its high-entropy Noise PSK.
+  /// The routing ID must not be the PSK or expose the stored invite hash.
+  final Future<String?> Function(String routeId)? invitePskResolver;
 
   /// Whether this process is a PUBLIC DEMO server.
   ///
@@ -770,6 +780,9 @@ class LocalRpcServer implements McpHostServer {
   void Function({required bool running})? onRunningChanged;
 
   HttpServer? _server;
+  SecureResourceHost? _resources;
+  final _resourceTransfers = Expando<RemoteResourceRequest>();
+  final Set<Socket> _editorCommandSockets = {};
   DateTime? _startedAt;
   final Set<_WsSession> _sessions = {};
   StreamSubscription<List<PairedDevicesTableData>>? _deviceWatch;
@@ -821,9 +834,20 @@ class LocalRpcServer implements McpHostServer {
         'expose this port directly to the public internet.',
       );
     }
-    final server = securityContext != null
-        ? await HttpServer.bindSecure(addr, port, securityContext!)
-        : await HttpServer.bind(addr, port);
+    final resources = await SecureResourceHost.start(
+      handleRequest: _handleSealedResource,
+      handleEditorBridge: _handleEditorBridge,
+    );
+    final HttpServer server;
+    try {
+      server = securityContext != null
+          ? await HttpServer.bindSecure(addr, port, securityContext!)
+          : await HttpServer.bind(addr, port);
+    } catch (_) {
+      await resources.close();
+      rethrow;
+    }
+    _resources = resources;
     _server = server;
     _startedAt = DateTime.now();
     server.listen(
@@ -847,12 +871,16 @@ class LocalRpcServer implements McpHostServer {
     // relay host's reconcile: watch the device table and drop any live
     // session whose device left the active set.
     _deviceWatch = devicesDao.watchAll().listen((rows) {
+      final now = DateTime.now();
       final active = {
         for (final row in rows)
-          if (row.status == PairedDeviceStatus.active) row.id,
+          if (row.status == PairedDeviceStatus.active &&
+              !RemotePairingLifecycle.isExpired(row.expiresAt, now))
+            row.id: row.expiresAt,
       };
+      _resources?.reconcileDevices(active);
       for (final session in _sessions.toList()) {
-        if (!active.contains(session.deviceId)) {
+        if (!active.containsKey(session.deviceId)) {
           _w('Dropping live session for revoked device ${session.deviceId}');
           unawaited(_drop(session));
         }
@@ -862,6 +890,7 @@ class LocalRpcServer implements McpHostServer {
     // but an ATTACHED workspace subscription would otherwise keep streaming to
     // a removed member until they unsubscribed. Tear those down on the event.
     _memberWatch = eventBus.on<WorkspaceMemberRemoved>().listen((e) {
+      unawaited(_resources?.cancelForUser(e.userId));
       for (final session in _sessions.toList()) {
         if (session.userId == e.userId) {
           session.rpc.dropWorkspaceSubscriptions(e.workspaceId);
@@ -876,10 +905,16 @@ class LocalRpcServer implements McpHostServer {
     final server = _server;
     _server = null;
     _startedAt = null;
+    for (final socket in _editorCommandSockets) {
+      socket.destroy();
+    }
+    _editorCommandSockets.clear();
     await _deviceWatch?.cancel();
     _deviceWatch = null;
     await _memberWatch?.cancel();
     _memberWatch = null;
+    await _resources?.close();
+    _resources = null;
     for (final s in _sessions.toList()) {
       await s.dispose();
     }
@@ -891,6 +926,31 @@ class LocalRpcServer implements McpHostServer {
     _mediaCacheInstance = null;
     onRunningChanged?.call(running: false);
     _i('LocalRpcServer stopped');
+  }
+
+  /// Attaches byte streams to the same authenticated session as RPC. The relay
+  /// host calls this too; neither path exposes a second public HTTP data lane.
+  void attachResourceSession(
+    SecureRpcChannel channel,
+    String deviceId,
+    String userId,
+    DateTime? expiresAt,
+  ) {
+    final resources = _resources;
+    if (resources == null) throw StateError('Resource server is not running');
+    resources.attach(
+      channel,
+      deviceId: deviceId,
+      userId: userId,
+      expiresAt: expiresAt,
+    );
+  }
+
+  /// Private loopback IPC for server-launched editor extensions, not clients.
+  Uri get codeServerBridgeBase {
+    final resources = _resources;
+    if (resources == null) throw StateError('Resource server is not running');
+    return resources.editorBridgeBase;
   }
 
   /// Best-effort fan-out of a JSON-RPC notification to every live session.
@@ -905,9 +965,12 @@ class LocalRpcServer implements McpHostServer {
   }
 
   /// [_handle] with a last-resort error envelope. Never rethrows.
-  Future<void> _handleGuarded(HttpRequest request) async {
+  Future<void> _handleGuarded(
+    HttpRequest request, {
+    bool sealedResource = false,
+  }) async {
     try {
-      await _handle(request);
+      await _handle(request, sealedResource: sealedResource);
     } on Object catch (e, st) {
       _e('Unhandled error serving ${request.uri.path}: $e', e, st);
       try {
@@ -924,7 +987,18 @@ class LocalRpcServer implements McpHostServer {
     }
   }
 
-  Future<void> _handle(HttpRequest request) async {
+  Future<void> _handle(
+    HttpRequest request, {
+    bool sealedResource = false,
+  }) async {
+    if (!sealedResource && isSecureResourcePath(request.uri.path)) {
+      request.response
+        ..statusCode = HttpStatus.upgradeRequired
+        ..headers.set(HttpHeaders.cacheControlHeader, 'no-store')
+        ..write('An authenticated encrypted resource channel is required.');
+      await request.response.close();
+      return;
+    }
     if (request.uri.path == '/rpc') {
       if (!WebSocketTransformer.isUpgradeRequest(request)) {
         request.response.statusCode = HttpStatus.upgradeRequired;
@@ -952,6 +1026,21 @@ class LocalRpcServer implements McpHostServer {
       await _serveHealth(request);
       return;
     }
+    if (request.uri.path == '/invites/secure') {
+      if (!WebSocketTransformer.isUpgradeRequest(request)) {
+        request.response.statusCode = HttpStatus.upgradeRequired;
+        await request.response.close();
+        return;
+      }
+      if (!_originAllowed(request.headers.value('origin'))) {
+        await _closeProxy(request.response, HttpStatus.forbidden);
+        return;
+      }
+      final remoteIp = _clientAddressOf(request);
+      final socket = await WebSocketTransformer.upgrade(request);
+      unawaited(_serveSecureInvite(socket, remoteIp));
+      return;
+    }
     if (request.uri.path == '/invites/redeem') {
       await _serveInviteRedeem(request);
       return;
@@ -974,6 +1063,10 @@ class LocalRpcServer implements McpHostServer {
     }
     if (request.uri.path == '/saml/acs') {
       await _serveSamlAcs(request);
+      return;
+    }
+    if (request.uri.path == '/saml/claim') {
+      await _serveSamlGrantClaim(request);
       return;
     }
     if (request.uri.path == '/saml/metadata') {
@@ -1521,7 +1614,11 @@ class LocalRpcServer implements McpHostServer {
       await _closeProxy(res, HttpStatus.forbidden);
       return;
     }
-    if (await _lacksMembershipForUser(device?.userId, workspaceId)) {
+    if (device?.userId == null || device!.userId!.isEmpty) {
+      await _closeProxy(res, HttpStatus.forbidden);
+      return;
+    }
+    if (await _lacksMembershipForUser(device.userId, workspaceId)) {
       await _closeProxy(res, HttpStatus.forbidden);
       return;
     }
@@ -1532,6 +1629,25 @@ class LocalRpcServer implements McpHostServer {
       return;
     }
 
+    final encodedName = request.headers.value('x-cc-file-name');
+    String name;
+    try {
+      name = Uri.decodeComponent(encodedName ?? '');
+    } on FormatException {
+      await _closeProxy(res, HttpStatus.badRequest);
+      return;
+    } on ArgumentError {
+      await _closeProxy(res, HttpStatus.badRequest);
+      return;
+    }
+    if (name.isEmpty ||
+        name.length > 255 ||
+        name == '.' ||
+        name == '..' ||
+        name.contains(RegExp(r'[/\\\x00-\x1f\x7f]'))) {
+      await _closeProxy(res, HttpStatus.badRequest);
+      return;
+    }
     // Any type, not just images. The device and the server are often not the
     // same machine, so a dropped PDF or source file has to have its BYTES on
     // the server — a host path means nothing there, and a preview opened later
@@ -1567,10 +1683,12 @@ class LocalRpcServer implements McpHostServer {
       return;
     }
 
-    ({String ref, int bytes, String mediaType})? stored;
+    ({String ref, int bytes, String mediaType, String fileId})? stored;
     try {
       stored = await writer(
         workspaceId: workspaceId,
+        uploaderUserId: device.userId!,
+        name: name,
         bytes: bytes,
         mediaType: mediaType,
       );
@@ -1591,6 +1709,7 @@ class LocalRpcServer implements McpHostServer {
           'ref': stored.ref,
           'bytes': stored.bytes,
           'media_type': stored.mediaType,
+          'file_id': stored.fileId,
         }),
       );
     await res.close();
@@ -1670,12 +1789,17 @@ class LocalRpcServer implements McpHostServer {
       return;
     }
 
+    final transfer = _resourceTransfers[request];
     final cache = _fontCache;
     if (cache != null) {
       try {
         final resolution = await cache.resolve(
           MediaCache.keyFor(upstream.toString(), null),
-          ({etag, lastModified}) => _fetchMediaForCache(
+          ({
+            etag,
+            lastModified,
+            required MediaFetchCancellation cancellation,
+          }) => _fetchMediaForCache(
             upstream!,
             maxWidth: null,
             etag: etag,
@@ -1685,7 +1809,11 @@ class LocalRpcServer implements McpHostServer {
             // re-fetch it from the CDN.
             alwaysBuffer: true,
             bufferCap: _maxFontBytes,
+            cancelled: cancellation.cancelled,
+            isCancelled: () => cancellation.isCancelled,
           ),
+          cancelled: transfer?.cancelled,
+          isCancelled: () => transfer?.isCancelled ?? false,
         );
         switch (resolution) {
           case MediaCacheHit(:final bodyFile, :final contentType):
@@ -1702,6 +1830,10 @@ class LocalRpcServer implements McpHostServer {
             return;
         }
       } catch (e) {
+        if (transfer?.isCancelled ?? false) {
+          await _closeProxy(res, HttpStatus.requestTimeout);
+          return;
+        }
         // The cache must never take the route down — fall through to a direct
         // fetch below.
         _w('Font cache path failed for $family: $e');
@@ -1713,6 +1845,8 @@ class LocalRpcServer implements McpHostServer {
       maxWidth: null,
       alwaysBuffer: true,
       bufferCap: _maxFontBytes,
+      cancelled: transfer?.cancelled,
+      isCancelled: () => transfer?.isCancelled ?? false,
     );
     switch (outcome) {
       case MediaFetchBuffered(:final bytes, :final contentType):
@@ -1821,9 +1955,7 @@ class LocalRpcServer implements McpHostServer {
       // open-ended body, which is what every progressive-MP3 player expects.
       ..set(HttpHeaders.connectionHeader, 'keep-alive');
     try {
-      // addStream cancels its source subscription when the socket errors
-      // (client disconnect), which fires the hub consumer's onCancel → detach.
-      await res.addStream(stream);
+      await res.addStream(_withResourceCancellation(request, stream));
     } catch (_) {
       // Client disconnected mid-stream — the source was cancelled; nothing else.
     }
@@ -2197,23 +2329,13 @@ class LocalRpcServer implements McpHostServer {
   }
 
   Future<void> _onSocket(WebSocket socket, InternetAddress? peer) async {
-    final transport = WsRemoteTransport(socket, label: peer?.host ?? 'ws')
-      ..start();
-    final auth = await _authenticate(transport);
+    final raw = WsRemoteTransport(socket, label: peer?.host ?? 'ws')..start();
+    final auth = await _authenticate(raw);
     if (auth == null) {
-      // Tell the client it was rejected instead of letting its handshake stall
-      // until the timeout (which surfaces as an opaque "Server did not complete
-      // auth"). Deliberately generic: the precise reason (unpaired / wrong key /
-      // expired) is logged server-side in [_authenticate] and must NOT be
-      // revealed to an unauthenticated peer.
-      try {
-        await transport.send(const {'type': 'auth_denied'});
-      } catch (_) {
-        // Best effort — the socket may already be gone.
-      }
-      await transport.close();
+      await raw.close();
       return;
     }
+    final transport = auth.channel;
     final userId = auth.row.userId;
     if (userId == null || userId.isEmpty) {
       // A device credential with no user binding cannot act as a principal.
@@ -2228,6 +2350,7 @@ class LocalRpcServer implements McpHostServer {
       await transport.close();
       return;
     }
+    attachResourceSession(transport, auth.row.id, userId, auth.row.expiresAt);
     final rpc = RemoteRpcSession(
       deviceId: auth.row.id,
       userId: userId,
@@ -2306,19 +2429,16 @@ class LocalRpcServer implements McpHostServer {
     }
   }
 
-  /// Mutual PSK challenge over the (TLS-protected) WebSocket. Delegates to the
-  /// shared [authenticatePairedPeer] — the same handshake the broker-relay path
-  /// (`RemoteRelayHost`) runs, so a direct WS and a relayed phone authenticate
-  /// identically. Returns null on any failure (fail closed).
-  Future<({PairedDevicesTableData row, String psk})?> _authenticate(
-    WsRemoteTransport transport,
-  ) => authenticatePairedPeer(
-    transport,
-    devicesDao: devicesDao,
-    secrets: secrets,
-    identity: identity,
-    warn: _w,
-  );
+  /// Direct and broker connections share the same authenticated Noise session.
+  Future<PairedPeerAuth?> _authenticate(WsRemoteTransport transport) =>
+      authenticatePairedPeer(
+        transport,
+        devicesDao: devicesDao,
+        secrets: secrets,
+        identity: identity,
+        sessionPolicy: sessionPolicy,
+        warn: _w,
+      );
 
   /// Whether the SPA fallback `index.html` exists, resolved once. The web
   /// bundle does not appear or vanish while the server runs.

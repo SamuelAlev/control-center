@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/fonts/fonts.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The Fontsource catalogue endpoint — key-less and CORS-open, unlike Google's
 /// own Developer API (`webfonts/v1`), which requires an API key.
@@ -33,11 +35,11 @@ class FontsourceCatalogService implements FontCatalogRepository {
   /// for tests and restricted environments.
   FontsourceCatalogService({
     required this.cacheFilePath,
-    Dio? dio,
+    RhttpClient? httpClient,
     this.url = kFontsourceCatalogUrl,
     this.ttl = const Duration(days: 1),
     this.allowNetwork = true,
-  }) : _dio = dio ?? Dio();
+  }) : _httpClientOverride = httpClient;
 
   /// Path of the on-disk catalogue cache.
   final String cacheFilePath;
@@ -55,7 +57,24 @@ class FontsourceCatalogService implements FontCatalogRepository {
   static const _userAgent =
       'ControlCenter/1.0 (+https://github.com/SamuelAlev/control-center)';
 
-  final Dio _dio;
+  final RhttpClient? _httpClientOverride;
+
+  /// The [RhttpClient] used by [_fetch], created on first use so a cache-only
+  /// service never touches the transport. It is deliberately a plain client
+  /// (no interceptor chain), bounded like the per-request timeouts it replaces
+  /// (15s to connect, 20s overall).
+  late final RhttpClient _httpClient =
+      _httpClientOverride ??
+      RhttpClient.createSync(
+        settings: httpClientSettings(
+          settings: const ClientSettings(
+            timeoutSettings: TimeoutSettings(
+              connectTimeout: Duration(seconds: 15),
+              timeout: Duration(seconds: 20),
+            ),
+          ),
+        ),
+      );
 
   List<FontFamilyInfo>? _memo;
   Future<List<FontFamilyInfo>>? _inflight;
@@ -154,17 +173,11 @@ class FontsourceCatalogService implements FontCatalogRepository {
       return null;
     }
     try {
-      final res = await _dio.getUri<Object?>(
-        Uri.parse(url),
-        options: Options(
-          responseType: ResponseType.plain,
-          sendTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 20),
-          headers: const {'User-Agent': _userAgent},
-        ),
+      final response = await _httpClient.getText(
+        url,
+        headers: const HttpHeaders.rawMap({'User-Agent': _userAgent}),
       );
-      final body = res.data;
-      final decoded = body is String ? jsonDecode(body) : body;
+      final decoded = httpJsonBody(response);
       if (decoded is! List) {
         return null;
       }

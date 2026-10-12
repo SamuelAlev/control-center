@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -68,10 +69,93 @@ class BlobStore {
   /// stored, because the caller has a text fallback and the store does not.
   BlobStore({
     required this._workspaceDir,
+    this.onArtifactStored,
+    this.isProtectedHash,
     this.maxBytes = 24 * 1024 * 1024,
   });
 
   final String Function(String workspaceId) _workspaceDir;
+
+  /// Called after durable bytes exist and before returning a generated result.
+  /// Uploads opt out and create a user-owned draft instead.
+  final Future<void> Function(
+    String workspaceId,
+    StoredBlob blob,
+    String? creatorId,
+  )?
+  onArtifactStored;
+
+  /// Catalog lookup for optional cache eviction; legacy and active rows are
+  /// protected while disposable PR image blobs can still be reclaimed.
+  final Future<bool> Function(String workspaceId, String hash)? isProtectedHash;
+
+  final Map<String, Future<void>> _hashLocks = {};
+
+  /// Serializes writes, registration, and explicit removal for one hash. The
+  /// caller must finish catalog insertion inside [action] before releasing it.
+  Future<T> withHashLock<T>(
+    String workspaceId,
+    String hash,
+    Future<T> Function() action,
+  ) async {
+    final key = '$workspaceId/$hash';
+    final previous = _hashLocks[key];
+    final done = Completer<void>();
+    _hashLocks[key] = done.future;
+    if (previous != null) {
+      await previous;
+    }
+    try {
+      return await action();
+    } finally {
+      if (identical(_hashLocks[key], done.future)) {
+        unawaited(_hashLocks.remove(key));
+      }
+      done.complete();
+    }
+  }
+
+  /// Registers a human upload before making its reference visible. The
+  /// registration and file write share a hash lock with discard/reclamation.
+  Future<T?> putUpload<T>(
+    String workspaceId,
+    Uint8List bytes, {
+    required String mediaType,
+    required Future<T> Function(StoredBlob blob, bool ownedBytes) register,
+  }) async {
+    if (bytes.isEmpty || bytes.length > maxBytes) {
+      return null;
+    }
+    final hash = sha256.convert(bytes).toString();
+    return withHashLock(workspaceId, hash, () async {
+      final ownedBytes = fileFor(workspaceId, hash) == null;
+      final blob = await _putUnlocked(
+        workspaceId,
+        hash,
+        bytes,
+        mediaType: mediaType,
+        catalogArtifact: false,
+      );
+      return register(blob, ownedBytes);
+    });
+  }
+
+  /// Physical reclamation is only invoked after catalog reference checks
+  /// under [withHashLock]. A missing file is an idempotent success.
+  Future<void> deleteHash(String workspaceId, String hash) async {
+    final path = pathFor(workspaceId, hash);
+    if (path == null) {
+      return;
+    }
+    final file = File(path);
+    if (file.existsSync()) {
+      await file.delete();
+    }
+    final sidecar = File('$path.type');
+    if (sidecar.existsSync()) {
+      await sidecar.delete();
+    }
+  }
 
   /// Largest single blob accepted, in bytes.
   final int maxBytes;
@@ -97,11 +181,35 @@ class BlobStore {
     String workspaceId,
     Uint8List bytes, {
     String mediaType = 'application/octet-stream',
-  }) async {
+    bool catalogArtifact = true,
+    String? creatorId,
+  }) {
     if (bytes.isEmpty || bytes.length > maxBytes) {
-      return null;
+      return Future<StoredBlob?>.value();
     }
     final hash = sha256.convert(bytes).toString();
+    return withHashLock(
+      workspaceId,
+      hash,
+      () => _putUnlocked(
+        workspaceId,
+        hash,
+        bytes,
+        mediaType: mediaType,
+        catalogArtifact: catalogArtifact,
+        creatorId: creatorId,
+      ),
+    );
+  }
+
+  Future<StoredBlob> _putUnlocked(
+    String workspaceId,
+    String hash,
+    Uint8List bytes, {
+    required String mediaType,
+    required bool catalogArtifact,
+    String? creatorId,
+  }) async {
     final path = pathFor(workspaceId, hash)!;
     final file = File(path);
     // Content-addressed: identical bytes are already the right bytes, so an
@@ -126,12 +234,16 @@ class BlobStore {
       }
     }
     await _writeMeta(workspaceId, hash, mediaType);
-    return StoredBlob(
+    final stored = StoredBlob(
       hash: hash,
       ref: blobRefFor(hash),
       bytes: bytes.length,
       mediaType: mediaType,
     );
+    if (catalogArtifact && onArtifactStored != null) {
+      await onArtifactStored!(workspaceId, stored, creatorId);
+    }
+    return stored;
   }
 
   /// Stores base64-encoded [data]. Returns null when it is not valid base64,
@@ -140,6 +252,8 @@ class BlobStore {
     String workspaceId,
     String data, {
     String mediaType = 'image/png',
+    bool catalogArtifact = true,
+    String? creatorId,
   }) async {
     final Uint8List bytes;
     try {
@@ -147,7 +261,13 @@ class BlobStore {
     } on FormatException {
       return null;
     }
-    return put(workspaceId, bytes, mediaType: mediaType);
+    return put(
+      workspaceId,
+      bytes,
+      mediaType: mediaType,
+      catalogArtifact: catalogArtifact,
+      creatorId: creatorId,
+    );
   }
 
   /// The file holding [hash] in [workspaceId], or null when absent.
@@ -221,6 +341,10 @@ class BlobStore {
   /// for an hour can write hundreds of frames, and nothing in the transcript
   /// deletes them — a compacted-away tool result leaves its blob behind.
   Future<int> evictTo(String workspaceId, int budgetBytes) async {
+    // Without a protection lookup, never evict cataloged content.
+    if (onArtifactStored != null && isProtectedHash == null) {
+      return 0;
+    }
     final dir = Directory(directoryFor(workspaceId));
     if (!dir.existsSync()) {
       return 0;
@@ -248,13 +372,21 @@ class BlobStore {
       if (total - reclaimed <= budgetBytes) {
         break;
       }
+      final hash = p.basename(entry.file.path);
+      if (!_isSha256Hex(hash)) {
+        continue;
+      }
       try {
-        await entry.file.delete();
-        final meta = File('${entry.file.path}.type');
-        if (meta.existsSync()) {
-          await meta.delete();
+        final removed = await withHashLock(workspaceId, hash, () async {
+          if (await isProtectedHash?.call(workspaceId, hash) ?? false) {
+            return false;
+          }
+          await deleteHash(workspaceId, hash);
+          return true;
+        });
+        if (removed) {
+          reclaimed += entry.size;
         }
-        reclaimed += entry.size;
       } on FileSystemException {
         continue;
       }

@@ -9,9 +9,9 @@ import 'package:flutter/widgets.dart';
 /// or a PR body would fight the app's light/dark palette and its contrast
 /// floor. Diagrams are themed HERE, once.
 ///
-/// Full value equality is deliberate: the view memoizes laid-out scenes by
-/// `(source, style, width)`, so a token-driven rebuild that produces an equal
-/// style is a non-event.
+/// Full value equality lets identical styles reuse a render plan. The geometry
+/// cache separately compares text metrics and layout spacing, so paint-only
+/// changes can reuse positions without keeping stale text colors.
 @immutable
 class CcMermaidStyle {
   /// Creates a [CcMermaidStyle].

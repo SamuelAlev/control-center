@@ -1,59 +1,46 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/cc_domain.dart' show NetworkException;
 import 'package:cc_infra/src/network/github_api_client.dart';
 import 'package:cc_infra/src/skills/github_skill_source_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-/// Routes GitHub REST calls to canned JSON keyed by path prefix, so the
-/// adapter's tree-walking can be exercised without a network.
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.routes, {this.status = 200});
-
-  /// path substring → response body (decoded for every matching request).
-  final Map<String, Object> routes;
-  final int status;
-  final List<Uri> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    final uri = options.uri;
-    requests.add(uri);
-    // Longest match wins: '/repos/o/r' would otherwise shadow the more
-    // specific '/git/trees/…' and '/contents/…' routes of the same repo.
-    final matches = routes.entries
-        .where((e) => uri.path.contains(e.key))
-        .toList()
-      ..sort((a, b) => b.key.length.compareTo(a.key.length));
-    for (final entry in matches) {
-      // String routes serve RAW bodies (the contents API's raw media type);
-      // map/list routes are JSON endpoints.
-      final body =
-          entry.value is String
-              ? entry.value as String
-              : jsonEncode(entry.value);
-      return ResponseBody.fromString(body, status, headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      });
-    }
-    return ResponseBody.fromString('{"message": "no route"}', 404);
-  }
-
-  @override
-  void close({bool force = false}) {}
+/// A canned GitHub REST transport keyed by path substring, so the adapter's
+/// tree-walking can be exercised without a network.
+///
+/// Longest match wins: '/repos/o/r' would otherwise shadow the more specific
+/// '/git/trees/…' and '/contents/…' routes of the same repo. A [String] route
+/// serves a RAW body (the contents API's raw media type); a map/list route is a
+/// JSON endpoint.
+TestHttpClient _client(
+  Map<String, Object> routes, {
+  int status = 200,
+  List<Uri>? requests,
+}) {
+  return TestHttpClient(
+    settings: const ClientSettings(baseUrl: 'https://api.github.com'),
+    handler: (request) {
+      final uri = httpRequestUri(request);
+      requests?.add(uri);
+      final matches =
+          routes.entries.where((e) => uri.path.contains(e.key)).toList()
+            ..sort((a, b) => b.key.length.compareTo(a.key.length));
+      final unmatched = matches.isEmpty;
+      return httpTextResponse(
+        request,
+        unmatched ? const {'message': 'no route'} : matches.first.value,
+        statusCode: unmatched ? 404 : status,
+        headers: const {'content-type': 'application/json'},
+      );
+    },
+  );
 }
 
-GitHubSkillSourceAdapter _adapter(Map<String, Object> routes, {int status = 200}) {
-  final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-    ..httpClientAdapter = _FakeAdapter(routes, status: status);
-  return GitHubSkillSourceAdapter(GitHubApiClient(dio));
-}
+GitHubSkillSourceAdapter _adapter(
+  Map<String, Object> routes, {
+  int status = 200,
+}) =>
+    GitHubSkillSourceAdapter(GitHubApiClient(_client(routes, status: status)));
 
 void main() {
   group('GitHubSkillSourceAdapter.repoSnapshot', () {
@@ -97,8 +84,14 @@ void main() {
             {'path': '.claude-plugin/marketplace.json', 'type': 'blob'},
             // The Claude plugin-marketplace shape: plugins/<plugin>/skills/<slug>.
             {'path': 'plugins/auto-bugfix/skills/fix/SKILL.md', 'type': 'blob'},
-            {'path': 'plugins/auto-bugfix/skills/retrospect/SKILL.md', 'type': 'blob'},
-            {'path': 'plugins/engineering/skills/pull-request/SKILL.md', 'type': 'blob'},
+            {
+              'path': 'plugins/auto-bugfix/skills/retrospect/SKILL.md',
+              'type': 'blob',
+            },
+            {
+              'path': 'plugins/engineering/skills/pull-request/SKILL.md',
+              'type': 'blob',
+            },
             // Four deep but NOT ending in skills/<slug> — still excluded.
             {'path': 'a/b/c/d/SKILL.md', 'type': 'blob'},
             // A plugin's other directory is not a skill.
@@ -115,12 +108,13 @@ void main() {
 
       final listings = await adapter.listSkills('o', 'r');
 
-      expect(listings.map((l) => l.slug), ['fix', 'pull-request', 'retrospect']);
+      expect(listings.map((l) => l.slug), [
+        'fix',
+        'pull-request',
+        'retrospect',
+      ]);
       final fix = listings.firstWhere((l) => l.slug == 'fix');
-      expect(
-        fix.skillFilePath,
-        'plugins/auto-bugfix/skills/fix/SKILL.md',
-      );
+      expect(fix.skillFilePath, 'plugins/auto-bugfix/skills/fix/SKILL.md');
       expect(fix.name, 'fix');
       expect(fix.description, 'Fix bugs at the root cause');
     });
@@ -180,8 +174,7 @@ void main() {
             {'path': 'other/thing.md', 'type': 'blob'},
           ],
         },
-        '/contents/skills/pdf/SKILL.md':
-            '---\nname: pdf\n---\n\n# body',
+        '/contents/skills/pdf/SKILL.md': '---\nname: pdf\n---\n\n# body',
         '/contents/skills/pdf/scripts/run.sh': 'echo hi',
         '/contents/skills/pdf/README.md': '# The README',
       });
@@ -233,20 +226,16 @@ void main() {
 
     test('an explicit commit SHA is used as-is (no commit probe)', () async {
       final sha = 'a' * 40;
-      final fake = _FakeAdapter({
+      final requests = <Uri>[];
+      final client = _client({
         '/git/trees/$sha': {
           'tree': [
             {'path': 'skills/pdf/SKILL.md', 'type': 'blob'},
           ],
         },
         '/contents/skills/pdf/SKILL.md': '# pinned',
-      });
-      final adapter = GitHubSkillSourceAdapter(
-        GitHubApiClient(
-          Dio(BaseOptions(baseUrl: 'https://api.github.com'))
-            ..httpClientAdapter = fake,
-        ),
-      );
+      }, requests: requests);
+      final adapter = GitHubSkillSourceAdapter(GitHubApiClient(client));
 
       final resolved = await adapter.resolve(
         'o',
@@ -256,10 +245,7 @@ void main() {
       );
       expect(resolved.ref, sha);
       // No /commits probe happened.
-      expect(
-        fake.requests.any((u) => u.path.contains('/commits')),
-        isFalse,
-      );
+      expect(requests.any((u) => u.path.contains('/commits')), isFalse);
     });
   });
 }

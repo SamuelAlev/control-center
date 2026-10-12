@@ -1,8 +1,8 @@
 ---
 title: Kontrol jarak jauh dan seluler
-description: Bagaimana ponsel menjangkau server Anda melalui relay dengan perantara yang tersegel ujung ke ujung alih-alih tautan peer-to-peer, dan model akses berlapis yang menjaga jangkauan itu tetap sempit.
+description: Bagaimana ponsel menjangkau server Anda melalui koneksi terenkripsi ujung ke ujung, baik langsung maupun dengan perantara, dan model akses berlapis yang menjaga jangkauan itu tetap sempit.
 slug: id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center adalah aplikasi desktop, tetapi pekerjaan yang dilacaknya tidak
@@ -10,28 +10,29 @@ berhenti saat Anda meninggalkan meja. **Kontrol jarak jauh** memasangkan ponsel
 Anda dengan `cc_server` milik Anda, menggunakan
 **[Remote](https://remote.usectrl.dev/)**, aplikasi pendamping di
 remote.usectrl.dev, sehingga Anda dapat mengikuti fleet dari sana: membaca pesan
-dan tiket, membalas agen, memilah umpan berita Anda, tanpa audio, transkrip,
-kode sumber, atau kredensial yang ada di server pernah meninggalkannya.
+dan tiket, membalas agen, dan memilah umpan berita Anda melalui koneksi terenkripsi
+ujung ke ujung. Ponsel dan `cc_server` adalah endpoint teks asli yang tepercaya;
+relay hanya membawa catatan aplikasi yang terenkripsi.
 
 Anggap saja ini sebagai pendamping yang sebagian besar hanya untuk membaca bagi
 dek. Ini tidak dimaksudkan untuk menggantikan klien desktop lengkap.
 
-:::note[Dua jalur jarak jauh yang berbeda]
-Aplikasi pendamping ponsel dipasangkan dengan `cc_server` melalui **relay
-WebSocket dengan perantara** yang membawa frame JSON-RPC tersegel ujung ke
-ujung. **Build web** lengkap (dan desktop yang diarahkan ke server jarak jauh)
-adalah jalur jarak jauh yang lain; ia menghubungi `cc_server` melalui WebSocket
-dan merender aplikasi lengkapnya. Lihat
+:::note[Dua klien jarak jauh yang berbeda]
+Aplikasi pendamping ponsel dan **build web** lengkap (atau desktop yang diarahkan
+ke server jarak jauh) dapat terhubung langsung ke `cc_server` atau memakai relay
+WebSocket dengan perantara. Kedua jalur memerlukan sesi terenkripsi yang sama;
+ponsel menyediakan lebih sedikit operasi daripada klien lengkap. Lihat
 [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/) untuk
-perbedaan keduanya.
+perbedaan antar klien.
 :::
 
 ## Transport
 
 Ponsel menjangkau `cc_server` melalui WebSocket: baik koneksi langsung
 (loopback, LAN, tailnet, atau `wss://`) maupun ruang yang dibatasi undangan pada
-broker pensinyalan yang meneruskan frame tersegel. Tidak ada kanal data
-peer-to-peer.
+broker pensinyalan. Kedua jalur memerlukan sesi yang terautentikasi dan
+terenkripsi ujung ke ujung; broker hanya meneruskan catatan terenkripsinya.
+Tidak ada kanal data peer-to-peer.
 
 ## Apa yang dapat dilakukan ponsel
 
@@ -55,23 +56,26 @@ hal itu ditegakkan, bukan sekadar diniatkan.
 
 ## Bagaimana tautan dibangun
 
-Koneksi berjalan melalui **relay dengan perantara**: server bergabung ke satu
-ruang yang dibatasi undangan pada broker `wss://` sebagai pemiliknya, dan
-setiap klien yang dipasangkan — desktop, web, ponsel — bergabung ke ruang yang
-sama dengan token masuk yang dibatasi waktu. Tiga bagian bekerja bersama:
+Ketika ponsel tidak dapat menjangkau server secara langsung, koneksi memakai
+**relay dengan perantara**: server bergabung ke satu ruang yang dibatasi undangan
+pada broker `wss://` sebagai pemiliknya, dan klien yang dipasangkan bergabung
+dengan token masuk yang dibatasi waktu. Tiga bagian bekerja bersama:
 
 | Bagian                 | Peran                                                                                                                                                                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (aplikasi ponsel)** | Aplikasi web pendamping, yang secara bawaan dihosting di `remote.usectrl.dev`, atau dihosting sendiri. Dimuat di peramban, menyimpan catatan pairing di IndexedDB.                                                                                                      |
-| **Broker relay**       | Relay `wss://` tanpa status (`cc_signaling_server`) yang menghosting ruang N-arah. Ia membawa **hanya frame buram**: setiap payload tersegel ujung ke ujung antara ponsel dan server, sehingga broker tidak pernah melihat data aplikasi atau rahasia pairing dan tidak pernah menafsirkan apa yang diteruskannya. |
+| **Broker relay**       | Relay `wss://` tanpa status (`cc_signaling_server`) yang menghosting ruang N-arah. Ia meneruskan catatan terenkripsi tanpa rahasia pairing atau teks asli aplikasi, tetapi melihat pengenal perutean, IP, ukuran catatan, dan waktu. |
 | **`cc_server`**        | Pemilik ruang. Ia menjawab panggilan ponsel melalui dispatcher yang sama dengan yang digunakan setiap klien lain.                                                                                                                                                              |
 
 Tawaran pairing membawa **deskriptor koneksi** yang mencantumkan setiap jalur
 ke server (LAN, tailnet, `wss://` publik, relay) beserta sidik jari
-identitasnya. Resolver ponsel memilih jalur terbaik yang dapat dijangkau dan
-menyematkan sidik jari pada koneksi pertama (TOFU); relay menjamin konektivitas
-bahkan ketika tidak ada jalur langsung, tanpa pernah bisa membaca lalu
-lintasnya.
+identitasnya. Resolver ponsel memilih jalur terbaik yang dapat dijangkau. Server
+menandatangani jabat tangan terenkripsi, dan klien menyematkan sidik jarinya.
+Pada koneksi pertama, periksa sidik jari itu terhadap QR atau sumber tepercaya
+lain: identitas bertanda tangan pertama saja tidak membuktikan server mana yang
+Anda jangkau. Penyematan yang berubah ditolak, bukan dipercaya kembali secara
+diam-diam. Relay membawa ciphertext ketika tidak ada jalur langsung, tetapi tetap
+dapat memutus atau menunda koneksi.
 
 ## Apa isi payload pairing
 
@@ -83,26 +87,33 @@ adalah anatominya.
 https://<pwa-host>/#<payload>
 ```
 
-Payload berada di **fragment** URL, bagian setelah `#` yang tidak pernah dikirim
-peramban ke server, sehingga host HTTPS PWA tidak pernah melihatnya. Payload
-membawa semua yang dibutuhkan ponsel untuk menjangkau server dan membuktikan
-identitasnya: deskriptor koneksi (setiap jalur ditambah sidik jari identitas),
-id perangkat yang baru dibuat, kunci yang dibagikan sebelumnya sepanjang 32
-byte, dan stempel kedaluwarsa. Ponsel mendekodenya, menyimpan catatan pairing
-secara lokal, dan menghapus fragment agar rahasianya hilang dari URL.
+Payload berada di **fragment** URL, bagian setelah `#` yang tidak dikirim
+peramban dalam permintaan HTTP ke host PWA. Payload membawa semua yang dibutuhkan
+ponsel untuk menjangkau server dan membuktikan identitasnya: deskriptor koneksi
+(setiap jalur ditambah sidik jari identitas), id perangkat yang baru dibuat,
+kunci yang dibagikan sebelumnya sepanjang 32 byte, dan stempel kedaluwarsa.
+Ponsel mendekodenya, menyimpan catatan pairing secara lokal, dan menghapus
+fragment dari URL. Kode aplikasi web dapat membaca fragment, jadi gunakan host
+aplikasi yang tepercaya dan perlakukan tautannya sebagai rahasia.
 
 Ada dua bentuk payload dan keduanya **tidak dapat dipertukarkan**. QR ponsel
 yang dibuat dari panel pairing di dalam aplikasi adalah `PairingPayload` v2 di
 atas, yang diarahkan ke host PWA Remote. `cc_server pair --client-url`
-menghasilkan tautan v1 yang berbeda dan lebih lama (`{s, i, k}` — URL server, id
-perangkat, kunci) yang ditujukan hanya untuk klien **web**.
+menghasilkan tautan v1 (`{s, i, k}` — URL server, id perangkat, kunci) yang
+ditujukan hanya untuk klien **web**. Keduanya adalah format data pairing, bukan
+fallback transport: kedua klien harus mendukung protokol sesi terenkripsi yang
+berlaku saat ini.
 
 Keduanya juga berbeda masa berlakunya, dan hal ini mudah disalahpahami:
 
 | Dibuat oleh                              | Kedaluwarsa kredensial                       |
 | ---------------------------------------- | -------------------------------------------- |
 | Panel pairing di dalam aplikasi (`pairing.mint`) | 30 hari, selalu                       |
-| `cc_server pair` di baris perintah       | **Tidak ada** — kredensial tidak kedaluwarsa |
+| `cc_server pair` di baris perintah       | Tidak ada masa kedaluwarsa yang dikodekan; kebijakan server tetap berlaku |
+
+Kebijakan tingkat server untuk usia perangkat maksimum dan batas waktu menganggur
+dapat menolak salah satu kredensial lebih awal. Tidak ada format pairing yang
+melewati kebijakan tersebut.
 
 ## Model akses
 
@@ -160,13 +171,15 @@ ruang kerja asing juga tidak membantu, karena pemeriksaan keanggotaan di gerbang
 [isolasi ruang kerja](/id-ID/panduan-pengguna/konsep/ruang-kerja/) yang sama
 dengan yang ditegakkan oleh bagian lain produk.
 
-### 5. Frame tersegel ujung ke ujung yang dikunci dengan kunci yang dibagikan sebelumnya
+### 5. Enkripsi ujung ke ujung pada koneksi langsung dan melalui relay
 
-Setiap frame antara ponsel dan server tersegel dengan kunci pairing; token
-masuk hanya membawa klien ke dalam ruang, ia tidak mendekripsi apa pun. Broker
-meneruskan ciphertext dan tidak pernah melihat kuncinya. Perangkat yang dicabut
-akan mendapati kredensialnya sudah hilang, sehingga ia **gagal secara tertutup**
-saat menyambung kembali.
+Setiap sesi klien, langsung maupun melalui relay, memerlukan jabat tangan Noise
+yang ditandatangani. Kunci pairing mengautentikasi jabat tangan itu; kunci
+sementara yang baru menurunkan kunci lalu lintas, bukan memakai kunci pairing
+untuk menyegel setiap frame. Server menandatangani identitasnya ke dalam
+pertukaran ini dan klien memeriksa penyematan sidik jari yang tersimpan. Tidak ada
+fallback ke teks asli atau klien lama. Token masuk relay hanya membawa klien ke
+dalam ruang; ia tidak dapat mendekripsi catatan.
 
 Kredensial yang dibuat aplikasi dibatasi waktu 30 hari; setelah itu gerbang
 koneksi menolaknya dan ponsel harus melakukan pairing ulang. Pencabutan bersifat
@@ -182,21 +195,24 @@ menarik dari satu jatah, sehingga klien yang dibajak tidak dapat menambah
 kelonggaran dengan membuka lebih banyak sesi dan satu anggota yang berisik tidak
 dapat merampas jatah anggota lain.
 
-### 7. Broker yang tidak mempelajari apa pun
+### 7. Broker yang tidak dapat membaca konten aplikasi
 
-Broker relay sengaja dibuat bodoh: ia menghosting ruang, meneruskan frame
-tersegel, dan tidak menyimpan akun, data aplikasi, maupun kunci. Ruang dibatasi
-undangan dan bersifat sementara. Data aplikasi, audio, transkrip, kode sumber,
-dan kredensial semuanya tetap berada di server.
+Broker relay menghosting ruang sementara yang dibatasi undangan dan meneruskan
+catatan terenkripsi tanpa teks asli aplikasi atau kunci pairing. Namun ia tetap
+melihat alamat IP, pengenal ruang dan peer, ukuran catatan, waktu, serta masa
+hidup koneksi, dan dapat menurunkan atau menunda lalu lintas. Klien yang
+dipasangkan dan `cc_server` yang dipilih adalah endpoint teks asli; operator
+server dan layanan yang dikirimi konten olehnya dapat melihat konten itu.
+Enkripsi saat transit tidak mengenkripsi data server saat tersimpan.
 
 ## Pembaruan langsung
 
 Setelah dipasangkan, ponsel menerima **pembaruan langsung** sebagai frame
 notifikasi — pesan agen baru, tiket yang ditugaskan kepada Anda, perubahan
-status — yang mencerminkan notifikasi desktop itu sendiri. Server menyiarkan
-frame tersebut ke setiap sesi yang terhubung dan filter ruang kerja diterapkan
-di sisi klien, sehingga apa yang Anda lihat terbatas pada ruang kerja yang
-sedang Anda lihat.
+status — yang mencerminkan notifikasi desktop itu sendiri. Server memeriksa
+keanggotaan ruang kerja sebelum meneruskan peristiwa ke sebuah sesi. Klien
+kemudian memfilter peristiwa yang sudah diotorisasi itu ke ruang kerja yang
+sedang Anda lihat; filter tampilan itu bukan batas akses.
 
 ## Di mana letaknya
 
@@ -209,8 +225,8 @@ bukan hanya ponsel — alurnya identik, hanya tautan mendalamnya yang berbeda.
 
 ::::note
 Kontrol jarak jauh berjalan di sisi server dan **tidak** diekspos melalui MCP.
-Ponsel berbicara dengan dispatcher milik server melalui relay; ia bukan klien
-MCP dari server eksternal.
+Ponsel berbicara dengan dispatcher milik server melalui koneksi langsung atau
+melalui relay yang terenkripsi; ia bukan klien MCP dari server eksternal.
 ::::
 
 ## Lihat juga

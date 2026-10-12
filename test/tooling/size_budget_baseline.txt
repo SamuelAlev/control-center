@@ -86,7 +86,7 @@ lib/features/pipelines/presentation/screens/pipelines_screen.dart  510
 lib/features/pipelines/presentation/widgets/condition_config_editor.dart  450
 lib/features/pipelines/presentation/widgets/node_config_editor.dart  775
 lib/features/pipelines/presentation/widgets/node_type_visuals.dart  377
-lib/features/pipelines/presentation/widgets/pipeline_canvas.dart  450
+lib/features/pipelines/presentation/widgets/pipeline_canvas.dart  429
 lib/features/pipelines/presentation/widgets/pipeline_editor_canvas.dart  536
 lib/features/pipelines/presentation/widgets/pipeline_editor_geometry.dart  407
 lib/features/pipelines/presentation/widgets/pipeline_editor_node_tile.dart  521
@@ -159,7 +159,7 @@ lib/features/pr_review/presentation/widgets/review_overlay.dart  765
 lib/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart  569
 lib/features/pr_review/presentation/widgets/sticky_header.dart  331
 lib/features/pr_review/presentation/widgets/workflow_job_detail.dart  1074
-lib/features/pr_review/presentation/widgets/workflow_run_canvas.dart  458
+lib/features/pr_review/presentation/widgets/workflow_run_canvas.dart  440
 lib/features/remote_control/presentation/widgets/server_pairing_panel.dart  398
 lib/features/repos/presentation/settings/repos_settings_view.dart  578
 lib/features/repos/presentation/widgets/add_repo_dialog.dart  495

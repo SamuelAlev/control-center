@@ -33,6 +33,7 @@ CC_THIRD_PARTY=(
   "sherpa-onnx|@SHERPA_ONNX_VERSION|Apache-2.0|https://github.com/k2-fsa/sherpa-onnx|sherpa-onnx-Apache-2.0.txt|static|desktop,server"
   "ONNX Runtime|1.28.2|MIT|https://github.com/microsoft/onnxruntime|onnxruntime-MIT.txt|static|desktop,server"
   "flutter_pty (vendored C)|0.4.2|MIT|https://github.com/xtyxtyx/flutter_pty|flutter-pty-MIT.txt|static|desktop,server"
+  "rhttp (Rust HTTP engine)|@RHTTP_VERSION|MIT|https://codeberg.org/Tienisto/rhttp|rhttp-MIT.txt|static|server"
   "code-server|@codeServerVersion|MIT|https://github.com/coder/code-server|code-server-MIT.txt|bundled|server"
   "AppImage runtime|20251108|MIT|https://github.com/AppImage/type2-runtime|appimage-runtime-MIT.txt|bundled|desktop"
   # Fonts. Vendored into packages/cc_ui/fonts/ and compiled into the Flutter

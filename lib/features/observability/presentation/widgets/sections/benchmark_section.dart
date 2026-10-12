@@ -29,9 +29,10 @@ class BenchmarkSection extends ConsumerWidget {
     final run = ref.watch(workspaceBenchmarkRunProvider);
     final scorer = ref.watch(benchmarkScorerProvider);
 
-    final costPerTaskCents = run.done > 0
-        ? (run.totalCostCents / run.done).round()
-        : 0;
+    final totalCost = run.totalCostCents;
+    final costPerTaskCents = totalCost != null && run.done > 0
+        ? (totalCost / run.done).round()
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,11 +67,11 @@ class BenchmarkSection extends ConsumerWidget {
             ),
             ObsStatStripEntry(
               label: l10n.obsBenchmarkSpend,
-              value: fmtCents(run.totalCostCents),
+              value: totalCost == null ? '—' : fmtCents(totalCost),
             ),
             ObsStatStripEntry(
               label: l10n.obsBenchmarkCostPerTask,
-              value: fmtCents(costPerTaskCents),
+              value: costPerTaskCents == null ? '—' : fmtCents(costPerTaskCents),
             ),
           ],
         ),
@@ -217,7 +218,9 @@ class _TrialRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.lg),
           _TrialMetric(
             label: l10n.obsColCost,
-            value: fmtCents(trial.costCents),
+            value: trial.costCents == null
+                ? '—'
+                : fmtCents(trial.costCents!),
             t: t,
           ),
           const SizedBox(width: AppSpacing.lg),

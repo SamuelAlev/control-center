@@ -6,14 +6,11 @@ import 'package:cc_rpc/cc_rpc.dart';
 
 /// [RemoteRpcChannelPort] backed by a [WebSocket].
 ///
-/// This is the transport for the **reachable-server** path (LAN / Tailnet /
-/// VPS / same-origin web): a client dials `wss://…/rpc`, the server upgrades the
-/// connection and frames flow as JSON text. Confidentiality + integrity come
-/// from TLS at the socket layer (vs. DTLS for the WebRTC path); the same
-/// `RemoteRpcSession` and PSK auth ride on top, transport-agnostic.
-///
-/// Mirrors `WebRtcRemoteTransport`: a frame-size cap and a pending-frame buffer
-/// (the client's first `auth_challenge` can arrive before a listener attaches).
+/// On the reachable-server path, a client dials `wss://…/rpc` and the server
+/// upgrades the connection. This adapter carries bounded Noise records;
+/// authentication and application confidentiality belong to SecureRpcChannel.
+/// It buffers a bounded number of early handshake records until a listener
+/// attaches and drains queued JSON decodes before signaling remote EOF.
 class WsRemoteTransport implements RemoteRpcChannelPort {
   /// Wraps an already-upgraded WebSocket. Call [start] once to begin reading.
   WsRemoteTransport(this._socket, {this.label = 'ws'});
@@ -23,12 +20,13 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
   /// A short label for logs (e.g. the device id or peer address).
   final String label;
 
-  /// Hard cap on a single inbound frame before decode (DoS guard). RPC frames
-  /// are small JSON; anything larger is abusive and closes the space.
-  static const int _maxFrameBytes = 256 * 1024;
+  /// A Noise record fits comfortably under 64 KiB; assembled application
+  /// frames use a separate, larger limit inside SecureRpcChannel.
+  static const int _maxFrameBytes = 64 * 1024;
 
   /// Cap on frames buffered while no listener is attached.
   static const int _maxPendingFrames = 64;
+  static const int _maxQueuedDecodes = 128;
 
   StreamController<Map<String, dynamic>>? _incomingController;
   StreamController<RemoteChannelState>? _stateController;
@@ -37,15 +35,10 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
   bool _closed = false;
   bool _open = false;
 
-  /// Tail of the decode chain. Large frames decode off this isolate, but a
-  /// later small frame must not be delivered ahead of an earlier one: snapshot
-  /// and response order is part of the protocol.
+  /// Preserve socket order across asynchronous JSON decodes, with bounded
+  /// admission before either a listener or the decoder can be overwhelmed.
   Future<void> _decodeChain = Future<void>.value();
-
-  /// True while [_deliverFrame] is on the stack, including across its decode
-  /// await. [close] is called from that path when the pending buffer
-  /// overflows; awaiting the chain from inside it would wait for itself.
-  bool _decoding = false;
+  int _queuedDecodes = 0;
 
   void _ensureControllers() {
     _incomingController ??= StreamController<Map<String, dynamic>>.broadcast(
@@ -82,7 +75,7 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
         CcHostLog.warning('WS error ($label): $e');
         unawaited(close());
       },
-      onDone: () => unawaited(close()),
+      onDone: () => unawaited(_onRemoteDone()),
       cancelOnError: true,
     );
     // A freshly-upgraded socket is open; surface it so listeners don't miss it.
@@ -92,36 +85,27 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
   }
 
   void _onData(dynamic data) {
-    if (data is! String) {
-      CcHostLog.warning('Ignoring non-text WS frame ($label)');
-      return;
-    }
-    if (data.length > _maxFrameBytes) {
-      CcHostLog.warning(
-        'WS frame ($label) is ${data.length}B (> $_maxFrameBytes) — closing',
-      );
+    if (data is! String ||
+        data.length > _maxFrameBytes ||
+        _queuedDecodes >= _maxQueuedDecodes) {
+      CcHostLog.warning('Invalid or excessive WS record ($label) — closing');
       unawaited(close());
       return;
     }
-    // Started before any await so two frames keep socket order even when the
-    // earlier one is still decoding off-isolate.
-    _decodeChain = _decodeChain.then((_) => _deliverFrame(data));
+    _queuedDecodes++;
+    // Register before any await; a later record must never overtake this one.
+    _decodeChain = _decodeChain.then((_) => _deliverFrame(data)).whenComplete(
+      () => _queuedDecodes--,
+    );
   }
 
   Future<void> _deliverFrame(String data) async {
-    if (_closed) {
-      return;
-    }
-    _decoding = true;
+    if (_closed) return;
     try {
       final decoded = await decodeJsonFrame(data);
-      if (_closed) {
-        return;
-      }
+      if (_closed) return;
       final controller = _incomingController;
-      if (controller == null || controller.isClosed) {
-        return;
-      }
+      if (controller == null || controller.isClosed) return;
       if (controller.hasListener) {
         controller.add(decoded);
       } else if (_pendingIncoming.length >= _maxPendingFrames) {
@@ -131,10 +115,16 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
         _pendingIncoming.add(decoded);
       }
     } catch (e) {
-      CcHostLog.warning('Malformed WS frame ($label): $e');
-    } finally {
-      _decoding = false;
+      CcHostLog.warning('Malformed WS record ($label): $e');
+      unawaited(close());
     }
+  }
+
+  Future<void> _onRemoteDone() async {
+    if (_closed) return;
+    _open = false;
+    await _decodeChain;
+    if (!_closed) await close();
   }
 
   @override
@@ -155,11 +145,8 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
   /// Ceiling on bytes accepted for this session but not yet handed to the
   /// socket.
   ///
-  /// `WebSocket.add` is fire-and-forget over an UNBOUNDED internal controller:
-  /// nothing in dart:io pushes back, so a slow peer (a phone on a bad link
-  /// receiving full-list snapshots) grows the server's heap for as long as it
-  /// stays connected. Every push path here is unawaited, so nobody upstream
-  /// notices either.
+  /// `WebSocket.add` is fire-and-forget over an unbounded internal controller;
+  /// queued Noise records must count against a separate total backpressure cap.
   static const int _maxOutboundBytes = 8 * 1024 * 1024;
 
   int _outboundBytes = 0;
@@ -174,29 +161,17 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
     if (!isOpen) {
       throw StateError('WsRemoteTransport ($label) is not open');
     }
-    // Encode before the socket write, but do not hold this isolate for a
-    // multi-megabyte snapshot. [encodeJsonFrame] stays inline under 50KB
-    // and moves the rest to another isolate. The future is started now and
-    // attached to [_sendChain] before the first await below, so two sends
-    // still leave the socket in call order when their encodes finish
-    // out of order.
-    //
-    // Admission happens as soon as the bytes exist, so frames waiting behind
-    // a slow socket count against [_maxOutboundBytes] — sends are serialized,
-    // so counting only the frame being written meant the gauge never held
-    // more than one frame. It read "0 bytes queued" and closed a healthy
-    // connection whenever a SINGLE snapshot was larger than the ceiling, and
-    // the reconnect re-seeded the same snapshot, in a loop. A frame is always
-    // admitted onto an empty queue: one big frame is not a stalled peer.
+    // Encode before admission; register the future before awaiting earlier
+    // sends so concurrent records keep their original socket order.
     final encodedFuture = encodeJsonFrame(frame).then((encoded) {
-      if (_outboundBytes > 0 &&
-          _outboundBytes + encoded.length > _maxOutboundBytes) {
-        // Saturated. Dropping the frame silently would leave the peer's
-        // mirror quietly wrong; closing makes it reconnect and re-seed,
-        // which is the only outcome that stays honest.
+      if (encoded.length > _maxFrameBytes) {
+        throw StateError('WsRemoteTransport ($label) record exceeds wire cap');
+      }
+      if (_outboundBytes + encoded.length > _maxOutboundBytes) {
+        // A saturated peer must reconnect rather than silently lose a record.
         CcHostLog.warning(
           'WsRemoteTransport ($label): peer is not draining '
-          '($_outboundBytes bytes queued) — closing so it re-seeds',
+          '($_outboundBytes bytes queued) — closing',
         );
         unawaited(close());
         throw StateError('WsRemoteTransport ($label) outbound buffer is full');
@@ -229,22 +204,20 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
 
   @override
   Future<void> close() async {
-    if (_closed) {
-      return;
-    }
+    if (_closed) return;
     _closed = true;
     _open = false;
-    await _socketSub?.cancel();
-    if (!_decoding) {
-      await _decodeChain;
-    }
+    _pendingIncoming.clear();
     _stateController?.add(RemoteChannelState.closed);
+    await _socketSub?.cancel();
     try {
       await _socket.close();
     } catch (_) {
       // Already closed by the peer.
+    } finally {
+      // Paused consumers must not hold socket teardown or key disposal.
+      unawaited(_incomingController?.close());
+      unawaited(_stateController?.close());
     }
-    await _incomingController?.close();
-    await _stateController?.close();
   }
 }

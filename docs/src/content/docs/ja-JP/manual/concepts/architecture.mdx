@@ -3,7 +3,7 @@ title: アーキテクチャ
 description: Control Center が、シンクライアントのサーバーモデル、フィーチャー優先のクリーンアーキテクチャ、およびポートとアダプターによってどのように構成されているかを説明します。
 dateModified: 2026-09-19
 slug: ja-JP/マニュアル/コンセプト/アーキテクチャ
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## 概要
@@ -26,7 +26,7 @@ RPC レイヤー自体は**ステートレス**です。セッションは認証
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **ドメイン層**: 純粋な Dart のエンティティ、値オブジェクト、リポジトリインターフェース、ポート、ドメインサービス。インフラストラクチャのインポートはゼロです（dio、drift、ネットワークモデルなし）。
+- **ドメイン層**: 純粋な Dart のエンティティ、値オブジェクト、リポジトリインターフェース、ポート、ドメインサービス。インフラストラクチャのインポートはゼロです（rhttp、drift、ネットワークモデルなし）。
 - **プレゼンテーション層**: 画面、ウィジェット、ノーティファイアー。drift/DAO/データ層への直接アクセスはありません。すべては Riverpod プロバイダー → リポジトリを経由します。
 - **インフラストラクチャ層**: ドメインのポートとリポジトリインターフェースの具象実装。ドメインに依存し、その逆は決してありません。
 
@@ -122,7 +122,7 @@ Control Center はマルチユーザーです。人間とエージェントは `
 
 外部への HTTP はすべてサーバー内にあります。クライアントが GitHub、Linear、Google に直接接続することはありません — サーバーの RPC オペレーションを呼び出し、リモートのメディアでさえ上流のオリジンからではなくサーバーの `/proxy/media` エンドポイントを通じて取得されます。
 
-- `packages/cc_infra/lib/src/` にある **dio** クライアント: `GitHubApiClient`、`GitHubPrClient`、`GitHubContentClient`、`GitHubGraphQLClient`、`GitLabApiClient`、`BitbucketApiClient`、`LinearGraphQlClient`、`GoogleCalendarApiClient`
+- `packages/cc_infra/lib/src/` にある **rhttp** クライアント: `GitHubApiClient`、`GitHubPrClient`、`GitHubContentClient`、`GitHubGraphQLClient`、`GitLabApiClient`、`BitbucketApiClient`、`LinearGraphQlClient`、`GoogleCalendarApiClient`
 - インターセプターによる認証トークンの注入。401 でトークンを更新する、`cc_server_core` 内のアカウントごとの Google OAuth インターセプターも含みます
 - すべてのエラーは `packages/cc_infra/lib/src/network/error_mapper.dart` を通じてマッピングされ、`cc_domain` で定義された型付きの `AppException` サブクラスになります
 

@@ -29,6 +29,8 @@ import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/core/server/server_entry_factory.dart';
 import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/sso_login.dart';
+import 'package:control_center/core/server/sso_login_web.dart'
+    show openSsoWebFragment;
 import 'package:control_center/core/server/sso_pair_link.dart'
     show httpOriginFor;
 import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
@@ -266,7 +268,7 @@ class _WebRootState extends State<_WebRoot> {
   /// the [ResilientRpcClient]'s job — the gate only handles first connects.
   Future<void> _boot() async {
     await removeLegacyCalendarSnapshots(AppPreferences(_webBackend));
-    final urlHints = _readUrlHints();
+    final urlHints = await _readUrlHints();
     _stripCredentialFragment();
     final active = _store.readActive();
     final defaultServer =
@@ -295,9 +297,8 @@ class _WebRootState extends State<_WebRoot> {
       return;
     }
     if (urlHints.server.isNotEmpty && (urlHints.psk?.isNotEmpty ?? false)) {
-      if (ssoLoginInFlight()) {
-        // The expected completion of an SSO round-trip this tab started
-        // (the IdP redirected back with the credential fragment).
+      if (urlHints.trustedHandoff) {
+        // Only a decryptable, expected SSO completion may auto-connect.
         await _pair(
           server: urlHints.server,
           deviceId: urlHints.device ?? 'web-client',
@@ -721,6 +722,7 @@ class _Creds {
     this.device,
     this.psk,
     this.invite,
+    this.trustedHandoff = false,
     this.remember = true,
   });
 
@@ -728,10 +730,13 @@ class _Creds {
   final String? device;
   final String? psk;
 
-  /// One-time invite code from an invite deep link — redeemed against the
-  /// server's `/invites/redeem` to mint this browser's device credential.
+  /// One-time high-entropy invite code redeemed over authenticated Noise.
+  /// The public demo's short admission code uses a client-held sealed result.
   final String? invite;
   final bool remember;
+
+  /// True only after client-held decryption of an expected SSO completion.
+  final bool trustedHandoff;
 
   bool get isComplete => server.isNotEmpty && (psk != null && psk!.isNotEmpty);
 
@@ -746,6 +751,7 @@ class _Creds {
     device: other.device ?? device,
     psk: other.psk ?? psk,
     invite: other.invite ?? invite,
+    trustedHandoff: other.trustedHandoff,
     remember: other.remember && remember,
   );
 }
@@ -822,12 +828,13 @@ void _clearProxyOriginCookie() {
 /// nothing: a `?psk=` lands in the static host's access logs, proxies and
 /// the browser's history and the invariant is that the PSK rides in the
 /// fragment so it never reaches a server.
-_Creds _readUrlHints() {
+Future<_Creds> _readUrlHints() async {
   final base = Uri.base;
   String? server;
   String? device;
   String? psk;
   String? invite;
+  var trustedHandoff = false;
   void take(String? s, void Function(String) set) {
     if (s != null && s.isNotEmpty) {
       set(s);
@@ -842,6 +849,19 @@ _Creds _readUrlHints() {
       final json = jsonDecode(utf8.decode(base64Url.decode(padded)));
       if (json is Map) {
         parsed = {for (final e in json.entries) '${e.key}': '${e.value}'};
+        if (json.containsKey('box')) {
+          final handoff = await openSsoWebFragment(
+            json.cast<String, dynamic>(),
+          );
+          if (handoff != null) {
+            parsed = {
+              's': handoff.server,
+              'i': handoff.deviceId,
+              'k': handoff.psk,
+            };
+            trustedHandoff = json['idpInitiated'] != true;
+          }
+        }
       }
     } catch (_) {
       try {
@@ -857,7 +877,13 @@ _Creds _readUrlHints() {
       take(parsed['invite'] ?? parsed['inv'], (v) => invite = v);
     }
   }
-  return _Creds(server: server ?? '', device: device, psk: psk, invite: invite);
+  return _Creds(
+    server: server ?? '',
+    device: device,
+    psk: psk,
+    invite: invite,
+    trustedHandoff: trustedHandoff,
+  );
 }
 
 /// Removes the credential fragment from the address bar and history. The

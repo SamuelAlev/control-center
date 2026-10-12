@@ -32,22 +32,11 @@ class ComposerDrop {
   bool get isEmpty => attachments.isEmpty && (text == null || text!.isEmpty);
 }
 
-/// Largest picture read into memory on a drop.
-///
-/// Matches the clipboard's own ceiling (and the server's), because both ends of
-/// the image lane have to agree: reading a 40 MB screenshot here only to have
-/// `blob.put` refuse it on send would spend the memory and lose the image
-/// anyway.
-const int kMaxDroppedImageBytes = 16 * 1024 * 1024;
+/// Server upload ceiling. Oversized files remain visible as failed attachments.
+const int kMaxDroppedImageBytes = 24 * 1024 * 1024;
 
-/// Accepts files and pictures dragged onto the composer from the OS, and says so before the
-/// user lets go.
-/// That is what lets the composer advertise itself as a target the moment a drag enters the
-/// window rather than only once the pointer is already on top of it — a target you have to
-/// find before it admits it exists is not discoverable.
-/// dropped file's bytes, which is right for a rig (the bytes have to cross into a VM) and
-/// wrong here: a composer needs bytes only for a PICTURE, which it uploads, and a path for
-/// everything else, which the agent opens itself from the filesystem it already shares.
+/// Accepts files and pictures dragged onto the composer from the OS, and says
+/// so before the user lets go.
 class ComposerDropTarget extends StatefulWidget {
   /// Creates a [ComposerDropTarget].
   const ComposerDropTarget({
@@ -424,40 +413,29 @@ bool _sessionMayCarryFiles(DropSession session) {
 
 /// Turns a host drop into composer attachments.
 ///
-/// The same rule the reader path follows, arrived at more cheaply: bytes are
-/// read only for a PICTURE, because only a picture is uploaded with the
-/// message. Everything else travels as the path the host already gave us, which
-/// the agent opens from the filesystem it shares — no read, whatever the file
-/// weighs.
+/// Local paths are read by the bounded upload service after insertion; web
+/// drops without paths carry bytes in the draft instead.
 Future<ComposerDrop> _readHostDrop(HostDropEvent event) async {
   final attachments = <ComposerAttachment>[];
   for (final path in event.paths) {
     final name = p.basename(path);
     final mimeType = mediaTypeForFileName(name);
-    final isImage = (mimeType ?? '').startsWith('image/');
-    final bytes = isImage
-        ? await readLocalBytes(path, maxBytes: kMaxDroppedImageBytes)
-        : null;
     attachments.add(
       ComposerAttachment(
         id: 'file:$path',
-        // A picture too large to carry (readLocalBytes refuses past the
-        // ceiling) degrades to a plain file reference rather than vanishing.
-        kind: isImage && bytes != null ? 'image' : 'file',
+        kind: (mimeType ?? '').startsWith('image/') ? 'image' : 'file',
         label: name,
         path: path,
-        bytes: bytes,
         mimeType: mimeType,
-        sizeBytes: bytes?.length ?? await localFileSize(path),
+        sizeBytes: await localFileSize(path),
       ),
     );
   }
-  // Pictures with no file behind them (a browser drag) arrive as bytes.
   for (var i = 0; i < event.images.length; i++) {
     final bytes = event.images[i];
     attachments.add(
       ComposerAttachment(
-        id: 'drop:${identityHashCode(bytes)}:${bytes.length}',
+        id: 'drop:${identityHashCode(bytes)}:$i',
         kind: 'image',
         label: 'dropped.png',
         bytes: bytes,
@@ -501,74 +479,46 @@ Future<ComposerDrop> _readDrop(List<DataReader> readers) async {
   return ComposerDrop(attachments: attachments, text: text);
 }
 
-/// Reads one file item — bytes for a picture, a path for everything else.
+/// Reads one dropped file. Never turn a failed transfer into a client path.
 Future<ComposerAttachment?> _readFileItem(
   DataReader item,
   FileFormat? format,
 ) async {
   final path = await _localPath(item);
-  final name = path == null ? null : p.basename(path);
-  final mimeFromName = name == null ? null : mediaTypeForFileName(name);
-  final isImage = (mimeFromName ?? '').startsWith('image/');
-
-  // Not a picture and we know where it lives: the agent shares this
-  // filesystem, so the path IS the attachment. Nothing is read.
-  if (path != null && !isImage) {
+  if (path != null) {
+    final name = p.basename(path);
+    final mime = mediaTypeForFileName(name);
     return ComposerAttachment(
       id: 'file:$path',
-      kind: 'file',
-      label: name!,
-      path: path,
-      mimeType: mimeFromName,
-    );
-  }
-
-  final file = await readHostFile(item, format: format);
-  if (file == null) {
-    // A file we could not read but DO have a path for is still a usable
-    // reference — the agent opens it by path, and only the preview is lost.
-    if (path != null) {
-      return ComposerAttachment(
-        id: 'file:$path',
-        kind: 'file',
-        label: name!,
-        path: path,
-        mimeType: mimeFromName,
-      );
-    }
-    return null;
-  }
-  final resolvedName = name ?? file.name;
-  final mime =
-      file.mediaType ?? mimeFromName ?? mediaTypeForFileName(resolvedName);
-  final isPicture = (mime ?? '').startsWith('image/');
-  if (isPicture && file.bytes.length > kMaxDroppedImageBytes) {
-    // Too large to carry, but not lost: with a path it is still attachable as
-    // a reference the agent can open.
-    AppLog.d(
-      'composer',
-      'dropped image ${file.bytes.length} B exceeds the attach ceiling',
-    );
-    if (path == null) {
-      return null;
-    }
-    return ComposerAttachment(
-      id: 'file:$path',
-      kind: 'file',
-      label: resolvedName,
+      kind: (mime ?? '').startsWith('image/') ? 'image' : 'file',
+      label: name,
       path: path,
       mimeType: mime,
-      sizeBytes: file.bytes.length,
+      sizeBytes: await localFileSize(path),
     );
   }
+  final file = await readHostFile(
+    item,
+    format: format,
+    maxBytes: kMaxDroppedImageBytes,
+  );
+  if (file == null) {
+    final name = await item.getSuggestedName() ?? 'file';
+    return ComposerAttachment(
+      id: 'drop:${identityHashCode(item)}:$name',
+      kind: 'file',
+      label: name,
+      mimeType: mediaTypeForFileName(name),
+    );
+  }
+  final mime = file.mediaType ?? mediaTypeForFileName(file.name);
   return ComposerAttachment(
-    id: path != null ? 'file:$path' : 'drop:$resolvedName:${file.bytes.length}',
-    kind: isPicture ? 'image' : 'file',
-    label: resolvedName,
-    path: path,
+    id: 'drop:${identityHashCode(item)}:${file.name}',
+    kind: (mime ?? '').startsWith('image/') ? 'image' : 'file',
+    label: file.name,
     bytes: file.bytes,
     mimeType: mime,
-    sizeBytes: file.bytes.length,
+    sizeBytes: file.sizeBytes ?? file.bytes.length,
   );
 }
 
@@ -581,15 +531,21 @@ Future<ComposerAttachment?> _readImageItem(DataReader item) async {
     if (!item.canProvide(format)) {
       continue;
     }
-    final read = await readHostFile(item, format: format);
-    if (read == null || read.bytes.isEmpty) {
-      return null;
-    }
-    if (read.bytes.length > kMaxDroppedImageBytes) {
-      AppLog.d('composer', 'dropped image exceeds the attach ceiling');
-      return null;
-    }
+    final read = await readHostFile(
+      item,
+      format: format,
+      maxBytes: kMaxDroppedImageBytes,
+    );
     final extension = mimeType.split('/').last;
+    if (read == null) {
+      final name = await item.getSuggestedName() ?? 'dropped.$extension';
+      return ComposerAttachment(
+        id: 'drop:${identityHashCode(item)}:$name',
+        kind: 'image',
+        label: name,
+        mimeType: mimeType,
+      );
+    }
     return ComposerAttachment(
       // Content-independent: dropping the same picture twice is two
       // deliberate attachments.
@@ -598,7 +554,7 @@ Future<ComposerAttachment?> _readImageItem(DataReader item) async {
       label: read.name.contains('.') ? read.name : 'dropped.$extension',
       bytes: read.bytes,
       mimeType: mimeType,
-      sizeBytes: read.bytes.length,
+      sizeBytes: read.sizeBytes ?? read.bytes.length,
     );
   }
   return null;

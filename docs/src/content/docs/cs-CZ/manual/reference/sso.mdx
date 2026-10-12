@@ -2,7 +2,7 @@
 title: Konfigurace SSO
 description: Každá volba, endpoint, operace a chybový kód jednotného přihlášení.
 slug: cs-CZ/prirucka/referencni-prirucka/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Všechno, co jde u jednotného přihlášení nastavit, na jednom místě. Hodnoty
@@ -23,7 +23,7 @@ dvou míst, je připojení, se kterým se obrazovka nastavení může rozejít).
 | `displayNameAttribute` | SAML      | `displayName`   | atribut zobrazovaného jména                                                                                                                               |
 | `groupsAttribute`      | SAML      | `groups`        | atribut s názvy skupin                                                                                                                                    |
 | `clockSkewSeconds`     | SAML      | 90              | povolená odchylka při kontrole životnosti                                                                                                                 |
-| `allowIdpInitiated`    | SAML      | vypnuto         | přijímat nevyžádané odpovědi Response (bez `InResponseTo`)                                                                                                |
+| `allowIdpInitiated`    | SAML      | vypnuto         | přijímat platné nevyžádané odpovědi Response (bez `InResponseTo`); prohlížeč musí nejdřív uplatnit krátkodobý grant, než dostane pověření zapečetěné pro příjemce |
 | `wantResponseSigned`   | SAML      | vypnuto         | vyžadovat podpis kořene Response (podpisy assertion jsou vždy povinné)                                                                                    |
 | `issuer`               | OIDC      | —               | základní URL vydavatele (nutná k zapnutí)                                                                                                                 |
 | `clientId`             | OIDC      | —               | id veřejného klienta (nutné k zapnutí)                                                                                                                    |
@@ -37,27 +37,58 @@ dvou míst, je připojení, se kterým se obrazovka nastavení může rozejít).
 ## Konfigurace procesu
 
 Připojení SSO se z prostředí nezakládají. Jediný zbývající přepínač procesu
-se týká **předání prohlížeči**, ne řádku připojení:
+volí, kam prohlížeč po callbacku SSO otevře webového klienta:
 
 | Proměnná / přepínač                     | Význam                                                                                                                                      |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin, na který callbacky SSO odrazí prohlížeč (přihlašovací údaj jede ve fragmentu URL). Když není nastaveno, předání zůstane na stejném originu. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | URL webového klienta pro předání zapečetěného pověření; když není nastaveno, předání zůstane na stejném originu (užitečné jen tehdy, když se tam webový klient servíruje). U přihlášení `web-popup` má přednost povolený `client_origin` z iniciující karty. |
 
 Samotná URL vydavatele musí být `https` (`http` se bere jen u vydavatelů na
-loopback `localhost`, `127.0.0.1` a `::1`).
+loopback `localhost`, `127.0.0.1` a `::1`). Pro callback IdP i hostitele
+webového klienta použij důvěryhodné TLS: stránka, která generuje klíč příjemce,
+a její dodávaný JavaScript jsou součástí hranice důvěry. HTTPS chrání tenhle
+bootstrap; po spárování vyžadují přímé i zprostředkované relace `/rpc` šifrování
+Noise a připnutou identitu serveru.
 
 ## HTTP endpointy
 
 | Endpoint                                         | Ověření              | Účel                                                                                                                                                                                                         |
 | ------------------------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /saml/login?relay=…`                        | žádné (přesměrování) | spustí přihlášení iniciované SP; `relay=desktop` předá aplikaci, `relay=web-popup` pošle postMessage čekající kartě připojení (ta ohlásí svůj `client_origin`, který platí jen když mu seznam povolených originů důvěřuje) |
-| `POST /saml/acs`                                 | žádné (POST od IdP)  | spotřebitel assertion — ověří, provisionuje, vystaví                                                                                                                                                         |
+| `GET /saml/login?relay=…&handoff_key=…`         | žádné (přesměrování) | spustí přihlášení iniciované SP s klíčem příjemce X25519, který drží klient; `relay=desktop` předá aplikaci, `relay=web-popup` pošle postMessage čekající kartě připojení (její `client_origin` platí jen když mu seznam povolených originů důvěřuje) |
+| `POST /saml/acs`                                 | žádné (POST od IdP)  | ověří assertion a založí uživatele; přihlášení iniciované SP zapečetí vystavené pověření zařízení klíčem iniciujícího příjemce; povolené nevyžádané SAML místo toho vrátí nárok vázaný na prohlížeč |
+| `POST /saml/claim`                               | grant prohlížeče na stejném originu | uplatní jednorázový grant z nevyžádaného SAML s jeho cookie a čerstvým `handoff_key`; vrátí pověření zapečetěné pro příjemce, nikdy otevřený párovací klíč |
 | `GET /saml/metadata`                             | žádné                | náš SP `EntityDescriptor`                                                                                                                                                                                    |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | žádné                | cesta OIDC tam a zpět; `relay=desktop` předá aplikaci, `relay=web-popup` čekající kartě připojení (stejná konvence `client_origin`)                                                                          |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | žádné | cesta OIDC tam a zpět; přihlášení vyžaduje klíč příjemce, který drží klient; `relay=desktop` předá aplikaci, `relay=web-popup` čekající kartě připojení (stejná konvence `client_origin`) |
 | `GET /auth/providers`                            | žádné, CORS `*`      | sonda obrazovky připojení: nabízená připojení SSO (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                   |
 | `/scim/v2/Users…`                                | Bearer (token SCIM)  | Users: vytvoření/načtení/výpis+filtr/PUT/PATCH/DELETE                                                                                                                                                        |
 | `/scim/v2/Groups`                                | Bearer               | jen pro čtení; push skupin vrací 501 schválně                                                                                                                                                                |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer               | dokument schopností                                                                                                                                                                                          |
+
+U SAML i OIDC iniciovaných SP vyžaduje URL pro spuštění přihlášení platný
+`handoff_key` (veřejný klíč X25519 iniciujícího klienta). Server ten klíč
+podrží u čekajícího přihlášení a při callbacku zapečetí vystavené pověření
+zařízení efemérním X25519, HKDF-SHA256 a AES-256-GCM vázanými na origin
+serveru. Předání na desktop používá `control-center://pair`, předání na webu
+ve stejné kartě používá fragment URL a `web-popup` posílá postMessage na
+povolený `client_origin`, pokud je dodaný (jinak na nastavenou URL webového
+klienta nebo origin callbacku). V tom fragmentu nebo popup zprávě jede
+zapečetěná obálka, ne otevřený párovací klíč. Iniciující klient si podrží
+odpovídající soukromý klíč, aby ji otevřel. Tahle obálka je něco jiného než
+povinná relace Noise navázaná po spárování.
+
+Odpověď SAML iniciovaná IdP (když je povolená) žádného iniciujícího příjemce
+nemá. ACS místo toho nastaví pětiminutovou cookie prohlížeče HttpOnly se
+SameSite=Strict a nabídne volbu **Otevřít webového klienta** / **Otevřít
+aplikaci pro počítač**. Ta stránka vygeneruje čerstvý klíč příjemce a pošle
+jeho veřejnou polovinu a handle grantu na `POST /saml/claim` ze stejného
+originu. Claim vyžaduje odpovídající cookie a origin (hranice CSRF), grant
+spotřebuje jednou a vrátí jen obálku zapečetěnou pro příjemce. Následný
+fragment pro web nebo desktop veze tuto obálku a materiál soukromého klíče
+příjemce, aby ji cílový klient otevřel, **ne** otevřené pověření zařízení.
+Jiný prohlížeč ani vypršelý grant ji neuplatní. Cílový origin webového klienta
+se k fragmentu dostane a dešifruje ho; kompromitovaná stránka callbacku nebo
+origin webového klienta umí pověření ukrást. Šifrování nedělá nedůvěryhodný
+servírovaný kód bezpečným.
 
 ## RPC operace
 

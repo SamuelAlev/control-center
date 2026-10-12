@@ -14119,6 +14119,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String get composerDropToAttach => 'Thả để đính kèm';
 
   @override
+  String get composerAttachmentUploading => 'Đang tải lên…';
+
+  @override
+  String get composerAttachmentReady => 'Sẵn sàng';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Tải lên thất bại';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Tệp vượt quá giới hạn $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Không đọc được tệp này';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Đợi tệp đính kèm tải lên xong';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Thử tải lại hoặc xóa tệp đính kèm tải lên thất bại trước khi gửi';
+
+  @override
   String get attachmentUnavailable => 'Tệp đính kèm không khả dụng';
 
   @override
@@ -15275,11 +15300,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Agent đang chờ bạn';
+  String get notificationAgentAwaitingInput => 'Agent cần được chú ý';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Khi agent cần bạn phê duyệt, trả lời hoặc cung cấp thông tin xác thực hợp lệ';
+      'Khi agent cần phê duyệt, câu trả lời hoặc thông tin xác thực hợp lệ, hoặc chính sách chặn một hành động';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15352,4 +15377,386 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Máy chủ đang dừng';
+
+  @override
+  String get skillEvalAbsent => 'Không có so với có sẵn';
+
+  @override
+  String get skillEvalAmbient => 'Kỹ năng sẵn có';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Tham chiếu hiện vật: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · lặp lại $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Lần thử';
+
+  @override
+  String get skillEvalAvailableEvent => 'Có sẵn';
+
+  @override
+  String get skillEvalBaseline => 'Hash của bản sửa đổi trước';
+
+  @override
+  String get skillEvalBodyLoad => 'Đã tải nội dung';
+
+  @override
+  String get skillEvalBudgetCents => 'Ngân sách (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Đánh giá trả phí dùng nhà cung cấp và ngân sách đã chọn. Kết quả quét bảo mật được tính riêng.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Ngân sách đăng ký theo dõi mức sử dụng quy đổi theo giá API, không phải hóa đơn. Lệnh gọi đang chạy có thể vượt ngân sách; khi đạt giới hạn, hệ thống không bắt đầu lệnh gọi mới. Quét bảo mật được thực hiện riêng.';
+
+  @override
+  String get skillEvalCancel => 'Hủy lượt chạy';
+
+  @override
+  String get skillEvalCancelled => 'Đã hủy';
+
+  @override
+  String get skillEvalCancelling => 'Đang hủy';
+
+  @override
+  String get skillEvalComparison => 'So sánh';
+
+  @override
+  String get skillEvalCompleted => 'Đã hoàn tất';
+
+  @override
+  String get skillEvalComposition => 'Thành phần';
+
+  @override
+  String get skillEvalCorpus => 'Tập tác vụ';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · lặp lại $repeatsString lần';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Đã ghi nhận mọi lượt thử theo kế hoạch';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Hash gói hiện tại: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Tắt đánh giá khi cập nhật';
+
+  @override
+  String get skillEvalEnableUpdates => 'Bật đánh giá khi cập nhật';
+
+  @override
+  String get skillEvalExport => 'Sao chép JSON đã ẩn dữ liệu nhạy cảm';
+
+  @override
+  String get skillEvalFailed => 'Thất bại';
+
+  @override
+  String get skillEvalForced => 'Buộc tải so với không có';
+
+  @override
+  String get skillEvalForcedEvent => 'Buộc tải';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Hash gói không có trên máy chủ này. Tính năng đánh giá đã bị vô hiệu hóa.';
+
+  @override
+  String get skillEvalHistory => 'Lịch sử bản sửa đổi';
+
+  @override
+  String get skillEvalImproved => 'Đã cải thiện';
+
+  @override
+  String get skillEvalIncomplete => 'Chưa hoàn chỉnh';
+
+  @override
+  String get skillEvalInconclusive => 'Chưa thể kết luận';
+
+  @override
+  String get skillEvalInferred => 'Suy ra';
+
+  @override
+  String get skillEvalInterrupted => 'Bị gián đoạn';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Không thể quan sát việc tải kỹ năng; không có sự kiện không có nghĩa là kỹ năng đã bị bỏ qua.';
+
+  @override
+  String get skillEvalModel => 'Mô hình đã chọn';
+
+  @override
+  String get skillEvalNoAttempts => 'Chưa có lần thử nào.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Không có mô hình nào đã kết nối. Trước tiên, hãy kết nối với một nhà cung cấp trong Cài đặt.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Không có hash trước đó trong lịch sử chiến dịch. Hãy đánh giá bản sửa đổi trước khi thay thế.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Chưa có báo cáo; các lần thử một phần vẫn có sẵn.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Chưa chọn không gian làm việc.';
+
+  @override
+  String get skillEvalNoTasks => 'Chưa có tác vụ nào được báo cáo.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Chưa ghi nhận bằng chứng xác minh.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Chưa đánh giá đúng các byte này. Quét không phải là bằng chứng về hành vi.';
+
+  @override
+  String get skillEvalNotVerified => 'Chưa xác minh';
+
+  @override
+  String get skillEvalObserved => 'Đã quan sát';
+
+  @override
+  String get skillEvalOpenQuality => 'Mở Chất lượng';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Theo mặc định, lưu kỹ năng không bắt đầu đánh giá trả phí. Nếu bạn chủ động bật đánh giá lại tự động khi cập nhật, thao tác lưu sẽ bắt đầu một lượt đánh giá lại trả phí trong phạm vi ngân sách đã đặt.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Hãy đánh giá một bản sửa đổi trước khi cấu hình chính sách cập nhật.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Cấu hình chính sách cập nhật';
+
+  @override
+  String get skillEvalPartial =>
+      'Bằng chứng chưa đầy đủ; chưa thể kết luận có nên áp dụng';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString / $plannedString lần thử';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Nhà cung cấp: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Các chiến dịch kỹ năng trong không gian làm việc và bằng chứng theo từng bản sửa đổi.';
+
+  @override
+  String get skillEvalQueued => 'Đang chờ';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Đang kết nối lại với các bản ghi trạng thái chiến dịch…';
+
+  @override
+  String get skillEvalRefresh => 'Làm mới';
+
+  @override
+  String get skillEvalReferenceLoad => 'Đã tải tài liệu tham chiếu';
+
+  @override
+  String get skillEvalRepetitions => 'Số lần lặp lại mỗi tác vụ';
+
+  @override
+  String get skillEvalReport => 'Báo cáo bằng chứng';
+
+  @override
+  String get skillEvalRunning => 'Đang chạy';
+
+  @override
+  String get skillEvalScriptExecution => 'Đã chạy tập lệnh';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Đã chi: $spent / ngân sách $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Bắt đầu đánh giá';
+
+  @override
+  String get skillEvalStartTitle => 'So sánh các bản sửa đổi kỹ năng';
+
+  @override
+  String get skillEvalStale => 'Đã lỗi thời';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Đã lỗi thời: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Nhóm tác vụ riêng biệt: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes đã xác minh) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Tác vụ theo nhánh';
+
+  @override
+  String get skillEvalToolError => 'Lỗi công cụ';
+
+  @override
+  String get skillEvalTools => 'Sự kiện công cụ';
+
+  @override
+  String get skillEvalTitle => 'Đánh giá kỹ năng';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Không khả dụng: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Không rõ';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Các thay đổi chưa lưu không được đưa vào. Hãy lưu trước khi đánh giá.';
+
+  @override
+  String get skillEvalUncertainty => 'Khoảng bất định';
+
+  @override
+  String get skillEvalVerified => 'Đã xác minh';
+
+  @override
+  String get skillEvalVerifiers => 'Xác minh';
+
+  @override
+  String get skillEvalVerdict => 'Kết luận';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Đã sao chép: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Vi phạm kế hoạch';
+
+  @override
+  String get skillEvalPreserved => 'Chất lượng được duy trì';
+
+  @override
+  String get skillEvalPrevious => 'Bản trước so với bản hiện tại';
+
+  @override
+  String get skillEvalRegressed => 'Đã chứng minh có suy giảm';
+
+  @override
+  String get skillEvalCostRegression => 'Chi phí tăng trở lại';
+
+  @override
+  String get skillEvalHarnessError => 'Lỗi bộ kiểm thử';
+
+  @override
+  String get skillBehaviorRouting => 'Định tuyến kỹ năng';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive lượt dùng đúng kỳ vọng · $falsePositive lượt dùng ngoài kỳ vọng · $falseNegative lượt bỏ lỡ · $trueNegative lượt bỏ qua đúng';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive lượt dùng chưa rõ · $negative lượt bỏ qua chưa rõ · $notOffered lượt không được cung cấp';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Độ chính xác quan sát được $precision · độ bao phủ $recall · tỷ lệ dương tính giả $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Nhánh cưỡng bức · chỉ để chẩn đoán';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Tỷ lệ chỉ tính những lần truy cập quan sát được. Truy cập qua shell hoặc tìm kiếm có thể chưa rõ; tải kỹ năng không chứng tỏ đã áp dụng kỹ năng.';
+
+  @override
+  String get skillBehaviorSafety => 'An toàn mô phỏng';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts lượt kiểm tra hiện vật đạt · $denials lượt bị chính sách từ chối · $violations lượt vi phạm tệp được bảo vệ';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Các lượt kiểm tra hiện vật chỉ là mô phỏng, không phản ánh tỷ lệ tấn công trong thực tế; các tác động phụ thực tế không được theo dõi.';
+
+  @override
+  String get skillBehaviorUtility => 'Mức hữu ích theo nhóm';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts lượt thành công đã xác minh';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Mọi lượt thử đều nằm trong mẫu số mức hữu ích, kể cả lượt thất bại và chưa hoàn tất.';
 }

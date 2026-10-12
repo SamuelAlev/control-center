@@ -35,6 +35,12 @@
   Cache-Control: no-cache
 /flutter_service_worker.js
   Cache-Control: no-cache
+/cc_resource_bridge.js
+  Cache-Control: no-cache
+/cc_resource_worker.js
+  Cache-Control: no-cache
+/cc_resource_ws_shim.js
+  Cache-Control: no-cache
 /manifest.json
   Cache-Control: no-cache
 /deploy.json

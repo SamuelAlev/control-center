@@ -1,5 +1,6 @@
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Credentials for ONE installation of a GitHub App, used to mint short-lived,
 /// repo-scoped access tokens.
@@ -52,10 +53,10 @@ class MintedToken {
 /// requested `repositories` + `permissions` and return the scoped token.
 /// Revocation is `DELETE /installation/token` authed with the token itself.
 class GitHubAppTokenMinter {
-  /// Creates a minter over an [_dio] based at `https://api.github.com`.
-  GitHubAppTokenMinter({required this._dio, required this._config});
+  /// Creates a minter over an [_httpClient] based at `https://api.github.com`.
+  GitHubAppTokenMinter({required this._httpClient, required this._config});
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final GitHubAppConfig _config;
 
   /// The App JWT the minter presents to GitHub. Public for testability — a test
@@ -78,20 +79,18 @@ class GitHubAppTokenMinter {
     Map<String, String> permissions = const {},
   }) async {
     final jwt = buildAppJwt();
-    final res = await _dio.post<Map<String, dynamic>>(
+    final res = await _httpClient.post(
       '/app/installations/${_config.installationId}/access_tokens',
-      data: {
+      body: HttpBody.json({
         if (repositories.isNotEmpty) 'repositories': repositories,
         if (permissions.isNotEmpty) 'permissions': permissions,
-      },
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $jwt',
-          'Accept': 'application/vnd.github+json',
-        },
-      ),
+      }),
+      headers: HttpHeaders.rawMap({
+        'Authorization': 'Bearer $jwt',
+        'Accept': 'application/vnd.github+json',
+      }),
     );
-    final data = res.data ?? const {};
+    final data = (httpJsonBody(res) as Map<String, dynamic>?) ?? const {};
     final token = data['token'] as String?;
     if (token == null || token.isEmpty) {
       throw StateError('GitHub App installation-token mint returned no token.');
@@ -106,14 +105,12 @@ class GitHubAppTokenMinter {
   /// Best-effort revocation of an installation [token] (`DELETE
   /// /installation/token`, authed with the token itself).
   Future<void> revoke(String token) async {
-    await _dio.delete<void>(
+    await _httpClient.delete(
       '/installation/token',
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/vnd.github+json',
-        },
-      ),
+      headers: HttpHeaders.rawMap({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/vnd.github+json',
+      }),
     );
   }
 }

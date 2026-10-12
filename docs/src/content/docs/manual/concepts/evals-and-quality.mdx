@@ -1,7 +1,13 @@
 ---
 title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+description: Eval suites and revision-pinned skill campaigns, and how to interpret their evidence.
 ---
+
+**Observability → Quality** contains both single-task eval suites and paired
+skill campaigns. A skill campaign measures a package as used by a particular
+model and harness, not the quality of its Markdown in isolation.
+
+## Eval suites
 
 An **eval suite** is a workspace-scoped definition of a task to run against an
 agent: a prompt, a target agent and mode, optional setup, an optional fixture
@@ -14,7 +20,7 @@ mode producing a plan and a ticket round-trip. Seeding listens for
 `WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
 that already exists and does not backfill older workspaces.
 
-## Where they appear
+### Where they appear
 
 **Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
 in the workspace.
@@ -23,10 +29,110 @@ Create, list, edit and delete suites over `evals.upsertSuite`,
 `evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
 those operations are the editor.
 
+## Skill campaigns
+
+A campaign compares two arms under the same task and execution configuration.
+The candidate is absent, normally available, explicitly loaded, or compared
+with an earlier revision or fixed ambient skill inventory. These answer
+different questions; forced loading is a diagnostic, not a score for normal
+discovery. The [skills guide](/manual/guides/manage-skills/#evaluate-a-skill)
+explains how to choose a comparison and authorize a budgeted run.
+
+Evidence belongs to an exact **whole-package hash**: `SKILL.md`, metadata,
+scripts, references and assets. The server captures scanned immutable
+packages and pins the corpus, adapter, provider/native model identifier,
+protocol, tool schemas and ambient inventory. Native Claude campaigns also pin
+the managed account and observed CLI version. Editing a reference invalidates current
+evidence even if `SKILL.md` is unchanged. A model alias records what was
+requested, not immutable provider weights.
+
+Each attempt gets fresh context, home and fixture state. Paired arms use the
+same policy and task conditions except for the declared skill intervention.
+Target-absent means the candidate's metadata and files are unavailable, not
+that all background instructions or skills have been removed. Task prompts
+must not name the candidate in a normal-discovery comparison.
+
+The server owns authorization, execution, budgets and workspace persistence.
+Clients select settings and render evidence. Progress survives reconnects;
+cancellation retains partial results, and a restart marks unfinished work
+interrupted rather than silently repeating paid calls. These campaigns do
+not supply the separate executor contract for arbitrary eval suites.
+
+## Read evidence conservatively
+
+- **Outcomes decide correctness.** Independent typed verifiers check artifacts
+  and resulting behavior, not the agent's claim that it succeeded. Expected
+  answers remain outside the candidate's enclosure; generated code is graded
+  in a separately contained copy.
+- **Loading and usefulness are different.** Availability, body/reference
+  loads and observed script use explain execution. A file read does not prove
+  the model followed its instructions; unobservable access remains unknown.
+- **Keep the matched baseline.** A successful candidate run alone does not
+  establish benefit. Include attempts where an available skill was ignored,
+  failed attempts and their costs; do not keep only the best retry.
+- **Repeats are not new tasks.** Reports cluster uncertainty by task. Small
+  samples, missing coverage, identity drift and unknown spend cannot justify
+  an adoption recommendation. A completed campaign may still be inconclusive;
+  failure to show improvement is not proof of equivalence or regression.
+- **Inspect individual regressions.** Aggregate gains must not hide a harmed
+  task or unauthorized side effect. Security scans, runtime safety
+  observations and usefulness remain separate; cheaper execution cannot
+  compensate for missing quality or safety evidence.
+- **Do not pool incompatible results.** Another model, harness, policy,
+  fixture or skill combination is another configuration. Keep held-out
+  transfer and composition evidence separate from development cases.
+
+The nine locally authored pilot corpora contain 108 task entries across
+utility, family-specific routing/safety and held-out transfer/composition.
+Choose a family matching the skill's purpose. Reference solutions and
+known-bad outputs check the verifiers; these fixtures are not a reproduction
+of a public benchmark, nor evidence that any installed skill is useful.
+Implementation smoke runs with scripted provider responses are not
+live-model skill-quality measurements.
+
+## Execution and evidence limits
+
+The controlled **built-in harness** and **Claude Code** adapters are supported.
+Containment and active credentials must pass before execution. Built-in
+providers require documented tool support, token limits and pricing; Codex
+OAuth authenticates its own account rather than requiring a separate OpenAI
+API key. Claude Code uses the default managed account, a concrete model ID and
+its native API-equivalent cost report.
+
+Claude Code and Codex OAuth use a **usage stopping threshold**: an in-flight
+call can exceed the budget, then further calls stop. This is not billed
+subscription spend or a hard invoice ceiling. API-key providers keep
+conservative pre-call reservations. Unknown observed spend stops further
+calls for every adapter; incomplete coverage remains partial or inconclusive.
+
+Claude runs its native model loop in a private controller directory, with
+built-in tools and ambient skills disabled. Its only tools are the
+authenticated, server-owned MCP bridge into the same confined guest used by
+the built-in harness. Credentials remain outside that guest. A changed CLI
+identity or tool surface invalidates the attempt rather than silently
+changing executors. Fleet evaluation and Windows are unsupported; a worker
+Git probe or prompt echo does not count as evaluation.
+
+macOS containment denies guest network and external filesystem access,
+blocks process detachment, bounds CPU/files/output and cleans up owned
+descendants, but **does not enforce a hard memory quota**. Linux requires
+bubblewrap and applies an address-space limit. Initial containment validation
+exercised macOS, not Linux. Missing containment never falls back to a host
+shell. Provider credentials stay on the server, outside guest tools.
+
+Attempt evidence is redacted and capped at 256 KiB; an export is capped at
+16 MiB. Large exports retain compact outcome/cost summaries for all admitted
+attempts and explicitly report omitted or summarized trace content. Neither
+an export nor a report contains a complete private-source replay bundle.
+Synthetic safety checks do not establish actual exfiltration resistance,
+override quarantine or certify a skill as safe.
+
 ## Related concepts
 
 - [The agent model](/manual/concepts/agent-model/): the configuration a suite
   pins
+- [Sandbox and security](/manual/concepts/sandbox-security/): containment and
+  authority boundaries
 - [Guardrails](/manual/concepts/guardrails/): the autonomy dial
 - [Manage costs and budgets](/manual/guides/manage-costs/): spend recorded
   alongside a run

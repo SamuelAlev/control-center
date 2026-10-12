@@ -1,6 +1,61 @@
 part of 'local_rpc_server.dart';
 
 extension _AuthMethods on LocalRpcServer {
+  /// Invite codes are high-entropy one-use Noise PSKs. The public hello carries
+  /// only a second digest; even a terminating TLS proxy cannot derive the
+  /// stored invite hash or read the newly minted paired-device credential.
+  Future<void> _serveSecureInvite(WebSocket socket, String remoteIp) async {
+    final resolver = invitePskResolver;
+    final redeem = inviteRedeemer;
+    final serverIdentity = identity;
+    final raw = WsRemoteTransport(socket, label: remoteIp)..start();
+    if (resolver == null || redeem == null || serverIdentity == null ||
+        (manualPairingEnabled != null && !await manualPairingEnabled!()) ||
+        !_admitInWindow(_inviteRate, remoteIp, 20)) {
+      await raw.close();
+      return;
+    }
+    SecureChannelConnection? session;
+    try {
+      session = await acceptSecureChannel(
+        channel: raw,
+        readPsk: (id) async {
+          if (!id.startsWith('invite:')) return null;
+          return resolver(id.substring('invite:'.length));
+        },
+        serverPublicKey: serverIdentity.publicKeyB64,
+        signIdentity: serverIdentity.signChallenge,
+      );
+      final routeId = session.deviceId.substring('invite:'.length);
+      final request = await session.channel.incoming.first.timeout(
+        const Duration(seconds: 15),
+      );
+      final code = request['code'];
+      if (request['type'] != 'invite_redeem' ||
+          code is! String ||
+          InvitePairingProof.routeIdFromHash(
+                InvitePairingProof.codeHash(code),
+              ) !=
+              routeId ||
+          await resolver(routeId) == null) {
+        throw const FormatException('Invite rejected');
+      }
+      final result = await redeem({
+        'code': code,
+        'platform': request['platform'],
+        'device_label': request['device_label'],
+      }, remoteIp: remoteIp);
+      await session.channel.send({'type': 'invite_redeemed', 'result': result});
+    } catch (_) {
+      // Never reveal whether a route, code, expiry, or concurrency check failed.
+      try {
+        await session?.channel.send(const {'type': 'invite_denied'});
+      } catch (_) {}
+    } finally {
+      await (session?.channel ?? raw).close();
+    }
+  }
+
   Future<void> _serveInviteRedeem(HttpRequest request) async {
     final res = request.response;
     final redeem = inviteRedeemer;
@@ -9,15 +64,17 @@ extension _AuthMethods on LocalRpcServer {
       await res.close();
       return;
     }
-    // CORS, for the same reason `/healthz` has it: the WEB client redeems its
-    // invite cross-origin, before any WebSocket exists. A wildcard origin is
-    // safe here on the same grounds — no cookies, no ambient credentials, and
-    // the invite code in the BODY is the only thing that authorizes anything.
-    //
-    // Without this the browser's preflight (the client sends
-    // `Content-Type: application/json`, which is not a simple request) hit a
-    // bare 405 with no CORS headers, so cross-origin pairing by invite could
-    // never work at all — a pre-existing bug, not a demo-specific one.
+    // Real workspace invites must authenticate the secure channel with the
+    // out-of-band code. The old JSON POST cannot issue device credentials.
+    if (!isDemo) {
+      res.statusCode = HttpStatus.upgradeRequired;
+      await res.close();
+      return;
+    }
+    // The public demo's invite is a low-entropy admission label, not a Noise
+    // PSK. The first-party web origin is its trust root. A client-held
+    // recipient keeps minted credentials out of readable HTTP responses.
+    // CORS is intentionally open: there are no ambient user credentials.
     res.headers
       ..set('Access-Control-Allow-Origin', '*')
       ..set('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -80,12 +137,23 @@ extension _AuthMethods on LocalRpcServer {
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('body must be a JSON object');
       }
+      final recipient = decoded['handoff_key'];
+      if (recipient is! String ||
+          !CredentialSeal.isValidPublicKey(recipient)) {
+        throw const FormatException('Missing credential recipient');
+      }
       final result = await redeem(decoded, remoteIp: ip);
       res
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.json
         ..headers.set('Cache-Control', 'no-store')
-        ..write(jsonEncode(result));
+        ..write(jsonEncode({
+          'box': await CredentialSeal.seal(
+            recipientPublicKey: recipient,
+            credential: result,
+            context: 'cc-public-demo-v1',
+          ),
+        }));
     } on RedeemCapacityException catch (e) {
       // "We are full" is not "your code is wrong". Answering 403 here told a
       // visitor their link was broken and sent them away for good.
@@ -156,8 +224,7 @@ extension _AuthMethods on LocalRpcServer {
 
   static String _ssoPopupCompletePage(
     String serverOrigin,
-    String deviceId,
-    String psk,
+    Map<String, String> envelope,
     String targetOrigin,
   ) {
     final target = targetOrigin.replaceAll(RegExp('/+\$'), '');
@@ -173,8 +240,7 @@ extension _AuthMethods on LocalRpcServer {
     window.opener.postMessage({
       type: 'cc-sso-pair',
       server: ${_jsonForScript(serverOrigin)},
-      deviceId: ${_jsonForScript(deviceId)},
-      psk: ${_jsonForScript(psk)},
+      envelope: ${_jsonForScript(envelope)},
     }, target);
   } catch (_) {
     // The opener is gone (tab closed / navigation raced): the message is
@@ -201,10 +267,15 @@ extension _AuthMethods on LocalRpcServer {
       return;
     }
     try {
+      final recipientKey = request.uri.queryParameters['handoff_key'];
+      if (!CredentialSeal.isValidPublicKey(recipientKey)) {
+        throw const FormatException('Invalid credential recipient');
+      }
       final authorizationUrl = await sso.beginLogin(
         redirectUri: _oidcRedirectUri(request),
         relay: request.uri.queryParameters['relay'] ?? '',
         clientOrigin: request.uri.queryParameters['client_origin'],
+        recipientPublicKey: recipientKey,
       );
       res
         ..statusCode = HttpStatus.found
@@ -240,6 +311,7 @@ extension _AuthMethods on LocalRpcServer {
         request,
         deviceId: result.deviceId,
         psk: result.psk,
+        recipientPublicKey: result.recipientPublicKey,
         relayState: state.startsWith('p.')
             ? 'web-popup'
             : state.startsWith('d.')
@@ -249,19 +321,7 @@ extension _AuthMethods on LocalRpcServer {
       );
     } catch (e) {
       _w('OIDC callback failed: $e');
-      final state = request.uri.queryParameters['state'] ?? '';
-      await _writeSignInFailed(
-        res,
-        retryUrl: _ssoRetryUrl(
-          request,
-          kind: 'oidc',
-          relay: state.startsWith('p.')
-              ? 'web-popup'
-              : state.startsWith('d.')
-              ? 'desktop'
-              : null,
-        ),
-      );
+      await _writeSignInFailed(res);
     }
   }
 
@@ -329,13 +389,8 @@ extension _AuthMethods on LocalRpcServer {
     bool ok = true,
   }) => browserHandoffPage(title: title, body: body, ok: ok);
 
-  /// Sign-in failure page. [retryUrl] is the login start for this same
-  /// attempt, so the tab itself has a button instead of only "close and
-  /// try again" with nowhere to go.
-  Future<void> _writeSignInFailed(
-    HttpResponse res, {
-    String? retryUrl,
-  }) async {
+  /// A retry must begin in the app with a fresh client-held encryption key.
+  Future<void> _writeSignInFailed(HttpResponse res) async {
     res
       ..statusCode = HttpStatus.forbidden
       ..headers.contentType = ContentType.html
@@ -343,35 +398,11 @@ extension _AuthMethods on LocalRpcServer {
       ..write(
         browserHandoffPage(
           title: 'Sign-in failed',
-          body: retryUrl == null
-              ? 'Close this tab and try again.'
-              : 'Sign-in did not finish. You can try again.',
+          body: 'Close this tab and try again from Control Center.',
           ok: false,
-          ctaLabel: retryUrl == null ? null : 'Try again',
-          ctaHref: retryUrl,
         ),
       );
     await res.close();
-  }
-
-  /// Login URL that restarts [kind] (`oidc` or `saml`) with the same relay
-  /// the failed attempt used. Null when the relay is not one we started.
-  String? _ssoRetryUrl(
-    HttpRequest request, {
-    required String kind,
-    required String? relay,
-  }) {
-    if (relay != 'web-popup' && relay != 'desktop') {
-      return null;
-    }
-    final origin = _requestOrigin(request);
-    final path = kind == 'saml' ? '/saml/login' : '/oidc/login';
-    final clientOrigin = request.uri.queryParameters['client_origin'];
-    final base = '$origin$path?relay=$relay';
-    if (clientOrigin == null || clientOrigin.isEmpty) {
-      return base;
-    }
-    return '$base&client_origin=${Uri.encodeComponent(clientOrigin)}';
   }
 
   Future<void> _serveSamlLogin(HttpRequest request) async {
@@ -388,11 +419,16 @@ extension _AuthMethods on LocalRpcServer {
       return;
     }
     try {
+      final recipientKey = request.uri.queryParameters['handoff_key'];
+      if (!CredentialSeal.isValidPublicKey(recipientKey)) {
+        throw const FormatException('Invalid credential recipient');
+      }
       final relay = request.uri.queryParameters['relay'];
       final redirect = sso.beginLogin(
         origin: _requestOrigin(request),
         relayState: (relay == null || relay.isEmpty) ? null : relay,
         clientOrigin: request.uri.queryParameters['client_origin'],
+        recipientPublicKey: recipientKey,
       );
       res
         ..statusCode = HttpStatus.found
@@ -418,7 +454,11 @@ extension _AuthMethods on LocalRpcServer {
       await res.close();
       return;
     }
-    String? relay;
+    if (!_admitInWindow(_samlAcsRate, _clientAddressOf(request), 30)) {
+      res.statusCode = HttpStatus.tooManyRequests;
+      await res.close();
+      return;
+    }
     try {
       const maxBodyBytes = 256 * 1024;
       final chunks = <int>[];
@@ -433,30 +473,202 @@ extension _AuthMethods on LocalRpcServer {
       final fields = Uri.splitQueryString(
         utf8.decode(chunks, allowMalformed: true),
       );
-      relay = fields['RelayState'];
       final encoded = fields['SAMLResponse'];
       if (encoded == null || encoded.isEmpty) {
         throw const FormatException('no SAMLResponse field');
       }
       final responseXml = utf8.decode(base64.decode(encoded));
-      final result = await sso.handleAcs(
+      final outcome = await sso.handleBrowserAcs(
         origin: _requestOrigin(request),
         responseXml: responseXml,
       );
-      await _ssoHandoff(
-        request,
-        deviceId: result.deviceId,
-        psk: result.psk,
-        relayState: fields['RelayState'],
-        clientOrigin: result.clientOrigin,
-      );
+      if (outcome.login case final result?) {
+        await _ssoHandoff(
+          request,
+          deviceId: result.deviceId,
+          psk: result.psk,
+          recipientPublicKey: result.recipientPublicKey,
+          relayState: fields['RelayState'],
+          clientOrigin: result.clientOrigin,
+        );
+      } else {
+        final origin = _requestOrigin(request);
+        res.cookies.add(
+          Cookie('cc_saml_grant', outcome.cookie!)
+            ..httpOnly = true
+            ..sameSite = SameSite.strict
+            ..secure = Uri.parse(origin).scheme == 'https'
+            ..path = '/saml/claim'
+            ..maxAge = 300,
+        );
+        res
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.html
+          ..headers.set('Cache-Control', 'no-store')
+          ..headers.set('X-Frame-Options', 'DENY')
+          ..headers.set('Referrer-Policy', 'no-referrer')
+          ..headers.set(
+            'Content-Security-Policy',
+            "default-src 'none'; script-src 'unsafe-inline'; "
+                "style-src 'unsafe-inline'; connect-src 'self'; "
+                "base-uri 'none'; form-action 'none'",
+          )
+          ..write(_samlGrantPage(origin, outcome.handle!));
+        await res.close();
+      }
     } catch (e) {
       _w('SAML ACS failed: $e');
-      await _writeSignInFailed(
-        res,
-        retryUrl: _ssoRetryUrl(request, kind: 'saml', relay: relay),
-      );
+      await _writeSignInFailed(res);
     }
+  }
+
+  static final _samlAcsRate = <String, (int, DateTime)>{};
+
+  static final _samlGrantRate = <String, (int, DateTime)>{};
+
+  Future<void> _serveSamlGrantClaim(HttpRequest request) async {
+    final res = request.response;
+    final service = saml;
+    if (service == null || !service.config.enabled) {
+      res.statusCode = HttpStatus.notFound;
+      await res.close();
+      return;
+    }
+    final origin = _requestOrigin(request);
+    if (request.method != 'POST' ||
+        request.headers.value('origin') != origin ||
+        !_admitInWindow(_samlGrantRate, _clientAddressOf(request), 30)) {
+      res.statusCode = HttpStatus.forbidden;
+      await res.close();
+      return;
+    }
+    var cookie = '';
+    for (final entry in request.cookies) {
+      if (entry.name == 'cc_saml_grant') {
+        cookie = entry.value;
+        break;
+      }
+    }
+    try {
+      final bytes = <int>[];
+      await for (final chunk in request) {
+        bytes.addAll(chunk);
+        if (bytes.length > 4096) {
+          throw const FormatException('Grant claim too large');
+        }
+      }
+      final value = jsonDecode(utf8.decode(bytes));
+      if (value is! Map<String, dynamic> ||
+          value['handle'] is! String ||
+          value['handoff_key'] is! String ||
+          cookie.isEmpty) {
+        throw const FormatException('Invalid grant claim');
+      }
+      final credential = await service.redeemBrowserGrant(
+        handle: value['handle'] as String,
+        cookie: cookie,
+        recipientPublicKey: value['handoff_key'] as String,
+      );
+      final envelope = await CredentialSeal.seal(
+        recipientPublicKey: value['handoff_key'] as String,
+        credential: {
+          's': origin,
+          'i': credential.deviceId,
+          'k': credential.psk,
+        },
+        context: origin,
+      );
+      res
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.json
+        ..headers.set('Cache-Control', 'no-store')
+        ..headers.set('X-Content-Type-Options', 'nosniff')
+        ..write(jsonEncode({'box': envelope}));
+    } catch (e) {
+      _w('SAML grant claim denied: $e');
+      res.statusCode = HttpStatus.forbidden;
+    } finally {
+      res.cookies.add(
+        Cookie('cc_saml_grant', '')
+          ..httpOnly = true
+          ..sameSite = SameSite.strict
+          ..secure = Uri.parse(origin).scheme == 'https'
+          ..path = '/saml/claim'
+          ..maxAge = 0,
+      );
+      await res.close();
+    }
+  }
+
+  String _samlGrantPage(String origin, String handle) {
+    final web = (webClientUrl?.trim().isNotEmpty ?? false)
+        ? webClientUrl!.trim().replaceAll(RegExp('/+\$'), '')
+        : origin;
+    return browserHandoffPage(
+      title: 'Sign-in verified',
+      body: 'Choose where to open Control Center. This sign-in expires in five minutes.',
+      statusLabel: '',
+      extraBody: '''
+<p><button type="button" id="cc-web">Open web client</button>
+<button type="button" id="cc-desktop">Open desktop app</button></p>
+<p id="cc-error" role="alert"></p>
+<script>
+(() => {
+  const origin = ${_jsonForScript(origin)};
+  const handle = ${_jsonForScript(handle)};
+  const web = ${_jsonForScript(web)};
+  const buttons = [document.getElementById('cc-web'),
+                   document.getElementById('cc-desktop')];
+  const encode = bytes =>
+    btoa(String.fromCharCode(...bytes)).replace(/=/g, '').replace(/\\+/g, '-').replace(/\\//g, '_');
+  async function open(destination) {
+    buttons.forEach(button => button.disabled = true);
+    try {
+      // WebCrypto generates this private key in the browser; it never crosses
+      // the HTTP boundary. Only the public half is sent to the claim endpoint.
+      const pair = await crypto.subtle.generateKey({name: 'X25519'}, true, ['deriveBits']);
+      const publicKey = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey));
+      const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
+      const prefix = [0x30,0x2e,0x02,0x01,0x00,0x30,0x05,0x06,
+                      0x03,0x2b,0x65,0x6e,0x04,0x22,0x04,0x20];
+      if (pkcs8.length !== 48 || !prefix.every((byte, index) => pkcs8[index] === byte)) {
+        throw Error('Unsupported browser key format');
+      }
+      const response = await fetch(origin + '/saml/claim', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({handle, handoff_key: encode(publicKey)}),
+      });
+      if (!response.ok) throw Error('This sign-in expired. Please return to your identity provider.');
+      const result = await response.json();
+      if (!result.box) throw Error('Incomplete sign-in response');
+      const fragment = encode(new TextEncoder().encode(JSON.stringify({
+        s: origin, box: result.box,
+        recipientPrivateKey: encode(pkcs8.slice(16)),
+        idpInitiated: true,
+      })));
+      if (destination === 'desktop') {
+        // Keep a working fallback if this browser has no native URL handler.
+        const fallback = document.createElement('a');
+        fallback.href = web + '/#' + fragment;
+        fallback.textContent = 'Open web client instead';
+        document.getElementById('cc-error').replaceChildren(fallback);
+        location.href = 'control-center://pair#' + fragment;
+      } else {
+        location.replace(web + '/#' + fragment);
+      }
+    } catch (error) {
+      document.getElementById('cc-error').textContent =
+        error instanceof Error ? error.message : 'Sign-in failed.';
+      buttons.forEach(button => button.disabled = false);
+    }
+  }
+  buttons[0].onclick = () => open('web');
+  buttons[1].onclick = () => open('desktop');
+})();
+</script>''',
+    );
   }
 
   Future<void> _serveSamlMetadata(HttpRequest request) async {
@@ -623,13 +835,22 @@ extension _AuthMethods on LocalRpcServer {
     HttpRequest request, {
     required String deviceId,
     required String psk,
+    required String? recipientPublicKey,
     String? relayState,
     String? clientOrigin,
   }) async {
     final res = request.response;
+    if (!CredentialSeal.isValidPublicKey(recipientPublicKey)) {
+      throw StateError('Missing credential recipient');
+    }
     final origin = _requestOrigin(request);
+    final envelope = await CredentialSeal.seal(
+      recipientPublicKey: recipientPublicKey!,
+      credential: {'s': origin, 'i': deviceId, 'k': psk},
+      context: origin,
+    );
     final fragment = base64Url
-        .encode(utf8.encode(jsonEncode({'s': origin, 'i': deviceId, 'k': psk})))
+        .encode(utf8.encode(jsonEncode({'s': origin, 'box': envelope})))
         .replaceAll('=', '');
     if (relayState == 'desktop') {
       res
@@ -658,7 +879,7 @@ extension _AuthMethods on LocalRpcServer {
         ..headers.set('Cache-Control', 'no-store')
         ..headers.set('X-Frame-Options', 'DENY')
         ..headers.set('Referrer-Policy', 'no-referrer')
-        ..write(_ssoPopupCompletePage(origin, deviceId, psk, target));
+        ..write(_ssoPopupCompletePage(origin, envelope, target));
       await res.close();
       return;
     }
@@ -674,7 +895,12 @@ extension _AuthMethods on LocalRpcServer {
   }
 
   String _requestOrigin(HttpRequest request) {
-    final scheme = securityContext != null ? 'https' : 'http';
+    final forwardedScheme = trustProxy
+        ? request.headers.value('x-forwarded-proto')?.split(',').last.trim()
+        : null;
+    final scheme = securityContext != null || forwardedScheme == 'https'
+        ? 'https'
+        : 'http';
     final host =
         request.headers.value('host') ?? 'localhost:${_server?.port ?? port}';
     return '$scheme://$host';

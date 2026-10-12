@@ -55,6 +55,10 @@ class SignalingBroker {
     this.maxFramesPerWindow = 200,
     this.maxRoomFramesPerWindow = 2000,
     this.rateWindow = const Duration(seconds: 10),
+    this.dataBytesPerWindow = 8 * 1024 * 1024,
+    this.roomDataBytesPerWindow = 32 * 1024 * 1024,
+    this.dataBurstBytes = 512 * 1024,
+    this.roomDataBurstBytes = 2 * 1024 * 1024,
     this.neverClaimedTtl = const Duration(minutes: 5),
     this.idleTtl = const Duration(seconds: 60),
     this.gcInterval = const Duration(seconds: 30),
@@ -63,7 +67,15 @@ class SignalingBroker {
     this.turnTtl = const Duration(hours: 6),
     DateTime Function()? now,
     void Function(String message)? log,
-  }) : _now = now ?? DateTime.now,
+  }) : assert(rateWindow > Duration.zero),
+       assert(dataBytesPerWindow > 0 && roomDataBytesPerWindow > 0),
+       assert(dataBurstBytes >= maxFrameBytes),
+       assert(roomDataBurstBytes >= maxFrameBytes),
+       _dataFrameFloor = min(
+         _minimumDataChargeBytes,
+         min(dataBurstBytes, roomDataBurstBytes),
+       ),
+       _now = now ?? DateTime.now,
        _log = log ?? _noopLog;
 
   /// Maximum number of connected peers a room will accept (owner + clients).
@@ -79,8 +91,27 @@ class SignalingBroker {
   /// Ceiling on bytes queued to one peer before it is closed as too slow.
   static const int _maxOutboundBufferBytes = 8 * 1024 * 1024;
 
+  // Keep reading WebSocket control/close frames while data waits for quota.
+  // Shared Noise peers have a 64-record credit window; these bounds leave
+  // room for that window without accepting an unbounded admitted flood.
+  static const int _maxInboundBufferBytes = 4 * 1024 * 1024;
+  static const int _maxInboundBufferFrames = 256;
+  static const int _maxTotalInboundBufferBytes = 128 * 1024 * 1024;
+  int _bufferedDataBytes = 0;
+
+  /// Charge even tiny purported records enough to bound fake-encrypted floods.
+  /// Genuine Noise credits share the same pacing without ever being dropped.
+  static const int _minimumDataChargeBytes = 8 * 1024;
+  final int _dataFrameFloor;
+
   /// Per-socket outbound queue state (see [_send]).
   final Map<WebSocket, _Outbox> _outbox = {};
+
+  /// One active quota reservation per socket, plus a bounded data FIFO.
+  final Map<WebSocket, _DataWaiter> _pendingData = {};
+
+  /// Weak keys do not retain a slow socket after its outbox is detached.
+  final Expando<bool> _closingSockets = Expando<bool>();
 
   /// Hard cap on concurrently-tracked rooms. A new room beyond this is
   /// refused, so a flood of unique room codes can't exhaust memory/fds.
@@ -93,16 +124,26 @@ class SignalingBroker {
   /// JSON decode.
   final int maxFrameBytes;
 
-  /// Per-connection frame budget within [rateWindow].
+  /// Per-connection control frame budget within [rateWindow]. Over-budget
+  /// control frames are dropped; Noise records never use this budget.
   final int maxFramesPerWindow;
 
-  /// Per-room aggregate frame budget within [rateWindow] — one hostile
-  /// admitted joiner can't spin the broker's CPU for a whole room unnoticed
-  /// (PRD 15 adversarial note). Frames over the budget are dropped + logged.
+  /// Per-room aggregate control frame budget within [rateWindow].
   final int maxRoomFramesPerWindow;
 
-  /// Sliding window over which the frame budgets are counted.
+  /// Window for control budgets and sustained encrypted-record byte rates.
   final Duration rateWindow;
+
+  /// Per-connection and per-room sustained inbound encrypted bytes per window.
+  /// Data is paced, never silently dropped. Charge the complete outer wire
+  /// frame (or the minimum floor for tiny records), never decrypted content.
+  final int dataBytesPerWindow;
+  final int roomDataBytesPerWindow;
+
+  /// Maximum initial/accumulated burst, independently per peer and room.
+  /// Each must accommodate at least one [maxFrameBytes] wire frame.
+  final int dataBurstBytes;
+  final int roomDataBurstBytes;
 
   /// A room that never had an owner claim is reaped this long after it was
   /// created.
@@ -140,6 +181,12 @@ class SignalingBroker {
   /// connections: it is keyed by [WebSocket] and a stale entry retains that
   /// socket's whole object graph for the process lifetime.
   int get outboxCount => _outbox.length;
+
+  /// Number of peers with an active encrypted-record quota reservation.
+  int get pendingDataCount => _pendingData.length;
+
+  /// All admitted data bytes buffered in the bounded per-peer FIFOs.
+  int get pendingDataBytes => _bufferedDataBytes;
 
   /// Starts the periodic garbage collector. Idempotent.
   void start() {
@@ -214,7 +261,12 @@ class SignalingBroker {
     String? roomCode;
     _Peer? self;
     var detached = false;
-
+    final dataBucket = _ByteBucket(
+      dataBurstBytes,
+      dataBytesPerWindow,
+      rateWindow,
+      _now(),
+    );
     final rateHits = Queue<DateTime>();
     bool withinRate() {
       final now = _now();
@@ -229,11 +281,65 @@ class SignalingBroker {
       return true;
     }
 
+    final dataQueue =
+        Queue<
+          ({Map<String, dynamic> frame, int bytes, _Room room, _Peer peer})
+        >();
+    var queuedBytes = 0;
+    var drainingData = false;
+    void discardData() {
+      _bufferedDataBytes -= queuedBytes;
+      queuedBytes = 0;
+      dataQueue.clear();
+    }
+
+    Future<void> drainData() async {
+      if (drainingData) return;
+      drainingData = true;
+      try {
+        while (dataQueue.isNotEmpty &&
+            !detached &&
+            _closingSockets[socket] != true) {
+          final record = dataQueue.first;
+          final waiter = _DataWaiter(
+            record.bytes,
+            max(record.bytes, _dataFrameFloor),
+            dataBucket,
+            record.room,
+          );
+          _pendingData[socket] = waiter;
+          record.room.requestData(waiter);
+          final allowed = await waiter.done.future;
+          if (identical(_pendingData[socket], waiter)) {
+            _pendingData.remove(socket);
+          }
+          if (dataQueue.isEmpty)
+            break; // Connection cleanup already released it.
+          dataQueue.removeFirst();
+          queuedBytes -= record.bytes;
+          _bufferedDataBytes -= record.bytes;
+          if (allowed &&
+              !detached &&
+              _closingSockets[socket] != true &&
+              socket.readyState == WebSocket.open &&
+              !record.peer.removed &&
+              identical(_rooms[roomCode], record.room)) {
+            _handleSignal(record.frame, roomCode, record.peer);
+          }
+        }
+      } finally {
+        drainingData = false;
+        if (detached || _closingSockets[socket] == true) discardData();
+      }
+    }
+
     void cleanup() {
       if (detached) {
         return;
       }
       detached = true;
+      _cancelPendingData(socket);
+      discardData();
       final code = roomCode;
       final peer = self;
       roomCode = null;
@@ -244,21 +350,70 @@ class SignalingBroker {
     }
 
     final done = Completer<void>();
-    final subscription = socket.listen(
+    late final StreamSubscription<dynamic> subscription;
+    subscription = socket.listen(
       (dynamic data) {
-        if (!withinRate()) {
-          _log('rate limit exceeded on a connection, dropping frame');
+        if (detached || _closingSockets[socket] == true) return;
+        final preJoin = roomCode == null;
+        if (preJoin && !withinRate()) {
+          _log('pre-join control rate limit exceeded, dropping frame');
           return;
         }
-        final frame = _decode(data);
+        final bytes = data is String
+            ? _utf8Length(data)
+            : data is List<int>
+            ? data.length
+            : 0;
+        final frame = _decode(data, bytes);
         if (frame == null) {
+          if (!preJoin) withinRate();
           return;
         }
-        // Per-room aggregate budget: charged for every frame from a joined
-        // peer, so one hostile member can't starve the broker for the room.
         final joinedRoom = roomCode == null ? null : _rooms[roomCode];
-        if (joinedRoom != null && !joinedRoom.withinRate(_now, rateWindow, maxRoomFramesPerWindow)) {
-          _log('room "${joinedRoom.code}" over aggregate rate, dropping frame');
+        final peer = self;
+        // A logical per-peer close is an ordering barrier for ciphertext, not
+        // an out-of-band control message. The owner keeps its room socket open
+        // after this close; forwarding it early loses the final RPC response.
+        final orderedSignal =
+            joinedRoom != null &&
+            peer != null &&
+            !peer.removed &&
+            frame['type'] == 'signal' &&
+            frame['to'] is String &&
+            (frame['to'] as String).isNotEmpty &&
+            frame['payload'] is Map &&
+            (frame['kind'] == 'close' ||
+                (frame['kind'] == 'rpc' &&
+                    (frame['payload'] as Map)['type'] == 'secure' &&
+                    (frame['payload'] as Map)['v'] == 1 &&
+                    (frame['payload'] as Map)['c'] is String));
+        if (orderedSignal) {
+          if (dataQueue.length >= _maxInboundBufferFrames ||
+              queuedBytes + bytes > _maxInboundBufferBytes ||
+              _bufferedDataBytes + bytes > _maxTotalInboundBufferBytes) {
+            // A conforming Noise sender stops at its credit window. A peer
+            // that ignores it is disconnected, never silently reordered.
+            _closeQuietly(socket);
+            return;
+          }
+          dataQueue.add((
+            frame: frame,
+            bytes: bytes,
+            room: joinedRoom,
+            peer: peer,
+          ));
+          queuedBytes += bytes;
+          _bufferedDataBytes += bytes;
+          unawaited(drainData());
+          return;
+        }
+        if (!preJoin && !withinRate()) {
+          _log('control rate limit exceeded on a connection, dropping frame');
+          return;
+        }
+        if (joinedRoom != null &&
+            !joinedRoom.withinRate(_now, rateWindow, maxRoomFramesPerWindow)) {
+          _log('room "${joinedRoom.code}" over control rate, dropping frame');
           return;
         }
         final type = frame['type'] as Object?;
@@ -283,11 +438,11 @@ class SignalingBroker {
           _handleTurnRequest(socket, roomCode, self);
         } else if (type == 'bye') {
           final code = roomCode;
-          final peer = self;
+          final leaving = self;
           roomCode = null;
           self = null;
-          if (code != null && peer != null) {
-            _leave(code, peer, notify: true);
+          if (code != null && leaving != null) {
+            _leave(code, leaving, notify: true);
           }
           _closeQuietly(socket);
         } else {
@@ -296,8 +451,16 @@ class SignalingBroker {
       },
       onError: (Object error, StackTrace stackTrace) {
         _log('socket error: $error');
+        _cancelPendingData(socket);
       },
       onDone: done.complete,
+    );
+    // An outbound failure also invalidates any active quota reservation.
+    unawaited(
+      socket.done.then(
+        (_) => _cancelPendingData(socket),
+        onError: (Object _) => _cancelPendingData(socket),
+      ),
     );
 
     try {
@@ -313,6 +476,7 @@ class SignalingBroker {
       // entry per connection the broker had ever answered. Any write still
       // in flight completes against the detached `_Outbox` and is discarded.
       _outbox.remove(socket);
+      _closingSockets[socket] = null;
       _connectionCount--;
     }
   }
@@ -363,7 +527,18 @@ class SignalingBroker {
       if (_rooms.length >= maxRooms) {
         return _refuse(socket, 'server busy');
       }
-      room = _Room(code, _now(), ownerHash: _sha256Hex(ownerToken));
+      room = _Room(
+        code,
+        _now(),
+        ownerHash: _sha256Hex(ownerToken),
+        dataBucket: _ByteBucket(
+          roomDataBurstBytes,
+          roomDataBytesPerWindow,
+          rateWindow,
+          _now(),
+        ),
+        now: _now,
+      );
       _rooms[code] = room;
     } else if (_sha256Hex(ownerToken) != room.ownerHash) {
       // Wrong owner token — either a client trying to escalate, or the
@@ -576,8 +751,7 @@ class SignalingBroker {
       });
       return;
     }
-    final expiry =
-        _now().add(turnTtl).millisecondsSinceEpoch ~/ 1000;
+    final expiry = _now().add(turnTtl).millisecondsSinceEpoch ~/ 1000;
     final label = _randomHex(4);
     final username = '$expiry:$label';
     final credential = base64.encode(
@@ -598,12 +772,12 @@ class SignalingBroker {
     String? roomCode,
     _Peer? self,
   ) {
-    if (roomCode == null || self == null) {
+    if (roomCode == null || self == null || self.removed) {
       _log('signal from a peer that has not joined, dropping');
       return;
     }
     final room = _rooms[roomCode];
-    if (room == null) {
+    if (room == null || !room.peers.contains(self)) {
       _log('signal for missing room "$roomCode", dropping');
       return;
     }
@@ -660,8 +834,8 @@ class SignalingBroker {
   ///
   /// Dart's WebSocket buffers unboundedly when a peer stops reading, so one
   /// slow (or deliberately stalled) admitted client could accumulate every
-  /// relayed frame in BROKER memory — the inbound side is well bounded (64 KB
-  /// frames, two-level rate limits) and this side was not.
+  /// relayed frame in BROKER memory — the inbound side has a 64 KiB frame
+  /// cap and separate control/data budgets, but each recipient can stall.
   ///
   /// Writes are serialized through `addStream`, whose future completes only
   /// once the socket has ACCEPTED the bytes: that is the only backpressure
@@ -671,6 +845,7 @@ class SignalingBroker {
   /// own room is not a client any more. Same shape as
   /// `WsRemoteTransport.send`.
   void _send(WebSocket socket, Map<String, dynamic> frame) {
+    if (_closingSockets[socket] == true) return;
     if (socket.readyState != WebSocket.open) {
       return;
     }
@@ -687,7 +862,6 @@ class SignalingBroker {
         'closing a peer that is not draining '
         '(${outbox.queuedBytes ~/ 1024} KB queued)',
       );
-      _outbox.remove(socket);
       _closeQuietly(socket);
       return;
     }
@@ -707,59 +881,61 @@ class SignalingBroker {
     );
   }
 
+  void _cancelPendingData(WebSocket socket) {
+    final waiter = _pendingData.remove(socket);
+    waiter?.room.cancelData(waiter);
+  }
+
   /// Closes [socket] once anything already queued to it has been accepted.
   ///
-  /// [_send] is asynchronous (writes are serialized through `addStream` for
-  /// backpressure), so closing immediately would drop the frame that JUST
-  /// explained the close — a refusal ("not admitted") would arrive as a bare
-  /// disconnect. Callers that are closing a peer BECAUSE it is not draining
-  /// remove its outbox first, which short-circuits the wait.
+  /// [_send] is asynchronous, so closing immediately would discard a refusal
+  /// error frame. A stalled write is given five seconds to finish; a bound
+  /// addStream that finishes later retries the close without retaining a timer.
   void _closeQuietly(WebSocket socket) {
+    _closingSockets[socket] = true;
+    _cancelPendingData(socket);
     final outbox = _outbox.remove(socket);
     if (outbox != null) {
       unawaited(
         outbox.chain
             .timeout(const Duration(seconds: 5))
             .catchError((Object _) {})
-            .whenComplete(() => _closeNow(socket)),
+            .whenComplete(() => _closeNow(socket, retry: outbox.chain)),
       );
       return;
     }
     _closeNow(socket);
   }
 
-  void _closeNow(WebSocket socket) {
+  void _closeNow(WebSocket socket, {Future<void>? retry}) {
     if (socket.readyState == WebSocket.open) {
       try {
         unawaited(socket.close());
       } on StateError {
-        // A queued addStream is still bound to the sink (readyState only
-        // flips once the close proceeds), which makes close() throw
-        // "StreamSink is bound to a stream". The in-flight stream completes
-        // (or errors) and the socket's done path finishes the close.
+        // An addStream can temporarily bind the sink. Retry once that queued
+        // write finishes, without creating another timer or outbound queue.
+        if (retry != null) {
+          unawaited(retry.then((_) => _closeNow(socket)));
+        }
       }
     }
   }
 
-  Map<String, dynamic>? _decode(dynamic data) {
-    String text;
-    if (data is String) {
-      if (data.length > maxFrameBytes) {
-        _log('frame exceeds $maxFrameBytes bytes, dropping');
-        return null;
-      }
-      text = data;
-    } else if (data is List<int>) {
-      if (data.length > maxFrameBytes) {
-        _log('frame exceeds $maxFrameBytes bytes, dropping');
-        return null;
-      }
-      text = utf8.decode(data);
-    } else {
-      _log('unsupported frame encoding, ignoring');
+  Map<String, dynamic>? _decode(dynamic data, int bytes) {
+    if (bytes > maxFrameBytes) {
+      _log('frame exceeds $maxFrameBytes bytes, dropping');
       return null;
     }
     try {
+      String text;
+      if (data is String) {
+        text = data;
+      } else if (data is List<int>) {
+        text = utf8.decode(data);
+      } else {
+        _log('unsupported frame encoding, ignoring');
+        return null;
+      }
       final decoded = jsonDecode(text);
       if (decoded is! Map<String, dynamic>) {
         _log('frame is not a JSON object, ignoring');
@@ -772,14 +948,29 @@ class SignalingBroker {
     }
   }
 
+  static int _utf8Length(String value) {
+    var bytes = 0;
+    for (final rune in value.runes) {
+      bytes += rune <= 0x7f
+          ? 1
+          : rune <= 0x7ff
+          ? 2
+          : rune <= 0xffff
+          ? 3
+          : 4;
+    }
+    return bytes;
+  }
+
   static String _sha256Hex(String value) =>
       sha256.convert(utf8.encode(value)).toString();
 
   static String _randomHex(int bytes) {
     final rnd = Random.secure();
-    return List<int>.generate(bytes, (_) => rnd.nextInt(256))
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
+    return List<int>.generate(
+      bytes,
+      (_) => rnd.nextInt(256),
+    ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }
 
@@ -830,9 +1021,16 @@ class _Outbox {
 }
 
 class _Room {
-  _Room(this.code, DateTime createdAt, {required this.ownerHash})
-    : createdAt = createdAt,
-      lastActivityAt = createdAt;
+  _Room(
+    this.code,
+    DateTime createdAt, {
+    required this.ownerHash,
+    required _ByteBucket dataBucket,
+    required DateTime Function() now,
+  }) : createdAt = createdAt,
+       lastActivityAt = createdAt,
+       _dataBucket = dataBucket,
+       _now = now;
 
   /// The room code (the server's relay room id).
   final String code;
@@ -862,16 +1060,52 @@ class _Room {
 
   /// `sha256` hex admission hashes currently allowed to join.
   final Set<String> admittedHashes = <String>{};
+  final _ByteBucket _dataBucket;
+  final DateTime Function() _now;
+  final Queue<_DataWaiter> _waitingData = Queue<_DataWaiter>();
+  Timer? _dataTimer;
+
+  /// FIFO among waiting peers, with one pending quota reservation per socket.
+  /// One room timer services all peers, and is canceled when the last leaves.
+  void requestData(_DataWaiter waiter) {
+    _waitingData.add(waiter);
+    _drainData();
+  }
+
+  void cancelData(_DataWaiter waiter) {
+    if (_waitingData.remove(waiter)) {
+      waiter.finish(false);
+      _dataTimer?.cancel();
+      _dataTimer = null;
+      _drainData();
+    }
+  }
+
+  void _drainData() {
+    _dataTimer?.cancel();
+    _dataTimer = null;
+    while (_waitingData.isNotEmpty) {
+      final waiter = _waitingData.first;
+      final now = _now();
+      final peerDelay = waiter.peerBucket.delay(waiter.charge, now);
+      final roomDelay = _dataBucket.delay(waiter.charge, now);
+      final delay = peerDelay > roomDelay ? peerDelay : roomDelay;
+      if (delay > Duration.zero) {
+        _dataTimer = Timer(delay, _drainData);
+        return;
+      }
+      _waitingData.removeFirst();
+      waiter.peerBucket.spend(waiter.charge);
+      _dataBucket.spend(waiter.charge);
+      waiter.finish(true);
+    }
+  }
 
   /// Timestamps of recent frames from all members (aggregate rate cap).
   final Queue<DateTime> _frameHits = Queue<DateTime>();
 
   /// Charges one frame against the room's aggregate budget.
-  bool withinRate(
-    DateTime Function() now,
-    Duration window,
-    int maxFrames,
-  ) {
+  bool withinRate(DateTime Function() now, Duration window, int maxFrames) {
     final t = now();
     final cutoff = t.subtract(window);
     while (_frameHits.isNotEmpty && !_frameHits.first.isAfter(cutoff)) {
@@ -882,6 +1116,52 @@ class _Room {
     }
     _frameHits.add(t);
     return true;
+  }
+}
+
+/// Continuous byte budget with a bounded burst. Refilling by elapsed time
+/// avoids retaining per-record timestamps across long transfers.
+class _ByteBucket {
+  _ByteBucket(this.capacity, this.bytesPerWindow, this.window, this._updated)
+    : _available = capacity.toDouble();
+
+  final int capacity;
+  final int bytesPerWindow;
+  final Duration window;
+  DateTime _updated;
+  double _available;
+
+  Duration delay(int bytes, DateTime now) {
+    final elapsed = now.difference(_updated).inMicroseconds;
+    if (elapsed > 0) {
+      _available = min(
+        capacity.toDouble(),
+        _available + elapsed * bytesPerWindow / window.inMicroseconds,
+      );
+      _updated = now;
+    }
+    if (_available >= bytes) return Duration.zero;
+    final micros =
+        ((bytes - _available) * window.inMicroseconds / bytesPerWindow).ceil();
+    return Duration(microseconds: max(1000, micros));
+  }
+
+  void spend(int bytes) => _available -= bytes;
+}
+
+class _DataWaiter {
+  _DataWaiter(this.bytes, this.charge, this.peerBucket, this.room);
+
+  final int bytes;
+  final int charge;
+  final _ByteBucket peerBucket;
+  final _Room room;
+  final Completer<bool> done = Completer<bool>();
+  bool allowed = false;
+
+  void finish(bool accepted) {
+    allowed = accepted;
+    done.complete(accepted);
   }
 }
 

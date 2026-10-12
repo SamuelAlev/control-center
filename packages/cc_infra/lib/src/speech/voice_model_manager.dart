@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:archive/archive.dart';
 import 'package:cc_domain/features/meetings/domain/value_objects/voice_model_paths.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/speech/tar_bz2_extract.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/util/http_file_download.dart';
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart';
 
 // Re-export the relocated value types so existing consumers that import this
 // manager keep naming `VoiceModelPaths` / `VoiceModelType` without a churned
@@ -205,12 +206,14 @@ class VoiceModelManager {
   /// [_paths] (the app/server on-disk layout that supplies the `models/` dir).
   VoiceModelManager({
     required this._paths,
-    Dio? dio,
+    RhttpClient? httpClient,
     this.model = VoiceModelInfo.parakeetTdtV3,
-  }) : _dio = dio ?? createDio();
+  }) : _httpClient =
+           httpClient ??
+           createHttpClient(settings: modelDownloadClientSettings);
 
   final CcPaths _paths;
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Model to manage.
   final VoiceModelInfo model;
@@ -269,7 +272,8 @@ class VoiceModelManager {
     onProgress?.call(0, 'downloading');
 
     try {
-      await _dio.download(
+      await downloadToFile(
+        _httpClient,
         model.archiveUrl,
         tmpArchive.path,
         cancelToken: cancelToken,
@@ -278,10 +282,6 @@ class VoiceModelManager {
           final pct = (received / expected).clamp(0.0, 1.0) * 0.85;
           onProgress?.call(pct, 'downloading');
         },
-        options: Options(
-          followRedirects: true,
-          responseType: ResponseType.bytes,
-        ),
       );
     } catch (e) {
       if (tmpArchive.existsSync()) {
@@ -333,17 +333,16 @@ class VoiceModelManager {
     return resolved;
   }
 
-  /// Decode + write the tarball off the main isolate so the UI stays
+  /// Stream + write the tarball off the main isolate so the UI stays
   /// responsive. The worker streams a `[0..1]` fraction back over a
   /// [SendPort]; we remap it into the `[0.86, 1.0)` window used by the
   /// overall install progress bar.
   ///
-  /// The bulk of the wall-clock time is spent inside the synchronous
-  /// `BZip2Decoder` call, which can't emit progress. To keep the bar from
-  /// freezing at 86% for ~10 seconds we run a "creep" timer on the main
-  /// side that nudges the bar forward at a steady rate, capped just shy of
-  /// the worker's real progress so honest events always win when they
-  /// arrive.
+  /// The bulk of the wall-clock time is spent inside bzip2's block decode,
+  /// which can't emit progress. To keep the bar from freezing at 86% for ~10
+  /// seconds we run a "creep" timer on the main side that nudges the bar
+  /// forward at a steady rate, capped just shy of the worker's real progress
+  /// so honest events always win when they arrive.
   Future<void> _extract(
     File archive,
     Directory destinationRoot,
@@ -464,41 +463,22 @@ class _ExtractArgs {
   final SendPort sendPort;
 }
 
-/// Top-level entry point for the extraction isolate. Reads the archive,
-/// decompresses bzip2 + tar, writes each entry to disk and reports progress
-/// back as a `[0..1]` fraction via the send port. All file I/O uses the
-/// `*Sync` variants because we are off the main isolate.
+/// Top-level entry point for the extraction isolate. Streams the archive's
+/// entries to disk (see [extractTarBz2Streamed]) and reports progress back as
+/// a `[0..1]` fraction via the send port. All file I/O uses the `*Sync`
+/// variants because we are off the main isolate.
 ///
-/// Progress budget within the `[0..1]` fraction:
-/// * `0.00` — entry
-/// * `0.05` — archive bytes read into memory
-/// * `0.80` — bzip2 + tar decode done (opaque; can't subdivide)
-/// * `0.80 → 1.00` — per-file writes (smoothly interpolated)
+/// The fraction is the share of the compressed input consumed so far: it
+/// advances once per entry as the tar is decoded and each entry is written,
+/// while the bzip2 decode of any one block is opaque. The main isolate's creep
+/// timer keeps the bar moving between those steps.
 void _extractEntry(_ExtractArgs args) {
   args.sendPort.send(0.0);
-  final bytes = File(args.archivePath).readAsBytesSync();
-  args.sendPort.send(0.05);
-
-  final tarBytes = BZip2Decoder().decodeBytes(bytes);
-  final archiveData = TarDecoder().decodeBytes(tarBytes);
-  args.sendPort.send(0.80);
-
-  final total = archiveData.length;
-  var i = 0;
-  for (final file in archiveData) {
-    final outPath = p.join(args.destinationPath, file.name);
-    if (file.isFile) {
-      final out = File(outPath);
-      out.parent.createSync(recursive: true);
-      out.writeAsBytesSync(file.content as List<int>);
-    } else {
-      Directory(outPath).createSync(recursive: true);
-    }
-    i++;
-    // Report every file so the writing phase fills smoothly even when the
-    // archive only contains a handful of entries.
-    args.sendPort.send(0.80 + (i / total) * 0.20);
-  }
+  extractTarBz2Streamed(
+    args.archivePath,
+    args.destinationPath,
+    onProgress: (value) => args.sendPort.send(value),
+  );
   args.sendPort.send(_extractDoneSignal);
 }
 

@@ -33,6 +33,9 @@ class WorkspaceFilesystemService implements WorkspaceFilesystemPort {
   /// (same late-attach shape as `SkillScannerAdapter.llmReview`).
   set linkFilter(SkillLinkFilter? filter) => _linkFilter = filter;
 
+  /// Durable catalog hook; the bytes stay at the established logo path.
+  Future<void> Function(String workspaceId, String path)? onLogoPersisted;
+
   @override
   Future<String> workspaceDir(String workspaceId) async {
     final cc = await _paths.root();
@@ -310,6 +313,7 @@ class WorkspaceFilesystemService implements WorkspaceFilesystemPort {
     final destName = ext.isEmpty ? 'logo' : 'logo$ext';
     final dest = File(p.join(wsPath, destName));
     await source.copy(dest.path);
+    await onLogoPersisted?.call(workspaceId, dest.path);
     return dest.path;
   }
 
@@ -331,6 +335,7 @@ class WorkspaceFilesystemService implements WorkspaceFilesystemPort {
     final destName = ext.isEmpty ? 'logo' : 'logo$ext';
     final dest = File(p.join(wsPath, destName));
     await dest.writeAsBytes(bytes, flush: true);
+    await onLogoPersisted?.call(workspaceId, dest.path);
     return dest.path;
   }
 

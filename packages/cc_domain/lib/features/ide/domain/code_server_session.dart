@@ -1,17 +1,12 @@
-/// A live, server-hosted code-server (VS Code in the browser) process opened
-/// against one conversation's isolated copy-on-write worktree.
+/// A device-bound capability for a server-hosted code-server process opening
+/// one conversation's isolated copy-on-write worktree.
 ///
-/// code-server runs **on the server** (`cc_server`) — never on a client — and
-/// binds loopback only. A client reaches it through the authenticated
-/// `/proxy/vscode/<sessionId>/` reverse proxy (the thin-client invariant), or —
-/// on a loopback-local desktop/Linux — directly on `127.0.0.1:<port>`.
-///
-/// [sessionId] is a **capability**: it is minted only over the PSK-authenticated
-/// RPC socket (`codeServer.open`), bound server-side to `(workspaceId,
-/// deviceId)` with a TTL and handed only to the authorized client. The reverse
-/// proxy re-checks ownership on every request and rejects unknown / expired /
-/// foreign sessions with 403 (loud deny). It must be high-entropy and
-/// unguessable; never derived from public inputs.
+/// The process is loopback-only and can be shared by authorized devices, but
+/// each device has its own [sessionId]. Clients access it only through the
+/// authenticated encrypted resource tunnel at `/proxy/vscode/<sessionId>/`.
+/// The server's extension bridge has a separate, private process id. Each
+/// resource request must compare [deviceId] with the authenticated device and
+/// reject unknown, expired, closed, or foreign bindings.
 class CodeServerSession {
   /// Creates a [CodeServerSession].
   const CodeServerSession({
@@ -24,9 +19,8 @@ class CodeServerSession {
     required this.status,
   });
 
-  /// High-entropy, unguessable capability token. Authorizes the holder to reach
-  /// this session's code-server through `/proxy/vscode/<sessionId>/`. Serves as
-  /// the map key in the host's session table.
+  /// High-entropy client proxy capability bound server-side to [deviceId].
+  /// Distinct from the process id and private extension bridge id.
   final String sessionId;
 
   /// The owning workspace (never null — the isolation boundary). Every proxy
@@ -41,13 +35,12 @@ class CodeServerSession {
   /// opened as its `--folder` (so user edits land beside agent edits).
   final String folderPath;
 
-  /// The paired-device id of the client that minted this session. The proxy
-  /// re-checks that an incoming request's connected device matches this (or its
-  /// workspace), so a capability leaked to a foreign device still cannot proxy.
+  /// The paired-device id that owns this capability. Another device cannot use
+  /// it even if the capability string leaks.
   final String deviceId;
 
-  /// When this session's capability expires. The proxy rejects requests for an
-  /// expired session with 403; the host reaps it on the idle-GC sweep.
+  /// Expiry of this device's binding. An expired capability is revoked without
+  /// tearing down another device's still-live reference to the shared process.
   final DateTime expiresAt;
 
   /// Host-side readiness, so the client can render the right surface

@@ -2,7 +2,7 @@
 title: Tham chiếu cấu hình SSO
 description: Mọi tham số điều chỉnh, endpoint, thao tác và mã lỗi của đăng nhập một lần.
 slug: vi-VN/so-tay/tham-chieu/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Mọi thứ có thể cấu hình về đăng nhập một lần, gói gọn trong một trang. Các giá
@@ -24,7 +24,7 @@ nối mà màn hình cài đặt có thể phản đối).
 | `displayNameAttribute` | SAML        | `displayName`  | thuộc tính tên hiển thị                                                                                                                               |
 | `groupsAttribute`      | SAML        | `groups`       | thuộc tính tên nhóm                                                                                                                                    |
 | `clockSkewSeconds`     | SAML        | 90             | mức cho phép lệch đồng hồ khi xác thực thời hạn hiệu lực                                                                                              |
-| `allowIdpInitiated`    | SAML        | tắt            | chấp nhận các Response không được yêu cầu (không có `InResponseTo`)                                                                                   |
+| `allowIdpInitiated`    | SAML        | tắt            | chấp nhận các Response không được yêu cầu hợp lệ (không có `InResponseTo`); trình duyệt phải nhận một quyền ngắn hạn trước khi nhận thông tin xác thực được niêm phong cho người nhận |
 | `wantResponseSigned`   | SAML        | tắt            | yêu cầu chữ ký ở gốc Response (chữ ký khẳng định luôn bắt buộc)                                                                                       |
 | `issuer`               | OIDC        | —              | URL gốc của issuer (bắt buộc để bật)                                                                                                                   |
 | `clientId`             | OIDC        | —              | id client công khai (bắt buộc để bật)                                                                                                                 |
@@ -37,28 +37,57 @@ nối mà màn hình cài đặt có thể phản đối).
 
 ## Cấu hình tiến trình
 
-Các kết nối SSO không được nạp sẵn từ môi trường. Một cờ tiến trình còn lại nói
-về **bước chuyển tiếp qua trình duyệt**, chứ không phải dòng kết nối:
+Các kết nối SSO không được nạp sẵn từ môi trường. Một cờ tiến trình còn lại chọn
+nơi trình duyệt mở máy khách web sau một callback SSO:
 
 | Biến / cờ                                        | Ý nghĩa                                                                                                                                                        |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | origin mà các callback SSO chuyển hướng trình duyệt tới (thông tin xác thực đi kèm trong phần fragment của URL). Để trống thì bước chuyển tiếp vẫn cùng origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | URL máy khách web cho bước chuyển tiếp thông tin xác thực đã niêm phong; để trống thì bước chuyển tiếp vẫn cùng origin (chỉ hữu ích nếu máy khách web được phục vụ tại đó). Với đăng nhập `web-popup`, một `client_origin` được phép từ thẻ khởi tạo sẽ được ưu tiên. |
 
 Bản thân URL issuer phải là `https` (`http` chỉ được chấp nhận cho các issuer
-loopback `localhost`, `127.0.0.1` và `::1`).
+loopback `localhost`, `127.0.0.1` và `::1`). Hãy dùng TLS tin cậy cho callback của
+IdP và máy chủ của máy khách web: trang tạo khóa người nhận cùng JavaScript mà nó
+phân phối đều là một phần của ranh giới tin cậy. HTTPS bảo vệ bước khởi tạo đó; sau
+khi ghép nối, cả phiên `/rpc` trực tiếp lẫn qua relay đều cần mã hóa Noise và một
+danh tính máy chủ đã ghim.
 
 ## Các endpoint HTTP
 
 | Endpoint                                         | Xác thực            | Mục đích                                                                                                                                                                                                                                                                       |
 | ------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /saml/login?relay=…`                        | không (chuyển hướng) | bắt đầu đăng nhập do SP khởi tạo; `relay=desktop` chuyển tiếp sang ứng dụng, `relay=web-popup` gửi postMessage tới thẻ kết nối đang chờ (thẻ này khai báo `client_origin` của nó, chỉ được tôn trọng khi danh sách origin tin cậy cho phép)                                      |
-| `POST /saml/acs`                                 | không (IdP POST)    | bộ tiếp nhận khẳng định — xác minh, cấp phát, tạo mới                                                                                                                                                                                                                          |
+| `GET /saml/login?relay=…&handoff_key=…`                        | không (chuyển hướng) | bắt đầu đăng nhập do SP khởi tạo với khóa người nhận X25519 do máy khách giữ; `relay=desktop` chuyển tiếp sang ứng dụng, `relay=web-popup` gửi postMessage tới thẻ kết nối đang chờ (`client_origin` của nó chỉ được tôn trọng khi danh sách origin được phép tin cậy nó) |
+| `POST /saml/acs`                                 | không (IdP POST)    | xác minh khẳng định và cấp phát người dùng; đăng nhập do SP khởi tạo niêm phong thông tin xác thực thiết bị được tạo cho khóa người nhận khởi tạo; SAML không được yêu cầu và được phép thay vào đó tạo ra một quyền gắn với trình duyệt |
+| `POST /saml/claim`                               | quyền của trình duyệt cùng origin | đổi một quyền SAML không được yêu cầu dùng một lần bằng cookie của nó và một `handoff_key` mới; trả về thông tin xác thực được niêm phong cho người nhận, không bao giờ là khóa ghép nối bản rõ |
 | `GET /saml/metadata`                             | không               | `EntityDescriptor` SP của chúng ta                                                                                                                                                                                                                                             |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | không               | vòng khứ hồi OIDC; `relay=desktop` chuyển tiếp sang ứng dụng, `relay=web-popup` tới thẻ kết nối đang chờ (cùng quy ước `client_origin`)                                                                                                                                        |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | không               | vòng khứ hồi OIDC; việc đăng nhập cần khóa người nhận do máy khách giữ; `relay=desktop` chuyển tiếp sang ứng dụng, `relay=web-popup` tới thẻ kết nối đang chờ (cùng quy ước `client_origin`) |
 | `GET /auth/providers`                            | không, CORS `*`     | phép dò của màn hình kết nối: các kết nối SSO được cung cấp (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                                                                           |
 | `/scim/v2/Users…`                                | Bearer (token SCIM) | Users: tạo/đọc/liệt kê+lọc/PUT/PATCH/DELETE                                                                                                                                                                                                                                    |
 | `/scim/v2/Groups`                                | Bearer              | chỉ đọc; việc đẩy nhóm trả về 501 có chủ đích                                                                                                                                                                                                                                  |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | tài liệu mô tả năng lực                                                                                                                                                                                                                                                        |
+
+Với SAML và OIDC do SP khởi tạo, URL bắt đầu đăng nhập cần một `handoff_key` hợp lệ
+(khóa công khai X25519 của máy khách khởi tạo). Máy chủ giữ khóa đó cùng phiên đăng
+nhập đang chờ và niêm phong thông tin xác thực thiết bị được tạo tại callback bằng
+X25519 tạm thời, HKDF-SHA256 và AES-256-GCM gắn với origin của máy chủ. Bước chuyển
+tiếp trên desktop dùng `control-center://pair`, bước chuyển tiếp web cùng thẻ dùng
+fragment của URL, và `web-popup` gửi postMessage tới `client_origin` được phép nếu
+được cung cấp (nếu không thì tới URL máy khách web đã cấu hình hoặc origin của
+callback). Phong bì đã niêm phong, chứ không phải một khóa ghép nối bản rõ, đi trong
+fragment hoặc thông điệp popup đó. Máy khách khởi tạo giữ khóa riêng tương ứng để mở
+nó. Phong bì này tách biệt với phiên Noise bắt buộc được thiết lập sau khi ghép nối.
+
+Một Response SAML do IdP khởi tạo (khi được bật) không có người nhận khởi tạo. Thay
+vào đó, ACS đặt một cookie trình duyệt năm phút, HttpOnly, SameSite=Strict và đưa ra
+lựa chọn **Open web client** / **Open desktop app**. Trang đó tạo một khóa người
+nhận mới và gửi nửa công khai cùng mã xử lý quyền của nó tới `POST /saml/claim` từ
+cùng origin. Thao tác claim cần cookie và origin khớp (một ranh giới CSRF), dùng
+quyền một lần rồi chỉ trả về một phong bì được niêm phong cho người nhận. Fragment
+web/desktop tiếp theo chở phong bì đó cùng tài liệu khóa riêng của người nhận để
+máy khách đích mở nó, **không** phải thông tin xác thực thiết bị bản rõ. Một trình
+duyệt khác hoặc một quyền đã hết hạn không thể đổi nó. Origin của máy khách web đích
+có thể truy cập fragment và giải mã nó; một trang callback hoặc origin máy khách web
+bị xâm phạm có thể đánh cắp thông tin xác thực. Mã hóa không làm mã được phục vụ
+không đáng tin cậy trở nên an toàn.
 
 ## Các thao tác RPC
 

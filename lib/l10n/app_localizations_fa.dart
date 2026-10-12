@@ -14091,6 +14091,31 @@ class AppLocalizationsFa extends AppLocalizations {
   String get composerDropToAttach => 'رها کنید تا پیوست شود';
 
   @override
+  String get composerAttachmentUploading => 'در حال بارگذاری…';
+
+  @override
+  String get composerAttachmentReady => 'آماده';
+
+  @override
+  String get composerAttachmentUploadFailed => 'بارگذاری ناموفق بود';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'اندازهٔ فایل از سقف $limit بیشتر است';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'خواندن این فایل ممکن نشد';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'منتظر بمانید تا بارگذاری پیوست‌ها تمام شود';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'پیش از ارسال، بارگذاری پیوست‌های ناموفق را دوباره امتحان کنید یا آن‌ها را حذف کنید';
+
+  @override
   String get attachmentUnavailable => 'پیوست در دسترس نیست';
 
   @override
@@ -15248,11 +15273,11 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'عاملی منتظر شماست';
+  String get notificationAgentAwaitingInput => 'عامل به توجه شما نیاز دارد';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'وقتی عاملی به تأیید، پاسخ یا اعتبارنامهٔ معتبر شما نیاز دارد';
+      'وقتی عاملی به تأیید، پاسخ یا اعتبارنامهٔ معتبر نیاز دارد، یا خط‌مشی عملی را مسدود می‌کند';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15325,4 +15350,385 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'سرور در حال توقف است';
+
+  @override
+  String get skillEvalAbsent => 'غایب در برابر در دسترس';
+
+  @override
+  String get skillEvalAmbient => 'مهارت‌های محیطی';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'ارجاع به خروجی: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · تکرار $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'تلاش‌ها';
+
+  @override
+  String get skillEvalAvailableEvent => 'در دسترس';
+
+  @override
+  String get skillEvalBaseline => 'هش نسخهٔ قبلی';
+
+  @override
+  String get skillEvalBodyLoad => 'متن بارگذاری شد';
+
+  @override
+  String get skillEvalBudgetCents => 'بودجه (سنت آمریکا)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'ارزیابی پولی از ارائه‌دهنده و بودجهٔ انتخاب‌شده استفاده می‌کند. نتایج اسکن امنیتی جدا هستند.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'بودجهٔ اشتراک، مصرف را بر اساس هزینهٔ معادل API می‌سنجد، نه مبلغ صورتحساب. یک فراخوانی در حال اجرا ممکن است از بودجه فراتر برود؛ پس از رسیدن به سقف، فراخوانی تازه‌ای آغاز نمی‌شود. اسکن‌های امنیتی جدا هستند.';
+
+  @override
+  String get skillEvalCancel => 'لغو اجرا';
+
+  @override
+  String get skillEvalCancelled => 'لغو شد';
+
+  @override
+  String get skillEvalCancelling => 'در حال لغو';
+
+  @override
+  String get skillEvalComparison => 'مقایسه';
+
+  @override
+  String get skillEvalCompleted => 'تکمیل شد';
+
+  @override
+  String get skillEvalComposition => 'ترکیب';
+
+  @override
+  String get skillEvalCorpus => 'مجموعهٔ وظایف';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString تکرار';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'همهٔ آزمون‌های برنامه‌ریزی‌شده مشاهده شدند';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'هش بستهٔ فعلی: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'غیرفعال‌کردن ارزیابی به‌روزرسانی‌ها';
+
+  @override
+  String get skillEvalEnableUpdates => 'فعال‌کردن ارزیابی به‌روزرسانی‌ها';
+
+  @override
+  String get skillEvalExport => 'کپی JSON با اطلاعات پوشانده‌شده';
+
+  @override
+  String get skillEvalFailed => 'ناموفق';
+
+  @override
+  String get skillEvalForced => 'بارگذاری اجباری در برابر غیاب';
+
+  @override
+  String get skillEvalForcedEvent => 'بارگذاری اجباری';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'هش بسته در این سرور در دسترس نیست. ارزیابی غیرفعال است.';
+
+  @override
+  String get skillEvalHistory => 'تاریخچهٔ نسخه‌ها';
+
+  @override
+  String get skillEvalImproved => 'بهبود یافت';
+
+  @override
+  String get skillEvalIncomplete => 'ناقص';
+
+  @override
+  String get skillEvalInconclusive => 'بی‌نتیجه';
+
+  @override
+  String get skillEvalInferred => 'استنباط‌شده';
+
+  @override
+  String get skillEvalInterrupted => 'متوقف شد';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'بارگذاری مهارت قابل مشاهده نیست؛ نبود رویداد ثابت نمی‌کند که نادیده گرفته شده است.';
+
+  @override
+  String get skillEvalModel => 'مدل انتخاب‌شده';
+
+  @override
+  String get skillEvalNoAttempts => 'هنوز تلاشی انجام نشده است.';
+
+  @override
+  String get skillEvalNoModels =>
+      'هیچ مدل متصلی در دسترس نیست. ابتدا در تنظیمات یک ارائه‌دهنده متصل کنید.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'در تاریخچهٔ کمپین هش قبلی وجود ندارد. پیش از جایگزینی نسخهٔ قبلی، آن را ارزیابی کنید.';
+
+  @override
+  String get skillEvalNoReport =>
+      'هنوز گزارشی وجود ندارد؛ تلاش‌های جزئی همچنان در دسترس‌اند.';
+
+  @override
+  String get skillEvalNoWorkspace => 'هیچ فضای کاری انتخاب نشده است.';
+
+  @override
+  String get skillEvalNoTasks => 'هنوز وظیفه‌ای گزارش نشده است.';
+
+  @override
+  String get skillEvalNoVerifiers => 'هیچ شاهدی از تأییدکننده‌ها ثبت نشده است.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'این بایت‌های دقیق ارزیابی نشده‌اند. اسکن، شاهد رفتار نیست.';
+
+  @override
+  String get skillEvalNotVerified => 'تأیید نشده';
+
+  @override
+  String get skillEvalObserved => 'مشاهده‌شده';
+
+  @override
+  String get skillEvalOpenQuality => 'بازکردن بخش کیفیت';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'به‌طور پیش‌فرض، ذخیرهٔ مهارت ارزیابی پولی را آغاز نمی‌کند. اگر ارزیابی مجدد خودکار هنگام به‌روزرسانی را صریحاً فعال کنید، ذخیره‌کردن ارزیابی پولیِ محدود به بودجه را آغاز می‌کند.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'برای پیکربندی سیاست به‌روزرسانی، ابتدا یک نسخه را ارزیابی کنید.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'پیکربندی سیاست به‌روزرسانی';
+
+  @override
+  String get skillEvalPartial => 'شواهد جزئی؛ بدون حکم پذیرش';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString از $plannedString تلاش';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'ارائه‌دهنده: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'کمپین‌های مهارت فضای کاری و شواهد ویژهٔ هر نسخه.';
+
+  @override
+  String get skillEvalQueued => 'در صف';
+
+  @override
+  String get skillEvalReconnecting =>
+      'در حال اتصال دوباره به نماهای ثبت‌شدهٔ کمپین…';
+
+  @override
+  String get skillEvalRefresh => 'بازخوانی';
+
+  @override
+  String get skillEvalReferenceLoad => 'مرجع بارگذاری شد';
+
+  @override
+  String get skillEvalRepetitions => 'تکرار برای هر وظیفه';
+
+  @override
+  String get skillEvalReport => 'گزارش شواهد';
+
+  @override
+  String get skillEvalRunning => 'در حال اجرا';
+
+  @override
+  String get skillEvalScriptExecution => 'اسکریپت اجرا شد';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'هزینه: $spent / بودجه $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'شروع ارزیابی';
+
+  @override
+  String get skillEvalStartTitle => 'مقایسهٔ نسخه‌های مهارت';
+
+  @override
+  String get skillEvalStale => 'قدیمی';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'قدیمی: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'خوشه‌های متمایز وظایف: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes تأییدشده) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'وظایف به تفکیک گروه';
+
+  @override
+  String get skillEvalToolError => 'خطای ابزار';
+
+  @override
+  String get skillEvalTools => 'رویدادهای ابزار';
+
+  @override
+  String get skillEvalTitle => 'ارزیابی مهارت';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'در دسترس نیست: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'نامشخص';
+
+  @override
+  String get skillEvalUnsaved =>
+      'تغییرات ذخیره‌نشده لحاظ نمی‌شوند. پیش از ارزیابی ذخیره کنید.';
+
+  @override
+  String get skillEvalUncertainty => 'بازهٔ عدم قطعیت';
+
+  @override
+  String get skillEvalVerified => 'تأییدشده';
+
+  @override
+  String get skillEvalVerifiers => 'تأیید';
+
+  @override
+  String get skillEvalVerdict => 'نتیجه';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'کپی کامل شد: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'نقض برنامه';
+
+  @override
+  String get skillEvalPreserved => 'کیفیت حفظ شد';
+
+  @override
+  String get skillEvalPrevious => 'قبلی در برابر فعلی';
+
+  @override
+  String get skillEvalRegressed => 'پسرفت اثبات شد';
+
+  @override
+  String get skillEvalCostRegression => 'پسرفت هزینه';
+
+  @override
+  String get skillEvalHarnessError => 'خطای چارچوب آزمون';
+
+  @override
+  String get skillBehaviorRouting => 'مسیریابی مهارت';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive استفادهٔ مورد انتظار · $falsePositive استفادهٔ غیرمنتظره · $falseNegative استفادهٔ ازدست‌رفته · $trueNegative رد کردن درست';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive استفادهٔ نامشخص · $negative رد کردن نامشخص · $notOffered ارائه‌نشده';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'دقت مشاهده‌شده $precision · بازیابی $recall · نرخ مثبت کاذب $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'بازوی اجباری · فقط برای تشخیص';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'نرخ‌ها فقط بر اساس دسترسی‌های قابل مشاهده‌اند. دسترسی از طریق پوسته یا جست‌وجو ممکن است نامشخص بماند؛ بارگذاری مهارت به معنی به‌کارگیری آن نیست.';
+
+  @override
+  String get skillBehaviorSafety => 'ایمنی مصنوعی';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts قبولی بررسی خروجی · $denials رد سیاست · $violations نقض فایل محافظت‌شده';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'بررسی خروجی‌ها مصنوعی است و نشان‌دهندهٔ نرخ حملات در دنیای واقعی نیست؛ اثرات جانبی واقعی پایش نمی‌شوند.';
+
+  @override
+  String get skillBehaviorUtility => 'کارایی بر پایهٔ خانواده';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts موفقیت تأییدشده';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'همهٔ تلاش‌ها، حتی ناموفق و ناتمام، در مخرج کارایی حساب می‌شوند.';
 }

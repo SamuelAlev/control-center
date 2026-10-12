@@ -2,7 +2,7 @@
 title: Rujukan konfigurasi SSO
 description: Setiap tetapan, titik akhir, operasi dan kod ralat daftar masuk tunggal.
 slug: ms-MY/manual-pengguna/rujukan/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Semua yang boleh dikonfigurasikan tentang daftar masuk tunggal, di satu tempat.
@@ -24,7 +24,7 @@ boleh bercanggah dengannya).
 | `displayNameAttribute` | SAML          | `displayName`   | atribut nama paparan                                                                                                                                 |
 | `groupsAttribute`      | SAML          | `groups`        | atribut nama kumpulan                                                                                                                                 |
 | `clockSkewSeconds`     | SAML          | 90              | elaun sisihan pengesahan jangka hayat                                                                                                                |
-| `allowIdpInitiated`    | SAML          | mati            | terima Jawapan tidak diminta (tiada `InResponseTo`)                                                                                                  |
+| `allowIdpInitiated`    | SAML          | mati            | terima Jawapan tidak diminta yang sah (tiada `InResponseTo`); penyemak imbas mesti menuntut geran jangka pendek sebelum menerima kelayakan tersegel untuk penerimanya |
 | `wantResponseSigned`   | SAML          | mati            | wajibkan tandatangan pada akar Jawapan (tandatangan penegasan sentiasa diperlukan)                                                                    |
 | `issuer`               | OIDC          | —               | URL asas penerbit (diperlukan untuk mendayakan)                                                                                                      |
 | `clientId`             | OIDC          | —               | id klien awam (diperlukan untuk mendayakan)                                                                                                          |
@@ -37,28 +37,61 @@ boleh bercanggah dengannya).
 
 ## Konfigurasi proses
 
-Sambungan SSO tidak disemai daripada persekitaran. Satu baki flag proses adalah
-tentang **penyerahan penyemak imbas**, bukan baris sambungan:
+Sambungan SSO tidak disemai daripada persekitaran. Satu baki flag proses memilih
+di mana penyemak imbas membuka klien web selepas panggil balik SSO:
 
 | Pemboleh ubah / flag                             | Maksud                                                                                                                     |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | asalan panggil balik SSO memantulkan penyemak imbas ke (kelayakan menunggang dalam serpihan URL). Tidak ditetapkan mengekalkan penyerahan pada asalan yang sama. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | URL klien web untuk penyerahan kelayakan tersegel; tidak ditetapkan mengekalkan penyerahan pada asalan yang sama (berguna hanya jika klien web disajikan di situ). Untuk log masuk `web-popup`, `client_origin` yang dibenarkan daripada tab pemula diutamakan. |
 
 URL penerbit itu sendiri mestilah `https` (`http` diterima untuk penerbit
-loopback `localhost`, `127.0.0.1` dan `::1` sahaja).
+loopback `localhost`, `127.0.0.1` dan `::1` sahaja). Gunakan TLS dipercayai untuk
+panggil balik IdP dan hos klien web: halaman yang menjana kunci penerima serta
+JavaScript yang disampaikannya ialah sebahagian daripada sempadan kepercayaan.
+HTTPS melindungi butstrap itu; selepas penggandingan, sesi `/rpc` langsung dan
+melalui geganti kedua-duanya memerlukan penyulitan Noise dan identiti pelayan
+yang disematkan.
 
 ## Titik akhir HTTP
 
 | Titik akhir                                      | Pengesahan          | Tujuan                                                                                                                                                                                                          |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | tiada (ubah hala)   | mulakan log masuk yang dimulakan SP; `relay=desktop` menyerahkan kepada apl, `relay=web-popup` postMessage kepada tab sambungan yang menunggu (yang mengisytiharkan `client_origin`nya, dihormati hanya apabila senarai asalan yang dibenarkan mempercayainya) |
-| `POST /saml/acs`                                 | tiada (POST IdP)    | konsumer penegasan — mengesahkan, memperuntukkan, menjana                                                                                                                                                       |
+| `GET /saml/login?relay=…&handoff_key=…`                        | tiada (ubah hala)   | mulakan log masuk yang dimulakan SP dengan kunci penerima X25519 yang dipegang klien; `relay=desktop` menyerahkan kepada apl, `relay=web-popup` postMessage kepada tab sambungan yang menunggu (`client_origin`nya dihormati hanya apabila senarai asalan yang dibenarkan mempercayainya) |
+| `POST /saml/acs`                                 | tiada (POST IdP)    | sahkan penegasan dan peruntukkan pengguna; log masuk yang dimulakan SP menyegel kelayakan peranti yang dijana kepada kunci penerima pemula; SAML tidak diminta yang dibenarkan menghasilkan tuntutan terikat penyemak imbas sebagai gantinya |
+| `POST /saml/claim`                               | geran penyemak imbas se-asalan | tebus geran SAML tidak diminta sekali guna bersama kukinya dan `handoff_key` baharu; mengembalikan kelayakan tersegel untuk penerimanya, bukan kunci penggandingan teks biasa |
 | `GET /saml/metadata`                             | tiada               | `EntityDescriptor` SP kami                                                                                                                                                                                      |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | tiada               | perjalanan pergi-balik OIDC; `relay=desktop` menyerahkan kepada apl, `relay=web-popup` kepada tab sambungan yang menunggu (konvensyen `client_origin` yang sama)                                              |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | tiada               | perjalanan pergi-balik OIDC; log masuk memerlukan kunci penerima yang dipegang klien; `relay=desktop` menyerahkan kepada apl, `relay=web-popup` kepada tab sambungan yang menunggu (konvensyen `client_origin` yang sama) |
 | `GET /auth/providers`                            | tiada, CORS `*`     | kuar skrin sambungan: sambungan SSO yang ditawarkan (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                    |
 | `/scim/v2/Users…`                                | Bearer (token SCIM) | Pengguna: cipta/dapat/senarai+tapis/PUT/PATCH/DELETE                                                                                                                                                            |
 | `/scim/v2/Groups`                                | Bearer              | baca sahaja; tolakan kumpulan menjawab 501 mengikut reka bentuk                                                                                                                                                 |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | dokumen keupayaan                                                                                                                                                                                               |
+
+Untuk SAML dan OIDC yang dimulakan SP, URL mula log masuk memerlukan
+`handoff_key` yang sah (kunci awam X25519 klien pemula). Pelayan menyimpan kunci
+itu bersama log masuk yang tertunda dan menyegel kelayakan peranti yang dijana
+pada panggil balik menggunakan X25519 sementara, HKDF-SHA256 dan AES-256-GCM yang
+terikat pada asalan pelayan. Penyerahan desktop menggunakan
+`control-center://pair`, penyerahan web pada tab yang sama menggunakan serpihan
+URL, dan `web-popup` menghantar postMessage kepada `client_origin` yang dibenarkan
+jika disediakan (jika tidak, kepada URL klien web yang dikonfigurasi atau asalan
+panggil balik). Sampul tersegel, bukan kunci penggandingan teks biasa, menempuh
+serpihan atau mesej popup itu. Klien pemula menyimpan kunci peribadi yang
+sepadan untuk membukanya. Sampul ini berbeza daripada sesi Noise yang diwajibkan
+yang dibina selepas penggandingan.
+
+Jawapan SAML yang dimulakan IdP (apabila didayakan) tiada penerima pemula. Sebagai
+gantinya, ACS menetapkan kuki penyemak imbas lima minit, HttpOnly, SameSite=Strict
+dan menyajikan pilihan **Open web client** / **Open desktop app**. Halaman itu
+menjana kunci penerima baharu dan menghantar separuh awamnya serta pemegang geran
+ke `POST /saml/claim` daripada asalan yang sama. Claim memerlukan kuki dan asalan
+yang sepadan (sempadan CSRF), menggunakan geran sekali dan hanya mengembalikan
+sampul tersegel untuk penerimanya. Serpihan web/desktop berikutnya membawa sampul
+itu serta bahan kunci peribadi penerima supaya klien destinasi boleh membukanya,
+**bukan** kelayakan peranti teks biasa. Penyemak imbas lain atau geran yang tamat
+tempoh tidak boleh menebusnya. Asalan klien web destinasi boleh mengakses serpihan
+itu dan menyahsulitnya; halaman panggil balik atau asalan klien web yang diceroboh
+boleh mencuri kelayakan. Penyulitan tidak menjadikan kod yang disajikan tetapi tidak
+dipercayai itu selamat.
 
 ## Operasi RPC
 

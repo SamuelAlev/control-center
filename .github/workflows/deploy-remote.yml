@@ -12,6 +12,8 @@ on:
       - "packages/**"
       - "tool/gen_build_info.dart"
       - ".github/workflows/deploy-remote.yml"
+      - "web/cc_resource*"
+      - "tool/stage_resource_assets.mjs"
   workflow_dispatch:
 
 permissions: {}
@@ -74,7 +76,10 @@ jobs:
 
       - name: Build web (SkWasm with CanvasKit fallback)
         working-directory: apps/cc_remote
-        run: flutter build web --release --wasm
+        run: flutter build web --release --wasm --enable-wasm-deferred-loading
+
+      - name: Stage encrypted resource assets
+        run: node tool/stage_resource_assets.mjs apps/cc_remote/build/web
 
       # After the build. flutter build web writes version.json; the poll
       # manifest is deploy.json.

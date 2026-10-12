@@ -7,16 +7,16 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_adapter.dar
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_delta.dart';
 import 'package:cc_infra/src/tickets/linear/linear_graphql_client.dart';
 import 'package:cc_infra/src/tickets/linear/linear_issue_dto.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// [TicketSyncAdapter] for Linear, over its GraphQL API. The only place that
 /// knows Linear specifics (status names, the GraphQL client, priority numbers,
-/// the required team id). Construct from an authorized [Dio].
+/// the required team id). Construct from an authorized [RhttpClient].
 class LinearTicketSyncAdapter implements TicketSyncAdapter {
   /// Creates a [LinearTicketSyncAdapter]. [_defaultTeamId] is used as the create
   /// target when a config's `vendorProjectId` is empty.
-  LinearTicketSyncAdapter(Dio dio, {this._defaultTeamId})
-    : _client = LinearGraphQlClient(dio);
+  LinearTicketSyncAdapter(RhttpClient httpClient, {this._defaultTeamId})
+    : _client = LinearGraphQlClient(httpClient);
 
   final LinearGraphQlClient _client;
   final String? _defaultTeamId;

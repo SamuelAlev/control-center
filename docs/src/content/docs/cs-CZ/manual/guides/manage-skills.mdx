@@ -1,21 +1,23 @@
 ---
 title: Instalujte a spravujte skilly
-description: Přidej repozitáře z GitHubu jako zdroje skillů, procházej jejich katalogy a skilly instaluj, aktualizuj nebo odinstaluj přes bránu antivirového skenu.
+description: Nainstaluj a aktualizuj skilly pracovního prostoru přes bránu skenu a pak porovnej uložené revize s vyhodnocením skillů s rozpočtem.
 slug: cs-CZ/prirucka/navody/sprava-skillu
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Tenhle návod ukazuje, jak do pracovního prostoru dostat skilly z GitHubu:
 přidat repozitář jako zdroj, nainstalovat z něj skilly, které chceš, a držet
-je aktuální.
+je aktuální. Uloženou revizi také můžeš vyhodnotit proti odpovídajícímu
+výchozímu stavu, než se rozhodneš, zda si ji ponechat.
 
 Než začneš, jedno je třeba vědět: **zdrojový repozitář je nedůvěryhodný.**
-Jeho název, popis i počet hvězdiček píše ten, kdo ho vlastní. Jediný
-bezpečnostní signál, kterému Control Center věří, je verdikt antivirového
-skenu. Každá instalace jím projde, než se cokoli dostane na disk nebo do
-promptu agenta. Chceš-li zdůvodnění, přečti si
-[sekci Skilly v modelu agentů](/cs-CZ/prirucka/koncepty/model-agentu/); tahle
-stránka zůstává u postupu.
+Jeho název, popis i počet hvězdiček píše ten, kdo ho vlastní. Každá
+instalace projde branou antivirového skenu, než se cokoli dostane na disk nebo
+do promptu agenta. Ten verdikt je vstupní kontrola, ne důkaz, že je skill
+bezpečný nebo užitečný. Přečti si
+[sekci Skilly v modelu agentů](/cs-CZ/prirucka/koncepty/model-agentu/) o modelu
+instalace a [Evaly a kvalita](/cs-CZ/prirucka/koncepty/evaly-a-kvalita/) o tom,
+jak se behaviorální důkazy liší od skenu.
 
 Skilly jsou v **Nastavení → Pracovní prostor → Dovednosti**
 (`/workspaces/<id>/settings/workspace/skills`). Patří k pracovnímu prostoru:
@@ -85,6 +87,83 @@ instalace. Skill, jehož nová verze skončí v karanténě, se odmítne a verze
 kterou jsi měl, zůstane. Hash staré verze zůstane v zámku jako odkaz
 pro návrat.
 
+## Vyhodnoť skill
+
+1. Otevři **Nastavení → Pracovní prostor → Dovednosti**, vyber nainstalovaný
+   skill a ulož všechny úpravy. Ve **Vyhodnocení dovednosti** zkontroluj hash
+   balíčku.
+2. Zvol **Spustit vyhodnocení**. Vyber **Sadu úloh**, která odpovídá účelu
+   skillu, a **adaptér**. Vestavěný harness použije nakonfigurovaného
+   poskytovatele a model schopný používat nástroje. **Claude Code** použije
+   výchozí spravovaný účet Claude a konkrétní identifikátor modelu; nejdřív se
+   přihlas v **Nastavení → Adaptéry**. Nevypůjčuje si osobní přihlášení
+   operátora serveru.
+3. Zvol **Porovnání** z tabulky níže.
+4. Nastav **Opakování na úlohu** (1–20) a **Rozpočet (US cents)**. Například
+   `100` znamená 1 americký dolar. Zvol **Spustit vyhodnocení** a tím
+   autorizuj placenou práci poskytovatele.
+5. Sleduj kampaň v **Observabilita → Kvalita**, nebo se vrať přes
+   **Otevřít kvalitu** v panelu skillu.
+
+U předplatných Claude Code a Codex OAuth je rozpočet **prahová hodnota
+zastavení využití ekvivalentního API**, ne limit faktury ani míra kvóty
+předplatného. `100` připouští práh 1 amerického dolaru: probíhající volání ho
+může překročit, ale jakmile hlášené využití tohoto prahu dosáhne, další volání
+už nezačnou. Neznámé využití také zastaví další volání. Malý rozpočet může
+nechat porovnání dílčí; neslibuje dokončení vybrané sady úloh.
+
+Poskytovatelé s API klíčem si drží konzervativní rezervace na volání podle
+dokumentovaných limitů tokenů a ceníku. Mohou odmítnout `100` ještě před
+utrácením, když jedno bezpečně rezervované volání potřebuje víc. Chyba uvede
+vybraný model a minimální rezervaci; zvol levnější model nebo ten rozpočet
+zvyš.
+
+| Porovnání | Použij ho k odpovědi na |
+| --- | --- |
+| **Nepřítomné oproti dostupnému** | Zlepšuje běžné objevování a používání tohoto skillu výsledek oproti stavu, kdy chybí? |
+| **Předchozí oproti aktuální** | Zachovává nebo zlepšuje aktualizace chování oproti dříve zachycené revizi? |
+| **Vynucené načtení oproti nepřítomnosti** | Může obsah pomoci, když se načte výslovně? Diagnostikuje to problémy s načítáním; neprokazuje to běžné objevování. |
+| **Složení** | Pomáhá přidání kandidáta, nebo koliduje s vybranými okolními skilly? Výchozí stav zachovává stejný okolní inventář bez kandidáta. |
+
+**Předchozí oproti aktuální** potřebuje hash balíčku z historie kampaní.
+Vyhodnoť revizi, než ji nahradíš, pokud ji chceš použít jako výchozí stav;
+libovolná historie Gitu se neimportuje.
+
+Neuložené úpravy, nedostupný hash a režim demo jen pro čtení spuštění
+zablokují. Server navíc kontroluje přístup k pracovnímu prostoru a repozitáři,
+karanténu skenu, zásady akcí, podporu modelu, ceny a izolaci spouštění.
+Neúspěšnou kontrolu vyřeš, neobcházej. Identita poskytovatele a modelu se
+zaznamenává, ale vzdálený alias modelu nezafixuje základní váhy poskytovatele.
+
+### Prohlížej, ruš a exportuj
+
+Čti pokrytí a výdaje spolu s výsledky jednotlivých úloh a regresemi. Otevírej
+jednotlivé pokusy a zkoumej pozorovaná načtení skillů, události nástrojů, chyby
+a důkazy ověřovatelů. Výsledky **Dílčí**, **Zastaralé** a **Neprůkazné**
+nejsou doporučením revizi přijmout. Hash zprávy identifikuje zachycený balíček,
+ne nutně balíček aktuálně nainstalovaný.
+
+Pro zařazenou nebo aktivní práci použij **Zrušit běh**. Dokončené pokusy
+zůstávají viditelné; zrušení nevrací už vykonanou práci poskytovatele.
+**Kopírovat JSON se skrytými údaji** zkopíruje do schránky omezený export
+důkazů, ne úplný balíček pro přehrání soukromých zdrojů. Viz
+[Evaly a kvalita](/cs-CZ/prirucka/koncepty/evaly-a-kvalita/) o důkazech a limitech
+platformy.
+
+### Po aktualizacích vyhodnoť znovu
+
+Automatické placené vyhodnocení je **ve výchozím stavu vypnuté**. Po
+vyhodnocení aktuální revize zvol kampaň v **Nastavení zásad aktualizací** a
+vyber **Zapnout vyhodnocování aktualizací**. Změna těchto zásad vyžaduje
+oprávnění správce pracovního prostoru. Vybraná kampaň dodá sadu úloh,
+adaptér, poskytovatele/model, porovnání, opakování a rozpočet.
+
+Následné přijaté změny obsahu naplánují práci s rozpočtem; nezměněné hashe se
+deduplikují. **Vypnout vyhodnocování aktualizací** zabrání budoucím
+automatickým přijetím. Pro už přijatou kampaň použij **Zrušit běh**.
+Historické zprávy zůstávají připojené ke svým původním hashům balíčků;
+opětovné vyhodnocení skill nezveřejní, nezapne ani nepřepíše.
+
 ## Odinstaluj skill, odeber repozitář
 
 **Odinstalovat** (v detailu nainstalovaného skillu, nebo **Smazat** na kartě
@@ -134,3 +213,4 @@ a [Slash příkazy](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/).
 ## Související koncepty
 
 - [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/)
+- [Evaly a kvalita](/cs-CZ/prirucka/koncepty/evaly-a-kvalita/)

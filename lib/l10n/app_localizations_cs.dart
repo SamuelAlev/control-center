@@ -14303,6 +14303,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get composerDropToAttach => 'Pusťte pro přiložení';
 
   @override
+  String get composerAttachmentUploading => 'Nahrávání…';
+
+  @override
+  String get composerAttachmentReady => 'Připraveno';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Nahrávání se nezdařilo';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Soubor překračuje limit $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Tento soubor nelze přečíst';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Počkejte, až se přílohy nahrají';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Před odesláním neúspěšné přílohy nahrajte znovu nebo odeberte';
+
+  @override
   String get attachmentUnavailable => 'Příloha není k dispozici';
 
   @override
@@ -15478,11 +15503,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Agent na vás čeká';
+  String get notificationAgentAwaitingInput => 'Agent potřebuje vaši pozornost';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Když agent potřebuje vaše schválení, odpověď nebo funkční přihlašovací údaje';
+      'Když agent potřebuje vaše schválení, odpověď či funkční přihlašovací údaje nebo zásady zablokují akci';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15555,4 +15580,386 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Server se zastavuje';
+
+  @override
+  String get skillEvalAbsent => 'Nepřítomné oproti dostupnému';
+
+  @override
+  String get skillEvalAmbient => 'Dovednosti v prostředí';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Odkaz na artefakt: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · opakování $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Pokusy';
+
+  @override
+  String get skillEvalAvailableEvent => 'Dostupné';
+
+  @override
+  String get skillEvalBaseline => 'Hash předchozí revize';
+
+  @override
+  String get skillEvalBodyLoad => 'Načteno tělo';
+
+  @override
+  String get skillEvalBudgetCents => 'Rozpočet (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Placené vyhodnocení používá vybraného poskytovatele a rozpočet. Výsledky bezpečnostní kontroly jsou oddělené.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Rozpočty předplatného sledují využití přepočtené na ceny API, nikoli faktury. Probíhající volání může rozpočet překročit; po jeho dosažení se další volání nespustí. Bezpečnostní kontroly jsou oddělené.';
+
+  @override
+  String get skillEvalCancel => 'Zrušit běh';
+
+  @override
+  String get skillEvalCancelled => 'Zrušeno';
+
+  @override
+  String get skillEvalCancelling => 'Ruší se';
+
+  @override
+  String get skillEvalComparison => 'Porovnání';
+
+  @override
+  String get skillEvalCompleted => 'Dokončeno';
+
+  @override
+  String get skillEvalComposition => 'Složení';
+
+  @override
+  String get skillEvalCorpus => 'Sada úloh';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString opakování';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Všechny plánované pokusy byly zaznamenány';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Hash aktuálního balíčku: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Vypnout vyhodnocování aktualizací';
+
+  @override
+  String get skillEvalEnableUpdates => 'Zapnout vyhodnocování aktualizací';
+
+  @override
+  String get skillEvalExport => 'Kopírovat JSON se skrytými údaji';
+
+  @override
+  String get skillEvalFailed => 'Neúspěšné';
+
+  @override
+  String get skillEvalForced => 'Vynucené načtení oproti nepřítomnosti';
+
+  @override
+  String get skillEvalForcedEvent => 'Vynucené načtení';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Hash balíčku není na tomto serveru dostupný. Vyhodnocování je vypnuté.';
+
+  @override
+  String get skillEvalHistory => 'Historie revizí';
+
+  @override
+  String get skillEvalImproved => 'Zlepšení';
+
+  @override
+  String get skillEvalIncomplete => 'Neúplné';
+
+  @override
+  String get skillEvalInconclusive => 'Neprůkazné';
+
+  @override
+  String get skillEvalInferred => 'Odvozené';
+
+  @override
+  String get skillEvalInterrupted => 'Přerušeno';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Načtení dovednosti nelze sledovat; chybějící událost nedokazuje, že byla ignorována.';
+
+  @override
+  String get skillEvalModel => 'Vybraný model';
+
+  @override
+  String get skillEvalNoAttempts => 'Zatím žádné pokusy.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Nejsou dostupné žádné připojené modely. Nejprve připojte poskytovatele v Nastavení.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'V historii kampaně není hash předchozí revize. Před jejím nahrazením ji vyhodnoťte.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Zatím žádná zpráva; dílčí pokusy zůstávají dostupné.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Není vybrán žádný pracovní prostor.';
+
+  @override
+  String get skillEvalNoTasks => 'Zatím nejsou hlášeny žádné úlohy.';
+
+  @override
+  String get skillEvalNoVerifiers =>
+      'Nejsou zaznamenány žádné důkazy z ověřování.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Tyto přesné bajty nebyly vyhodnoceny. Bezpečnostní kontrola nedokládá chování.';
+
+  @override
+  String get skillEvalNotVerified => 'Neověřeno';
+
+  @override
+  String get skillEvalObserved => 'Pozorováno';
+
+  @override
+  String get skillEvalOpenQuality => 'Otevřít kvalitu';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Ve výchozím nastavení uložení dovednosti nespustí placené vyhodnocení. Pokud výslovně zapnete automatické opětovné vyhodnocení při aktualizaci, uložení spustí placené vyhodnocení v rámci rozpočtu.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Před nastavením zásad aktualizací nejprve vyhodnoťte revizi.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Nastavení zásad aktualizací';
+
+  @override
+  String get skillEvalPartial => 'Dílčí důkazy; bez závěru o přijetí';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString z $plannedString pokusů';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Poskytovatel: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Kampaně dovedností v pracovním prostoru a důkazy pro jednotlivé revize.';
+
+  @override
+  String get skillEvalQueued => 'Ve frontě';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Obnovuje se připojení ke snímkům kampaně…';
+
+  @override
+  String get skillEvalRefresh => 'Obnovit';
+
+  @override
+  String get skillEvalReferenceLoad => 'Načtena reference';
+
+  @override
+  String get skillEvalRepetitions => 'Opakování na úlohu';
+
+  @override
+  String get skillEvalReport => 'Zpráva o důkazech';
+
+  @override
+  String get skillEvalRunning => 'Probíhá';
+
+  @override
+  String get skillEvalScriptExecution => 'Skript spuštěn';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Útrata: $spent / rozpočet $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Spustit vyhodnocení';
+
+  @override
+  String get skillEvalStartTitle => 'Porovnat revize dovednosti';
+
+  @override
+  String get skillEvalStale => 'Zastaralé';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Zastaralé: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Odlišné skupiny úloh: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes ověřeno) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Úlohy podle varianty';
+
+  @override
+  String get skillEvalToolError => 'Chyba nástroje';
+
+  @override
+  String get skillEvalTools => 'Události nástrojů';
+
+  @override
+  String get skillEvalTitle => 'Vyhodnocení dovednosti';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Nedostupné: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Neznámé';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Neuložené úpravy nejsou zahrnuty. Před vyhodnocením je uložte.';
+
+  @override
+  String get skillEvalUncertainty => 'Interval nejistoty';
+
+  @override
+  String get skillEvalVerified => 'Ověřeno';
+
+  @override
+  String get skillEvalVerifiers => 'Ověřování';
+
+  @override
+  String get skillEvalVerdict => 'Závěr';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Kopírování dokončeno: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Porušení plánu';
+
+  @override
+  String get skillEvalPreserved => 'Kvalita zachována';
+
+  @override
+  String get skillEvalPrevious => 'Předchozí oproti aktuální';
+
+  @override
+  String get skillEvalRegressed => 'Regrese prokázána';
+
+  @override
+  String get skillEvalCostRegression => 'Nárůst nákladů';
+
+  @override
+  String get skillEvalHarnessError => 'Chyba testovacího prostředí';
+
+  @override
+  String get skillBehaviorRouting => 'Směrování dovednosti';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive očekávaných použití · $falsePositive neočekávaných použití · $falseNegative opomenutých použití · $trueNegative správných přeskočení';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive nejistých použití · $negative nejistých přeskočení · $notOffered nenabídnuto';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Pozorovaná přesnost $precision · úplnost $recall · míra falešných poplachů $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Vynucené rameno · pouze diagnostika';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Míry vycházejí jen z pozorovatelných přístupů. Přístup přes shell či hledání může zůstat neznámý; načtení dovednosti nedokazuje její použití.';
+
+  @override
+  String get skillBehaviorSafety => 'Syntetická bezpečnost';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts úspěšných kontrol artefaktů · $denials zamítnutí zásadami · $violations porušení ochrany souborů';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Kontroly artefaktů jsou syntetické a nepředstavují míru útoků v reálném světě; skutečné vedlejší účinky se neměří.';
+
+  @override
+  String get skillBehaviorUtility => 'Užitečnost podle skupiny';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts ověřených úspěchů';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Do jmenovatele užitečnosti se počítají všechny pokusy včetně neúspěšných a nedokončených.';
 }

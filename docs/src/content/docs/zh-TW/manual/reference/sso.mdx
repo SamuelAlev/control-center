@@ -2,7 +2,7 @@
 title: SSO 設定參考
 description: 單一登入的每一個設定項、端點、操作與錯誤碼。
 slug: zh-TW/手冊/參考/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 單一登入所有可設定的項目，全都集中在這裡。這些值存放在 `global.db` 的
@@ -22,7 +22,7 @@ sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 | `displayNameAttribute` | SAML   | `displayName`   | 顯示名稱屬性                                                                                                                                         |
 | `groupsAttribute`      | SAML   | `groups`        | 群組名稱屬性                                                                                                                                         |
 | `clockSkewSeconds`     | SAML   | 90              | 有效期間驗證容許的時鐘偏差                                                                                                                           |
-| `allowIdpInitiated`    | SAML   | 關閉            | 接受未經請求的回應（沒有 `InResponseTo`）                                                                                                            |
+| `allowIdpInitiated`    | SAML   | 關閉            | 接受有效的未經請求回應（沒有 `InResponseTo`）；瀏覽器必須先認領一個短效期的 grant，才會收到為接收方密封的憑證 |
 | `wantResponseSigned`   | SAML   | 關閉            | 要求 Response 根層級的簽章（判斷提示簽章一律必要）                                                                                                   |
 | `issuer`               | OIDC   | —               | 簽發者基準 URL（啟用時必須提供）                                                                                                                     |
 | `clientId`             | OIDC   | —               | 公開用戶端 id（啟用時必須提供）                                                                                                                      |
@@ -35,28 +35,51 @@ sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 
 ## 行程設定
 
-SSO 連線不會從環境植入。剩下的一個行程旗標談的是**瀏覽器交付**，而不是
-連線資料列：
+SSO 連線不會從環境植入。剩下的一個行程旗標決定 SSO 回呼後瀏覽器要開啟
+哪個網頁用戶端：
 
 | 變數／旗標                                      | 意義                                                                                                          |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | SSO 回呼會把瀏覽器重導到的來源（憑證隨 URL 片段傳遞）。未設定時，交付會維持在同源。                          |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | 用於密封憑證交付的網頁用戶端 URL；未設定時維持同源交付（只有在該處提供網頁用戶端時才有用）。對於 `web-popup` 登入，來自發起分頁且獲允許的 `client_origin` 優先。 |
 
 簽發者 URL 本身必須是 `https`（只有回送位址的簽發者 `localhost`、
-`127.0.0.1` 與 `::1` 才接受 `http`）。
+`127.0.0.1` 與 `::1` 才接受 `http`）。請為 IdP 回呼與網頁用戶端主機使用可信任
+的 TLS：產生接收方金鑰的頁面及其交付的 JavaScript 都屬於信任邊界的一部分。
+HTTPS 保護那段引導；配對之後，直接與經中繼的 `/rpc` 工作階段都要求 Noise 加密
+與已釘選的伺服器身分。
 
 ## HTTP 端點
 
 | 端點                                             | 驗證                | 用途                                                                                                                                                                                                           |
 | ------------------------------------------------ | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | 無（重新導向）      | 開始由 SP 發起的登入；`relay=desktop` 會交付給應用程式，`relay=web-popup` 會對等待中的連線分頁發出 postMessage（該分頁會宣告自己的 `client_origin`，只有在來源允許清單信任它時才會被採用）                     |
-| `POST /saml/acs`                                 | 無（IdP POST）      | 判斷提示取用端——驗證、佈建、簽發                                                                                                                                                                               |
+| `GET /saml/login?relay=…&handoff_key=…`         | 無（重新導向）      | 以用戶端持有的 X25519 接收方金鑰開始由 SP 發起的登入；`relay=desktop` 會交付給應用程式，`relay=web-popup` 會對等待中的連線分頁發出 postMessage（只有在來源允許清單信任它時，才會採用其 `client_origin`） |
+| `POST /saml/acs`                                 | 無（IdP POST）      | 驗證判斷提示並佈建使用者；由 SP 發起的登入會把簽發的裝置憑證密封給發起的接收方金鑰；獲允許的未經請求 SAML 則改為產生一份繫結至瀏覽器的認領 |
+| `POST /saml/claim`                               | 同源瀏覽器 grant | 用其 cookie 與新的 `handoff_key` 兌換一次性的未經請求 SAML grant；回傳為接收方密封的憑證，永遠不是明文配對金鑰 |
 | `GET /saml/metadata`                             | 無                  | 我們的 SP `EntityDescriptor`                                                                                                                                                                                   |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | 無                  | OIDC 往返；`relay=desktop` 交付給應用程式，`relay=web-popup` 則交付給等待中的連線分頁（同樣的 `client_origin` 慣例）                                                                                           |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | 無 | OIDC 往返；登入需要用戶端持有的接收方金鑰；`relay=desktop` 交付給應用程式，`relay=web-popup` 則交付給等待中的連線分頁（同樣的 `client_origin` 慣例） |
 | `GET /auth/providers`                            | 無，CORS `*`        | 連線畫面的探測：可用的 SSO 連線（`id`/`kind`/`label`）與 `pairingEnabled`                                                                                                                                      |
 | `/scim/v2/Users…`                                | Bearer（SCIM 權杖） | Users 的建立／取得／列出＋篩選／PUT／PATCH／DELETE                                                                                                                                                             |
 | `/scim/v2/Groups`                                | Bearer              | 唯讀；群組推送依設計會回應 501                                                                                                                                                                                 |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | 能力文件                                                                                                                                                                                                       |
+
+對於由 SP 發起的 SAML 與 OIDC，登入起始 URL 需要一個有效的 `handoff_key`（發起
+用戶端的 X25519 公開金鑰）。伺服器會把該金鑰與待處理的登入一併保留，並在回呼時
+以臨時的 X25519、HKDF-SHA256 與 AES-256-GCM，把它簽發的裝置憑證密封、並繫結
+到伺服器來源。桌面交接使用 `control-center://pair`，同一分頁的網頁交接使用 URL
+片段，而 `web-popup`（如有提供）會 postMessage 到獲允許的 `client_origin`，否則
+傳送到所設定的網頁用戶端 URL 或回呼來源。在那個片段或彈出訊息中傳遞的是密封
+信封，而不是明文配對金鑰。發起用戶端保留對應的私人金鑰以便開啟它。這個信封
+不同於配對後建立的強制性 Noise 工作階段。
+
+由 IdP 發起的 SAML 回應（啟用時）沒有發起的接收方。取而代之，ACS 會設定一個
+五分鐘有效的 HttpOnly、SameSite=Strict 瀏覽器 cookie，並提供 **開啟網頁用戶端**
+/ **開啟桌面應用程式** 的選擇。該頁面會產生一個新的接收方密鑰，並從同一來源把
+它的公開部分與 grant 控制代碼 POST 到 `POST /saml/claim`。認領需要相符的 cookie
+與來源（一道 CSRF 邊界），一次性消費該 grant，並只傳回一個為接收方密封的信封。
+隨後的網頁/桌面片段會攜帶那個信封與接收方的私人密鑰材料，讓目標用戶端能開啟它，
+**而不是**明文裝置憑證。另一個瀏覽器或已過期的 grant 無法兌換它。目標網頁用戶端
+來源可以存取該片段並解密它；遭入侵的回呼頁面或網頁用戶端來源可以竊取憑證。加密
+並不能令不受信任的、被交付的程式碼變得安全。
 
 ## RPC 操作
 

@@ -2,7 +2,7 @@
 title: Sikkerhetskopi, eksport og import
 description: Oppsettet av øyeblikksbilder, manifestet, hver sikkerhetskopioperasjon og overføringsrute, og nøyaktig hvilke filer en sikkerhetskopi inneholder og ikke inneholder.
 slug: nb-NO/handbok/referanse/sikkerhetskopi
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Alt Control Center kan kopiere, overlevere eller ta i bruk, og den nøyaktige formen til
@@ -23,6 +23,12 @@ Det finnes tre artefakter for databaskopiering, med ulikt omfang og ulik slettep
 Alle skrives med SQLite `VACUUM INTO`, som er trygt mot en aktiv WAL-database:
 det tar en lesetransaksjon, lager en defragmentert og transaksjonskonsistent
 kopi, og krever aldri at serveren stoppes.
+
+Disse filene og nedlastede kopier **krypteres ikke i ro** av Control Center. Den
+ende-til-ende-krypterte overføringen beskytter byter underveis mellom en paret
+klient og dens `cc_server`, enten på direkte tilkoblinger eller på relébaserte
+tilkoblinger. Beskytt lokal lagring og kopier utenfor maskinen separat; serveren
+og enhver autorisert mottaker kan lese databasefilene.
 
 ## Oppsettet av et øyeblikksbilde
 
@@ -203,10 +209,15 @@ men indeksen kan være utdatert.
 
 ## Overføringsruter
 
-Hver operasjon ovenfor snakker om stier på serversiden, noe som bare er et fullstendig
-svar når serveren er din egen maskin. Disse tre frakter bytene, på samme PSK-signerte
-bane som medieproxyen og bildelageret bruker. Den som kaller, signerer en målstreng med
-enhetens forhåndsdelt nøkkel og sender signaturen som `s`.
+Eksport-/import- og listoperasjonene for øyeblikksbilder ovenfor snakker om stier på
+serversiden, noe som bare er et fullstendig svar når serveren er din egen maskin. Disse
+HTTP-formede rutene frakter sikkerhetskopibyter **inne i den samme autentiserte,
+ende-til-ende-krypterte ressurskanalen** som andre sensitive ressurser, enten
+RPC-tilkoblingen er direkte eller formidlet. De er ikke offentlige
+HTTP-filoverferingsendepunkter: en forespørsel til en av dem på den offentlige lytteren
+returnerer `426 Upgrade Required`, også fra loopback. I den krypterte tunnelen må
+enheten som er autentisert med Noise, samsvare med `d`; behandleren sjekker i tillegg
+enhetens signatur over målstrengen med dens parings-PSK og rollen nedenfor.
 
 | Rute                    | Metode | Spørring        | Signert mål                    | Krever                  |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -226,6 +237,7 @@ ville ha vist.
 | `404`  | Ingen sikkerhetskopiport på denne verten, eller det navngitte øyeblikksbildet/arbeidsområdefilen finnes ikke |
 | `405`  | `/backup/restore` kalt med noe annet enn `POST`                                      |
 | `413`  | Opplastingskroppen overskrider 8 GiB, enten etter oppgitt content-length eller etter byter som faktisk er lest |
+| `426`  | Enhver direkte forespørsel til en overføringssti på den offentlige HTTP-lytteren; bruk en paret klients krypterte ressurskanal |
 | `500`  | Eksporten eller arkiveringen mislyktes på serversiden                                |
 
 Begge nedlastingene svarer `Cache-Control: no-store` med `Accept-Ranges: none`. Hver
@@ -242,12 +254,14 @@ av samme øyeblikksbilde er det samme arkivet.
 begrenser den før og under lesingen, og sletter den mellomlagrede filen på **enhver**
 vei ut, også ved en avvisning.
 
-:::caution[En relébasert tilkobling har ingen HTTP-opprinnelse]
-Det formidlede reléet frakter RPC-rammer, ikke filoverføringer. Alt som snakker om stier
-på serversiden, fortsetter å virke over det; de tre overføringsrutene trenger en direkte
-tilkobling, og UI-et slår dem av med en merknad i stedet for å feile midt i en
-nedlasting.
-:::
+::::caution[Direkte og relé bruker den samme krypterte overføringen]
+Reléet frakter ressursforespørsler, strømmede svar og opplastingsbyter som
+chiffertekst; det kan ikke lese sikkerhetskopiinnhold. En sti på serversiden er
+fortsatt en sti på serververten, ikke en fil på reléet. Tilgang krever fortsatt
+den parede enheten, mål signaturen og den gjeldende arbeidsområde- eller
+installasjonsrollen. Ingen av transportene krypterer de resulterende
+sikkerhetskopifilene i ro.
+::::
 
 ## Stier og grenser
 
@@ -258,7 +272,7 @@ nedlasting.
 | Arbeidsområdeeksporter          | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Overføringsmellomlager         | `<dataDir>/backups/transfer/` — en arbeidsbenk, feid av ruten som skriver den |
 | Navn på øyeblikksbildearkiv     | `<snapshot directory name>.zip`                              |
-| Opplastingsgrense              | 8 GiB per `POST /backup/restore`                             |
+| Opplastingsgrense              | 8 GiB per kryptert `/backup/restore`-opplasting              |
 | Oppbevaring                    | Installasjonsøyeblikksbilder: manuell sletting. Arbeidsområdesikkerhetskopier: ukentlig pipeline, 30 dager som standard |
 
 Mappene `exports/`, `transfer/` og `workspace-backups/` er ikke

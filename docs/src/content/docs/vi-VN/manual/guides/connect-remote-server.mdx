@@ -2,7 +2,7 @@
 title: Kết nối máy chủ từ xa
 description: Trỏ ứng dụng máy tính hoặc máy khách web tới một cc_server đang chạy ở nơi khác và chuyển đổi giữa các máy chủ mà không cần khởi động lại.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Mọi máy khách đều là một lớp dựng giao diện trên một `cc_server` sở hữu dữ liệu.
@@ -14,7 +14,7 @@ chủ đang chạy ở nơi khác — một chiếc máy nhỏ, một VM trên �
 ## Điều kiện tiên quyết
 
 - Một `cc_server` đang chạy. Nếu bạn chưa có, xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
-- Hoặc ba giá trị ghép nối mà máy chủ đã tạo — **URL máy chủ** (`ws://…/rpc` hoặc `wss://…/rpc`), một **id thiết bị** và một **khóa ghép nối** — **hoặc** một **mã mời** dùng một lần từ quản trị viên không gian làm việc. Đổi một mã mời sẽ cấp phát người dùng của bạn, ghi nhận tư cách thành viên và tạo thông tin xác thực của máy khách này thay bạn, nên bạn không bao giờ phải xử lý id thiết bị hay khóa.
+- Hoặc ba giá trị ghép nối mà máy chủ đã tạo — **URL máy chủ** (`ws://…/rpc` hoặc `wss://…/rpc`), một **id thiết bị** và một **khóa ghép nối** — **hoặc** một **mã mời** dùng một lần từ quản trị viên không gian làm việc. Đổi một mã mời sẽ cấp phát người dùng của bạn, ghi nhận tư cách thành viên và tạo thông tin xác thực của máy khách này thay bạn, nên bạn không bao giờ phải xử lý id thiết bị hay khóa. Hãy lấy những giá trị này qua một kênh tin cậy và đối chiếu dấu vân tay của máy chủ với một mã QR tin cậy hoặc một ghim đã biết ở lần kết nối đầu tiên.
 
 ### Đảm bảo có thể truy cập tới máy chủ
 
@@ -27,7 +27,7 @@ trình duyệt chỉ mở một socket `wss://` với chứng chỉ mà nó đã
 từ đầu. Hãy cấp cho nó một trong những thứ sau:
 
 - một chứng chỉ trực tiếp, với `--tls-cert` và `--tls-key`
-- một reverse proxy kết thúc TLS ở phía trước, với máy chủ được khởi động `--insecure` (dữ liệu thuần phía sau proxy, chỉ trên mạng tin cậy)
+- một reverse proxy kết thúc TLS ở phía trước, với máy chủ được khởi động `--insecure` (dữ liệu thuần giữa proxy và máy chủ tại trình lắng nghe bên ngoài, chỉ trên mạng tin cậy; điều này không tắt phiên máy khách đã mã hóa bắt buộc)
 - một tunnel hoặc VPN cung cấp chứng chỉ — Tailscale, cloudflared, hoặc tương tự. **Cài đặt → Máy chủ → Kết nối & trạng thái** có tùy chọn tunnel tích hợp sẵn dưới mục **Chia sẻ máy chủ này**.
 
 Hai thiết lập phía máy chủ rất dễ bị bỏ sót. Khi đứng sau proxy, NAT hoặc tunnel,
@@ -57,7 +57,8 @@ thấy lỗi. Hàng của máy chủ bạn đang dùng không có thao tác **Ch
 bộ là hàng đầu tiên, được gắn nhãn **Chạy trong ứng dụng này**.
 
 Sau khi chuyển, ứng dụng máy tính không còn sở hữu cơ sở dữ liệu nào. Mọi màn hình
-đều đọc và ghi qua máy chủ từ xa thông qua WebSocket.
+đều đọc và ghi qua máy chủ từ xa trên một phiên WebSocket đã ký và mã hóa đầu-cuối;
+sự bảo vệ tương tự cũng áp dụng trên loopback và qua relay.
 
 ## Kết nối máy khách web
 
@@ -68,14 +69,19 @@ Bản dựng web luôn ở chế độ từ xa.
 3. Máy khách gọi tới máy chủ và dựng đúng giao diện mà ứng dụng máy tính dựng.
 
 Nếu URL có chứa một deep link ghép nối, các trường sẽ được điền sẵn. Khóa ghép nối
-nằm trong **fragment** của URL, thứ mà trình duyệt không bao giờ gửi tới máy chủ
-lưu trữ trang, nên máy chủ tĩnh không bao giờ thấy nó.
+nằm trong **fragment** của URL, thứ mà trình duyệt không gửi tới máy chủ lưu trữ
+trang. Hãy coi liên kết như một bí mật và tin cậy trang phục vụ máy khách web:
+fragment không bảo vệ khỏi mã độc hại của trang.
 
-:::note[Nội dung đa phương tiện và bảo mật]
-Nội dung đa phương tiện (ảnh đại diện, ảnh bảng tin, ảnh chụp màn hình PR) được
-proxy qua máy chủ đã kết nối, nên trình duyệt không bao giờ tải trực tiếp từ máy
-chủ thượng nguồn. Chính sách Bảo mật Nội dung theo từng yêu cầu, được đóng dấu từ
-một cookie không nhạy cảm, chỉ cho phép origin của máy chủ đã kết nối.
+:::note[Nội dung đa phương tiện, trình soạn thảo và bảo mật]
+Nội dung đa phương tiện (ảnh đại diện, ảnh bảng tin, ảnh chụp màn hình PR), các lần
+truyền bản sao lưu và lưu lượng của trình soạn thảo nhúng đều dùng đường hầm tài
+nguyên đã mã hóa, không phải các tuyến HTTP công khai đọc được. Trình soạn thảo
+trên trình duyệt đáng tin cậy chạy trên chính origin của ứng dụng web; Service Worker
+của nó chuyển các yêu cầu qua phiên đã mã hóa và đã xác thực tới phần phụ trợ
+code-server trên `cc_server`. Hãy lưu trữ máy khách web qua HTTPS hoặc loopback bảo
+mật để Service Worker khả dụng. Máy khách gốc dùng một mặt tiền loopback giới hạn
+theo năng lực.
 :::
 
 ### Những gì trình duyệt không làm
@@ -98,6 +104,7 @@ diện không cài trình soạn thảo nào.
 
 - **Kết nối bị quá thời gian chờ**: máy chủ phải tiếp cận được từ máy khách. Hãy kiểm tra bind (`--bind any`), rằng cổng đang mở và rằng `--public-url` nêu đúng địa chỉ mà máy khách thực sự có thể gọi tới. Trên mạng internet công khai, TLS là bắt buộc — một bind không phải loopback ở dạng thuần sẽ bị từ chối khi khởi động, trừ khi máy chủ được khởi động với `--insecure` phía sau một proxy.
 - **Trình duyệt từ chối kết nối nhưng máy khách native vẫn hoạt động**: origin của trình duyệt không nằm trong danh sách `--allowed-origins` của máy chủ. Mặc định chỉ cho phép `https://app.usectrl.dev` (cùng loopback).
+- **Danh tính máy chủ đã thay đổi**: máy khách từ chối một dấu vân tay khác với ghim đã lưu. Hãy xác minh danh tính máy chủ qua một kênh ngoài và ghép nối lại qua một kênh tin cậy; đừng bỏ qua cảnh báo hay chuyển sang một máy khách cũ hơn hoặc bản rõ.
 - **Khóa ghép nối bị từ chối**: chạy lại `cc_server pair` trên máy chủ để xoay khóa của thiết bị đó, rồi nhập khóa mới. Một thiết bị đã bị thu hồi sẽ thấy thông tin xác thực của mình biến mất và bị từ chối truy cập; việc thu hồi cắt một phiên đang hoạt động trong vài giây.
 - **Sai không gian làm việc**: không gian làm việc là một phần của URL (`/workspaces/:workspaceId/…`) và đi kèm mọi lời gọi, nên việc chuyển không gian làm việc trong một máy khách chỉ thay đổi góc nhìn của riêng bạn. Bạn chỉ có thể truy cập những không gian làm việc mà mình là thành viên — bất cứ thứ gì khác đều bị từ chối với "Not a member of this workspace". Xem [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
 

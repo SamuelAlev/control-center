@@ -2,7 +2,7 @@
 title: Munkaterületek és elszigetelés
 description: Miért jelent a munkaterület szigorú bérlői határt, hogyan teszi ezt a határt strukturálissá az adatbázisok szétválasztása, és mi az, ami szándékosan átlépi.
 slug: hu-HU/kezikonyv/fogalmak/munkateruletek
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Mi a munkaterület?
@@ -110,13 +110,15 @@ Egyik sem viszi magával a munkaterület-könyvtár többi részét. Egy munkate
 
 ## Biztonsági mentés mozgatása a szerver és az eszköz között
 
-A fenti műveletek mindegyike a **szerveren** lévő útvonalakban beszél, ami csak akkor teljes válasz, ha a szerver az Ön saját gépe. Három aláírt HTTP-útvonal — [`/backup/workspace`, `/backup/snapshot` és `/backup/restore`](/hu-HU/kezikonyv/referencia/mentes/#transfer-routes) — szállítja a bájtokat minden más topológia számára, ugyanazon a hitelesített sávon, amelyet a médiarelé és a képtár már használ. Az oldalon ez minden exportálás és minden pillanatkép mellett egy **Letöltés** gomb (Ön választja ki, hová kerüljön), valamint a **Fájl választása és feltöltése** a visszaállításhoz abból a fájlból, amely az éppen használt gépen található. A feltöltés az, amely akkor működik, ha a szerver nem az Ön gépe: a `workspace.import` megköveteli, hogy a fájl már a gazdagépen legyen, és ez az, ahogyan odakerül.
+A fenti műveletek mindegyike a **szerveren** lévő útvonalakban beszél, ami csak akkor teljes válasz, ha a szerver az Ön saját gépe. Három aláírt átviteli útvonal — [`/backup/workspace`, `/backup/snapshot` és `/backup/restore`](/hu-HU/kezikonyv/referencia/mentes/#transfer-routes) — szállítja a bájtokat minden más topológia számára a hitelesített, titkosított erőforrás-alagúton keresztül, közvetlen kapcsolatokon és a relén át is. A nyilvános HTTP-útvonalak nem szolgálnak ki olvasható biztonsági mentési bájtokat, és az aláírt útvonalak továbbra is engedélyezést igényelnek. Az oldalon ez minden exportálás és minden pillanatkép mellett egy **Letöltés** gomb (Ön választja ki, hová kerüljön), valamint a **Fájl választása és feltöltése** a visszaállításhoz abból a fájlból, amely az éppen használt gépen található. A feltöltés akkor működik, ha a szerver nem az Ön gépe: a `workspace.import` megköveteli, hogy a fájl már a gazdagépen legyen, és ez az, ahogyan odakerül.
 
 Három tulajdonságot érdemes ismerni:
 
 - **A letöltés friss másolatot készít, és a szerver semmit nem tart meg belőle.** A letöltés nem „hozd el az exportálás gomb által készített fájlt” — újra exportál, azt streameli, majd törli. A válasz `no-store` és `Accept-Ranges: none`, ugyanezen okból: egy folytatott tartomány két különböző exportot fűzne össze egyetlen fájlba, amely érvényesnek látszik, de nem az.
 - **A feltöltés lemezre streamelődik, soha nem pufferelődik**, mindkét végén, és az előkészített másolat minden kivezető úton törlődik — az elutasítást is beleértve. Egy munkaterület adatbázisa nem képernyőkép.
-- **Egy relén átvezetett kapcsolatnak nincs HTTP-eredete**, ezért az átvitelvezérlők ott le vannak tiltva, egy megjegyzéssel, amely megindokolja, miért. Minden, ami szerveroldali útvonalakban beszél, továbbra is működik a relén; csak a bájtsávokhoz kell közvetlen kapcsolat.
+- **Az átvitel a relén keresztül is működik.** A letöltések és feltöltések ugyanazt a titkosított erőforrás-alagutat használják, mint a közvetlen kapcsolatok; közvetlen HTTP-origin nem szükséges.
+
+A titkosítás az átvitelt védi menet közben, nem a szerveroldali adatbázist, a pillanatkép-könyvtárat vagy egy letöltött másolatot nyugalmi állapotban. A szerver üzemeltetője hozzáférhet az adott gazdagépen tárolt adatokhoz.
 
 :::note[Melyik útvonal kié]
 Az oldal által *mutatott* útvonalak — a pillanatkép-könyvtár, az exportálás által írt fájl, az import által olvasott forrás — azon a gépen vannak, amelyen a `cc_server` fut. A **letöltés** által jelentett útvonal azon a gépen van, amelynél Ön ül. Ez a megkülönböztetés az oka annak, hogy mindkettő létezik: az első az, amire egy karbantartó szkriptnek vagy egy ssh-munkamenetnek van szüksége, a második pedig az, amire egy biztonsági mentést gyűjtő embernek.

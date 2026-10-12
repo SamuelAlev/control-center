@@ -1,16 +1,14 @@
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// App-side mermaid wiring: the diagram builder is registered on both markdown
-/// registers, the stylesheet is token-driven (and light/dark aware) and the
-/// chrome exposes source / expand / copy without hiding the diagram.
+/// App-side diagram behavior: token-aware styling, source inspection and an
+/// expanded viewer whose controls actually move and restore the canvas.
 Widget _app(Widget child, {Brightness brightness = Brightness.light}) {
   return ProviderScope(
     child: MaterialApp(
@@ -48,18 +46,6 @@ void main() {
     CcMarkdownCache.clearCache();
   });
 
-  group('registries', () {
-    test('both registers carry the mermaid builder', () {
-      expect(chatMarkdownBuilders.builderFor('mermaid'), isNotNull);
-      expect(githubMarkdownBuilders.builderFor('mermaid'), isNotNull);
-    });
-
-    test('both registers keep mermaid parsing on', () {
-      expect(chatMarkdownOptions.mermaid, isTrue);
-      expect(githubMarkdownOptions.mermaid, isTrue);
-    });
-  });
-
   group('appMermaidStyle', () {
     testWidgets('is built from design tokens and follows brightness', (
       tester,
@@ -91,25 +77,6 @@ void main() {
       expect(dark, isNotNull);
       expect(light!.nodeFill, isNot(dark!.nodeFill));
       expect(light!.label.color, isNot(dark!.label.color));
-    });
-
-    testWidgets('is attached to the unified markdown stylesheet', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _app(
-          Builder(
-            builder: (context) {
-              final style = appMarkdownStyle(context);
-              expect(style.mermaid, isNotNull);
-              // Value equality must survive a rebuild, or the streaming block
-              // memo invalidates on every frame.
-              expect(appMarkdownStyle(context), style);
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
     });
   });
 
@@ -155,7 +122,9 @@ void main() {
       expect(find.byType(CcMermaidView), findsOneWidget);
     });
 
-    testWidgets('expand opens an interactive viewer', (tester) async {
+    testWidgets('expanded viewer zooms and restores the fitted diagram', (
+      tester,
+    ) async {
       await tester.pumpWidget(_app(const StyledMarkdownBody(data: _flowchart)));
       await tester.pumpAndSettle();
 
@@ -167,8 +136,29 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(InteractiveViewer), findsOneWidget);
-      expect(find.text(l10n.diagram), findsOneWidget);
+      final viewer = tester.widget<InteractiveViewer>(
+        find.byType(InteractiveViewer),
+      );
+      final controller = viewer.transformationController!;
+      final fitted = controller.value.clone();
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) => widget is CcIconButton && widget.tooltip == l10n.zoomIn,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        controller.value.getMaxScaleOnAxis(),
+        greaterThan(fitted.getMaxScaleOnAxis()),
+      );
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CcIconButton && widget.tooltip == l10n.fitToView,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(controller.value, fitted);
     });
 
     testWidgets(

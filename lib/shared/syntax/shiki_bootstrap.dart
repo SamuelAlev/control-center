@@ -1,14 +1,17 @@
-// One-time shiki configuration for app startup. Registration itself is lazy
-// and idempotent (CcShikiTokenizer registers themes/grammars before every
-// tokenize), so widget tests work without this — bootstrap only warms the
-// common path so the first visible code block doesn't pay the grammar
-// compile.
+// Configure highlighting before use; warm common grammars only after a frame
+// has painted and the scheduler has no higher-priority interactive work.
+
+import 'dart:async';
 
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:shiki_flutter/engine.dart';
 
-/// Configures shiki for the app process and pre-warms the hottest grammars.
-/// Call once from the platform bootstrap. Safe to call more than once.
+bool _warmUpScheduled = false;
+
+/// Configures shiki and schedules one idle task per common grammar.
+/// Repeated bootstrap calls do not queue another warm-up. On-demand tokenizer
+/// initialization remains authoritative if code appears before an idle slot.
 void initializeShikiHighlighting() {
   ShikiHighlighter.config = ShikiHighlighter.config.copyWith(
     // Web: use the prebuilt tokenize Web Worker (web/shiki_tokenize_worker.js,
@@ -16,12 +19,28 @@ void initializeShikiHighlighting() {
     // when the asset is missing or CSP-blocked.
     asyncWeb: true,
   );
-  CcShikiTokenizer.instance.warmUp(const [
+  if (_warmUpScheduled) {
+    return;
+  }
+  _warmUpScheduled = true;
+  SchedulerBinding.instance.addPostFrameCallback((_) {
+    unawaited(_warmCommonLanguages());
+  });
+}
+
+Future<void> _warmCommonLanguages() async {
+  for (final language in const [
     'dart',
     'javascript',
     'typescript',
     'json',
     'yaml',
     'shellscript',
-  ]);
+  ]) {
+    await SchedulerBinding.instance.scheduleTask<void>(
+      () => CcShikiTokenizer.instance.warmUp([language]),
+      Priority.idle,
+      debugLabel: 'Warm syntax: $language',
+    );
+  }
 }

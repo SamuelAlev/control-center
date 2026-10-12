@@ -2,7 +2,7 @@
 title: Sandarkan dan pulihkan
 description: Ambil snapshot pemasangan, pindahkan ruang kerja antara mesin, pulihkan satu ruang kerja atau kesemuanya, dan simpan salinan di tempat lain.
 slug: ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Panduan ini merangkumi lima perkara yang sebenarnya dilakukan orang dengan sandaran:
@@ -17,15 +17,23 @@ Semuanya di sini terletak di **Tetapan → Pelayan → Sandaran & pulih**.
 - **Klien penuh** — apl desktop atau web. Telefon yang digandingkan tidak boleh mencetuskan mana-mana daripada ini, memang sengaja.
 - Untuk mengambil, menyenaraikan, memuat turun atau memadam **snapshot pemasangan**: **pemilik** pemasangan itu.
 - Untuk tindakan mengikut ruang kerja: **pentadbir** ruang kerja itu untuk eksport, **pemilik** untuk mengimport atau memadamnya.
-- Untuk muat turun dan muat naik: sambungan **terus** ke pelayan. Geganti berperantara membawa bingkai RPC, bukan pemindahan fail, dan kawalan pemindahan melumpuhkan dirinya dengan satu nota apabila anda berada padanya.
+- Untuk muat turun dan muat naik: klien penuh yang digandingkan, sama ada pada sambungan langsung atau melalui geganti berperantara. Kedua-dua laluan membawa bait fail melalui terowong sumber yang disahkan dan disulitkan hujung ke hujung yang sama; geganti tidak boleh membacanya.
 
-:::caution[Snapshot pemasangan dibuat secara manual]
+::::caution[Snapshot pemasangan dibuat secara manual]
 **Sandarkan sekarang** masih hanya mencipta snapshot seluruh pemasangan apabila diminta.
 Pipeline **Workspace backup** terbina sebaliknya boleh mengambil sandaran pangkalan data
 ruang kerja sekali seminggu dan membuang sandaran ruang kerja itu yang lebih lama
 daripada 30 hari. Ia tidak menyalin `global.db`, ruang kerja lain, atau fail di sisi
 pangkalan data. Simpan salinan di luar mesin secara berasingan.
-:::
+::::
+
+::::caution[Sandaran tidak disulitkan semasa disimpan]
+Pemindahan tersulit berakhir pada klien anda dan pada `cc_server`. Direktori
+snapshot, eksport ruang kerja, fail yang dimuat turun dan pangkalan data pelayan
+tidak disulitkan semasa disimpan oleh Control Center. Lindungi hos pelayan, muat
+turun anda dan salinan di luar mesin dengan penyulitan storan serta kawalan akses
+anda sendiri.
+::::
 
 ## Apa yang dicakup oleh sandaran
 
@@ -327,7 +335,7 @@ menukar tempat penyimpanannya.
 
 | Gejala                                                                  | Punca dan pembaikan                                                                                                      |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Kawalan muat turun dan muat naik dilumpuhkan dengan nota tentang geganti | Anda bersambung melalui geganti berperantara, yang tidak membawa pemindahan fail. Sambung terus                            |
+| Muat turun atau muat naik gagal selepas sambungan berubah              | Cuba semula pada sambungan berganding yang aktif. Laluan langsung dan geganti kedua-duanya menyokong pemindahan fail tersulit; tiada satu pun mendedahkan sandaran HTTP teks biasa |
 | "Pelayan menolak"                                                        | Peranan. Mengambil atau menyenaraikan snapshot pemasangan memerlukan operator pemasangan. Memuat turun ruang kerja memerlukan pentadbir, memulihkannya memerlukan pemilik, dan zip seluruh snapshot memerlukan operator pemasangan |
 | "Pelayan ini tiada permukaan sandaran"                                   | Hos itu tiada port sandaran yang dipasang — pelayan demo. Operasi itu tidak wujud dan bukannya ditolak                    |
 | "Fail itu lebih besar daripada yang diterima oleh pelayan"               | Muat naik dihadkan pada 8 GiB. Letakkan fail itu pada hos pelayan dan gunakan **Import** → **Pilih fail** sebagai gantinya |
@@ -341,7 +349,7 @@ menukar tempat penyimpanannya.
 
 - [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): dari mana direktori data datang
 - [Sambung ke pelayan jauh](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/): sambungan terus berbanding sambungan melalui geganti
-- [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/): kelayakan yang ditandatangani oleh laluan pemindahan
+- [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/): kelayakan peranti yang digandingkan yang digunakan oleh pemindahan tersulit serta permintaan sumber bertandatangannya
 
 ## Konsep dan rujukan berkaitan
 

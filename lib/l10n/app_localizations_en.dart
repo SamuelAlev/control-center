@@ -14104,6 +14104,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerDropToAttach => 'Drop to attach';
 
   @override
+  String get composerAttachmentUploading => 'Uploading…';
+
+  @override
+  String get composerAttachmentReady => 'Ready';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Upload failed';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'File exceeds the $limit limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Couldn\'t read this file';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Wait for attachments to finish uploading';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Retry or remove failed attachments before sending';
+
+  @override
   String get attachmentUnavailable => 'Attachment unavailable';
 
   @override
@@ -15260,11 +15285,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Agent waiting on you';
+  String get notificationAgentAwaitingInput => 'Agent needs attention';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'When an agent needs your approval, an answer or a working credential';
+      'When an agent needs approval, an answer or working credentials, or policy blocks an action';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15337,6 +15362,385 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'The server is stopping';
+
+  @override
+  String get skillEvalAbsent => 'Absent vs available';
+
+  @override
+  String get skillEvalAmbient => 'Ambient skills';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Artifact reference: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · repeat $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Attempts';
+
+  @override
+  String get skillEvalAvailableEvent => 'Available';
+
+  @override
+  String get skillEvalBaseline => 'Previous revision hash';
+
+  @override
+  String get skillEvalBodyLoad => 'Body loaded';
+
+  @override
+  String get skillEvalBudgetCents => 'Budget (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Paid evaluation uses the selected provider and budget. Security scan results are separate.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Subscription budgets track API-equivalent usage, not invoices. An in-flight call may exceed the budget; no further calls start once it is reached. Security scans are separate.';
+
+  @override
+  String get skillEvalCancel => 'Cancel run';
+
+  @override
+  String get skillEvalCancelled => 'Cancelled';
+
+  @override
+  String get skillEvalCancelling => 'Cancelling';
+
+  @override
+  String get skillEvalComparison => 'Comparison';
+
+  @override
+  String get skillEvalCompleted => 'Completed';
+
+  @override
+  String get skillEvalComposition => 'Composition';
+
+  @override
+  String get skillEvalCorpus => 'Task corpus';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString repeats';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => 'All planned trials observed';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Current package hash: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Disable update evaluations';
+
+  @override
+  String get skillEvalEnableUpdates => 'Enable update evaluations';
+
+  @override
+  String get skillEvalExport => 'Copy redacted JSON';
+
+  @override
+  String get skillEvalFailed => 'Failed';
+
+  @override
+  String get skillEvalForced => 'Forced load vs absent';
+
+  @override
+  String get skillEvalForcedEvent => 'Forced load';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Package hash unavailable on this server. Evaluation is disabled.';
+
+  @override
+  String get skillEvalHistory => 'Revision history';
+
+  @override
+  String get skillEvalImproved => 'Improved';
+
+  @override
+  String get skillEvalIncomplete => 'Incomplete';
+
+  @override
+  String get skillEvalInconclusive => 'Inconclusive';
+
+  @override
+  String get skillEvalInferred => 'Inferred';
+
+  @override
+  String get skillEvalInterrupted => 'Interrupted';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Skill loading not observable; absence of an event does not prove it was ignored.';
+
+  @override
+  String get skillEvalModel => 'Selected model';
+
+  @override
+  String get skillEvalNoAttempts => 'No attempts yet.';
+
+  @override
+  String get skillEvalNoModels =>
+      'No connected models available. Connect a provider in Settings first.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'No previous hash in campaign history. Evaluate the previous revision before replacing it.';
+
+  @override
+  String get skillEvalNoReport =>
+      'No report yet; partial attempts remain available.';
+
+  @override
+  String get skillEvalNoWorkspace => 'No workspace selected.';
+
+  @override
+  String get skillEvalNoTasks => 'No tasks reported yet.';
+
+  @override
+  String get skillEvalNoVerifiers => 'No verifier evidence recorded.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Not evaluated for these exact bytes. A scan is not behavioral evidence.';
+
+  @override
+  String get skillEvalNotVerified => 'Not verified';
+
+  @override
+  String get skillEvalObserved => 'Observed';
+
+  @override
+  String get skillEvalOpenQuality => 'Open Quality';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'By default, saving a skill does not start a paid evaluation. If you explicitly enable automatic update reevaluation, saving starts a budgeted paid evaluation.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Evaluate a revision first to configure the update policy.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Update policy configuration';
+
+  @override
+  String get skillEvalPartial => 'Partial evidence; no adoption verdict';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString of $plannedString attempts';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Provider: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Workspace skill campaigns and revision-specific evidence.';
+
+  @override
+  String get skillEvalQueued => 'Queued';
+
+  @override
+  String get skillEvalReconnecting => 'Reconnecting to campaign snapshots…';
+
+  @override
+  String get skillEvalRefresh => 'Refresh';
+
+  @override
+  String get skillEvalReferenceLoad => 'Reference loaded';
+
+  @override
+  String get skillEvalRepetitions => 'Repeats per task';
+
+  @override
+  String get skillEvalReport => 'Evidence report';
+
+  @override
+  String get skillEvalRunning => 'Running';
+
+  @override
+  String get skillEvalScriptExecution => 'Script executed';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Spend: $spent / budget $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Start evaluation';
+
+  @override
+  String get skillEvalStartTitle => 'Compare skill revisions';
+
+  @override
+  String get skillEvalStale => 'Stale';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Stale: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Distinct task clusters: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes verified) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Tasks by arm';
+
+  @override
+  String get skillEvalToolError => 'Tool error';
+
+  @override
+  String get skillEvalTools => 'Tool events';
+
+  @override
+  String get skillEvalTitle => 'Skill evaluation';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Unavailable: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Unknown';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Unsaved edits are not included. Save before evaluating.';
+
+  @override
+  String get skillEvalUncertainty => 'Uncertainty interval';
+
+  @override
+  String get skillEvalVerified => 'Verified';
+
+  @override
+  String get skillEvalVerifiers => 'Verification';
+
+  @override
+  String get skillEvalVerdict => 'Verdict';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Copy complete: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Plan violation';
+
+  @override
+  String get skillEvalPreserved => 'Quality preserved';
+
+  @override
+  String get skillEvalPrevious => 'Previous vs current';
+
+  @override
+  String get skillEvalRegressed => 'Regression demonstrated';
+
+  @override
+  String get skillEvalCostRegression => 'Cost regression';
+
+  @override
+  String get skillEvalHarnessError => 'Harness error';
+
+  @override
+  String get skillBehaviorRouting => 'Skill routing';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive expected uses · $falsePositive unexpected uses · $falseNegative missed uses · $trueNegative correct skips';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive uncertain uses · $negative uncertain skips · $notOffered not offered';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Observed precision $precision · recall $recall · false-positive rate $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Forced arm · diagnostic only';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Rates use observable accesses only. Shell or search access may remain unknown; loading a skill does not prove it was applied.';
+
+  @override
+  String get skillBehaviorSafety => 'Synthetic safety';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts artifact passes · $denials policy denials · $violations protected-file violations';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Artifact checks are synthetic, not real-world attack rates; actual side effects are not instrumented.';
+
+  @override
+  String get skillBehaviorUtility => 'Utility by family';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts verified successes';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'All attempts count toward the utility denominator, including failures and incomplete runs.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

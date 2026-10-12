@@ -1,9 +1,16 @@
 ---
 title: Evals und Qualität
-description: Eval-Suites, der Startersatz, der mit jedem Arbeitsbereich angelegt wird, und wo sie in Observability erscheinen.
+description: Eval-Suites und revisionsgebundene Skill-Kampagnen und wie ihre Nachweise zu deuten sind.
 slug: de-DE/handbuch/konzepte/evals-und-qualitaet
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observability → Qualität** enthält sowohl Eval-Suites für einzelne Aufgaben
+als auch gepaarte Skill-Kampagnen. Eine Skill-Kampagne misst ein Paket, wie es
+ein bestimmtes Modell und Harness nutzt, nicht die Qualität seines Markdowns
+allein.
+
+## Eval-Suites
 
 Eine **Eval-Suite** ist eine an den Arbeitsbereich gebundene Definition einer
 Aufgabe, die gegen einen Agenten läuft: ein Prompt, ein Zielagent und ein
@@ -19,7 +26,7 @@ einen Plan erzeugt, und einen Ticket-Roundtrip. Das Seeding hört auf
 `WorkspaceCreated` (`workspace.upsert` oder `workspace.create`), überspringt
 einen Namen, der schon existiert, und zieht ältere Arbeitsbereiche nicht nach.
 
-## Wo sie erscheinen
+### Wo sie erscheinen
 
 **Observability → Qualität** (`/workspaces/<id>/observability`) listet jede
 Suite im Arbeitsbereich auf.
@@ -28,10 +35,130 @@ Suites werden über `evals.upsertSuite`, `evals.deleteSuite` und
 `evals.watchSuites` angelegt, aufgelistet, bearbeitet und gelöscht. Der Tab
 Qualität ist die Liste; diese Operationen sind der Editor.
 
+## Skill-Kampagnen
+
+Eine Kampagne vergleicht zwei Arme unter derselben Aufgabe und
+Ausführungskonfiguration. Der Kandidat fehlt, ist normal verfügbar,
+ausdrücklich geladen oder wird mit einer früheren Revision oder einem festen
+Bestand an Umgebungs-Skills verglichen. Diese beantworten unterschiedliche
+Fragen; erzwungenes Laden ist eine Diagnose, kein Wert für die normale
+Entdeckung. Der
+[Skills-Leitfaden](/de-DE/handbuch/anleitungen/skills-verwalten/#einen-skill-evaluieren)
+erklärt, wie du einen Vergleich wählst und einen budgetierten Lauf
+autorisierst.
+
+Nachweise gehören zu einem exakten **Hash des ganzen Pakets**: `SKILL.md`,
+Metadaten, Skripte, Referenzen und Assets. Der Server erfasst gescannte,
+unveränderliche Pakete und pinnt Korpus, Adapter, Anbieter-/native
+Modellkennung, Protokoll, Werkzeugschemata und Umgebungsbestand. Native
+Claude-Kampagnen pinnen zusätzlich das verwaltete Konto und die beobachtete
+CLI-Version. Das Bearbeiten einer Referenz macht aktuelle Nachweise ungültig,
+selbst wenn `SKILL.md` unverändert ist. Ein Modellalias erfasst, was angefordert
+wurde, nicht unveränderliche Anbietergewichte.
+
+Jeder Versuch bekommt frischen Kontext, Home- und Fixture-Zustand. Gepaarte
+Arme nutzen dieselbe Richtlinie und dieselben Aufgabenbedingungen, außer der
+erklärten Skill-Intervention. Ziel-abwesend heißt, dass Metadaten und Dateien
+des Kandidaten nicht verfügbar sind, nicht dass alle Hintergrundanweisungen
+oder Skills entfernt wurden. Aufgaben-Prompts dürfen den Kandidaten in einem
+Vergleich zur normalen Entdeckung nicht nennen.
+
+Der Server besitzt Autorisierung, Ausführung, Budgets und die Persistenz des
+Arbeitsbereichs. Clients wählen Einstellungen und stellen Nachweise dar. Der
+Fortschritt übersteht Wiederverbindungen; ein Abbruch behält Teilergebnisse,
+und ein Neustart markiert unfertige Arbeit als unterbrochen, statt bezahlte
+Aufrufe stillschweigend zu wiederholen. Diese Kampagnen liefern nicht den
+separaten Executor-Vertrag für beliebige Eval-Suites.
+
+## Nachweise zurückhaltend lesen
+
+- **Ergebnisse entscheiden über die Korrektheit.** Unabhängige typisierte
+  Prüfer kontrollieren Artefakte und resultierendes Verhalten, nicht die
+  Behauptung des Agenten, er sei erfolgreich gewesen. Erwartete Antworten
+  bleiben außerhalb der Kapsel des Kandidaten; generierter Code wird in einer
+  separat gekapselten Kopie bewertet.
+- **Laden und Nützlichkeit sind verschieden.** Verfügbarkeit, Ladevorgänge
+  von Rumpf/Referenzen und beobachtete Skriptnutzung erklären die Ausführung.
+  Ein gelesener Dateiinhalt beweist nicht, dass das Modell seine Anweisungen
+  befolgt hat; nicht beobachtbarer Zugriff bleibt unbekannt.
+- **Behalte die passende Vergleichsbasis.** Ein erfolgreicher Kandidatenlauf
+  allein belegt keinen Nutzen. Beziehe Versuche ein, in denen ein verfügbarer
+  Skill ignoriert wurde, fehlgeschlagene Versuche und ihre Kosten; behalte
+  nicht nur den besten Wiederholungsversuch.
+- **Wiederholungen sind keine neuen Aufgaben.** Berichte bündeln Unsicherheit
+  nach Aufgabe. Kleine Stichproben, fehlende Abdeckung, Identitätsdrift und
+  unbekannte Ausgaben können keine Übernahmeempfehlung rechtfertigen. Eine
+  abgeschlossene Kampagne kann dennoch nicht eindeutig sein; das Ausbleiben
+  einer Verbesserung ist kein Beweis für Gleichwertigkeit oder Regression.
+- **Untersuche einzelne Regressionen.** Aggregierte Gewinne dürfen keine
+  geschädigte Aufgabe oder unautorisierte Nebenwirkung verdecken.
+  Sicherheitsscans, Beobachtungen zur Laufzeitsicherheit und Nützlichkeit
+  bleiben getrennt; eine billigere Ausführung kann fehlende Qualitäts- oder
+  Sicherheitsnachweise nicht ausgleichen.
+- **Fasse unvereinbare Ergebnisse nicht zusammen.** Ein anderes Modell,
+  Harness, eine andere Richtlinie, Fixture oder Skill-Kombination ist eine
+  andere Konfiguration. Halte Nachweise zu Transfer und Zusammensetzung aus
+  der Zurückhaltung getrennt von Entwicklungsfällen.
+
+Die neun lokal erstellten Pilotkorpora enthalten 108 Aufgabeneinträge über
+Nützlichkeit, familienspezifisches Routing/Sicherheit und zurückgehaltenen
+Transfer/Zusammensetzung. Wähle eine Familie, die zum Zweck des Skills passt.
+Referenzlösungen und bekannt schlechte Ausgaben prüfen die Prüfer; diese
+Fixtures sind keine Reproduktion eines öffentlichen Benchmarks und kein
+Beleg, dass ein installierter Skill nützlich ist. Implementierungs-Smoke-Läufe
+mit skriptgesteuerten Anbieterantworten sind keine Messungen der
+Skill-Qualität mit einem Live-Modell.
+
+## Grenzen von Ausführung und Nachweisen
+
+Unterstützt werden das kontrollierte **eingebaute Harness** und **Claude Code**.
+Kapselung und aktive Zugangsdaten müssen vor der Ausführung bestehen. Eingebaute
+Anbieter verlangen dokumentierte Werkzeugunterstützung, Tokenlimits und Preise;
+Codex OAuth authentifiziert sein eigenes Konto, statt einen separaten
+OpenAI-API-Schlüssel zu verlangen. Claude Code nutzt das standardmäßig
+verwaltete Konto, eine konkrete Modell-ID und seinen nativen API-äquivalenten
+Kostenbericht.
+
+Claude Code und Codex OAuth nutzen eine **Nutzungsstoppschwelle**: Ein laufender
+Aufruf kann das Budget überschreiten, danach stoppen weitere Aufrufe. Das sind
+keine abgerechneten Abo-Ausgaben und keine harte Rechnungsobergrenze. Anbieter
+mit API-Schlüssel behalten konservative Reservierungen vor dem Aufruf.
+Unbekannte beobachtete Ausgaben stoppen weitere Aufrufe bei jedem Adapter;
+unvollständige Abdeckung bleibt teilweise oder nicht eindeutig.
+
+Claude führt seine native Modellschleife in einem privaten
+Controller-Verzeichnis aus, mit deaktivierten eingebauten Werkzeugen und
+Umgebungs-Skills. Seine einzigen Werkzeuge sind die authentifizierte,
+servereigene MCP-Brücke in denselben gekapselten Gast, den das eingebaute
+Harness nutzt. Zugangsdaten bleiben außerhalb dieses Gasts. Eine geänderte
+CLI-Identität oder Werkzeugoberfläche macht den Versuch ungültig, statt still
+die Executoren zu wechseln. Flotten-Evaluierung und Windows werden nicht
+unterstützt; eine erfolgreiche Git-Sonde eines Workers oder ein Prompt-Echo
+zählt nicht als Evaluierung.
+
+Die Kapselung unter macOS verweigert dem Gast Netzwerk- und externen
+Dateisystemzugriff, blockiert Prozessablösung, begrenzt CPU/Dateien/Ausgabe und
+räumt eigene Nachfahren auf, **erzwingt aber kein hartes Speicherkontingent**.
+Linux erfordert bubblewrap und wendet ein Adressraumbegrenzung an. Die
+anfängliche Validierung der Kapselung prüfte macOS, nicht Linux. Fehlende
+Kapselung fällt nie auf eine Host-Shell zurück. Anbieter-Zugangsdaten bleiben
+auf dem Server, außerhalb der Gastwerkzeuge.
+
+Nachweise zu Versuchen werden redigiert und auf 256 KiB begrenzt; ein Export
+ist auf 16 MiB begrenzt. Große Exporte behalten kompakte
+Ergebnis-/Kosten-Zusammenfassungen für alle zugelassenen Versuche und melden
+ausgelassene oder zusammengefasste Trace-Inhalte ausdrücklich. Weder ein
+Export noch ein Bericht enthält ein vollständiges Replay-Bundle privater
+Quellen. Synthetische Sicherheitsprüfungen belegen keine tatsächliche
+Widerstandsfähigkeit gegen Exfiltration, heben keine Quarantäne auf und
+zertifizieren keinen Skill als sicher.
+
 ## Verwandte Konzepte
 
 - [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/): die Konfiguration, die eine Suite
   festschreibt
+- [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/): Kapselung und
+  Autoritätsgrenzen
 - [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/): der Autonomieregler
 - [Kosten und Budgets verwalten](/de-DE/handbuch/anleitungen/kosten-verwalten/): Ausgaben, die neben
   einem Lauf erfasst werden

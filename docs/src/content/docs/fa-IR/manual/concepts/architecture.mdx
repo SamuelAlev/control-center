@@ -3,7 +3,7 @@ title: معماری
 description: ساختار Control Center با مدل سرور و کلاینت نازک، معماری تمیزِ ویژگی‌محور و پورت‌ها و آداپتورها.
 dateModified: 2026-09-19
 slug: fa-IR/راهنمای-کاربر/مفهومها/معماری
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## نگاه کلی
@@ -26,7 +26,7 @@ Control Center یک **معماری کلاینت نازک** است. هیچ کلا
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **لایهٔ دامنه**: موجودیت‌ها، اشیای ارزشی، واسط‌های مخزن، پورت‌ها و سرویس‌های دامنهٔ خالص Dart. صفر واردات زیرساختی (بدون dio، drift یا مدل‌های شبکه).
+- **لایهٔ دامنه**: موجودیت‌ها، اشیای ارزشی، واسط‌های مخزن، پورت‌ها و سرویس‌های دامنهٔ خالص Dart. صفر واردات زیرساختی (بدون rhttp، drift یا مدل‌های شبکه).
 - **لایهٔ نمایش**: صفحه‌ها، ویجت‌ها، نوتیفایرها. بدون دسترسی مستقیم به drift/DAO/لایهٔ داده؛ همه‌چیز از مسیر ارائه‌دهنده‌های Riverpod → مخزن‌ها می‌گذرد.
 - **لایهٔ زیرساخت**: پیاده‌سازی‌های مشخصِ پورت‌های دامنه و واسط‌های مخزن. به دامنه وابسته است، هرگز برعکس.
 
@@ -122,7 +122,7 @@ Control Center چندکاربره است: انسان‌ها و عامل‌ها �
 
 همهٔ HTTP بیرونی در سرور زندگی می‌کند. کلاینت‌ها هرگز مستقیماً به GitHub، Linear یا Google وصل نمی‌شوند — آن‌ها عملیات RPC سرور را صدا می‌زنند و حتی رسانهٔ راه دور از طریق نقطهٔ پایانی `/proxy/media` سرور واکشی می‌شود، نه از مبدأ بالادستی.
 
-- کلاینت‌های **dio** در `packages/cc_infra/lib/src/`: `GitHubApiClient`، `GitHubPrClient`، `GitHubContentClient`، `GitHubGraphQLClient`، `GitLabApiClient`، `BitbucketApiClient`، `LinearGraphQlClient` و `GoogleCalendarApiClient`
+- کلاینت‌های **rhttp** در `packages/cc_infra/lib/src/`: `GitHubApiClient`، `GitHubPrClient`، `GitHubContentClient`، `GitHubGraphQLClient`، `GitLabApiClient`، `BitbucketApiClient`، `LinearGraphQlClient` و `GoogleCalendarApiClient`
 - تزریق توکن احراز هویت از طریق رهگیرها، از جمله یک رهگیر Google OAuth به‌ازای هر حساب در `cc_server_core` که توکن‌ها را روی 401 تازه می‌کند
 - همهٔ خطاها از `packages/cc_infra/lib/src/network/error_mapper.dart` به زیرکلاس‌های تایپ‌شدهٔ `AppException` که در `cc_domain` تعریف شده‌اند نگاشت می‌شوند
 

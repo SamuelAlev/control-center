@@ -2,7 +2,7 @@
 title: Sichern und wiederherstellen
 description: Erstelle eine Momentaufnahme der Installation, verschiebe einen Arbeitsbereich zwischen Rechnern, stelle einen oder alle wieder her und bewahre Kopien an einem anderen Ort auf.
 slug: de-DE/handbuch/anleitungen/sichern-und-wiederherstellen
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Diese Anleitung deckt die fünf Dinge ab, die du mit Sicherungen tatsächlich tust:
@@ -18,7 +18,7 @@ Alles hier liegt unter **Einstellungen → Server → Sicherung und Wiederherste
 - Ein **vollständiger Client**, also die Desktop- oder Web-App. Ein gekoppeltes Telefon löst davon nichts aus. Das ist so gewollt.
 - Eine **Momentaufnahme der Installation** erstellen, auflisten, herunterladen oder löschen darf der **Eigentümer** der Installation.
 - Bei Aktionen an einem Arbeitsbereich: **Admin** dieses Arbeitsbereichs für den Export, **Eigentümer** für Import oder Löschen.
-- Zum Herunterladen und Hochladen: eine **direkte** Verbindung zum Server. Das vermittelte Relay trägt RPC-Frames, keine Dateiübertragungen, und die Steuerelemente für den Transfer schalten sich mit einem Hinweis ab, wenn du über eines verbunden bist.
+- Zum Herunterladen und Hochladen: ein gekoppelter vollständiger Client, entweder direkt oder über das vermittelte Relay verbunden. Beide Wege tragen die Dateibytes durch denselben authentifizierten, Ende-zu-Ende verschlüsselten Ressourcen-Tunnel; das Relay kann sie nicht lesen.
 
 :::caution[Momentaufnahmen der Installation sind manuell]
 **Jetzt sichern** legt eine Momentaufnahme der ganzen Installation weiterhin nur
@@ -27,7 +27,15 @@ einmal pro Woche eine Sicherung der Arbeitsbereichsdatenbank erstellen und
 Sicherungen dieses Arbeitsbereichs entfernen, die älter als 30 Tage sind. Sie
 kopiert weder `global.db` noch andere Arbeitsbereiche noch Dateien neben der
 Datenbank. Kopien außerhalb des Rechners hältst du getrennt.
-:::
+::::
+
+::::caution[Sicherungen sind im Ruhezustand nicht verschlüsselt]
+Der verschlüsselte Transfer endet bei deinem Client und `cc_server`.
+Snapshot-Verzeichnisse, Arbeitsbereichs-Exporte, heruntergeladene Dateien und die
+Datenbanken des Servers werden von Control Center nicht im Ruhezustand
+verschlüsselt. Schütze den Server-Host, deine Downloads und Kopien außerhalb des
+Rechners mit deiner eigenen Speicherverschlüsselung und deinen Zugriffskontrollen.
+::::
 
 ## Was eine Sicherung umfasst
 
@@ -348,7 +356,7 @@ Mach das einmal, wenn du Sicherungen einrichtest, und wieder, sobald du
 
 | Anzeichen | Ursache und Abhilfe |
 | --- | --- |
-| Herunterladen und Hochladen sind deaktiviert, mit einem Hinweis auf ein Relay | Du bist über das vermittelte Relay verbunden, das keine Dateien überträgt. Verbinde dich direkt |
+| Herunterladen oder Hochladen schlägt nach einem Verbindungswechsel fehl | Versuche es über die aktive gekoppelte Verbindung erneut. Direkt und über das Relay wird der verschlüsselte Dateitransfer beide unterstützt; keiner davon bietet einen Klartext-HTTP-Fallback |
 | „Der Server hat abgelehnt“ | Rolle. Eine Momentaufnahme der Installation zu erstellen oder aufzulisten braucht den Betreiber der Installation. Einen Arbeitsbereich herunterzuladen braucht Admin, ihn wiederherzustellen Eigentümer, ein Zip der ganzen Momentaufnahme den Betreiber der Installation |
 | „Dieser Server bietet keine Sicherungsschnittstelle“ | Auf dem Host ist kein Backup-Port verdrahtet, ein Demo-Server. Die Operationen fehlen, sie werden nicht abgelehnt |
 | „Die Datei ist größer, als der Server annimmt“ | Uploads sind auf 8 GiB begrenzt. Lege die Datei auf den Server-Host und nimm **Importieren** → **Datei auswählen** |
@@ -362,7 +370,7 @@ Mach das einmal, wenn du Sicherungen einrichtest, und wieder, sobald du
 
 - [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/): woher das Datenverzeichnis kommt
 - [Mit einem Remote-Server verbinden](/de-DE/handbuch/anleitungen/remote-server-verbinden/): direkte Verbindung und Verbindung über das Relay
-- [Ein Gerät koppeln](/de-DE/handbuch/anleitungen/geraet-koppeln/): das Zugangsdatum, mit dem die Transfer-Routen signieren
+- [Ein Gerät koppeln](/de-DE/handbuch/anleitungen/geraet-koppeln/): das Zugangsdatum des gekoppelten Geräts, das der verschlüsselte Transfer und seine signierten Ressourcenanfragen nutzen
 
 ## Verwandte Konzepte und Referenz
 

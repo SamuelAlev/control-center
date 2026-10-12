@@ -1,35 +1,38 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_infra/src/network/klipy_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises [KlipyApiClient] — the server-side GIF client. Pure response
-/// parsing over an injectable [Dio]: pins the request path + query params, the
-/// nested `data.data` array flattening and the HD-vs-SD GIF url selection.
+/// parsing over an injectable [RhttpClient]: pins the request path + query
+/// params, the nested `data.data` array flattening and the HD-vs-SD GIF url
+/// selection.
 void main() {
-  late RecordingAdapter adapter;
+  late TestHttpClient fake;
   late KlipyApiClient client;
+  const baseUrl = 'https://api.klipy.com';
+
+  Object nextBody = <String, dynamic>{};
 
   setUp(() {
-    adapter = RecordingAdapter();
-    client = KlipyApiClient(
-      appKey: 'APPKEY',
-      dio: Dio()..httpClientAdapter = adapter,
+    nextBody = <String, dynamic>{};
+    fake = TestHttpClient(
+      settings: const ClientSettings(baseUrl: baseUrl),
+      handler: (request) => httpTextResponse(request, nextBody),
     );
+    client = KlipyApiClient(appKey: 'APPKEY', httpClient: fake);
   });
 
   test('isConfigured reflects the app key', () {
-    expect(KlipyApiClient(appKey: 'k', dio: Dio()).isConfigured, isTrue);
-    expect(KlipyApiClient(appKey: '', dio: Dio()).isConfigured, isFalse);
+    expect(KlipyApiClient(appKey: 'k', httpClient: fake).isConfigured, isTrue);
+    expect(KlipyApiClient(appKey: '', httpClient: fake).isConfigured, isFalse);
   });
 
   group('search', () {
     test(
       'GETs the search endpoint with query/per_page/format_filter',
       () async {
-        adapter.nextJson({
+        nextBody = {
           'data': {
             'data': [
               {
@@ -53,13 +56,14 @@ void main() {
               },
             ],
           },
-        });
+        };
         final results = await client.search('cats');
-        final req = adapter.requests.single;
-        expect(req.path, '/api/v1/APPKEY/gifs/search');
-        expect(req.queryParameters['q'], 'cats');
-        expect(req.queryParameters['per_page'], 30);
-        expect(req.queryParameters['format_filter'], 'gif');
+        final req = fake.requests.single;
+        expect(httpRequestUri(req).path, '/api/v1/APPKEY/gifs/search');
+        final qp = req.query!;
+        expect(qp['q'], 'cats');
+        expect(qp['per_page'], '30');
+        expect(qp['format_filter'], 'gif');
 
         expect(results, hasLength(2));
         // HD preferred for the GIF url.
@@ -76,17 +80,17 @@ void main() {
     );
 
     test('returns empty when the nested data array is absent', () async {
-      adapter.nextJson({'data': <String, dynamic>{}});
+      nextBody = {'data': <String, dynamic>{}};
       expect(await client.search('x'), isEmpty);
 
-      adapter.nextJson(<String, dynamic>{});
+      nextBody = <String, dynamic>{};
       expect(await client.search('x'), isEmpty);
     });
   });
 
   group('trending', () {
     test('GETs the trending endpoint', () async {
-      adapter.nextJson({
+      nextBody = {
         'data': {
           'data': [
             {
@@ -99,44 +103,20 @@ void main() {
             },
           ],
         },
-      });
+      };
       final results = await client.trending();
-      expect(adapter.requests.single.path, '/api/v1/APPKEY/gifs/trending');
-      expect(adapter.requests.single.queryParameters['format_filter'], 'gif');
+      final req = fake.requests.single;
+      expect(httpRequestUri(req).path, '/api/v1/APPKEY/gifs/trending');
+      expect(req.query!['format_filter'], 'gif');
       expect(results.single.id, 9);
       expect(results.single.url, 'g.gif');
     });
 
     test('returns empty when data.data is null', () async {
-      adapter.nextJson({
+      nextBody = {
         'data': {'data': null},
-      });
+      };
       expect(await client.trending(), isEmpty);
     });
   });
-}
-
-class RecordingAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-  Object _nextBody = <String, dynamic>{};
-  void nextJson(Object body) => _nextBody = body;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return ResponseBody.fromString(
-      jsonEncode(_nextBody),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

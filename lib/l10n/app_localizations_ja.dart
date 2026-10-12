@@ -13844,6 +13844,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get composerDropToAttach => 'ドロップして添付';
 
   @override
+  String get composerAttachmentUploading => 'アップロード中…';
+
+  @override
+  String get composerAttachmentReady => '準備完了';
+
+  @override
+  String get composerAttachmentUploadFailed => 'アップロードに失敗しました';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'ファイルが容量の上限（$limit）を超えています';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'このファイルを読み取れませんでした';
+
+  @override
+  String get composerAttachmentWaitForUploads => '添付ファイルのアップロードが終わるまでお待ちください';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      '送信する前に、失敗した添付ファイルを再試行するか削除してください';
+
+  @override
   String get attachmentUnavailable => '添付ファイルは利用できません';
 
   @override
@@ -14975,10 +14999,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'エージェントが待機中';
+  String get notificationAgentAwaitingInput => '対応が必要なエージェント';
 
   @override
-  String get notifyAgentAwaitingInput => 'エージェントが承認・回答・有効な認証情報を必要としたとき';
+  String get notifyAgentAwaitingInput =>
+      'エージェントが承認・回答・有効な認証情報を必要とする場合、またはポリシーにより操作がブロックされた場合';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15050,4 +15075,375 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'サーバーを停止しています';
+
+  @override
+  String get skillEvalAbsent => '不在 vs 利用可能';
+
+  @override
+  String get skillEvalAmbient => '常時利用可能なスキル';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return '成果物の参照: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · 繰り返し $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => '試行';
+
+  @override
+  String get skillEvalAvailableEvent => '利用可能';
+
+  @override
+  String get skillEvalBaseline => '前のリビジョンのハッシュ';
+
+  @override
+  String get skillEvalBodyLoad => '本文を読み込み済み';
+
+  @override
+  String get skillEvalBudgetCents => '予算 (米セント)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      '有料評価には、選択したプロバイダーと予算を使用します。セキュリティスキャンの結果は別です。';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'サブスクリプションの予算は請求額ではなく、API料金相当の使用量を管理します。実行中の呼び出しは予算を超える場合があります。予算に達すると新たな呼び出しは開始しません。セキュリティスキャンは別に行います。';
+
+  @override
+  String get skillEvalCancel => '実行をキャンセル';
+
+  @override
+  String get skillEvalCancelled => 'キャンセル済み';
+
+  @override
+  String get skillEvalCancelling => 'キャンセル中';
+
+  @override
+  String get skillEvalComparison => '比較';
+
+  @override
+  String get skillEvalCompleted => '完了';
+
+  @override
+  String get skillEvalComposition => '構成';
+
+  @override
+  String get skillEvalCorpus => 'タスク集';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString 回繰り返し';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => '予定した試行をすべて確認済み';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return '現在のパッケージハッシュ: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => '更新時の評価を無効化';
+
+  @override
+  String get skillEvalEnableUpdates => '更新時の評価を有効化';
+
+  @override
+  String get skillEvalExport => '編集済みJSONをコピー';
+
+  @override
+  String get skillEvalFailed => '失敗';
+
+  @override
+  String get skillEvalForced => '強制読み込み vs 不在';
+
+  @override
+  String get skillEvalForcedEvent => '強制読み込み';
+
+  @override
+  String get skillEvalHashUnavailable => 'このサーバーではパッケージハッシュを取得できません。評価は無効です。';
+
+  @override
+  String get skillEvalHistory => 'リビジョン履歴';
+
+  @override
+  String get skillEvalImproved => '改善';
+
+  @override
+  String get skillEvalIncomplete => '未完了';
+
+  @override
+  String get skillEvalInconclusive => '結論なし';
+
+  @override
+  String get skillEvalInferred => '推定';
+
+  @override
+  String get skillEvalInterrupted => '中断';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'スキルの読み込みは観測できません。イベントがないことは、無視された証拠にはなりません。';
+
+  @override
+  String get skillEvalModel => '選択したモデル';
+
+  @override
+  String get skillEvalNoAttempts => '試行はまだありません。';
+
+  @override
+  String get skillEvalNoModels => '利用可能な接続済みモデルがありません。先に設定でプロバイダーを接続してください。';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'キャンペーン履歴に前のハッシュがありません。置き換える前に、前のリビジョンを評価してください。';
+
+  @override
+  String get skillEvalNoReport => 'レポートはまだありません。途中までの試行は確認できます。';
+
+  @override
+  String get skillEvalNoWorkspace => 'ワークスペースが選択されていません。';
+
+  @override
+  String get skillEvalNoTasks => '報告されたタスクはまだありません。';
+
+  @override
+  String get skillEvalNoVerifiers => '検証の証拠は記録されていません。';
+
+  @override
+  String get skillEvalNotEvaluated => 'このバイト列そのものは未評価です。スキャンは動作の証拠にはなりません。';
+
+  @override
+  String get skillEvalNotVerified => '未検証';
+
+  @override
+  String get skillEvalObserved => '観測済み';
+
+  @override
+  String get skillEvalOpenQuality => '品質を開く';
+
+  @override
+  String get skillEvalPolicyNote =>
+      '既定では、スキルを保存しても有料評価は始まりません。更新時の自動再評価を明示的に有効にすると、保存時に予算内で有料評価が始まります。';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign => '更新ポリシーを設定するには、まずリビジョンを評価してください。';
+
+  @override
+  String get skillEvalPolicyTemplate => '更新ポリシーの設定';
+
+  @override
+  String get skillEvalPartial => '証拠が一部のみのため、採用の判定なし';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$plannedString 回中 $completedString 回の試行';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'プロバイダー: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro => 'ワークスペースのスキルキャンペーンと、リビジョンごとの証拠。';
+
+  @override
+  String get skillEvalQueued => '待機中';
+
+  @override
+  String get skillEvalReconnecting => 'キャンペーンのスナップショットに再接続中…';
+
+  @override
+  String get skillEvalRefresh => '更新';
+
+  @override
+  String get skillEvalReferenceLoad => '参照を読み込み済み';
+
+  @override
+  String get skillEvalRepetitions => 'タスクごとの繰り返し回数';
+
+  @override
+  String get skillEvalReport => '証拠レポート';
+
+  @override
+  String get skillEvalRunning => '実行中';
+
+  @override
+  String get skillEvalScriptExecution => 'スクリプトを実行済み';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return '使用額: $spent / 予算 $budget';
+  }
+
+  @override
+  String get skillEvalStart => '評価を開始';
+
+  @override
+  String get skillEvalStartTitle => 'スキルのリビジョンを比較';
+
+  @override
+  String get skillEvalStale => '古い';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return '古い: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return '異なるタスク群: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate (検証済み $passes 件) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => '比較群別のタスク';
+
+  @override
+  String get skillEvalToolError => 'ツールエラー';
+
+  @override
+  String get skillEvalTools => 'ツールイベント';
+
+  @override
+  String get skillEvalTitle => 'スキル評価';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return '利用不可: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => '不明';
+
+  @override
+  String get skillEvalUnsaved => '未保存の変更は含まれません。評価前に保存してください。';
+
+  @override
+  String get skillEvalUncertainty => '不確実性の区間';
+
+  @override
+  String get skillEvalVerified => '検証済み';
+
+  @override
+  String get skillEvalVerifiers => '検証';
+
+  @override
+  String get skillEvalVerdict => '判定';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'コピー完了: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => '計画違反';
+
+  @override
+  String get skillEvalPreserved => '品質を維持';
+
+  @override
+  String get skillEvalPrevious => '前回 vs 今回';
+
+  @override
+  String get skillEvalRegressed => '品質低下を確認';
+
+  @override
+  String get skillEvalCostRegression => 'コストの悪化';
+
+  @override
+  String get skillEvalHarnessError => 'ハーネスエラー';
+
+  @override
+  String get skillBehaviorRouting => 'スキルの振り分け';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive 回の期待どおりの使用 · $falsePositive 回の予期しない使用 · $falseNegative 回の使用漏れ · $trueNegative 回の正しい見送り';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive 回の不明な使用 · $negative 回の不明な見送り · $notOffered 回は未提示';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return '観測上の適合率 $precision · 再現率 $recall · 偽陽性率 $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => '強制適用群 · 診断専用';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      '割合は観測可能なアクセスのみを対象とします。シェルや検索経由のアクセスは不明な場合があります。スキルの読み込みは適用の証拠ではありません。';
+
+  @override
+  String get skillBehaviorSafety => '模擬安全性';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts 件の成果物チェックに合格 · ポリシーによる拒否 $denials 件 · 保護ファイルへの違反 $violations 件';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      '成果物のチェックは模擬的なもので、現実世界での攻撃率を示すものではありません。実際の副作用は計測されていません。';
+
+  @override
+  String get skillBehaviorUtility => 'タスク群別の有効性';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts 件の検証済み成功';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote => '失敗や未完了を含むすべての試行を有効性の分母に含めます。';
 }

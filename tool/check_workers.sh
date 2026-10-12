@@ -44,7 +44,7 @@ done
 # Only generator-produced names are checked; hand-maintained and copied assets
 # (diffWorker.js is compiled by tool/gen_workers.sh, the shiki worker is copied
 # from the package) are listed here so they are never mistaken for orphans.
-KNOWN_NON_GENERATED="diffWorker.js shiki_tokenize_worker.js flutter_service_worker.js"
+KNOWN_NON_GENERATED="diffWorker.js shiki_tokenize_worker.js flutter_service_worker.js cc_resource_worker.js cc_resource_bridge.js cc_resource_ws_shim.js"
 for f in web/*.js; do
   [ -e "$f" ] || continue
   name="$(basename "$f")"

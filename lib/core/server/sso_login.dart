@@ -8,10 +8,10 @@
 ///    whether manual pairing is still allowed. On web that is a `fetch`; on
 ///    the VM it is an `HttpClient` that accepts the probed host's
 ///    SELF-SIGNED certificate, narrowed to that exact host:port.
-/// * Starting a round-trip — web opens a popup and receives the minted
-///    credential back by `postMessage`; the desktop hands the URL to the
-///    SYSTEM browser and the credential returns out-of-band as a
-///    `control-center://pair` deep link.
+/// * Starting a round-trip — each client generates an X25519 recipient. Web
+///    decrypts a sealed popup message or same-tab fragment; the desktop
+///    decrypts an out-of-band `control-center://pair` deep link. The newly
+///    issued PSK never appears in the browser completion response.
 library;
 
 import 'package:control_center/core/server/auth_providers.dart';
@@ -58,8 +58,7 @@ Future<SsoPairPayload?> startSsoLogin({
 /// rather than refused as an unbidden link.
 void cancelSsoLogin() => cancelSsoLoginImpl();
 
-/// Whether a round-trip THIS client started is still inside its adoption
-/// window. A bounce-back arriving outside it was not asked for — anyone can
-/// craft one, and adopting it would silently re-home the app to an impostor
-/// server — so surfaces confirm with the user or refuse.
+/// A round-trip THIS client started is still inside its adoption window.
+/// The client-held recipient key, not the window alone, authenticates the
+/// handoff and prevents forged plaintext pair links.
 bool ssoLoginInFlight() => ssoLoginInFlightImpl();

@@ -2,7 +2,7 @@
 title: Associer un appareil
 description: Associez votre téléphone (ou un second navigateur ou poste de bureau) à votre serveur Control Center pour suivre la flotte à distance.
 slug: fr-CA/manuel/guides/associer-appareil
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Ce guide vous montre comment associer un téléphone à Control Center, de manière
@@ -24,9 +24,10 @@ pouvez déployer sur Cloudflare Pages au moyen de son `wrangler.jsonc`, dans
 l’image nginx `docker/cc_remote`, ou sur n’importe quel hôte statique avec
 HTTPS — les service workers et IndexedDB sont réservés aux contextes sécurisés)
 et le relais (`apps/cc_signaling_server`, un binaire Dart unique et sans état qui
-ne détient aucune donnée d’application et ne voit jamais le secret d’appairage —
-il ne transmet que des trames scellées de bout en bout). Consultez leurs README
-pour les étapes de compilation et d’exécution.
+ne détient aucune donnée d’application et ne peut pas déchiffrer d’enregistrements
+chiffrés ni voir le secret d’appairage). Il voit tout de même les IP, les
+identifiants de routage, les tailles et le minutage, et peut abandonner du
+trafic. Consultez leurs README pour les étapes de compilation et d’exécution.
 
 ## Étape 1 : Ouvrir le panneau d’appairage
 
@@ -53,15 +54,19 @@ du serveur et l’empreinte d’identité pour la PWA Remote.
 
 Du côté du téléphone, l’ouverture d’un lien d’appairage n’associe rien en
 silence. Remote affiche le nom annoncé par le serveur et vous demande de
-confirmer avant de conserver quoi que ce soit, de sorte qu’un lien falsifié ne
-peut pas détourner l’application vers le serveur de quelqu’un d’autre.
+confirmer avant de conserver quoi que ce soit. Vérifiez l’empreinte du code QR
+par rapport à une source fiable : confirmer un nom non vérifié ou un code QR
+falsifié n’établit pas que le serveur est le vôtre. Le client épingle l’identité
+signée et rejette une empreinte modifiée lors des connexions ultérieures.
 
 :::caution[Un code QR scanné accorde l’accès immédiatement]
 Il n’y a aucune étape « en attente puis approuvé » : un appareil créé est actif
 dès l’instant de sa création et la barrière de connexion vérifie seulement que
 le justificatif est actif et non expiré. Traitez le code QR et la clé
 d’appairage comme un mot de passe et révoquez tout ce que vous ne vouliez pas
-distribuer.
+distribuer. Les sessions de client directes comme relayées exigent le chiffrement
+de bout en bout ; les anciens clients ne peuvent pas se rabattre sur du RPC en
+clair.
 :::
 
 ## Gérer les appareils associés

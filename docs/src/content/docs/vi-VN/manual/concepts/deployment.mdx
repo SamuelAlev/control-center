@@ -2,7 +2,7 @@
 title: Triển khai và máy khách
 description: Cách kiến trúc máy khách mỏng của Control Center tách một máy chủ không giao diện khỏi các máy khách máy tính, web và di động.
 slug: vi-VN/so-tay/khai-niem/trien-khai
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center không phải là một chương trình duy nhất. Nó là một **kiến trúc máy
@@ -22,8 +22,9 @@ cửa sổ, hoặc mà hai máy khách phải thấy giống hệt nhau, đều 
 
 Không máy khách nào tự mở tệp cơ sở dữ liệu. Thay vào đó, mỗi máy khách giữ một
 **`RemoteRpcClient`** và phát các thao tác kho mã cùng các gói đăng ký qua nó.
-Máy chủ xác thực kết nối dựa trên khóa chia sẻ trước của thiết bị đã ghép nối —
-rồi không quan tâm tới kết nối đó nữa. **Một phiên không bị ràng buộc vào một
+Cả phiên trực tiếp lẫn phiên qua relay đều cần một bắt tay Noise đã ký: khóa chia
+sẻ trước của thiết bị đã ghép nối xác thực trao đổi này, còn các khóa lưu lượng mới
+mã hóa từng phiên. **Một phiên không bị ràng buộc vào một
 không gian làm việc.** Bộ điều phối là phi trạng thái: mọi lời gọi thuộc phạm vi
 không gian làm việc đều mang `workspace_id` của riêng nó trong tham số, và lời
 gọi nào thiếu trường đó sẽ bị từ chối.
@@ -97,9 +98,10 @@ liệu.
 Bản dựng web cũng chính là ứng dụng Flutter đó, được biên dịch để chạy trong
 trình duyệt và lưu trữ tại [app.usectrl.dev](https://app.usectrl.dev), nên không
 có gì phải cài đặt. Trình duyệt không thể sinh tiến trình con, vì vậy máy khách
-web **luôn** ở chế độ từ xa: nó quay số tới một `cc_server` qua `wss://` và dựng
-toàn bộ giao diện máy tính. Sau khi kết nối, nó hiển thị đúng những màn hình đó
-trên cùng một đội máy, bởi vì đó là cùng một đoạn mã chạy trên cùng một RPC.
+web **luôn** ở chế độ từ xa: nó quay số tới một `cc_server` qua một phiên WebSocket
+đã mã hóa và dựng toàn bộ giao diện máy tính. Sau khi kết nối, nó hiển thị đúng
+những màn hình đó trên cùng một đội máy, bởi vì nó dùng cùng một đoạn mã chạy trên
+cùng một RPC.
 Những khoảng trống chỉ là vài chỗ cần một năng lực gốc mà trình duyệt không có —
 lớp chất lượng ghi âm cuộc họp ở phần dưới là chỗ chính, và thông báo hệ điều
 hành là chỗ khác.
@@ -123,26 +125,30 @@ trình duyệt nằm trong danh sách `--allowed-origins`, mặc định là
 `https://app.usectrl.dev`, nên tự lưu trữ bundle nghĩa là phải thêm origin của nó
 vào danh sách.
 
-Phương tiện (ảnh đại diện, ảnh bảng tin, ảnh chụp PR) đi qua điểm cuối proxy của
-máy chủ thay vì gọi thẳng tới các máy chủ thượng nguồn, nên trình duyệt không bao
-giờ tải từ một origin tùy ý. Máy khách đã triển khai gắn một Content-Security
-Policy riêng cho từng yêu cầu, lấy từ một cookie không nhạy cảm, để chỉ origin
-của máy chủ đang kết nối được phép.
+Phương tiện (ảnh đại diện, ảnh bảng tin, ảnh chụp PR), các lần tải lên, bản sao lưu
+và lưu lượng HTTP/WebSocket của trình soạn thảo nhúng đều đi qua đường hầm tài
+nguyên đã mã hóa, không phải các tuyến HTTP công khai đọc được; các đường dẫn đã ký
+vẫn cần được cấp quyền. Giao diện trình soạn thảo đáng tin cậy chạy trên chính
+origin của ứng dụng web. Service Worker của nó định tuyến các yêu cầu soạn thảo qua
+phiên đã mã hóa sẵn có tới `cc_server`, nơi sở hữu các tệp và phần phụ trợ
+code-server. Trình duyệt cần HTTPS hoặc một ngữ cảnh loopback bảo mật để dùng
+Service Worker. Máy khách gốc dùng một mặt tiền loopback giới hạn theo năng lực.
 
 ### Ứng dụng đồng hành trên điện thoại (cc_remote)
 
 Ứng dụng **Remote** là một máy khách riêng, nhẹ hơn — một PWA Flutter web tại
 [remote.usectrl.dev](https://remote.usectrl.dev/). Nó **không** phải bản ứng dụng
-đầy đủ, và đó là chủ ý. Nó ghép nối qua một relay WebSocket được môi giới, niêm
-phong đầu-cuối, và chỉ nói một lát cắt thiên về đọc của bề mặt công cụ: đọc phiếu,
-tin nhắn và bảng tin; gửi trả lời hoặc cập nhật một phiếu.
+đầy đủ, và đó là chủ ý. Nó kết nối trực tiếp khi có thể hoặc qua một relay được
+môi giới; cả hai đường đều cần mã hóa đầu-cuối. Nó chỉ nói một lát cắt thiên về đọc
+của bề mặt công cụ: đọc phiếu, tin nhắn và bảng tin; gửi trả lời hoặc cập nhật một
+phiếu.
 
 Một chiếc điện thoại là **chủ thể có đặc quyền thấp hơn** so với một agent cục bộ.
-Chính sách công cụ từ chối mặc định, khóa chia sẻ trước niêm phong mọi khung, một
-năng lực phiên khóa các thao tác đặc quyền (chẳng hạn ghép nối) khỏi máy khách
-đồng hành, các kiểm tra vai trò và quyền cấp theo kho ở trên, cùng việc giới hạn
-tần suất — tất cả giữ cho một lần ghép nối đã được duyệt (hay bị lộ) không biến
-thành toàn quyền điều khiển từ xa. Xem
+Chính sách công cụ từ chối mặc định, một năng lực phiên khóa các thao tác đặc quyền
+(chẳng hạn ghép nối) khỏi máy khách đồng hành, các kiểm tra vai trò và quyền cấp
+theo kho ở trên, cùng việc giới hạn tần suất — tất cả giữ cho một lần ghép nối đã
+được duyệt (hay bị lộ) không biến thành toàn quyền điều khiển từ xa. Mã hóa vận
+chuyển không cấp quyền nào. Xem
 [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/) để biết
 đầy đủ mô hình bảo mật.
 
@@ -224,27 +230,36 @@ xử lý, và thao tác ghi-rồi-liên kết của lịch.
 
 ## Ghép nối và tin cậy
 
-Mọi máy khách chứng minh danh tính của mình bằng một **khóa chia sẻ trước** được
-cấp một lần:
+Mọi máy khách dùng một **khóa chia sẻ trước** được cấp một lần để xác thực bắt tay
+Noise đã ký của nó với `cc_server`, kể cả trên loopback và qua relay:
 
 - Ứng dụng máy tính ở chế độ cục bộ tạo một khóa mới mỗi lần khởi động rồi đưa nó
   cho máy chủ được sinh ra qua biến môi trường, nên không có gì bí mật bị lưu lại
   trên máy tính.
 - Các máy khách từ xa (máy tính ở chế độ từ xa, web, điện thoại) dùng một khóa do
-  lệnh `pair` của máy chủ tạo ra và lưu trong keychain của hệ điều hành (hoặc, trên
-  điện thoại, lưu cục bộ).
+  luồng ghép nối của máy chủ hoặc lệnh `pair` tạo ra. Máy khách gốc dùng keychain
+  của hệ điều hành; máy khách trình duyệt lưu bản ghép nối cục bộ.
+
+Máy khách kiểm tra danh tính đã ký của máy chủ dựa trên ghim dấu vân tay đã lưu.
+Ở lần kết nối đầu tiên, hãy xác minh dấu vân tay đó qua một mã QR tin cậy hoặc một
+kênh tin cậy khác: một lần liên hệ đầu được ký tự nó không thể xác thực ai đã cung
+cấp khóa. Nếu danh tính thay đổi, máy khách hỏng theo hướng đóng; hãy ghép nối lại
+qua một kênh tin cậy thay vì bỏ qua sự không khớp. Máy khách cũ hơn và RPC bản rõ
+không thể kết nối. TLS vẫn cần cho origin của trình duyệt, bước khởi tạo và metadata
+công khai; `--insecure` tác động tới trình lắng nghe bên ngoài của máy chủ, không
+tác động tới phiên mã hóa bắt buộc.
 
 Việc thu hồi diễn ra **trực tiếp**, không chậm trễ. Máy chủ theo dõi bảng thiết bị
 đã ghép nối và cắt mọi phiên đang mở mà thiết bị của nó đã rời khỏi tập đang hoạt
 động, trong vòng vài giây — trên cả đường WebSocket trực tiếp lẫn đường relay. Bạn
 không phải chờ thiết bị kết nối lại mới cắt được nó.
 
-Khóa không bao giờ đi qua một URL mà máy chủ tĩnh có thể thấy. Khi nó đến qua liên
-kết — trên điện thoại hoặc trong trình duyệt — nó nằm trong **URL fragment**, phần
-sau dấu `#`, thứ mà trình duyệt không bao giờ gửi tới máy chủ lưu trữ trang. Đó là
-bất biến đáng ghi nhớ, và nó đúng cho cả hai. Máy khách web còn hai điểm vào khác:
-biểu mẫu kết nối, nơi bạn dán trực tiếp máy chủ và khóa, cùng một mã mời mà nó đổi
-lấy thông tin xác thực được tạo riêng cho trình duyệt đó.
+Khi khóa đến qua liên kết — trên điện thoại hoặc trong trình duyệt — nó nằm trong
+**URL fragment**, phần sau dấu `#` mà trình duyệt không gửi trong yêu cầu tới máy
+chủ của trang. Tuy vậy JavaScript của trang vẫn đọc được nó, nên hãy tin cậy máy
+chủ đó và giữ liên kết bí mật. Máy khách web cũng có một biểu mẫu kết nối, nơi bạn
+dán trực tiếp máy chủ và khóa, cùng một mã mời mà nó đổi lấy thông tin xác thực
+được tạo riêng cho trình duyệt đó.
 
 ## Các khái niệm liên quan
 

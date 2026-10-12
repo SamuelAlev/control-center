@@ -13,8 +13,9 @@ void main() {
   final root = Directory.current.path;
 
   group('build_inference.sh', () {
-    final source =
-        File('$root/scripts/natives/build_inference.sh').readAsStringSync();
+    final source = File(
+      '$root/scripts/natives/build_inference.sh',
+    ).readAsStringSync();
 
     test('pins the sherpa-onnx archive by checksum before linking it', () {
       // The crate's own build script downloads this archive itself, unverified,
@@ -47,13 +48,18 @@ void main() {
         reason: 'the symbol-leak assertion was removed from the build script',
       );
       expect(source, contains('cc_embedder_run'), reason: 'ABI check weakened');
-      expect(source, contains('cc_asr_transcribe'), reason: 'ABI check weakened');
+      expect(
+        source,
+        contains('cc_asr_transcribe'),
+        reason: 'ABI check weakened',
+      );
     });
   });
 
   group('macos_package.sh', () {
-    final source =
-        File('$root/scripts/release/macos_package.sh').readAsStringSync();
+    final source = File(
+      '$root/scripts/release/macos_package.sh',
+    ).readAsStringSync();
 
     test('an absent signing identity reaches the actionable error', () {
       // `security find-identity | grep "Developer ID Application"` exits 1 when
@@ -184,17 +190,20 @@ void main() {
       '$root/scripts/release/cc_server_package.sh',
     ).readAsStringSync();
 
-    test('the standalone cc_server is signed with its dart-aot entitlements',
-        () {
-      // Same failure mode as the embedded copy (see the macos_package.sh
-      // group): bare hardened signing notarizes and then SIGKILLs on launch.
-      expect(
-        source,
-        contains(r'sign_entitled "$CC_ENTITLEMENTS" "$DIST/bin/cc_server"'),
-        reason: 'a bare-signed cc_server notarizes and then dies on launch '
-            '(CODESIGNING: Invalid Page)',
-      );
-    });
+    test(
+      'the standalone cc_server is signed with its dart-aot entitlements',
+      () {
+        // Same failure mode as the embedded copy (see the macos_package.sh
+        // group): bare hardened signing notarizes and then SIGKILLs on launch.
+        expect(
+          source,
+          contains(r'sign_entitled "$CC_ENTITLEMENTS" "$DIST/bin/cc_server"'),
+          reason:
+              'a bare-signed cc_server notarizes and then dies on launch '
+              '(CODESIGNING: Invalid Page)',
+        );
+      },
+    );
   });
 
   group('entitlements', () {
@@ -208,8 +217,9 @@ void main() {
       for (final f in dir.listSync().whereType<File>()) {
         final lines = f.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
-          final stripped =
-              lines[i].replaceAll('<!--', '').replaceAll('-->', '');
+          final stripped = lines[i]
+              .replaceAll('<!--', '')
+              .replaceAll('-->', '');
           expect(
             stripped.contains('--'),
             isFalse,
@@ -236,8 +246,9 @@ void main() {
   });
 
   group('windows_natives.sh', () {
-    final source =
-        File('$root/scripts/release/windows_natives.sh').readAsStringSync();
+    final source = File(
+      '$root/scripts/release/windows_natives.sh',
+    ).readAsStringSync();
 
     test('no archive is handed to tar as an -f argument', () {
       // GNU tar reads an -f value containing a colon as a REMOTE archive
@@ -307,26 +318,30 @@ void main() {
       );
     });
 
-    test('the APM archive is found under its meson name (libfoo.a, not .lib)', () {
-      // meson names static libraries libfoo.a even under MSVC — they are
-      // ordinary COFF archives link.exe accepts by path — so waiting for an
-      // MSVC-flavoured webrtc-audio-processing-2.lib found nothing after a
-      // fully successful 440-target build.
-      expect(
-        source,
-        contains(
-          r'$SRC/build/webrtc/modules/audio_processing/'
-          'libwebrtc-audio-processing-2.a',
-        ),
-        reason: 'the aec block must look for the .a the meson build emits, '
-            'at the same fixed path build_aec.sh uses',
-      );
-      expect(
-        source.contains("-name '*.lib'"),
-        isFalse,
-        reason: 'dependency archives are .a under meson-on-MSVC too',
-      );
-    });
+    test(
+      'the APM archive is found under its meson name (libfoo.a, not .lib)',
+      () {
+        // meson names static libraries libfoo.a even under MSVC — they are
+        // ordinary COFF archives link.exe accepts by path — so waiting for an
+        // MSVC-flavoured webrtc-audio-processing-2.lib found nothing after a
+        // fully successful 440-target build.
+        expect(
+          source,
+          contains(
+            r'$SRC/build/webrtc/modules/audio_processing/'
+            'libwebrtc-audio-processing-2.a',
+          ),
+          reason:
+              'the aec block must look for the .a the meson build emits, '
+              'at the same fixed path build_aec.sh uses',
+        );
+        expect(
+          source.contains("-name '*.lib'"),
+          isFalse,
+          reason: 'dependency archives are .a under meson-on-MSVC too',
+        );
+      },
+    );
 
     test('webrtc archives and the aec shim agree on the static CRT', () {
       // meson's release default compiles /MD; the shim — like every other
@@ -385,6 +400,7 @@ void main() {
         'fff_c.dll',
         'cc_watcher.dll',
         'cc_saml.dll',
+        'rhttp.dll',
         'cc_inference.dll',
         'ccpty.dll',
         'tree-sitter.dll',
@@ -392,7 +408,9 @@ void main() {
         'lame_ffi.dll',
       ]) {
         expect(
-          RegExp(r'trap .*\$\? -eq 0 .*' + RegExp.escape(native)).hasMatch(source),
+          RegExp(
+            r'trap .*\$\? -eq 0 .*' + RegExp.escape(native),
+          ).hasMatch(source),
           isTrue,
           reason: '$native lost the EXIT trap that names it on failure',
         );

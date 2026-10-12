@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// OpenAI Codex (ChatGPT) usage via `GET /backend-api/wham/usage`.
 ///
@@ -10,13 +10,15 @@ import 'package:dio/dio.dart';
 /// spawns the Codex CLI.
 class CodexUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [CodexUsageStrategy].
-  CodexUsageStrategy({required this._dio})
+  CodexUsageStrategy({required this._httpClient})
     : super(providerId: 'codex', displayName: 'Codex');
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   @override
-  Future<SubscriptionUsage> fetchAccount(SubscriptionUsageAccount account) async {
+  Future<SubscriptionUsage> fetchAccount(
+    SubscriptionUsageAccount account,
+  ) async {
     final token = account.accessToken?.trim() ?? '';
     if (token.isEmpty) {
       return unconfigured(
@@ -39,21 +41,19 @@ class CodexUsageStrategy extends SubscriptionUsageStrategy {
       final headerId = (chatgptId != null && chatgptId.isNotEmpty)
           ? chatgptId
           : CodexOAuth.accountIdFromToken(token);
-      final resp = await _dio.getUri<Map<String, dynamic>>(
-        Uri.parse('$origin${CodexOAuth.usagePath}'),
-        options: Options(
-          responseType: ResponseType.json,
-          headers: {
+      final resp = await boundedRequest(
+        (token0) => _httpClient.get(
+          '$origin${CodexOAuth.usagePath}',
+          headers: HttpHeaders.rawMap({
             'Authorization': 'Bearer $token',
             'Accept': 'application/json',
             if (headerId != null && headerId.isNotEmpty)
               'ChatGPT-Account-Id': headerId,
-          },
-          sendTimeout: SubscriptionUsageStrategy.requestTimeout,
-          receiveTimeout: SubscriptionUsageStrategy.requestTimeout,
+          }),
+          cancelToken: token0,
         ),
       );
-      final windows = parseCodexWhamWindows(resp.data);
+      final windows = parseCodexWhamWindows(jsonObject(resp));
       if (windows.isEmpty) {
         return error('Could not read Codex usage.');
       }
@@ -75,14 +75,10 @@ List<SubscriptionWindow> parseCodexWhamWindows(Map<String, dynamic>? data) {
   final rate = _asMap(data['rate_limit'] ?? data['rateLimit']);
   final windows = <SubscriptionWindow>[];
   final primary = _asMap(
-    rate?['primary_window'] ??
-        rate?['primaryWindow'] ??
-        data['primary'],
+    rate?['primary_window'] ?? rate?['primaryWindow'] ?? data['primary'],
   );
   final secondary = _asMap(
-    rate?['secondary_window'] ??
-        rate?['secondaryWindow'] ??
-        data['secondary'],
+    rate?['secondary_window'] ?? rate?['secondaryWindow'] ?? data['secondary'],
   );
   final now = DateTime.now().toUtc();
   final primaryWindow = _windowOf(primary, key: 'primary', now: now);

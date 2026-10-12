@@ -1,9 +1,9 @@
 ---
 title: Jalankan server headless
 description: Jalankan biner headless cc_server atau image Docker-nya, pasangkan klien ke sana, dan konfigurasikan dengan seluruh permukaan flag CLI dan variabel lingkungannya.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Jalankan `cc_server` di mesin yang tetap menyala, lalu hubungkan ke sana dari
@@ -25,7 +25,7 @@ sendiri tidak memerlukan checkout sumber. Pin tag versi
 | `ghcr.io/samuelalev/cc-server`                    | Backend: basis data, agen, MCP, webhook      | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | Klien web (nginx statis)                     | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | PWA pendamping ponsel (nginx statis)         | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Relay pairing WebRTC (opsional)              | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Relay koneksi terenkripsi (opsional)         | `-p 8788:8788`   |
 
 Seluruh stack sebagai file compose:
 
@@ -56,11 +56,14 @@ volumes:
 Hal-hal yang perlu diketahui sebelum Anda mengekspos semua ini di luar loopback:
 
 - **Image `cc-server` hadir dengan `CC_SERVER_INSECURE=1`** (image ini harus
-  mengikat `0.0.0.0` untuk menerima lalu lintas dari port yang dipublikasikan),
-  yang hanya aman di balik reverse proxy terminasi TLS — Caddy, Traefik, nginx,
-  atau Cloudflare Tunnel — di jaringan tepercaya. Untuk menerminasi TLS di dalam
-  proses sebagai gantinya, pasang sertifikat dan setel `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` (lalu hapus setelan `CC_SERVER_INSECURE`). Semuanya dapat
+  mengikat `0.0.0.0` untuk menerima lalu lintas dari port yang dipublikasikan).
+  Gunakan reverse proxy terminasi TLS — Caddy, Traefik, nginx, atau Cloudflare
+  Tunnel — di jaringan tepercaya, atau pasang sertifikat dan setel
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (lalu hapus setelan
+  `CC_SERVER_INSECURE`). Setelan ini hanya mengendalikan listener HTTP/WebSocket
+  luar server. Setelan ini tidak pernah menonaktifkan sesi klien terenkripsi ujung
+  ke ujung yang diwajibkan. TLS tetap melindungi lalu lintas login/bootstrap,
+  metadata koneksi, endpoint publik, dan pengiriman klien web. Semuanya dapat
   ditimpa dengan `docker run -e …` atau blok `environment:` di compose.
 - **`/data` adalah satu-satunya state.** Basis data SQLite, rahasia perangkat
   yang dipasangkan, model yang diunduh, dan audio rapat semuanya berada di
@@ -73,14 +76,17 @@ Hal-hal yang perlu diketahui sebelum Anda mengekspos semua ini di luar loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Kedua image klien adalah host nginx statis** — tidak ada yang perlu
-  dikonfigurasi saat runtime; formulir koneksi setiap klien menerima URL server,
-  id perangkat, dan kunci pairing Anda. Relay pensinyalan juga hanya memerlukan
-  portnya (`SIGNALING_HOST` / `SIGNALING_PORT` dapat ditimpa); relay ini tanpa
-  status, tidak menyimpan rahasia, dan merupakan **cadangan** — ponsel memakai
-  loopback, LAN, tailnet, atau jalur `wss://` langsung bila salah satunya dapat
-  dijangkau, dan hanya beralih ke relay bila tidak ada. Lewati relay ini jika
-  klien Anda selalu menjangkau server secara langsung.
+- **Kedua image klien adalah host nginx statis.** Editor peramban tertanam
+  memakai origin aplikasi yang sama dan koneksi terenkripsi, seperti dijelaskan
+  [di bawah](#sumber-daya-editor-peramban). Formulir koneksi setiap klien menerima URL
+  server, id perangkat, dan kunci pairing Anda. Relay pensinyalan hanya
+  memerlukan portnya (`SIGNALING_HOST` / `SIGNALING_PORT` dapat ditimpa); relay
+  ini tanpa status, tidak menyimpan kunci pairing, dan merupakan **cadangan** —
+  ponsel memakai loopback, LAN, tailnet, atau jalur `wss://` langsung bila salah
+  satunya dapat dijangkau, dan hanya beralih ke relay bila tidak ada. Lewati relay
+  ini jika klien Anda selalu menjangkau server secara langsung. Broker dapat
+  melihat pengenal perutean, alamat IP, ukuran, dan waktu, serta dapat memutus lalu
+  lintas; ia tidak dapat mendekripsi aliran sumber daya antara klien dan server.
 
 Sisa panduan ini membangun server dari sumber; flag dan perilaku yang
 dibahasnya sama dengan yang diumpankan oleh variabel lingkungan image tersebut.
@@ -178,6 +184,15 @@ kedaluwarsa**; kredensial yang dibuat di aplikasi selalu kedaluwarsa setelah 30
 hari. Cabut perangkat yang dibuat melalui CLI dari
 **Pengaturan → Anda → Perangkat Anda** setelah selesai menggunakannya.
 
+Kunci pairing mengautentikasi jabat tangan Noise yang diwajibkan; setiap sesi
+menurunkan kunci lalu lintas yang baru dan memeriksa identitas bertanda tangan
+server. Lindungi kunci pairing dan dapatkan dari sumber tepercaya (termasuk QR
+tepercaya), lalu verifikasi sidik jari server yang baru melalui saluran tepercaya
+terpisah atau terhadap penyematan yang dikenal. Jangan menerima penyematan yang
+berubah secara diam-diam: lakukan pairing ulang melalui saluran tepercaya jika Anda
+sengaja mengganti identitas server. TLS saja tidak dapat menetapkan penyematan
+identitas ujung ke ujung itu.
+
 ## Langkah 4: Jalankan server
 
 Di loopback — bawaan dan semua yang Anda perlukan untuk klien di mesin yang
@@ -206,8 +221,13 @@ serta dalam pengikatan plaintext di baliknya:
 ```
 
 `--insecure` diabaikan bila `--tls-cert` dan `--tls-key` keduanya disetel — TLS
-selalu menang. Server mengiklankan status plaintext sebagai `insecure: true` di
-`GET /healthz` dan klien menandai koneksi semacam itu sebagai tidak aman.
+selalu menang. Server mengiklankan status teks polos listener luarnya sebagai
+`insecure: true` di `GET /healthz`. Ini tidak mematikan enkripsi Noise pada `/rpc`,
+baik klien terhubung langsung maupun melalui relay. Tingkatkan server, relay, dan
+klien bersama-sama: klien RPC teks polos lama akan ditolak, tanpa fallback
+kompatibilitas. Permintaan publik ke rute sumber daya sensitif (termasuk transfer
+cadangan) mendapat HTTP `426`, bahkan dari loopback; klien yang dipasangkan
+memakai terowongan terenkripsi sebagai gantinya.
 
 Server berjalan sampai `SIGINT`/`SIGTERM`, lalu mati dengan bersih.
 
@@ -228,6 +248,33 @@ atas persis untuk itu). Origin peramban selain loopback harus ada di
 bawaannya adalah `https://app.usectrl.dev` dan `localhost` / `127.0.0.1` selalu
 diizinkan.
 :::
+
+### Sumber daya editor peramban
+
+Frontend editor adalah kode aplikasi tepercaya dan berjalan pada origin aplikasi web
+itu sendiri. Service Worker-nya merutekan lalu lintas HTTP dan WebSocket melalui
+sesi terenkripsi terautentikasi yang sama seperti bagian klien lainnya. `cc_server`
+mendekripsi setiap permintaan, meneruskannya ke backend code-server lokalnya, lalu
+mengenkripsi respons kembali ke klien. Berkasnya tetap dimiliki server.
+
+Hosting klien web melalui HTTPS atau origin loopback yang aman agar Service Worker
+dapat berjalan. Skrip build dan rilis web yang biasa sudah menyertakan aset sumber
+daya bersama. Jika Anda membangun bundel sendiri, siapkan aset tersebut setelahnya
+dari akar repo:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Untuk build web ponsel, gantikan dengan `apps/cc_remote/build/web`. Perintah ini
+menyalin `cc_resource_bridge.js`, `cc_resource_worker.js`, dan
+`cc_resource_ws_shim.js` ke dalam bundel aplikasi.
+
+Lalu lintas editor native memakai fasad loopback yang dibatasi kapabilitas sebagai
+gantinya. Jangan mengekspos gerbang laporan/perintah loopback privat milik ekstensi
+editor yang dijalankan server melalui proxy publik. Permintaan HTTP publik yang
+sensitif ditolak; sumber daya memerlukan sesi terenkripsi yang terautentikasi.
+
 
 ## Langkah 6: Hubungkan Google Calendar (opsional)
 
@@ -290,7 +337,7 @@ Setiap panggilan berlingkup ruang kerja membawa `workspace_id`-nya sendiri dan
 akses ditentukan oleh keanggotaan dan peran ruang kerja pemanggil — bukan karena
 memegang kunci pairing.
 
-Dua hal yang perlu diketahui sebelum Anda mengekspos port di luar loopback:
+Dua hal yang perlu diketahui sebelum Anda mengekspos port di luar loopback (TLS saja tidak menyediakan enkripsi ujung ke ujung klien yang dipasangkan atau memberi otorisasi sumber daya):
 
 - **MCP gagal secara tertutup di luar host.** Permukaan MCP tanpa token hanya menjawab loopback. Mengikat `any` tidak melebarkannya — permintaan dari luar host ditolak dengan "MCP requires a bearer token to answer non-loopback clients" sampai Anda mengonfigurasi token (`mcp.setToken`, atau **Pengaturan → Server → Server MCP**).
 - **`GET /healthz` tidak diautentikasi secara sengaja**, memakai CORS wildcard dan memublikasikan id, nama, sidik jari identitas, dan versi build server. Klien memerlukan sidik jari itu untuk mematok server, jadi ini disengaja — tetapi artinya setiap `cc_server` yang dapat dijangkau mengungkapkan sebanyak itu kepada siapa pun yang bertanya.

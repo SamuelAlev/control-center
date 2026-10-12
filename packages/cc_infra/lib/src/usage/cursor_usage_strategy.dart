@@ -2,26 +2,27 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Cursor usage via Connect RPC `DashboardService/GetCurrentPeriodUsage`
 /// (Pro/Ultra spend + Auto/API percentages). Request-based enterprise seats
 /// have no `planUsage` there and answer instead at `GET /auth/usage`.
 class CursorUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [CursorUsageStrategy].
-  CursorUsageStrategy({required this._dio})
+  CursorUsageStrategy({required this._httpClient})
     : super(providerId: 'cursor', displayName: 'Cursor');
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   static const _periodUsagePath =
       '/aiserver.v1.DashboardService/GetCurrentPeriodUsage';
   static const _authUsagePath = '/auth/usage';
 
   @override
-  Future<SubscriptionUsage> fetchAccount(SubscriptionUsageAccount account) async {
-    final token =
-        account.accessToken?.trim().isNotEmpty == true
+  Future<SubscriptionUsage> fetchAccount(
+    SubscriptionUsageAccount account,
+  ) async {
+    final token = account.accessToken?.trim().isNotEmpty == true
         ? account.accessToken!.trim()
         : (account.apiKey?.trim() ?? '');
     if (token.isEmpty) {
@@ -48,11 +49,11 @@ class CursorUsageStrategy extends SubscriptionUsageStrategy {
         if (period != null && period.hasReading) {
           return period;
         }
-      } on DioException catch (e) {
+      } on RhttpException catch (e) {
         // Auth failure is the same on both endpoints — don't spend a second
         // round-trip to re-learn it. Anything else (404, 5xx, empty body) is
         // "this seat is not period-billed" and we fall through to requests.
-        final code = e.response?.statusCode;
+        final code = e is RhttpStatusCodeException ? e.statusCode : null;
         if (code == 401 || code == 403) {
           return error(shortError(e));
         }
@@ -68,48 +69,50 @@ class CursorUsageStrategy extends SubscriptionUsageStrategy {
   }
 
   Future<SubscriptionUsage?> _periodUsage(String origin, String token) async {
-    final resp = await _dio.postUri<Map<String, dynamic>>(
-      Uri.parse('$origin$_periodUsagePath'),
-      data: const <String, dynamic>{},
-      options: Options(
-        responseType: ResponseType.json,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Connect-Protocol-Version': '1',
-          'x-cursor-client-version': kCursorClientVersion,
-          'x-cursor-client-type': 'cli',
-        },
-        sendTimeout: SubscriptionUsageStrategy.requestTimeout,
-        receiveTimeout: SubscriptionUsageStrategy.requestTimeout,
-        extra: expectStatuses(const [404, 405]),
+    final resp = await boundedRequest(
+      (cancel) => _httpClient.send(
+        BaseHttpRequest(
+          method: HttpMethod.post,
+          url: '$origin$_periodUsagePath',
+          headers: HttpHeaders.rawMap({
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Connect-Protocol-Version': '1',
+            'x-cursor-client-version': kCursorClientVersion,
+            'x-cursor-client-type': 'cli',
+          }),
+          body: const HttpBody.json(<String, dynamic>{}),
+          expectBody: HttpExpectBody.text,
+          cancelToken: cancel,
+        )..additionalData.addAll(expectStatuses(const [404, 405])),
       ),
     );
-    return _parsePeriod(resp.data);
+    return _parsePeriod(jsonObject(resp));
   }
 
   Future<SubscriptionUsage?> _requestUsage(String origin, String token) async {
     try {
-      final resp = await _dio.getUri<Map<String, dynamic>>(
-        Uri.parse('$origin$_authUsagePath'),
-        options: Options(
-          responseType: ResponseType.json,
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-          sendTimeout: SubscriptionUsageStrategy.requestTimeout,
-          receiveTimeout: SubscriptionUsageStrategy.requestTimeout,
-          extra: expectStatuses(const [404, 405]),
+      final resp = await boundedRequest(
+        (cancel) => _httpClient.send(
+          BaseHttpRequest(
+            method: HttpMethod.get,
+            url: '$origin$_authUsagePath',
+            headers: HttpHeaders.rawMap({
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            }),
+            expectBody: HttpExpectBody.text,
+            cancelToken: cancel,
+          )..additionalData.addAll(expectStatuses(const [404, 405])),
         ),
       );
-      return _parseRequests(resp.data);
-    } on DioException catch (e) {
+      return _parseRequests(jsonObject(resp));
+    } on RhttpStatusCodeException catch (e) {
       // A missing request-quota endpoint is not a failure of the period
       // reading we already tried — only a hard error (auth, network) should
       // surface. 404/405 mean this seat is not request-billed.
-      final code = e.response?.statusCode;
+      final code = e.statusCode;
       if (code == 404 || code == 405) {
         return null;
       }

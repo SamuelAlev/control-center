@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// Console tracing for the remote-control connection pipeline:
-/// pairing → signaling → WebRTC (offer/answer/ICE) → PSK handshake → JSON-RPC.
+/// pairing → direct/relay transport → signed Noise session → JSON-RPC.
 ///
 /// Every call is gated on [kDebugMode], so the whole thing compiles out of
 /// release builds. On web the output lands in the browser console (Chrome

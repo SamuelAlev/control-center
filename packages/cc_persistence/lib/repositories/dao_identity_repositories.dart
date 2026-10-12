@@ -14,6 +14,7 @@ import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/daos/user_activity_dao.dart';
 import 'package:cc_persistence/database/daos/user_dao.dart';
@@ -299,6 +300,23 @@ class DaoWorkspaceInviteRepository implements WorkspaceInviteRepository {
       return null;
     }
     final row = await _dao(workspaceId).getByCodeHash(codeHash);
+    return row == null ? null : _mapper.inviteToDomain(row);
+  }
+
+  @override
+  Future<WorkspaceInvite?> getByRouteId(String routeId) async {
+    if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(routeId)) return null;
+    final route = await _routes.resolveSecureInvite(routeId);
+    if (route == null ||
+        InvitePairingProof.routeIdFromHash(route.codeHash) != routeId ||
+        await _routes.resolve(
+              WorkspaceRouteKind.inviteCode,
+              route.codeHash,
+            ) !=
+            route.workspaceId) {
+      return null;
+    }
+    final row = await _dao(route.workspaceId).getByCodeHash(route.codeHash);
     return row == null ? null : _mapper.inviteToDomain(row);
   }
 

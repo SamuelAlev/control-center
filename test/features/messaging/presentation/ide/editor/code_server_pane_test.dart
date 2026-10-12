@@ -10,6 +10,7 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_group.dart';
 import 'package:control_center/shared/editor/editor_workspace.dart';
 import 'package:control_center/shared/editor/host/editor_body_host.dart';
+import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,13 +77,19 @@ void main() {
     final bodyHost = EditorBodyHost(isWebviewKind: (_) => false);
     await tester.pumpWidget(
       testWrap(
+        MediaProxyScope(
+          config: MediaProxyConfig(
+            httpBase: Uri.parse('http://127.0.0.1:4100/_cc_resource/cap/'),
+            deviceId: 'desktop',
+            psk: 'test-key',
+          ),
+          child:
         ProviderScope(
           overrides: [
             codeServerSessionProvider.overrideWith(
               (ref, request) async => const CodeServerSessionResult(
                 sessionId: 'sid',
-                url: 'http://127.0.0.1:1/proxy/vscode/sid/',
-                directUrl: '',
+                url: '/proxy/vscode/sid/',
                 status: CodeServerStatus.ready,
               ),
             ),
@@ -110,6 +117,7 @@ void main() {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -187,7 +195,7 @@ void main() {
     final url = codeServerEmbedUrl(
       '/proxy/vscode/sid/?folder=%2Fw&payload='
       '${Uri.encodeQueryComponent('[["openFile","vscode-remote://remote/w/a.ts:3"]]')}',
-      Uri.parse('http://localhost:4100'),
+      Uri.parse('http://localhost:4100/_cc_resource/cap/'),
     )!;
     final parsed = Uri.parse(url);
     expect(parsed.host, '127.0.0.1');
@@ -195,6 +203,7 @@ void main() {
       parsed.queryParameters['payload'],
       '[["openFile","vscode-remote://127.0.0.1:4100/w/a.ts:3"]]',
     );
+    expect(parsed.path, '/_cc_resource/cap/proxy/vscode/sid/');
     expect(parsed.queryParameters['folder'], '/w');
   });
 
@@ -202,9 +211,16 @@ void main() {
     expect(
       codeServerEmbedUrl(
         '/proxy/vscode/sid/?folder=%2Fw',
-        Uri.parse('https://cc.example'),
+        Uri.parse('http://127.0.0.1:4100/_cc_resource/cap/'),
       ),
-      'https://cc.example/proxy/vscode/sid/?folder=%2Fw',
+      'http://127.0.0.1:4100/_cc_resource/cap/proxy/vscode/sid/?folder=%2Fw',
     );
+  });
+
+  test('rejects absolute and missing-facade iframe URLs', () {
+    final local = Uri.parse('http://127.0.0.1:4100/_cc_resource/cap/');
+    expect(codeServerEmbedUrl('http://remote.example/proxy/vscode/sid/', local), isNull);
+    expect(codeServerEmbedUrl('/proxy/vscode/sid/', null), isNull);
+    expect(codeServerEmbedUrl('//remote.example/proxy/vscode/sid/', local), isNull);
   });
 }

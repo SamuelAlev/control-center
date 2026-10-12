@@ -39,6 +39,7 @@ Future<RepoAddOutcome?> showAddRepoDialog(
   final l10n = AppLocalizations.of(context);
   return showCcDialog<RepoAddOutcome?>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (dialogContext) => CcDialog(
       title: l10n.addRepository,
       content: SizedBox(

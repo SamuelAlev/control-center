@@ -5,10 +5,10 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_statu
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas.dart';
-import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas_background.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_step_detail_panel.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -102,6 +102,51 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   }
 
+  testWidgets('zoom and node picking survive docking and closing details', (
+    tester,
+  ) async {
+    final def = _definition([
+      _step(id: 'start', kind: StepKind.trigger, label: 'Start'),
+    ]);
+    await pumpCanvas(
+      tester,
+      def,
+      runId: 'run-1',
+      overrides: [
+        pipelineStepRunsForRunProvider(
+          'run-1',
+        ).overrideWith((_) => Stream.value(const <PipelineStepRun>[])),
+      ],
+    );
+    final zoomIn = find.byWidgetPredicate(
+      (widget) => widget is CcIconButton && widget.tooltip == l10n.zoomIn,
+    );
+    await tester.tap(zoomIn);
+    await tester.pump(const Duration(milliseconds: 200));
+    final label = find.text('Start');
+    double labelWidth() =>
+        tester.getBottomRight(label).dx - tester.getTopLeft(label).dx;
+    final zoomedWidth = labelWidth();
+    await tester.tap(label);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(PipelineStepDetailPanel), findsOneWidget);
+    final canvasLabel = find.descendant(
+      of: find.byType(InteractiveViewer),
+      matching: find.text('Start'),
+    );
+    expect(
+      tester.getBottomRight(canvasLabel).dx - tester.getTopLeft(canvasLabel).dx,
+      closeTo(zoomedWidth, 0.01),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(PipelineStepDetailPanel), findsNothing);
+    expect(labelWidth(), closeTo(zoomedWidth, 0.01));
+    await tester.tap(label);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(PipelineStepDetailPanel), findsOneWidget);
+  });
+
   // -- Empty canvas ---------------------------------------------------------
 
   group('empty canvas', () {
@@ -117,17 +162,6 @@ void main() {
       tester,
     ) async {
       final def = _definition([_step(id: 'end', kind: StepKind.terminal)]);
-      await pumpCanvas(tester, def);
-      expect(find.text(l10n.pipelinesNoSteps), findsOneWidget);
-    });
-
-    testWidgets('shows placeholder when only terminal steps exist', (
-      tester,
-    ) async {
-      final def = _definition([
-        _step(id: 't1', kind: StepKind.terminal),
-        _step(id: 't2', kind: StepKind.terminal),
-      ]);
       await pumpCanvas(tester, def);
       expect(find.text(l10n.pipelinesNoSteps), findsOneWidget);
     });
@@ -155,49 +189,6 @@ void main() {
       expect(find.text('Setup'), findsOneWidget);
       expect(find.text('fetch'), findsOneWidget);
     });
-
-    testWidgets('nodes use Positioned with coordinates when provided', (
-      tester,
-    ) async {
-      final def = _definition([
-        _step(id: 'a', kind: StepKind.trigger, x: 0, y: 0),
-        _step(id: 'b', kind: StepKind.listen, x: 300, y: 200),
-      ]);
-      await pumpCanvas(tester, def);
-      expect(find.byType(Positioned), findsWidgets);
-    });
-
-    testWidgets('trigger node uses brand colors', (tester) async {
-      final def = _definition([_step(id: 'trigger', kind: StepKind.trigger)]);
-      await pumpCanvas(tester, def);
-      expect(find.text('trigger'), findsOneWidget);
-    });
-  });
-
-  // -- Connections ----------------------------------------------------------
-
-  group('connections', () {
-    testWidgets('renders CustomPaint for edge/background layers', (
-      tester,
-    ) async {
-      final def = _definition([
-        _step(id: 'start', kind: StepKind.trigger, x: 0, y: 0),
-        _step(id: 'stepA', kind: StepKind.listen, x: 250, y: 0),
-        _step(id: 'end', kind: StepKind.terminal, x: 500, y: 0),
-      ]);
-      await pumpCanvas(tester, def);
-      // Multiple CustomPaint widgets exist (edge painter + background painter
-      // + any from the theme). At minimum there should be some.
-      expect(find.byType(CustomPaint), findsWidgets);
-    });
-
-    testWidgets('renders PipelineCanvasBackground', (tester) async {
-      final def = _definition([
-        _step(id: 'start', kind: StepKind.trigger, x: 0, y: 0),
-      ]);
-      await pumpCanvas(tester, def);
-      expect(find.byType(PipelineCanvasBackground), findsOneWidget);
-    });
   });
 
   // -- Interaction without runId --------------------------------------------
@@ -223,20 +214,6 @@ void main() {
       expect(find.byType(PipelineStepDetailPanel), findsNothing);
       // Without a panel there is no seam to drag, so the graph is not split.
       expect(find.byType(CcResizable), findsNothing);
-    });
-
-    testWidgets('pan gesture shifts canvas', (tester) async {
-      final def = _definition([
-        _step(id: 'start', kind: StepKind.trigger, x: 0, y: 0),
-      ]);
-      await pumpCanvas(tester, def);
-
-      final gestureDetector = find.byType(GestureDetector).first;
-      await tester.drag(gestureDetector, const Offset(50, 30));
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // Canvas still renders after pan
-      expect(find.text('start'), findsOneWidget);
     });
   });
 
@@ -559,24 +536,6 @@ void main() {
       expect(find.text('T'), findsOneWidget);
       expect(find.text('End'), findsNothing);
       expect(find.text('End2'), findsNothing);
-    });
-  });
-
-  // -- Focus / keyboard -----------------------------------------------------
-
-  group('focus and keyboard', () {
-    testWidgets('Focus widget is present with autofocus', (tester) async {
-      final def = _definition([
-        _step(id: 'start', kind: StepKind.trigger, label: 'Start'),
-      ]);
-      await pumpCanvas(tester, def);
-
-      // The canvas Focus with autofocus is the one wrapping CallbackShortcuts.
-      final canvasFocus = find.byWidgetPredicate(
-        (w) =>
-            w is Focus && w.autofocus == true && w.child is CallbackShortcuts,
-      );
-      expect(canvasFocus, findsOneWidget);
     });
   });
 

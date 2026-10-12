@@ -3,7 +3,7 @@ title: Arkitektur
 description: Hur Control Center är uppbyggt med en servermodell för tunna klienter, funktionsorienterad Clean Architecture samt portar och adaptrar.
 dateModified: 2026-09-19
 slug: sv-SE/handbok/koncept/arkitektur
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Översikt
@@ -26,7 +26,7 @@ Det här är en **Dart-arbetsyta** med en enda resolverad lockfil och tjugoen me
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domänlagret**: entiteter, värdeobjekt, repository-gränssnitt, portar och domäntjänster i ren Dart. Noll importer från infrastrukturen (ingen dio, drift eller nätverksmodeller).
+- **Domänlagret**: entiteter, värdeobjekt, repository-gränssnitt, portar och domäntjänster i ren Dart. Noll importer från infrastrukturen (ingen rhttp, drift eller nätverksmodeller).
 - **Presentationslagret**: skärmar, widgets, notifiers. Ingen direkt åtkomst till drift/DAO/datalagret; allt går via Riverpod-providers → repositories.
 - **Infrastrukturlagret**: konkreta implementationer av domänportar och repository-gränssnitt. Är beroende av domänen, aldrig tvärtom.
 
@@ -122,7 +122,7 @@ Båda databaserna ägs av `cc_persistence` och öppnas bara av `cc_server`; inge
 
 All extern HTTP finns i servern. Klienter ansluter aldrig direkt till GitHub, Linear eller Google — de anropar serverns RPC-operationer, och till och med fjärrmedia hämtas via serverns `/proxy/media`-ändpunkt i stället för från den ursprungliga källan.
 
-- **dio**-klienter i `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` och `GoogleCalendarApiClient`
+- **rhttp**-klienter i `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` och `GoogleCalendarApiClient`
 - Injektion av autentiseringstoken via interceptors, inklusive en kontospecifik Google OAuth-interceptor i `cc_server_core` som förnyar tokens vid 401
 - Alla fel mappas via `packages/cc_infra/lib/src/network/error_mapper.dart` → typade `AppException`-subklasser som definieras i `cc_domain`
 

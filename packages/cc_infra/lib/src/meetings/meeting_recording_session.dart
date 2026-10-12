@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
@@ -71,6 +72,7 @@ class MeetingRecordingService {
     required this._eventBus,
     required this._paths,
     this._onIdle,
+    this.onAudioPersisted,
   });
 
   final MeetingRepository _repository;
@@ -85,6 +87,10 @@ class MeetingRecordingService {
   /// Resolves the on-disk meeting audio directory (`<dataDir>/meetings/<id>/`)
   /// where each session retains its per-channel WAVs for diarization + playback.
   final CcPaths _paths;
+
+  /// Catalog retained WAV files once their headers and samples are complete.
+  final Future<void> Function(String workspaceId, String path)?
+  onAudioPersisted;
 
   static const Uuid _uuid = Uuid();
   final Map<String, _RecordingSession> _sessions = {};
@@ -203,6 +209,15 @@ class MeetingRecordingService {
       );
     }
     await session.drainAndClose();
+    final retained = await _repository.getById(workspaceId, meetingId);
+    if (retained?.audioPath case final String dir) {
+      for (final name in ['me.wav', 'them.wav']) {
+        final file = File(p.join(dir, name));
+        if (file.existsSync()) {
+          await onAudioPersisted?.call(workspaceId, file.path);
+        }
+      }
+    }
     if (_sessions.isEmpty) {
       _onIdle?.call();
     }

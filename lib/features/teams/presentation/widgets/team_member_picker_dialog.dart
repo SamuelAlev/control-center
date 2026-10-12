@@ -13,6 +13,7 @@ Future<List<String>?> showTeamMemberPickerDialog(
 }) {
   return showCcDialog<List<String>>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (dialogContext) => _MemberPicker(candidates: candidates),
   );
 }
@@ -90,16 +91,16 @@ class _MemberPickerState extends State<_MemberPicker> {
                                   Text(
                                     agent.name,
                                     style: CcTypography.body.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: tokens?.textPrimary,
-                                        ),
+                                      fontWeight: FontWeight.w600,
+                                      color: tokens?.textPrimary,
+                                    ),
                                   ),
                                   if (agent.title.isNotEmpty)
                                     Text(
                                       agent.title,
                                       style: CcTypography.caption.copyWith(
-                                            color: tokens?.textTertiary,
-                                          ),
+                                        color: tokens?.textTertiary,
+                                      ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                 ],

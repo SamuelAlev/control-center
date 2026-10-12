@@ -1,9 +1,15 @@
 ---
 title: Evaly a kvalita
-description: Sady eval, startovní sada založená v každém pracovním prostoru a kde se objeví v Observabilitě.
+description: Sady eval a kampaně skillů připnuté k revizím a jak vykládat jejich důkazy.
 slug: cs-CZ/prirucka/koncepty/evaly-a-kvalita
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observabilita → Kvalita** obsahuje sady eval pro jednu úlohu i párové kampaně
+skillů. Kampaň skillu měří balíček tak, jak ho používá konkrétní model a
+harness, ne kvalitu jeho Markdownu samotného.
+
+## Sady eval
 
 **Sada eval** je definice úlohy vázaná na pracovní prostor, která se spouští na
 agentovi: prompt, cílový agent a režim, volitelná příprava, volitelná fixture
@@ -18,7 +24,7 @@ Zakládání naslouchá `WorkspaceCreated` (`workspace.upsert` nebo
 `workspace.create`), přeskočí název, který už existuje, a starší pracovní
 prostory zpětně nedoplní.
 
-## Kde se objeví
+### Kde se objeví
 
 **Observabilita → Kvalita** (`/workspaces/<id>/observability`) vypíše každou
 sadu v pracovním prostoru.
@@ -27,10 +33,112 @@ Sady se vytvářejí, vypisují, upravují a mažou přes `evals.upsertSuite`,
 `evals.deleteSuite` a `evals.watchSuites`. Záložka Kvalita je seznam; ty
 operace jsou editor.
 
+## Kampaně skillů
+
+Kampaň porovnává dvě ramena za stejné úlohy a konfigurace spouštění. Kandidát
+chybí, je běžně dostupný, výslovně načtený, nebo se porovnává s dřívější revizí
+či pevným inventářem okolních skillů. Ty odpovídají na různé otázky; vynucené
+načtení je diagnostika, ne skóre pro běžné objevování.
+[Průvodce skilly](/cs-CZ/prirucka/navody/sprava-skillu/#vyhodnoť-skill)
+vysvětluje, jak zvolit porovnání a autorizovat běh s rozpočtem.
+
+Důkazy náleží přesnému **hashe celého balíčku**: `SKILL.md`, metadata, skripty,
+reference a assety. Server zachycuje naskenované neměnné balíčky a připíná sadu
+úloh, adaptér, identifikátor poskytovatele/nativního modelu, protokol, schémata
+nástrojů a okolní inventář. Nativní kampaně Claude navíc připínají spravovaný
+účet a pozorovanou verzi CLI. Úprava reference zneplatní aktuální důkazy, i když
+je `SKILL.md` nezměněný. Alias modelu zaznamenává, co bylo vyžádáno, ne neměnné
+váhy poskytovatele.
+
+Každý pokus dostane čerstvý kontext, domov a stav fixture. Párová ramena
+používají stejné zásady a podmínky úlohy kromě deklarované intervence skillu.
+Nepřítomnost cíle znamená, že metadata a soubory kandidáta nejsou dostupné, ne
+že byly odstraněny všechny pokyny na pozadí nebo skilly. Prompty úloh nesmí
+v porovnání běžného objevování kandidáta pojmenovat.
+
+Server vlastní autorizaci, spouštění, rozpočty a perzistenci pracovního prostoru.
+Klienti volí nastavení a vykreslují důkazy. Průběh přežije opětovná připojení;
+zrušení zachová dílčí výsledky a restart označí nedokončenou práci jako
+přerušenou, místo aby tiše opakoval placená volání. Tyto kampaně nedodávají
+samostatný kontrakt exekutoru pro libovolné sady eval.
+
+## Čti důkazy obezřetně
+
+- **O výsledku rozhoduje správnost.** Nezávislí typovaní ověřovatelé kontrolují
+  artefakty a výsledné chování, ne tvrzení agenta, že uspěl. Očekávané odpovědi
+  zůstávají mimo uzávěr kandidáta; generovaný kód se hodnotí v samostatně
+  izolované kopii.
+- **Načtení a užitečnost jsou různé věci.** Dostupnost, načtení těla/referencí
+  a pozorované použití skriptů vysvětlují spouštění. Přečtení souboru
+  nedokazuje, že model dodržel jeho pokyny; nepozorovatelný přístup zůstává
+  neznámý.
+- **Zachovej odpovídající výchozí stav.** Úspěšný běh kandidáta sám o sobě
+  neprokazuje přínos. Zahrň pokusy, kdy byl dostupný skill ignorován, neúspěšné
+  pokusy a jejich náklady; nenechávej si jen nejlepší opakování.
+- **Opakování nejsou nové úlohy.** Zprávy shlukují nejistotu podle úlohy. Malé
+  vzorky, chybějící pokrytí, posun identity a neznámé výdaje nemohou odůvodnit
+  doporučení k přijetí. Dokončená kampaň může být stále neprůkazná; nepodařené
+  prokázání zlepšení není důkazem ekvivalence ani regrese.
+- **Zkoumej jednotlivé regrese.** Souhrnné zisky nesmí skrýt poškozenou úlohu
+  nebo neautorizovaný vedlejší účinek. Bezpečnostní skeny, pozorování
+  bezpečnosti za běhu a užitečnost zůstávají oddělené; levnější spuštění nemůže
+  vykompenzovat chybějící důkazy o kvalitě nebo bezpečnosti.
+- **Neslučuj neslučitelné výsledky.** Jiný model, harness, zásady, fixture nebo
+  kombinace skillů je jiná konfigurace. Uchovávej důkazy o přenosu a složení
+  z odložené množiny odděleně od vývojových případů.
+
+Devět lokálně vytvořených pilotních korpusů obsahuje 108 položek úloh napříč
+užitečností, směrováním/bezpečností specifickou pro rodinu a odloženým
+přenosem/složením. Zvol rodinu odpovídající účelu skillu. Referenční řešení a
+známě špatné výstupy kontrolují ověřovatele; tyto fixtures nejsou reprodukcí
+veřejného benchmarku ani důkazem, že je nějaký nainstalovaný skill užitečný.
+Implementační smoke běhy se skriptovanými odpověďmi poskytovatele nejsou
+měřením kvality skillu živým modelem.
+
+## Limity spouštění a důkazů
+
+Podporovány jsou řízený **vestavěný harness** a **Claude Code**. Izolace a
+aktivní přihlašovací údaje musí projít před spuštěním. Vestavění poskytovatelé
+vyžadují dokumentovanou podporu nástrojů, limity tokenů a ceny; Codex OAuth
+autentizuje vlastní účet, místo aby vyžadoval samostatný API klíč OpenAI. Claude
+Code použije výchozí spravovaný účet, konkrétní ID modelu a vlastní report
+nákladů ekvivalentní API.
+
+Claude Code a Codex OAuth používají **prahovou hodnotu zastavení využití**:
+probíhající volání může rozpočet překročit, pak se další volání zastaví. Nejde o
+fakturované výdaje za předplatné ani o tvrdý strop fakturace. Poskytovatelé s API
+klíčem si drží konzervativní rezervace před voláním. Neznámý pozorovaný výdaj
+zastaví další volání u každého adaptéru; neúplné pokrytí zůstává dílčí nebo
+neprůkazné.
+
+Claude spouští svou nativní smyčku modelu v soukromém adresáři kontroleru, s
+vypnutými vestavěnými nástroji a okolními skilly. Jeho jedinými nástroji jsou
+autentizovaný můstek MCP patřící serveru do stejného izolovaného hosta, jakého
+používá vestavěný harness. Přihlašovací údaje zůstávají mimo tohoto hosta.
+Změněná identita CLI nebo plocha nástrojů pokus zneplatní, místo aby tiše
+vyměnila exekutory. Vyhodnocování flotily a Windows nejsou podporovány; úspěšná
+sonda Git workeru nebo echo promptu se nepočítá jako vyhodnocení.
+
+Izolace v macOS odmítá síť hosta a přístup k externímu systému souborů, blokuje
+odpojení procesů, omezuje CPU/soubory/výstup a uklízí vlastněné potomky, ale
+**nevynucuje tvrdou kvótu paměti**. Linux vyžaduje bubblewrap a uplatňuje limit
+adresního prostoru. Počáteční ověření izolace procvičilo macOS, ne Linux.
+Chybějící izolace nikdy nepadá zpět na shell hostitele. Přihlašovací údaje
+poskytovatele zůstávají na serveru, mimo nástroje hosta.
+
+Důkazy pokusů jsou redigované a omezené na 256 KiB; export je omezen na 16 MiB.
+Velké exporty zachovávají stručné souhrny výsledků/nákladů pro všechny přijaté
+pokusy a výslovně hlásí vynechaný nebo shrnutý obsah trasování. Ani export, ani
+zpráva neobsahuje úplný balíček pro přehrání soukromých zdrojů. Syntetické
+bezpečnostní kontroly neprokazují skutečnou odolnost proti exfiltraci, neruší
+karanténu ani necertifikují skill jako bezpečný.
+
 ## Související koncepty
 
 - [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): konfigurace, kterou sada
   připne
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): izolace a
+  hranice oprávnění
 - [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): ovladač autonomie
 - [Spravujte náklady a rozpočty](/cs-CZ/prirucka/navody/sprava-nakladu/): výdaje
   zaznamenané spolu s během

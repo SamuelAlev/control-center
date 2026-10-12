@@ -1,9 +1,16 @@
 ---
 title: Eval-uri și calitate
-description: Suitele eval, setul de pornire inserat în fiecare spațiu de lucru și unde apar în Observabilitate.
+description: Suitele eval și campaniile de skill-uri fixate pe revizii și cum să le interpretezi dovezile.
 slug: ro-RO/manual/concepte/eval-uri-si-calitate
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observabilitate → Calitate** conține atât suite eval pentru o singură sarcină,
+cât și campanii de skill-uri în perechi. O campanie de skill-uri măsoară un
+pachet așa cum este folosit de un anumit model și un anumit harness, nu calitatea
+Markdown-ului lui în sine.
+
+## Suite eval
 
 O **suită eval** este o definiție, la nivelul spațiului de lucru, a unei sarcini
 de rulat împotriva unui agent: un prompt, un agent țintă și un mod, o
@@ -18,7 +25,7 @@ dus-întors al unui tichet. Inițializarea ascultă `WorkspaceCreated`
 (`workspace.upsert` sau `workspace.create`), ignoră un nume care există deja și
 nu completează retroactiv spațiile de lucru mai vechi.
 
-## Unde apar
+### Unde apar
 
 **Observabilitate → Calitate** (`/workspaces/<id>/observability`) listează fiecare
 suită din spațiul de lucru.
@@ -27,10 +34,123 @@ Creează, listează, editează și șterge suite prin `evals.upsertSuite`,
 `evals.deleteSuite` și `evals.watchSuites`. Fila Calitate este lista;
 acele operațiuni sunt editorul.
 
+## Campanii de skill-uri
+
+O campanie compară două grupuri în cadrul aceleiași sarcini și configurații de
+execuție. Candidatul este absent, disponibil în mod normal, încărcat explicit sau
+comparat cu o revizie anterioară ori cu un inventar fix de skill-uri ambientale.
+Acestea răspund la întrebări diferite; încărcarea forțată este un diagnostic, nu
+un scor pentru descoperirea normală. [Ghidul skill-urilor](/ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri/#evaluează-un-skill)
+explică cum să alegi o comparație și să autorizezi o rulare cu buget.
+
+Dovezile aparțin unui **hash exact al întregului pachet**: `SKILL.md`, metadate,
+scripturi, referințe și resurse. Serverul capturează pachete imuabile scanate și
+fixează corpusul, adaptorul, identificatorul furnizorului/modelului nativ,
+protocolul, schemele instrumentelor și inventarul ambiental. Campaniile native
+Claude fixează de asemenea contul gestionat și versiunea observată a CLI.
+Editarea unei referințe invalidează dovezile curente chiar dacă `SKILL.md` a
+rămas neschimbat. Un alias
+de model înregistrează ce s-a cerut, nu ponderile imuabile ale furnizorului.
+
+Fiecare încercare primește context, home și stare de fixture proaspete. Grupurile
+în perechi folosesc aceeași politică și aceleași condiții de sarcină, cu excepția
+intervenției declarate asupra skill-ului. Ținta absentă înseamnă că metadatele și
+fișierele candidatului nu sunt disponibile, nu că toate instrucțiunile sau
+skill-urile de fundal au fost eliminate. Prompturile sarcinilor nu trebuie să
+numească candidatul într-o comparație de descoperire normală.
+
+Autorizarea, execuția, bugetele și persistența în spațiul de lucru aparțin
+serverului. Clienții selectează setările și afișează dovezile. Progresul
+supraviețuiește reconectărilor; anularea păstrează rezultatele parțiale, iar o
+repornire marchează munca neterminată ca întreruptă, în loc să repete în silență
+apeluri plătite. Aceste campanii nu furnizează contractul separat de executor
+pentru suite eval arbitrare.
+
+## Citește dovezile cu prudență
+
+- **Rezultatele decid corectitudinea.** Verificatori tipizați independenți
+  controlează artefactele și comportamentul rezultat, nu afirmația agentului că a
+  reușit. Răspunsurile așteptate rămân în afara incintei candidatului; codul
+  generat este notat într-o copie izolată separat.
+- **Încărcarea și utilitatea sunt lucruri diferite.** Disponibilitatea,
+  încărcarea corpului și a referințelor și folosirea observată a scripturilor
+  explică execuția. Citirea unui fișier nu dovedește că modelul i-a urmat
+  instrucțiunile; accesul neobservabil rămâne necunoscut.
+- **Păstrează linia de referință potrivită.** O rulare reușită a candidatului,
+  singură, nu stabilește un beneficiu. Include încercările în care un skill
+  disponibil a fost ignorat, încercările eșuate și costurile lor; nu păstra doar
+  cea mai bună reîncercare.
+- **Repetările nu sunt sarcini noi.** Rapoartele grupează incertitudinea pe
+  sarcină. Eșantioanele mici, acoperirea lipsă, deriva de identitate și
+  cheltuielile necunoscute nu pot justifica o recomandare de adoptare. O campanie
+  finalizată poate rămâne neconcludentă; faptul că nu arată o îmbunătățire nu
+  este dovadă de echivalență sau regresie.
+- **Inspectează regresiile individuale.** Câștigurile agregate nu trebuie să
+  ascundă o sarcină afectată sau un efect secundar neautorizat. Scanările de
+  securitate, observațiile de siguranță la rulare și utilitatea rămân separate;
+  o execuție mai ieftină nu poate compensa lipsa dovezilor de calitate sau
+  siguranță.
+- **Nu pune la un loc rezultate incompatibile.** Un alt model, harness, politică,
+  fixture sau combinație de skill-uri este o altă configurație. Ține dovezile de
+  transfer și de compoziție pe seturi ținute deoparte separate de cazurile de
+  dezvoltare.
+
+Cele nouă corpusuri pilot redactate local conțin 108 intrări de sarcini, acoperind
+utilitatea, rutarea/siguranța specifică familiei și transferul/compoziția pe
+seturi ținute deoparte. Alege o familie care se potrivește scopului skill-ului.
+Soluțiile de referință și ieșirile cunoscute ca rele verifică evaluatorii; aceste
+fixture-uri nu sunt o reproducere a unui benchmark public și nici dovada că vreun
+skill instalat este util. Rulările de fum de implementare, cu răspunsuri
+scriptate de la furnizor, nu sunt măsurători de calitate a skill-urilor pe modele
+reale.
+
+## Limite de execuție și de dovezi
+
+Sunt acceptate adaptoarele **harness încorporat** și **Claude Code**
+controlate. Izolarea și credențialele active trebuie să treacă înainte de
+execuție. Furnizorii încorporați necesită suport documentat de instrumente,
+limite de tokeni și prețuri; Codex OAuth își autentifică propriul cont, în loc
+să necesite o cheie API OpenAI separată. Claude Code folosește contul gestionat
+implicit, un ID concret de model și raportul său nativ de cost echivalent cu API.
+
+Claude Code și Codex OAuth folosesc un **prag de oprire a utilizării**: un apel
+în curs poate depăși bugetul, apoi apelurile ulterioare se opresc. Acesta nu
+este cheltuială facturată de abonament și nici un plafon strict de factură.
+Furnizorii cu chei API păstrează rezervări conservatoare înainte de apel.
+Cheltuielile observate necunoscute opresc apelurile ulterioare pentru fiecare
+adaptor; acoperirea incompletă rămâne parțială sau neconcludentă.
+
+Claude rulează bucla sa nativă de model într-un director de control privat, cu
+instrumentele încorporate și skill-urile ambientale dezactivate. Singurele sale
+instrumente sunt puntea MCP autentificată, deținută de server, către același
+invitat izolat folosit de harness-ul încorporat. Credențialele rămân în afara
+acelui invitat. O identitate CLI sau o suprafață de instrumente schimbată
+invalidează încercarea, în loc să schimbe în silență executorii. Evaluarea de
+flotă și Windows nu sunt acceptate; o sondă Git reușită a workerului sau un ecou
+de prompt nu contează drept evaluare.
+
+Izolarea pe macOS refuză rețeaua invitatului și accesul la sisteme de fișiere
+externe, blochează detașarea proceselor, delimitează CPU-ul, fișierele și ieșirea
+și curăță descendenții deținuți, dar **nu impune o cotă strictă de memorie**.
+Linux necesită bubblewrap și aplică o limită a spațiului de adrese. Validarea
+inițială a izolării a exercitat macOS, nu Linux. Izolarea lipsă nu recurge
+niciodată la un shell gazdă. Credențialele furnizorului rămân pe server, în afara
+instrumentelor invitate.
+
+Dovezile încercărilor sunt mascate și limitate la 256 KiB; un export este limitat
+la 16 MiB. Exporturile mari păstrează rezumate compacte de rezultat și cost
+pentru toate încercările admise și raportează explicit conținutul de urmărire
+omis sau rezumat. Nici un export, nici un raport nu conține un pachet complet de
+reluare a sursei private. Verificările sintetice de siguranță nu stabilesc
+rezistența reală la exfiltrare, nu anulează carantina și nu certifică un skill ca
+sigur.
+
 ## Concepte conexe
 
 - [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): configurația
   pe care o fixează o suită
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/): izolarea și
+  limitele de autoritate
 - [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): cadranul de autonomie
 - [Gestionează costurile și bugetele](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/): cheltuielile
   înregistrate alături de o rulare

@@ -7,6 +7,7 @@ import 'package:cc_rpc/src/client/remote_rpc_client.dart';
 import 'package:cc_rpc/src/client/rpc_snapshot_cache.dart';
 import 'package:cc_rpc/src/client/server_build.dart';
 import 'package:cc_rpc/src/resolver/connection_supervisor.dart';
+import 'package:cc_rpc/src/resources/resource_tunnel.dart';
 
 /// Stable [RemoteRpcClient] over [ServerConnectionSupervisor] across path
 /// failovers. In-flight [call]s are never replayed on death. [subscribe]
@@ -99,6 +100,10 @@ class ResilientRpcClient implements RemoteRpcClient {
       StreamController<JsonRpcNotification>.broadcast();
   final StreamController<RemoteChannelState> _connectionState =
       StreamController<RemoteChannelState>.broadcast();
+  late final RemoteResources _resources = _ResilientResources(_live);
+
+  @override
+  RemoteResources get resources => _resources;
 
   void _wireInner(RemoteRpcClient? client) {
     unawaited(_notificationsSub?.cancel());
@@ -648,6 +653,39 @@ class ResilientRpcClient implements RemoteRpcClient {
     await _connectionState.close();
     await _snapshotCache?.flush();
     await supervisor.close();
+  }
+}
+
+/// A new operation selects a live secure session; an active body or socket
+/// always remains attached to the session on which it was opened.
+final class _ResilientResources implements RemoteResources {
+  _ResilientResources(this._live);
+
+  final Future<RemoteRpcClient> Function() _live;
+
+  @override
+  Future<RemoteResourceResponse> request(
+    String method,
+    Uri uri, {
+    Map<String, List<String>> headers = const {},
+    Stream<List<int>>? body,
+  }) async {
+    final client = await _live();
+    return client.resources.request(method, uri, headers: headers, body: body);
+  }
+
+  @override
+  Future<RemoteResourceSocket> connectWebSocket(
+    Uri uri, {
+    Map<String, List<String>> headers = const {},
+    List<String> protocols = const [],
+  }) async {
+    final client = await _live();
+    return client.resources.connectWebSocket(
+      uri,
+      headers: headers,
+      protocols: protocols,
+    );
   }
 }
 

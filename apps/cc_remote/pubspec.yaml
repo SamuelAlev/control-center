@@ -44,15 +44,15 @@ dependencies:
   cc_markdown:
     path: ../../packages/cc_markdown
   # Routing. Workspace-pinned version.
-  go_router: ^18.0.1
+  go_router: ^18.0.2
   # State management (mirrors the desktop app).
-  flutter_riverpod: ^3.3.2
+  flutter_riverpod: ^3.4.3
   # Browser DOM/IndexedDB bindings (the pairing store + boot-fragment capture)
   # via `package:web` + `dart:js_interop`.
   web: ^1.1.1
   # Non-sensitive UI prefs only (e.g. last selected tab). The PSK and pairing
   # record live in IndexedDB, never here.
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
   # The bulk lane. An attached picture is POSTed to the host's `/blob` rather
   # than pushed through the RPC socket, whose inbound frames the server caps at
   # 256 KB and closes past — see `attachments.dart`.
@@ -71,7 +71,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  build_runner: ^2.15.2
+  build_runner: ^2.16.2
 
 flutter:
   uses-material-design: false

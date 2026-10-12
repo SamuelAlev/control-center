@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_host/cc_host.dart';
@@ -257,6 +259,46 @@ void main() {
       expect((res['result'] as Map)['data'], {'dropped': true});
     });
   });
+
+  test(
+    'a failed typed audit future cannot crash a successful mutation',
+    () async {
+      final audit = Completer<int>();
+      var revision = 0;
+      final d = RepoOpDispatcher(
+        registry: RepoOpRegistry([
+          RepoOp(
+            name: 'thing.update',
+            kind: RepoOpKind.mutate,
+            handler: (_) async => {'revision': ++revision},
+          ),
+        ]),
+        workspaceExists: (_) async => true,
+        resolveRole: (_, _) async => WorkspaceRole.member,
+        recordActivity:
+            ({
+              required workspaceId,
+              required userId,
+              required deviceId,
+              required action,
+              targetType,
+              targetId,
+              ip,
+              details,
+            }) => audit.future,
+      );
+
+      final response = await call(
+        d,
+        'thing.update',
+        args: {'workspace_id': 'ws-a'},
+      );
+      expect((response['result'] as Map)['data'], {'revision': 1});
+      audit.completeError(StateError('audit store unavailable'));
+      await Future<void>.delayed(Duration.zero);
+      expect(revision, 1);
+    },
+  );
 
   group('handler exceptions', () {
     RepoOpDispatcher throwing({RpcExceptionMapper? mapException}) => dispatcher(

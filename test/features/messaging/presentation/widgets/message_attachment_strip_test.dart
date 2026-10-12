@@ -81,10 +81,8 @@ void main() {
       expect(found.single.name, 'attachment');
     });
 
-    // The degraded case: an attachment too large to carry, or whose upload
-    // failed, is still recorded — by path. `isUploaded` is what separates a
-    // reference every reader can resolve from one that only works on the
-    // machine that sent it.
+    // Historic transcripts can contain path-only entries from before eager
+    // uploads; new local files must be catalog-backed before they are sent.
     test('distinguishes an uploaded reference from a local path', () {
       final message = _message({
         'attachments': [

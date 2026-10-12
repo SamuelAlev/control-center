@@ -2,6 +2,8 @@ import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 
 /// Current state of an agent execution.
 enum RunStatus {
@@ -127,10 +129,19 @@ class AgentRunLog {
     RetryMeta? retry,
     this.role = AgentRunRole.main,
     this.childCostCents = 0,
+    this.childCostMicros = 0,
     this.parentRunId,
     this.spawnToolCallId,
+    this.effort,
+    this.taskFamily,
+    this.nativeSessionId,
+    this.resumedNativeSession = false,
+    RunVerification? verification,
+    RunLatencyProfile? latency,
   }) : cost = cost ?? RunCost.zero,
-       retry = retry ?? const RetryMeta() {
+       retry = retry ?? const RetryMeta(),
+       verification = verification ?? RunVerification.none,
+       latency = latency ?? RunLatencyProfile.empty {
     if (agentId.isEmpty) {
       throw ArgumentError('AgentRunLog agentId must not be empty');
     }
@@ -239,9 +250,19 @@ class AgentRunLog {
 
   /// Cost in US cents rolled up from this run's subagent (child) runs, summed
   /// concurrency-safely as each child completes (see `SubagentCostPropagator`).
+  /// Rounded projection of [childCostMicros]; use that for arithmetic.
   /// `cost.estimatedCostCents + childCostCents` is this run's total spend
   /// including everything it delegated. Zero for leaf runs.
   final int childCostCents;
+
+  /// Exact cost in micro-USD rolled up from this run's child runs, the precise
+  /// companion to [childCostCents].
+  ///
+  /// A whole-cent child rollup rounds every sub-cent child to zero, so a parent
+  /// that delegated a hundred small subagent calls recorded a child total of
+  /// zero. Writers SHOULD accumulate this axis; [childCostCents] remains for
+  /// historical rows.
+  final int childCostMicros;
 
   /// Run id of the parent run that spawned this one as an ephemeral subagent
   /// (via the `task` tool). Null for top-level runs. Distinct from
@@ -258,9 +279,59 @@ class AgentRunLog {
   /// time instead would mis-link concurrent `task` calls.
   final String? spawnToolCallId;
 
+  /// Reasoning-effort setting the run actually executed at (`low`/`medium`/
+  /// `high`, or an adapter-specific level), when recorded.
+  ///
+  /// Null means UNKNOWN — a run from before effort was plumbed through, or one
+  /// with no effort configured. Latency percentiles group by this, and an
+  /// unknown run must form its own bucket rather than being folded into a real
+  /// level.
+  final String? effort;
+
+  /// Task-family label the run belongs to (the caller's classification), when
+  /// recorded. Null means unclassified.
+  final String? taskFamily;
+
+  /// The adapter's OWN session/thread id for this run, when it has one (e.g. a
+  /// Claude CLI session id).
+  ///
+  /// Recorded as DATA, not as a debug line: the evaluation's resume-vs-fresh
+  /// stratum is derived from stored runs, and lineage that exists only as prose
+  /// in a log file cannot be grouped or filtered.
+  final String? nativeSessionId;
+
+  /// Whether this run RESUMED [nativeSessionId] rather than starting a fresh
+  /// native session.
+  final bool resumedNativeSession;
+
+  /// Whether the run's output was independently verified.
+  ///
+  /// Distinct from [status]: a run can complete and still fail verification, or
+  /// complete with no verifier at all. Metrics that count "success" MUST say
+  /// which of the two they mean.
+  final RunVerification verification;
+
+  /// Observed stage offsets for this run (submitted → verifiedCompletion).
+  /// Absent stages are unknown, never zero.
+  final RunLatencyProfile latency;
+
+  /// True when the run finished successfully AND an independent verifier
+  /// accepted the output.
+  bool get isVerifiedSuccess =>
+      status == RunStatus.completed && verification.isVerifiedSuccess;
+
   /// Total cost in US cents for this run including propagated subagent cost.
   int get totalCostCentsWithChildren =>
       cost.estimatedCostCents + childCostCents;
+
+  /// Total cost in micro-USD for this run including propagated subagent cost.
+  ///
+  /// Prefers the exact [childCostMicros] axis and only widens the whole-cent
+  /// [childCostCents] for historical rows that never recorded micros — so a
+  /// parent's total never loses sub-cent child spend on the way through.
+  int get totalCostMicrosWithChildren =>
+      cost.preciseCostMicros +
+      (childCostMicros != 0 ? childCostMicros : childCostCents * 10000);
 
   /// True while the run is still active.
   bool get isRunning => status == RunStatus.running;
@@ -310,8 +381,15 @@ class AgentRunLog {
           retry == other.retry &&
           role == other.role &&
           childCostCents == other.childCostCents &&
+          childCostMicros == other.childCostMicros &&
           parentRunId == other.parentRunId &&
-          spawnToolCallId == other.spawnToolCallId;
+          spawnToolCallId == other.spawnToolCallId &&
+          effort == other.effort &&
+          taskFamily == other.taskFamily &&
+          nativeSessionId == other.nativeSessionId &&
+          resumedNativeSession == other.resumedNativeSession &&
+          verification == other.verification &&
+          latency == other.latency;
 
   @override
   int get hashCode => Object.hashAll([
@@ -345,8 +423,15 @@ class AgentRunLog {
     retry,
     role,
     childCostCents,
+    childCostMicros,
     parentRunId,
     spawnToolCallId,
+    effort,
+    taskFamily,
+    nativeSessionId,
+    resumedNativeSession,
+    verification,
+    latency,
   ]);
 
   /// Copy with.
@@ -394,8 +479,18 @@ class AgentRunLog {
     RetryMeta? retry,
     AgentRunRole? role,
     int? childCostCents,
+    int? childCostMicros,
     String? parentRunId,
     String? spawnToolCallId,
+    String? effort,
+    bool removeEffort = false,
+    String? taskFamily,
+    bool removeTaskFamily = false,
+    String? nativeSessionId,
+    bool removeNativeSessionId = false,
+    bool? resumedNativeSession,
+    RunVerification? verification,
+    RunLatencyProfile? latency,
   }) {
     return AgentRunLog(
       id: id ?? this.id,
@@ -434,8 +529,17 @@ class AgentRunLog {
       retry: retry ?? this.retry,
       role: role ?? this.role,
       childCostCents: childCostCents ?? this.childCostCents,
+      childCostMicros: childCostMicros ?? this.childCostMicros,
       parentRunId: parentRunId ?? this.parentRunId,
       spawnToolCallId: spawnToolCallId ?? this.spawnToolCallId,
+      effort: removeEffort ? null : (effort ?? this.effort),
+      taskFamily: removeTaskFamily ? null : (taskFamily ?? this.taskFamily),
+      nativeSessionId: removeNativeSessionId
+          ? null
+          : (nativeSessionId ?? this.nativeSessionId),
+      resumedNativeSession: resumedNativeSession ?? this.resumedNativeSession,
+      verification: verification ?? this.verification,
+      latency: latency ?? this.latency,
     );
   }
 }

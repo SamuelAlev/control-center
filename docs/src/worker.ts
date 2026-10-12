@@ -28,6 +28,9 @@
  * 7. The docs MCP server (/mcp, /.well-known/mcp), answering from the build's
  *    per-language page index so the content collection never enters this
  *    bundle.
+ * 8. A permanent trailing-slash redirect for successful extensionless HTML
+ *    pages. Missing pages, negotiated markdown and machine endpoints keep
+ *    their existing responses.
  *
  * Anything this file does not explicitly handle is delegated to the adapter
  * untouched.
@@ -100,6 +103,16 @@ const content = {
     }
 
     const response = await adapter.fetch(request, env, ctx);
+
+    if (METHODS[request.method] && !pathname.endsWith('/') &&
+        !pathname.slice(pathname.lastIndexOf('/') + 1).includes('.') &&
+        response.status === 200 && (response.headers.get('Content-Type') ?? '').includes('text/html')) {
+      await response.body?.cancel();
+      return new Response(null, {
+        status: 301,
+        headers: { Location: pathname + '/' + url.search, Vary: 'Accept' },
+      });
+    }
 
     if (response.status === 404 && METHODS[request.method]) {
       // JSON envelope for API paths and JSON clients…

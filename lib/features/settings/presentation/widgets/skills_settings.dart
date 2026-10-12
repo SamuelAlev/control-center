@@ -12,6 +12,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/skills/skill_evaluation_panel.dart';
 import 'package:control_center/features/settings/providers/skill_security_providers.dart';
 import 'package:control_center/features/settings/providers/skill_source_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -34,6 +35,7 @@ class SkillInfo {
     required this.name,
     required this.content,
     required this.description,
+    this.computedHash = '',
     this.lockState,
     this.origin,
     this.trustTier,
@@ -51,6 +53,8 @@ class SkillInfo {
 
   /// Skill description extracted from YAML front-matter.
   final String description;
+  /// Exact current package hash supplied by the catalog; unavailable on legacy hosts.
+  final String computedHash;
 
   /// How the skill relates to `skills-lock.json` (null on the legacy path).
   final InstalledSkillLockState? lockState;
@@ -94,6 +98,7 @@ final skillListProvider = FutureProvider.family<List<SkillInfo>, String>((
         if (d.content != null)
           SkillInfo(
             name: d.slug,
+            computedHash: d.computedHash,
             content: d.content!,
             description: extractYamlField(d.content!, 'description') ?? '',
             lockState: d.lockState,
@@ -706,6 +711,9 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
                         ? _SkillEditorContent(
                             isNew: _isNew,
                             selectedSkill: _selectedSkill,
+                            currentHash: skills.where((s) => s.name == _selectedSkill)
+                                .firstOrNull?.computedHash ?? '',
+                            availableSkills: [for (final s in skills) s.name],
                             nameCtl: _nameCtl,
                             descCtl: _descCtl,
                             bodyCtl: _bodyCtl,
@@ -932,6 +940,8 @@ class _SkillEditorContent extends ConsumerWidget {
     required this.isNew,
     required this.selectedSkill,
     required this.nameCtl,
+    required this.currentHash,
+    required this.availableSkills,
     required this.descCtl,
     required this.bodyCtl,
     required this.attachedAgentIds,
@@ -947,6 +957,8 @@ class _SkillEditorContent extends ConsumerWidget {
   final bool isNew;
   final String? selectedSkill;
   final TextEditingController nameCtl;
+  final String currentHash;
+  final List<String> availableSkills;
   final TextEditingController descCtl;
   final TextEditingController bodyCtl;
   final Set<String> attachedAgentIds;
@@ -1113,6 +1125,10 @@ class _SkillEditorContent extends ConsumerWidget {
               ],
             ),
           ],
+          if (!isNew && selectedSkill != null && workspaceId != null)
+            SkillEvaluationPanel(workspaceId: workspaceId,
+              slug: selectedSkill!, currentHash: currentHash,
+              availableSkills: availableSkills, dirty: dirty),
         ],
       ),
     );

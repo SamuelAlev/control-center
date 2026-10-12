@@ -27,7 +27,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/cached_pr_review_repository.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
@@ -38,9 +38,9 @@ import 'helpers/test_database.dart';
 // Fake ReviewDao — same pattern
 // FakeGitHubPrClient — in-memory PR client
 class FakeGitHubPrClient extends GitHubPrClient {
-  FakeGitHubPrClient() : super(_fakeDio);
+  FakeGitHubPrClient() : super(_fakeHttpClient);
 
-  static final _fakeDio = _NullDio();
+  static final _fakeHttpClient = _NullHttpClient();
 
   final Map<String, GitHubPullRequest> pullRequests = {};
   final Map<String, String> diffs = {};
@@ -55,10 +55,9 @@ class FakeGitHubPrClient extends GitHubPrClient {
   /// Set to cause [getPullRequest] to throw.
   Object? getPullRequestError;
 
-  /// Set to intercept [getPullRequest] with custom (e.g. blocking) behaviour —
-  /// used to hold a request in-flight while the consumer cancels, reproducing
-  /// the navigate-away race. Receives the [CancelToken] so it can mirror dio
-  /// and abort on cancellation. Takes precedence over the canned map and error.
+  /// Intercepts [getPullRequest] with custom behavior, such as holding a request
+  /// in flight while the consumer cancels. Receives its [CancelToken] and takes
+  /// precedence over the canned map and error.
   Future<GitHubPullRequest?> Function(CancelToken? cancelToken)?
   getPullRequestHook;
   Object? diffError;
@@ -222,9 +221,9 @@ class FakeGitHubPrClient extends GitHubPrClient {
 
 // FakeGitHubContentClient — minimal implementation
 class FakeGitHubContentClient extends GitHubContentClient {
-  FakeGitHubContentClient() : super(_fakeDio);
+  FakeGitHubContentClient() : super(_fakeHttpClient);
 
-  static final _fakeDio = _NullDio();
+  static final _fakeHttpClient = _NullHttpClient();
 
   final Map<String, String> fileContents = {};
 
@@ -259,12 +258,12 @@ class FakeGitHubContentClient extends GitHubContentClient {
 }
 
 /// GraphQL surface whose review-reaction listing is set per test. Everything
-/// else is left to the real client (over a null Dio — reaching any other
+/// else is left to the real client (over a null HTTP client — reaching any other
 /// method is a test bug).
 class StubGraphqlClient extends GitHubGraphQLClient {
-  StubGraphqlClient() : super(_nullDio());
+  StubGraphqlClient() : super(_nullHttpClient());
 
-  static Dio _nullDio() => _NullDio();
+  static RhttpClient _nullHttpClient() => _NullHttpClient();
 
   List<GitHubReviewReactionSet> reviewReactions = const [];
 
@@ -776,8 +775,9 @@ class FakePrReviewRepository implements PrReviewRepository {
   Future<List<PrUser>> listSuggestedReviewers(int prNumber) async => [];
 }
 
-// _NullDio — Dio that never gets called; all methods are overridden
-class _NullDio implements Dio {
+// _NullHttpClient — an rhttp client that never gets called; all methods are
+// overridden
+class _NullHttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -2245,7 +2245,7 @@ void main() {
   //
   // Navigating between PRs (or pressing back mid-load) tears down the
   // autoDispose stream, which fires the CancelToken and makes any in-flight
-  // GitHub request throw a dio cancellation. That cancellation must NEVER
+  // GitHub request throw a cancellation exception. That cancellation must NEVER
   // escape the SWR generators as an error: in the server's root isolate an
   // unhandled error is fatal and the abrupt VM teardown then races the drift
   // background isolate's sqlite finalizers into a `sqlite3_finalize` segfault.
@@ -2259,9 +2259,8 @@ void main() {
         '"head_sha":"abc123","head_ref":"f","base_sha":"base123","base_ref":"m",'
         '"requested_reviewers":[],"assignees":[]}';
 
-    DioException cancelException() => DioException(
-      requestOptions: RequestOptions(path: '/pulls/42'),
-      type: DioExceptionType.cancel,
+    RhttpCancelException cancelException() => RhttpCancelException(
+      HttpRequest(url: 'https://api.github.com/repos/o/r/pulls/42'),
     );
 
     test('watchDiff swallows a cancellation in the freshness probe', () async {
@@ -2272,7 +2271,7 @@ void main() {
 
       final repo = _makeRepo(db: db, apiClient: apiClient);
 
-      // Before the fix this threw the DioException out of the stream; now the
+      // Before the fix this threw the cancellation out of the stream; now the
       // cancellation is swallowed and only the cached diff is yielded.
       final results = await repo.watchDiff(42).toList();
       expect(results, ['cached diff']);
@@ -2285,15 +2284,17 @@ void main() {
         await db.cacheDao.put('ws1', 'prDetail', 'o/r#42', prDetailJson);
 
         // Hold the freshness probe in-flight until the subscription is
-        // cancelled, then abort exactly as dio does — wait on the token, throw
-        // a cancellation. This is the exact ordering that crashed the server:
-        // the error is thrown into an already-cancelled generator.
+        // cancelled, then abort the way an rhttp request does once its
+        // CancelToken fires — it completes with an [RhttpCancelException].
+        // This is the exact ordering that crashed the server: the error is
+        // thrown into an already-cancelled generator.
         final probeStarted = Completer<void>();
-        mockPr.getPullRequestHook = (cancelToken) async {
+        final probeAborted = Completer<void>();
+        mockPr.getPullRequestHook = (_) async {
           if (!probeStarted.isCompleted) {
             probeStarted.complete();
           }
-          await cancelToken?.whenCancel;
+          await probeAborted.future;
           throw cancelException();
         };
 
@@ -2302,8 +2303,10 @@ void main() {
         final zoneErrors = <Object>[];
         await runZonedGuarded(() async {
           final sub = repo.watchDiff(42).listen((_) {});
-          await probeStarted.future; // probe is now suspended on the token
-          await sub.cancel(); // navigate away → CancelToken.cancel() → abort
+          await probeStarted.future; // probe is now in flight
+          final cancelled = sub.cancel(); // navigate away → aborts the token
+          probeAborted.complete(); // the in-flight probe now fails, cancelled
+          await cancelled;
           await Future<void>.delayed(Duration.zero);
         }, (error, stack) => zoneErrors.add(error));
 

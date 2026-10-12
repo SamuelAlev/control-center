@@ -7,27 +7,32 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/task_lifecycle_events.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
+import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
-import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart'
+    as domain_purpose;
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/capability_preamble.dart';
-import 'package:cc_domain/features/dispatch/domain/services/harness_cost_calculator.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
+    show AgentPromptParts, DeliveredPromptContext;
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
@@ -52,6 +57,7 @@ import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
+import 'package:cc_infra/src/harness/harness_run_accounting.dart';
 import 'package:cc_infra/src/harness/harness_system_prompt.dart';
 import 'package:cc_infra/src/harness/harness_tool_registry_builder.dart';
 import 'package:cc_infra/src/harness/harness_tool_surface.dart';
@@ -59,6 +65,7 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/messaging/prompt_attachments.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
+import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
 import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
@@ -100,6 +107,9 @@ class DispatchSession implements SteeringSessionView {
     required this.cliName,
     required this.prompt,
     this.userText,
+    this.promptParts,
+    this.claudeResumeReset = false,
+    DateTime? runStartedAt,
     this.promptImageRefs = const [],
     required this.agentDirHostPath,
     required this.modelId,
@@ -129,7 +139,7 @@ class DispatchSession implements SteeringSessionView {
     this.onHarnessCredentialExhausted,
     this.costCapCents,
     this.resolveBinary = resolveBinaryPath,
-  });
+  }) : runStartedAt = runStartedAt ?? DateTime.now();
 
   /// Fired once per run, the moment this session's steering queue becomes
   /// drainable: at the top of [_runHarness], or once a `claude -p` run's stdin
@@ -196,6 +206,38 @@ class DispatchSession implements SteeringSessionView {
   /// Built-in slash commands are parsed from this field; null falls back to
   /// [prompt] for callers that do no layering.
   final String? userText;
+
+  /// The structured prompt this dispatch was prepared from: standing brief,
+  /// per-turn context and the conversation window, each with a revision
+  /// fingerprint.
+  ///
+  /// When — and only when — a persisted native Claude session exists whose
+  /// scope matches this run, the session resumes it with `--resume <id>` and
+  /// sends the delta built by [AgentPromptParts.deltaPromptFor] against the
+  /// conversation revision THAT session has already been delivered: the new
+  /// per-turn context, the user's message, and the conversation window again if
+  /// it changed while this session was parked. With no matching session (or no
+  /// cursor to trust) the full [prompt] is sent instead, so context can never be
+  /// lost on a first turn or after a fork.
+  ///
+  /// Null means never resume — the pre-resume behaviour, byte for byte.
+  final AgentPromptParts? promptParts;
+
+  /// When the RUN started, shared by every runner.
+  ///
+  /// The zero for offset-based stage timings, and the same instant the run log
+  /// persists as `startedAt` — so an adapter that only launches after a
+  /// directory-lock wait reports latency against the run's beginning rather
+  /// than restarting the clock. Initialized once, here, so nothing can move it.
+  final DateTime runStartedAt;
+
+  /// Drops any persisted native session for this scope before deciding whether
+  /// to resume, so this dispatch starts (and then records) a fresh native
+  /// session. This is the explicit RESET/FORK switch: a new conversation
+  /// already forks by scope, but a caller that wants a fresh session inside
+  /// the same conversation asks for it here rather than silently inheriting
+  /// one.
+  final bool claudeResumeReset;
 
   /// Host-side path to the agent's working directory.
   final String agentDirHostPath;
@@ -424,6 +466,77 @@ class DispatchSession implements SteeringSessionView {
   /// Whether a microtask is already due to drain the steering queue into
   /// [_claudeStdin], so a burst of pushes is written in one pass.
   bool _claudeSteeringPumpScheduled = false;
+
+  /// Cumulative-accounting ledger for the active `claude -p` call.
+  ///
+  /// `claude` reports per-turn main-loop `usage` (additive) alongside a
+  /// CUMULATIVE `total_cost_usd` and `modelUsage`; this delta's the cumulative
+  /// halves so a queued follow-up turn — or a resumed session, whose totals
+  /// include the prior spend — is never counted twice. Seeded from the
+  /// persisted session record only when the CLI will restore those totals.
+  ClaudeAccountingLedger? _claudeLedger;
+
+  /// THIS dispatch's spend, summed from turn deltas.
+  ///
+  /// The run-level `runCumulative` event is built from this, never from the
+  /// native session's cumulative counters: those include earlier dispatches
+  /// (inflating the run) and restart at a reset or an account switch (losing
+  /// the attempts already made).
+  ClaudeDispatchTotals _claudeDispatchTotals = ClaudeDispatchTotals();
+
+  /// The delta prompt this dispatch sends when it resumes, or null when it does
+  /// not resume (the full prompt is sent then).
+  String? _claudeDeltaPrompt;
+
+  /// The capabilities the resolved CLI advertised for this run, kept so the
+  /// persistence decision (does this build restore session totals?) uses the
+  /// same probe result that governed the argv.
+  ClaudeCliCapabilities? _claudeCapabilities;
+
+  /// The native session this scope loaded, when the run resumed one. Held so
+  /// the record is re-saved with the CLI's authoritative id after `init`.
+  ClaudeNativeSessionRecord? _claudeResumeRecord;
+
+  /// The native session id the CLI reports for the current call — `init`'s
+  /// `session_id`, refreshed by any later result (a `/clear` mints a new one).
+  /// This is what a later turn resumes.
+  String? _claudeNativeSessionId;
+
+  /// The native session id this run actually launched with (`--resume`), or
+  /// null when it started fresh. Read by the tests and the diagnostics.
+  String? _claudeResumeId;
+
+  /// Storage key of the current run's scope, and the launch policy it was
+  /// fingerprinted with. Together they are the record coordinates.
+  String? _claudeScopeKey;
+  String? _claudePolicyKey;
+
+  /// Startup metadata parsed from `system/init` (serving model, tool surface,
+  /// MCP status/errors, capabilities), when the CLI reported it.
+  ClaudeInitMetadata? _claudeInit;
+
+  /// When the active attempt's process was launched, for separating startup +
+  /// MCP discovery time from model latency.
+  DateTime? _claudeAttemptStartedAt;
+
+  /// Whether the attempt has seen its first structured stdout line yet, and
+  /// whether it has produced a model delta / its first useful work (assistant
+  /// text or a tool call) — the three observable latency boundaries this
+  /// adapter can honestly report (it never invents a provider TTFB the CLI
+  /// hides).
+  bool _claudeSawFirstStdout = false;
+  bool _claudeSawFirstModelDelta = false;
+  bool _claudeSawFirstUseful = false;
+
+  /// Whether this run was launched with an MCP config, so a session that came
+  /// back without any `mcp__*` tool is a lost capability rather than the
+  /// expected shape of a config-less run.
+  bool _claudeMcpExpected = false;
+
+  /// Set while the run is executing on a fallback account: the scope record
+  /// names the FIRST account's config directory, so a session id learned on
+  /// another account must not be written under it.
+  bool _claudePersistDisabled = false;
 
   /// Closes any Claude subagent still open: its parent process is gone, so
   /// its spawn call will never return.
@@ -703,9 +816,62 @@ class DispatchSession implements SteeringSessionView {
       if (!m.readOnly && m.hostPath.isNotEmpty) m.hostPath,
   ];
 
+  /// The space root this session's cwd is an overlay of, or null when the cwd
+  /// is not a provisioner overlay (fallback/oneshot runs, where the cwd is the
+  /// agent's own durable dir).
+  ///
+  /// Two corroborations, neither of them a path the agent can name: the cwd
+  /// parses as `<root>/agents/<overlay>` ([spaceRootForOverlay], the layout the
+  /// provisioner creates) AND `<root>/repos` exists ([_reposDir], the same
+  /// existence check [_bindMounts] mounts on).
+  String? get _spaceRoot {
+    final reposDir = _reposDir;
+    if (reposDir == null) {
+      return null;
+    }
+    final root = p.dirname(reposDir);
+    return spaceRootForOverlay(agentDirHostPath) == root ? root : null;
+  }
+
+  /// Server-created disposable trees whose exec authority is implicit — see
+  /// `SandboxExecGrantService.approvedRoots`.
+  ///
+  /// A grant keyed on the per-conversation overlay path could never be reused:
+  /// every new conversation is a new path, so the operator was asked again
+  /// about a copy the server had just made for that run. The space root covers
+  /// the overlay AND the shared worktrees, and empty on the fallback path keeps
+  /// the agent's durable dir approval-gated, as it always was.
+  ///
+  /// A root that touches a protected path — the workspace's ORIGINAL repo
+  /// checkouts — is never implicit: nothing about the disposable-copy
+  /// provenance holds for a tree that overlaps a real source mount, so that
+  /// run falls back to asking.
+  Future<List<String>> _managedExecGrantRoots() async {
+    final root = _spaceRoot;
+    if (root == null) {
+      return const [];
+    }
+    for (final path in await _protectedPaths()) {
+      if (path.isEmpty) {
+        continue;
+      }
+      if (path == root ||
+          path.startsWith('$root/') ||
+          root.startsWith('$path/')) {
+        return const [];
+      }
+    }
+    return [root];
+  }
+
   /// Resolves the operator-approved exec roots for this session, asking once
   /// per undecided tree. Returns empty when no grant service is wired, which
   /// leaves the exec block fully closed.
+  ///
+  /// Also the harness `bash` tool's resolver (per command, so an answer lands
+  /// on the next one): the tool's own cwd is deliberately NOT the candidate —
+  /// it is a subdirectory of these roots, and naming it would make each `cd` a
+  /// fresh unknown tree and re-ask on it.
   Future<List<String>> _resolveExecGrantRoots(String wsId) async {
     final service = deps.execGrantService;
     if (service == null || wsId.isEmpty) {
@@ -715,6 +881,7 @@ class DispatchSession implements SteeringSessionView {
       return await service.approvedRoots(
         workspaceId: wsId,
         candidateRoots: _execGrantCandidateRoots(),
+        managedRoots: await _managedExecGrantRoots(),
         spaceId: spaceId,
       );
     } on Object catch (e) {
@@ -1150,12 +1317,15 @@ class DispatchSession implements SteeringSessionView {
       networkEnabled: _networkEnabled,
       loopbackPorts: _gatewayLoopbackPorts,
       env: env,
+      toolOutputStore: deps.toolOutputStore,
       workspaceId: workspaceId,
       agentId: agentId,
       conversationId: conversationId,
       sandboxManager: deps.sandboxManager,
       confirmationPort: deps.confirmationPort,
-      execGrantService: deps.execGrantService,
+      // The SAME resolution the CLI profile uses, so both adapters get the
+      // same scoped exec roots — and the tool's own cwd never enters into it.
+      execGrantRootsResolver: () => _resolveExecGrantRoots(workspaceId ?? ''),
       // The operator's own `commandPrefix` rules reach the bash gate through
       // this — before it, they were stored, resolvable, editable in the
       // what-if probe, and never consulted at runtime.
@@ -1822,6 +1992,7 @@ class DispatchSession implements SteeringSessionView {
         workspaceId: wsId,
         deniedPath: target,
         candidateRoots: _execGrantCandidateRoots(),
+        managedRoots: await _managedExecGrantRoots(),
         spaceId: spaceId,
       );
       if (granted != null) {
@@ -1913,6 +2084,9 @@ class DispatchSession implements SteeringSessionView {
     }
     final claudeParser = _claudeParser;
     if (claudeParser != null) {
+      // The first stdout byte of this attempt: the one transport boundary the
+      // adapter can honestly time (the CLI hides the provider request).
+      _noteClaudeFirstStdout();
       claudeParser.process(json);
       return;
     }
@@ -1993,14 +2167,15 @@ class DispatchSession implements SteeringSessionView {
     }
     unawaited(() async {
       try {
-        final existing = await repo.getById(ws, id);
-        if (existing == null) {
-          _failRun('Run log $id missing when PID $forkedPid arrived');
-          return;
-        }
-        await repo.upsert(
-          existing.copyWith(pid: forkedPid, status: RunStatus.running),
+        final updated = await repo.updateRuntime(
+          ws,
+          id,
+          pid: forkedPid,
+          markRunning: true,
         );
+        if (!updated) {
+          _failRun('Run log $id missing when PID $forkedPid arrived');
+        }
       } on Object catch (e, st) {
         CcInfraLog.error(
           'DispatchSession: Failed to persist PID $forkedPid for $id',
@@ -2030,16 +2205,7 @@ class DispatchSession implements SteeringSessionView {
     }
     unawaited(() async {
       try {
-        final existing = await repo.getById(ws, id);
-        // Never resurrect a row that already reached a terminal state (a stop
-        // that landed during startup) and never clobber a status something else
-        // has already advanced.
-        if (existing == null ||
-            existing.completedAt != null ||
-            existing.status != RunStatus.pending) {
-          return;
-        }
-        await repo.upsert(existing.copyWith(status: RunStatus.running));
+        await repo.updateRuntime(ws, id, markRunning: true);
       } on Object catch (e, st) {
         // Best-effort: a lost transition only mislabels the dot, so it must not
         // fail the run the way a lost PID does.
@@ -2061,12 +2227,9 @@ class DispatchSession implements SteeringSessionView {
     }
     unawaited(() async {
       try {
-        final existing = await repo.getById(ws, id);
-        if (existing == null) {
+        if (!await repo.updateRuntime(ws, id, logPath: path)) {
           _failRun('Run log $id missing when log path arrived');
-          return;
         }
-        await repo.upsert(existing.copyWith(logPath: path));
       } on Object catch (e, st) {
         CcInfraLog.error(
           'DispatchSession: Failed to persist log path $path for $id',
@@ -2100,6 +2263,7 @@ class DispatchSession implements SteeringSessionView {
     required String systemPrompt,
     List<String> deferredToolNames = const [],
     int toolSchemaTokens = 0,
+    String? effort,
   }) {
     final id = runLogId;
     final repo = deps.runLogRepo;
@@ -2113,6 +2277,7 @@ class DispatchSession implements SteeringSessionView {
       'mode': mode,
       'model': model,
       'adapter': adapter,
+      'effort': effort ?? 'default',
       'toolCount': toolNames.length,
       'tools': toolNames,
       'deferredToolCount': deferredToolNames.length,
@@ -2125,11 +2290,14 @@ class DispatchSession implements SteeringSessionView {
     });
     unawaited(() async {
       try {
-        final existing = await repo.getById(ws, id);
-        if (existing == null) {
-          return;
-        }
-        await repo.upsert(existing.copyWith(contextSnapshotJson: snapshot));
+        await repo.updateRuntime(
+          ws,
+          id,
+          contextSnapshotJson: snapshot,
+          modelId: model,
+          effort: effort ?? 'default',
+          taskFamily: mode,
+        );
       } on Object catch (e, st) {
         // Diagnostics must never take the run down with them.
         CcInfraLog.error(
@@ -2153,12 +2321,13 @@ class DispatchSession implements SteeringSessionView {
         try {
           final existing = await repo.getById(ws, id);
           if (existing != null && existing.completedAt == null) {
-            await repo.upsert(
+            await repo.completeIfActive(
               existing.copyWith(
                 status: RunStatus.error,
                 summary: message,
                 completedAt: DateTime.now(),
               ),
+              writeCost: false,
             );
           }
         } on Object catch (e, st) {
@@ -2301,11 +2470,7 @@ class DispatchSession implements SteeringSessionView {
     _pendingLastOutput = null;
     _lastOutputFlushInFlight = true;
     try {
-      final existing = await repo.getById(ws, id);
-      if (existing == null) {
-        return;
-      }
-      await repo.upsert(existing.copyWith(lastOutputAt: stamp));
+      await repo.updateRuntime(ws, id, lastOutputAt: stamp);
     } catch (_) {
     } finally {
       _lastOutputFlushInFlight = false;
@@ -2366,16 +2531,12 @@ class DispatchSession implements SteeringSessionView {
       return;
     }
     try {
-      final existing = await repo.getById(ws, id);
-      if (existing == null) {
-        return;
-      }
-      await repo.upsert(
-        existing.copyWith(
-          liveness: RunLiveness.empty,
-          errorFamily: RunErrorFamily.silentRun,
-          summary: contract.unmetSummary,
-        ),
+      await repo.updateRuntime(
+        ws,
+        id,
+        liveness: RunLiveness.empty,
+        errorFamily: RunErrorFamily.silentRun,
+        summary: contract.unmetSummary,
       );
     } on Object catch (e) {
       CcInfraLog.warning('Failed to mark run $id contract-unmet: $e');

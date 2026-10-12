@@ -24,13 +24,10 @@ extension _CodeServerMethods on LocalRpcServer {
       return;
     }
 
-    if (rest == '/__cc_open__') {
-      await _handleCodeServerOpenReport(request, res, sid);
-      return;
-    }
-
-    if (rest == '/__cc_commands__') {
-      await _handleCodeServerCommandStream(res, sid);
+    if (rest == '/__cc_open__' || rest == '/__cc_commands__') {
+      // These belong exclusively to the server-launched extension's private
+      // bridge, never to a client-visible proxy capability.
+      await _closeProxy(res, HttpStatus.forbidden);
       return;
     }
 
@@ -128,26 +125,55 @@ extension _CodeServerMethods on LocalRpcServer {
     res.headers
       ..set(HttpHeaders.contentTypeHeader, 'text/event-stream')
       ..set(HttpHeaders.cacheControlHeader, 'no-cache')
-      ..set('Connection', 'keep-alive')
-      ..set('Access-Control-Allow-Origin', '*');
-    final sub = resolver(sid).listen((cmd) {
-      try {
-        res.write('data: ${jsonEncode(cmd)}\n\n');
-      } catch (_) {
-        // Socket gone — the done handler / error path tears down.
-      }
-    }, onError: (_) {});
+      ..chunkedTransferEncoding = false;
+    res.persistentConnection = false;
+    // HttpResponse.done only settles when the response producer finishes.
+    // Own this close-delimited SSE socket so an idle extension disconnect
+    // immediately cancels its command subscription instead of leaking it.
+    final socket = await res.detachSocket();
+    if (_server == null) {
+      socket.destroy();
+      return;
+    }
+    _editorCommandSockets.add(socket);
+    final done = Completer<void>();
+    void finish() {
+      if (!done.isCompleted) done.complete();
+    }
+
+    final incoming = socket.listen(
+      (_) {},
+      onDone: finish,
+      onError: (Object _) => finish(),
+      cancelOnError: true,
+    );
+    Future<void> flush() =>
+        socket.flush().then<void>((_) {}, onError: (Object _) => finish());
+    late final StreamSubscription<Map<String, dynamic>> commands;
     try {
-      await res.done;
-    } catch (_) {
-      // Client hung up — fall through to cancel + close.
-    } finally {
-      await sub.cancel();
+      socket.write(': connected\n\n');
+      await flush();
+      commands = resolver(sid).listen(
+        (command) {
+          try {
+            socket.write('data: ${jsonEncode(command)}\n\n');
+            commands.pause(flush());
+          } catch (_) {
+            finish();
+          }
+        },
+        onDone: finish,
+        onError: (Object _) => finish(),
+      );
       try {
-        await res.close();
-      } catch (_) {
-        // Already closed.
+        await done.future;
+      } finally {
+        await commands.cancel();
       }
+    } finally {
+      _editorCommandSockets.remove(socket);
+      socket.destroy();
+      await incoming.cancel();
     }
   }
 
@@ -160,10 +186,21 @@ extension _CodeServerMethods on LocalRpcServer {
       ..connectionTimeout = const Duration(seconds: 10)
       ..autoUncompress = false
       ..userAgent = 'control-center-vscode-proxy';
+    final transfer = _resourceTransfers[request];
+    if (transfer != null) {
+      unawaited(
+        transfer.cancelled.then((_) {
+          if (transfer.isCancelled) client.close(force: true);
+        }),
+      );
+    }
     try {
       final upstreamReq = await client.openUrl(request.method, target);
+      upstreamReq.followRedirects = false;
       request.headers.forEach((name, values) {
-        if (_isHopByHopHeader(name) || name == 'host') {
+        if (_isHopByHopHeader(name) ||
+            name == 'host' ||
+            name.startsWith('x-cc-')) {
           return;
         }
         upstreamReq.headers.set(name, values.join(', '));
@@ -173,9 +210,8 @@ extension _CodeServerMethods on LocalRpcServer {
         'X-Forwarded-Host',
         request.headers.value('host') ?? '',
       );
-      await request
-          .cast<List<int>>()
-          .pipe(upstreamReq)
+      await upstreamReq
+          .addStream(request.cast<List<int>>())
           .timeout(const Duration(seconds: 30));
       final upstream = await upstreamReq.close().timeout(
         const Duration(seconds: 30),
@@ -196,8 +232,12 @@ extension _CodeServerMethods on LocalRpcServer {
         res.headers.set(name, values.join(', '));
       });
       res.headers.removeAll('x-frame-options');
-      await upstream.cast<List<int>>().pipe(res);
+      await _withResourceCancellation(
+        request,
+        upstream.cast<List<int>>(),
+      ).pipe(res);
     } catch (e) {
+      if (transfer?.isCancelled ?? false) return;
       _w('VS Code proxy HTTP forward failed for $target: $e');
       await _closeProxy(res, HttpStatus.badGateway);
     } finally {
@@ -216,33 +256,48 @@ extension _CodeServerMethods on LocalRpcServer {
     WebSocket? clientSocket;
     WebSocket? upstreamSocket;
     try {
-      clientSocket = await WebSocketTransformer.upgrade(request);
       final offered = request.headers.value('sec-websocket-protocol');
-      final upstreamUri = wsTarget.toString();
-      upstreamSocket = offered == null
-          ? await WebSocket.connect(upstreamUri)
-          : await WebSocket.connect(
-              upstreamUri,
-              protocols: offered
-                  .split(',')
-                  .map((e) => e.trim())
-                  .where((e) => e.isNotEmpty)
-                  .toList(),
-            );
-      clientSocket.listen(
-        upstreamSocket.add,
-        onDone: () => upstreamSocket?.close(),
-        onError: (Object e) => upstreamSocket?.close(),
-        cancelOnError: true,
+      final protocols = offered
+          ?.split(',')
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
+      upstreamSocket = await WebSocket.connect(
+        wsTarget.toString(),
+        protocols: protocols,
+        compression: CompressionOptions.compressionOff,
       );
-      upstreamSocket.listen(
-        clientSocket.add,
-        onDone: () => clientSocket?.close(),
-        onError: (Object e) => clientSocket?.close(),
-        cancelOnError: true,
+      final selected = upstreamSocket.protocol;
+      clientSocket = await WebSocketTransformer.upgrade(
+        request,
+        protocolSelector: (_) => selected,
+        compression: CompressionOptions.compressionOff,
       );
-    } catch (e) {
-      _w('VS Code proxy WS bridge failed for $wsTarget: $e');
+      Future<void> forward(WebSocket from, WebSocket to) async {
+        try {
+          // addStream propagates socket backpressure; listen(to.add) does not.
+          await to.addStream(from);
+        } finally {
+          final code = from.closeCode;
+          await to.close(
+            code == null || code == 1005 || code == 1006 || code == 1015
+                ? WebSocketStatus.goingAway
+                : code,
+            from.closeReason,
+          );
+        }
+      }
+
+      await Future.wait([
+        forward(clientSocket, upstreamSocket),
+        forward(upstreamSocket, clientSocket),
+      ]);
+    } catch (_) {
+      _w('VS Code proxy WebSocket bridge closed');
+      if (clientSocket == null) {
+        await _closeProxy(request.response, HttpStatus.badGateway);
+      }
+    } finally {
       await clientSocket?.close();
       await upstreamSocket?.close();
     }

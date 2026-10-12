@@ -2,7 +2,7 @@
 title: Conectar a un servidor remoto
 description: Apunta la aplicación de escritorio o el cliente web a un cc_server que se ejecuta en otro lugar y cambia de servidor sin reiniciar.
 slug: es-ES/manual/guias/conectar-servidor-remoto
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Todo cliente es un renderizador sobre un `cc_server` que es el propietario de
@@ -15,7 +15,7 @@ pequeña, una VM en la nube o un servidor de compilación.
 ## Requisitos previos
 
 - Un `cc_server` en ejecución. Si no tienes uno, consulta [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/).
-- Los tres valores de emparejamiento que generó el servidor —la **URL del servidor** (`ws://…/rpc` o `wss://…/rpc`), un **id de dispositivo** y una **clave de emparejamiento**— **o** un **código de invitación** de un solo uso de un administrador del espacio de trabajo. Canjear una invitación aprovisiona tu usuario, registra tu pertenencia y genera por ti la credencial de este cliente, así que nunca tienes que gestionar un id de dispositivo ni una clave.
+- Los tres valores de emparejamiento que generó el servidor —la **URL del servidor** (`ws://…/rpc` o `wss://…/rpc`), un **id de dispositivo** y una **clave de emparejamiento**— **o** un **código de invitación** de un solo uso de un administrador del espacio de trabajo. Canjear una invitación aprovisiona tu usuario, registra tu pertenencia y genera por ti la credencial de este cliente, así que nunca tienes que gestionar un id de dispositivo ni una clave. Consigue estos valores por un canal de confianza y comprueba la huella del servidor contra un QR de confianza o un fijado conocido en la primera conexión.
 
 ### Asegúrate de que se puede acceder al servidor
 
@@ -29,7 +29,7 @@ ya confíe; además, `cc_server` se niega a enlazar una dirección que no sea
 loopback sin TLS. Dale una de estas opciones:
 
 - un certificado directamente, con `--tls-cert` y `--tls-key`
-- un proxy inverso que termine el TLS delante, con el servidor iniciado con `--insecure` (texto sin cifrar detrás del proxy, solo en una red de confianza)
+- un proxy inverso que termine el TLS delante, con el servidor iniciado con `--insecure` (texto sin cifrar entre el proxy y el servidor en el listener externo, solo en una red de confianza; esto no desactiva la sesión de cliente cifrada obligatoria)
 - un túnel o VPN que proporcione el certificado: Tailscale, cloudflared o similar. **Ajustes → Servidor → Conexión y estado** tiene la opción integrada de túnel en **Compartir este servidor**.
 
 Hay dos ajustes del lado del servidor que es fácil pasar por alto. Detrás de un
@@ -61,7 +61,9 @@ actual y ves el error. La fila del servidor en el que estás no tiene acción
 aplicación**.
 
 Una vez cambiado, el escritorio no posee ninguna base de datos. Cada pantalla
-lee y escribe a través del servidor remoto mediante un WebSocket.
+lee y escribe a través del servidor remoto mediante una sesión WebSocket firmada
+y cifrada de extremo a extremo; la misma protección se aplica en loopback y a
+través del relé.
 
 ## Conectar el cliente web
 
@@ -73,15 +75,19 @@ La compilación web siempre es remota.
 
 Si en la URL hay un enlace profundo de emparejamiento, los campos vienen
 rellenos de antemano. La clave de emparejamiento viaja en el **fragmento** de la
-URL, que los navegadores nunca envían al servidor que aloja la página, así que
-el host estático nunca la ve.
+URL, que los navegadores nunca envían al servidor que aloja la página. Trata el
+enlace como un secreto y confía en la página que sirve el cliente web: el
+fragmento no protege frente a código malicioso de la página.
 
-:::note[Multimedia y seguridad]
-El contenido multimedia (avatares, imágenes del feed, capturas de PR) se sirve
-mediante proxy a través del servidor conectado, así que el navegador nunca
-obtiene recursos de un host de origen directamente. Una política de seguridad de
-contenido por solicitud, establecida a partir de una cookie no sensible, solo
-permite el origen del servidor conectado.
+:::note[Multimedia, editores y seguridad]
+El contenido multimedia (avatares, imágenes del feed, capturas de PR), las
+transferencias de copias de seguridad y el tráfico del editor integrado usan el
+túnel de recursos cifrado, no rutas HTTP públicas legibles. El editor del
+navegador de confianza se ejecuta en el propio origen de la app web; su service
+worker lleva las peticiones por la sesión cifrada autenticada hasta el backend
+de code-server en `cc_server`. Aloja el cliente web por HTTPS o loopback seguro
+para que los service workers estén disponibles. Los clientes nativos usan una
+fachada de loopback con alcance de capacidades.
 :::
 
 ### Lo que el navegador no hace
@@ -105,6 +111,7 @@ el botón se oculta frente a un host headless sin editores instalados.
 
 - **La conexión agota el tiempo de espera**: se debe poder acceder al servidor desde el cliente. Comprueba el enlace (`--bind any`), que el puerto esté abierto y que `--public-url` indique la dirección a la que el cliente puede marcar realmente. Por internet abierto, el TLS es obligatorio: un enlace que no sea loopback y sin cifrar se rechaza al arrancar, a menos que el servidor se haya iniciado con `--insecure` detrás de un proxy.
 - **El navegador se niega a conectar pero un cliente nativo funciona**: el origen del navegador no está en la lista `--allowed-origins` del servidor. De forma predeterminada solo se permite `https://app.usectrl.dev` (además de loopback).
+- **La identidad del servidor ha cambiado**: el cliente rechaza una huella que difiera de su fijado guardado. Verifica la identidad del servidor fuera de banda y vuelve a emparejarte por un canal de confianza; no ignores el aviso ni cambies a un cliente antiguo o en texto plano.
 - **Clave de emparejamiento rechazada**: vuelve a ejecutar `cc_server pair` en el servidor para rotar la clave de ese dispositivo y luego introduce la nueva. Un dispositivo revocado se encuentra con que su credencial ha desaparecido y falla de forma cerrada; la revocación corta una sesión activa en cuestión de segundos.
 - **Espacio de trabajo equivocado**: el espacio de trabajo forma parte de la URL (`/workspaces/:workspaceId/…`) y viaja con cada llamada, así que cambiar de espacio de trabajo en un cliente solo cambia tu propia vista. Solo puedes acceder a los espacios de trabajo de los que eres miembro; cualquier otro se rechaza con «Not a member of this workspace». Consulta [Espacios de trabajo y aislamiento](/es-ES/manual/conceptos/espacios-de-trabajo/).
 

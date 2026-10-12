@@ -2,7 +2,7 @@
 title: Espaços de trabalho e isolamento
 description: Por que um espaço de trabalho é uma fronteira rígida de tenant, como a divisão do banco de dados torna essa fronteira estrutural e o que a atravessa de propósito.
 slug: pt-BR/manual/conceitos/espacos-de-trabalho
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## O que é um espaço de trabalho?
@@ -110,13 +110,17 @@ O que nenhuma delas carrega é o resto do diretório do espaço de trabalho. Um 
 
 ## Mover um backup entre o servidor e seu dispositivo
 
-Toda op acima fala em caminhos no **servidor**, o que só é uma resposta completa quando o servidor é a sua própria máquina. Três rotas HTTP assinadas — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/pt-BR/manual/referencia/backup/#transfer-routes) — carregam os bytes para todas as outras topologias, na mesma faixa autenticada que o proxy de mídia e o armazenamento de imagens já usam. Na página, isto é um botão **Baixar** ao lado de cada exportação e de cada snapshot (você escolhe onde ele cai) e **Escolher um arquivo e enviar** para restaurar a partir de um arquivo que está na máquina que você usa. O upload é o que funciona quando o servidor não é a sua máquina: `workspace.import` precisa que o arquivo já esteja no host, e é assim que ele chega lá.
+Toda op acima fala em caminhos no **servidor**, o que só é uma resposta completa quando o servidor é a sua própria máquina. Três rotas de transferência assinadas — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/pt-BR/manual/referencia/backup/#transfer-routes) — carregam os bytes para todas as outras topologias pelo túnel de recursos autenticado e cifrado, em conexões diretas e pelo relay. As rotas HTTP públicas não servem bytes de backup legíveis, e caminhos assinados ainda exigem autorização. Na página, isto é um botão **Baixar** ao lado de cada exportação e de cada snapshot (você escolhe onde ele cai) e **Escolher um arquivo e enviar** para restaurar a partir de um arquivo que está na máquina que você usa. O upload funciona quando o servidor não é a sua máquina: `workspace.import` precisa que o arquivo já esteja no host, e é assim que ele chega lá.
 
 Três propriedades valem a pena conhecer:
 
 - **Um download cria uma cópia nova e o servidor não fica com nada dela.** Baixar não é “buscar o arquivo que o botão de exportar criou” — ele exporta de novo, transmite isso e exclui. A resposta é `no-store` com `Accept-Ranges: none` pelo mesmo motivo: um intervalo retomado juntaria duas exportações diferentes em um arquivo que parece válido e não é.
 - **Um upload é transmitido para o disco, nunca bufferizado**, nas duas pontas, e a cópia preparada é excluída em todos os caminhos de saída — inclusive em uma recusa. Um banco de dados de espaço de trabalho não é uma captura de tela.
-- **Uma conexão via relay não tem origem HTTP**, então os controles de transferência ficam desabilitados nela, com uma observação explicando por quê. Tudo o que fala em caminhos do lado do servidor continua funcionando pelo relay; só as faixas de bytes precisam de uma conexão direta.
+- **A transferência também funciona pelo relay.** Downloads e uploads usam o mesmo túnel de recursos cifrado das conexões diretas; não é preciso uma origem HTTP direta.
+
+A criptografia protege a transferência em trânsito, não o banco de dados do lado do
+servidor, o diretório de snapshots nem uma cópia baixada em repouso. O operador do
+servidor consegue acessar os dados mantidos nesse host.
 
 :::note[De quem é cada caminho]
 Os caminhos que a página *mostra* — o diretório do snapshot, o arquivo que uma exportação gravou, a origem que uma importação lê — estão na máquina que executa o `cc_server`. O caminho que um **download** informa está na máquina em que você está. Essa distinção é o motivo de ambos existirem: o primeiro é o que um script de manutenção ou uma sessão ssh precisa, o segundo é o que uma pessoa que está reunindo um backup precisa.

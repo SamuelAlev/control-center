@@ -77,25 +77,57 @@ void main() {
       expect(space.sent.single['method'], 'notifications/message_received');
     });
 
-    test('frames without a workspace id pass through (user-targeted)',
-        () async {
-      forwarder(isMember: (_) async => false);
-      // A human mention with no resolved workspace: no workspace_id in the
-      // frame — user-targeted, matches the pre-gate behavior.
+    test(
+      'frames without a workspace id pass through (user-targeted)',
+      () async {
+        forwarder(isMember: (_) async => false);
+        // A human mention with no resolved workspace: no workspace_id in the
+        // frame — user-targeted, matches the pre-gate behavior.
+        bus.publish(
+          MessageReceived(
+            spaceId: 'c1',
+            messageId: 'm2',
+            senderName: 'Sam',
+            contentPreview: 'ping',
+            isAgentMessage: false,
+            workspaceId: null,
+            mentions: const [UserPrincipal('user-1')],
+            occurredAt: DateTime(2026),
+          ),
+        );
+        await pumpEventQueue(times: 10);
+        expect(space.sent, hasLength(1));
+      },
+    );
+
+    test(
+      'a blocked action for a non-member workspace never reaches the wire',
+      () async {
+        forwarder(isMember: (_) async => false);
+        bus.publish(
+          AgentActionBlocked(
+            workspaceId: 'ws-theirs',
+            reason: 'Pushing to main is denied by workspace policy',
+            occurredAt: DateTime(2026),
+          ),
+        );
+        await pumpEventQueue(times: 10);
+        expect(space.sent, isEmpty);
+      },
+    );
+
+    test('a blocked action for a member workspace is forwarded', () async {
+      forwarder(isMember: (ws) async => ws == 'ws-mine');
       bus.publish(
-        MessageReceived(
-          spaceId: 'c1',
-          messageId: 'm2',
-          senderName: 'Sam',
-          contentPreview: 'ping',
-          isAgentMessage: false,
-          workspaceId: null,
-          mentions: const [UserPrincipal('user-1')],
+        AgentActionBlocked(
+          workspaceId: 'ws-mine',
+          reason: 'Pushing to main is denied by workspace policy',
           occurredAt: DateTime(2026),
         ),
       );
       await pumpEventQueue(times: 10);
       expect(space.sent, hasLength(1));
+      expect(space.sent.single['method'], 'notifications/agent_action_blocked');
     });
 
     test('a membership removal invalidates the cached verdict', () async {
@@ -122,21 +154,23 @@ void main() {
       expect(space.sent, hasLength(1));
     });
 
-    test('verdicts are cached per workspace (one check per workspace)',
-        () async {
-      var checks = 0;
-      forwarder(
-        isMember: (_) async {
-          checks++;
-          return true;
-        },
-      );
-      bus.publish(agentMessage('ws-x'));
-      bus.publish(agentMessage('ws-x'));
-      await pumpEventQueue(times: 10);
-      expect(checks, 1);
-      expect(space.sent, hasLength(2));
-    });
+    test(
+      'verdicts are cached per workspace (one check per workspace)',
+      () async {
+        var checks = 0;
+        forwarder(
+          isMember: (_) async {
+            checks++;
+            return true;
+          },
+        );
+        bus.publish(agentMessage('ws-x'));
+        bus.publish(agentMessage('ws-x'));
+        await pumpEventQueue(times: 10);
+        expect(checks, 1);
+        expect(space.sent, hasLength(2));
+      },
+    );
 
     // The turn's MessageReceived is the completion notification; the run
     // event fires before the reply is persisted, so it never reaches the wire.

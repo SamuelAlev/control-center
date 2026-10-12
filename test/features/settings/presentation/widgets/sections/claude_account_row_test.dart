@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/claude_account_row.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -20,12 +21,9 @@ ClaudeAccount _account({
 );
 
 void main() {
-  testWidgets('a lapsed login still signed in shows the flyout copy', (
+  testWidgets('warns on expiry even while the CLI reports logged in', (
     tester,
   ) async {
-    // Same state as the usage flyout's `signInExpired`: the access token is
-    // past but `claude auth status` still reports logged in, because it reads
-    // credential shape. The CLI renews it on the next run.
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     await tester.pumpWidget(
       testWrap(
@@ -33,23 +31,17 @@ void main() {
           view: ClaudeAccountView(
             account: _account(
               loggedIn: true,
-              credentialExpiresAt: DateTime.now().subtract(
-                const Duration(hours: 1),
-              ),
+              credentialExpiresAt: DateTime.utc(2000),
             ),
           ),
         ),
       ),
     );
 
-    expect(find.text(l10n.subscriptionUsageSignInExpired), findsOneWidget);
-    expect(find.text(l10n.claudeAccountExpired), findsNothing);
-    expect(
-      find.textContaining(
-        'thomas@control-center.com · enterprise · Control Center',
-      ),
-      findsOneWidget,
+    final badge = tester.widget<CcBadge>(
+      find.widgetWithText(CcBadge, l10n.claudeAccountExpired),
     );
+    expect(badge.variant, CcBadgeVariant.warning);
   });
 
   testWidgets('a still-valid login does not claim it expired', (tester) async {
@@ -60,7 +52,7 @@ void main() {
           view: ClaudeAccountView(
             account: _account(
               loggedIn: true,
-              credentialExpiresAt: DateTime.now().add(const Duration(hours: 8)),
+              credentialExpiresAt: DateTime.utc(2100),
             ),
           ),
         ),
@@ -75,7 +67,7 @@ void main() {
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    final expiredAt = DateTime.now().subtract(const Duration(hours: 2));
+    final expiredAt = DateTime.utc(2000);
     await tester.pumpWidget(
       testWrap(
         ClaudeAccountRow(

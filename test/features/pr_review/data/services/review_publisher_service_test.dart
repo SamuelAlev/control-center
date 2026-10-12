@@ -16,8 +16,8 @@ import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.
 import 'package:cc_infra/src/git/review_publisher_service.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
 import 'package:cc_infra/src/network/models/github_review.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart';
 
 class _FakeMessaging implements MessagingRepository {
   _FakeMessaging(this._messages);
@@ -291,10 +291,18 @@ class _FakeReviewSpaces implements ReviewSpaceRepository {
   }
 }
 
+/// A no-op [RhttpClient]: the fake overrides every method the service calls,
+/// so the transport is never touched and no native library is loaded.
+class _NullHttpClient implements RhttpClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// Fake PR client that records submit calls and can simulate a 422 on the
 /// inline-comments attempt.
 class _FakeGitHubPrClient extends GitHubPrClient {
-  _FakeGitHubPrClient({this.rejectInlineWith422 = false}) : super(Dio());
+  _FakeGitHubPrClient({this.rejectInlineWith422 = false})
+    : super(_NullHttpClient());
 
   final bool rejectInlineWith422;
   final List<

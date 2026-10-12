@@ -1,35 +1,37 @@
 ---
 title: Afstandsbediening en mobiel
-description: Hoe de telefoon je server bereikt via een relay met een broker en end-to-end verzegelde frames in plaats van een peer-to-peer-verbinding, en het gelaagde toegangsmodel dat dat bereik beperkt houdt.
+description: Hoe de telefoon je server bereikt via directe of via een broker bemiddelde end-to-end-versleutelde verbindingen, en het gelaagde toegangsmodel dat dat bereik beperkt houdt.
 slug: nl-NL/handleiding/concepten/afstandsbediening
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center is een desktopapp, maar het werk dat het volgt stopt niet wanneer
 je van je bureau weggaat. **Afstandsbediening** koppelt je telefoon aan je
 `cc_server`, met **[Remote](https://remote.usectrl.dev/)**, de bijbehorende app
 op remote.usectrl.dev, zodat je de fleet vanaf daar kunt volgen: berichten en
-tickets lezen, een agent antwoorden, je nieuwsfeed triëren, zonder dat de audio,
-het transcript, de broncode of de referenties die op de server staan die ooit
-verlaten.
+tickets lezen, een agent antwoorden en je nieuwsfeed triëren via een
+end-to-end-versleutelde verbinding. De telefoon en `cc_server` zijn vertrouwde
+plaintext-eindpunten; een relay draagt alleen versleutelde applicatierecords.
 
 Zie het als een metgezel van het deck die vooral leest. Het is niet bedoeld om
 de volledige desktopclient te vervangen.
 
-:::note[Twee verschillende routes op afstand]
-De telefoonmetgezel koppelt met een `cc_server` via een **relay met een broker**
-die end-to-end verzegelde JSON-RPC-frames doorgeeft. De volledige **webbuild**
-(en een desktop die naar een externe server wijst) is de andere route op
-afstand; die belt `cc_server` via WebSocket en toont de complete app. Zie
-[Deployment en clients](/nl-NL/handleiding/concepten/deployment/) voor hoe de twee verschillen.
+:::note[Twee verschillende clients op afstand]
+De telefoonmetgezel en de volledige **webbuild** (of een desktop die naar een
+externe server wijst) kunnen rechtstreeks verbinden met `cc_server` of een via
+een broker bemiddelde WebSocket-relay gebruiken. Beide routes vereisen dezelfde
+versleutelde sessie; de telefoon biedt een kleinere set bewerkingen dan de
+volledige client. Zie
+[Deployment en clients](/nl-NL/handleiding/concepten/deployment/) voor hoe de clients verschillen.
 :::
 
 ## Transport
 
 De telefoon bereikt `cc_server` via een WebSocket: ofwel een directe verbinding
 (loopback, LAN, tailnet of `wss://`), ofwel een ruimte waarvoor een uitnodiging
-nodig is op een signaleringsbroker die verzegelde frames doorgeeft. Er is geen
-peer-to-peer-datakanaal.
+nodig is op een signaleringsbroker. Beide routes vereisen een geauthenticeerde,
+end-to-end-versleutelde sessie; de broker stuurt alleen zijn versleutelde
+records door. Er is geen peer-to-peer-datakanaal.
 
 ## Wat de telefoon kan doen
 
@@ -53,23 +55,28 @@ van alleen bedoeld.
 
 ## Hoe de verbinding tot stand komt
 
-De verbinding loopt via een **relay met een broker**: de server voegt zich als
-eigenaar bij één ruimte waarvoor een uitnodiging nodig is op een `wss://`-broker
-en elke gekoppelde client — desktop, web, telefoon — voegt zich bij dezelfde
-ruimte met een tijdgebonden toegangstoken. Drie onderdelen komen samen:
+Als de telefoon de server niet rechtstreeks kan bereiken, gebruikt de verbinding
+een **relay met een broker**: de server voegt zich als eigenaar bij één ruimte
+waarvoor een uitnodiging nodig is op een `wss://`-broker en gekoppelde clients
+voegen zich met tijdgebonden toegangstokens bij die ruimte. Drie onderdelen komen
+samen:
 
 | Onderdeel                | Rol                                                                                                                                                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote (telefoonapp)** | De bijbehorende webapp, standaard gehost op `remote.usectrl.dev`, of zelf gehost. Laadt in een browser en houdt de koppelingsregistratie bij in IndexedDB.                                                                                                                      |
-| **Relay-broker**         | Een stateless `wss://`-relay (`cc_signaling_server`) die N-weg-ruimtes host. Geeft **alleen ondoorzichtige frames** door: elke payload wordt end-to-end verzegeld tussen de telefoon en de server, dus de broker ziet nooit app-gegevens of het koppelingsgeheim en interpreteert nooit wat hij doorstuurt. |
+| **Relay-broker**         | Een stateless `wss://`-relay (`cc_signaling_server`) die N-weg-ruimtes host. Stuurt versleutelde records door zonder het koppelingsgeheim of app-plaintext, maar ziet routerings-id's, IP's, recordgroottes en timing. |
 | **`cc_server`**          | De eigenaar van de ruimte. Beantwoordt de aanroepen van de telefoon via dezelfde dispatcher die elke andere client gebruikt.                                                                                                                                                    |
 
 Een koppelingsaanbod bevat een **verbindingsdescriptor** met elke route naar de
 server (LAN, tailnet, publieke `wss://`, relay) plus de identiteitsvingerafdruk.
-De resolver van de telefoon kiest de best bereikbare route en pint de
-vingerafdruk vast bij de eerste verbinding (TOFU); de relay garandeert
-verbinding zelfs wanneer er geen directe route bestaat, zonder ooit het verkeer
-te kunnen lezen.
+De resolver van de telefoon kiest de best bereikbare route. De server
+ondertekent de versleutelde handshake en de client pint de vingerafdruk vast.
+Controleer bij de eerste verbinding de vingerafdruk aan de hand van een QR-code
+of een andere vertrouwde bron: een eerste ondertekende identiteit alleen bewijst
+niet welke server je hebt bereikt. Een gewijzigde pin wordt geweigerd in plaats
+van stilzwijgend opnieuw vertrouwd. De relay draagt ciphertext wanneer er geen
+directe route bestaat, maar kan de verbinding nog steeds onderbreken of
+vertragen.
 
 ## Wat de koppelingspayload is
 
@@ -82,26 +89,33 @@ https://<pwa-host>/#<payload>
 ```
 
 De payload reist mee in het **fragment** van de URL, het deel na `#` dat
-browsers nooit naar de server sturen, zodat de HTTPS-host van de PWA het nooit
-ziet. Hij bevat alles wat de telefoon nodig heeft om de server te bereiken en te
-bewijzen wie hij is: de verbindingsdescriptor (elke route plus de
-identiteitsvingerafdruk), een nieuw aangemaakte apparaat-id, een 32-byte vooraf
-gedeelde sleutel en een vervalstempel. De telefoon decodeert hem, slaat lokaal
-een koppelingsregistratie op en verwijdert het fragment zodat het geheim de URL
-verlaat.
+browsers niet meesturen in het HTTP-verzoek aan de PWA-host. Hij bevat alles wat
+de telefoon nodig heeft om de server te bereiken en te bewijzen wie hij is: de
+verbindingsdescriptor (elke route plus de identiteitsvingerafdruk), een nieuw
+aangemaakte apparaat-id, een 32-byte vooraf gedeelde sleutel en een
+vervalstempel. De telefoon decodeert hem, slaat lokaal een
+koppelingsregistratie op en verwijdert het fragment uit de URL. De code van de
+webapp kan het fragment lezen, dus gebruik een vertrouwde app-host en behandel
+de link als een geheim.
 
 Er zijn twee payloadvormen en ze zijn **niet uitwisselbaar**. De telefoon-QR die
 het koppelingspaneel in de app aanmaakt, is de v2 `PairingPayload` hierboven,
-gericht op de Remote PWA-host. `cc_server pair --client-url` levert een andere,
-oudere v1-link (`{s, i, k}` — server-URL, apparaat-id, sleutel) die alleen voor
-de **web**client bedoeld is.
+gericht op de Remote PWA-host. `cc_server pair --client-url` levert een
+v1-link (`{s, i, k}` — server-URL, apparaat-id, sleutel) die alleen voor
+de **web**client bedoeld is. Dit zijn koppelingsgegevensformaten, geen
+transport-fallbacks: beide clients moeten het huidige versleutelde
+sessieprotocol ondersteunen.
 
 Ze verschillen ook in levensduur, wat makkelijk mis te gaan is:
 
 | Aangemaakt door                          | Verval van referenties                    |
 | ---------------------------------------- | ----------------------------------------- |
 | Koppelingspaneel in de app (`pairing.mint`) | 30 dagen, altijd                       |
-| `cc_server pair` op de opdrachtregel     | **Geen** — de referenties verlopen niet    |
+| `cc_server pair` op de opdrachtregel     | Geen verval gecodeerd; serverbeleid blijft van toepassing |
+
+Serverbreed beleid voor maximale apparaatleeftijd en idle-time-out kan beide
+referenties eerder weigeren. Geen van beide koppelingsformaten omzeilt dat
+beleid.
 
 ## Het toegangsmodel
 
@@ -159,13 +173,16 @@ want de lidmaatschapscontrole in controle 1 geldt nog steeds. Dit is dezelfde
 [werkruimte-isolatie](/nl-NL/handleiding/concepten/werkruimtes/)-invariant die de rest van het
 product afdwingt.
 
-### 5. End-to-end verzegelde frames met de vooraf gedeelde sleutel
+### 5. End-to-end-encryptie op directe en via relay verlopen verbindingen
 
-Elk frame tussen telefoon en server wordt verzegeld met de koppelingssleutel;
-het toegangstoken krijgt een client alleen de ruimte in, het ontsleutelt niets.
-De broker geeft ciphertext door en ziet de sleutel nooit. Een apparaat dat wordt
-ingetrokken, ontdekt dat zijn referenties al weg zijn, dus het **faalt gesloten**
-bij opnieuw verbinden.
+Elke directe of via een relay verlopen clientsessie vereist een ondertekende
+Noise-handshake. De koppelingssleutel authenticeert die handshake; verse efemere
+sleutels leiden de verkeerssleutels af in plaats van de koppelingssleutel
+gebruiken om elk frame te verzegelen. De server ondertekent zijn identiteit in
+de uitwisseling en de client controleert zijn opgeslagen
+vingerafdruk-pin. Er is geen plaintext- of oudere-client-fallback. Een
+relay-toegangstoken krijgt een client alleen een ruimte in; het kan de records
+niet ontsleutelen.
 
 Een referentie die de app aanmaakt, is tijdgebonden aan 30 dagen; daarna laat de
 verbindingscontrole hem mislukken en moet de telefoon opnieuw koppelen. Intrekken
@@ -182,21 +199,25 @@ sessie**: drie van je apparaten putten uit één tegoed, dus een gekaapte client
 kan geen extra ruimte kopen door meer sessies te openen en één luidruchtig lid
 kan de anderen niet uithongeren.
 
-### 7. Een broker die niets leert
+### 7. Een broker die geen app-inhoud kan lezen
 
-De relay-broker is bewust dom: hij host ruimtes, stuurt verzegelde frames door
-en houdt geen accounts, geen app-gegevens en geen sleutels bij. Ruimtes zijn
-uitnodigingsgebonden en tijdelijk. De app-gegevens, audio, het transcript, de
-broncode en de referenties blijven allemaal op de server.
+De relay-broker host tijdelijke, uitnodigingsgebonden ruimtes en stuurt
+versleutelde records door zonder app-plaintext of koppelingssleutels. Hij ziet
+wel IP-adressen, ruimte- en peer-id's, recordgroottes, timing en de levensduur
+van de verbinding, en kan verkeer laten vallen of vertragen. De gekoppelde
+client en de gekozen `cc_server` zijn de plaintext-eindpunten; de
+serveroperator en diensten waarnaar hij inhoud stuurt, kunnen die inhoud zien.
+Versleuteling tijdens transport versleutelt servergegevens in rust niet.
 
 ## Live-updates
 
 Eenmaal gekoppeld ontvangt de telefoon **live-updates** als
 notificatieframes — nieuwe agentberichten, tickets die aan jou zijn toegewezen,
 statuswijzigingen — die de eigen meldingen van de desktop spiegelen. De server
-zendt die frames naar elke verbonden sessie uit en het werkruimtefilter wordt
-aan de clientkant toegepast, dus wat je ziet is beperkt tot de werkruimte waar
-je naar kijkt.
+controleert het werkruimtelidmaatschap voordat hij een gebeurtenis naar een
+sessie doorstuurt. De client filtert die al geautoriseerde gebeurtenissen
+vervolgens tot de werkruimte waarnaar je kijkt; dat weergavefilter is niet de
+toegangsgrens.
 
 ## Waar het te vinden is
 
@@ -209,8 +230,9 @@ alleen voor telefoons — de flow is identiek, alleen de deeplink verschilt.
 
 ::::note
 Afstandsbediening is server-side en wordt **niet** via MCP beschikbaar gesteld.
-De telefoon praat via de relay met de eigen dispatcher van de server; hij is
-geen MCP-client van een externe server.
+De telefoon praat via zijn versleutelde directe of via een relay verlopen
+verbinding met de eigen dispatcher van de server; hij is geen MCP-client van een
+externe server.
 ::::
 
 ## Zie ook

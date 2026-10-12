@@ -2,7 +2,7 @@
 title: Sparuj urządzenie
 description: Sparuj telefon (albo drugą przeglądarkę lub komputer) z serwerem Control Center, aby śledzić flotę zdalnie.
 slug: pl-PL/podrecznik/poradniki/parowanie-urzadzenia
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Ten poradnik pokazuje, jak sparować telefon z Control Center, aby czytać
@@ -23,8 +23,9 @@ którą możesz wdrożyć na Cloudflare Pages przez jej `wrangler.jsonc`, do obr
 nginx `docker/cc_remote` albo na dowolny statyczny host z HTTPS — service workery
 i IndexedDB są ograniczone do bezpiecznego kontekstu) oraz przekaźnik
 (`apps/cc_signaling_server`, pojedyncza bezstanowa binarka Darta, która nie
-przechowuje żadnych danych aplikacji i nigdy nie widzi sekretu parowania —
-przekazuje wyłącznie ramki zamknięte end-to-end). Kroki budowania i uruchamiania
+przechowuje żadnych danych aplikacji i nie potrafi odszyfrować zaszyfrowanych
+rekordów ani zobaczyć sekretu parowania). Wciąż widzi adresy IP, identyfikatory
+routingu, rozmiary i czasy, i może odrzucać ruch. Kroki budowania i uruchamiania
 znajdziesz w ich plikach README.
 
 ## Krok 1: Otwórz panel parowania
@@ -48,14 +49,19 @@ klienta webowego, a ten kod QR przenosi pełny deskryptor połączenia serwera
 i odcisk tożsamości dla PWA Remote.
 
 Po stronie telefonu otwarcie linku parowania nie paruje po cichu. Remote pokazuje
-ogłaszaną nazwę serwera i prosi o potwierdzenie, zanim cokolwiek zapisze, więc
-podrobiony link nie może przejąć aplikacji na serwer kogoś innego.
+ogłaszaną nazwę serwera i prosi o potwierdzenie, zanim cokolwiek zapisze.
+Sprawdź odcisk w kodzie QR na podstawie zaufanego źródła: potwierdzenie
+niezweryfikowanej nazwy albo podrobionego kodu QR nie dowodzi, że serwer należy
+do Ciebie. Klient przypina podpisaną tożsamość i odrzuca zmieniony odcisk przy
+kolejnych połączeniach.
 
 :::caution[Zeskanowany kod QR przyznaje dostęp natychmiast]
 Nie ma etapu oczekiwania i zatwierdzania: utworzone urządzenie jest aktywne od
 chwili powstania, a brama połączenia sprawdza tylko, czy poświadczenie jest
 aktywne i nie wygasło. Traktuj kod QR i klucz parowania jak hasło i odwołuj
-wszystko, czego nie zamierzałeś przekazać.
+wszystko, czego nie zamierzałeś przekazać. Zarówno połączenia bezpośrednie, jak
+i przez przekaźnik wymagają szyfrowania end-to-end; starsi klienci nie mogą
+przejść na tekst jawny RPC.
 :::
 
 ## Zarządzaj sparowanymi urządzeniami

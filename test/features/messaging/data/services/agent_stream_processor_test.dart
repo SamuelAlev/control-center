@@ -25,6 +25,8 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
@@ -39,10 +41,8 @@ import 'package:flutter_test/flutter_test.dart';
 const _ws = 'ws-1';
 
 class _FakeMessagingRepo implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -269,10 +269,8 @@ class _FakeMessagingRepo implements MessagingRepository {
 }
 
 class _FakeAgentDispatchService implements AgentDispatchService {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<bool> pauseRun(String runLogId) async => false;
 
@@ -313,6 +311,7 @@ class _FakeAgentDispatchService implements AgentDispatchService {
   bool failRunCalled = false;
   String? lastCompleteRunSummary;
   RunCost? lastCompleteRunCost;
+  RunLatencyProfile? lastCompleteRunLatency;
   String? lastFailError;
 
   @override
@@ -320,10 +319,15 @@ class _FakeAgentDispatchService implements AgentDispatchService {
     AgentRunLog runLog,
     String? summary, {
     RunCost? cost,
+    RunLatencyProfile? latency,
+    RunVerification? verification,
+    String? nativeSessionId,
+    bool resumedNativeSession = false,
   }) async {
     completeRunCalled = true;
     lastCompleteRunSummary = summary;
     lastCompleteRunCost = cost;
+    lastCompleteRunLatency = latency;
   }
 
   @override

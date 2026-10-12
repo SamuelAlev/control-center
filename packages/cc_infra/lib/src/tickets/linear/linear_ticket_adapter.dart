@@ -7,17 +7,18 @@ import 'package:cc_domain/features/ticketing/domain/ports/ticket_provider_port.d
 import 'package:cc_domain/features/ticketing/domain/ports/ticket_query.dart';
 import 'package:cc_infra/src/tickets/linear/linear_graphql_client.dart';
 import 'package:cc_infra/src/tickets/linear/linear_issue_dto.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// [TicketProviderPort] backed by Linear's GraphQL API. The only place in the
 /// codebase that knows about Linear specifics — status names, the GraphQL
-/// client, priority numbering and the required team id. Construct it from a
-/// [Dio] so the transport client stays sealed inside this folder.
+/// client, priority numbering and the required team id. Construct it from an
+/// [RhttpClient] so the transport client stays sealed inside this folder.
 class LinearTicketAdapter implements TicketProviderPort {
-  /// Creates a [LinearTicketAdapter] over an authorized [Dio]. [_defaultTeamId]
-  /// is used when a create draft does not carry a `teamId` in its extras.
-  LinearTicketAdapter(Dio dio, {this._defaultTeamId})
-    : _client = LinearGraphQlClient(dio);
+  /// Creates a [LinearTicketAdapter] over an authorized [RhttpClient].
+  /// [_defaultTeamId] is used when a create draft does not carry a `teamId` in
+  /// its extras.
+  LinearTicketAdapter(RhttpClient httpClient, {this._defaultTeamId})
+    : _client = LinearGraphQlClient(httpClient);
 
   final LinearGraphQlClient _client;
   final String? _defaultTeamId;

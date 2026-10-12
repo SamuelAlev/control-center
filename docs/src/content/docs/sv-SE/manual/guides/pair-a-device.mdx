@@ -2,7 +2,7 @@
 title: Para en enhet
 description: Parkoppla din telefon (eller en andra webbläsare eller skrivbordsapp) med din Control Center-server så att du kan följa flottan på distans.
 slug: sv-SE/handbok/how-to-guider/para-enhet
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Den här guiden visar hur du parkopplar en telefon med Control Center, så att du
@@ -22,9 +22,10 @@ telefonappen (`apps/cc_remote`, en Flutter-webb-PWA som du kan driftsätta till
 Cloudflare Pages via dess `wrangler.jsonc`, till nginx-avbildningen
 `docker/cc_remote`, eller till valfri statisk värd med HTTPS — service workers och
 IndexedDB kräver säker kontext) och reläet (`apps/cc_signaling_server`, en enda
-tillståndslös Dart-binär som inte håller någon appdata och aldrig ser
-parkopplingshemligheten — den vidarebefordrar bara end-to-end-förseglade ramar).
-Se deras README-filer för steg för att bygga och köra.
+tillståndslös Dart-binär som inte håller någon appdata och inte kan dekryptera
+krypterade poster eller se parkopplingshemligheten). Den ser ändå IP:n,
+routing-id:n, storlekar och timing och kan släppa trafik. Se deras README-filer
+för steg för att bygga och köra.
 
 ## Steg 1: Öppna parkopplingspanelen
 
@@ -48,14 +49,18 @@ fullständiga anslutningsbeskrivning och identitetsfingeravtryck för Remote-PWA
 
 På telefonsidan parkopplar det inte tyst när du öppnar en parkopplingslänk.
 Remote visar serverns annonserade namn och ber dig bekräfta innan den sparar
-något, så en förfalskad länk kan inte kapa appen till någon annans server.
+något. Kontrollera fingeravtrycket i QR-koden mot en betrodd källa: att bekräfta
+ett overifierat namn eller en förfalskad QR-kod bevisar inte att servern är din.
+Klienten fäster den signerade identiteten och avvisar ett ändrat fingeravtryck
+vid senare anslutningar.
 
 :::caution[En skannad QR-kod ger åtkomst direkt]
 Det finns inget steg där något väntar på godkännande: en utfärdad enhet är aktiv
 från det att den skapas, och anslutningsgrinden kontrollerar bara att
 autentiseringsuppgiften är aktiv och inte har löpt ut. Behandla QR-koden och
 parkopplingsnyckeln som ett lösenord och återkalla allt du inte menade att lämna
-ut.
+ut. Både direkta och reläade klientsessioner kräver end-to-end-kryptering; äldre
+klienter kan inte falla tillbaka på klartext-RPC.
 :::
 
 ## Hantera parkopplade enheter

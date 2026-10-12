@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 // change — and GitHub refuses to hang an inline comment there. Telling that
 // apart from a real failure is what stops the toast reporting "2 failed" for
 // something the operator cannot retry and the reason ending up only in a raw
-// Dio error in the server log.
+// HTTP error in the server log.
 void main() {
   // Verbatim from a real rejection: a finding anchored to
   // a file that is in the branch but not in the PR's diff.

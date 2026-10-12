@@ -2,7 +2,7 @@ import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/models/google_calendar_event.dart';
 import 'package:cc_infra/src/network/models/google_calendar_list_entry.dart';
 import 'package:cc_infra/src/network/network_constants.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Thrown when Google answers 410 GONE to an incremental-sync request: the
 /// presented `syncToken` expired and the caller must fall back to a full sync
@@ -35,17 +35,25 @@ class GoogleCalendarEventsSyncResult {
 /// Read-only client for the Google Calendar API v3.
 ///
 /// Mirrors the GitHub clients: every method wraps the call in try/catch,
-/// re-throws cancellations and maps any other [DioException] through
-/// [mapDioException]. The [Dio] is expected to carry the OAuth Bearer +
-/// refresh interceptor (see `googleCalendarDioProvider`). Pagination follows
-/// Google's `nextPageToken` (not GitHub-style Link headers).
+/// re-throws cancellations and maps any other [RhttpException] through
+/// [mapHttpException]. Every request is tagged with the account id
+/// ([googleAccountIdExtraKey], in the request's `additionalData`) so the
+/// [RhttpClient]'s auth interceptor can attach (and refresh) that account's
+/// OAuth token. Pagination follows Google's `nextPageToken` (not GitHub-style
+/// Link headers).
 class GoogleCalendarApiClient {
-  /// Creates a [GoogleCalendarApiClient] backed by [Dio].
-  GoogleCalendarApiClient(this._dio);
+  /// Creates a [GoogleCalendarApiClient] backed by [RhttpClient].
+  GoogleCalendarApiClient(this._httpClient);
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   static const int _maxResults = 2500;
+
+  /// Tags [request] with [accountId] so the auth interceptor can attach (and
+  /// refresh) that account's OAuth token. `expectBody` is explicit at every
+  /// call site: a bare [BaseHttpRequest] asks for a streamed body.
+  BaseHttpRequest _tagged(BaseHttpRequest request, String accountId) =>
+      request..additionalData[googleAccountIdExtraKey] = accountId;
 
   /// Lists the calendars on [accountId]'s calendar list.
   Future<List<GoogleCalendarListEntry>> listCalendars({
@@ -56,24 +64,32 @@ class GoogleCalendarApiClient {
       final entries = <GoogleCalendarListEntry>[];
       String? pageToken;
       do {
-        final response = await _dio.get<dynamic>(
-          '$googleCalendarApiBaseUrl/users/me/calendarList',
-          queryParameters: <String, dynamic>{'pageToken': ?pageToken},
-          options: Options(extra: {googleAccountIdExtraKey: accountId}),
-          cancelToken: cancelToken,
-        );
-        final body = _asMap(response.data);
+        final response =
+            await _httpClient.send(
+                  _tagged(
+                    BaseHttpRequest(
+                      method: HttpMethod.get,
+                      url: '$googleCalendarApiBaseUrl/users/me/calendarList',
+                      query: {'pageToken': ?pageToken},
+                      expectBody: HttpExpectBody.text,
+                      cancelToken: cancelToken,
+                    ),
+                    accountId,
+                  ),
+                )
+                as HttpTextResponse;
+        final body = _asMap(httpJsonBody(response));
         entries.addAll(
           _decodeList(body['items'], GoogleCalendarListEntry.fromJson),
         );
         pageToken = body['nextPageToken'] as String?;
       } while (pageToken != null && pageToken.isNotEmpty);
       return entries;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -96,29 +112,38 @@ class GoogleCalendarApiClient {
       final encodedId = Uri.encodeComponent(calendarId);
       String? pageToken;
       do {
-        final response = await _dio.get<dynamic>(
-          '$googleCalendarApiBaseUrl/calendars/$encodedId/events',
-          queryParameters: <String, dynamic>{
-            'timeMin': timeMin.toUtc().toIso8601String(),
-            'timeMax': timeMax.toUtc().toIso8601String(),
-            'singleEvents': singleEvents,
-            'orderBy': orderBy,
-            'maxResults': _maxResults,
-            'pageToken': ?pageToken,
-          },
-          options: Options(extra: {googleAccountIdExtraKey: accountId}),
-          cancelToken: cancelToken,
-        );
-        final body = _asMap(response.data);
+        final response =
+            await _httpClient.send(
+                  _tagged(
+                    BaseHttpRequest(
+                      method: HttpMethod.get,
+                      url:
+                          '$googleCalendarApiBaseUrl/calendars/$encodedId/events',
+                      query: <String, String>{
+                        'timeMin': timeMin.toUtc().toIso8601String(),
+                        'timeMax': timeMax.toUtc().toIso8601String(),
+                        'singleEvents': '$singleEvents',
+                        'orderBy': orderBy,
+                        'maxResults': '$_maxResults',
+                        'pageToken': ?pageToken,
+                      },
+                      expectBody: HttpExpectBody.text,
+                      cancelToken: cancelToken,
+                    ),
+                    accountId,
+                  ),
+                )
+                as HttpTextResponse;
+        final body = _asMap(httpJsonBody(response));
         events.addAll(_decodeList(body['items'], GoogleCalendarEvent.fromJson));
         pageToken = body['nextPageToken'] as String?;
       } while (pageToken != null && pageToken.isNotEmpty);
       return events;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -147,23 +172,34 @@ class GoogleCalendarApiClient {
       String? pageToken;
       String? nextSyncToken;
       do {
-        final response = await _dio.get<dynamic>(
-          '$googleCalendarApiBaseUrl/calendars/$encodedId/events',
-          queryParameters: <String, dynamic>{
-            if (syncToken != null && syncToken.isNotEmpty)
-              'syncToken': syncToken
-            else ...{
-              if (timeMin != null) 'timeMin': timeMin.toUtc().toIso8601String(),
-              if (timeMax != null) 'timeMax': timeMax.toUtc().toIso8601String(),
-            },
-            'singleEvents': true,
-            'maxResults': _maxResults,
-            'pageToken': ?pageToken,
-          },
-          options: Options(extra: {googleAccountIdExtraKey: accountId}),
-          cancelToken: cancelToken,
-        );
-        final body = _asMap(response.data);
+        final response =
+            await _httpClient.send(
+                  _tagged(
+                    BaseHttpRequest(
+                      method: HttpMethod.get,
+                      url:
+                          '$googleCalendarApiBaseUrl/calendars/$encodedId/events',
+                      query: <String, String>{
+                        if (syncToken != null && syncToken.isNotEmpty)
+                          'syncToken': syncToken
+                        else ...{
+                          if (timeMin != null)
+                            'timeMin': timeMin.toUtc().toIso8601String(),
+                          if (timeMax != null)
+                            'timeMax': timeMax.toUtc().toIso8601String(),
+                        },
+                        'singleEvents': 'true',
+                        'maxResults': '$_maxResults',
+                        'pageToken': ?pageToken,
+                      },
+                      expectBody: HttpExpectBody.text,
+                      cancelToken: cancelToken,
+                    ),
+                    accountId,
+                  ),
+                )
+                as HttpTextResponse;
+        final body = _asMap(httpJsonBody(response));
         events.addAll(_decodeList(body['items'], GoogleCalendarEvent.fromJson));
         pageToken = body['nextPageToken'] as String?;
         final token = body['nextSyncToken'] as String?;
@@ -175,14 +211,14 @@ class GoogleCalendarApiClient {
         events: events,
         nextSyncToken: nextSyncToken,
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      if (e.response?.statusCode == 410) {
+      if (e is RhttpStatusCodeException && e.statusCode == 410) {
         throw const CalendarSyncTokenExpired();
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -202,17 +238,24 @@ class GoogleCalendarApiClient {
     try {
       final encodedCal = Uri.encodeComponent(calendarId);
       final encodedEvent = Uri.encodeComponent(eventId);
-      await _dio.patch<dynamic>(
-        '$googleCalendarApiBaseUrl/calendars/$encodedCal/events/$encodedEvent',
-        data: <String, dynamic>{'attendees': attendees},
-        options: Options(extra: {googleAccountIdExtraKey: accountId}),
-        cancelToken: cancelToken,
+      await _httpClient.send(
+        _tagged(
+          BaseHttpRequest(
+            method: HttpMethod.patch,
+            url:
+                '$googleCalendarApiBaseUrl/calendars/$encodedCal/events/$encodedEvent',
+            body: HttpBody.json(<String, dynamic>{'attendees': attendees}),
+            expectBody: HttpExpectBody.text,
+            cancelToken: cancelToken,
+          ),
+          accountId,
+        ),
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 

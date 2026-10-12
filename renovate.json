@@ -489,6 +489,18 @@
       ],
       "depNameTemplate": "dart",
       "datasourceTemplate": "docker"
+    },
+    {
+      "description": "sentry-cli release pin (SENTRY_CLI_VERSION, used by scripts/release/sentry_upload.sh)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "SENTRY_CLI_VERSION=(?<currentValue>[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "getsentry/sentry-cli",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [

@@ -123,3 +123,57 @@ class AgentInputResolved implements DomainEvent {
   @override
   final DateTime occurredAt;
 }
+
+/// Policy refused an action an agent tried to take (PRD 24 §3/§5).
+///
+/// Deliberately NOT an [AgentAwaitingInput]: nothing is waiting on a human and
+/// there is nothing to approve — the guard resolved the action to `deny`
+/// without ever asking, so the run replans instead of parking. It is published
+/// only for a refusal the human was never shown (a `deny` with `prompted`
+/// false), which is exactly why answering an approval never produces one: that
+/// action's prompt already announced it, and the answer ended that wait.
+///
+/// A rule doing its job silently is still a thing the operator has to be able
+/// to find out about without reading the audit trail — "why did my agent
+/// stop?" is the question the bell answers.
+class AgentActionBlocked implements DomainEvent {
+  /// Creates an [AgentActionBlocked].
+  const AgentActionBlocked({
+    required this.workspaceId,
+    required this.reason,
+    required this.occurredAt,
+    this.spaceId,
+    this.agentId,
+    this.agentName,
+    this.actionSummary = '',
+    this.source,
+  });
+
+  /// Workspace the blocked action belonged to.
+  final String workspaceId;
+
+  /// The terminal reason the guard refused with, kept verbatim: the
+  /// notification says what the rule says, not a paraphrase of it.
+  final String reason;
+
+  /// The space the agent was working in, when known — where the operator goes
+  /// to change the work, or the rule.
+  final String? spaceId;
+
+  /// The agent that was refused, when known.
+  final String? agentId;
+
+  /// The refused agent's display name, when known.
+  final String? agentName;
+
+  /// A short description of the refused action (tool/op name + effect
+  /// classes), when the guard had one. Empty when it did not.
+  final String actionSummary;
+
+  /// Provenance of the denying decision (space/agent/workspace/preset), when
+  /// the guard resolved one.
+  final String? source;
+
+  @override
+  final DateTime occurredAt;
+}

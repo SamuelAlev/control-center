@@ -64,7 +64,10 @@ class LlmToolUseDelta extends LlmEvent {
   final String argumentsJson;
 }
 
-/// Token accounting for a request.
+/// Cumulative per-component token accounting within one request.
+///
+/// A provider may report only some components, or repeat a full snapshot.
+/// Reconcile snapshots with component-wise maxima; sum separate requests.
 class LlmUsage extends LlmEvent {
   /// Creates a usage report.
   const LlmUsage({
@@ -78,7 +81,7 @@ class LlmUsage extends LlmEvent {
   /// Non-cached input tokens.
   final int inputTokens;
 
-  /// Output (completion) tokens.
+  /// Total output tokens, including reasoning/thinking when present.
   final int outputTokens;
 
   /// Cache-hit read tokens (discounted by the provider).
@@ -87,10 +90,10 @@ class LlmUsage extends LlmEvent {
   /// Cache-write tokens.
   final int cacheWriteTokens;
 
-  /// Reasoning / thinking tokens, when reported separately.
+  /// Reasoning/thinking subset of [outputTokens], when reported.
   final int thoughtTokens;
 
-  /// Merge two usage reports (later wins for non-additive context; counts sum).
+  /// Adds independent usage deltas or separate calls.
   LlmUsage operator +(LlmUsage other) => LlmUsage(
     inputTokens: inputTokens + other.inputTokens,
     outputTokens: outputTokens + other.outputTokens,
@@ -98,6 +101,42 @@ class LlmUsage extends LlmEvent {
     cacheWriteTokens: cacheWriteTokens + other.cacheWriteTokens,
     thoughtTokens: thoughtTokens + other.thoughtTokens,
   );
+
+  /// Reconciles accumulated deltas with a cumulative final report without
+  /// counting the same tokens twice or losing a partially reported component.
+  LlmUsage reconcile(LlmUsage? cumulative) {
+    if (cumulative == null) {
+      return this;
+    }
+    final input = _larger(inputTokens, cumulative.inputTokens);
+    final output = _larger(outputTokens, cumulative.outputTokens);
+    final read = _larger(cacheReadTokens, cumulative.cacheReadTokens);
+    final write = _larger(cacheWriteTokens, cumulative.cacheWriteTokens);
+    final thought = _larger(thoughtTokens, cumulative.thoughtTokens);
+    if (input == inputTokens &&
+        output == outputTokens &&
+        read == cacheReadTokens &&
+        write == cacheWriteTokens &&
+        thought == thoughtTokens) {
+      return this;
+    }
+    if (input == cumulative.inputTokens &&
+        output == cumulative.outputTokens &&
+        read == cumulative.cacheReadTokens &&
+        write == cumulative.cacheWriteTokens &&
+        thought == cumulative.thoughtTokens) {
+      return cumulative;
+    }
+    return LlmUsage(
+      inputTokens: input,
+      outputTokens: output,
+      cacheReadTokens: read,
+      cacheWriteTokens: write,
+      thoughtTokens: thought,
+    );
+  }
+
+  static int _larger(int a, int b) => a > b ? a : b;
 }
 
 /// Why a completion finished.
@@ -175,6 +214,86 @@ class LlmError extends LlmEvent {
   final int? retryAfterMs;
 }
 
+/// Why a completion was requested.
+///
+/// Attribution exists because a run's cost is the sum of EVERY call it makes,
+/// not just its main turns. The probe that motivated this measured a real
+/// compaction through the loop: the provider billed 918 input tokens for one
+/// summarization request plus one main request, while the loop accounted for
+/// 17. Work moved into an auxiliary call made the run *look* cheaper. Tagging
+/// the purpose at the call site is what lets a ledger price every caller —
+/// main turns, compactions, advisor reviews, side requests, subagent turns —
+/// against the same budget.
+enum LlmCallPurpose {
+  /// The primary agent turn.
+  main,
+
+  /// Context compaction / summarization.
+  compaction,
+
+  /// A watchdog/advisor review.
+  advisor,
+
+  /// A one-off side question or handoff document.
+  sideRequest,
+
+  /// A subagent's own turns.
+  subagent;
+
+  /// The wire spelling used by the observability/accounting layer.
+  String get wire => switch (this) {
+    LlmCallPurpose.main => 'main',
+    LlmCallPurpose.compaction => 'compaction',
+    LlmCallPurpose.advisor => 'advisor',
+    LlmCallPurpose.sideRequest => 'side_request',
+    LlmCallPurpose.subagent => 'subagent',
+  };
+
+  /// Parses [wire]; an unknown value degrades to [LlmCallPurpose.main].
+  static LlmCallPurpose fromWire(String? raw) => switch (raw) {
+    'compaction' => LlmCallPurpose.compaction,
+    'advisor' => LlmCallPurpose.advisor,
+    'side_request' => LlmCallPurpose.sideRequest,
+    'subagent' => LlmCallPurpose.subagent,
+    _ => LlmCallPurpose.main,
+  };
+}
+
+/// Per-call instrumentation a provider's transport reports into.
+///
+/// The usage ledger creates one per completed request and hands it to the
+/// provider through [LlmCompleteConfig.trace]; a provider that can observe
+/// these boundaries calls the hooks, and one that cannot leaves them uncalled.
+/// Nothing is ever inferred on the provider's behalf: an unobserved boundary
+/// stays `null` in the resulting record rather than being back-filled from a
+/// nearby timestamp, so a CLI adapter whose output is buffered never publishes
+/// a fabricated time-to-first-byte.
+class LlmCallTrace {
+  /// Creates a trace.
+  const LlmCallTrace();
+
+  /// The HTTP transport committed the request body, after encoding/connect.
+  /// Unobservable providers leave this unset; this is not a socket timestamp.
+  void requestSent() {}
+
+  /// The transport received the first response BODY byte.
+  ///
+  /// Fires at most once per call (first boundary wins — an auth-retry's second
+  /// response does not move it) and never fires for a response with no body, so
+  /// an unobserved boundary stays null rather than being inferred.
+  ///
+  /// It is a body-byte boundary, NOT a wire first-byte one: response headers
+  /// complete earlier, and the first TCP/TLS byte is not observable from the
+  /// client at all. The interval between this timestamp and the first model
+  /// delta is server generation plus transport plus queueing — do not attribute
+  /// it to the network, or to the model, from this metric alone.
+  void transportFirstByte() {}
+
+  /// The provider learned which model actually served the request (a proxy or
+  /// router can serve a different one than was asked for).
+  void servedModel(String model) {}
+}
+
 /// A tool definition handed to the provider so the model can call it.
 class LlmToolSchema {
   /// Creates a tool schema.
@@ -182,6 +301,7 @@ class LlmToolSchema {
     required this.name,
     required this.description,
     required this.inputSchema,
+    this.deferLoading = false,
   });
 
   /// Tool name.
@@ -192,6 +312,66 @@ class LlmToolSchema {
 
   /// JSON Schema for the tool input.
   final Map<String, dynamic> inputSchema;
+
+  /// Whether the provider should keep this definition OUT of the model's
+  /// working context until the model discovers it (Anthropic's native deferred
+  /// loading / tool search).
+  ///
+  /// The definition is still SENT in full — `defer_loading` controls what
+  /// enters the context window, not what travels on the wire, and the API needs
+  /// the schema server-side to expand a `tool_reference` back into it. A
+  /// provider without a native deferral mechanism ignores this flag and sends
+  /// the tool normally, which is exactly the pre-existing behavior.
+  final bool deferLoading;
+
+  /// Returns a copy with [deferLoading] overridden.
+  LlmToolSchema copyWith({bool? deferLoading}) => LlmToolSchema(
+    name: name,
+    description: description,
+    inputSchema: inputSchema,
+    deferLoading: deferLoading ?? this.deferLoading,
+  );
+}
+
+/// A provider that can defer tool definitions natively (Anthropic's tool
+/// search: `defer_loading` + `tool_reference` blocks).
+///
+/// A capability interface rather than a member of [LlmProviderPort] so the many
+/// existing implementations and test doubles stay valid, and so a caller must
+/// ask explicitly instead of assuming every provider caches tools the same way
+/// — sending `defer_loading` to an endpoint that does not understand it is a
+/// rejected request, not a no-op.
+abstract interface class LlmDeferredToolSupport {
+  /// Whether this provider can defer tool loading for [model] (null = the
+  /// provider's default model).
+  bool supportsDeferredTools({String? model});
+}
+
+/// Whether [provider] can defer tool loading for [model].
+///
+/// The single check to use instead of `provider is LlmDeferredToolSupport`
+/// (which would answer `true` for a wrapper whose delegate cannot).
+bool providerSupportsDeferredTools(LlmProviderPort provider, {String? model}) =>
+    switch (provider) {
+      final LlmDeferredToolSupport capability =>
+        capability.supportsDeferredTools(model: model),
+      _ => false,
+    };
+
+/// A provider that can report which concrete provider/model actually served the
+/// most recent request (credential rotation and cross-provider fallback chains
+/// serve from a different target than the one that was configured).
+///
+/// Reported identity is a FALLBACK for a wrapper that had to instrument a whole
+/// chain: it names only the target that finally served, so any earlier target
+/// the chain consumed is not accounted separately. Instrument each entry's
+/// provider when per-target accounting matters.
+abstract interface class LlmServedIdentity {
+  /// Provider id of the target that served the most recent completion.
+  String get lastServedProviderId;
+
+  /// Model of the target that served the most recent completion.
+  String get lastServedModel;
 }
 
 /// How long a provider should keep a cached prefix alive.
@@ -232,6 +412,9 @@ class LlmCompleteConfig {
     this.toolCacheBreakpointIndex,
     this.cacheAnchorIndex,
     this.stablePrefixTtl = LlmCacheTtl.oneHour,
+    this.purpose = LlmCallPurpose.main,
+    this.callId,
+    this.trace,
   });
 
   /// Overrides the provider default model.
@@ -299,12 +482,33 @@ class LlmCompleteConfig {
   /// the short window: it is rewritten every turn regardless.
   final LlmCacheTtl stablePrefixTtl;
 
+  /// What this request is for, for usage attribution. Providers ignore it; the
+  /// usage ledger reads it so an auxiliary call is priced against the same
+  /// budget as a main turn instead of vanishing from the accounting.
+  final LlmCallPurpose purpose;
+
+  /// Correlation id for the LOGICAL request this call belongs to.
+  ///
+  /// One logical request can be attempted several times (the loop retries a
+  /// retryable error with backoff). Sharing a [callId] across those attempts is
+  /// what lets the ledger number them (`attempt` 1, 2, …) instead of presenting
+  /// three identical-looking calls. Null yields `attempt: 1`.
+  final String? callId;
+
+  /// Optional per-call instrumentation sink, set by the usage ledger. A
+  /// provider that can observe the transport/model boundaries reports them
+  /// here; a provider that cannot simply never calls it.
+  final LlmCallTrace? trace;
+
   /// Returns a copy with the given overrides.
   LlmCompleteConfig copyWith({
     String? model,
     String? systemPrompt,
     int? toolCacheBreakpointIndex,
     int? cacheAnchorIndex,
+    LlmCallPurpose? purpose,
+    String? callId,
+    LlmCallTrace? trace,
   }) => LlmCompleteConfig(
     model: model ?? this.model,
     systemPrompt: systemPrompt ?? this.systemPrompt,
@@ -320,6 +524,9 @@ class LlmCompleteConfig {
         toolCacheBreakpointIndex ?? this.toolCacheBreakpointIndex,
     cacheAnchorIndex: cacheAnchorIndex ?? this.cacheAnchorIndex,
     stablePrefixTtl: stablePrefixTtl,
+    purpose: purpose ?? this.purpose,
+    callId: callId ?? this.callId,
+    trace: trace ?? this.trace,
   );
 }
 

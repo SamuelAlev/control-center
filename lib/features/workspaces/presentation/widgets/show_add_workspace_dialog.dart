@@ -13,6 +13,7 @@ Future<String?> showAddWorkspaceDialog(
   final l10n = AppLocalizations.of(context);
   return showCcDialog<String?>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (dialogContext) => CcDialog(
       title: l10n.addWorkspace,
       content: SizedBox(

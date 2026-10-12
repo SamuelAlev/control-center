@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:cc_infra/src/network/github_content_client.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// In-memory fake [GitHubContentClient] for testing protocol handlers.
 class FakeGitHubContentClient extends GitHubContentClient {
-  FakeGitHubContentClient() : super(_fakeDio);
+  FakeGitHubContentClient() : super(_fakeHttpClient);
 
-  static final _fakeDio = _NullDio();
+  static final _fakeHttpClient = _NullHttpClient();
 
   /// File content by "$owner/$repo/$path@$ref".
   final Map<String, String> files = {};
@@ -43,9 +43,10 @@ class FakeGitHubContentClient extends GitHubContentClient {
   }
 }
 
-/// A Dio instance that never gets called — all methods are overridden.
-class _NullDio implements Dio {
+/// An rhttp client that is never reached — every networked method is
+/// overridden.
+class _NullHttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
-      throw StateError('FakeGitHubContentClient should not reach Dio');
+      throw StateError('FakeGitHubContentClient should not reach the network');
 }

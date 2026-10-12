@@ -14295,6 +14295,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get composerDropToAttach => 'Lasă ca să atașezi';
 
   @override
+  String get composerAttachmentUploading => 'Se încarcă…';
+
+  @override
+  String get composerAttachmentReady => 'Pregătit';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Încărcarea a eșuat';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Fișierul depășește limita de $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Nu s-a putut citi acest fișier';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Așteaptă să se termine încărcarea atașamentelor';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Încearcă din nou sau elimină atașamentele cu încărcare eșuată înainte de trimitere';
+
+  @override
   String get attachmentUnavailable => 'Atașament indisponibil';
 
   @override
@@ -15473,11 +15498,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Un agent te așteaptă';
+  String get notificationAgentAwaitingInput => 'Un agent necesită atenție';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Când un agent are nevoie de aprobarea ta, de un răspuns sau de credențiale valide';
+      'Când un agent are nevoie de aprobare, un răspuns sau credențiale valide, ori o politică blochează o acțiune';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15551,4 +15576,388 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Serverul se oprește';
+
+  @override
+  String get skillEvalAbsent => 'Absent vs disponibil';
+
+  @override
+  String get skillEvalAmbient => 'Abilități disponibile implicit';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Referință artefact: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · repetarea $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Încercări';
+
+  @override
+  String get skillEvalAvailableEvent => 'Disponibil';
+
+  @override
+  String get skillEvalBaseline => 'Hash-ul reviziei anterioare';
+
+  @override
+  String get skillEvalBodyLoad => 'Conținut încărcat';
+
+  @override
+  String get skillEvalBudgetCents => 'Buget (cenți SUA)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Evaluarea plătită folosește furnizorul și bugetul selectate. Rezultatele scanării de securitate sunt separate.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Bugetele abonamentelor urmăresc utilizarea la tarife API echivalente, nu facturile. Un apel în curs poate depăși bugetul; după atingerea limitei nu mai pornesc alte apeluri. Scanările de securitate sunt separate.';
+
+  @override
+  String get skillEvalCancel => 'Anulează rularea';
+
+  @override
+  String get skillEvalCancelled => 'Anulată';
+
+  @override
+  String get skillEvalCancelling => 'Se anulează';
+
+  @override
+  String get skillEvalComparison => 'Comparație';
+
+  @override
+  String get skillEvalCompleted => 'Finalizată';
+
+  @override
+  String get skillEvalComposition => 'Componență';
+
+  @override
+  String get skillEvalCorpus => 'Set de sarcini';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString repetări';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Toate testele planificate au fost observate';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Hash-ul pachetului curent: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates =>
+      'Dezactivează evaluările la actualizare';
+
+  @override
+  String get skillEvalEnableUpdates => 'Activează evaluările la actualizare';
+
+  @override
+  String get skillEvalExport => 'Copiază JSON-ul cu date mascate';
+
+  @override
+  String get skillEvalFailed => 'Eșuată';
+
+  @override
+  String get skillEvalForced => 'Încărcare forțată vs absent';
+
+  @override
+  String get skillEvalForcedEvent => 'Încărcare forțată';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Hash-ul pachetului nu este disponibil pe acest server. Evaluarea este dezactivată.';
+
+  @override
+  String get skillEvalHistory => 'Istoricul reviziilor';
+
+  @override
+  String get skillEvalImproved => 'Îmbunătățită';
+
+  @override
+  String get skillEvalIncomplete => 'Incompletă';
+
+  @override
+  String get skillEvalInconclusive => 'Neconcludentă';
+
+  @override
+  String get skillEvalInferred => 'Dedusă';
+
+  @override
+  String get skillEvalInterrupted => 'Întreruptă';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Încărcarea abilității nu poate fi observată; lipsa unui eveniment nu dovedește că a fost ignorată.';
+
+  @override
+  String get skillEvalModel => 'Model selectat';
+
+  @override
+  String get skillEvalNoAttempts => 'Nicio încercare deocamdată.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Nu există modele conectate. Conectează mai întâi un furnizor în Setări.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Nu există un hash anterior în istoricul campaniei. Evaluează revizia anterioară înainte de a o înlocui.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Nu există încă un raport; încercările parțiale rămân disponibile.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Niciun spațiu de lucru selectat.';
+
+  @override
+  String get skillEvalNoTasks => 'Nicio sarcină raportată deocamdată.';
+
+  @override
+  String get skillEvalNoVerifiers =>
+      'Nu au fost înregistrate dovezi de verificare.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Nu a fost evaluată pentru acești octeți exacți. O scanare nu este o dovadă a comportamentului.';
+
+  @override
+  String get skillEvalNotVerified => 'Neverificată';
+
+  @override
+  String get skillEvalObserved => 'Observată';
+
+  @override
+  String get skillEvalOpenQuality => 'Deschide Quality';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'În mod implicit, salvarea unei abilități nu pornește o evaluare plătită. Dacă activezi explicit reevaluarea automată la actualizare, salvarea pornește o reevaluare plătită în limita bugetului stabilit.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Evaluează mai întâi o revizie pentru a configura politica de actualizare.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Configurarea politicii de actualizare';
+
+  @override
+  String get skillEvalPartial =>
+      'Dovezi parțiale; fără verdict privind adoptarea';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString din $plannedString încercări';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Furnizor: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Campanii pentru abilitățile din spațiul de lucru și dovezi specifice fiecărei revizii.';
+
+  @override
+  String get skillEvalQueued => 'În așteptare';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Se reconectează la instantaneele campaniei…';
+
+  @override
+  String get skillEvalRefresh => 'Reîmprospătează';
+
+  @override
+  String get skillEvalReferenceLoad => 'Referință încărcată';
+
+  @override
+  String get skillEvalRepetitions => 'Repetări per sarcină';
+
+  @override
+  String get skillEvalReport => 'Raport de dovezi';
+
+  @override
+  String get skillEvalRunning => 'În curs';
+
+  @override
+  String get skillEvalScriptExecution => 'Script executat';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Cheltuit: $spent / buget $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Pornește evaluarea';
+
+  @override
+  String get skillEvalStartTitle => 'Compară reviziile abilității';
+
+  @override
+  String get skillEvalStale => 'Învechită';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Învechită: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Grupuri distincte de sarcini: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes verificate) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Sarcini pe grup';
+
+  @override
+  String get skillEvalToolError => 'Eroare de instrument';
+
+  @override
+  String get skillEvalTools => 'Evenimente ale instrumentelor';
+
+  @override
+  String get skillEvalTitle => 'Evaluarea abilității';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Indisponibilă: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Necunoscută';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Modificările nesalvate nu sunt incluse. Salvează înainte de evaluare.';
+
+  @override
+  String get skillEvalUncertainty => 'Interval de incertitudine';
+
+  @override
+  String get skillEvalVerified => 'Verificată';
+
+  @override
+  String get skillEvalVerifiers => 'Verificare';
+
+  @override
+  String get skillEvalVerdict => 'Verdict';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Copiere finalizată: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Încălcare a planului';
+
+  @override
+  String get skillEvalPreserved => 'Calitate menținută';
+
+  @override
+  String get skillEvalPrevious => 'Anterior vs curent';
+
+  @override
+  String get skillEvalRegressed => 'Regresie demonstrată';
+
+  @override
+  String get skillEvalCostRegression => 'Regresia costurilor';
+
+  @override
+  String get skillEvalHarnessError => 'Eroare a cadrului de testare';
+
+  @override
+  String get skillBehaviorRouting => 'Rutarea abilității';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive utilizări așteptate · $falsePositive utilizări neașteptate · $falseNegative utilizări ratate · $trueNegative omisiuni corecte';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive utilizări incerte · $negative omisiuni incerte · $notOffered neoferite';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Precizie observată $precision · rată de recuperare $recall · rată de fals pozitive $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Braț forțat · doar diagnostic';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Ratele includ doar accesările observabile. Accesul prin shell sau căutare poate rămâne necunoscut; încărcarea unei abilități nu dovedește aplicarea ei.';
+
+  @override
+  String get skillBehaviorSafety => 'Siguranță sintetică';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts verificări de artefact trecute · $denials refuzuri conform politicii · $violations încălcări ale fișierelor protejate';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Verificările artefactelor sunt sintetice și nu reflectă ratele atacurilor din lumea reală; efectele secundare reale nu sunt monitorizate.';
+
+  @override
+  String get skillBehaviorUtility => 'Utilitate după familie';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts reușite verificate';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Toate încercările intră în numitorul utilității, inclusiv cele eșuate și incomplete.';
 }

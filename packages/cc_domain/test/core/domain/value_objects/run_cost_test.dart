@@ -41,7 +41,7 @@ void main() {
   });
 
   group('RunCost.totalTokens', () {
-    test('sums every token category', () {
+    test('does not charge the reasoning subset twice', () {
       const cost = RunCost(
         inputTokens: 100,
         outputTokens: 50,
@@ -49,7 +49,7 @@ void main() {
         cachedReadTokens: 10,
         cachedWriteTokens: 5,
       );
-      expect(cost.totalTokens, 190);
+      expect(cost.totalTokens, 165);
     });
 
     test('is zero when nothing was consumed', () {
@@ -202,15 +202,15 @@ void main() {
       expect(usage.totalTokens, 0);
     });
 
-    test('sums token categories in totalTokens', () {
+    test('counts reasoning once through output tokens', () {
       const usage = RunUsage(
         inputTokens: 1,
         outputTokens: 2,
-        thoughtTokens: 3,
+        thoughtTokens: 1,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
       );
-      expect(usage.totalTokens, 15);
+      expect(usage.totalTokens, 12);
     });
 
     test('toCost carries token counts and supplied timings', () {

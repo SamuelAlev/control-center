@@ -1,5 +1,8 @@
+import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
 
 /// Agent process event type discriminant.
 ///
@@ -21,6 +24,10 @@ enum AgentProcessEventType {
 
   /// Usage / token-count event.
   usage,
+
+  /// A typed run-stage latency boundary (request sent, first byte, first model
+  /// delta, first useful work, verified completion).
+  stageTiming,
 
   /// The provider-reported size of the context the model just read.
   contextWindow,
@@ -54,6 +61,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return 'tool_result';
       case AgentProcessEventType.usage:
         return 'usage';
+      case AgentProcessEventType.stageTiming:
+        return 'stage_timing';
       case AgentProcessEventType.contextWindow:
         return 'context_window';
       case AgentProcessEventType.error:
@@ -81,6 +90,9 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return AgentProcessEventType.toolResult;
       case 'usage':
         return AgentProcessEventType.usage;
+      case 'stage_timing':
+      case 'stagetiming':
+        return AgentProcessEventType.stageTiming;
       case 'context_window':
         return AgentProcessEventType.contextWindow;
       case 'error':
@@ -246,8 +258,25 @@ class ToolResultEvent extends AgentProcessEvent {
 
 class UsageEvent extends AgentProcessEvent {
   /// Creates a token usage report event.
-  UsageEvent({required this.usage, this.durationMs, super.timestamp})
-    : content = '';
+  ///
+  /// [scope] decides how the report folds into the run's accumulated cost:
+  /// [UsageScope.request] / [UsageScope.turn] are ADDITIVE deltas, while
+  /// [UsageScope.runCumulative] is an ABSOLUTE snapshot that REPLACES the
+  /// accumulated totals. A resumed CLI that reports whole-process totals must
+  /// send the latter, or every turn doubles the run's spend.
+  UsageEvent({
+    required this.usage,
+    this.durationMs,
+    this.purpose = LlmCallPurpose.main,
+    this.provider,
+    this.modelId,
+    this.attempt,
+    this.requestId,
+    this.scope = UsageScope.request,
+    this.nativeSessionId,
+    this.resumedNativeSession = false,
+    super.timestamp,
+  }) : content = '';
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.usage;
@@ -261,6 +290,38 @@ class UsageEvent extends AgentProcessEvent {
   /// Wall-clock duration for this measurement window, if reported.
   final int? durationMs;
 
+  /// What the reported call(s) were for. Defaults to [LlmCallPurpose.main] so
+  /// every existing adapter keeps its meaning without changes.
+  final LlmCallPurpose purpose;
+
+  /// Provider that served the call, when known.
+  final String? provider;
+
+  /// Model that ACTUALLY served the call, when known (a fallback or re-route
+  /// is not the requested alias).
+  final String? modelId;
+
+  /// 1-based attempt number for calls sharing [requestId], when known.
+  final int? attempt;
+
+  /// Id of the request this report belongs to, when the adapter assigns one.
+  final String? requestId;
+
+  /// How this report folds into the run's totals.
+  final UsageScope scope;
+
+  /// The adapter's OWN session/thread id for this run (e.g. a Claude CLI
+  /// session id), when it has one.
+  ///
+  /// Recorded as data rather than prose: the evaluation's resume-vs-fresh
+  /// stratum has to be derivable from stored runs, and a `DebugEvent` line is
+  /// not a queryable field.
+  final String? nativeSessionId;
+
+  /// Whether this run RESUMED a native session ([nativeSessionId]) rather than
+  /// starting a fresh one.
+  final bool resumedNativeSession;
+
   @override
   Map<String, dynamic>? get metadata => {
     'inputTokens': usage.inputTokens,
@@ -270,7 +331,89 @@ class UsageEvent extends AgentProcessEvent {
     if (usage.cachedWriteTokens > 0)
       'cachedWriteTokens': usage.cachedWriteTokens,
     'estimatedCostCents': usage.estimatedCostCents,
+    if (usage.costMicros != 0) 'costMicros': usage.costMicros,
+    if (usage.costBasis != CostBasis.estimated)
+      'costBasis': usage.costBasis.name,
     if (durationMs != null) 'durationMs': durationMs,
+    if (purpose != LlmCallPurpose.main) 'purpose': purpose.wire,
+    if (provider != null) 'provider': provider,
+    if (modelId != null) 'modelId': modelId,
+    if (attempt != null) 'attempt': attempt,
+    if (requestId != null) 'requestId': requestId,
+    if (scope != UsageScope.request) 'scope': scope.wire,
+    if (nativeSessionId != null) 'nativeSessionId': nativeSessionId,
+    if (resumedNativeSession) 'resumedNativeSession': true,
+  };
+}
+
+/// One observed run-stage latency boundary.
+///
+/// The stream processors emit these instead of deriving a single "TTFT" from
+/// the first text event: a thinking-first or tool-first run does useful work
+/// while that number is unset, and the old derivation silently reported
+/// context-assembly time as if it were provider latency. Stages that cannot be
+/// observed are simply NOT emitted — an absent stage is unknown, and a consumer
+/// must never render it as zero.
+class StageTimingEvent extends AgentProcessEvent {
+  /// Creates a stage timing event.
+  StageTimingEvent({
+    required this.stage,
+    required this.offsetMs,
+    required this.source,
+    this.durationMs,
+    this.provider,
+    this.modelId,
+    this.requestId,
+    super.timestamp,
+  }) : content = '';
+
+  @override
+  AgentProcessEventType get type => AgentProcessEventType.stageTiming;
+
+  @override
+  final String content;
+
+  /// Which boundary this marks.
+  final RunStage stage;
+
+  /// Milliseconds from run start to this boundary.
+  final int offsetMs;
+
+  /// Who observed it (provider, transport, adapter, harness).
+  final RunTimingSource source;
+
+  /// Milliseconds this stage itself took, when it closes a span.
+  final int? durationMs;
+
+  /// Provider id, when the boundary is provider/transport specific.
+  final String? provider;
+
+  /// Model id, when known.
+  final String? modelId;
+
+  /// Physical request identity for retry-safe latency intervals.
+  final String? requestId;
+
+  /// This timing as a domain value, for folding into a run profile.
+  RunStageTiming toTiming() => RunStageTiming(
+    stage: stage,
+    offsetMs: offsetMs,
+    source: source,
+    durationMs: durationMs,
+    provider: provider,
+    modelId: modelId,
+    requestId: requestId,
+  );
+
+  @override
+  Map<String, dynamic>? get metadata => {
+    'stage': stage.wire,
+    'offsetMs': offsetMs,
+    'source': source.wire,
+    if (durationMs != null) 'durationMs': durationMs,
+    if (provider != null) 'provider': provider,
+    if (modelId != null) 'modelId': modelId,
+    if (requestId != null) 'requestId': requestId,
   };
 }
 

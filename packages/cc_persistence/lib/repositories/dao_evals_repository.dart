@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/evals/domain/entities/evals_entities.dart';
+import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
 import 'package:cc_domain/features/evals/domain/repositories/evals_repository.dart';
 import 'package:cc_persistence/database/daos/evals_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
@@ -246,4 +247,84 @@ class DaoEvalsRepository implements EvalsRepository {
     promotedAt: promotedAt,
     scorecardJson: scorecardJson,
   );
+  // ── Skill evaluation campaigns ──
+
+  @override
+  Future<void> upsertSkillCampaign(SkillEvaluationCampaign campaign) =>
+      _dao(campaign.workspaceId).upsertSkillCampaign(
+        _mapper.skillCampaignToCompanion(campaign),
+      );
+
+  @override
+  Future<SkillEvaluationCampaign?> skillCampaignById(
+    String workspaceId, String id,
+  ) async {
+    final row = await _dao(workspaceId).skillCampaignById(workspaceId, id);
+    return row == null ? null : _mapper.skillCampaignFromRow(row);
+  }
+
+  @override
+  Future<List<SkillEvaluationCampaign>> skillCampaigns(
+    String workspaceId, {String? skillKey, int limit = 100}
+  ) async => (await _dao(workspaceId).skillCampaigns(
+    workspaceId, skillKey: skillKey, limit: limit,
+  )).map(_mapper.skillCampaignFromRow).toList();
+
+  @override
+  Stream<List<SkillEvaluationCampaign>> watchSkillCampaigns(
+    String workspaceId, {String? skillKey}
+  ) => _dao(workspaceId)
+      .watchSkillCampaigns(workspaceId, skillKey: skillKey)
+      .map((rows) => rows.map(_mapper.skillCampaignFromRow).toList());
+
+  @override
+  Stream<SkillEvaluationCampaign?> watchSkillCampaign(
+    String workspaceId, String id,
+  ) => _dao(workspaceId)
+      .watchSkillCampaign(workspaceId, id)
+      .map((row) => row == null ? null : _mapper.skillCampaignFromRow(row));
+
+  @override
+  Future<void> upsertSkillAttempt(SkillEvaluationAttemptRecord attempt) =>
+      _dao(attempt.workspaceId).upsertSkillAttempt(
+        _mapper.skillAttemptToCompanion(attempt),
+      );
+
+  @override
+  Future<List<SkillEvaluationAttemptRecord>> skillAttempts(
+    String workspaceId, String campaignId,
+  ) async => (await _dao(workspaceId).skillAttempts(
+    workspaceId, campaignId,
+  )).map(_mapper.skillAttemptFromRow).toList();
+
+  @override
+  Future<SkillEvaluationAttemptRecord?> skillAttemptById(
+    String workspaceId, String campaignId, String id,
+  ) async {
+    final row = await _dao(workspaceId).skillAttemptById(
+      workspaceId, campaignId, id,
+    );
+    return row == null ? null : _mapper.skillAttemptFromRow(row);
+  }
+
+  @override
+  Future<void> upsertSkillPolicy(SkillEvaluationPolicy policy) =>
+      _dao(policy.workspaceId).upsertSkillPolicy(
+        _mapper.skillPolicyToCompanion(policy),
+      );
+
+  @override
+  Future<SkillEvaluationPolicy?> skillPolicy(
+    String workspaceId, String skillKey,
+  ) async {
+    final row = await _dao(workspaceId).skillPolicy(workspaceId, skillKey);
+    return row == null ? null : _mapper.skillPolicyFromRow(row);
+  }
+
+  @override
+  Future<List<SkillEvaluationPolicy>> enabledSkillPolicies(
+    String workspaceId,
+  ) async => (await _dao(workspaceId).enabledSkillPolicies(
+    workspaceId,
+  )).map(_mapper.skillPolicyFromRow).toList();
 }

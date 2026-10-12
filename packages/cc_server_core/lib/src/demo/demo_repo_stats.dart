@@ -1,5 +1,6 @@
+import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/demo/demo_world.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The project's own GitHub stars, fetched server-side and cached.
 ///
@@ -19,20 +20,22 @@ import 'package:dio/dio.dart';
 class DemoRepoStats {
   /// Creates a stats fetcher.
   ///
-  /// [dio] is injectable for tests; the default is a plain client with the
-  /// same timeout shape the RSS fetcher uses, so a stalled GitHub cannot hold
-  /// an RPC handler open.
+  /// [httpClient] is injectable for tests; the default is a plain client with
+  /// the same timeout shape the RSS fetcher uses, so a stalled GitHub cannot
+  /// hold an RPC handler open.
   DemoRepoStats({
-    Dio? dio,
+    RhttpClient? httpClient,
     this.ttl = const Duration(minutes: 30),
     this.failureCooldown = const Duration(minutes: 5),
     this._onLog,
-  }) : _dio =
-           dio ??
-           Dio(
-             BaseOptions(
-               connectTimeout: const Duration(seconds: 5),
-               receiveTimeout: const Duration(seconds: 5),
+  }) : _httpClient =
+           httpClient ??
+           createHttpClient(
+             settings: const ClientSettings(
+               timeoutSettings: TimeoutSettings(
+                 timeout: Duration(seconds: 5),
+                 connectTimeout: Duration(seconds: 5),
+               ),
              ),
            );
 
@@ -48,7 +51,7 @@ class DemoRepoStats {
   static const String _userAgent =
       'ControlCenter/1.0 (+https://github.com/$kDemoProjectRepoFullName)';
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final void Function(String message)? _onLog;
 
   int? _stars;
@@ -77,11 +80,12 @@ class DemoRepoStats {
 
   Future<int?> _refresh() async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
+      final response = await _httpClient.getText(
         'https://api.github.com/repos/$kDemoProjectRepoFullName',
-        options: Options(headers: {'User-Agent': _userAgent}),
+        headers: const HttpHeaders.rawMap({'User-Agent': _userAgent}),
       );
-      final stars = response.data?['stargazers_count'];
+      final body = response.bodyToJson;
+      final stars = body is Map ? body['stargazers_count'] : null;
       if (stars is! num || stars < 0) {
         throw const FormatException('stargazers_count missing');
       }

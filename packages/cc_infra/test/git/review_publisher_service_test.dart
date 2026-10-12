@@ -11,8 +11,15 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_pa
 import 'package:cc_infra/src/git/review_publisher_service.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
 import 'package:cc_infra/src/network/models/github_review.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
+
+/// Never touches the network: the fake below overrides every method under
+/// test, so this client only satisfies the constructor.
+class _NullRhttpClient implements RhttpClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Exercises [ReviewPublisherService] with faked repositories and a
 /// [GitHubPrClient] subclass that captures `submitReview` calls. Covers: the
@@ -197,10 +204,7 @@ void main() {
       github
         ..firstSubmitThrows422 = true
         ..reviewId = 999;
-      final result = await service.publish(
-        workspaceId: 'ws1',
-        spaceId: 'ch1',
-      );
+      final result = await service.publish(workspaceId: 'ws1', spaceId: 'ch1');
       expect(result.usedFallback, isTrue);
       expect(result.inlineCount, 0); // fallback → no inline comments
       expect(result.reviewId, 999);
@@ -274,10 +278,15 @@ class _SubmitCall {
 }
 
 /// A [GitHubPrClient] subclass that captures `submitReview` calls. The real
-/// constructor needs a [Dio], but every networked method is overridden so the
-/// Dio is never used.
+/// constructor needs an [RhttpClient], but every networked method is
+/// overridden, so the null client is never used.
 class _FakeGithub extends GitHubPrClient {
-  _FakeGithub() : super(Dio());
+  _FakeGithub()
+    : super(
+        _NullRhttpClient(),
+        downloadHttpClient: _NullRhttpClient(),
+        redirectlessHttpClient: _NullRhttpClient(),
+      );
 
   final submits = <_SubmitCall>[];
   int reviewId = 1;

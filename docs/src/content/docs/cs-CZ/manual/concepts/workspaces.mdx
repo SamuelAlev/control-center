@@ -2,7 +2,7 @@
 title: Pracovní prostory a izolace
 description: Proč je pracovní prostor tvrdá hranice tenanta, jak rozdělení databází tu hranici dělá strukturální a co ji záměrně překračuje.
 slug: cs-CZ/prirucka/koncepty/pracovni-prostory
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Co je pracovní prostor?
@@ -118,13 +118,17 @@ Co žádná z nich nenese, je zbytek adresáře pracovního prostoru. Pracovní 
 
 ## Přesun zálohy mezi serverem a tvým zařízením
 
-Každá operace výše mluví v cestách na **serveru**, a to je úplná odpověď jen tehdy, když je server tvůj vlastní stroj. Tři podepsané HTTP cesty, [`/backup/workspace`, `/backup/snapshot` a `/backup/restore`](/cs-CZ/prirucka/referencni-prirucka/zaloha/#trasy-přenosu), přenesou bajty pro každou jinou topologii, po stejné ověřené lince, kterou už používá proxy médií a úložiště obrázků. Na stránce je to tlačítko **Stáhnout** vedle každého exportu a každého snímku (vybereš, kam soubor spadne) a **Vybrat soubor a nahrát**, když obnovuješ ze souboru na stroji, u kterého sedíš. Nahrání je to, co funguje, když server není tvůj stroj: `workspace.import` potřebuje, aby soubor už ležel na hostiteli, a tudy se tam dostane.
+Každá operace výše mluví v cestách na **serveru**, a to je úplná odpověď jen tehdy, když je server tvůj vlastní stroj. Tři podepsané přenosové cesty, [`/backup/workspace`, `/backup/snapshot` a `/backup/restore`](/cs-CZ/prirucka/referencni-prirucka/zaloha/#trasy-přenosu), přenesou bajty pro každou jinou topologii přes ověřený, šifrovaný tunel prostředků, na přímých spojeních i přes relé. Veřejné HTTP cesty neobsluhují čitelné bajty zálohy a podepsané cesty pořád vyžadují autorizaci. Na stránce je to tlačítko **Stáhnout** vedle každého exportu a každého snímku (vybereš, kam soubor spadne) a **Vybrat soubor a nahrát**, když obnovuješ ze souboru na stroji, u kterého sedíš. Nahrání funguje, když server není tvůj stroj: `workspace.import` potřebuje, aby soubor už ležel na hostiteli, a tudy se tam dostane.
 
 Tři vlastnosti stojí za to znát:
 
 - **Stažení vytvoří čerstvou kopii a server si z ní nic nenechá.** Při stažení se export spustí znovu, výsledek se streamuje a pak se smaže. Odpověď je `no-store` s `Accept-Ranges: none` ze stejného důvodu: obnovený rozsah by slepil dva různé exporty do jednoho souboru, který vypadá platně a není.
 - **Nahrání se streamuje na disk a nikdy se nebufferuje**, na obou koncích, a dočasná kopie se smaže na každé cestě ven, včetně odmítnutí. Databáze pracovního prostoru není snímek obrazovky.
-- **Spojení přes relay nemá HTTP origin**, takže ovládání přenosu je tam vypnuté a poznámka říká proč. Všechno, co mluví v cestách na straně serveru, přes relay dál funguje. Přímé spojení potřebuje jen samotný přenos bajtů.
+- **Přenos funguje i přes relé.** Stažení i nahrání používají stejný šifrovaný tunel prostředků jako přímá spojení; přímý HTTP origin není potřeba.
+
+Šifrování chrání přenos na cestě, ne databázi na straně serveru, adresář se
+snímky ani staženou kopii v klidu. Operátor serveru se k datům na tom hostiteli
+dostane.
 
 :::note[Čí jsou které cesty]
 Cesty, které stránka *ukazuje* (adresář snímku, soubor, který zapsal export, zdroj, který čte import), jsou na stroji, kde běží `cc_server`. Cesta, kterou hlásí **stažení**, je na stroji, u kterého sedíš. Proto existují obě: první potřebuje skript údržby nebo relace ssh, druhou člověk, který si zálohu odnáší.

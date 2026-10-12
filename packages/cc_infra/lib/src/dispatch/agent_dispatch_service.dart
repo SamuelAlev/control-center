@@ -23,7 +23,8 @@ import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_u
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
 import 'package:cc_domain/features/observability/domain/doom_loop_detector.dart';
-import 'package:cc_domain/features/observability/domain/subagent_cost_propagator.dart';
+import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_infra/cc_infra.dart'
     show WorkspaceFilesystemService, HireAgentUseCase;
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
@@ -178,34 +179,6 @@ class AgentDispatchService {
 
   final _uuid = const Uuid();
 
-  /// Serializes subagent → parent cost rollups so concurrent child completions
-  /// can't lose a read-modify-write update of the parent's `childCostCents`.
-  /// Reads/writes go through the run-log repo (the propagator stays pure).
-  ///
-  /// One propagator per workspace: the store hooks bind the workspace that
-  /// selects the run log's database and per-parent locking stays correct
-  /// because a parent run id only ever exists inside one workspace.
-  final Map<String, SubagentCostPropagator> _costPropagators = {};
-
-  SubagentCostPropagator _costPropagatorFor(String workspaceId) =>
-      _costPropagators.putIfAbsent(
-        workspaceId,
-        () => SubagentCostPropagator(
-          readChildCostCents: (parentRunId) async =>
-              (await _runLogRepo?.getById(
-                workspaceId,
-                parentRunId,
-              ))?.childCostCents ??
-              0,
-          writeChildCostCents: (parentRunId, value) async {
-            final parent = await _runLogRepo?.getById(workspaceId, parentRunId);
-            if (parent != null) {
-              await _runLogRepo?.upsert(parent.copyWith(childCostCents: value));
-            }
-          },
-        ),
-      );
-
   /// Dispatches an agent to process a prompt, returning a stream of events and metadata.
   ///
   /// [workspaceId] owns the run: it scopes the run log, the conversation
@@ -239,6 +212,8 @@ class AgentDispatchService {
     List<String> promptImageRefs = const [],
     String? modelOverride,
   }) async {
+    final startedAt = DateTime.now();
+    final preparationClock = Stopwatch()..start();
     // Prepare the dispatch (resolve agent + build prompt) FIRST so we can derive
     // the per-agent slug and heal its skills before provisioning the
     // conversation overlay cwd. `workingDirectory` here is the agent's global
@@ -254,6 +229,7 @@ class AgentDispatchService {
       wakeContext: wakeContext,
       mentionContext: mentionContext,
     );
+    final contextReadyMs = preparationClock.elapsedMilliseconds;
 
     final agent = prepared.agent;
     final agentSlug = agentSlugFor(agent, agentId);
@@ -328,8 +304,6 @@ class AgentDispatchService {
       runLogId: runLogId,
     );
 
-    final startedAt = DateTime.now();
-
     // Park this run when another in-flight run owns the same working directory:
     // the path lock serializes same-path dispatches and surfaces the wait as a
     // `waiting_local_directory` task state. Released when the run's event stream
@@ -372,9 +346,41 @@ class AgentDispatchService {
           prepared.resolvedAdapterId == null || adapterLaunchOverrides == null
           ? const (args: <String>[], env: <String, String>{})
           : await adapterLaunchOverrides!(prepared.resolvedAdapterId!);
+      final runLog = AgentRunLog(
+        id: runLogId,
+        agentId: agentId,
+        workspaceId: workspaceId,
+        conversationId: prepared.effectiveConversationId,
+        // The space the run belongs to. It used to be left null and read back
+        // as `spaceId ?? conversationId`, which only worked while the two ids
+        // were the same value.
+        spaceId: spaceId,
+        ticketId: ticketId,
+        startedAt: startedAt,
+        status: RunStatus.pending,
+        adapter: prepared.resolvedAdapterId,
+        modelId: modelOverride ?? prepared.agent?.modelId,
+        effort: prepared.agent?.effort ?? 'default',
+        taskFamily: prepared.mode.name,
+        pipelineRunId: pipelineRunId,
+        pipelineStepId: pipelineStepId,
+        expectedOutputSchema: expectedOutputSchema,
+        outputContractMode: outputContractMode,
+        role: role,
+      );
+      await _runLogRepo?.upsert(runLog);
       final handle = _agentDispatch.start(
         cliName: prepared.cliName,
         prompt: prepared.effectivePrompt,
+        // The structured prompt, so a native-resumed runner can build the
+        // delta it sends instead of the full prompt. A runner with no matching
+        // stored session falls back to `prompt`, so this can never lose
+        // context.
+        promptParts: prepared.promptParts,
+        // The run's own start, the SAME instant the run log persists as
+        // `startedAt`, so stage timings from an adapter that launches later
+        // still measure from the run's beginning.
+        runStartedAt: startedAt,
         // The user's message verbatim, so built-in slash commands are recognized
         // (the layered prompt starts with `<context>`, never a slash).
         userText: prepared.rawUserText,
@@ -416,27 +422,6 @@ class AgentDispatchService {
         onHarnessCredentialExhausted: onHarnessCredentialExhausted,
         costCapCents: costCapCents,
       );
-      final runLog = AgentRunLog(
-        id: runLogId,
-        agentId: agentId,
-        workspaceId: workspaceId,
-        conversationId: prepared.effectiveConversationId,
-        // The space the run belongs to. It used to be left null and read back
-        // as `spaceId ?? conversationId`, which only worked while the two ids
-        // were the same value.
-        spaceId: spaceId,
-        ticketId: ticketId,
-        startedAt: startedAt,
-        status: RunStatus.pending,
-        adapter: prepared.resolvedAdapterId,
-        modelId: prepared.agent?.modelId,
-        pipelineRunId: pipelineRunId,
-        pipelineStepId: pipelineStepId,
-        expectedOutputSchema: expectedOutputSchema,
-        outputContractMode: outputContractMode,
-        role: role,
-      );
-      await _runLogRepo?.upsert(runLog);
 
       _runToDispatch[runLogId] = handle.dispatchId;
 
@@ -472,39 +457,90 @@ class AgentDispatchService {
       // write) fire exactly once per dispatch, not on every subsequent identical
       // tool call once the streak is past threshold.
       var loopMarked = false;
+      var timingsEmitted = false;
+      void emitPreparationTimings(EventSink<AgentProcessEvent> sink) {
+        if (timingsEmitted) return;
+        timingsEmitted = true;
+        sink.add(
+          StageTimingEvent(
+            stage: RunStage.submitted,
+            offsetMs: 0,
+            source: RunTimingSource.harness,
+          ),
+        );
+        sink.add(
+          StageTimingEvent(
+            stage: RunStage.contextReady,
+            offsetMs: contextReadyMs,
+            source: RunTimingSource.harness,
+          ),
+        );
+      }
 
       return AgentDispatchResult(
         // Tap the event stream to keep the roster live: tool calls become the
         // agent's current activity and the terminal DoneEvent flips it to idle.
-        // The same tap feeds the doom-loop detector. `.map` preserves the
-        // stream's single-subscription / broadcast nature and only runs while the
-        // consumer is listening, so it adds no overhead to an unconsumed stream.
+        // The transformer preserves cancellation and the source stream kind.
+        // Preparation timings precede even an immediate startup error.
         stream: _withLockRelease(
-          handle.events.map((event) {
-            if (trackedRegistry != null) {
-              _updateRegistryFromEvent(trackedRegistry, agentId, event);
-            }
-            if (!loopMarked) {
-              final loopingTool = _recordDoomLoop(doomLoop, event);
-              if (loopingTool != null) {
-                loopMarked = true;
-                trackedRegistry?.setActivity(
-                  agentId,
-                  'doom loop: $loopingTool',
-                );
-                unawaited(_markLooping(workspaceId, runLogId));
-              }
-            }
-            return event;
-          }),
+          handle.events.transform(
+            StreamTransformer<
+              AgentProcessEvent,
+              AgentProcessEvent
+            >.fromHandlers(
+              handleData: (event, sink) {
+                emitPreparationTimings(sink);
+                if (trackedRegistry != null) {
+                  _updateRegistryFromEvent(trackedRegistry, agentId, event);
+                }
+                if (!loopMarked) {
+                  final loopingTool = _recordDoomLoop(doomLoop, event);
+                  if (loopingTool != null) {
+                    loopMarked = true;
+                    trackedRegistry?.setActivity(
+                      agentId,
+                      'doom loop: $loopingTool',
+                    );
+                    unawaited(_markLooping(workspaceId, runLogId));
+                  }
+                }
+                sink.add(event);
+              },
+              handleError: (error, stack, sink) {
+                emitPreparationTimings(sink);
+                sink.addError(error, stack);
+              },
+              handleDone: (sink) {
+                emitPreparationTimings(sink);
+                sink.close();
+              },
+            ),
+          ),
           pathLockHandle,
         ),
         dispatchId: handle.dispatchId,
         runLog: runLog,
         agent: prepared.agent,
       );
-    } on Object {
+    } on Object catch (error) {
       pathLockHandle?.release();
+      try {
+        final row = await _runLogRepo?.getById(workspaceId, runLogId);
+        if (row != null) {
+          await _runLogRepo?.completeIfActive(
+            row.copyWith(
+              completedAt: DateTime.now(),
+              status: RunStatus.error,
+              summary: 'Dispatch startup failed: $error',
+            ),
+            writeCost: false,
+          );
+        }
+      } on Object catch (writeError) {
+        CcInfraLog.warning(
+          'Failed to persist dispatch startup error: $writeError',
+        );
+      }
       rethrow;
     }
   }
@@ -569,10 +605,11 @@ class AgentDispatchService {
 
   /// Marks [runLogId] as looping (idempotent — only the first transition writes).
   Future<void> _markLooping(String workspaceId, String runLogId) async {
-    final run = await _runLogRepo?.getById(workspaceId, runLogId);
-    if (run != null && run.liveness != RunLiveness.looping) {
-      await _runLogRepo?.upsert(run.copyWith(liveness: RunLiveness.looping));
-    }
+    await _runLogRepo?.updateRuntime(
+      workspaceId,
+      runLogId,
+      liveness: RunLiveness.looping,
+    );
   }
 
   /// Reflects a single dispatch event into the registry: a tool call sets the
@@ -714,10 +751,25 @@ class AgentDispatchService {
   /// The workspace comes from [AgentRunLog.workspaceId] — the run owns it. A run
   /// log with no workspace was never persisted (the repository rejects it), so
   /// there is no row to complete and only the roster is updated.
+  ///
+  /// [latency] carries the run's observed stage timings (submitted →
+  /// firstModelDelta → firstUsefulText), and [verification] the independent
+  /// verdict on its output. Both are persisted here because this is the one
+  /// place that stamps a run terminal: a timing that never reaches this call is
+  /// a timing no reader will ever see, and "completed" without a verifier is not
+  /// the same fact as "completed and verified".
+  ///
+  /// [nativeSessionId] / [resumedNativeSession] record which adapter session the
+  /// run used and whether it was resumed — stored as data so a resume-vs-fresh
+  /// comparison can group on it.
   Future<void> completeRun(
     AgentRunLog runLog,
     String? summary, {
     RunCost? cost,
+    RunLatencyProfile? latency,
+    RunVerification? verification,
+    String? nativeSessionId,
+    bool resumedNativeSession = false,
   }) async {
     _runToDispatch.remove(runLog.id);
     // The run is over: the agent stays in the roster but goes idle. Idempotent
@@ -731,11 +783,9 @@ class AgentDispatchService {
     if (existing == null || existing.completedAt != null) {
       return;
     }
-    // Complete from the freshly-read row, not the stale dispatch-time [runLog]:
-    // a subagent may have rolled cost into this run's `childCostCents` while it
-    // was in flight and the dispatch-time object still carries 0. Writing from
-    // `existing` preserves that propagated rollup (and any other server-side
-    // field) instead of clobbering it back to its dispatch-time default.
+    // Read current observability state to classify the finished run. The
+    // terminal write below is conditional and column-scoped: this snapshot is
+    // NEVER upserted, so a concurrent descendant cost increment survives.
     // A run already marked `silentRun` ended without its declared deliverable,
     // and that summary is the honest one — do not overwrite it with the model's
     // last chatter. `liveness`/`errorFamily` survive automatically (copyWith
@@ -746,7 +796,12 @@ class AgentDispatchService {
       completedAt: completedAt,
       status: RunStatus.completed,
       summary: unmetDeliverable ? existing.summary : summary,
-      cost: _timed(cost, existing.startedAt, completedAt),
+      cost: _timed(cost ?? existing.cost, existing.startedAt, completedAt),
+      latency: _mergeLatency(existing.latency, latency),
+      verification: verification ?? existing.verification,
+      nativeSessionId: nativeSessionId ?? existing.nativeSessionId,
+      resumedNativeSession:
+          resumedNativeSession || existing.resumedNativeSession,
     );
     // Classify the FINISHED row. [RunLivenessClassifier] reads `status` and
     // `summary`, so it has to run after both are set — and it has to run at
@@ -757,18 +812,22 @@ class AgentDispatchService {
     // A contract-unmet run keeps the verdict `_markContractUnmet` already
     // recorded, for the same reason it keeps its summary: that one was decided
     // against the deliverable, which the classifier cannot see.
-    await _runLogRepo?.upsert(
+    final stamped = await _runLogRepo?.completeIfActive(
       unmetDeliverable
           ? completed
           : completed.copyWith(
               liveness: const RunLivenessClassifier().classify(completed),
             ),
+      writeCost: cost != null,
     );
+    if (stamped != true) {
+      return;
+    }
     _notifyRunEnded(runLog);
     await _propagateCostToParent(
       workspaceId,
       runLog.agentId,
-      cost?.estimatedCostCents ?? 0,
+      cost?.preciseCostMicros ?? 0,
     );
   }
 
@@ -787,6 +846,17 @@ class AgentDispatchService {
       () => hook(workspaceId, runLog.conversationId ?? '', runLog.spaceId),
     );
   }
+
+  /// Merges [incoming] stage timings onto [existing], keeping the EARLIEST
+  /// observation per stage.
+  ///
+  /// Merge rather than replace: the row may already carry timings recorded by
+  /// an earlier write (a subagent's own recorder, a mid-run flush), and the
+  /// earliest boundary is the one that means "time to first".
+  static RunLatencyProfile _mergeLatency(
+    RunLatencyProfile existing,
+    RunLatencyProfile? incoming,
+  ) => incoming == null ? existing : existing.mergeAll(incoming.timings.values);
 
   /// Stamps [cost] with the run's wall-clock duration when nothing upstream
   /// measured one.
@@ -813,16 +883,20 @@ class AgentDispatchService {
       cachedReadTokens: cost.cachedReadTokens,
       cachedWriteTokens: cost.cachedWriteTokens,
       estimatedCostCents: cost.estimatedCostCents,
+      // The exact figure and its provenance are NOT reconstructible from cents:
+      // dropping them here silently downgraded every timed run's cost to the
+      // rounded projection and relabelled a provider-reported or subscription
+      // cost as an estimate.
+      costMicros: cost.costMicros,
+      costBasis: cost.costBasis,
       durationMs: elapsed,
       timeToFirstTokenMs: cost.timeToFirstTokenMs,
     );
   }
 
-  /// Rolls this run's spend up into its spawning parent's run, if any: looks up
-  /// the parent agent in the registry, finds the parent's active run and adds
-  /// [amountCents] to its `childCostCents` via the concurrency-safe propagator
-  /// (so parallel subagent completions sum without lost updates). A no-op when
-  /// there is no parent, no active parent run, or nothing to add.
+  /// Rolls a dispatched child's final reported spend into its spawning
+  /// parent's active run. Internal task children complete by a separate path.
+  /// The database increment is atomic across dispatch services and processes.
   ///
   /// The parent run is looked up inside [workspaceId] — the child's own
   /// workspace. A spawning parent always shares it: a subagent cannot cross the
@@ -830,9 +904,9 @@ class AgentDispatchService {
   Future<void> _propagateCostToParent(
     String workspaceId,
     String agentId,
-    int amountCents,
+    int amountMicros,
   ) async {
-    if (amountCents <= 0) {
+    if (amountMicros <= 0) {
       return;
     }
     final parentId = _registry?.get(agentId)?.parentId;
@@ -846,7 +920,11 @@ class AgentDispatchService {
     if (parentRun == null) {
       return;
     }
-    await _costPropagatorFor(workspaceId).propagate(parentRun.id, amountCents);
+    await _runLogRepo?.addChildCostMicros(
+      workspaceId,
+      parentRun.id,
+      amountMicros,
+    );
   }
 
   /// Marks [runLog] failed (idempotent) and forgets its dispatch mapping.
@@ -878,12 +956,15 @@ class AgentDispatchService {
       // more here, because this is where the classifier separates a process we
       // lost (`dead`) from one that reported it was blocked (`blocked`) from an
       // ordinary failure.
-      await _runLogRepo?.upsert(
-        failed.copyWith(
-          liveness: const RunLivenessClassifier().classify(failed),
-        ),
-      );
-      _notifyRunEnded(runLog);
+      final completed =
+          await _runLogRepo?.completeIfActive(
+            failed.copyWith(
+              liveness: const RunLivenessClassifier().classify(failed),
+            ),
+            writeCost: false,
+          ) ??
+          false;
+      if (completed) _notifyRunEnded(runLog);
     }
   }
 
@@ -945,14 +1026,17 @@ class AgentDispatchService {
       // re-dispatchable). The id comes from the run log so the registry stays
       // in sync even when only the run id is known.
       _registry?.setStatus(existing.agentId, AgentStatus.idle);
-      await _runLogRepo?.upsert(
-        existing.copyWith(
-          completedAt: DateTime.now(),
-          status: RunStatus.error,
-          summary: 'Stopped by user',
-        ),
-      );
-      _notifyRunEnded(existing);
+      final completed =
+          await _runLogRepo?.completeIfActive(
+            existing.copyWith(
+              completedAt: DateTime.now(),
+              status: RunStatus.error,
+              summary: 'Stopped by user',
+            ),
+            writeCost: false,
+          ) ??
+          false;
+      if (completed) _notifyRunEnded(existing);
     }
   }
 }

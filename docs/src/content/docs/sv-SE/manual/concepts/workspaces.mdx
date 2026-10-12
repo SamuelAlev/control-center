@@ -2,7 +2,7 @@
 title: Arbetsytor och isolering
 description: Varför en arbetsyta är en hård tenant-gräns, hur databasuppdelningen gör gränsen strukturell och vad som medvetet korsar den.
 slug: sv-SE/handbok/koncept/arbetsytor
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Vad är en arbetsyta?
@@ -119,13 +119,15 @@ Det ingen av dem bär med sig är resten av arbetsytekatalogen. En arbetsyta sam
 
 ## Flytta en säkerhetskopia mellan servern och din enhet
 
-Varje operation ovan talar i sökvägar på **servern**, vilket bara är ett fullständigt svar när servern är din egen maskin. Tre signerade HTTP-rutter — [`/backup/workspace`, `/backup/snapshot` och `/backup/restore`](/sv-SE/handbok/referens/sakerhetskopia/#transfer-routes) — bär byten för varje annan topologi, på samma autentiserade bana som medieproxyn och bildlagret redan använder. På sidan är det här en **Hämta**-knapp bredvid varje export och varje ögonblicksbild (du väljer var den hamnar), och **Välj en fil och ladda upp** för att återställa från en fil som ligger på maskinen du använder. Uppladdningen är den som fungerar när servern inte är din maskin: `workspace.import` kräver att filen redan ligger på värden, och det här är hur den tar sig dit.
+Varje operation ovan talar i sökvägar på **servern**, vilket bara är ett fullständigt svar när servern är din egen maskin. Tre signerade överföringsrutter — [`/backup/workspace`, `/backup/snapshot` och `/backup/restore`](/sv-SE/handbok/referens/sakerhetskopia/#transfer-routes) — bär byten för varje annan topologi genom den autentiserade, krypterade resurstunneln, på direkta anslutningar och över reläet. De publika HTTP-rutterna betjänar inte läsbara säkerhetskopiebyten, och signerade sökvägar kräver fortfarande auktorisering. På sidan är det här en **Hämta**-knapp bredvid varje export och varje ögonblicksbild (du väljer var den hamnar), och **Välj en fil och ladda upp** för att återställa från en fil som ligger på maskinen du använder. Uppladdningen fungerar när servern inte är din maskin: `workspace.import` kräver att filen redan ligger på värden, och det här är hur den tar sig dit.
 
 Tre egenskaper är värda att känna till:
 
 - **En nedladdning skapar en färsk kopia och servern behåller inget av den.** Att hämta är inte ”hämta filen som exportknappen skapade” — den exporterar igen, strömmar den och raderar den. Svaret är `no-store` med `Accept-Ranges: none` av samma skäl: ett återupptaget intervall skulle skarva ihop två olika exporter till en fil som ser giltig ut men inte är det.
 - **En uppladdning strömmas till disk, buffras aldrig**, i båda ändar, och den mellanlagrade kopian raderas på varje väg ut — inklusive ett avslag. En arbetsytedatabas är inte en skärmbild.
-- **En vidarebefordrad anslutning har inget HTTP-ursprung**, så överföringskontrollerna är inaktiverade där med en notis som förklarar varför. Allt som talar i sökvägar på serversidan fortsätter fungera över reläet; bara byte-banorna behöver en direkt anslutning.
+- **Överföring fungerar även över reläet.** Nedladdningar och uppladdningar använder samma krypterade resurstunnel som direkta anslutningar; ingen direkt HTTP-origin krävs.
+
+Kryptering skyddar överföringen under vägen, inte databasen på serversidan, ögonblicksbildskatalogen eller en nedladdad kopia i vila. Serveroperatören kan komma åt data som finns på den värden.
 
 :::note[Vilka sökvägar som är vems]
 Sökvägarna som sidan *visar* — ögonblicksbildskatalogen, filen en export skrev, källan en import läser — ligger på maskinen som kör `cc_server`. Sökvägen som en **nedladdning** rapporterar ligger på maskinen du sitter vid. Den skillnaden är varför båda finns: den första är vad ett underhållsskript eller en ssh-session behöver, den andra är vad en person som samlar in en säkerhetskopia behöver.

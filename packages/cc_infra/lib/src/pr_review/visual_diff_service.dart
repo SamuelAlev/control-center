@@ -50,11 +50,16 @@ class VisualDiffService {
     required this._paths,
     this._flutterBinary,
     this.testTimeout = const Duration(minutes: 8),
+    this.onSnapshotWritten,
   });
 
   final VisualDiffRepository _repository;
   final CcPaths _paths;
   final String? _flutterBinary;
+
+  /// Durable review snapshot catalog hook; checkout goldens remain excluded.
+  final Future<void> Function(String workspaceId, String path, int bytes)?
+  onSnapshotWritten;
 
   /// Timeout for a single `flutter test` golden pass.
   final Duration testTimeout;
@@ -159,21 +164,26 @@ class VisualDiffService {
 
     if (baseBytes == null && headBytes != null) {
       status = VisualDiffStatus.added;
-      headRef = await _write(dir, 'head.png', headBytes);
+      headRef = await _write(workspaceId, dir, 'head.png', headBytes);
     } else if (headBytes == null && baseBytes != null) {
       status = VisualDiffStatus.removed;
-      baseRef = await _write(dir, 'base.png', baseBytes);
+      baseRef = await _write(workspaceId, dir, 'base.png', baseBytes);
     } else if (baseBytes != null && headBytes != null) {
       final result = _differ.compare(baseBytes, headBytes);
       changedPercent = result.changedPercent;
-      baseRef = await _write(dir, 'base.png', baseBytes);
-      headRef = await _write(dir, 'head.png', headBytes);
+      baseRef = await _write(workspaceId, dir, 'base.png', baseBytes);
+      headRef = await _write(workspaceId, dir, 'head.png', headBytes);
       if (result.identical) {
         status = VisualDiffStatus.unchanged;
       } else {
         status = VisualDiffStatus.changed;
         if (result.overlayPng != null) {
-          diffRef = await _write(dir, 'diff.png', result.overlayPng!);
+          diffRef = await _write(
+            workspaceId,
+            dir,
+            'diff.png',
+            result.overlayPng!,
+          );
         }
       }
     } else {
@@ -269,9 +279,15 @@ class VisualDiffService {
     return out;
   }
 
-  Future<String> _write(Directory dir, String name, Uint8List bytes) async {
+  Future<String> _write(
+    String workspaceId,
+    Directory dir,
+    String name,
+    Uint8List bytes,
+  ) async {
     final file = File(p.join(dir.path, name));
     await file.writeAsBytes(bytes);
+    await onSnapshotWritten?.call(workspaceId, file.path, bytes.length);
     return file.path;
   }
 

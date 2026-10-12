@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/features/settings/domain/model_control.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Signature of an on-disk model manager's `install` method
 /// (`VoiceModelManager` / `DiarizationModelManager` / `EmbeddingModelManager`
@@ -180,7 +180,7 @@ class ManagedModelControl implements ModelControl {
 
   /// Reports a progress tick, at most once per 10% and once per phase change.
   ///
-  /// The raw dio callback fires per chunk — thousands of times for a
+  /// The raw transfer callback fires per chunk — thousands of times for a
   /// multi-hundred-megabyte model — so it is unusable as a log line, while
   /// logging nothing leaves the whole transfer invisible. Deciles keep the
   /// transfer legible in ~10 lines. The terminal `ready` tick is skipped
@@ -244,27 +244,15 @@ class ManagedModelControl implements ModelControl {
           phase: 'ready',
         ),
       );
-    } on DioException catch (e) {
-      if (CancelToken.isCancel(e)) {
-        _onLog?.call(
-          ModelLogLevel.notice,
-          'download cancelled after ${elapsed()}',
-        );
-        _set(
-          const ModelStatusSnapshot(status: ModelLifecycleStatus.notInstalled),
-        );
-        return;
-      }
+    } on RhttpCancelException {
       _onLog?.call(
-        ModelLogLevel.warning,
-        'install failed after ${elapsed()}: ${e.message ?? e}',
+        ModelLogLevel.notice,
+        'download cancelled after ${elapsed()}',
       );
       _set(
-        ModelStatusSnapshot(
-          status: ModelLifecycleStatus.error,
-          error: e.message ?? e.toString(),
-        ),
+        const ModelStatusSnapshot(status: ModelLifecycleStatus.notInstalled),
       );
+      return;
     } catch (e) {
       _onLog?.call(
         ModelLogLevel.warning,
@@ -285,13 +273,13 @@ class ManagedModelControl implements ModelControl {
 
   @override
   Future<void> cancel() async {
-    _cancelToken?.cancel('cancelled by client');
+    unawaited(_cancelToken?.cancel());
     _cancelToken = null;
   }
 
   @override
   Future<void> uninstall() async {
-    _cancelToken?.cancel('superseded by uninstall');
+    unawaited(_cancelToken?.cancel());
     _cancelToken = null;
     await _runUninstall();
     _set(const ModelStatusSnapshot(status: ModelLifecycleStatus.notInstalled));
@@ -300,7 +288,7 @@ class ManagedModelControl implements ModelControl {
   /// Cancels any in-flight download and closes the progress stream. Call on
   /// server shutdown.
   Future<void> dispose() async {
-    _cancelToken?.cancel('disposed');
+    unawaited(_cancelToken?.cancel());
     _cancelToken = null;
     await _events.close();
   }

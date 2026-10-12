@@ -1,3 +1,4 @@
+import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_infra/src/context/text_raster.dart';
 
@@ -52,6 +53,128 @@ class SnapFrameShape {
 /// The glyph cell width the shapes are computed against.
 const int kSnapGlyphWidth = 5;
 
+/// Upper bound on the retained plain-text source carried across folds.
+///
+/// Every pass prepends the previous pass's source so a second fold re-images
+/// the WHOLE discarded history. Left unbounded that source grows with the run
+/// while the pages that carry it stay the same size — the retained text is
+/// then pure memory growth and, worse, a fold late in a long run spends its
+/// pages re-drawing text that has already been folded several times. When the
+/// cap is hit the OLDEST end is dropped with an explicit marker, keeping the
+/// most recent discarded history.
+const int kSnapMaxRetainedSourceChars = 200000;
+
+/// Distinguishes the caption line the snapshot replacement message opens with,
+/// so a text-compaction fallback can recognize a region it must rehydrate
+/// rather than a region of ordinary history.
+const String kSnapcompactCaptionMarker = 'earlier messages are rendered as';
+
+/// Whether [message] is a snapshot replacement (an imaged page).
+///
+/// The identity marker ([HarnessMessage.isSnapshotCarrier], stamped by the loop
+/// from the reported `foldedFromIndex`) is authoritative — it survives image
+/// shedding and a restart. The content test is a fallback for legacy pages
+/// written before the marker existed.
+bool isSnapcompactMessage(HarnessMessage message) {
+  if (message.isSnapshotCarrier) {
+    return true;
+  }
+  if (message.role != HarnessRole.user) {
+    return false;
+  }
+  final hasImage = message.content.any((b) => b is HarnessImageBlock);
+  return hasImage && message.textContent.contains(kSnapcompactCaptionMarker);
+}
+
+/// Rebuilds a snapshot region as TEXT so a text compactor can fold the real
+/// conversation instead of the page caption.
+///
+/// Returns null when there is no retained source to restore — after a restart
+/// that did not persist it, for instance. The caller must then surface the loss
+/// explicitly rather than let the caption stand in for the history.
+///
+/// The returned message deliberately carries NO [HarnessMessage.isSnapshotCarrier]
+/// marker: it is TEXT now, and its absence is exactly what tells the host the
+/// retained source may be dropped.
+HarnessMessage? rehydrateSnapshotMessage(
+  String? retainedSource, {
+  List<String> activatedToolNames = const [],
+}) {
+  final source = retainedSource?.trim() ?? '';
+  if (source.isEmpty) {
+    return null;
+  }
+  return HarnessMessage(
+    role: HarnessRole.user,
+    content: [
+      HarnessTextBlock(
+        '[snapshot region restored as text — the same words that were '
+        'rendered as pages]\n\n$source',
+      ),
+    ],
+    activatedToolNames: activatedToolNames,
+  );
+}
+
+/// The explicit marker written in place of a snapshot region whose retained
+/// source was not available (e.g. a restart that did not persist it) — a
+/// labeled loss, never a silent one.
+const String snapshotUnavailableMarker =
+    '[snapshot region unavailable: retained source not persisted]';
+
+/// Rehydrates every snapshot region in [history] back to text, so a text
+/// compactor folds the REAL conversation rather than the page captions.
+///
+/// [retainedSource] is cumulative (a later pass's source contains every earlier
+/// pass's), so the NEWEST snapshot message is replaced with the full restored
+/// text and any EARLIER one with a pointer marker. Message COUNT is preserved,
+/// so checkpoint indices do not shift because of rehydration.
+List<HarnessMessage> rehydrateSnapcompactHistory(
+  List<HarnessMessage> history,
+  String? retainedSource,
+) {
+  var newest = -1;
+  for (var i = history.length - 1; i >= 0; i--) {
+    if (isSnapcompactMessage(history[i])) {
+      newest = i;
+      break;
+    }
+  }
+  if (newest < 0) {
+    return history;
+  }
+  final restored = rehydrateSnapshotMessage(
+    retainedSource,
+    activatedToolNames: collectActivatedToolNames(history),
+  );
+  final out = <HarnessMessage>[];
+  for (var i = 0; i < history.length; i++) {
+    final m = history[i];
+    if (!isSnapcompactMessage(m)) {
+      out.add(m);
+      continue;
+    }
+    if (i == newest) {
+      out.add(restored ?? HarnessMessage.user(snapshotUnavailableMarker));
+    } else {
+      out.add(
+        HarnessMessage(
+          role: HarnessRole.user,
+          content: const [
+            HarnessTextBlock(
+              '[superseded snapshot: its text is restored in the later region]',
+            ),
+          ],
+          activatedToolNames: m.activatedToolNames,
+          // No snapshot-carrier marker: this is a pointer, not a page — the
+          // source may be dropped once no real page remains.
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 /// Picks the page shape for [modelId].
 ///
 /// **Priced for the API that carries the request, not the weights.** A Claude
@@ -103,6 +226,7 @@ class SnapcompactResult {
     required this.frames,
     required this.foldedCount,
     required this.retainedSource,
+    this.replacementIndex = 0,
   });
 
   /// The rebuilt history.
@@ -113,6 +237,13 @@ class SnapcompactResult {
 
   /// How many messages were folded into them.
   final int foldedCount;
+
+  /// The index the single replacement message occupies in [messages].
+  ///
+  /// The folded span is `[replacementIndex, replacementIndex + foldedCount)`.
+  /// A caller remapping checkpoint indices must use this — unlike a text fold,
+  /// a snapshot keeps a verbatim head, so indices BEFORE this do not shift.
+  final int replacementIndex;
 
   /// The plain text those pages were rendered from.
   ///
@@ -179,17 +310,60 @@ class Snapcompactor {
       );
     }
 
-    final head = messages.sublist(0, keepHead);
-    final middle = messages.sublist(keepHead, messages.length - keepTail);
-    final tail = messages.sublist(messages.length - keepTail);
+    // Boundary selection is PAIR-SAFE. A message slice may not split a
+    // `tool_use` / `tool_result` pair: a head that ended on an assistant turn
+    // with an unanswered tool_use would leave the imaged block (a user turn)
+    // sitting where the provider requires the tool result, and a tail that
+    // began on a `tool` message would orphan a result whose call was imaged.
+    // Both are rejected by every provider, so the boundaries are snapped to
+    // whole pairs before anything is imaged.
+    var headEnd = keepHead;
+    while (headEnd > 0 && messages[headEnd - 1].hasToolUse) {
+      headEnd--;
+    }
+    var tailStart = messages.length - keepTail;
+    while (tailStart < messages.length &&
+        messages[tailStart].role == HarnessRole.tool) {
+      tailStart++;
+    }
+    if (tailStart - headEnd < minimumFold) {
+      // The safe boundaries left too little middle to be worth an image.
+      return SnapcompactResult(
+        messages: messages,
+        frames: 0,
+        foldedCount: 0,
+        retainedSource: retainedSource ?? '',
+      );
+    }
+
+    final head = messages.sublist(0, headEnd);
+    final middle = messages.sublist(headEnd, tailStart);
+    final tail = messages.sublist(tailStart);
 
     // The previous pass's source comes first, so a second compaction images
     // the WHOLE discarded history rather than only what has been discarded
     // since — and images it from text, never from the last pass's pixels.
-    final source = [
-      if (retainedSource != null && retainedSource.isNotEmpty) retainedSource,
-      renderMessagesAsText(middle),
-    ].join('\n\n');
+    final source = _boundSource(
+      [
+        if (retainedSource != null && retainedSource.isNotEmpty) retainedSource,
+        renderMessagesAsText(middle),
+      ].join('\n\n'),
+    );
+
+    // The rasterizer normalizes unsupported glyphs, tabs and control codes.
+    // That is acceptable for a preview, not for replacing exact code or paths
+    // in memory. Decline before allocating images; the host uses text folding.
+    for (var i = 0; i < source.length; i++) {
+      final unit = source.codeUnitAt(i);
+      if (unit != 0x0A && (unit < 0x20 || unit > 0x7E)) {
+        return SnapcompactResult(
+          messages: messages,
+          frames: 0,
+          foldedCount: 0,
+          retainedSource: retainedSource ?? '',
+        );
+      }
+    }
 
     final frames = shape.rasterizer.render(source);
     if (frames.isEmpty) {
@@ -210,20 +384,42 @@ class Snapcompactor {
         HarnessTextBlock(
           '[${middle.length} earlier messages are rendered as '
           '${frames.length} page${frames.length == 1 ? '' : 's'} of text '
-          'below. Read them as ordinary conversation history — they are the '
+          'below. Read them as ordinary conversation history; they are the '
           'same words, drawn rather than typed.]',
         ),
         for (final frame in frames)
           HarnessImageBlock(mediaType: 'image/png', data: frame.base64Data),
       ],
+      // Activation metadata of the imaged region travels WITH the replacement:
+      // a search result referencing a deferred tool may be inside the middle,
+      // and losing its activation would make that tool uncallable.
+      activatedToolNames: collectActivatedToolNames(middle),
+      // Page IDENTITY: the host's source-persistence rule keys on this marker
+      // (not on an image count), so it is carried here as well as being stamped
+      // by the loop from `foldedFromIndex`. Redundant on the loop path; correct
+      // for a page built by calling `compact` directly.
+      isSnapshotCarrier: true,
     );
 
     return SnapcompactResult(
       messages: [...head, imaged, ...tail],
       frames: frames.length,
       foldedCount: middle.length,
+      replacementIndex: head.length,
       retainedSource: source,
     );
+  }
+
+  /// Caps the retained source, dropping the OLDEST end with an explicit marker.
+  static String _boundSource(String source) {
+    if (source.length <= kSnapMaxRetainedSourceChars) {
+      return source;
+    }
+    // The start of the source is the oldest folded history; the most recent
+    // discarded turns sit at the end and are what a later fold should re-image.
+    const marker = '[earlier folded history dropped: source cap reached]\n';
+    return '$marker'
+        '${source.substring(source.length - kSnapMaxRetainedSourceChars + marker.length)}';
   }
 }
 

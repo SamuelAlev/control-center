@@ -20,7 +20,12 @@ import 'package:super_clipboard/super_clipboard.dart';
 /// One file read off the host's clipboard (or a drop), with its bytes.
 class HostFile {
   /// Creates a [HostFile].
-  const HostFile({required this.name, required this.bytes, this.mediaType});
+  const HostFile({
+    required this.name,
+    required this.bytes,
+    this.mediaType,
+    this.sizeBytes,
+  });
 
   /// The file's name.
   final String name;
@@ -30,6 +35,9 @@ class HostFile {
 
   /// MIME type when the platform reported one.
   final String? mediaType;
+
+  /// Reported size, including a file stopped at a caller's read ceiling.
+  final int? sizeBytes;
 }
 
 /// What is on the host's clipboard.
@@ -39,6 +47,7 @@ class HostClipboardSnapshot {
     this.text,
     this.imageBytes,
     this.imageMediaType,
+    this.imageSizeBytes,
     this.files = const [],
   });
 
@@ -54,6 +63,9 @@ class HostClipboardSnapshot {
   /// The image's MIME type.
   final String? imageMediaType;
 
+  /// Original size even when a bounded read stopped before transferring it.
+  final int? imageSizeBytes;
+
   /// Files named on the clipboard, with their bytes already read.
   final List<HostFile> files;
 
@@ -64,11 +76,9 @@ class HostClipboardSnapshot {
       files.isEmpty;
 }
 
-/// The most a clipboard image may be before it is left behind.
-///
-/// Matches the server's ceiling on the same value. Above it the paste reports
-/// that it could not carry the image, which is a better outcome than silently
-/// downscaling something the user expected to arrive intact.
+/// Default clipboard-image ceiling for other host/rig consumers. The composer
+/// opts out of filtering so it can display a failed attachment over its
+/// separate 24 MiB upload ceiling instead of silently omitting a paste.
 const int kMaxHostClipboardImageBytes = 16 * 1024 * 1024;
 
 /// Reads the host clipboard.
@@ -78,7 +88,10 @@ const int kMaxHostClipboardImageBytes = 16 * 1024 * 1024;
 /// platforms raise. An empty snapshot and a refusal look the same to the
 /// caller on purpose: both mean "there is nothing to paste from here", and
 /// the alternative is an error dialog for a keystroke.
-Future<HostClipboardSnapshot> readHostClipboard() async {
+Future<HostClipboardSnapshot> readHostClipboard({
+  int? maxImageBytes = kMaxHostClipboardImageBytes,
+  int? maxFileBytes,
+}) async {
   final clipboard = SystemClipboard.instance;
   if (clipboard == null) {
     return HostClipboardSnapshot.empty;
@@ -92,6 +105,8 @@ Future<HostClipboardSnapshot> readHostClipboard() async {
       // as a real file turns every text paste into an upload. Real files copied
       // from Finder still carry `fileUri` and remain files.
       includeVirtualFiles: false,
+      maxImageBytes: maxImageBytes,
+      maxFileBytes: maxFileBytes,
     );
   } on Object catch (e) {
     AppLog.d('rig-clipboard', 'reading the host clipboard failed: $e');
@@ -108,10 +123,13 @@ Future<HostClipboardSnapshot> readHostClipboard() async {
 Future<HostClipboardSnapshot> snapshotFromReader(
   List<DataReader> items, {
   bool includeVirtualFiles = true,
+  int? maxImageBytes = kMaxHostClipboardImageBytes,
+  int? maxFileBytes,
 }) async {
   String? text;
   Uint8List? image;
   String? imageType;
+  int? imageSize;
   final files = <HostFile>[];
 
   for (final item in items) {
@@ -123,7 +141,7 @@ Future<HostClipboardSnapshot> snapshotFromReader(
       includeVirtualFiles: includeVirtualFiles,
     );
     if (asFile.isFile) {
-      final file = await _readFile(item, asFile.format);
+      final file = await _readFile(item, asFile.format, maxBytes: maxFileBytes);
       if (file != null) {
         files.add(file);
         continue;
@@ -134,10 +152,12 @@ Future<HostClipboardSnapshot> snapshotFromReader(
         if (!item.canProvide(format)) {
           continue;
         }
-        final read = await _readFile(item, format);
-        if (read != null && read.bytes.length <= kMaxHostClipboardImageBytes) {
+        final read = await _readFile(item, format, maxBytes: maxFileBytes);
+        if (read != null &&
+            (maxImageBytes == null || read.bytes.length <= maxImageBytes)) {
           image = read.bytes;
           imageType = mimeType;
+          imageSize = read.sizeBytes;
         }
         break;
       }
@@ -153,6 +173,7 @@ Future<HostClipboardSnapshot> snapshotFromReader(
     text: text,
     imageBytes: image,
     imageMediaType: imageType,
+    imageSizeBytes: imageSize,
     files: files,
   );
 }
@@ -270,17 +291,18 @@ const List<(SimpleFileFormat, String)> _imageFormats = [
 /// Whether [item] carries a real file (rather than an image or a string), and
 /// in which format to read it.
 ///
-/// Exposed for callers that need to decide what to do with a dropped item
-/// BEFORE paying to read it — the composer reads a dropped picture's bytes but
-/// keeps a dropped video as a path, and it cannot make that choice after
-/// [snapshotFromReader] has already loaded four gigabytes into memory.
+/// Path-backed files are read by the bounded upload service; byte-backed
+/// drag/clipboard files use [readHostFile] with a read ceiling.
 ({bool isFile, FileFormat? format}) hostFileFormatFor(DataReader item) =>
     _fileFormatFor(item);
 
 /// Reads one item as a file, or null when it has none. See [readHostValue] for
 /// why the callback form is wrapped.
-Future<HostFile?> readHostFile(DataReader item, {FileFormat? format}) =>
-    _readFile(item, format);
+Future<HostFile?> readHostFile(
+  DataReader item, {
+  FileFormat? format,
+  int? maxBytes,
+}) => _readFile(item, format, maxBytes: maxBytes);
 
 /// Reads one value (text, a URI) off an item, or null when it has none.
 Future<T?> readHostValue<T extends Object>(
@@ -322,18 +344,54 @@ Future<T?> _readValue<T extends Object>(
 }
 
 /// Reads one item as a file, or null when it has none.
-Future<HostFile?> _readFile(DataReader item, FileFormat? format) async {
+Future<HostFile?> _readFile(
+  DataReader item,
+  FileFormat? format, {
+  int? maxBytes,
+}) async {
   final completer = Completer<HostFile?>();
   final progress = item.getFile(
     format,
     (file) async {
       try {
-        final bytes = await file.readAll();
+        final name = file.fileName ?? await item.getSuggestedName() ?? 'file';
+        final length = file.fileSize;
+        if (maxBytes != null && length != null && length > maxBytes) {
+          if (!completer.isCompleted) {
+            completer.complete(
+              HostFile(name: name, bytes: Uint8List(0), sizeBytes: length),
+            );
+          }
+          return;
+        }
+        Uint8List bytes;
+        if (maxBytes == null) {
+          bytes = await file.readAll();
+        } else {
+          final buffer = BytesBuilder(copy: false);
+          await for (final chunk in file.getStream()) {
+            if (buffer.length + chunk.length > maxBytes) {
+              if (!completer.isCompleted) {
+                completer.complete(
+                  HostFile(
+                    name: name,
+                    bytes: Uint8List(0),
+                    sizeBytes: buffer.length + chunk.length,
+                  ),
+                );
+              }
+              return;
+            }
+            buffer.add(chunk);
+          }
+          bytes = buffer.takeBytes();
+        }
         if (!completer.isCompleted) {
           completer.complete(
             HostFile(
-              name: file.fileName ?? await item.getSuggestedName() ?? 'file',
+              name: name,
               bytes: bytes,
+              sizeBytes: length ?? bytes.length,
             ),
           );
         }

@@ -86,6 +86,45 @@ class _RecordingRunLogRepo implements AgentRunLogRepository {
   }
 
   @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async {
+    final current = await getById(workspaceId, runId);
+    if (current == null || current.workspaceId != workspaceId) {
+      return false;
+    }
+    final start = markRunning &&
+        current.completedAt == null &&
+        current.status == RunStatus.pending;
+    await upsert(current.copyWith(
+      pid: pid,
+      status: start ? RunStatus.running : null,
+      logPath: logPath,
+      contextSnapshotJson: contextSnapshotJson,
+      lastOutputAt: lastOutputAt,
+      liveness: liveness,
+      errorFamily: errorFamily,
+      summary: summary,
+      modelId: modelId,
+      effort: effort,
+      taskFamily: taskFamily,
+    ));
+    return true;
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

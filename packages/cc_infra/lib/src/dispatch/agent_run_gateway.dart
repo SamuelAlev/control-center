@@ -407,6 +407,19 @@ class AgentRunGateway {
       );
       if (resolution.decision == ActionDecision.deny &&
           resolution.driving.rule?.constraint == null) {
+        // Discovery ends the push before check() can run. Record the applied
+        // denial here too, so the operator sees why the agent was blocked.
+        _guard.recordOutcome(
+          workspaceId: grant.workspaceId,
+          resolution: resolution,
+          applied: ActionDecision.deny,
+          classes: const {ActionClass.gitPush},
+          agentId: grant.agentId,
+          spaceId: grant.spaceId,
+          actionSummary: 'git push to $owner/$name',
+          onBehalfOfUserId: grant.actingUserId,
+          runId: grant.runId,
+        );
         return _plain(
           request,
           HttpStatus.forbidden,

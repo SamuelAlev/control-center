@@ -3,8 +3,8 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/daos/rss_dao.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_server_core/src/dao_newsfeed_repository.dart';
-import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
@@ -14,8 +14,15 @@ const _uuid = Uuid();
 
 // ── Fake fetcher ────────────────────────────────────────────────────────
 
+/// Never touches the network: the fakes below override every method under
+/// test, so this client only satisfies the constructor.
+class _NullRhttpClient implements RhttpClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeRssFetcherService extends RssFetcherService {
-  FakeRssFetcherService() : super(Dio());
+  FakeRssFetcherService() : super(_NullRhttpClient());
 
   final Map<String, ParsedFeed> _feeds = {};
 
@@ -61,7 +68,7 @@ class FakeRssFetcherService extends RssFetcherService {
 
 /// Records calls and returns stubbed icons per site URL.
 class FakeSiteIconResolver extends SiteIconResolver {
-  FakeSiteIconResolver() : super(Dio());
+  FakeSiteIconResolver() : super(_NullRhttpClient());
 
   final Map<String, String> _icons = {};
   final List<String> calls = [];
@@ -171,9 +178,9 @@ const _user = 'user-1';
 /// A second user for isolation assertions.
 const _otherUser = 'user-2';
 
-Future<void> _insertUser(GlobalDatabase db, String id) => db.into(
-  db.usersTable,
-).insert(UsersTableCompanion.insert(id: id, handle: id, displayName: id));
+Future<void> _insertUser(GlobalDatabase db, String id) => db
+    .into(db.usersTable)
+    .insert(UsersTableCompanion.insert(id: id, handle: id, displayName: id));
 
 void main() {
   late GlobalDatabase db;
@@ -793,141 +800,115 @@ void main() {
   // ── Feed icon resolution ─────────────────────────────────────────────
 
   group('feed icon resolution', () {
-    test('persists the space image the feed advertises (TechCrunch case)', () async {
+    test(
+      'persists the space image the feed advertises (TechCrunch case)',
+      () async {
+        final fetcher = FakeRssFetcherService();
+        final icons = FakeSiteIconResolver();
+        final refreshRepo = DaoNewsfeedRepository(
+          dao,
+          fetcher,
+          siteIcons: icons,
+        );
+
+        final feed = await refreshRepo.addFeed(
+          _user,
+          name: 'TechCrunch',
+          url: 'https://techcrunch.example.com/feed/',
+        );
+        fetcher.stubFeed(
+          feed.id,
+          const [],
+          iconUrl:
+              'https://techcrunch.example.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32',
+          siteUrl: 'https://techcrunch.example.com/',
+        );
+
+        await refreshRepo.refreshFeed(_user, feed.id);
+
+        final stored = await dao.getFeedByUrl(_user, feed.url);
+        expect(
+          stored!.iconUrl,
+          'https://techcrunch.example.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32',
+        );
+        // The space image wins; the site is never fetched for an icon.
+        expect(icons.calls, isEmpty);
+      },
+    );
+
+    test('falls back to the site favicon when the feed advertises no image '
+        '(lea.verou.me case)', () async {
       final fetcher = FakeRssFetcherService();
       final icons = FakeSiteIconResolver();
-      final refreshRepo = DaoNewsfeedRepository(
-        dao,
-        fetcher,
-        siteIcons: icons,
-      );
+      final refreshRepo = DaoNewsfeedRepository(dao, fetcher, siteIcons: icons);
 
       final feed = await refreshRepo.addFeed(
         _user,
-        name: 'TechCrunch',
-        url: 'https://techcrunch.example.com/feed/',
+        name: 'Lea Verou',
+        url: 'https://lea.example.com/feed.xml',
       );
-      fetcher.stubFeed(
-        feed.id,
-        const [],
-        iconUrl:
-            'https://techcrunch.example.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32',
-        siteUrl: 'https://techcrunch.example.com/',
+      fetcher.stubFeed(feed.id, const [], siteUrl: 'https://lea.example.com/');
+      icons.stubIcon(
+        'https://lea.example.com/',
+        'https://lea.example.com/assets/favicon.png',
       );
 
       await refreshRepo.refreshFeed(_user, feed.id);
 
       final stored = await dao.getFeedByUrl(_user, feed.url);
-      expect(
-        stored!.iconUrl,
-        'https://techcrunch.example.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32',
-      );
-      // The space image wins; the site is never fetched for an icon.
-      expect(icons.calls, isEmpty);
+      expect(stored!.iconUrl, 'https://lea.example.com/assets/favicon.png');
+      expect(icons.calls, ['https://lea.example.com/']);
     });
 
-    test(
-      'falls back to the site favicon when the feed advertises no image '
-      '(lea.verou.me case)',
-      () async {
-        final fetcher = FakeRssFetcherService();
-        final icons = FakeSiteIconResolver();
-        final refreshRepo = DaoNewsfeedRepository(
-          dao,
-          fetcher,
-          siteIcons: icons,
-        );
+    test('uses the feed URL as the site when the space has no link', () async {
+      final fetcher = FakeRssFetcherService();
+      final icons = FakeSiteIconResolver();
+      final refreshRepo = DaoNewsfeedRepository(dao, fetcher, siteIcons: icons);
 
-        final feed = await refreshRepo.addFeed(
-          _user,
-          name: 'Lea Verou',
-          url: 'https://lea.example.com/feed.xml',
-        );
-        fetcher.stubFeed(
-          feed.id,
-          const [],
-          siteUrl: 'https://lea.example.com/',
-        );
-        icons.stubIcon(
-          'https://lea.example.com/',
-          'https://lea.example.com/assets/favicon.png',
-        );
+      final feed = await refreshRepo.addFeed(
+        _user,
+        name: 'No Link',
+        url: 'https://nolink.example.com/feed.xml',
+      );
+      fetcher.stubFeed(feed.id, const []);
+      icons.stubIcon(
+        'https://nolink.example.com/feed.xml',
+        'https://nolink.example.com/favicon.ico',
+      );
 
-        await refreshRepo.refreshFeed(_user, feed.id);
+      await refreshRepo.refreshFeed(_user, feed.id);
 
-        final stored = await dao.getFeedByUrl(_user, feed.url);
-        expect(stored!.iconUrl, 'https://lea.example.com/assets/favicon.png');
-        expect(icons.calls, ['https://lea.example.com/']);
-      },
-    );
+      final stored = await dao.getFeedByUrl(_user, feed.url);
+      expect(stored!.iconUrl, 'https://nolink.example.com/favicon.ico');
+    });
 
-    test(
-      'uses the feed URL as the site when the space has no link',
-      () async {
-        final fetcher = FakeRssFetcherService();
-        final icons = FakeSiteIconResolver();
-        final refreshRepo = DaoNewsfeedRepository(
-          dao,
-          fetcher,
-          siteIcons: icons,
-        );
+    test('does not re-fetch the site once an icon is stored', () async {
+      final fetcher = FakeRssFetcherService();
+      final icons = FakeSiteIconResolver();
+      final refreshRepo = DaoNewsfeedRepository(dao, fetcher, siteIcons: icons);
 
-        final feed = await refreshRepo.addFeed(
-          _user,
-          name: 'No Link',
-          url: 'https://nolink.example.com/feed.xml',
-        );
-        fetcher.stubFeed(feed.id, const []);
-        icons.stubIcon(
-          'https://nolink.example.com/feed.xml',
-          'https://nolink.example.com/favicon.ico',
-        );
+      final feed = await refreshRepo.addFeed(
+        _user,
+        name: 'Has Icon',
+        url: 'https://hasicon.example.com/feed',
+      );
+      await dao.updateFeedIcon(
+        feedId: feed.id,
+        iconUrl: 'https://hasicon.example.com/icon.png',
+      );
+      fetcher.stubFeed(feed.id, const []);
 
-        await refreshRepo.refreshFeed(_user, feed.id);
+      await refreshRepo.refreshFeed(_user, feed.id);
 
-        final stored = await dao.getFeedByUrl(_user, feed.url);
-        expect(stored!.iconUrl, 'https://nolink.example.com/favicon.ico');
-      },
-    );
-
-    test(
-      'does not re-fetch the site once an icon is stored',
-      () async {
-        final fetcher = FakeRssFetcherService();
-        final icons = FakeSiteIconResolver();
-        final refreshRepo = DaoNewsfeedRepository(
-          dao,
-          fetcher,
-          siteIcons: icons,
-        );
-
-        final feed = await refreshRepo.addFeed(
-          _user,
-          name: 'Has Icon',
-          url: 'https://hasicon.example.com/feed',
-        );
-        await dao.updateFeedIcon(
-          feedId: feed.id,
-          iconUrl: 'https://hasicon.example.com/icon.png',
-        );
-        fetcher.stubFeed(feed.id, const []);
-
-        await refreshRepo.refreshFeed(_user, feed.id);
-
-        final stored = await dao.getFeedByUrl(_user, feed.url);
-        expect(stored!.iconUrl, 'https://hasicon.example.com/icon.png');
-        expect(icons.calls, isEmpty);
-      },
-    );
+      final stored = await dao.getFeedByUrl(_user, feed.url);
+      expect(stored!.iconUrl, 'https://hasicon.example.com/icon.png');
+      expect(icons.calls, isEmpty);
+    });
 
     test('a refreshed space image replaces a rebranded icon', () async {
       final fetcher = FakeRssFetcherService();
       final icons = FakeSiteIconResolver();
-      final refreshRepo = DaoNewsfeedRepository(
-        dao,
-        fetcher,
-        siteIcons: icons,
-      );
+      final refreshRepo = DaoNewsfeedRepository(dao, fetcher, siteIcons: icons);
 
       final feed = await refreshRepo.addFeed(
         _user,
@@ -950,53 +931,46 @@ void main() {
       expect(stored!.iconUrl, 'https://rebrand.example.com/new.png');
     });
 
-    test(
-      'a stored SVG icon is re-resolved, or cleared when the site offers '
-      'nothing better (Hacker News case)',
-      () async {
-        final fetcher = FakeRssFetcherService();
-        final icons = FakeSiteIconResolver();
-        final refreshRepo = DaoNewsfeedRepository(
-          dao,
-          fetcher,
-          siteIcons: icons,
-        );
+    test('a stored SVG icon is re-resolved, or cleared when the site offers '
+        'nothing better (Hacker News case)', () async {
+      final fetcher = FakeRssFetcherService();
+      final icons = FakeSiteIconResolver();
+      final refreshRepo = DaoNewsfeedRepository(dao, fetcher, siteIcons: icons);
 
-        final feed = await refreshRepo.addFeed(
-          _user,
-          name: 'Hacker News',
-          url: 'https://news.example.com/rss',
-        );
-        // Legacy state: the resolver stored y18.svg before SVGs were
-        // recognised as unrenderable.
-        await dao.updateFeedIcon(
-          feedId: feed.id,
-          iconUrl: 'https://news.example.com/y18.svg',
-        );
-        fetcher.stubFeed(feed.id, const [], siteUrl: 'https://news.example.com/');
+      final feed = await refreshRepo.addFeed(
+        _user,
+        name: 'Hacker News',
+        url: 'https://news.example.com/rss',
+      );
+      // Legacy state: the resolver stored y18.svg before SVGs were
+      // recognised as unrenderable.
+      await dao.updateFeedIcon(
+        feedId: feed.id,
+        iconUrl: 'https://news.example.com/y18.svg',
+      );
+      fetcher.stubFeed(feed.id, const [], siteUrl: 'https://news.example.com/');
 
-        await refreshRepo.refreshFeed(_user, feed.id);
+      await refreshRepo.refreshFeed(_user, feed.id);
 
-        // The resolver finds no raster icon → the SVG is cleared so the
-        // client falls back to the origin's /favicon.ico again.
-        var stored = await dao.getFeedByUrl(_user, feed.url);
-        expect(stored!.iconUrl, '');
-        expect(icons.calls, ['https://news.example.com/']);
+      // The resolver finds no raster icon → the SVG is cleared so the
+      // client falls back to the origin's /favicon.ico again.
+      var stored = await dao.getFeedByUrl(_user, feed.url);
+      expect(stored!.iconUrl, '');
+      expect(icons.calls, ['https://news.example.com/']);
 
-        // When the site later offers a raster icon, it replaces the SVG.
-        await dao.updateFeedIcon(
-          feedId: feed.id,
-          iconUrl: 'https://news.example.com/y18.svg',
-        );
-        icons.stubIcon(
-          'https://news.example.com/',
-          'https://news.example.com/favicon.png',
-        );
-        await refreshRepo.refreshFeed(_user, feed.id);
-        stored = await dao.getFeedByUrl(_user, feed.url);
-        expect(stored!.iconUrl, 'https://news.example.com/favicon.png');
-      },
-    );
+      // When the site later offers a raster icon, it replaces the SVG.
+      await dao.updateFeedIcon(
+        feedId: feed.id,
+        iconUrl: 'https://news.example.com/y18.svg',
+      );
+      icons.stubIcon(
+        'https://news.example.com/',
+        'https://news.example.com/favicon.png',
+      );
+      await refreshRepo.refreshFeed(_user, feed.id);
+      stored = await dao.getFeedByUrl(_user, feed.url);
+      expect(stored!.iconUrl, 'https://news.example.com/favicon.png');
+    });
 
     test(
       'an SVG space image is not stored; the site resolver takes over',
@@ -1153,7 +1127,10 @@ void main() {
 
       // Saving through the wrong user is a silent no-op.
       await repo.setArticleSaved(_user, theirArticle, saved: true);
-      expect((await repo.getArticleById(_otherUser, theirArticle))!.saved, isFalse);
+      expect(
+        (await repo.getArticleById(_otherUser, theirArticle))!.saved,
+        isFalse,
+      );
 
       // markAllRead only touches the caller's articles.
       await repo.markAllRead(_user);
@@ -1180,7 +1157,8 @@ void main() {
   group('edge cases', () {
     test('addFeed with empty name throws ArgumentError', () async {
       expect(
-        () => repo.addFeed(_user, name: '', url: 'https://valid.example.com/rss'),
+        () =>
+            repo.addFeed(_user, name: '', url: 'https://valid.example.com/rss'),
         throwsA(isA<ArgumentError>()),
       );
     });

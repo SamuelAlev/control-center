@@ -85,7 +85,9 @@ class LocalNotificationService implements NotificationPort {
       // Toast-only by construction: the durable bell renders through
       // `mapNotificationFrame` and never consults this service, so a message
       // silenced here is still recorded as history.
-      if (_isAppFocused() && _isRouteActive(notification.route)) {
+      if (notification.suppressWhenViewingTarget &&
+          _isAppFocused() &&
+          _isRouteActive(notification.route)) {
         final spaceId = notification.spaceId;
         if (spaceId == null || _isSpaceActive(spaceId)) {
           return;

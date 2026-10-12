@@ -8,6 +8,7 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
@@ -15,6 +16,7 @@ import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
+import 'package:cc_harness/context.dart' show TokenCalibration, ToolOutputStore;
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart' show FileSearchPort;
@@ -27,6 +29,8 @@ import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/harness/cc_natives_file_search_port.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
+import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
+import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 
 /// Shared dependencies for a `DispatchSession`.
@@ -37,6 +41,7 @@ class SandboxDispatchDeps {
     required this.broker,
     required this.agentRepo,
     required this.runLogRepo,
+    this.llmCallRecordRepo,
     required this.eventBus,
     required this.backendRegistry,
     this.todoRepo,
@@ -51,6 +56,9 @@ class SandboxDispatchDeps {
     this.lspSupervisor,
     this.astParsers,
     this.transcriptStore,
+    this.toolOutputStore,
+    this.claudeSessionStore,
+    this.claudeMcpDiscoveryCache = ClaudeMcpDiscoveryCachePolicy.disabled,
     this.debugSupervisor,
     this.kernelLauncherFactory,
     this.actionGuard,
@@ -70,7 +78,9 @@ class SandboxDispatchDeps {
     this.processControl,
     this.toolDeferralEnabled = true,
     FileSearchPort? fileSearch,
-  }) : fileSearch = fileSearch ?? CcNativesFileSearchPort();
+    TokenCalibration? tokenCalibration,
+  }) : tokenCalibration = tokenCalibration ?? TokenCalibration(),
+       fileSearch = fileSearch ?? CcNativesFileSearchPort();
 
   /// Whether a harness run withholds the schemas of tools it is unlikely to
   /// need until it asks for them (`--tool-deferral`, default on).
@@ -79,6 +89,9 @@ class SandboxDispatchDeps {
   /// the pre-deferral behaviour byte for byte — so if a model ever handles the
   /// two-tier surface badly, the fix is a flag rather than a release.
   final bool toolDeferralEnabled;
+
+  /// Empirical token-estimate buckets shared by this host's dispatches.
+  final TokenCalibration tokenCalibration;
 
   /// Fuzzy file search shared by the harness `read` (did-you-mean recovery)
   /// and `file_search` tools. Defaults to the fff-backed adapter; the server
@@ -117,6 +130,9 @@ class SandboxDispatchDeps {
 
   /// Optional run-log repository.
   final AgentRunLogRepository? runLogRepo;
+
+  /// Durable physical-request records, including auxiliary and failed calls.
+  final LlmCallRecordRepository? llmCallRecordRepo;
 
   /// Records a subagent run's own activity timeline: folds the child loop's
   /// events into transcript segments, streams them live under the CHILD run id,
@@ -179,12 +195,14 @@ class SandboxDispatchDeps {
   /// degrades gracefully when no approver is wired).
   final ConfirmationPort? confirmationPort;
 
-  /// Asks the operator whether agents may run programs from inside their
-  /// worktree, and turns the answers into the sandbox's exec-grant roots.
+  /// Turns the operator's answers into the sandbox's exec-grant roots, and
+  /// grants the server's own disposable conversation worktrees without asking
+  /// (see [SandboxExecGrantService.approvedRoots]).
   ///
   /// Null leaves the writable-dir exec block fully closed — the behaviour
-  /// before grants existed. It is never inferred: a tree is opened only by an
-  /// answer, so a host with no approver wired grants nothing.
+  /// before grants existed. Apart from those server-created trees, a path is
+  /// opened only by an explicit answer, so a host with no approver wired asks
+  /// nothing and grants nothing outside them.
   final SandboxExecGrantService? execGrantService;
 
   /// The host's language-server pool, or null when the host runs without one.
@@ -217,6 +235,27 @@ class SandboxDispatchDeps {
   /// continues it for real instead of re-reading a summary of it. Null keeps
   /// the historical behaviour: every run starts from an empty history.
   final HarnessTranscriptStore? transcriptStore;
+
+  /// Authorized full observations referenced by persisted harness transcripts.
+  final ToolOutputStore? toolOutputStore;
+
+  /// Where native Claude Code session ids (and their cumulative-accounting
+  /// baselines) are persisted between dispatches.
+  ///
+  /// This is what lets an ordinary follow-up turn RESUME the same `claude -p`
+  /// session — `--resume <id>` with only the new input — instead of spawning a
+  /// fresh process and reconstructing continuity in the prompt. Records are
+  /// scoped by workspace, conversation, agent, account, working directory and
+  /// launch policy, so a resume can never cross any of them.
+  ///
+  /// Null (the default) keeps the pre-resume behaviour exactly: every run
+  /// starts a fresh native session; nothing is read or written.
+  final ClaudeNativeSessionStore? claudeSessionStore;
+
+  /// Opt-in policy for Claude Code's own MCP discovery cache
+  /// (`MCP_DISCOVERY_CACHE`). [ClaudeMcpDiscoveryCachePolicy.disabled] by
+  /// default — the CLI's own behaviour, untouched.
+  final ClaudeMcpDiscoveryCachePolicy claudeMcpDiscoveryCache;
 
   /// Content-addressed storage for images a tool returned (screenshots from
   /// `browser_use` / `computer_use` / `mobile_use` / `ios_use`, rendered output).

@@ -14354,6 +14354,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get composerDropToAttach => 'أفلت للإرفاق';
 
   @override
+  String get composerAttachmentUploading => 'جارٍ رفع الملف…';
+
+  @override
+  String get composerAttachmentReady => 'جاهز';
+
+  @override
+  String get composerAttachmentUploadFailed => 'فشل رفع الملف';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'يتجاوز حجم الملف الحد المسموح به وهو $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'تعذّرت قراءة هذا الملف';
+
+  @override
+  String get composerAttachmentWaitForUploads => 'انتظر حتى يكتمل رفع المرفقات';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'أعِد محاولة رفع المرفقات التي فشلت أو أزلها قبل الإرسال';
+
+  @override
   String get attachmentUnavailable => 'المرفق غير متاح';
 
   @override
@@ -15533,11 +15557,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'وكيل بانتظارك';
+  String get notificationAgentAwaitingInput => 'وكيل يحتاج إلى انتباهك';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'عندما يحتاج وكيل إلى موافقتك أو إجابتك أو بيانات اعتماد صالحة';
+      'عندما يحتاج وكيل إلى موافقتك أو إجابتك أو بيانات اعتماد صالحة، أو تحظر السياسة إجراءً';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15609,4 +15633,383 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'الخادم يتوقف';
+
+  @override
+  String get skillEvalAbsent => 'غائبة مقابل متاحة';
+
+  @override
+  String get skillEvalAmbient => 'المهارات المحيطة';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'مرجع الأثر: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · التكرار $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'المحاولات';
+
+  @override
+  String get skillEvalAvailableEvent => 'متاحة';
+
+  @override
+  String get skillEvalBaseline => 'تجزئة المراجعة السابقة';
+
+  @override
+  String get skillEvalBodyLoad => 'تم تحميل المحتوى';
+
+  @override
+  String get skillEvalBudgetCents => 'الميزانية (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'يستخدم التقييم المدفوع المزوّد والميزانية المحددين. نتائج الفحص الأمني منفصلة.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'تتتبّع ميزانيات الاشتراك الاستخدام المكافئ لواجهة API، لا الفواتير. قد تتجاوز مكالمة جارية الميزانية؛ ولا تبدأ مكالمات أخرى بعد بلوغها. الفحوص الأمنية منفصلة.';
+
+  @override
+  String get skillEvalCancel => 'إلغاء التشغيل';
+
+  @override
+  String get skillEvalCancelled => 'أُلغي';
+
+  @override
+  String get skillEvalCancelling => 'جارٍ الإلغاء';
+
+  @override
+  String get skillEvalComparison => 'المقارنة';
+
+  @override
+  String get skillEvalCompleted => 'اكتمل';
+
+  @override
+  String get skillEvalComposition => 'التركيب';
+
+  @override
+  String get skillEvalCorpus => 'مجموعة المهام';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString تكرارات';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => 'رُصدت جميع التجارب المخطط لها';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'تجزئة الحزمة الحالية: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'تعطيل تقييمات التحديث';
+
+  @override
+  String get skillEvalEnableUpdates => 'تفعيل تقييمات التحديث';
+
+  @override
+  String get skillEvalExport => 'نسخ JSON بعد حجب البيانات الحساسة';
+
+  @override
+  String get skillEvalFailed => 'فشل';
+
+  @override
+  String get skillEvalForced => 'التحميل الإجباري مقابل الغياب';
+
+  @override
+  String get skillEvalForcedEvent => 'تحميل إجباري';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'تجزئة الحزمة غير متاحة على هذا الخادم. التقييم معطّل.';
+
+  @override
+  String get skillEvalHistory => 'سجل المراجعات';
+
+  @override
+  String get skillEvalImproved => 'تحسّن';
+
+  @override
+  String get skillEvalIncomplete => 'غير مكتمل';
+
+  @override
+  String get skillEvalInconclusive => 'غير حاسم';
+
+  @override
+  String get skillEvalInferred => 'مستنتج';
+
+  @override
+  String get skillEvalInterrupted => 'توقّف';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'لا يمكن رصد تحميل المهارة؛ غياب الحدث لا يثبت تجاهلها.';
+
+  @override
+  String get skillEvalModel => 'النموذج المحدد';
+
+  @override
+  String get skillEvalNoAttempts => 'لا توجد محاولات بعد.';
+
+  @override
+  String get skillEvalNoModels =>
+      'لا تتوفر نماذج متصلة. وصّل مزوّدًا في الإعدادات أولًا.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'لا توجد تجزئة سابقة في سجل الحملة. قيّم المراجعة السابقة قبل استبدالها.';
+
+  @override
+  String get skillEvalNoReport =>
+      'لا يوجد تقرير بعد؛ المحاولات الجزئية ما زالت متاحة.';
+
+  @override
+  String get skillEvalNoWorkspace => 'لم تُحدَّد مساحة عمل.';
+
+  @override
+  String get skillEvalNoTasks => 'لم يُبلّغ عن مهام بعد.';
+
+  @override
+  String get skillEvalNoVerifiers => 'لم تُسجَّل أدلة تحقق.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'لم تُقيَّم هذه البايتات بعينها. الفحص ليس دليلًا على السلوك.';
+
+  @override
+  String get skillEvalNotVerified => 'لم يُتحقَّق منه';
+
+  @override
+  String get skillEvalObserved => 'مرصود';
+
+  @override
+  String get skillEvalOpenQuality => 'فتح الجودة';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'افتراضيًا، لا يبدأ حفظ المهارة تقييمًا مدفوعًا. إذا فعّلت صراحةً إعادة التقييم التلقائي عند التحديث، يبدأ الحفظ تقييمًا مدفوعًا ضمن الميزانية.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'قيّم مراجعة أولًا لضبط سياسة التحديث.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'إعداد سياسة التحديث';
+
+  @override
+  String get skillEvalPartial => 'أدلة جزئية؛ لا حكم بشأن الاعتماد';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString من $plannedString محاولات';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'المزوّد: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'حملات مهارات مساحة العمل وأدلة خاصة بكل مراجعة.';
+
+  @override
+  String get skillEvalQueued => 'في قائمة الانتظار';
+
+  @override
+  String get skillEvalReconnecting => 'جارٍ إعادة الاتصال بلقطات الحملة…';
+
+  @override
+  String get skillEvalRefresh => 'تحديث';
+
+  @override
+  String get skillEvalReferenceLoad => 'تم تحميل المرجع';
+
+  @override
+  String get skillEvalRepetitions => 'التكرارات لكل مهمة';
+
+  @override
+  String get skillEvalReport => 'تقرير الأدلة';
+
+  @override
+  String get skillEvalRunning => 'جارٍ التشغيل';
+
+  @override
+  String get skillEvalScriptExecution => 'نُفِّذ البرنامج النصي';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'الإنفاق: $spent / الميزانية $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'بدء التقييم';
+
+  @override
+  String get skillEvalStartTitle => 'مقارنة مراجعات المهارة';
+
+  @override
+  String get skillEvalStale => 'قديم';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'قديم: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'مجموعات مهام متميزة: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes تم التحقق منها) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'المهام حسب المجموعة';
+
+  @override
+  String get skillEvalToolError => 'خطأ في الأداة';
+
+  @override
+  String get skillEvalTools => 'أحداث الأدوات';
+
+  @override
+  String get skillEvalTitle => 'تقييم المهارة';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'غير متاح: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'غير معروف';
+
+  @override
+  String get skillEvalUnsaved =>
+      'التعديلات غير المحفوظة غير مشمولة. احفظ قبل التقييم.';
+
+  @override
+  String get skillEvalUncertainty => 'نطاق عدم اليقين';
+
+  @override
+  String get skillEvalVerified => 'تم التحقق منه';
+
+  @override
+  String get skillEvalVerifiers => 'التحقق';
+
+  @override
+  String get skillEvalVerdict => 'الحكم';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'اكتمل النسخ: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'مخالفة الخطة';
+
+  @override
+  String get skillEvalPreserved => 'الجودة محفوظة';
+
+  @override
+  String get skillEvalPrevious => 'السابقة مقابل الحالية';
+
+  @override
+  String get skillEvalRegressed => 'ثبت التراجع';
+
+  @override
+  String get skillEvalCostRegression => 'تراجع التكلفة';
+
+  @override
+  String get skillEvalHarnessError => 'خطأ في إطار الاختبار';
+
+  @override
+  String get skillBehaviorRouting => 'توجيه المهارة';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive استخدامات متوقعة · $falsePositive استخدامات غير متوقعة · $falseNegative استخدامات فائتة · $trueNegative حالات تجاوز صحيحة';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive استخدامات غير مؤكدة · $negative حالات تجاوز غير مؤكدة · $notOffered لم تُعرض';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'الدقة المرصودة $precision · الاسترجاع $recall · معدل الإيجابيات الكاذبة $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'ذراع قسري · للتشخيص فقط';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'تُحسب المعدلات من الوصولات القابلة للرصد فقط. قد يبقى الوصول عبر الطرفية أو البحث مجهولًا؛ وتحميل المهارة لا يثبت تطبيقها.';
+
+  @override
+  String get skillBehaviorSafety => 'السلامة الاصطناعية';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts اجتيازات للآثار · $denials حالات رفض وفق السياسة · $violations انتهاكات للملفات المحمية';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'فحوص الآثار اصطناعية ولا تمثل معدلات الهجمات في العالم الحقيقي؛ الآثار الجانبية الفعلية غير مرصودة.';
+
+  @override
+  String get skillBehaviorUtility => 'الفائدة حسب العائلة';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts نجاحات متحقق منها';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'تُحتسب جميع المحاولات في مقام الفائدة، بما فيها الفاشلة وغير المكتملة.';
 }

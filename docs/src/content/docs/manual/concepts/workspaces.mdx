@@ -116,13 +116,17 @@ What none of them carry is the rest of the workspace directory. A workspace accu
 
 ## Moving a backup between the server and your device
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/manual/reference/backup/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed transfer routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/manual/reference/backup/#transfer-routes) — carry the bytes for every other topology through the authenticated, encrypted resource tunnel, on direct connections and over the relay. The public HTTP routes do not serve readable backup bytes, and signed paths still require authorization. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
 
 Three properties are worth knowing:
 
 - **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
 - **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Transfer works over the relay too.** Downloads and uploads use the same encrypted resource tunnel as direct connections; a direct HTTP origin is not required.
+
+Encryption protects the transfer in transit, not the server-side database,
+snapshot directory or a downloaded copy at rest. The server operator can access
+data held on that host.
 
 :::note[Which paths are whose]
 The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.

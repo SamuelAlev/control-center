@@ -47,6 +47,7 @@ Future<QuickOpenChoice?> showQuickOpenDialog(
 }) {
   return showCcDialog<QuickOpenChoice>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (dialogContext) {
       final ds = dialogContext.designSystem ?? DesignSystemTokens.light();
       final size = MediaQuery.sizeOf(dialogContext);

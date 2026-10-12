@@ -7,28 +7,27 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// The observability hub: four tabs over the workspace run-log feed — Usage
 /// (lifetime token totals, the activity calendar, the per-model trend and
 /// split), Insights (time-ranged KPIs, charts, breakdowns, per-agent and
 /// per-run rows), Live (roster, quotas, goal, fleet) and Quality (benchmark,
 /// evals).
-class ObservabilityScreen extends ConsumerStatefulWidget {
+class ObservabilityScreen extends StatelessWidget {
   /// Creates an [ObservabilityScreen].
   const ObservabilityScreen({super.key});
 
   @override
-  ConsumerState<ObservabilityScreen> createState() =>
-      _ObservabilityScreenState();
-}
-
-class _ObservabilityScreenState extends ConsumerState<ObservabilityScreen> {
-  int _index = 0;
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final uri = GoRouterState.of(context).uri;
+    final selectedIndex = switch (uri.queryParameters['tab']) {
+      'insights' => 1,
+      'live' => 2,
+      'quality' => 3,
+      _ => 0,
+    };
     return ScopedShortcuts(
       scope: '/observability',
       bindings: const {},
@@ -36,8 +35,16 @@ class _ObservabilityScreenState extends ConsumerState<ObservabilityScreen> {
         title: l10n.navObservability,
         subtitle: l10n.obsScreenSubtitle,
         child: CcTabView(
-          selectedIndex: _index,
-          onChanged: (i) => setState(() => _index = i),
+          selectedIndex: selectedIndex,
+          onChanged: (i) {
+            final tab = switch (i) {
+              1 => 'insights',
+              2 => 'live',
+              3 => 'quality',
+              _ => 'usage',
+            };
+            context.go('${uri.path}?tab=$tab');
+          },
           scrollable: false,
           expand: true,
           tabs: [

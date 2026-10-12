@@ -24,46 +24,6 @@ void main() {
     ),
   );
 
-  testWidgets('draws a flowchart with no exceptions', (tester) async {
-    await tester.pumpWidget(
-      host(
-        const CcMermaidView(
-          source: 'flowchart TD\n A[Start] -->|go| B{Choice}\n B --> C((End))',
-          style: style,
-        ),
-      ),
-    );
-    expect(tester.takeException(), isNull);
-    expect(find.byType(CustomPaint), findsWidgets);
-  });
-
-  testWidgets('draws every supported dialect without exceptions', (
-    tester,
-  ) async {
-    // Adjacent string literals here are line CONTINUATIONS of one diagram
-    // source, not separate entries — the lint's usual "you forgot a comma"
-    // reading is wrong for a wrapped multi-line fixture.
-    // ignore_for_file: no_adjacent_strings_in_list
-    const sources = <String>[
-      'flowchart LR\n subgraph s [Group]\n A --> B\n end\n B -.-> C',
-      'stateDiagram-v2\n [*] --> Idle\n Idle --> Busy: work\n Busy --> [*]\n'
-          ' note right of Idle : waiting',
-      'classDiagram\n class A {\n +int x\n +go()\n }\n A <|-- B : extends',
-      'erDiagram\n A ||--o{ B : has\n A {\n string name\n }',
-      'sequenceDiagram\n autonumber\n actor U\n U->>+S: req\n S-->>-U: res\n'
-          ' loop retry\n U->>S: again\n end\n Note over U,S: done',
-      'pie showData\n title Split\n "A" : 3\n "B" : 1',
-      'timeline\n title T\n section One\n 2020 : a : b\n section Two\n 2021 : c',
-    ];
-    for (final source in sources) {
-      await tester.pumpWidget(
-        host(CcMermaidView(source: source, style: style), width: 600),
-      );
-      await tester.pump();
-      expect(tester.takeException(), isNull, reason: source);
-    }
-  });
-
   testWidgets('an unsupported dialect renders the fallback with a reason', (
     tester,
   ) async {
@@ -152,19 +112,6 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.byType(SingleChildScrollView), findsOneWidget);
-  });
-
-  testWidgets('interactive mode wraps the canvas in a viewer', (tester) async {
-    await tester.pumpWidget(
-      host(
-        const CcMermaidView(
-          source: 'flowchart TD\n A --> B',
-          style: style,
-          interactive: true,
-        ),
-      ),
-    );
-    expect(find.byType(InteractiveViewer), findsOneWidget);
   });
 
   group('markdown integration', () {

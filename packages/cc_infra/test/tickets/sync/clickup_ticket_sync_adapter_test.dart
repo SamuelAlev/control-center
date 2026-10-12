@@ -1,26 +1,40 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart';
 import 'package:cc_infra/src/tickets/sync/clickup_ticket_sync_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
+/// The decoded JSON body of a captured request.
+Map<String, dynamic> jsonBody(HttpRequest request) =>
+    ((request.body! as HttpBodyJson).json as Map).cast<String, dynamic>();
+
 /// Exercises [ClickUpTicketSyncAdapter] — pure vendor translation over an
-/// injectable [Dio]. Pins the REST paths, the priority int mapping, the
+/// injectable [RhttpClient]. Pins the REST paths, the priority int mapping, the
 /// status-by-name PUT and the pull delta flattening.
 void main() {
-  late RecordingAdapter adapter;
-  late Dio dio;
+  late TestHttpClient httpClient;
   late ClickUpTicketSyncAdapter sync;
+  var queued = <Object?>[];
+  Object? next = <String, dynamic>{};
+
+  void nextJson(Object body) => next = body;
+
+  // Scripts consecutive responses (for paginated reads).
+  void queueJson(List<Object> bodies) => queued = [...bodies];
 
   setUp(() {
-    adapter = RecordingAdapter();
-    dio = Dio()..httpClientAdapter = adapter;
-    sync = ClickUpTicketSyncAdapter(dio);
+    queued = <Object?>[];
+    next = <String, dynamic>{};
+    httpClient = TestHttpClient(
+      handler: (request) => httpTextResponse(
+        request,
+        queued.isNotEmpty ? queued.removeAt(0) : next,
+      ),
+    );
+    sync = ClickUpTicketSyncAdapter(httpClient);
   });
 
   Ticket ticket({
@@ -80,7 +94,7 @@ void main() {
     test('follows pages until last_page', () async {
       // Regression: only page 0 was fetched, so a list with more than 100
       // changed tasks synced silently incomplete.
-      adapter.queueJson([
+      queueJson([
         {
           'tasks': [
             {
@@ -109,13 +123,13 @@ void main() {
       );
 
       expect(deltas.map((d) => d.externalId), ['p1', 'p2']);
-      expect(adapter.requests, hasLength(2));
-      expect(adapter.requests[0].queryParameters['page'], 0);
-      expect(adapter.requests[1].queryParameters['page'], 1);
+      expect(httpClient.requests, hasLength(2));
+      expect(httpClient.requests[0].query!['page'], '0');
+      expect(httpClient.requests[1].query!['page'], '1');
     });
 
     test('stops on an empty page even without last_page', () async {
-      adapter.queueJson([
+      queueJson([
         {
           'tasks': [
             {
@@ -134,11 +148,11 @@ void main() {
       );
 
       expect(deltas.map((d) => d.externalId), ['only']);
-      expect(adapter.requests, hasLength(2));
+      expect(httpClient.requests, hasLength(2));
     });
 
     test('GETs the list tasks endpoint and flattens the response', () async {
-      adapter.nextJson({
+      nextJson({
         'tasks': [
           {
             'id': 't1',
@@ -163,9 +177,9 @@ void main() {
         workspaceId: 'ws',
         vendorProjectId: 'list-9',
       );
-      expect(adapter.requests.first.path, '/api/v2/list/list-9/task');
-      expect(adapter.requests.first.queryParameters['subtasks'], true);
-      expect(adapter.requests.first.queryParameters['order_by'], 'updated');
+      expect(httpClient.requests.first.url, '/api/v2/list/list-9/task');
+      expect(httpClient.requests.first.query!['subtasks'], 'true');
+      expect(httpClient.requests.first.query!['order_by'], 'updated');
       expect(deltas, hasLength(2));
       expect(deltas[0].externalId, 't1');
       expect(deltas[0].url, 'https://app.clickup.com/t/123/t1');
@@ -180,14 +194,14 @@ void main() {
     });
 
     test('forwards since as a millisecond date_updated_gt', () async {
-      adapter.nextJson({'tasks': const []});
+      nextJson({'tasks': const []});
       await sync.pullChanges(
         workspaceId: 'ws',
         vendorProjectId: 'l',
         since: DateTime.utc(2023, 11, 14, 22, 13, 20),
       );
       expect(
-        adapter.requests.first.queryParameters['date_updated_gt'],
+        httpClient.requests.first.query!['date_updated_gt'],
         '1700000000000',
       );
     });
@@ -197,7 +211,7 @@ void main() {
       () async {
         // Drive via pullChanges with each priority shape.
         Future<TicketPriority?> pri(String raw) async {
-          adapter.nextJson({
+          nextJson({
             'tasks': [
               {
                 'id': 'x',
@@ -225,10 +239,7 @@ void main() {
 
   group('pushChange — create', () {
     test('POSTs the task with name/description/priority', () async {
-      adapter.nextJson({
-        'id': 'new1',
-        'url': 'https://app.clickup.com/t/x/new1',
-      });
+      nextJson({'id': 'new1', 'url': 'https://app.clickup.com/t/x/new1'});
       final outcome = await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(
@@ -239,9 +250,9 @@ void main() {
         changeType: TicketChangeType.created,
         vendorProjectId: 'list-9',
       );
-      expect(adapter.requests.single.method, 'POST');
-      expect(adapter.requests.single.path, '/api/v2/list/list-9/task');
-      final data = adapter.requests.single.data as Map;
+      expect(httpClient.requests.single.method.value, 'POST');
+      expect(httpClient.requests.single.url, '/api/v2/list/list-9/task');
+      final data = jsonBody(httpClient.requests.single);
       expect(data['name'], 'New');
       expect(data['description'], 'body');
       expect(data['priority'], 3);
@@ -250,14 +261,14 @@ void main() {
     });
 
     test('omits description/priority when not set', () async {
-      adapter.nextJson({'id': 'new1'});
+      nextJson({'id': 'new1'});
       await sync.pushChange(
         workspaceId: 'ws',
         ticket: ticket(),
         changeType: TicketChangeType.created,
         vendorProjectId: 'l',
       );
-      expect(adapter.requests.single.data, {'name': 't'});
+      expect(jsonBody(httpClient.requests.single), {'name': 't'});
     });
   });
 
@@ -270,10 +281,10 @@ void main() {
         externalId: 't7',
         vendorProjectId: 'l',
       );
-      final req = adapter.requests.single;
-      expect(req.method, 'PUT');
-      expect(req.path, '/api/v2/task/t7');
-      expect(req.data, {'status': 'done'});
+      final req = httpClient.requests.single;
+      expect(req.method.value, 'PUT');
+      expect(req.url, '/api/v2/task/t7');
+      expect(jsonBody(req), {'status': 'done'});
     });
 
     test('updated PUTs name/description', () async {
@@ -284,7 +295,7 @@ void main() {
         externalId: 't7',
         vendorProjectId: 'l',
       );
-      final data = adapter.requests.single.data as Map;
+      final data = jsonBody(httpClient.requests.single);
       expect(data['name'], 'T2');
       expect(data['description'], 'd');
     });
@@ -303,40 +314,7 @@ void main() {
           vendorProjectId: 'l',
         );
       }
-      expect(adapter.requests, isEmpty);
+      expect(httpClient.requests, isEmpty);
     });
   });
-}
-
-class RecordingAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-  Object _nextBody = <String, dynamic>{};
-  final List<Object> _queued = [];
-
-  void nextJson(Object body) => _nextBody = body;
-
-  /// Scripts consecutive responses (for paginated reads).
-  void queueJson(List<Object> bodies) => _queued
-    ..clear()
-    ..addAll(bodies);
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    final body = _queued.isNotEmpty ? _queued.removeAt(0) : _nextBody;
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

@@ -7,10 +7,10 @@ import 'package:control_center/features/pr_review/presentation/widgets/mention_a
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/emoji_parser.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_emoji/flutter_emoji.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// THE input for every PR comment — inline diff comments, thread replies and the review
@@ -119,7 +119,7 @@ class _PrCommentFieldState extends ConsumerState<PrCommentField> {
       return;
     }
     final name = match.group(1)!;
-    final parser = EmojiParser();
+    final parser = emojiParser;
     if (!parser.hasName(name)) {
       return;
     }

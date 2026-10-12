@@ -2,7 +2,7 @@
 title: Associa un dispositivo
 description: Associa il telefono (o un secondo browser o desktop) al tuo server Control Center per seguire la flotta da remoto.
 slug: it-IT/manuale/guide/associa-dispositivo
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Questa guida mostra come associare un telefono a Control Center, così puoi
@@ -23,9 +23,10 @@ Cloudflare Pages tramite il suo `wrangler.jsonc`, sull'immagine nginx
 `docker/cc_remote`, oppure su qualsiasi host statico con HTTPS — i service worker
 e IndexedDB richiedono un contesto sicuro) e il relay
 (`apps/cc_signaling_server`, un singolo binario Dart senza stato che non conserva
-dati dell'app e non vede mai il segreto di abbinamento — inoltra solo frame
-sigillati end-to-end). Vedi i rispettivi README per i passaggi di compilazione ed
-esecuzione.
+dati dell'app e non può decifrare record cifrati né vedere il segreto di
+abbinamento). Vede comunque IP, identificatori di instradamento, dimensioni e
+tempistiche, e può scartare traffico. Vedi i rispettivi README per i passaggi di
+compilazione ed esecuzione.
 
 ## Passaggio 1: apri il pannello di abbinamento
 
@@ -51,14 +52,18 @@ PWA Remote.
 
 Sul telefono, aprire un link di abbinamento non associa nulla in modo silenzioso.
 Remote mostra il nome annunciato dal server e ti chiede di confermare prima di
-memorizzare qualsiasi cosa, quindi un link falsificato non può dirottare l'app su
-un server altrui.
+memorizzare qualsiasi cosa. Verifica l'impronta nel codice QR rispetto a una fonte
+attendibile: confermare un nome non verificato o un QR falsificato non dimostra
+che il server sia tuo. Il client fissa l'identità firmata e rifiuta un'impronta
+modificata nelle connessioni successive.
 
 :::caution[Un codice QR inquadrato concede l'accesso immediatamente]
 Non esiste alcun passaggio «in sospeso e poi approvato»: un dispositivo creato è
 attivo dal momento in cui viene creato e il gate di connessione verifica solo che
 la credenziale sia attiva e non scaduta. Tratta il codice QR e la chiave di
 abbinamento come una password e revoca tutto ciò che non intendevi distribuire.
+Sia le sessioni client dirette sia quelle tramite relay richiedono la crittografia
+end-to-end; i client più vecchi non possono ripiegare su RPC in chiaro.
 :::
 
 ## Gestisci i dispositivi associati

@@ -27,6 +27,12 @@ class FindTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.read;
 
+  /// Audited safe for speculative (early) execution: a read-only glob walk
+  /// inside the workspace boundary, capped by [maxResults]. It writes nothing
+  /// and prompts nothing, so an early start can only cost the walk.
+  @override
+  bool get speculativeReadSafe => true;
+
   @override
   Map<String, dynamic> get inputSchema => {
     'type': 'object',

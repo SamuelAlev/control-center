@@ -240,6 +240,7 @@ class ModeToolPolicy {
     'ast_grep',
     'ast_edit',
     'resolve',
+    'read_output',
     'task',
   };
 

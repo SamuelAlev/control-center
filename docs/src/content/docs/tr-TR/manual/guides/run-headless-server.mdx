@@ -1,9 +1,9 @@
 ---
 title: Headless bir sunucu çalıştırma
 description: cc_server headless ikilisini ya da Docker imajını çalıştırın, ona bir istemci eşleştirin ve tüm CLI bayrakları ile ortam değişkenleri yüzeyiyle yapılandırın.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Sürekli açık kalan bir makinede `cc_server` çalıştırın, ardından masaüstünüzden,
@@ -26,7 +26,7 @@ sürüm etiketi sabitleyin (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ya da
 | `ghcr.io/samuelalev/cc-server`                    | Arka uç: veritabanı, ajanlar, MCP, webhook’lar | `-p 9030:9030`      |
 | `ghcr.io/samuelalev/cc-webapp`           | Web istemcisi (statik nginx)                  | `-p 8080:8080`      |
 | `ghcr.io/samuelalev/cc-remote`        | Telefon yardımcı PWA’sı (statik nginx)        | `-p 8081:8080`      |
-| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC eşleştirme aktarıcısı (isteğe bağlı)   | `-p 8788:8788`      |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Şifrelenmiş bağlantı aktarıcısı (isteğe bağlı) | `-p 8788:8788`      |
 
 Tüm yığın, tek bir compose dosyası olarak:
 
@@ -57,13 +57,16 @@ volumes:
 Bunlardan herhangi birini loopback dışına açmadan önce bilmeye değer şeyler:
 
 - **`cc-server` imajı `CC_SERVER_INSECURE=1` ile gelir** (yayımlanan port
-  trafiğini alabilmesi için `0.0.0.0` adresine bağlanmak zorundadır); bu yalnızca
-  güvenilir bir ağda, TLS sonlandıran bir ters proxy’nin — Caddy, Traefik, nginx
-  ya da bir Cloudflare Tunnel — arkasında güvenlidir. TLS’i bunun yerine süreç
-  içinde sonlandırmak için bir sertifika bağlayın ve `CC_SERVER_TLS_CERT` /
-  `CC_SERVER_TLS_KEY` değişkenlerini ayarlayın (ardından `CC_SERVER_INSECURE`
-  değişkenini kaldırın). Her şey `docker run -e …` ya da compose dosyasındaki
-  `environment:` bloğu ile geçersiz kılınabilir.
+  trafiğini alabilmesi için `0.0.0.0` adresine bağlanmak zorundadır). Güvenilir
+  bir ağda TLS sonlandıran bir ters proxy — Caddy, Traefik, nginx ya da bir
+  Cloudflare Tunnel — kullanın ya da bir sertifika bağlayın ve
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` değişkenlerini ayarlayın (ardından
+  `CC_SERVER_INSECURE` değişkenini kaldırın). Bu ayar yalnızca sunucunun dış
+  HTTP/WebSocket dinleyicisini denetler. Zorunlu uçtan uca şifrelenmiş istemci
+  oturumunu hiçbir zaman devre dışı bırakmaz. TLS yine de oturum açma/önyükleme
+  trafiğini, bağlantı üst verisini, genel uç noktaları ve web istemcisi teslimini
+  korur. Her şey `docker run -e …` ya da compose dosyasındaki `environment:`
+  bloğu ile geçersiz kılınabilir.
 - **Tek durum `/data` dizinidir.** SQLite veritabanları, eşleştirilmiş cihaz
   sırları, indirilen modeller ve toplantı sesleri hep bu birimde tutulur — onu
   yedekleyin, kapsayıcı gözden çıkarılabilir hale gelir.
@@ -75,15 +78,18 @@ Bunlardan herhangi birini loopback dışına açmadan önce bilmeye değer şeyl
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **İki istemci imajı da statik nginx barındırıcısıdır** — çalışma zamanında
-  yapılandırılacak hiçbir şey yoktur; her istemcinin bağlantı formu sunucu
-  URL’nizi, cihaz kimliğini ve eşleştirme anahtarını alır. Sinyal aktarıcısı da
-  aynı şekilde yalnızca portuna ihtiyaç duyar (`SIGNALING_HOST` /
-  `SIGNALING_PORT` geçersiz kılınabilir); durumsuzdur, hiçbir sır tutmaz ve bir
+- **İki istemci imajı da statik nginx barındırıcısıdır.** Gömülü tarayıcı
+  düzenleyicileri, [aşağıda](#tarayıcı-düzenleyici-kaynakları) anlatıldığı gibi
+  uygulamanın aynı kaynağını ve aynı şifreli bağlantıyı kullanır. Her istemcinin
+  bağlantı formu sunucu URL’nizi, cihaz kimliğini ve eşleştirme anahtarını alır. Sinyal
+  aktarıcısı yalnızca portuna ihtiyaç duyar (`SIGNALING_HOST` / `SIGNALING_PORT`
+  geçersiz kılınabilir); durumsuzdur, hiçbir eşleştirme anahtarı tutmaz ve bir
   **yedek yoldur** — bir telefon, erişilebilir bir yol olduğunda loopback’i,
-  LAN’ı, tailnet’i ya da doğrudan bir `wss://` yolunu kullanır ve yalnızca
-  hiçbiri yoksa aktarıcıya düşer. İstemcileriniz sunucuya her zaman doğrudan
-  erişiyorsa bunu atlayın.
+  LAN’ı, tailnet’i ya da doğrudan bir `wss://` yolunu kullanır ve yalnızca hiçbiri
+  yoksa aktarıcıya düşer. İstemcileriniz sunucuya her zaman doğrudan erişiyorsa
+  bunu atlayın. Aracı, yönlendirme tanımlayıcılarını, IP adreslerini, boyutları ve
+  zamanlamayı görebilir ve trafiği kesebilir; istemci ile sunucu arasındaki kaynak
+  akışının şifresini çözemez.
 
 Bu kılavuzun geri kalanı sunucuyu kaynaktan derler; ele aldığı bayraklar ve
 davranış, imajın ortam değişkenlerinin beslediği şeylerin aynısıdır.
@@ -182,6 +188,14 @@ yoktur**; uygulamada üretilen bir tanesinin ise süresi her zaman 30 gün sonra
 dolar. İşiniz bittiğinde CLI ile üretilmiş bir cihazı **Ayarlar → Siz →
 Cihazlarınız** yolundan iptal edin.
 
+Eşleştirme anahtarı zorunlu Noise el sıkışmasını doğrular; her oturum yeni trafik
+anahtarları türetir ve sunucunun imzalı kimliğini denetler. Eşleştirme anahtarını
+koruyun ve güvenilir bir kaynaktan (güvenilir bir QR dahil) alın, ardından yeni bir
+sunucu parmak izini ayrı bir güvenilir kanaldan ya da bilinen bir sabitlemeye karşı
+doğrulayın. Değişen bir sabitlemeyi sessizce kabul etmeyin: sunucu kimliğini
+bilerek değiştiriyorsanız güvenilir bir kanal üzerinden yeniden eşleştirin. Tek
+başına TLS, o uçtan uca kimlik sabitlemesini kuramaz.
+
 ## 4. Adım: Sunucuyu başlatma
 
 Loopback üzerinde — varsayılan budur ve aynı makinedeki bir istemci için
@@ -210,9 +224,13 @@ arkasında düz metin bir bağlanmayı seçin:
 ```
 
 `--tls-cert` ve `--tls-key` birlikte ayarlandığında `--insecure` yok sayılır —
-TLS her zaman kazanır. Sunucu, düz metin durumunu `GET /healthz` içinde
-`insecure: true` olarak duyurur ve istemciler böyle bir bağlantıyı güvensiz
-olarak işaretler.
+TLS her zaman kazanır. Sunucu, dış dinleyicinin düz metin durumunu
+`GET /healthz` içinde `insecure: true` olarak duyurur. Bu, `/rpc` üzerindeki Noise
+şifrelemesini kapatmaz; istemci ister doğrudan ister aktarıcı üzerinden bağlansın.
+Sunucuyu, aktarıcıyı ve istemcileri birlikte yükseltin: eski düz metin RPC
+istemcileri reddedilir, uyumluluk için dönüş yolu yoktur. Hassas kaynak rotalarına
+(yedek aktarımları dahil) yapılan genel istekler, loopback'ten bile HTTP `426`
+alır; eşleştirilmiş istemciler bunun yerine şifrelenmiş tüneli kullanır.
 
 Sunucu `SIGINT`/`SIGTERM` alana kadar çalışır, ardından temiz biçimde kapanır.
 
@@ -234,6 +252,33 @@ olmalıdır, yoksa `/rpc` için WebSocket yükseltmesi reddedilir; listenin
 varsayılanı `https://app.usectrl.dev` adresidir ve `localhost` / `127.0.0.1` her
 zaman izinlidir.
 :::
+
+### Tarayıcı düzenleyici kaynakları
+
+Düzenleyici arayüzü güvenilir uygulama kodudur ve web uygulamasının kendi
+kaynağında çalışır. Service Worker'ı, HTTP ve WebSocket trafiğini istemcinin geri
+kalanıyla aynı kimliği doğrulanmış şifreli oturum üzerinden yönlendirir. `cc_server`
+her isteğin şifresini çözer, onu yerel code-server arka ucuna iletir ve yanıtı
+yeniden istemciye şifreler. Dosyalar sunucuya ait kalır.
+
+Service Worker'lar çalışabilsin diye web istemcisini HTTPS ya da güvenli bir loopback
+kaynağı üzerinden barındırın. Olağan web derleme ve sürüm betikleri paylaşılan kaynak
+varlıklarını içerir. Paketi elle derlerseniz, bu varlıkları ardından depo kökünden
+hazırlayın:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Telefonun web derlemesi için `apps/cc_remote/build/web` yazın. Bu, `cc_resource_bridge.js`,
+`cc_resource_worker.js` ve `cc_resource_ws_shim.js` dosyalarını uygulama paketine
+kopyalar.
+
+Yerel düzenleyici trafiği bunun yerine yetenekle sınırlandırılmış bir loopback
+cephesi kullanır. Sunucunun başlattığı düzenleyici eklentisinin özel loopback
+rapor/komut geçidini genel bir proxy üzerinden açığa çıkarmayın. Hassas genel HTTP
+istekleri reddedilir; kaynaklar kimliği doğrulanmış şifreli bir oturum gerektirir.
+
 
 ## 6. Adım: Bir Google Calendar bağlama (isteğe bağlı)
 
@@ -296,7 +341,7 @@ Dağıtıcı **durumsuzdur**: oturum başına bir çalışma alanı bağlaması 
 çağıranın çalışma alanı üyeliği ve rolü karar verir — bir eşleştirme anahtarı
 taşımak değil.
 
-Portu loopback dışına açmadan önce bilmeniz gereken iki şey:
+Portu loopback dışına açmadan önce bilmeniz gereken iki şey (tek başına TLS, eşleştirilmiş istemcinin uçtan uca şifrelemesini sağlamaz ve kaynakları yetkilendirmez):
 
 - **MCP, ana makine dışında kapalıya düşer.** Belirteçsiz bir MCP yüzeyi yalnızca loopback’e yanıt verir. `any` adresine bağlanmak bunu genişletmez — ana makine dışından gelen bir istek, siz bir belirteç yapılandırana kadar "MCP requires a bearer token to answer non-loopback clients" ile reddedilir (`mcp.setToken` ya da **Ayarlar → Sunucu → MCP sunucuları**).
 - **`GET /healthz` tasarımı gereği kimlik doğrulamasızdır**, joker CORS ile çalışır ve sunucunun kimliğini, adını, kimlik parmak izini ve derleme sürümünü yayımlar. İstemcilerin sunucuyu sabitlemek için parmak izine ihtiyacı vardır, bu yüzden bu kasıtlıdır — ancak bu, erişilebilir herhangi bir `cc_server`’ın soran herkese bu kadarını açıkladığı anlamına gelir.

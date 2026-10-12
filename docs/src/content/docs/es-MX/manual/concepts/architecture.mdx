@@ -3,7 +3,7 @@ title: Arquitectura
 description: Cómo está estructurado Control Center con un modelo de servidor y cliente ligero, Clean Architecture centrada en funcionalidades y puertos y adaptadores.
 dateModified: 2026-09-19
 slug: es-MX/manual/conceptos/arquitectura
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Resumen
@@ -73,7 +73,7 @@ Presentation → Application/Providers → Domain ← Infrastructure
 
 - **Capa de dominio**: entidades, objetos de valor, interfaces de repositorio,
   puertos y servicios de dominio en Dart puro. Cero importaciones de
-  infraestructura (ni dio, ni drift, ni modelos de red).
+  infraestructura (ni rhttp, ni drift, ni modelos de red).
 - **Capa de presentación**: pantallas, widgets, notificadores. Sin acceso directo
   a drift/DAO/capa de datos; todo pasa por los proveedores de Riverpod →
   repositorios.
@@ -274,7 +274,7 @@ directamente a GitHub, Linear o Google: llaman a operaciones RPC del servidor, e
 incluso los medios remotos se obtienen a través del endpoint `/proxy/media` del
 servidor en lugar de desde el origen remoto.
 
-- Clientes **dio** en `packages/cc_infra/lib/src/`: `GitHubApiClient`,
+- Clientes **rhttp** en `packages/cc_infra/lib/src/`: `GitHubApiClient`,
   `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`,
   `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` y
   `GoogleCalendarApiClient`

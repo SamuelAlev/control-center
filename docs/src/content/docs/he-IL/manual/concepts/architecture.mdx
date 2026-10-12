@@ -3,7 +3,7 @@ title: ארכיטקטורה
 description: כיצד Control Center בנוי במודל של לקוח דק מעל שרת, בארכיטקטורה נקייה מבוססת תכונות וביציאות ומתאמים.
 dateModified: 2026-09-19
 slug: he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## סקירה כללית
@@ -26,7 +26,7 @@ Control Center הוא **ארכיטקטורת לקוח דק**. שום לקוח ל
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **שכבת התחום**: ישויות Dart טהורות, אובייקטי ערך, ממשקי מאגר, יציאות ושירותי תחום. אפס ייבוא תשתית (בלי dio, drift או מודלים של רשת).
+- **שכבת התחום**: ישויות Dart טהורות, אובייקטי ערך, ממשקי מאגר, יציאות ושירותי תחום. אפס ייבוא תשתית (בלי rhttp, drift או מודלים של רשת).
 - **שכבת התצוגה**: מסכים, widgets ו-notifiers. בלי גישה ישירה ל־drift/DAO/שכבת הנתונים; הכול עובר דרך ספקי Riverpod ← מאגרים.
 - **שכבת התשתית**: מימושים קונקרטיים של יציאות התחום וממשקי המאגר. תלויה בתחום, ולעולם לא להפך.
 
@@ -122,7 +122,7 @@ Control Center הוא רב־משתמשים: בני אדם וסוכנים הם ש
 
 כל ה־HTTP החיצוני חי בשרת. לקוחות לעולם אינם מחייגים ישירות ל־GitHub, ל־Linear או ל־Google — הם קוראים לפעולות RPC בשרת, ואפילו מדיה מרוחקת נשלפת דרך נקודת הקצה `/proxy/media` של השרת ולא מהמקור במעלה הזרם.
 
-- לקוחות **dio** ב־`packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` ו־`GoogleCalendarApiClient`
+- לקוחות **rhttp** ב־`packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` ו־`GoogleCalendarApiClient`
 - הזרקת אסימון אימות דרך interceptors, כולל interceptor של Google OAuth לכל חשבון ב־`cc_server_core` שמרענן אסימונים בשגיאת 401
 - כל השגיאות ממופות דרך `packages/cc_infra/lib/src/network/error_mapper.dart` → מחלקות משנה של `AppException` עם טיפוסים, שמוגדרות ב־`cc_domain`
 

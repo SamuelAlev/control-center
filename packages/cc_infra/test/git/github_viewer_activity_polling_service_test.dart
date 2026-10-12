@@ -5,16 +5,18 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_infra/cc_infra.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-class _NullDio implements Dio {
+/// Never touches the network: the fake below overrides every method under
+/// test, so this client only satisfies the constructor.
+class _NullRhttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeGitHubGraphQLClient extends GitHubGraphQLClient {
-  FakeGitHubGraphQLClient() : super(_NullDio());
+  FakeGitHubGraphQLClient() : super(_NullRhttpClient());
 
   /// The sweep served to the poller; replaced by tests between polls.
   GitHubViewerActivity activity = const GitHubViewerActivity();

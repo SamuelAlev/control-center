@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Claude Code usage via `GET https://api.anthropic.com/api/oauth/usage`.
 ///
@@ -16,7 +16,7 @@ import 'package:dio/dio.dart';
 class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [ClaudeUsageStrategy].
   ClaudeUsageStrategy({
-    required this._dio,
+    required this._httpClient,
     required Map<String, String> environment,
     String? homeDir,
     this.readClaudeKeychain = true,
@@ -24,7 +24,7 @@ class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
        _home = homeDir,
        super(providerId: 'claude', displayName: 'Claude');
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final Map<String, String> _env;
   final String? _home;
 
@@ -41,7 +41,9 @@ class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
   String? get _homeDir => _home ?? _env['HOME'] ?? _env['USERPROFILE'];
 
   @override
-  Future<SubscriptionUsage> fetchAccount(SubscriptionUsageAccount account) async {
+  Future<SubscriptionUsage> fetchAccount(
+    SubscriptionUsageAccount account,
+  ) async {
     try {
       final explicit = account.accessToken?.trim();
       final token = (explicit != null && explicit.isNotEmpty)
@@ -50,20 +52,18 @@ class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
       if (token == null || token.isEmpty) {
         return unconfigured('Sign in to Claude Code to see usage.');
       }
-      final resp = await _dio.getUri<Map<String, dynamic>>(
-        Uri.parse(_usageUrl),
-        options: Options(
-          responseType: ResponseType.json,
-          headers: {
+      final resp = await boundedRequest(
+        (token0) => _httpClient.get(
+          _usageUrl,
+          headers: HttpHeaders.rawMap({
             'Authorization': 'Bearer $token',
             'anthropic-beta': _beta,
             'User-Agent': _userAgent,
-          },
-          sendTimeout: SubscriptionUsageStrategy.requestTimeout,
-          receiveTimeout: SubscriptionUsageStrategy.requestTimeout,
+          }),
+          cancelToken: token0,
         ),
       );
-      final data = resp.data ?? const {};
+      final data = jsonObject(resp) ?? const {};
       final windows = <SubscriptionWindow>[];
       void add(String key, String wid, String label) {
         final w = data[key];

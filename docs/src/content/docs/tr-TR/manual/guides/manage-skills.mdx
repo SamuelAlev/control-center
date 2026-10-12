@@ -1,21 +1,25 @@
 ---
 title: Becerileri kurma ve yönetme
-description: GitHub depolarını beceri kaynağı olarak ekleyin, kataloglarına göz atın ve becerileri antivirüs tarama kapısından geçirerek kurun, güncelleyin veya yüklemelerini kaldırın.
+description: Çalışma alanı becerilerini tarama kapısından geçirerek kurun ve güncelleyin, ardından kaydedilmiş sürümleri bütçeli beceri değerlendirmeleriyle karşılaştırın.
 slug: tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Bu kılavuz, bir çalışma alanını GitHub'dan gelen becerilerle nasıl
 dolduracağınızı gösterir: bir depoyu kaynak olarak ekleyin, istediğiniz
-becerileri oradan kurun ve zaman içinde güncel tutun.
+becerileri oradan kurun ve zaman içinde güncel tutun. Ayrıca kaydedilmiş bir
+sürümü, onu tutup tutmayacağınıza karar vermeden önce eşleştirilmiş bir temel
+sürümle karşılaştırabilirsiniz.
 
 Başlamadan önce bilmeniz gereken önemli şey: **bir kaynak deposu
 güvenilmezdir.** Adı, açıklaması ve yıldız sayısı onu sahiplenen kişi
-tarafından yazılır. Control Center'ın güvendiği tek güvenlik sinyali, her
-kurulumun diske ya da bir ajan istemine ulaşmadan önce geçtiği antivirüs
-tarama kararıdır. Gerekçesini istiyorsanız
-[ajan modelinin beceriler bölümünü](/tr-TR/kilavuz/kavramlar/ajan-modeli/) okuyun; bu sayfa
-işin nasıl yapıldığında kalır.
+tarafından yazılır. Her kurulum, bir şey diske ya da bir ajan istemine
+ulaşmadan önce antivirüs tarama kapısından geçer. O karar bir kabul
+denetimidir; bir becerinin güvenli ya da faydalı olduğunun kanıtı değildir.
+Kurulum modeli için
+[ajan modelinin beceriler bölümünü](/tr-TR/kilavuz/kavramlar/ajan-modeli/) ve
+davranışsal kanıtın taramadan nasıl farklı olduğu için
+[Eval’ler ve kalite](/tr-TR/kilavuz/kavramlar/evaller-ve-kalite/) bölümünü okuyun.
 
 Beceriler **Ayarlar → Çalışma alanı → Beceriler** altında yaşar
 (`/workspaces/<id>/settings/workspace/skills`). Çalışma alanı kapsamındadırlar:
@@ -85,6 +89,87 @@ kurulumla aynı tarama kapısından geçer — yeni sürümü karantinaya alına
 beceri reddedilir ve elinizdeki sürüm yerinde kalır. Eski sürümün hash'i, kilit
 içinde bir geri alma referansı olarak saklanır.
 
+## Bir beceriyi değerlendirme
+
+1. **Ayarlar → Çalışma alanı → Beceriler** yolunu açın, yüklü beceriyi seçin ve
+   varsa düzenlemeleri kaydedin. **Beceri değerlendirmesi** altında paket
+   hash'ini kontrol edin.
+2. **Değerlendirmeyi başlat** seçeneğini seçin. Becerinin amacına uyan bir
+   **Görev kümesi** ve bir **Adaptör** seçin. Yerleşik harness yapılandırılmış
+   bir sağlayıcı ve araç kullanabilen bir model kullanır. **Claude Code**,
+   varsayılan yönetilen Claude hesabını ve somut bir model tanımlayıcısını
+   kullanır; önce **Ayarlar → Adaptörler** altında oturum açın. Sunucu
+   operatörünün kişisel oturumunu ödünç almaz.
+3. Aşağıdaki tablodan bir **Karşılaştırma** seçin.
+4. **Görev başına tekrar** (1–20) ve **Bütçe (ABD senti)** değerlerini ayarlayın.
+   Örneğin `100`, 1 ABD doları demektir. Ücretli sağlayıcı çalışmasına izin
+   vermek için **Değerlendirmeyi başlat** seçeneğini seçin.
+5. Kampanyayı **Gözlemlenebilirlik → Kalite** altında izleyin ya da beceri
+   panelindeki **Kaliteyi aç** üzerinden geri dönün.
+
+Claude Code ve Codex OAuth aboneliklerinde bütçe, bir fatura sınırı ya da
+abonelik kotası ölçüsü değil, **API eşdeğeri kullanımı durdurma eşiğidir**.
+`100`, 1 ABD doları eşiği tanır: sürmekte olan bir çağrı eşiği aşabilir, ancak
+bildirilen kullanım eşiğe ulaştığında artık yeni çağrı başlamaz. Bilinmeyen
+kullanım da sonraki çağrıları durdurur. Küçük bir bütçe karşılaştırmayı kısmi
+bırakabilir; seçilen görev kümesinin tamamlanmasını garanti etmez.
+
+API anahtarı kullanan sağlayıcılar, belgelenmiş token sınırlarından ve
+fiyatlandırmadan türetilen ihtiyatlı çağrı başına rezervleri korur. Güvenle
+rezerve edilen tek bir çağrı daha fazlasına ihtiyaç duyuyorsa, `100`'ü harcamadan
+önce reddedebilirler. Hata, seçilen modeli ve asgari rezervi belirtir; daha
+düşük maliyetli bir model seçin ya da o bütçeyi artırın.
+
+| Karşılaştırma | Yanıtladığı soru |
+| --- | --- |
+| **Yok ve mevcut karşılaştırması** | Bu becerinin normal keşfi ve kullanımı, ona sahip olmamaya kıyasla sonucu iyileştiriyor mu? |
+| **Önceki ve mevcut karşılaştırması** | Güncelleme, daha önce kaydedilmiş bir sürüme kıyasla davranışı koruyor ya da iyileştiriyor mu? |
+| **Zorunlu yükleme ve yokluk karşılaştırması** | İçerik açıkça yüklendiğinde yardımcı olabiliyor mu? Bu, yükleme sorunlarını teşhis eder; normal keşfi göstermez. |
+| **Bileşim** | Adayın eklenmesi seçili ortam becerilerine yardımcı oluyor mu, yoksa onlarla çakışıyor mu? Temel sürüm, aynı ortam envanterini aday olmadan korur. |
+
+**Önceki ve mevcut karşılaştırması** kampanya geçmişinden bir paket hash'i
+gerektirir. Temel sürüm olarak kullanmak istiyorsanız, değiştirmeden önce bir
+sürümü değerlendirin; rastgele Git geçmişi içe aktarılmaz.
+
+Kaydedilmemiş düzenlemeler, kullanılamayan bir hash ve salt okunur demo modu
+başlatmayı devre dışı bırakır. Sunucu ayrıca çalışma alanı/depo erişimini, tarama
+karantinasını, eylem ilkesini, model desteğini, fiyatlandırmayı ve yürütme
+muhafazasını denetler. Başarısız bir denetimi atlamak yerine çözün. Sağlayıcı ve
+model kimliği kaydedilir, ancak uzak bir model takma adı sağlayıcının temelindeki
+ağırlıkları dondurmaz.
+
+### İnceleme, iptal ve dışa aktarma
+
+Kapsamı ve harcamayı, görev bazındaki sonuçlar ve gerilemelerle birlikte okuyun.
+Gözlemlenen beceri yüklemelerini, araç olaylarını, hataları ve doğrulayıcı
+kanıtlarını incelemek için tek tek denemeleri açın. **Kısmi**, **güncel
+olmayan** ve **sonucu belirsiz** sonuçlar bir sürümü benimseme önerisi değildir.
+Bir raporun hash'i yakalanan paketi tanımlar, o anda kurulu olan paketi
+tanımlamayabilir.
+
+Sıraya alınmış ya da etkin işler için **Çalıştırmayı iptal et** kullanın.
+Tamamlanan denemeler görünür kalır; iptal, sağlayıcının hâlihazırda yaptığı işi
+geri ödemez. **Gizlenmiş JSON'u kopyala** panoya sınırlı bir kanıt dışa
+aktarımını kopyalar, eksiksiz bir özel kaynak yeniden oynatma paketini değil.
+Kanıt ve platform sınırları için
+[Eval’ler ve kalite](/tr-TR/kilavuz/kavramlar/evaller-ve-kalite/) bölümüne bakın.
+
+### Güncellemelerden sonra yeniden değerlendirme
+
+Otomatik ücretli yeniden değerlendirme **varsayılan olarak kapalıdır**. Mevcut
+sürümü değerlendirdikten sonra **Güncelleme ilkesi yapılandırması** altından bir
+kampanya seçin ve **Güncelleme değerlendirmelerini etkinleştir** seçeneğini
+seçin. Bu ilkeyi değiştirmek çalışma alanı yöneticisi izni gerektirir. Seçilen
+kampanya görev kümesini, adaptörü, sağlayıcıyı/modeli, karşılaştırmayı, tekrarları ve
+bütçeyi sağlar.
+
+Sonraki kabul edilen içerik değişiklikleri bütçeli iş planlar; değişmeyen
+hash'ler yinelenenlerden arındırılır. **Güncelleme değerlendirmelerini devre
+dışı bırak** gelecekteki otomatik kabulleri engeller. Zaten kabul edilmiş bir
+kampanya için **Çalıştırmayı iptal et** kullanın. Geçmiş raporlar özgün paket
+hash'lerine bağlı kalır; yeniden değerlendirme bir beceriyi yayımlamaz,
+etkinleştirmez ya da yeniden yazmaz.
+
 ## Bir becerinin yüklemesini kaldırma, bir depoyu kaldırma
 
 **Yüklemeyi kaldır** (yüklü bir becerinin ayrıntı görünümünde ya da Yüklü
@@ -123,7 +208,7 @@ başarısızlıkta-kapalı taramadan geçer (`pass` / `warn` / `quarantine`). `w
 kabul edilir; `quarantine` alıkonur ve bu yolda operatör geçersiz kılması
 yoktur.
 
-Bkz. [Depo kapsamlı beceriler](/tr-TR/kilavuz/kavramlar/ajan-modeli/#repo-scoped-skills) ve
+Bkz. [Depoya özel beceriler](/tr-TR/kilavuz/kavramlar/ajan-modeli/#depoya-özel-beceriler) ve
 [Slash komutları](/tr-TR/kilavuz/referans/slash-komutlari/).
 
 ## İlgili kılavuzlar
@@ -134,3 +219,4 @@ Bkz. [Depo kapsamlı beceriler](/tr-TR/kilavuz/kavramlar/ajan-modeli/#repo-scope
 ## İlgili kavramlar
 
 - [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
+- [Eval’ler ve kalite](/tr-TR/kilavuz/kavramlar/evaller-ve-kalite/)

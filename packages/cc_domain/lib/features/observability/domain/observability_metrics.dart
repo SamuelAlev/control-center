@@ -6,6 +6,16 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 /// effectiveness, latency averages and an output-token throughput figure.
 /// All derived ratios are guarded against division by zero — an empty input
 /// yields a fully zeroed instance with null [firstRun] / [lastRun].
+///
+/// Two distinctions this class exists to keep honest:
+/// * COMPLETED is not VERIFIED: [successfulRuns] counts runs that ended
+///   cleanly, [verifiedSuccessfulRuns] counts the subset an independent
+///   verifier passed. A cost-per-success figure built on the former improves by
+///   lowering quality.
+/// * Own cost is not tree cost: [totalCostMicros] counts each run's own spend
+///   exactly once (never double counting a parent and its child), while
+///   [inclusiveCostMicros] folds propagated child rollups in for runs whose
+///   parent is outside the set.
 class ObservabilityMetrics {
   /// Creates an [ObservabilityMetrics] snapshot. All fields are required so
   /// callers cannot accidentally leave a derived figure at a stale default.
@@ -26,6 +36,12 @@ class ObservabilityMetrics {
     required this.tokensPerSecond,
     required this.firstRun,
     required this.lastRun,
+    this.verifiedSuccessfulRuns = 0,
+    this.successRate = 0,
+    this.verifiedSuccessRate = 0,
+    this.totalCostMicros = 0,
+    this.inclusiveCostMicros = 0,
+    this.activeRuns = 0,
   });
 
   /// A fully zeroed snapshot, used when there are no runs to aggregate.
@@ -46,6 +62,11 @@ class ObservabilityMetrics {
     tokensPerSecond: 0,
     firstRun: null,
     lastRun: null,
+    verifiedSuccessfulRuns: 0,
+    successRate: 0,
+    verifiedSuccessRate: 0,
+    totalCostMicros: 0,
+    inclusiveCostMicros: 0,
   );
 
   /// Total number of runs in the aggregation window.
@@ -93,6 +114,11 @@ class ObservabilityMetrics {
 
   /// Mean `cost.timeToFirstTokenMs` over runs that recorded one; `0` when none
   /// did.
+  ///
+  /// MIXED SEMANTICS across history: runs written before stage timing carried a
+  /// first-VISIBLE-TEXT-derived value, newer ones carry a provider-observed
+  /// TTFB/TTFT or nothing. Use `LatencyBreakdownCalculator` (p50/p95 per stage)
+  /// for any latency claim that must be exact.
   final double avgTtftMs;
 
   /// Output-token throughput: total output tokens of runs with a positive
@@ -105,6 +131,47 @@ class ObservabilityMetrics {
 
   /// Latest `startedAt` across all runs, or `null` when there are no runs.
   final DateTime? lastRun;
+
+  /// Number of runs that both completed AND passed an independent verifier.
+  ///
+  /// The distinction [successfulRuns] alone cannot make: a run can exit
+  /// cleanly and still fail its verifier, and a cost-per-success figure built
+  /// on [successfulRuns] improves simply by lowering quality.
+  final int verifiedSuccessfulRuns;
+
+  /// `successfulRuns / totalRuns` — COMPLETED runs, whether or not anything
+  /// checked them.
+  final double successRate;
+
+  /// `verifiedSuccessfulRuns / totalRuns` — independently VERIFIED successes.
+  /// Always `<=` [successRate].
+  final double verifiedSuccessRate;
+
+  /// Total exact cost in micro-USD for the aggregation window, counting each
+  /// run's OWN spend exactly once.
+  ///
+  /// Hierarchy-safe by construction: a parent's delegated spend lives on its
+  /// child rows, so summing self costs can never double count a subtree however
+  /// the set is composed.
+  final int totalCostMicros;
+
+  /// Total cost in micro-USD INCLUDING propagated subagent rollups, for runs
+  /// whose parent is not itself in the set.
+  ///
+  /// A child present in the set is folded into its parent's rollup and never
+  /// added again, so this equals [totalCostMicros] for a parent/child-closed set
+  /// and exceeds it when the set omits children (the tree view asks "what did
+  /// this conversation cost including delegation").
+  final int inclusiveCostMicros;
+
+  /// Runs whose status was [RunStatus.pending] or [RunStatus.running].
+  ///
+  /// While this is non-zero the window is still moving, so
+  /// [inclusiveCostMicros] MUST NOT be read as final: a running parent's
+  /// delegated spend has not been propagated yet, and "no difference between
+  /// inclusive and self cost" then means "the rollup has not landed", not "this
+  /// run delegated nothing".
+  final int activeRuns;
 
   @override
   bool operator ==(Object other) =>
@@ -125,7 +192,13 @@ class ObservabilityMetrics {
           avgTtftMs == other.avgTtftMs &&
           tokensPerSecond == other.tokensPerSecond &&
           firstRun == other.firstRun &&
-          lastRun == other.lastRun;
+          lastRun == other.lastRun &&
+          verifiedSuccessfulRuns == other.verifiedSuccessfulRuns &&
+          successRate == other.successRate &&
+          verifiedSuccessRate == other.verifiedSuccessRate &&
+          totalCostMicros == other.totalCostMicros &&
+          inclusiveCostMicros == other.inclusiveCostMicros &&
+          activeRuns == other.activeRuns;
 
   @override
   int get hashCode => Object.hashAll([
@@ -145,6 +218,12 @@ class ObservabilityMetrics {
     tokensPerSecond,
     firstRun,
     lastRun,
+    verifiedSuccessfulRuns,
+    successRate,
+    verifiedSuccessRate,
+    totalCostMicros,
+    inclusiveCostMicros,
+    activeRuns,
   ]);
 }
 
@@ -203,10 +282,21 @@ class ObservabilityMetricsCalculator {
   /// Returns [ObservabilityMetrics.empty] for an empty input. All ratio fields
   /// are guarded against division by zero.
   ObservabilityMetrics compute(Iterable<AgentRunLog> runs) {
+    // Materialize once: the hierarchy pass needs every id BEFORE any cost is
+    // summed, and an [Iterable] may be a single-use stream.
+    final all = runs.toList(growable: false);
+    if (all.isEmpty) {
+      return ObservabilityMetrics.empty;
+    }
+    final ids = {for (final run in all) run.id};
+
     var totalRuns = 0;
     var failedRuns = 0;
     var successfulRuns = 0;
-    var totalCostCents = 0;
+    var verifiedSuccessfulRuns = 0;
+    var activeRuns = 0;
+    var totalCostMicros = 0;
+    var inclusiveCostMicros = 0;
     var totalInputTokens = 0;
     var totalOutputTokens = 0;
     var totalCacheReadTokens = 0;
@@ -228,16 +318,32 @@ class ObservabilityMetricsCalculator {
     DateTime? firstRun;
     DateTime? lastRun;
 
-    for (final run in runs) {
+    for (final run in all) {
       totalRuns++;
       if (run.status == RunStatus.error) {
         failedRuns++;
       } else if (run.status == RunStatus.completed) {
         successfulRuns++;
+        if (run.verification.isVerifiedSuccess) {
+          verifiedSuccessfulRuns++;
+        }
+      } else {
+        activeRuns++;
       }
 
       final cost = run.cost;
-      totalCostCents += cost.estimatedCostCents;
+      // Each run's OWN spend counts exactly once. A parent's delegated cost is
+      // only ever its children's own rows, so this is hierarchy-safe for ANY
+      // composition of the input set — and it is why the total cannot be
+      // inflated by summing both a parent's rollup and its child rows.
+      totalCostMicros += cost.preciseCostMicros;
+      // The inclusive tree total adds a run's propagated child rollup only when
+      // its parent is absent from the set; a child that IS present is already
+      // included on its parent's row and must not be added twice.
+      final parentRunId = run.parentRunId;
+      if (parentRunId == null || !ids.contains(parentRunId)) {
+        inclusiveCostMicros += run.totalCostMicrosWithChildren;
+      }
       totalInputTokens += cost.inputTokens;
       totalOutputTokens += cost.outputTokens;
       totalCacheReadTokens += cost.cachedReadTokens;
@@ -269,10 +375,6 @@ class ObservabilityMetricsCalculator {
       }
     }
 
-    if (totalRuns == 0) {
-      return ObservabilityMetrics.empty;
-    }
-
     // Cache-write tokens belong in the denominator: they are prompt tokens the
     // provider charged at a PREMIUM because nothing matched. Leaving them out
     // scored a run that rebuilt its whole prefix every turn — the exact
@@ -285,13 +387,19 @@ class ObservabilityMetricsCalculator {
       totalRuns: totalRuns,
       failedRuns: failedRuns,
       successfulRuns: successfulRuns,
-      totalCostCents: totalCostCents,
+      verifiedSuccessfulRuns: verifiedSuccessfulRuns,
+      totalCostCents: (totalCostMicros / 10000).round(),
+      totalCostMicros: totalCostMicros,
+      inclusiveCostMicros: inclusiveCostMicros,
+      activeRuns: activeRuns,
       totalInputTokens: totalInputTokens,
       totalOutputTokens: totalOutputTokens,
       totalCacheReadTokens: totalCacheReadTokens,
       totalCacheWriteTokens: totalCacheWriteTokens,
       totalReasoningTokens: totalReasoningTokens,
       errorRate: failedRuns / totalRuns,
+      successRate: successfulRuns / totalRuns,
+      verifiedSuccessRate: verifiedSuccessfulRuns / totalRuns,
       cacheRate: cacheDenominator == 0
           ? 0
           : totalCacheReadTokens / cacheDenominator,

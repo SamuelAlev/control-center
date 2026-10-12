@@ -9,15 +9,15 @@ environment:
 resolution: workspace
 
 dependencies:
-  drift: ^2.34.3
-  sqlite3: ^3.5.1
+  drift: ^2.35.2
+  sqlite3: ^3.7.0
   # Vector-search SQLite extension (vector_init / vector_full_scan_stream) for the
   # memory-facts + code-graph embedding queries. Ships prebuilt native libraries
   # for every desktop platform as a `DynamicLoadingBundled` code asset, which
   # `dart build cli` bundles beside the server binary the same way it bundles
   # libsqlite3 — no Flutter, no manual scripts/natives step. `openServerDatabase`
-  # registers it as a process-global auto-extension. (Pins hooks to ^1.x, which
-  # is why apps/cc_server's build-hook deps stay on the 1.x line too.)
+  # registers it as a process-global auto-extension. Its hooks/code_assets ^1
+  # constraints need the root's ^2 overrides until upstream widens them.
   # Exact: patches/sqlite_vector@1.1.2.patch adds Windows ARM64 (no upstream
   # prebuilt) and only applies to this version. CI's first `pub get` runs
   # without patchwork's overrides, so a caret range re-resolves to the newest
@@ -34,5 +34,5 @@ dependencies:
 dev_dependencies:
   lints: any
   test: any
-  drift_dev: ^2.34.3
-  build_runner: ^2.15.2
+  drift_dev: ^2.35.1
+  build_runner: ^2.16.2

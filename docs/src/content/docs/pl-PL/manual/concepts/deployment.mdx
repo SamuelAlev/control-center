@@ -2,7 +2,7 @@
 title: Wdrażanie i klienci
 description: Jak architektura cienkiego klienta w Control Center rozdziela serwer headless od klientów desktopowych, webowych i mobilnych.
 slug: pl-PL/podrecznik/koncepcje/wdrazanie
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center to nie jeden program. To **architektura cienkiego klienta**:
@@ -22,12 +22,12 @@ znajduje się właśnie tam.
 
 Żaden klient sam nie otwiera pliku bazy danych. Zamiast tego każdy klient trzyma
 jeden **`RemoteRpcClient`** i wykonuje przez niego operacje na repozytoriach oraz
-subskrypcje. Serwer uwierzytelnia połączenie na podstawie wstępnie
-współdzielonego klucza sparowanego urządzenia — a potem przestaje się
-połączeniem przejmować. **Sesja nie jest powiązana z obszarem roboczym.**
-Dyspozytor jest bezstanowy: każde wywołanie w zakresie obszaru roboczego niesie
-własny `workspace_id` w argumentach, a wywołanie, które go pomija, zostaje
-odrzucone.
+subskrypcje. Zarówno sesje bezpośrednie, jak i przez przekaźnik wymagają
+podpisanego uścisku dłoni Noise: wstępnie współdzielony klucz sparowanego
+urządzenia uwierzytelnia wymianę, a świeże klucze ruchu szyfrują każdą sesję.
+**Sesja nie jest powiązana z obszarem roboczym.** Dyspozytor jest bezstanowy:
+każde wywołanie w zakresie obszaru roboczego niesie własny `workspace_id`
+w argumentach, a wywołanie, które go pomija, zostaje odrzucone.
 
 To celowe rozwiązanie: dzięki niemu dwa klienty na jednym serwerze mogą działać
 w różnych obszarach roboczych, bez przechowywanego na serwerze „bieżącego
@@ -98,8 +98,9 @@ Wersja webowa to ta sama aplikacja we Flutterze skompilowana do działania
 w przeglądarce, hostowana pod [app.usectrl.dev](https://app.usectrl.dev), więc
 nie ma nic do zainstalowania. Przeglądarka nie może uruchomić podprocesu,
 dlatego klient webowy jest **zawsze** zdalny: łączy się z `cc_server` przez
-`wss://` i renderuje pełny interfejs desktopowy. Po połączeniu pokazuje te same
-ekrany i tę samą flotę, bo to ten sam kod przez to samo RPC. Luki to garść
+szyfrowaną sesję WebSocket i renderuje pełny interfejs desktopowy. Po połączeniu
+pokazuje te same ekrany i tę samą flotę, bo używa tego samego kodu przez to samo
+RPC. Luki to garść
 miejsc wymagających natywnych możliwości, których przeglądarka nie ma — główną
 jest opisana niżej warstwa jakości nagrywania spotkań, a drugą powiadomienia
 systemowe.
@@ -123,29 +124,32 @@ przeglądarek tylko z listy `--allowed-origins`, która domyślnie zawiera
 `https://app.usectrl.dev`, więc samodzielny hosting pakietu wymaga dodania jego
 pochodzenia.
 
-Multimedia (awatary, obrazy w newsfeedzie, zrzuty ekranu z PR-ów) przechodzą
-przez punkt końcowy proxy serwera, a nie trafiają bezpośrednio do hostów
-źródłowych, więc przeglądarka nigdy nie pobiera danych z dowolnego pochodzenia.
-Wdrożony klient dodaje do każdego żądania politykę Content-Security Policy
-pochodzącą z niesensywnego pliku cookie, dzięki czemu dozwolone jest wyłącznie
-pochodzenie połączonego serwera.
+Multimedia (awatary, obrazy w newsfeedzie, zrzuty ekranu z PR-ów), przesyłane
+pliki, kopie zapasowe oraz HTTP/WebSockety wbudowanego edytora przechodzą przez
+szyfrowany tunel zasobów, a nie przez czytelne publiczne trasy HTTP; podpisane
+ścieżki nadal wymagają autoryzacji. Zaufany frontend edytora działa w origin
+samej aplikacji webowej. Jego Service Worker kieruje żądania edytora przez
+istniejącą szyfrowaną sesję do `cc_server`, który jest właścicielem plików i
+zaplecza code-server. Przeglądarka wymaga HTTPS lub bezpiecznego kontekstu
+loopback dla Service Workerów. Klienci natywni korzystają z fasady loopback o
+ograniczonym zakresie uprawnień.
 
 ### Towarzysz na telefonie (cc_remote)
 
 Aplikacja **Remote** to osobny, lżejszy klient — PWA we Flutterze dostępna pod
 [remote.usectrl.dev](https://remote.usectrl.dev/). Celowo **nie** jest pełną
-aplikacją. Paruje się przez brokerski, szyfrowany end-to-end przekaźnik
-WebSocket i obsługuje głównie odczytowy wycinek zestawu narzędzi: czytanie
-zgłoszeń, wiadomości i newsfeedu; wysyłanie odpowiedzi lub aktualizowanie
-zgłoszenia.
+aplikacją. Łączy się bezpośrednio, gdy to możliwe, albo przez brokerski
+przekaźnik; obie ścieżki wymagają szyfrowania end-to-end. Obsługuje głównie
+odczytowy wycinek zestawu narzędzi: czytanie zgłoszeń, wiadomości i newsfeedu;
+wysyłanie odpowiedzi lub aktualizowanie zgłoszenia.
 
 Telefon to **podmiot o niższych uprawnieniach** niż lokalny agent. Domyślnie
-odrzucająca polityka narzędzi, wstępnie współdzielony klucz zabezpieczający
-każdą ramkę, uprawnienie sesji, które wyklucza uprzywilejowane operacje (na
-przykład parowanie) z aplikacji towarzyszącej, opisane wyżej kontrole roli
-i uprawnień do repozytoriów przy każdym wywołaniu oraz ograniczanie tempa
-sprawiają, że zatwierdzone (lub ujawnione) parowanie nie staje się pełnym
-zdalnym sterowaniem. Pełny model bezpieczeństwa opisano w sekcji
+odrzucająca polityka narzędzi, uprawnienie sesji, które wyklucza
+uprzywilejowane operacje (na przykład parowanie) z aplikacji towarzyszącej,
+opisane wyżej kontrole roli i uprawnień do repozytoriów przy każdym wywołaniu
+oraz ograniczanie tempa sprawiają, że zatwierdzone (lub ujawnione) parowanie nie
+staje się pełnym zdalnym sterowaniem. Szyfrowanie transportu nie przyznaje
+uprawnień. Pełny model bezpieczeństwa opisano w sekcji
 [Zdalne sterowanie i mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/).
 
 ### Klienci MCP
@@ -227,15 +231,26 @@ akcja „Nagraj i podlinkuj” w kalendarzu.
 
 ## Parowanie i zaufanie
 
-Każdy klient potwierdza swoją tożsamość **wstępnie współdzielonym kluczem**,
-który nadaje się jednorazowo:
+Każdy klient używa **wstępnie współdzielonego klucza**, który nadaje się
+jednorazowo, do uwierzytelnienia swojego podpisanego uścisku dłoni Noise
+z `cc_server`, także przez loopback i przekaźnik:
 
 - Aplikacja desktopowa w trybie lokalnym generuje świeży klucz przy każdym
   starcie i przekazuje go uruchomionemu serwerowi przez zmienne środowiskowe,
   więc na komputerze nie zapisuje się żaden sekret.
 - Klienci zdalni (desktopowy w trybie zdalnym, webowy, telefon) używają klucza
-  utworzonego przez polecenie `pair` serwera i przechowywanego w pęku kluczy
-  systemu operacyjnego (a na telefonie — lokalnie).
+  utworzonego przez proces parowania albo polecenie `pair` serwera. Klienci
+  natywni korzystają z pęku kluczy systemu operacyjnego; klienci webowi
+  przechowują swoje parowanie lokalnie.
+
+Klient sprawdza podpisaną tożsamość serwera względem swojego zapisanego
+przypięcia odcisku. Przy pierwszym połączeniu zweryfikuj ten odcisk przez
+zaufany kod QR albo inny zaufany kanał: podpisany pierwszy kontakt sam nie
+uwierzytelnia, kto dostarczył klucz. Jeśli tożsamość się zmieni, klient odmawia
+domyślnie; sparuj ponownie przez zaufany kanał, zamiast ignorować niezgodność.
+Starzy klienci i tekst jawny RPC nie mogą się połączyć. TLS jest nadal potrzebny
+dla pochodzeń przeglądarek, startu i publicznych metadanych; `--insecure`
+dotyczy zewnętrznego nasłuchu serwera, a nie wymaganej szyfrowanej sesji.
 
 Unieważnianie działa **na bieżąco**, a nie leniwie. Serwer obserwuje tabelę
 sparowanych urządzeń i w ciągu kilku sekund zrywa każdą otwartą sesję, której
@@ -243,13 +258,13 @@ urządzenie opuściło aktywny zbiór — zarówno na bezpośredniej ścieżce W
 jak i przez przekaźnik. Nie trzeba czekać, aż urządzenie połączy się ponownie,
 żeby je odciąć.
 
-Klucz nigdy nie podróżuje w adresie URL, który może zobaczyć statyczny host. Gdy
-trafia przez link — na telefonie lub w przeglądarce — jedzie we **fragmencie
-URL**, czyli części po `#`, której przeglądarka nigdy nie wysyła do serwera
-hostującego stronę. To niezmiennik wart zapamiętania i dotyczy obu przypadków.
-Klient webowy ma dwa inne punkty wejścia: formularz połączenia, w którym wkleja
-się serwer i klucz bezpośrednio, oraz kod zaproszenia, wymieniany na
-poświadczenie utworzone wyłącznie dla tej przeglądarki.
+Gdy klucz trafia przez link — na telefonie lub w przeglądarce — jedzie we
+**fragmencie URL**, czyli części po `#`, której przeglądarki nie wysyłają
+w żądaniu do hosta strony. JavaScript strony wciąż może go odczytać, więc ufaj
+temu hostowi i trzymaj link w tajemnicy. Klient webowy ma też formularz
+połączenia, w którym wkleja się serwer i klucz bezpośrednio, oraz kod
+zaproszenia, wymieniany na poświadczenie utworzone wyłącznie dla tej
+przeglądarki.
 
 ## Powiązane koncepcje
 

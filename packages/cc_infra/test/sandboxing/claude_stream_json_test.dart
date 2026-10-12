@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cc_infra/src/sandboxing/claude_native_session.dart'
+    show ClaudeNativeSessionRecord;
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
 import 'package:test/test.dart';
 
@@ -889,6 +891,664 @@ void main() {
           },
         });
       expect(h.text, isEmpty);
+    });
+  });
+
+  group('system/init metadata', () {
+    Map<String, dynamic> initEvent({
+      String? sessionId = 'sess-1',
+      Object? tools,
+      Object? servers,
+      Object? errors,
+      Object? capabilities,
+    }) => {
+      'type': 'system',
+      'subtype': 'init',
+      'session_id': ?sessionId,
+      'model': 'claude-sonnet-4-5-20250929',
+      'cwd': '/work',
+      'permissionMode': 'plan',
+      'apiKeySource': 'oauth',
+      'claude_code_version': '2.1.293',
+      'tools': tools ?? ['Bash', 'Read', 'mcp__cc__complete_ticket'],
+      'mcp_servers':
+          servers ??
+          [
+            {'name': 'cc', 'status': 'connected'},
+          ],
+      'mcp_server_errors': ?errors,
+      'capabilities': ?capabilities,
+    };
+
+    test('parses the serving model, tools, MCP status and version', () {
+      final inits = <ClaudeInitMetadata>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onInit: inits.add),
+      );
+      parser.process(initEvent());
+
+      final init = inits.single;
+      expect(init.sessionId, 'sess-1');
+      expect(init.model, 'claude-sonnet-4-5-20250929');
+      expect(init.tools, contains('mcp__cc__complete_ticket'));
+      expect(init.hasControlCenterTools, isTrue);
+      expect(init.mcpServers.single.name, 'cc');
+      expect(init.mcpServers.single.isConnected, isTrue);
+      expect(init.mcpHealthy, isTrue);
+      expect(init.claudeCodeVersion, '2.1.293');
+      expect(init.permissionMode, 'plan');
+      expect(init.failedMcpServers, isEmpty);
+    });
+
+    test('surfaces --mcp-config entries skipped by validation', () {
+      final inits = <ClaudeInitMetadata>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onInit: inits.add),
+      );
+      parser.process(
+        initEvent(
+          servers: [
+            {'name': 'cc', 'status': 'connected'},
+            {'name': 'broken', 'status': 'failed'},
+          ],
+          errors: [
+            {'name': 'typo', 'type': 'url_missing_type', 'message': 'no type'},
+          ],
+        ),
+      );
+
+      final init = inits.single;
+      expect(init.mcpHealthy, isFalse);
+      expect(init.mcpServerErrors.single.name, 'typo');
+      expect(init.mcpServerErrors.single.type, 'url_missing_type');
+      expect(init.failedMcpServers.single.name, 'broken');
+    });
+
+    test('a pending MCP server is still healthy', () {
+      final inits = <ClaudeInitMetadata>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onInit: inits.add),
+      );
+      parser.process(
+        initEvent(
+          servers: [
+            {'name': 'cc', 'status': 'pending'},
+          ],
+        ),
+      );
+      expect(inits.single.mcpHealthy, isTrue);
+      expect(inits.single.failedMcpServers, isEmpty);
+    });
+
+    test('reports capabilities when the CLI advertises them', () {
+      final inits = <ClaudeInitMetadata>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onInit: inits.add),
+      );
+      parser.process(initEvent(capabilities: ['interrupt_receipt_v1']));
+      expect(inits.single.capabilities, ['interrupt_receipt_v1']);
+    });
+
+    test(
+      'no mcp__* tools means the control-center surface did not connect',
+      () {
+        final inits = <ClaudeInitMetadata>[];
+        final parser = ClaudeStreamJsonParser(
+          ClaudeStreamJsonCallbacks(onInit: inits.add),
+        );
+        parser.process(initEvent(tools: ['Bash', 'Read']));
+        expect(inits.single.hasControlCenterTools, isFalse);
+      },
+    );
+
+    test('a partial init never throws', () {
+      final inits = <ClaudeInitMetadata>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onInit: inits.add),
+      );
+      parser.process({'type': 'system', 'subtype': 'init'});
+      final init = inits.single;
+      expect(init.sessionId, isNull);
+      expect(init.model, isNull);
+      expect(init.tools, isEmpty);
+      expect(init.mcpServers, isEmpty);
+    });
+  });
+
+  group('conversation reset and api retry', () {
+    test('a conversation_reset resets the cumulative accounting', () {
+      final resets = <String?>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onConversationReset: resets.add),
+      );
+      parser.process({
+        'type': 'system',
+        'subtype': 'conversation_reset',
+        'session_id': 'sess-2',
+      });
+      expect(resets, ['sess-2']);
+    });
+
+    test('an api_retry carries attempt, status and delay', () {
+      final retries = <ClaudeApiRetry>[];
+      final parser = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(onApiRetry: retries.add),
+      );
+      parser.process({
+        'type': 'system',
+        'subtype': 'api_retry',
+        'attempt': 2,
+        'max_retries': 5,
+        'retry_delay_ms': 1500,
+        'error_status': 429,
+        'error': 'rate_limit',
+      });
+      final retry = retries.single;
+      expect(retry.attempt, 2);
+      expect(retry.maxRetries, 5);
+      expect(retry.retryDelayMs, 1500);
+      expect(retry.errorStatus, 429);
+      expect(retry.error, 'rate_limit');
+    });
+  });
+
+  group('ClaudeUsage.tryFromResult', () {
+    Map<String, dynamic> result({
+      int input = 10,
+      int output = 5,
+      int cacheRead = 2,
+      int cacheWrite = 3,
+      double cost = 1.0,
+      String subtype = 'success',
+      String? sessionId = 'sess-1',
+      Object? modelUsage,
+    }) => {
+      'type': 'result',
+      'subtype': subtype,
+      'session_id': ?sessionId,
+      'usage': {
+        'input_tokens': input,
+        'output_tokens': output,
+        'cache_read_input_tokens': cacheRead,
+        'cache_creation_input_tokens': cacheWrite,
+      },
+      'total_cost_usd': cost,
+      'modelUsage': ?modelUsage,
+    };
+
+    test('reads the per-turn usage and the cumulative cost', () {
+      final usage = ClaudeUsage.tryFromResult(result())!;
+      expect(usage.inputTokens, 10);
+      expect(usage.outputTokens, 5);
+      expect(usage.cacheReadTokens, 2);
+      expect(usage.cacheWriteTokens, 3);
+      expect(usage.costUsd, 1.0);
+      expect(usage.costCents, 100);
+      expect(usage.costMicros, 1000000);
+      expect(usage.subtype, 'success');
+      expect(usage.sessionId, 'sess-1');
+      expect(usage.isTokenless, isFalse);
+    });
+
+    test('parses modelUsage with camelCase keys', () {
+      final usage = ClaudeUsage.tryFromResult(
+        result(
+          modelUsage: {
+            'claude-opus-4-5': {
+              'inputTokens': 100,
+              'outputTokens': 20,
+              'cacheReadInputTokens': 7,
+              'cacheCreationInputTokens': 3,
+              'costUSD': 0.5,
+              'costBasis': 'list',
+            },
+          },
+        ),
+      )!;
+      final model = usage.modelUsage['claude-opus-4-5']!;
+      expect(model.inputTokens, 100);
+      expect(model.outputTokens, 20);
+      expect(model.cacheReadTokens, 7);
+      expect(model.cacheWriteTokens, 3);
+      expect(model.costUsd, 0.5);
+      expect(model.costBasis, 'list');
+      expect(usage.wholeTreeTotals.totalTokens, 130);
+    });
+
+    test('parses modelUsage with snake_case keys too', () {
+      final usage = ClaudeUsage.tryFromResult(
+        result(
+          modelUsage: {
+            'm': {
+              'input_tokens': 4,
+              'output_tokens': 1,
+              'cache_read_input_tokens': 1,
+              'cache_creation_input_tokens': 0,
+            },
+          },
+        ),
+      )!;
+      expect(usage.modelUsage['m']!.inputTokens, 4);
+      expect(usage.modelUsage['m']!.totalTokens, 6);
+    });
+
+    test('returns null when the result carries no usage block', () {
+      expect(
+        ClaudeUsage.tryFromResult({'type': 'result', 'is_error': true}),
+        isNull,
+      );
+    });
+
+    test('a monetary-only result retains its observed cost', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(
+        ClaudeUsage.tryFromResult({'type': 'result', 'total_cost_usd': 0.2})!,
+      );
+      final next = ledger.record(
+        ClaudeUsage.tryFromResult({
+          'type': 'result',
+          'total_cost_usd': 0.3,
+          'modelUsage': {
+            'main': {'inputTokens': 100},
+          },
+        })!,
+      );
+      expect(next.costDeltaMicros, 100000);
+      expect(next.costUnavailable, isFalse);
+      expect(next.tokenDelta.inputTokens, 100);
+    });
+
+    test('a zeroed crash is detected so a good baseline survives', () {
+      final usage = ClaudeUsage.tryFromResult(
+        result(
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          cost: 0,
+          subtype: 'error_during_execution',
+        ),
+      )!;
+      expect(usage.isTokenless, isTrue);
+      expect(usage.isZeroedCrash, isTrue);
+    });
+  });
+
+  group('ClaudeAccountingLedger', () {
+    ClaudeUsage usage({
+      int input = 0,
+      int output = 0,
+      double cost = 0,
+      String subtype = 'success',
+      Map<String, Object?> models = const {},
+    }) => ClaudeUsage.tryFromResult({
+      'type': 'result',
+      'subtype': subtype,
+      'usage': {
+        'input_tokens': input,
+        'output_tokens': output,
+        'cache_read_input_tokens': 0,
+        'cache_creation_input_tokens': 0,
+      },
+      'total_cost_usd': cost,
+      'modelUsage': models,
+    })!;
+
+    test('two results from one session are delta\'d, not summed', () {
+      // The research table: $1.00 then $1.50 cumulative is $1.50 spent, where
+      // the old additive policy produced $2.50.
+      final ledger = ClaudeAccountingLedger();
+      final first = ledger.record(usage(input: 10, cost: 1.00));
+      final second = ledger.record(usage(input: 4, cost: 1.50));
+
+      expect(first.costDeltaUsd, closeTo(1.00, 1e-9));
+      expect(second.costDeltaUsd, closeTo(0.50, 1e-9));
+      expect(second.cumulativeCostUsd, closeTo(1.50, 1e-9));
+      expect(second.cumulativeCostMicros, 1500000);
+      // Per-turn tokens stay additive and are the main loop's, not the tree's.
+      expect(first.inputTokens, 10);
+      expect(second.inputTokens, 4);
+      expect(ledger.turns, 2);
+    });
+
+    test('a repeated cumulative value adds nothing', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(usage(cost: 1.00));
+      final repeat = ledger.record(usage(cost: 1.00));
+      expect(repeat.costDeltaUsd, 0);
+      expect(repeat.costReset, isFalse);
+    });
+
+    test(
+      'a shrinking cumulative is a reset: the whole figure is folded in',
+      () {
+        final ledger = ClaudeAccountingLedger();
+        ledger.record(usage(cost: 2.00));
+        final after = ledger.record(usage(cost: 0.25));
+        expect(after.costReset, isTrue);
+        expect(after.costDeltaUsd, closeTo(0.25, 1e-9));
+        expect(after.cumulativeCostUsd, closeTo(0.25, 1e-9));
+      },
+    );
+
+    test('a zeroed crash leaves the good baseline untouched', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(usage(cost: 1.00));
+      final crash = ledger.record(
+        usage(subtype: 'error_during_execution', cost: 0),
+      );
+      expect(crash.costUnavailable, isTrue);
+      expect(crash.costDeltaUsd, 0);
+      expect(ledger.cumulativeCostUsd, closeTo(1.00, 1e-9));
+    });
+
+    test(
+      'missing cost is unknown and never resets a good cumulative baseline',
+      () {
+        final ledger = ClaudeAccountingLedger();
+        final totals = ClaudeDispatchTotals();
+        totals.add(ledger.record(usage(input: 10, cost: 1)));
+        final partial = ClaudeUsage.tryFromResult({
+          'type': 'result',
+          'subtype': 'success',
+          'usage': {'input_tokens': 20, 'output_tokens': 3},
+        })!;
+        final accounted = ledger.record(partial);
+        totals.add(accounted);
+        expect(accounted.costUnavailable, isTrue);
+        expect(accounted.costReset, isFalse);
+        expect(ledger.cumulativeCostUsd, 1);
+        expect(totals.inputTokens, 30);
+        expect(totals.outputTokens, 3);
+        expect(totals.costUnavailable, isTrue);
+        final next = ledger.record(usage(input: 5, cost: 1.5));
+        totals.add(next);
+        expect(next.costDeltaMicros, 500000);
+        expect(totals.costMicros, 1500000);
+      },
+    );
+
+    test(
+      'missing model counters retain main usage without replaying it later',
+      () {
+        final ledger = ClaudeAccountingLedger();
+        final totals = ClaudeDispatchTotals();
+        totals.add(
+          ledger.record(
+            usage(
+              input: 10,
+              cost: 1,
+              models: {
+                'main': {'inputTokens': 100},
+              },
+            ),
+          ),
+        );
+        totals.add(ledger.record(usage(input: 12, cost: 1.2)));
+        expect(totals.inputTokens, 112);
+        expect(ledger.baseline.mainUsageSinceModels.inputTokens, 12);
+        totals.add(
+          ledger.record(
+            usage(
+              input: 9,
+              cost: 1.5,
+              models: {
+                'main': {'inputTokens': 150},
+              },
+            ),
+          ),
+        );
+        expect(totals.inputTokens, 150);
+        expect(ledger.baseline.mainUsageSinceModels.totalTokens, 0);
+      },
+    );
+
+    test('a restored baseline credits missing-model main usage only once', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(
+        usage(
+          input: 10,
+          cost: 1,
+          models: {
+            'main': {'inputTokens': 100},
+          },
+        ),
+      );
+      ledger.record(usage(input: 12, cost: 1.2));
+      final baseline = ledger.baseline;
+      final persisted = ClaudeNativeSessionRecord.fromJson(
+        ClaudeNativeSessionRecord(
+          storageKey: 'workspace/account/conversation',
+          sessionId: 'session',
+          policyFingerprint: 'policy',
+          conversationRevision: 'revision',
+          createdAt: DateTime.utc(2026),
+          lastUsedAt: DateTime.utc(2026),
+          cumulativeCostUsd: baseline.cumulativeCostUsd,
+          modelUsage: baseline.modelUsage,
+          mainUsageSinceModels: baseline.mainUsageSinceModels,
+        ).toJson(),
+      )!;
+      final restored = ClaudeAccountingLedger(
+        baseline: ClaudeAccountingBaseline(
+          cumulativeCostUsd: persisted.cumulativeCostUsd,
+          modelUsage: persisted.modelUsage,
+          mainUsageSinceModels: persisted.mainUsageSinceModels,
+          restoredByCli: true,
+        ),
+      );
+      final next = restored.record(
+        usage(
+          input: 9,
+          cost: 1.5,
+          models: {
+            'main': {'inputTokens': 150},
+          },
+        ),
+      );
+      expect(next.tokenDelta.inputTokens, 38);
+      expect(next.costDeltaMicros, 300000);
+      restored.reset();
+      final fresh = restored.record(
+        usage(
+          input: 5,
+          cost: 0.1,
+          models: {
+            'main': {'inputTokens': 5},
+          },
+        ),
+      );
+      expect(fresh.tokenDelta.inputTokens, 5);
+    });
+
+    test('a resume baseline prevents re-counting restored spend', () {
+      // Turn one cost $1.50 and was persisted as a CLI-RESTORABLE baseline. A
+      // resumed call starts with its totals already at 1.50, so only the NEW
+      // spend is a delta.
+      final ledger = ClaudeAccountingLedger(
+        baseline: const ClaudeAccountingBaseline(
+          cumulativeCostUsd: 1.50,
+          turns: 1,
+          restoredByCli: true,
+        ),
+      );
+      final turn = ledger.record(usage(cost: 2.00));
+      expect(turn.costDeltaUsd, closeTo(0.50, 1e-9));
+      expect(ledger.turns, 2);
+    });
+
+    test('a non-restorable baseline is ignored, not delta\'d against', () {
+      // The CLI does not restore these totals (an older build, or a previous
+      // run that never exited cleanly), so its figures describe THIS dispatch
+      // and deltaing them against the old baseline would swallow spend.
+      final ledger = ClaudeAccountingLedger(
+        baseline: const ClaudeAccountingBaseline(cumulativeCostUsd: 1.50),
+      );
+      final turn = ledger.record(usage(cost: 2.00));
+      expect(turn.costDeltaUsd, closeTo(2.00, 1e-9));
+      expect(ledger.cumulativeCostUsd, closeTo(2.00, 1e-9));
+    });
+
+    test('a dispatch accumulator survives ledger resets', () {
+      final totals = ClaudeDispatchTotals();
+      final ledger = ClaudeAccountingLedger();
+      totals.add(
+        ledger.record(
+          usage(
+            cost: 1.00,
+            input: 100,
+            models: {
+              'm': {'inputTokens': 100, 'costUSD': 1.0},
+            },
+          ),
+        ),
+      );
+      // A `/clear` or an account switch resets the session's counters, not the
+      // dispatch's attribution.
+      ledger.reset();
+      totals.add(ledger.record(usage(cost: 0.25, input: 10)));
+
+      expect(totals.costMicros, 1250000);
+      expect(totals.inputTokens, 110);
+      expect(totals.snapshot.costUsd, closeTo(1.25, 1e-9));
+    });
+
+    test('a resume whose transcript was not saved reads as a new baseline', () {
+      // The baseline WAS recorded as restorable, but this call's totals came
+      // back smaller — no restore happened — so the whole figure is a new
+      // baseline rather than a negative delta.
+      final ledger = ClaudeAccountingLedger(
+        baseline: const ClaudeAccountingBaseline(
+          cumulativeCostUsd: 1.50,
+          restoredByCli: true,
+        ),
+      );
+      final turn = ledger.record(usage(cost: 0.30));
+      expect(turn.costReset, isTrue);
+      expect(turn.costDeltaUsd, closeTo(0.30, 1e-9));
+    });
+
+    test('modelUsage deltas are whole-tree and never double counted', () {
+      final ledger = ClaudeAccountingLedger();
+      final first = ledger.record(
+        usage(
+          input: 100,
+          cost: 1.00,
+          models: {
+            'main': {
+              'inputTokens': 100,
+              'outputTokens': 10,
+              'cacheReadInputTokens': 0,
+              'cacheCreationInputTokens': 0,
+              'costUSD': 0.9,
+            },
+            'haiku': {
+              'inputTokens': 20,
+              'outputTokens': 2,
+              'cacheReadInputTokens': 0,
+              'cacheCreationInputTokens': 0,
+              'costUSD': 0.1,
+            },
+          },
+        ),
+      );
+      expect(first.wholeTreeTotals.totalTokens, 132);
+      // The per-turn main-loop tokens are the `usage` block only.
+      expect(first.inputTokens, 100);
+
+      final second = ledger.record(
+        usage(
+          input: 50,
+          cost: 1.50,
+          models: {
+            'main': {
+              'inputTokens': 150,
+              'outputTokens': 20,
+              'cacheReadInputTokens': 0,
+              'cacheCreationInputTokens': 0,
+              'costUSD': 1.4,
+            },
+            'haiku': {
+              'inputTokens': 30,
+              'outputTokens': 3,
+              'cacheReadInputTokens': 0,
+              'cacheCreationInputTokens': 0,
+              'costUSD': 0.1,
+            },
+          },
+        ),
+      );
+      // Deltas, not the cumulative values, so the tree is not counted twice.
+      expect(second.modelUsageDeltas['main']!.inputTokens, 50);
+      expect(second.modelUsageDeltas['haiku']!.inputTokens, 10);
+      expect(second.wholeTreeTotals.inputTokens, 180);
+      expect(second.cumulativeModelUsage['main']!.inputTokens, 150);
+    });
+
+    test('a reset restarts the model counters', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(
+        usage(
+          cost: 2.00,
+          models: {
+            'main': {'inputTokens': 500},
+          },
+        ),
+      );
+      final after = ledger.record(
+        usage(
+          cost: 0.10,
+          models: {
+            'main': {'inputTokens': 10},
+          },
+        ),
+      );
+      expect(after.costReset, isTrue);
+      expect(after.modelUsageDeltas['main']!.inputTokens, 10);
+      expect(after.cumulativeModelUsage['main']!.inputTokens, 10);
+    });
+
+    test('reset forgets both cumulative axes', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(
+        usage(
+          cost: 1.00,
+          models: {
+            'main': {'inputTokens': 5},
+          },
+        ),
+      );
+      ledger.reset();
+      expect(ledger.cumulativeCostUsd, 0);
+      expect(ledger.modelUsage, isEmpty);
+      final next = ledger.record(usage(cost: 0.20));
+      expect(next.costDeltaUsd, closeTo(0.20, 1e-9));
+      expect(next.costReset, isFalse);
+    });
+
+    test('baseline round-trips through a persisted snapshot', () {
+      final ledger = ClaudeAccountingLedger();
+      ledger.record(
+        usage(
+          cost: 0.75,
+          models: {
+            'main': {'inputTokens': 40, 'costUSD': 0.75},
+          },
+        ),
+      );
+      // The session decides restorability from the CLI's exit + capability; a
+      // restorable baseline seeds the next ledger.
+      final restored = ClaudeAccountingLedger(
+        baseline: ClaudeAccountingBaseline(
+          cumulativeCostUsd: ledger.baseline.cumulativeCostUsd,
+          modelUsage: ledger.baseline.modelUsage,
+          turns: ledger.baseline.turns,
+          restoredByCli: true,
+        ),
+      );
+      expect(restored.cumulativeCostUsd, closeTo(0.75, 1e-9));
+      expect(restored.modelUsage['main']!.inputTokens, 40);
+      expect(restored.turns, 1);
     });
   });
 }

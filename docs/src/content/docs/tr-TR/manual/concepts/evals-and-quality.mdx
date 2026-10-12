@@ -1,9 +1,16 @@
 ---
 title: Eval’ler ve kalite
-description: Eval paketleri, her çalışma alanına tohumlanan başlangıç kümesi ve bunların Gözlemlenebilirlik’te nerede göründüğü.
+description: Eval paketleri ve sürüme sabitlenmiş beceri kampanyaları, ve kanıtlarının nasıl yorumlanacağı.
 slug: tr-TR/kilavuz/kavramlar/evaller-ve-kalite
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Gözlemlenebilirlik → Kalite** hem tek görevlik eval paketlerini hem de
+eşleştirilmiş beceri kampanyalarını içerir. Bir beceri kampanyası, bir paketi
+belirli bir model ve harness tarafından kullanıldığı biçimiyle ölçer; tek başına
+Markdown'ının kalitesini değil.
+
+## Eval paketleri
 
 Bir **eval paketi**, bir ajana karşı çalıştırılacak bir görevin çalışma alanı
 kapsamlı tanımıdır: bir istem, bir hedef ajan ve mod, isteğe bağlı kurulum,
@@ -18,7 +25,7 @@ gidiş-dönüşünü kapsar. Tohumlama `WorkspaceCreated` olayını dinler
 (`workspace.upsert` veya `workspace.create`), zaten var olan bir adı atlar ve
 eski çalışma alanlarını geriye dönük doldurmaz.
 
-## Nerede görünürler
+### Nerede görünürler
 
 **Gözlemlenebilirlik → Kalite** (`/workspaces/<id>/observability`) çalışma
 alanındaki her paketi listeler.
@@ -27,10 +34,118 @@ Paketleri `evals.upsertSuite`, `evals.deleteSuite` ve `evals.watchSuites`
 üzerinden oluşturun, listeleyin, düzenleyin ve silin. Kalite sekmesi liste; bu
 işlemler ise düzenleyicidir.
 
+## Beceri kampanyaları
+
+Bir kampanya, aynı görev ve yürütme yapılandırması altında iki kolu
+karşılaştırır. Aday ya yoktur, ya normal biçimde kullanılabilir, ya açıkça
+yüklenir, ya da daha önceki bir sürümle veya sabit bir ortam becerisi
+envanteriyle karşılaştırılır. Bunlar farklı soruları yanıtlar; zorunlu yükleme
+bir teşhistir, normal keşif için bir puan değildir.
+[Beceri kılavuzu](/tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme/#bir-beceriyi-değerlendirme)
+bir karşılaştırmanın nasıl seçileceğini ve bütçeli bir çalıştırmaya nasıl izin
+verileceğini açıklar.
+
+Kanıt, tam **tüm paket hash'ine** aittir: `SKILL.md`, üst veri, betikler,
+başvurular ve varlıklar. Sunucu, taranmış değişmez paketleri yakalar ve görev
+kümesini, adaptörü, sağlayıcı/yerel model tanımlayıcısını, protokolü, araç
+şemalarını ve ortam envanterini sabitler. Yerel Claude kampanyaları ayrıca
+yönetilen hesabı ve gözlemlenen CLI sürümünü sabitler. Bir başvuruyu düzenlemek,
+`SKILL.md` değişmemiş olsa bile mevcut kanıtı geçersiz kılar. Bir model takma
+adı, istenen şeyi kaydeder;
+sağlayıcının değişmez ağırlıklarını değil.
+
+Her deneme taze bağlam, home ve test düzeneği durumu alır. Eşleştirilmiş kollar,
+bildirilen beceri müdahalesi dışında aynı ilkeyi ve görev koşullarını kullanır.
+Hedefin yokluğu, adayın üst verisinin ve dosyalarının kullanılamadığı anlamına
+gelir; tüm arka plan yönergelerinin veya becerilerinin kaldırıldığı anlamına
+değil. Görev istemleri, normal keşif karşılaştırmasında adayı adlandırmamalıdır.
+
+Yetkilendirme, yürütme, bütçeler ve çalışma alanı kalıcılığı sunucuya aittir.
+İstemciler ayarları seçer ve kanıtı işler. İlerleme yeniden bağlanmalara dayanır;
+iptal kısmi sonuçları korur ve yeniden başlatma, ücretli çağrıları sessizce
+tekrarlamak yerine bitmemiş işi kesintiye uğramış olarak işaretler. Bu kampanyalar
+rastgele eval paketleri için ayrı yürütücü sözleşmesini sağlamaz.
+
+## Kanıtları ihtiyatlı okuma
+
+- **Doğruluğa sonuçlar karar verir.** Bağımsız tipli doğrulayıcılar, ajanın
+  başardığı iddiasını değil, eserleri ve ortaya çıkan davranışı denetler.
+  Beklenen yanıtlar adayın muhafazası dışında kalır; üretilen kod ayrı bir
+  muhafaza edilmiş kopyada değerlendirilir.
+- **Yükleme ile faydalılık farklı şeylerdir.** Kullanılabilirlik, gövde/başvuru
+  yüklemeleri ve gözlemlenen betik kullanımı yürütmeyi açıklar. Bir dosyanın
+  okunması, modelin yönergelerini izlediğini kanıtlamaz; gözlemlenemeyen erişim
+  bilinmez kalır.
+- **Eşleştirilmiş temel sürümü koruyun.** Tek başına başarılı bir aday
+  çalıştırması fayda sağlamaz. Kullanılabilir bir becerinin yok sayıldığı
+  denemeleri, başarısız denemeleri ve maliyetlerini dahil edin; yalnızca en iyi
+  yeniden denemeyi tutmayın.
+- **Tekrarlar yeni görevler değildir.** Raporlar belirsizliği göreve göre
+  kümelendirir. Küçük örneklemler, eksik kapsam, kimlik kayması ve bilinmeyen
+  harcama bir benimseme önerisini gerekçelendiremez. Tamamlanmış bir kampanya
+  yine de sonuçsuz kalabilir; iyileşme gösterememek denklik ya da gerileme
+  kanıtı değildir.
+- **Tek tek gerilemeleri inceleyin.** Toplu kazançlar zarar görmüş bir görevi ya
+  da izinsiz bir yan etkiyi gizlememelidir. Güvenlik taramaları, çalışma zamanı
+  güvenlik gözlemleri ve faydalılık ayrı kalır; daha ucuz yürütme, eksik kalite
+  veya güvenlik kanıtını telafi edemez.
+- **Uyumsuz sonuçları birleştirmeyin.** Başka bir model, harness, ilke, test
+  düzeneği veya beceri bileşimi başka bir yapılandırmadır. Transfer ve bileşim
+  kanıtını, geliştirme durumlarından ayrı tutulan setlerde saklayın.
+
+Yerelde yazılmış dokuz pilot görev kümesi, faydalılık, aileye özgü
+yönlendirme/güvenlik ve ayrı tutulmuş transfer/bileşim alanlarında 108 görev
+girdisi içerir. Becerinin amacına uyan bir aile seçin. Referans çözümler ve
+bilinen kötü çıktılar doğrulayıcıları denetler; bu test düzenekleri bir kamu
+benchmark'ının yeniden üretimi değildir ve kurulu bir becerinin faydalı olduğunun
+kanıtı da değildir. Betiklenmiş sağlayıcı yanıtlarıyla yapılan uygulama duman
+testleri, canlı model üzerinde beceri kalitesi ölçümü değildir.
+
+## Yürütme ve kanıt sınırları
+
+Denetimli **yerleşik harness** ve **Claude Code** adaptörleri desteklenir.
+Muhafaza ve etkin kimlik bilgileri yürütmeden önce geçmelidir. Yerleşik
+sağlayıcılar belgelenmiş araç desteği, token sınırları ve fiyatlandırma
+gerektirir; Codex OAuth, ayrı bir OpenAI API anahtarı gerektirmek yerine kendi
+hesabında kimlik doğrular. Claude Code, varsayılan yönetilen hesabı, somut bir
+model kimliğini ve kendi yerel API eşdeğeri maliyet raporunu kullanır.
+
+Claude Code ve Codex OAuth bir **kullanımı durdurma eşiği** kullanır: sürmekte
+olan bir çağrı bütçeyi aşabilir, ardından sonraki çağrılar durur. Bu, faturalanan
+abonelik harcaması ya da katı bir fatura tavanı değildir. API anahtarı kullanan
+sağlayıcılar çağrı öncesi ihtiyatlı rezervleri korur. Bilinmeyen gözlemlenen
+harcama her adaptör için sonraki çağrıları durdurur; eksik kapsam kısmi ya da
+sonucu belirsiz kalır.
+
+Claude, yerel model döngüsünü özel bir denetleyici dizininde çalıştırır; yerleşik
+araçlar ve ortam becerileri devre dışıdır. Tek araçları, yerleşik harness'ın
+kullandığı aynı muhafaza edilmiş konuğa açılan, kimliği doğrulanmış ve sunucuya
+ait MCP köprüsüdür. Kimlik bilgileri o konuğun dışında kalır. Değişen bir CLI
+kimliği ya da araç yüzeyi, yürütücüleri sessizce değiştirmek yerine denemeyi
+geçersiz kılar. Filo değerlendirmesi ve Windows desteklenmez; başarılı bir worker
+Git sorgusu ya da istem yankısı değerlendirme sayılmaz.
+
+macOS'ta muhafaza, konuk ağını ve dış dosya sistemi erişimini reddeder, süreç
+ayrılmasını engeller, CPU/dosya/çıktıyı sınırlar ve sahip olunan alt süreçleri
+temizler, ancak **sabit bir bellek kotası uygulamaz**. Linux bubblewrap
+gerektirir ve bir adres alanı sınırı uygular. İlk muhafaza doğrulaması Linux'u
+değil macOS'u denedi. Eksik muhafaza hiçbir zaman bir ana makine kabuğuna geri
+düşmez. Sağlayıcı kimlik bilgileri, konuk araçlarının dışında, sunucuda kalır.
+
+Deneme kanıtı gizlenir ve 256 KiB ile sınırlanır; bir dışa aktarma 16 MiB ile
+sınırlanır. Büyük dışa aktarmalar, kabul edilen tüm denemeler için kısa
+sonuç/maliyet özetlerini korur ve atlanan veya özetlenen iz içeriğini açıkça
+bildirir. Ne bir dışa aktarma ne de bir rapor, eksiksiz bir özel kaynak yeniden
+oynatma paketi içerir. Sentetik güvenlik kontrolleri, gerçek sızdırma direncini
+kanıtlamaz, karantinayı geçersiz kılmaz ve bir beceriyi güvenli olarak
+sertifikalandırmaz.
+
 ## İlgili kavramlar
 
 - [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): bir paketin
   sabitlediği yapılandırma
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): muhafaza ve yetki
+  sınırları
 - [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): özerklik ayarı
 - [Maliyetleri ve bütçeleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/): bir
   çalıştırmayla birlikte kaydedilen harcama

@@ -1,32 +1,33 @@
 ---
 title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+description: How the phone reaches your server over direct or brokered end-to-end-encrypted connections and the layered access model that keeps that reach narrow.
 ---
 
 Control Center is a desktop app, but the work it tracks doesn't stop when you
 step away from your desk. **Remote control** pairs your phone with your
 `cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
 at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+and tickets, reply to an agent, and triage your newsfeed over an end-to-end-encrypted
+connection. The phone and `cc_server` are trusted plaintext endpoints; a relay
+carries only encrypted application records.
 
 Think of it as a read-mostly companion to the deck. It is not meant to replace
 the full desktop client.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/manual/concepts/deployment/) for how the two differ.
+:::note[Two different remote clients]
+The phone companion and the full **web build** (or a desktop pointed at a remote
+server) can connect directly to `cc_server` or use a brokered WebSocket relay.
+Both paths require the same encrypted session; the phone exposes a smaller
+set of operations than the full client. See
+[Deployment and clients](/manual/concepts/deployment/) for how the clients differ.
 :::
 
 ## Transport
 
 The phone reaches `cc_server` over a WebSocket: either a direct connection
 (loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+broker. Both paths require an authenticated, end-to-end-encrypted session;
+the broker only forwards its encrypted records. There is no peer-to-peer data channel.
 
 ## What the phone can do
 
@@ -48,22 +49,25 @@ merely intended.
 
 ## How the link is built
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+When the phone cannot reach the server directly, the connection uses a
+**brokered relay**: the server joins one invite-gated room on a `wss://` broker
+as its owner and paired clients join with time-boxed admission tokens. Three
+pieces come together:
 
 | Piece                  | Role                                                                                                                                                                                                                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
+| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It forwards encrypted records without the pairing secret or app plaintext, but sees routing identifiers, IPs, record sizes and timing. |
 | **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
 
 A pairing offer carries a **connection descriptor** listing every path to the
 server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+The phone's resolver picks the best reachable path. The server signs the
+encrypted handshake, and the client pins its fingerprint. On first connection,
+check the fingerprint against a QR or another trusted source: a first signed
+identity alone does not prove which server you reached. A changed pin is
+rejected rather than silently trusted again. The relay carries ciphertext when
+no direct path exists, but can still interrupt or delay the connection.
 
 ## What the pairing payload is
 
@@ -76,25 +80,30 @@ https://<pwa-host>/#<payload>
 ```
 
 The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+do not send in the HTTP request to the PWA host. It carries everything the
+phone needs to reach the server and prove who it is: the connection descriptor
+(every path plus the identity fingerprint), a freshly minted device id, a
+32-byte pre-shared key and an expiry stamp. The phone decodes it, stores a
+pairing record locally and strips the fragment from the URL. The web app's
+code can read the fragment, so use a trusted app host and treat the link as a
+secret.
 
 There are two payload shapes and they are **not interchangeable**. The phone QR
 minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+at the Remote PWA host. `cc_server pair --client-url` emits a v1 link
+(`{s, i, k}` — server URL, device id, key) intended for the **web** client only.
+These are pairing data formats, not transport fallbacks: both clients must
+support the current encrypted session protocol.
 
 They also differ in lifetime, which is easy to get wrong:
 
 | Minted by                             | Credential expiry                         |
 | ------------------------------------- | ----------------------------------------- |
 | In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| `cc_server pair` on the command line  | No expiry encoded; server policies still apply |
+
+Server-wide maximum device-age and idle-timeout policies can reject either
+credential earlier. Neither pairing format bypasses those policies.
 
 ## The access model
 
@@ -147,12 +156,14 @@ membership check in gate 1 still applies. This is the same
 [workspace isolation](/manual/concepts/workspaces/) invariant the rest of the
 product enforces.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. End-to-end encryption on direct and relayed connections
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Every direct or relayed client session requires a signed Noise handshake.
+The pairing key authenticates that handshake; fresh ephemeral keys derive the
+traffic keys, rather than using the pairing key to seal each frame. The server
+signs its identity into the exchange and the client checks its saved fingerprint
+pin. There is no plaintext or older-client fallback. A relay admission token
+only gets a client into a room; it cannot decrypt the records.
 
 An app-minted credential is time-boxed to 30 days; past that the connect gate
 fails it and the phone must re-pair. Revocation is live: the server watches the
@@ -167,20 +178,23 @@ tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
 so a hijacked client cannot buy headroom by opening more sessions and one noisy
 member cannot starve the others.
 
-### 7. A broker that learns nothing
+### 7. A broker that cannot read app content
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+The relay broker hosts transient, invite-gated rooms and forwards encrypted
+records without app plaintext or pairing keys. It still sees IP addresses,
+room and peer identifiers, record sizes, timing and connection lifetime, and
+can drop or delay traffic. The paired client and the chosen `cc_server` are
+the plaintext endpoints; the server operator and services it sends content to
+can see that content. Encryption in transit does not encrypt server data at rest.
 
 ## Live updates
 
 Once paired, the phone receives **live updates** as notification frames — new
 agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+desktop's own notifications. The server checks workspace membership before
+forwarding an event to a session. The client then filters those authorized
+events to the workspace you are viewing; that display filter is not the access
+boundary.
 
 ## Where it lives
 
@@ -193,8 +207,8 @@ phones — the flow is identical, only the deep link differs.
 
 ::::note
 Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+to the server's own dispatcher over its encrypted direct or relayed connection;
+it is not an MCP client of an external server.
 ::::
 
 ## See also

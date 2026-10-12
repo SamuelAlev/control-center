@@ -385,16 +385,26 @@ class _DialogFocusScopeState extends State<_DialogFocusScope> {
   }
 }
 
+/// Controls the transition and scrim used by [showCcDialog].
+enum CcDialogPresentation {
+  /// The standard animated, frosted-glass dialog.
+  standard,
+
+  /// An instantly readable command surface with a simple, unblurred scrim.
+  immediate,
+}
+
 /// Presents a modal dialog built by [builder], centered over a warm scrim.
 ///
 /// Implemented with a [RawDialogRoute] (part of `package:flutter/widgets.dart`)
-/// so cc_ui stays off the Material layer. The scrim is a translucent
+/// so cc_ui stays off the Material layer. The standard scrim is a translucent
 /// `bgOverlay` wash over a [BackdropFilter] blur, so the surface beneath stays
-/// legible-but-defocused (frosted glass) instead of being fully obscured. The
-/// panel enters on [CcMotion.slow] (fade + scale) and leaves on
-/// [CcMotion.slowExit] — one tier quicker, so a close never drags. Reduced
-/// motion drops the scale and keeps the opacity fade. Returns the value the
-/// dialog is popped with, or null if dismissed.
+/// legible-but-defocused (frosted glass) instead of being fully obscured.
+/// By default the panel enters on [CcMotion.slow] (fade + scale) and leaves
+/// on [CcMotion.slowExit]. Reduced motion drops the scale and keeps the fade.
+/// [CcDialogPresentation.immediate] skips both transitions and backdrop blur
+/// for keyboard-first command surfaces. Returns the value the dialog is popped
+/// with, or null if dismissed.
 ///
 /// Owns the modal accessibility lifecycle: focus is moved into the dialog on
 /// open, trapped inside it (Tab/Shift-Tab cannot reach the background),
@@ -404,12 +414,18 @@ Future<T?> showCcDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool barrierDismissible = true,
+  CcDialogPresentation presentation = CcDialogPresentation.standard,
 }) {
   final theme = context.ccTheme;
   final t = theme?.tokens ?? DesignSystemTokens.light();
   final reduced = CcMotion.reduced(context);
-  final enter = reduced ? CcMotion.fade : CcMotion.slow;
-  final exit = reduced ? CcMotion.fade : CcMotion.slowExit;
+  final immediate = presentation == CcDialogPresentation.immediate;
+  final enter = immediate
+      ? Duration.zero
+      : (reduced ? CcMotion.fade : CcMotion.slow);
+  final exit = immediate
+      ? Duration.zero
+      : (reduced ? CcMotion.fade : CcMotion.slowExit);
 
   // The route presents into the root overlay, outside any route's
   // `Material`/text theme. The only ambient `DefaultTextStyle` there is
@@ -448,6 +464,21 @@ Future<T?> showCcDialog<T>({
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
+        if (immediate) {
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ColoredBox(
+                    color: t.bgOverlay.withValues(alpha: 0.5),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
+              Center(child: child),
+            ],
+          );
+        }
         final fadeOnly = CcMotion.reduced(context);
         final curved = CurvedAnimation(
           parent: animation,

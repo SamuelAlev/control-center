@@ -2,7 +2,7 @@
 title: Backup e ripristino
 description: Scatta un'istantanea dell'installazione, sposta uno spazio di lavoro tra macchine, ripristina un solo spazio di lavoro o tutti quanti, e conserva copie altrove.
 slug: it-IT/manuale/guide/backup-e-ripristino
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Questa guida copre le cinque cose che si fanno davvero con i backup: crearne uno,
@@ -17,7 +17,7 @@ Tutto quello che c'è qui vive in **Impostazioni → Server → Backup e riprist
 - Un **client completo** — l'app desktop o web. Un telefono associato non può attivare nulla di tutto questo, per scelta progettuale.
 - Per creare, elencare, scaricare o eliminare un'**istantanea dell'installazione**: il **proprietario** dell'installazione.
 - Per le azioni su un singolo spazio di lavoro: **admin** di quello spazio di lavoro per esportarlo, **proprietario** per importarlo o eliminarlo.
-- Per i download e gli upload: una connessione **diretta** al server. Il relay intermediato da un broker trasporta frame RPC, non trasferimenti di file, e i controlli di trasferimento si disattivano da soli con una nota quando sei su uno di questi.
+- Per i download e gli upload: un client completo associato, su una connessione diretta o tramite relay. Entrambi i percorsi trasportano i byte del file attraverso lo stesso tunnel delle risorse autenticato e cifrato end-to-end; il relay non può leggerli.
 
 :::caution[Le istantanee dell'installazione sono manuali]
 **Esegui backup ora** crea comunque un'istantanea dell'intera installazione solo su
@@ -25,7 +25,15 @@ richiesta. La pipeline integrata **Workspace backup** può invece fare un backup
 database di uno spazio di lavoro una volta alla settimana e rimuovere i backup di quello
 spazio di lavoro più vecchi di 30 giorni. Non copia `global.db`, altri spazi di lavoro né
 i file accanto al database. Conserva separatamente le copie fuori dalla macchina.
-:::
+::::
+
+::::caution[I backup non sono cifrati a riposo]
+Il trasferimento cifrato termina sul tuo client e su `cc_server`. Le directory delle
+istantanee, le esportazioni degli spazi di lavoro, i file scaricati e i database del
+server non sono cifrati a riposo da Control Center. Proteggi l'host del server, i tuoi
+download e le copie fuori dalla macchina con la tua crittografia di archiviazione e i tuoi
+controlli di accesso.
+::::
 
 ## Cosa copre un backup
 
@@ -327,7 +335,7 @@ conservati.
 
 | Sintomo                                                                  | Causa e soluzione                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| I controlli di download e upload sono disattivati con una nota su un relay | Sei connesso attraverso il relay intermediato da un broker, che non trasporta alcun trasferimento di file. Collegati direttamente |
+| Il download o l'upload non riesce dopo un cambio di connessione | Riprova sulla connessione associata attiva. Sia la connessione diretta sia quella via relay supportano il trasferimento di file cifrato; nessuna espone un fallback HTTP in chiaro |
 | «Il server ha rifiutato»                                                 | Ruolo. Creare o elencare un'istantanea dell'installazione richiede l'operatore dell'installazione. Scaricare uno spazio di lavoro richiede admin, ripristinarne uno richiede proprietario, e uno zip con l'intera istantanea richiede l'operatore dell'installazione |
 | «Questo server non espone alcuna superficie di backup»                   | L'host non ha alcuna porta di backup cablata — un server demo. Le operazioni sono assenti invece che rifiutate               |
 | «Il file supera la dimensione accettata dal server»                      | Gli upload sono limitati a 8 GiB. Metti il file sull'host del server e usa invece **Importa** → **Scegli un file**            |
@@ -341,7 +349,7 @@ conservati.
 
 - [Esegui un server headless](/it-IT/manuale/guide/esegui-server-headless/): da dove viene la directory dei dati
 - [Connettiti a un server remoto](/it-IT/manuale/guide/connetti-server-remoto/): connessioni dirette o via relay
-- [Associa un dispositivo](/it-IT/manuale/guide/associa-dispositivo/): la credenziale con cui firmano le route di trasferimento
+- [Associa un dispositivo](/it-IT/manuale/guide/associa-dispositivo/): la credenziale del dispositivo associato usata dal trasferimento cifrato e dalle sue richieste di risorse firmate
 
 ## Concetti e riferimenti correlati
 

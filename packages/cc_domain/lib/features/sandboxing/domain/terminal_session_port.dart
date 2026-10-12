@@ -1,14 +1,9 @@
 /// Platform-neutral control surface for server-hosted interactive terminal
 /// sessions (a PTY running a shell inside the agent's sandbox).
-/// On the desktop this is backed by an in-process implementation that owns
-/// `flutter_pty` + the sandbox manager (the same stack the desktop terminal
-/// panel used to drive directly); on the web / thin client the panel drives the
-/// SERVER's sessions over the `terminal.*` RPC ops + the `terminal.output`
-/// subscription. A PTY physically cannot run in a browser, so a web client only
-/// has a real terminal when the connected server hosts these ops; a pure-Dart
-/// headless server (which does not link `flutter_pty`) leaves the port null, the
-/// ops are absent and the web panel renders an honest "terminal runs on the
-/// server host" placeholder.
+/// The pure-Dart server owns the native PTY through `cc_natives` and the sandbox
+/// manager. Desktop and web clients drive those sessions through the
+/// `terminal.*` RPC ops and `terminal.output` subscription; clients never spawn
+/// a PTY themselves.
 /// Sessions are WORKSPACE-SCOPED: `spawn` records the owning workspace and the
 /// host validates ownership on every `output`/`write`/`resize`/`kill` before
 /// touching a session, so one workspace can never read or drive another's

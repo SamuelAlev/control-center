@@ -151,11 +151,7 @@ class VibeSpawnTool extends _VibeTool {
           type: SubagentType.general,
         );
         worker.runId = result.childRunId;
-        roster.settle(
-          worker.id,
-          result: result.text,
-          isError: result.isError,
-        );
+        roster.settle(worker.id, result: result.text, isError: result.isError);
       } on Object catch (e) {
         roster.settle(worker.id, result: '$e', isError: true);
       }
@@ -208,6 +204,11 @@ class VibeSendTool extends _VibeTool {
       return HarnessToolResult.error(
         '${worker.id} is still working. Wait for it, or kill it and start '
         'again with a corrected brief.',
+      );
+    }
+    if (worker.status == VibeWorkerStatus.killed) {
+      return HarnessToolResult.error(
+        '${worker.id} was killed. Start a new worker with a fresh brief.',
       );
     }
     worker
@@ -276,9 +277,7 @@ class VibeWaitTool extends _VibeTool {
       return resolved.error!;
     }
     final raw = args['timeout_seconds'];
-    final timeout = Duration(
-      seconds: raw is int ? raw.clamp(1, 1800) : 300,
-    );
+    final timeout = Duration(seconds: raw is int ? raw.clamp(1, 1800) : 300);
     if (worker.isRunning) {
       try {
         await worker.settled.future.timeout(timeout);

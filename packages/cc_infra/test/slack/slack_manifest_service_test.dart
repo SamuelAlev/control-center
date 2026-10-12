@@ -1,10 +1,9 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bot_profile.dart';
 import 'package:cc_infra/cc_infra.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:test/test.dart';
 
 /// [SlackManifestService]: manifest composition and the rotation contract.
@@ -226,7 +225,7 @@ void main() {
     test(
       'persists the new refresh token before using the access token',
       () async {
-        final adapter = _SlackStubAdapter()
+        final slack = _SlackStub()
           ..reply('tooling.tokens.rotate', {
             'token': 'xoxe.xoxp-access',
             'refresh_token': 'xoxe-2',
@@ -234,7 +233,7 @@ void main() {
           ..reply('apps.manifest.validate', const {})
           ..reply('apps.manifest.create', {'app_id': 'A1'});
         final store = _TokenStore('xoxe-1');
-        final service = _service(adapter, store);
+        final service = _service(slack, store);
 
         final created = await service.createApp(_profile);
 
@@ -244,8 +243,8 @@ void main() {
         expect(store.token, 'xoxe-2');
         expect(store.writes, ['xoxe-2']);
         expect(
-          adapter.calls.indexOf('tooling.tokens.rotate'),
-          lessThan(adapter.calls.indexOf('apps.manifest.create')),
+          slack.calls.indexOf('tooling.tokens.rotate'),
+          lessThan(slack.calls.indexOf('apps.manifest.create')),
         );
         expect(created.configRefreshToken, 'xoxe-2');
       },
@@ -254,7 +253,7 @@ void main() {
     test(
       'hands off to the app settings page, not Slack’s authorize url',
       () async {
-        final adapter = _SlackStubAdapter()
+        final slack = _SlackStub()
           ..reply('tooling.tokens.rotate', {
             'token': 'xoxe.xoxp-access',
             'refresh_token': 'xoxe-2',
@@ -267,7 +266,7 @@ void main() {
           });
 
         final created = await _service(
-          adapter,
+          slack,
           _TokenStore('xoxe-1'),
         ).createApp(_profile);
 
@@ -281,13 +280,13 @@ void main() {
     );
 
     test('a failed write fails the operation', () async {
-      final adapter = _SlackStubAdapter()
+      final slack = _SlackStub()
         ..reply('tooling.tokens.rotate', {
           'token': 'xoxe.xoxp-access',
           'refresh_token': 'xoxe-2',
         });
       final store = _TokenStore('xoxe-1', failWrites: true);
-      final service = _service(adapter, store);
+      final service = _service(slack, store);
 
       // Losing the replacement token un-manages the app forever, so this must
       // never be swallowed as "the manifest call worked".
@@ -295,14 +294,14 @@ void main() {
         service.createApp(_profile),
         throwsA(isA<StateError>()),
       );
-      expect(adapter.calls, ['tooling.tokens.rotate']);
+      expect(slack.calls, ['tooling.tokens.rotate']);
     });
 
     test(
       'a missing token is an actionable refusal, not a Slack round trip',
       () async {
-        final adapter = _SlackStubAdapter();
-        final service = _service(adapter, _TokenStore(null));
+        final slack = _SlackStub();
+        final service = _service(slack, _TokenStore(null));
 
         await expectLater(
           service.profile('A1'),
@@ -314,12 +313,12 @@ void main() {
             ),
           ),
         );
-        expect(adapter.calls, isEmpty);
+        expect(slack.calls, isEmpty);
       },
     );
 
     test('Slack’s manifest complaints reach the caller', () async {
-      final adapter = _SlackStubAdapter()
+      final slack = _SlackStub()
         ..reply('tooling.tokens.rotate', {
           'token': 'xoxe.xoxp-access',
           'refresh_token': 'xoxe-2',
@@ -335,7 +334,7 @@ void main() {
             },
           ],
         });
-      final service = _service(adapter, _TokenStore('xoxe-1'));
+      final service = _service(slack, _TokenStore('xoxe-1'));
 
       await expectLater(
         service.updateProfile(appId: 'A1', profile: _profile),
@@ -352,7 +351,7 @@ void main() {
     test(
       'a rotation Slack refuses is not reported as a manifest problem',
       () async {
-        final adapter = _SlackStubAdapter()
+        final slack = _SlackStub()
           ..reply('tooling.tokens.rotate', {
             'ok': false,
             'error': 'invalid_arguments',
@@ -360,7 +359,7 @@ void main() {
               'messages': ['[ERROR] missing required field: refresh_token'],
             },
           });
-        final service = _service(adapter, _TokenStore('xoxe-1'));
+        final service = _service(slack, _TokenStore('xoxe-1'));
 
         // The dialog sends people to the screen the message names, so a token
         // call that failed must not be described as the manifest being wrong.
@@ -383,7 +382,7 @@ void main() {
 
     test('an argument refusal Slack explains only in response_metadata reaches '
         'the caller too', () async {
-      final adapter = _SlackStubAdapter()
+      final slack = _SlackStub()
         ..reply('tooling.tokens.rotate', {
           'token': 'xoxe.xoxp-access',
           'refresh_token': 'xoxe-2',
@@ -395,7 +394,7 @@ void main() {
             'messages': ['[ERROR] must be a string [json-pointer:/manifest]'],
           },
         });
-      final service = _service(adapter, _TokenStore('xoxe-1'));
+      final service = _service(slack, _TokenStore('xoxe-1'));
 
       // `invalid_arguments` on its own reads as "your manifest is wrong" and
       // is not: the actionable half is the one Slack buries.
@@ -441,12 +440,9 @@ const _profile = ChatBotProfile(
   command: 'cc',
 );
 
-SlackManifestService _service(_SlackStubAdapter adapter, _TokenStore store) =>
+SlackManifestService _service(_SlackStub slack, _TokenStore store) =>
     SlackManifestService(
-      api: SlackApiClient(
-        dio: Dio()..httpClientAdapter = adapter,
-        botToken: '',
-      ),
+      api: SlackApiClient(httpClient: slack.client, botToken: ''),
       readRefreshToken: store.read,
       writeRefreshToken: store.write,
     );
@@ -472,31 +468,23 @@ class _TokenStore {
 }
 
 /// Answers Slack Web API calls from a per-method script, recording the order.
-class _SlackStubAdapter implements HttpClientAdapter {
+class _SlackStub {
+  _SlackStub() {
+    client = TestHttpClient(
+      handler: (request) {
+        final method = httpRequestUri(request).path.split('/').last;
+        calls.add(method);
+        final scripted = _replies[method] ?? const <String, dynamic>{};
+        return httpTextResponse(request, {'ok': true, ...scripted});
+      },
+    );
+  }
+
+  late final TestHttpClient client;
+
   final List<String> calls = [];
   final Map<String, Map<String, dynamic>> _replies = {};
 
   void reply(String method, Map<String, dynamic> body) =>
       _replies[method] = body;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    final method = options.path.split('/').last;
-    calls.add(method);
-    final scripted = _replies[method] ?? const <String, dynamic>{};
-    return ResponseBody.fromString(
-      jsonEncode({'ok': true, ...scripted}),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

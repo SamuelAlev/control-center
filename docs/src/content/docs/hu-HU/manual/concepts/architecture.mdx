@@ -3,7 +3,7 @@ title: "Architektúra"
 description: "Hogyan épül fel a Control Center: vékonykliens-szervermodell, funkcióközpontú Clean Architecture, valamint portok és adapterek."
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/fogalmak/architektura
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Áttekintés
@@ -26,7 +26,7 @@ Ez egyetlen, feloldott lockfile-lal rendelkező **Dart-munkaterület** huszonegy
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domainréteg**: pure Dart entitások, értékobjektumok, tárolófelületek, portok és domain-szolgáltatások. Nulla infrastruktúra-import (nincs dio, drift vagy hálózati modell).
+- **Domainréteg**: pure Dart entitások, értékobjektumok, tárolófelületek, portok és domain-szolgáltatások. Nulla infrastruktúra-import (nincs rhttp, drift vagy hálózati modell).
 - **Megjelenítési réteg**: képernyők, widgetek, notifierek. Nincs közvetlen drift/DAO/adatréteg-hozzáférés; minden a Riverpod-szolgáltatókon → tárolókon keresztül megy.
 - **Infrastruktúraréteg**: a domainportok és tárolófelületek konkrét implementációi. A domaintől függ, sosem fordítva.
 
@@ -122,7 +122,7 @@ Mindkét adatbázis a `cc_persistence` tulajdona, és csak a `cc_server` nyitja 
 
 A teljes külső HTTP a szerverben él. A kliensek soha nem kapcsolódnak közvetlenül a GitHubhoz, a Linearhoz vagy a Google-hoz — szerveres RPC-műveleteket hívnak, és még a távoli média is a szerver `/proxy/media` végpontján keresztül érkezik, nem a felsőbb szintű eredet helyéről.
 
-- **dio** kliensek a `packages/cc_infra/lib/src/` alatt: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` és `GoogleCalendarApiClient`
+- **rhttp** kliensek a `packages/cc_infra/lib/src/` alatt: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` és `GoogleCalendarApiClient`
 - Hitelesítési token befecskendezése interceptorekon keresztül, beleértve egy fiókonkénti Google OAuth interceptort a `cc_server_core`-ban, amely 401 esetén megújítja a tokeneket
 - Minden hiba a `packages/cc_infra/lib/src/network/error_mapper.dart`-on keresztül képeződik le → a `cc_domain`-ben definiált típusos `AppException` leszármazottakra
 

@@ -173,9 +173,9 @@ class _ControllerCaptionActions implements WindowCaptionActions {
       _controller.removeListener(listener);
 }
 
-/// Renders [app] in a standalone native window for the pre-app server-setup
-/// screen, shown before the main [AppWindows] tree exists (the desktop has no
-/// server connection yet, so the full app cannot boot).
+/// Renders [app] in the native startup/setup window before [AppWindows].
+/// The first boot frame contains no session data; setup can replace its
+/// contents while the authenticated server connection is being established.
 ///
 /// Must go through a [Window], exactly like [PrimaryWindow]: the macOS
 /// runner is headless (no `MainFlutterWindow`), so a plain `runApp` into the
@@ -187,20 +187,10 @@ void runServerSetupWindow(Widget app) {
   runWidget(ViewCollection(views: [_ServerSetupWindow(app: app)]));
 }
 
-/// Shows [error] in a native window when the desktop bootstrap threw before it
-/// could put ANY window on screen.
+/// Shows [error] if bootstrap fails before or during the startup surface.
 ///
-/// Everything the desktop does before `runWidget` — preferences, the keychain,
-/// resolving/spawning `cc_server` — happens while the app owns no window. A
-/// throw there used to be completely silent: `PlatformDispatcher.onError`
-/// logged it to a terminal nobody is looking at, the engine kept its run loop
-/// alive, and the operator was left with a process that is "running" and a
-/// screen with nothing on it. `ErrorWidget.builder` cannot help — it only
-/// replaces a widget inside a tree that was already mounted.
-///
-/// So the bootstrap's last act on failure is to become a window that says what
-/// broke. Deliberately dependency-light (no Riverpod, no theme, no l10n, no
-/// server): whatever failed may be exactly the thing those would need.
+/// Deliberately dependency-light (no Riverpod, theme, l10n or server): the
+/// failed dependency may be exactly what a normal app error view would need.
 void runBootFailureWindow(Object error, StackTrace stack) {
   runWidget(
     ViewCollection(

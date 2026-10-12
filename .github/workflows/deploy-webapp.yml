@@ -12,6 +12,9 @@ on:
       - "pubspec.yaml"
       - "pubspec.lock"
       - "web/_headers"
+      - "web/cc_resource*"
+      - "web/index.html"
+      - "tool/stage_resource_assets.mjs"
       - "web/deploy.json"
       - "wrangler.jsonc"
       - "worker/**"
@@ -81,7 +84,10 @@ jobs:
         run: ./tool/gen_workers.sh
 
       - name: Build web (SkWasm with CanvasKit fallback)
-        run: flutter build web --release --wasm
+        run: flutter build web --release --wasm --enable-wasm-deferred-loading
+
+      - name: Stage encrypted resource assets
+        run: node tool/stage_resource_assets.mjs build/web
 
       # After the build. flutter build web writes version.json; the poll
       # manifest is deploy.json.

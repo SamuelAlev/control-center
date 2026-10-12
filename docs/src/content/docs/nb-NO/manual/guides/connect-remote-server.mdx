@@ -2,7 +2,7 @@
 title: Koble til en ekstern server
 description: Pek skrivebordsappen eller nettklienten mot en cc_server som kjører et annet sted, og bytt mellom servere uten å starte på nytt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Hver klient er en gjengiver over en `cc_server` som eier dataene. Skrivebordet
@@ -14,7 +14,7 @@ boks, en sky-VM, en byggeserver.
 ## Forutsetninger
 
 - En kjørende `cc_server`. Har du ingen, se [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/).
-- Enten de tre paringsverdiene serveren utstedte — **Server-URL**-en (`ws://…/rpc` eller `wss://…/rpc`), en **Enhets-id** og en **Paringsnøkkel** — **eller** en engangs **Invitasjonskode** fra en administrator for arbeidsområdet. Å løse inn en invitasjon oppretter brukeren din, registrerer medlemskapet ditt og utsteder legitimasjonen til denne klienten for deg, så du håndterer aldri en enhets-id eller nøkkel.
+- Enten de tre paringsverdiene serveren utstedte — **Server-URL**-en (`ws://…/rpc` eller `wss://…/rpc`), en **Enhets-id** og en **Paringsnøkkel** — **eller** en engangs **Invitasjonskode** fra en administrator for arbeidsområdet. Å løse inn en invitasjon oppretter brukeren din, registrerer medlemskapet ditt og utsteder legitimasjonen til denne klienten for deg, så du håndterer aldri en enhets-id eller nøkkel. Skaff disse gjennom en klarert kanal, og kontroller serverens fingeravtrykk mot en klarert QR-kode eller en kjent pin ved første tilkobling.
 
 ### Sørg for at serveren er tilgjengelig
 
@@ -28,7 +28,7 @@ allerede stoler på — og `cc_server` nekter å binde en adresse utenfor loopba
 uten TLS i utgangspunktet. Gi den ett av:
 
 - et sertifikat direkte, med `--tls-cert` og `--tls-key`
-- en TLS-avsluttende omvendt proxy foran, med serveren startet med `--insecure` (klartekst bak proxyen, kun på et klarert nettverk)
+- en TLS-avsluttende omvendt proxy foran, med serveren startet med `--insecure` (klartekst mellom proxyen og serveren på den ytre lytteren, kun på et klarert nettverk; dette deaktiverer ikke den obligatoriske krypterte klientøkten)
 - en tunnel eller VPN som skaffer sertifikatet — Tailscale, cloudflared eller lignende. **Innstillinger → Server → Tilkobling og status** har den innebygde, valgfrie tunnelen under **Del denne serveren**.
 
 To innstillinger på serversiden er lette å overse. Bak en proxy, NAT eller
@@ -58,7 +58,8 @@ feilen. Raden for serveren du er på, har ingen **Bytt**-handling; den lokale
 serveren er den første raden, merket **Kjør i denne appen**.
 
 Når du har byttet, eier skrivebordet ingen database. Hver skjerm leser og skriver
-gjennom den eksterne serveren over en WebSocket.
+gjennom den eksterne serveren over en signert, ende-til-ende-kryptert
+WebSocket-økt; den samme beskyttelsen gjelder på loopback og gjennom reléet.
 
 ## Koble til nettklienten
 
@@ -70,13 +71,18 @@ Nettbygget er alltid eksternt.
 
 Hvis en paringsdyplenke ligger i URL-en, er feltene forhåndsutfylt.
 Paringsnøkkelen ligger i URL-**fragmentet**, som nettlesere aldri sender til
-serveren som hoster siden, så den statiske verten ser den aldri.
+serveren som hoster siden. Behandle lenken som en hemmelighet og stol på siden
+som betjener nettklienten: fragmentet beskytter ikke mot ondsinnet sidekode.
 
-:::note[Medier og sikkerhet]
-Medier (avatarer, bilder i strømmen, PR-skjermbilder) går gjennom proxyen til den
-tilkoblede serveren, så nettleseren henter aldri en oppstrømsvert direkte. En
-Content-Security Policy per forespørsel, stemplet fra en ikke-sensitiv
-informasjonskapsel, tillater bare origin til den tilkoblede serveren.
+:::note[Medier, editorer og sikkerhet]
+Medier (avatarer, bilder i strømmen, PR-skjermbilder),
+sikkerhetskopioverføringer og trafikk fra den innebygde editoren bruker den
+krypterte ressurskanalen, ikke lesbare offentlige HTTP-ruter. Den klarerte
+nettlesereditoren kjører på nettappens egen origin; Service Workeren dens fører
+forespørsler gjennom den autentiserte krypterte økten til
+code-server-backenden på `cc_server`. Vert nettklienten over HTTPS eller sikker
+loopback, slik at Service Workere er tilgjengelige. Native klienter bruker en
+kapabilitetsavgrenset loopback-fasade.
 :::
 
 ### Det nettleseren ikke gjør
@@ -99,6 +105,7 @@ installerte editorer.
 
 - **Tilkoblingen får tidsavbrudd**: serveren må være tilgjengelig fra klienten. Sjekk bindingen (`--bind any`), at porten er åpen og at `--public-url` angir adressen klienten faktisk kan ringe opp. Over det åpne internettet er TLS obligatorisk — en klartekstbinding utenfor loopback avvises ved oppstart med mindre serveren ble startet med `--insecure` bak en proxy.
 - **Nettleseren nekter å koble til, men en native klient fungerer**: nettleserens origin står ikke på serverens `--allowed-origins`-liste. Standarden tillater bare `https://app.usectrl.dev` (pluss loopback).
+- **Serveridentiteten er endret**: klienten avviser et fingeravtrykk som avviker fra den lagrede pinen. Verifiser serverens identitet utenfor båndet og par på nytt gjennom en klarert kanal; ikke ignorer advarselen eller bytt til en eldre eller klartekst-klient.
 - **Paringsnøkkelen avvises**: kjør `cc_server pair` på nytt på serveren for å rotere nøkkelen til den enheten, og skriv deretter inn den nye. En tilbakekalt enhet oppdager at legitimasjonen er borte og svikter lukket; tilbakekalling avslutter en åpen økt innen sekunder.
 - **Feil arbeidsområde**: arbeidsområdet er en del av URL-en (`/workspaces/:workspaceId/…`) og følger med hvert kall, så å bytte arbeidsområde i én klient endrer bare din egen visning. Du kan bare nå arbeidsområder du er medlem av — alt annet avvises med «Du er ikke medlem av dette arbeidsområdet». Se [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/).
 

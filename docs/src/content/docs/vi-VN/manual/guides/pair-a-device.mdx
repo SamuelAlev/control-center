@@ -2,7 +2,7 @@
 title: Ghép nối thiết bị
 description: Ghép nối điện thoại (hoặc trình duyệt hay máy tính thứ hai) với máy chủ Control Center của bạn để theo dõi đội máy từ xa.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Hướng dẫn này chỉ cho bạn cách ghép nối một chiếc điện thoại với Control Center,
@@ -23,8 +23,9 @@ khai lên Cloudflare Pages qua `wrangler.jsonc` của nó, lên image nginx
 `docker/cc_remote`, hoặc lên bất kỳ host tĩnh nào có HTTPS — service worker và
 IndexedDB bị ràng buộc bởi ngữ cảnh bảo mật) và relay
 (`apps/cc_signaling_server`, một binary Dart phi trạng thái duy nhất, không giữ
-dữ liệu ứng dụng nào và không bao giờ thấy bí mật ghép nối — nó chỉ chuyển tiếp
-các khung niêm phong đầu-cuối). Xem README của chúng để biết các bước build và
+dữ liệu ứng dụng nào và không thể giải mã các bản ghi đã mã hóa hay thấy bí mật
+ghép nối). Tuy vậy nó vẫn thấy IP, định danh định tuyến, kích thước và thời điểm
+và có thể bỏ lưu lượng. Xem README của chúng để biết các bước build và
 chạy.
 
 ## Bước 1: Mở bảng ghép nối
@@ -49,14 +50,17 @@ vào biểu mẫu kết nối của máy khách web, còn mã QR này mang bản
 
 Về phía điện thoại, việc mở một liên kết ghép nối không ghép nối một cách âm
 thầm. Remote hiển thị tên quảng bá của máy chủ và yêu cầu bạn xác nhận trước khi
-lưu bất cứ thứ gì, nên một liên kết giả mạo không thể chiếm quyền ứng dụng để trỏ
-sang máy chủ của người khác.
+lưu bất cứ thứ gì. Hãy đối chiếu dấu vân tay trong mã QR với một nguồn tin cậy:
+việc xác nhận một tên chưa được xác minh hay một mã QR giả mạo không chứng minh
+rằng máy chủ là của bạn. Máy khách ghim danh tính đã ký và từ chối một dấu vân tay
+đã thay đổi ở các lần kết nối tiếp theo.
 
 :::caution[Mã QR được quét là cấp quyền truy cập ngay lập tức]
 Không có bước chờ rồi phê duyệt: một thiết bị đã được cấp thì hoạt động ngay từ
 lúc nó được tạo và cổng kết nối chỉ kiểm tra rằng thông tin xác thực còn hoạt
 động và chưa hết hạn. Hãy đối xử với mã QR và khóa ghép nối như mật khẩu và thu
-hồi bất cứ thứ gì bạn không có ý định trao ra.
+hồi bất cứ thứ gì bạn không có ý định trao ra. Cả phiên máy khách trực tiếp lẫn
+qua relay đều cần mã hóa đầu-cuối; máy khách cũ hơn không thể lùi về RPC bản rõ.
 :::
 
 ## Quản lý thiết bị đã ghép nối

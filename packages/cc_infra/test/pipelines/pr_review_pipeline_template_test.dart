@@ -6,7 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.d
 import 'package:cc_infra/src/network/github_pr_client.dart';
 import 'package:cc_infra/src/network/models/github_review.dart';
 import 'package:cc_infra/src/pipelines/pr_review_pipeline_template.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises [registerPrReviewBodies] — the single step body that posts a
@@ -263,10 +263,10 @@ class _RecordingFinalize {
   }
 }
 
-/// Subclasses [GitHubPrClient] so the body calls the real type. We never touch
-/// the [Dio] — only [submitReview] is exercised and it's overridden.
+/// Subclasses [GitHubPrClient] so the body calls the real type. The client is
+/// never reached — only [submitReview] is exercised and it's overridden.
 class _FakeGitHubPrClient extends GitHubPrClient {
-  _FakeGitHubPrClient() : super(Dio());
+  _FakeGitHubPrClient() : super(_NullHttpClient());
 
   GitHubReview? reviewToReturn;
 
@@ -294,4 +294,12 @@ class _FakeGitHubPrClient extends GitHubPrClient {
     lastBody = body;
     return reviewToReturn!;
   }
+}
+
+/// An rhttp client that is never reached — [_FakeGitHubPrClient] overrides
+/// every method the pipeline body calls.
+class _NullHttpClient implements RhttpClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('_FakeGitHubPrClient should not reach the network');
 }

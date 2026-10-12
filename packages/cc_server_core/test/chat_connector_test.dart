@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/entities/agent.dart';
@@ -19,11 +17,12 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_provider_plugin.dart';
 import 'package:cc_server_core/src/chat/file_chat_connection_store.dart';
 import 'package:cc_server_core/src/chat/slack_chat_provider_plugin.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// [ChatConnector]: the lifecycle seam the RPC ops and the boot reconciler use.
@@ -52,7 +51,7 @@ void main() {
     userLinks = _FakeUserLinks();
     connector = ChatConnector(
       registry: ChatProviderRegistry([
-        SlackChatProviderPlugin(dioFactory: api.dio),
+        SlackChatProviderPlugin(httpClientFactory: api.client),
       ]),
       store: store,
       streamRegistry: ActiveStreamRegistry(),
@@ -90,7 +89,10 @@ void main() {
   );
 
   test('a workspace with no chat app reports disconnected', () async {
-    expect(await connector.status('w-1', slack), ChatConnectionStatus.none(slack));
+    expect(
+      await connector.status('w-1', slack),
+      ChatConnectionStatus.none(slack),
+    );
   });
 
   test('every offered provider gets a status, connected or not', () async {
@@ -105,7 +107,10 @@ void main() {
   test('connect verifies the credentials before storing anything', () async {
     api.fail('auth.test', 'invalid_auth');
 
-    await expectLater(connect(botToken: 'xoxb-typo'), throwsA(isA<Exception>()));
+    await expectLater(
+      connect(botToken: 'xoxb-typo'),
+      throwsA(isA<Exception>()),
+    );
     // A typo must not become a socket that quietly never works.
     expect(store.has('w-1', slack), isFalse);
   });
@@ -179,7 +184,10 @@ void main() {
 
     expect(store.has('w-1', slack), isFalse);
     expect(await store.loadSetup('w-1', slack), isNull);
-    expect(await connector.status('w-1', slack), ChatConnectionStatus.none(slack));
+    expect(
+      await connector.status('w-1', slack),
+      ChatConnectionStatus.none(slack),
+    );
   });
 
   test('a connected workspace is isolated from its neighbour', () async {
@@ -215,8 +223,7 @@ void main() {
   });
 
   group('app management', () {
-    test('guided create persists the rotated credential across the gap',
-        () async {
+    test('guided create persists the rotated credential across the gap', () async {
       final creation = await connector.createApp(
         workspaceId: 'w-1',
         provider: slack,
@@ -237,19 +244,22 @@ void main() {
       expect(store.has('w-1', slack), isFalse);
     });
 
-    test('a rotation on a connected workspace updates the connection', () async {
-      await connect(configRefreshToken: 'xoxe-1');
+    test(
+      'a rotation on a connected workspace updates the connection',
+      () async {
+        await connect(configRefreshToken: 'xoxe-1');
 
-      await connector.botProfile('w-1', slack);
+        await connector.botProfile('w-1', slack);
 
-      // The live credential is on the connection, so the next call reads the
-      // rotated one rather than replaying a dead one from a stale setup file.
-      expect(
-        (await store.load('w-1', slack))?.credential('configRefreshToken'),
-        'xoxe-2',
-      );
-      expect(await store.loadSetup('w-1', slack), isNull);
-    });
+        // The live credential is on the connection, so the next call reads the
+        // rotated one rather than replaying a dead one from a stale setup file.
+        expect(
+          (await store.load('w-1', slack))?.credential('configRefreshToken'),
+          'xoxe-2',
+        );
+        expect(await store.loadSetup('w-1', slack), isNull);
+      },
+    );
 
     test('an app id nobody recorded is refused with an explanation', () async {
       await store.saveSetup(
@@ -309,8 +319,14 @@ void main() {
       );
 
       expect(code.code, hasLength(6));
-      expect(connector.linkCodes.consume('w-2', code.code, provider: slack), isNull);
-      expect(connector.linkCodes.consume('w-1', code.code, provider: slack), isNotNull);
+      expect(
+        connector.linkCodes.consume('w-2', code.code, provider: slack),
+        isNull,
+      );
+      expect(
+        connector.linkCodes.consume('w-1', code.code, provider: slack),
+        isNotNull,
+      );
     });
 
     test('unlinking also revokes an outstanding code', () async {
@@ -324,7 +340,10 @@ void main() {
       expect(await connector.unlinkUser('w-1', 'u-1', provider: slack), 1);
       expect(userLinks.rows, isEmpty);
       // Otherwise the code a removed member still holds would re-link them.
-      expect(connector.linkCodes.consume('w-1', code.code, provider: slack), isNull);
+      expect(
+        connector.linkCodes.consume('w-1', code.code, provider: slack),
+        isNull,
+      );
     });
 
     test('the roster can be read for one provider or all of them', () async {
@@ -390,7 +409,8 @@ const _profile = ChatBotProfile(
 );
 
 /// The provider's HTTP API, scripted. Every connector path that talks to Slack
-/// goes through a `Dio` from [dio], so the whole HTTP surface is observable here.
+/// goes through a client from [client], so the whole HTTP surface is observable
+/// here.
 class _SlackStub {
   final List<String> calls = [];
   final Map<String, String> _failures = {};
@@ -398,7 +418,13 @@ class _SlackStub {
 
   void fail(String method, String error) => _failures[method] = error;
 
-  Dio dio() => Dio()..httpClientAdapter = _Adapter(this);
+  /// A fresh transport, as the plugin hands one to each call site.
+  RhttpClient client() => TestHttpClient(
+    handler: (request) => httpTextResponse(
+      request,
+      handle(httpRequestUri(request).pathSegments.last),
+    ),
+  );
 
   Map<String, dynamic> handle(String method) {
     calls.add(method);
@@ -440,28 +466,6 @@ class _SlackStub {
       _ => {'ok': true},
     };
   }
-}
-
-class _Adapter implements HttpClientAdapter {
-  _Adapter(this.stub);
-
-  final _SlackStub stub;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => ResponseBody.fromString(
-    jsonEncode(stub.handle(options.path.split('/').last)),
-    200,
-    headers: const {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    },
-  );
-
-  @override
-  void close({bool force = false}) {}
 }
 
 class _FakeMessaging implements MessagingService {

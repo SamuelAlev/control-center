@@ -28,7 +28,7 @@ import 'package:cc_infra/src/network/models/github_reaction.dart';
 import 'package:cc_infra/src/network/models/github_workflow_run.dart';
 import 'package:cc_infra/src/network/pr_review_mapper.dart';
 import 'package:cc_infra/src/network/workflow_graph_parser.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// GitHub's implementation of [ForgePrClient].
 ///
@@ -71,15 +71,14 @@ class GitHubForgePrClient implements ForgePrClient {
   /// `owner/repo`, the form [PullRequest.repoFullName] carries.
   String get _repoFullName => '$owner/$repo';
 
-  /// Narrows the port's dio-free [Object] token back to a dio [CancelToken].
-  /// Anything else (including null) means "no cancellation".
+  /// Narrows the port's transport-free [Object] token back to a rhttp
+  /// [CancelToken]. Anything else (including null) means "no cancellation".
   static CancelToken? _token(Object? cancelToken) =>
       cancelToken is CancelToken ? cancelToken : null;
 
-  /// Whether [error] is a dio request cancellation, which callers treat as a
+  /// Whether [error] is a rhttp request cancellation, which callers treat as a
   /// benign teardown signal rather than a failure.
-  static bool _isCancellation(Object error) =>
-      error is DioException && error.type == DioExceptionType.cancel;
+  static bool _isCancellation(Object error) => error is RhttpCancelException;
 
   // ── Reads ──────────────────────────────────────────────────────────────
 

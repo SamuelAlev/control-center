@@ -1,9 +1,16 @@
 ---
 title: Eval e qualità
-description: Le eval suite, il set di partenza inizializzato in ogni spazio di lavoro e dove compaiono in Osservabilità.
+description: Le eval suite e le campagne delle skill ancorate a una revisione, e come interpretarne le evidenze.
 slug: it-IT/manuale/concetti/eval-e-qualita
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Osservabilità → Qualità** contiene sia le eval suite a singola attività sia le
+campagne delle skill appaiate. Una campagna delle skill misura un pacchetto
+così come lo usa un determinato modello con un determinato harness, non la
+qualità del suo Markdown in isolamento.
+
+## Eval suite
 
 Una **eval suite** è la definizione, con ambito ristretto allo spazio di lavoro,
 di un'attività da eseguire su un agente: un prompt, un agente di destinazione e
@@ -19,7 +26,7 @@ L'inizializzazione ascolta `WorkspaceCreated` (`workspace.upsert` o
 `workspace.create`), salta un nome già esistente e non popola retroattivamente
 gli spazi di lavoro più vecchi.
 
-## Dove compaiono
+### Dove compaiono
 
 **Osservabilità → Qualità** (`/workspaces/<id>/observability`) elenca ogni suite
 dello spazio di lavoro.
@@ -28,10 +35,129 @@ Puoi creare, elencare, modificare ed eliminare le suite tramite
 `evals.upsertSuite`, `evals.deleteSuite` e `evals.watchSuites`. La scheda
 Qualità è l'elenco; quelle operazioni sono l'editor.
 
+## Campagne delle skill
+
+Una campagna confronta due bracci con la stessa attività e la stessa
+configurazione di esecuzione. Il candidato è assente, normalmente disponibile,
+caricato esplicitamente, oppure confrontato con una revisione precedente o con
+un inventario fisso di skill d'ambiente. Questi casi rispondono a domande
+diverse; il caricamento forzato è una diagnostica, non un punteggio per la
+scoperta normale. La [guida alle
+skill](/it-IT/manuale/guide/gestisci-skill/#valuta-una-skill) spiega come
+scegliere un confronto e autorizzare un'esecuzione a budget.
+
+Le evidenze appartengono a un esatto **hash dell'intero pacchetto**: `SKILL.md`,
+metadati, script, riferimenti e risorse. Il server acquisisce pacchetti immutabili
+già scansionati e fissa la raccolta di attività, l'adattatore,
+l'identificatore del provider/modello nativo, il protocollo, gli schemi degli
+strumenti e l'inventario d'ambiente. Le campagne Claude native fissano anche
+l'account gestito e la versione osservata della CLI. Modificare un riferimento
+invalida le evidenze attuali anche se `SKILL.md` non è cambiato. Un alias di modello registra ciò che è stato
+richiesto, non pesi immutabili del provider.
+
+Ogni tentativo riceve contesto, home e stato della fixture nuovi. I bracci
+appaiati usano la stessa politica e le stesse condizioni dell'attività, tranne
+per l'intervento sulla skill dichiarato. Assenza del target significa che i
+metadati e i file del candidato non sono disponibili, non che tutte le
+istruzioni o le skill di sfondo siano state rimosse. I prompt delle attività non
+devono nominare il candidato in un confronto di scoperta normale.
+
+Il server detiene autorizzazione, esecuzione, budget e persistenza dello spazio
+di lavoro. I client scelgono le impostazioni e mostrano le evidenze. I progressi
+sopravvivono alle riconnessioni; l'annullamento conserva i risultati parziali e
+un riavvio contrassegna il lavoro incompiuto come interrotto invece di ripetere
+in silenzio chiamate a pagamento. Queste campagne non forniscono il contratto
+separato dell'esecutore per eval suite arbitrarie.
+
+## Leggere le evidenze con prudenza
+
+- **Gli esiti decidono la correttezza.** Verificatori tipizzati indipendenti
+  controllano artefatti e comportamento risultante, non l'affermazione
+  dell'agente di aver avuto successo. Le risposte attese restano fuori dal
+  recinto del candidato; il codice generato viene valutato in una copia
+  contenuta separatamente.
+- **Caricamento e utilità sono cose diverse.** Disponibilità, caricamenti di
+  corpo e riferimenti e uso osservato degli script spiegano l'esecuzione. La
+  lettura di un file non prova che il modello ne abbia seguito le istruzioni;
+  un accesso non osservabile resta sconosciuto.
+- **Mantieni la baseline appaiata.** Una singola esecuzione riuscita del
+  candidato non dimostra un beneficio. Includi i tentativi in cui una skill
+  disponibile è stata ignorata, i tentativi falliti e i loro costi; non
+  conservare solo il ritentativo migliore.
+- **Le ripetizioni non sono attività nuove.** I report raggruppano
+  l'incertezza per attività. Campioni piccoli, copertura mancante, deriva
+  dell'identità e spesa sconosciuta non possono giustificare una raccomandazione
+  di adozione. Una campagna conclusa può comunque essere non conclusiva; non
+  riuscire a mostrare un miglioramento non è prova di equivalenza o di
+  regressione.
+- **Ispeziona le singole regressioni.** I guadagni aggregati non devono
+  nascondere un'attività danneggiata o un effetto collaterale non autorizzato.
+  Le scansioni di sicurezza, le osservazioni di sicurezza a runtime e l'utilità
+  restano separate; un'esecuzione più economica non compensa la mancanza di
+  evidenze sulla qualità o sulla sicurezza.
+- **Non aggregare risultati incompatibili.** Un altro modello, harness, criteri,
+  fixture o combinazione di skill è un'altra configurazione. Tieni separate le
+  evidenze di trasferimento e composizione tenute da parte dai casi di
+  sviluppo.
+
+I nove corpus pilota redatti localmente contengono 108 voci di attività tra
+utilità, instradamento/sicurezza specifici della famiglia e
+trasferimento/composizione tenuti da parte. Scegli una famiglia che corrisponda
+allo scopo della skill. Le soluzioni di riferimento e gli output noti come
+difettosi mettono alla prova i verificatori; queste fixture non sono una
+riproduzione di un benchmark pubblico, né la prova che una skill installata sia
+utile. Le esecuzioni di smoke dell'implementazione con risposte del provider
+scriptate non sono misurazioni della qualità delle skill su modelli reali.
+
+## Limiti di esecuzione e delle evidenze
+
+Sono supportati il **harness integrato** controllato e l'adattatore **Claude
+Code**. Isolamento e credenziali attive devono passare prima dell'esecuzione. I
+provider integrati richiedono supporto degli strumenti, limiti di token e prezzi
+documentati; **Codex OAuth** autentica il proprio account invece di richiedere
+una chiave API OpenAI separata. **Claude Code** usa l'account gestito
+predefinito, un ID di modello concreto e il suo report nativo dei costi
+equivalenti in API.
+
+**Claude Code** e **Codex OAuth** usano una **soglia di arresto per l'uso**: una
+chiamata in corso può superare il budget, poi le chiamate successive si
+arrestano. Non è spesa da abbonamento fatturata né un tetto di fattura rigido. I
+provider con chiave API mantengono prenotazioni conservative prima della
+chiamata. Una spesa osservata sconosciuta arresta le chiamate successive per
+ogni adattatore; una copertura incompleta resta parziale o non conclusiva.
+
+**Claude** esegue il suo ciclo nativo del modello in una directory di controllo
+privata, con strumenti integrati e skill d'ambiente disattivati. I suoi unici
+strumenti sono il bridge MCP autenticato e di proprietà del server verso lo
+stesso ospite confinato usato dal harness integrato. Le credenziali restano
+fuori da quell'ospite. Un'identità CLI o una superficie di strumenti modificata
+invalida il tentativo invece di cambiare silenziosamente esecutore. La
+valutazione della flotta e Windows non sono supportati; una sonda Git riuscita
+del worker o un'eco del prompt non contano come valutazione.
+
+L'isolamento su macOS nega la rete dell'ospite e l'accesso al filesystem
+esterno, blocca il distacco dei processi, limita CPU/file/output e ripulisce i
+discendenti di proprietà, ma **non applica una quota di memoria rigida**. Linux
+richiede bubblewrap e applica un limite allo spazio degli indirizzi. La
+validazione iniziale dell'isolamento ha esercitato macOS, non Linux. Un
+isolamento mancante non ripiega mai su una shell dell'host. Le credenziali del
+provider restano sul server, fuori dagli strumenti dell'ospite.
+
+Le evidenze dei tentativi sono oscurate e limitate a 256 KiB; un'esportazione è
+limitata a 16 MiB. Le esportazioni di grandi dimensioni conservano riepiloghi
+compatti di esito e costo per tutti i tentativi ammessi e segnalano
+esplicitamente i contenuti di traccia omessi o riepilogati. Né un'esportazione
+né un report contengono un bundle di replay completo del codice sorgente
+privato. I controlli di sicurezza sintetici non stabiliscono una reale
+resistenza all'esfiltrazione, non prevalgono sulla quarantena e non certificano
+una skill come sicura.
+
 ## Concetti correlati
 
 - [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/): la
   configurazione che una suite fissa
+- [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/):
+  isolamento e confini dell'autorità
 - [Guardrail](/it-IT/manuale/concetti/guardrail/): il selettore dell'autonomia
 - [Gestisci i costi e i budget](/it-IT/manuale/guide/gestisci-costi/): la spesa
   registrata insieme a un'esecuzione

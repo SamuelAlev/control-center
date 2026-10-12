@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/tools/subagent_profile.dart';
 import 'package:cc_harness/src/tools/subagent_spawner.dart';
 import 'package:cc_harness/src/tools/tool.dart';
@@ -78,6 +79,11 @@ class VibeWorker {
   /// Completes when the current turn settles.
   Completer<void> settled = Completer<void>();
 
+  final CancellationTokenSource _cancellation = CancellationTokenSource();
+
+  /// Stops the worker's current operation, not merely its roster status.
+  CancellationToken get cancel => _cancellation.token;
+
   /// Whether it is still working.
   bool get isRunning => status == VibeWorkerStatus.running;
 }
@@ -144,9 +150,10 @@ class VibeRoster {
     if (worker == null) {
       return;
     }
-    worker
-      ..result = result
-      ..status = isError ? VibeWorkerStatus.failed : VibeWorkerStatus.done;
+    worker.result = result;
+    if (worker.status != VibeWorkerStatus.killed) {
+      worker.status = isError ? VibeWorkerStatus.failed : VibeWorkerStatus.done;
+    }
     if (!worker.settled.isCompleted) {
       worker.settled.complete();
     }
@@ -159,6 +166,7 @@ class VibeRoster {
       return false;
     }
     worker.status = VibeWorkerStatus.killed;
+    worker._cancellation.cancel('Worker killed');
     if (!worker.settled.isCompleted) {
       worker.settled.complete();
     }
@@ -169,11 +177,7 @@ class VibeRoster {
   int killAll() {
     var killed = 0;
     for (final worker in _workers.values) {
-      if (worker.isRunning) {
-        worker.status = VibeWorkerStatus.killed;
-        if (!worker.settled.isCompleted) {
-          worker.settled.complete();
-        }
+      if (kill(worker.id)) {
         killed++;
       }
     }
@@ -191,7 +195,11 @@ class VibeRoster {
       buffer.writeln(
         '${worker.id} [${worker.tier.name}] ${worker.label} — '
         '${worker.status.name} (${elapsed}s)'
-        '${worker.status == VibeWorkerStatus.running ? '' : worker.result == null ? '' : ': ${_oneLine(worker.result!)}'}',
+        '${worker.status == VibeWorkerStatus.running
+            ? ''
+            : worker.result == null
+            ? ''
+            : ': ${_oneLine(worker.result!)}'}',
       );
     }
     return buffer.toString().trimRight();

@@ -12,6 +12,28 @@ import 'package:cc_server_core/cc_server_core.dart';
 /// standalone release; never silent); default runs until SIGINT/SIGTERM.
 /// Config: `--data-dir`, `--port`, `--bind` (see [CcServerConfig]).
 Future<void> main(List<String> args) async {
+  if (args.isNotEmpty && (args.first == '--help' || args.first == '-h')) {
+    stdout.writeln('''
+Usage: cc_server [--data-dir PATH] [--port PORT] [--bind loopback|any]
+
+Run the headless server until SIGINT or SIGTERM. Port 0 selects an ephemeral
+port. Non-loopback binding requires TLS configuration.
+
+Commands:
+  pair               Provision a paired device; stop the server first.
+  calendar connect   Connect Google Calendar; requires --workspace ID.
+  update             Stage or apply a standalone server release.
+
+Information (does not open databases or start services):
+  --help, -h         Show this help.
+  --version, -v      Print the build version.
+
+Configuration and pairing:
+https://github.com/SamuelAlev/control-center/tree/main/apps/cc_server
+''');
+    return;
+  }
+
   // `--version` / `-v` / `version`: print the CI-stamped build identity and
   // exit. Same values /healthz and the RPC handshake advertise.
   if (args.isNotEmpty && (args.first == '--version' || args.first == '-v')) {

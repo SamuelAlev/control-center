@@ -1,5 +1,9 @@
 part of 'dispatch_session.dart';
 
+/// Transcript-metadata key under which the built-in harness persists the
+/// delivered-context cursor (a host concern the loop never interprets).
+const _promptCursorMetadataKey = 'cc.promptCursor';
+
 ReasoningEffort? _raiseEffort(
   ReasoningEffort? configured,
   ReasoningEffort? requested,
@@ -93,7 +97,27 @@ extension _DispatchSessionHarness on DispatchSession {
         return;
       }
     }
-    final provider = built;
+    var compactions = 0;
+    late final int window;
+    late final HarnessRunAccounting accounting;
+    accounting = HarnessRunAccounting(
+      runId: runLogId ?? const Uuid().v4(),
+      workspaceId: wsId,
+      conversationId: conversationId,
+      runStartedAt: runStartedAt,
+      repository: runLogId == null ? null : deps.llmCallRecordRepo,
+      runLogRepository: runLogId == null ? null : deps.runLogRepo,
+      priceLookup: (pid, model) =>
+          deps.modelResolver?.call('$pid/$model')?.cost,
+      onCall: (record) => _emitHarnessProviderCall(
+        record,
+        accounting: accounting,
+        emit: addEvent,
+        contextWindow: window,
+        compactions: compactions,
+      ),
+    );
+    final provider = accounting.observe(built, providerId: providerId);
 
     // 1b. Slash commands: /plan, /goal, /loop change how the run behaves;
     //     /skill:<name> (or /skill:<repo>:<name>) injects that skill's
@@ -293,6 +317,18 @@ extension _DispatchSessionHarness on DispatchSession {
       harnessToolEnv.addAll(lease.environment(harnessToolEnv));
     }
 
+    final runConfig = await HarnessRunConfig.load(
+      [agentDirHostPath, agentConfigDir],
+      hookTrustedBases: [agentConfigDir],
+    );
+    final sessionCostCapMicros =
+        (costCapCents ?? defaultRunCostCapCents) * 10000;
+    final bool Function()? budgetExceeded = switch (parsedCommand.command) {
+      'goal' ||
+      'loop' => () => accounting.subtreeCostMicros >= sessionCostCapMicros,
+      _ => null,
+    };
+
     // 2. Assemble tools.
     final registry = _buildHarnessRegistry(
       mode: effectiveMode,
@@ -312,6 +348,9 @@ extension _DispatchSessionHarness on DispatchSession {
             env: harnessToolEnv,
             parentProvider: provider,
             parentProviderId: providerId,
+            parentAccounting: accounting,
+            runConfig: runConfig,
+            budgetExceeded: budgetExceeded,
             baseSystemPrompt: baseSystem,
             approval: approval,
           ),
@@ -328,17 +367,21 @@ extension _DispatchSessionHarness on DispatchSession {
     var deferredTools = partition.deferred;
 
     final vibeRoster = _vibeRoster;
+    final workerRuns = <Future<SubagentResult>>{};
     if (vibeRoster != null) {
       final vibeTools = buildVibeTools(
         roster: vibeRoster,
         runner: _ClosureVibeRunner((worker, brief, ctx, type, model) async {
-          return _spawnSubagent(
+          final run = _spawnSubagent(
             SubagentSpawnRequest(
               description: brief,
               label: 'vibe:${worker.label}',
               type: type,
-              context: ctx,
+              context: ctx.withCancel(
+                CancellationToken.any([_cancelSource.token, worker.cancel]),
+              ),
               modelOverride: model,
+              spawnToolCallId: ctx.toolCallId,
             ),
             depth: 1,
             parentType: null,
@@ -346,9 +389,18 @@ extension _DispatchSessionHarness on DispatchSession {
             env: harnessToolEnv,
             parentProvider: provider,
             parentProviderId: providerId,
+            parentAccounting: accounting,
+            runConfig: runConfig,
+            budgetExceeded: budgetExceeded,
             baseSystemPrompt: baseSystem,
             approval: approval,
           );
+          workerRuns.add(run);
+          try {
+            return await run;
+          } finally {
+            workerRuns.remove(run);
+          }
         }),
       );
       tools = [
@@ -364,8 +416,9 @@ extension _DispatchSessionHarness on DispatchSession {
     final qualifiedModel =
         '$providerId/${parsed.model ?? provider.defaultModel}';
     final modelInfo = deps.modelResolver?.call(qualifiedModel);
-    final costCalc = HarnessCostCalculator(
-      (pid, m) => deps.modelResolver?.call('$pid/$m')?.cost,
+    final effectiveEffort = _raiseEffort(
+      _resolveHarnessEffort(modelInfo),
+      magicKeywordEffort(magic),
     );
     final capabilityBlock = buildCapabilityPreamble(
       profile,
@@ -385,12 +438,9 @@ extension _DispatchSessionHarness on DispatchSession {
       adapter: 'cc-harness',
       systemPrompt: systemPrompt,
       toolSchemaTokens: estimateToolSchemaTokens(tools),
+      effort: effectiveEffort?.name,
     );
 
-    final runConfig = await HarnessRunConfig.load(
-      [agentDirHostPath, agentConfigDir],
-      hookTrustedBases: [agentConfigDir],
-    );
     if (runConfig.droppedHookBase != null) {
       addEvent(
         DebugEvent(
@@ -421,10 +471,32 @@ extension _DispatchSessionHarness on DispatchSession {
         return parts.join('\n\n');
       }
 
+      final advisorProviders = <String, LlmProviderPort>{};
+      Future<LlmProviderPort> providerForAdvisor(String? model) async {
+        if (model == null || model.isEmpty) return provider;
+        final cached = advisorProviders[model];
+        if (cached != null) return cached;
+        final factory = deps.harnessProviderFactory;
+        final target = factory.parseModel(model, defaultProvider: providerId);
+        final targetCredential = await _resolveHarnessCredential(
+          target.providerId,
+        );
+        final targetProvider = await _buildHarnessProvider(
+          factory: factory,
+          primaryProviderId: target.providerId,
+          primaryModel: target.model,
+          primaryCredential: targetCredential,
+          extraSpecs: const [],
+        );
+        return advisorProviders[model] = accounting.observe(
+          targetProvider,
+          providerId: target.providerId,
+        );
+      }
+
       if (roster.advisors.isEmpty) {
         advisor = WatchdogAdvisor(
-          provider,
-          model: runConfig.advisorModel,
+          await providerForAdvisor(runConfig.advisorModel),
           attention: attentionFor(''),
           projectContext: watchdogContext.projectContext,
           extraInstructions: runConfig.advisorInstructions,
@@ -433,8 +505,7 @@ extension _DispatchSessionHarness on DispatchSession {
         advisor = AdvisorPanel([
           for (final entry in roster.advisors)
             WatchdogAdvisor(
-              provider,
-              model: entry.model ?? runConfig.advisorModel,
+              await providerForAdvisor(entry.model ?? runConfig.advisorModel),
               attention: attentionFor(entry.instructions),
               projectContext: watchdogContext.projectContext,
               extraInstructions: runConfig.advisorInstructions,
@@ -460,17 +531,19 @@ extension _DispatchSessionHarness on DispatchSession {
 
     final generation =
         credential?.generation ?? const ProviderGenerationDefaults();
-    final sessionCostCapCents = costCapCents ?? defaultRunCostCapCents;
-    var runCostCents = 0;
     // The model's window, capped by the agent's own setting: a context size
     // is an override down, never a promise the model cannot keep.
     final modelWindow = modelInfo?.limits.context ?? 128000;
     final override = contextWindowTokens;
-    final window = override != null && override > 0 && override < modelWindow
+    window = override != null && override > 0 && override < modelWindow
         ? override
         : modelWindow;
-    // Summarizing compactions in this run, reported with each reading.
-    var compactions = 0;
+    // The resumed transcript is loaded FIRST: the config seeds its snapshot
+    // source from it (so an image from the previous run can still be recovered)
+    // and carries the delivered-context cursor whose update the loop persists
+    // with every save.
+    final resumed = await _loadResumeTranscript();
+
     final config = AgentLoopConfig(
       systemPrompt: systemPrompt,
       model: parsed.model,
@@ -479,24 +552,28 @@ extension _DispatchSessionHarness on DispatchSession {
       temperature: generation.temperature,
       topP: generation.topP,
       topK: generation.topK,
-      effort: _raiseEffort(
-        _resolveHarnessEffort(modelInfo),
-        magicKeywordEffort(magic),
-      ),
+      effort: effectiveEffort,
       cacheKey: conversationId,
       toolTimeout: const Duration(minutes: 30),
       approvalCallback: approval,
+      callLedger: accounting.ledger,
+      tokenCalibration: deps.tokenCalibration,
+      maxParallelToolCalls: runConfig.maxParallelToolCalls,
+      overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
+      observationIngest: ToolObservationIngest(
+        store: deps.toolOutputStore,
+        retainMinTokens: runConfig.compaction.policy == CompactionPolicy.current
+            ? 0
+            : kToolOutputRetentionMinTokens,
+      ),
       autoApprove: false,
       pauseGate: _pauseGate,
       contract: profile.toCompletionContract(),
       budget: const HarnessBudget(),
-      externalBudgetExceeded: switch (parsedCommand.command) {
-        'goal' || 'loop' => () => runCostCents >= sessionCostCapCents,
-        _ => null,
-      },
+      externalBudgetExceeded: budgetExceeded,
       externalBudgetPressure: switch (parsedCommand.command) {
-        'goal' ||
-        'loop' => () => runCostCents >= (sessionCostCapCents * 0.8).round(),
+        'goal' || 'loop' =>
+          () => accounting.subtreeCostMicros * 5 >= sessionCostCapMicros * 4,
         _ => null,
       },
       streamRules: runConfig.streamRules,
@@ -508,13 +585,28 @@ extension _DispatchSessionHarness on DispatchSession {
       compactor: SnapcompactCompactor(
         fallback: DefaultHarnessCompactor(
           summarizer: LlmHarnessSummarizer(provider),
+          config: runConfig.compaction,
+          calibration: deps.tokenCalibration,
+          providerId: providerId,
+          modelId: parsed.model ?? provider.defaultModel,
+          economics: CompactionEconomics(
+            cache: ProviderCacheEconomics.forProvider(providerId),
+          ),
         ),
         modelId: qualifiedModel,
         readerHasVision: modelInfo?.supportsImageInput ?? false,
+        providerId: providerId,
+        // Seed the source the previous run left behind, so an image it
+        // retained can still be recovered by this run's compactions.
+        retainedSource: resumed?.retainedSnapshotSource,
+        preferSnapshots: runConfig.snapshotCompaction,
+        config: runConfig.compaction,
       ),
       transcriptStore: deps.transcriptStore,
       transcriptKey: _transcriptKey,
       initialCheckpoints: _resumedCheckpoints,
+      initialSnapshotSource: resumed?.retainedSnapshotSource,
+      transcriptMetadata: _promptCursorMetadata(resumed),
     );
     final context = HarnessToolContext(
       workingDirectory: agentDirHostPath,
@@ -525,17 +617,44 @@ extension _DispatchSessionHarness on DispatchSession {
       spaceId: spaceId,
     );
 
-    final resumed = await _loadResumeTranscript();
     final history = <HarnessMessage>[...?resumed?.messages];
-    final bareUserText = userText;
-    final promptForRun =
-        history.isEmpty || bareUserText == null || bareUserText.isEmpty
-        ? effectivePrompt
-        : bareUserText;
+    // Fresh turns need the complete assembled context. A resumed turn uses a
+    // delta only when its cursor is known and no slash command replaced the
+    // input; otherwise append the full contextual input without losing history.
+    final cursorMetadata = resumed?.metadata[_promptCursorMetadataKey];
+    final standingUnchanged =
+        cursorMetadata is Map &&
+        cursorMetadata['standingRevision'] == promptParts?.standingRevision;
+    final resumeDelta =
+        history.isEmpty || effectivePrompt != prompt || !standingUnchanged
+        ? null
+        : promptParts?.deltaPromptFor(_deliveredPromptCursor(resumed));
+    final promptForRun = resumeDelta ?? effectivePrompt;
 
     var exitCode = 0;
+    Object? runFailure;
     CompletionContract? contractUnmet;
     _markRunStarted();
+    addEvent(
+      StageTimingEvent(
+        stage: RunStage.runtimeReady,
+        offsetMs: accounting.runOffsetMs + accounting.elapsedMs,
+        source: RunTimingSource.harness,
+      ),
+    );
+    var usefulWorkStarted = false;
+
+    void markUsefulWork() {
+      if (usefulWorkStarted) return;
+      usefulWorkStarted = true;
+      addEvent(
+        StageTimingEvent(
+          stage: RunStage.firstUsefulText,
+          offsetMs: accounting.runOffsetMs + accounting.elapsedMs,
+          source: RunTimingSource.harness,
+        ),
+      );
+    }
 
     try {
       await for (final event in deps.agentLoop.run(
@@ -551,6 +670,7 @@ extension _DispatchSessionHarness on DispatchSession {
       )) {
         switch (event) {
           case LoopTextDelta(:final text):
+            if (text.trim().isNotEmpty) markUsefulWork();
             addEvent(TextEvent(content: text));
           case LoopThinkingDelta(:final thinking):
             addEvent(ThinkingEvent(content: thinking));
@@ -559,6 +679,7 @@ extension _DispatchSessionHarness on DispatchSession {
             :final toolUseId,
             :final args,
           ):
+            markUsefulWork();
             addEvent(
               ToolCallEvent(
                 toolName: toolName,
@@ -580,44 +701,10 @@ extension _DispatchSessionHarness on DispatchSession {
                 images: await _externalizeToolImages(result.images),
               ),
             );
-          case LoopUsage(:final usage):
-            // Occupancy of THIS call: what the model read (cached or not)
-            // plus what it wrote, which the next call carries forward.
-            addEvent(
-              ContextWindowEvent(
-                contextTokens:
-                    usage.inputTokens +
-                    usage.cacheReadTokens +
-                    usage.cacheWriteTokens +
-                    usage.outputTokens,
-                windowTokens: window,
-                compactions: compactions,
-              ),
-            );
-            final servedProvider = provider is FallbackProvider
-                ? provider.lastServedProviderId
-                : providerId;
-            final servedModel = provider is FallbackProvider
-                ? provider.lastServedModel
-                : (parsed.model ?? provider.defaultModel);
-            final rc = costCalc.cost(
-              providerId: servedProvider,
-              modelId: servedModel,
-              usage: usage,
-            );
-            runCostCents += rc.estimatedCostCents;
-            addEvent(
-              UsageEvent(
-                usage: RunUsage(
-                  inputTokens: usage.inputTokens,
-                  outputTokens: usage.outputTokens,
-                  thoughtTokens: usage.thoughtTokens,
-                  cachedReadTokens: usage.cacheReadTokens,
-                  cachedWriteTokens: usage.cacheWriteTokens,
-                  estimatedCostCents: rc.estimatedCostCents,
-                ),
-              ),
-            );
+          case LoopUsage():
+            // The provider boundary owns usage, including retries and auxiliary
+            // calls. Banking this compatibility event would count main twice.
+            break;
           case LoopNotice(:final message):
             addEvent(DebugEvent(content: '[harness] $message'));
           case LoopToolsActivated(:final names, :final trigger):
@@ -696,10 +783,10 @@ extension _DispatchSessionHarness on DispatchSession {
       if (unmetAtClose != null) {
         await _markContractUnmet(unmetAtClose);
       }
-      unawaited(_closeRunLog(exitCode: exitCode));
     } on Object catch (e) {
+      exitCode = 1;
+      runFailure = e;
       addEvent(ErrorEvent(content: '[harness] $e', source: 'harness'));
-      unawaited(_closeRunLog(exitCode: 1, error: e));
     } finally {
       _harnessActive = false;
       _pauseGate.resume();
@@ -714,9 +801,161 @@ extension _DispatchSessionHarness on DispatchSession {
         );
       }
       _vibeRoster = null;
+      while (workerRuns.isNotEmpty) {
+        try {
+          await workerRuns.first;
+        } on Object catch (error) {
+          CcInfraLog.warning('Worker shutdown failed: $error');
+        }
+      }
+      await accounting.flush();
+      try {
+        await _closeRunLog(exitCode: exitCode, error: runFailure);
+      } on Object catch (error) {
+        CcInfraLog.warning('Harness run-log close failed: $error');
+      }
       addEvent(DoneEvent());
       _completeRun();
     }
+  }
+
+  void _emitHarnessProviderCall(
+    ProviderCallRecord record, {
+    required HarnessRunAccounting accounting,
+    required void Function(AgentProcessEvent) emit,
+    int? contextWindow,
+    int compactions = 0,
+  }) {
+    final usage = record.usage;
+    emit(
+      UsageEvent(
+        usage: RunUsage(
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          thoughtTokens: usage.thoughtTokens,
+          cachedReadTokens: usage.cacheReadTokens,
+          cachedWriteTokens: usage.cacheWriteTokens,
+          costMicros: record.costMicros ?? 0,
+          estimatedCostCents: ((record.costMicros ?? 0) / 10000).round(),
+          costBasis: CostBasis.fromWire(record.costBasis.wire),
+        ),
+        purpose: domain_purpose.LlmCallPurpose.fromWire(record.purpose.wire),
+        provider: record.providerId,
+        modelId: record.model,
+        requestId: record.requestId,
+        attempt: record.attempt,
+      ),
+    );
+    if (record.purpose != LlmCallPurpose.main &&
+        record.purpose != LlmCallPurpose.subagent) {
+      return;
+    }
+    final requestOffset = accounting.runOffsetMs + record.startedAtMs;
+    final requestIdentity = '${record.requestId}:${record.attempt}';
+    if (record.requestSentMs case final sent?) {
+      emit(
+        StageTimingEvent(
+          stage: RunStage.requestSent,
+          offsetMs: requestOffset + sent,
+          source: RunTimingSource.transport,
+          provider: record.providerId,
+          modelId: record.model,
+          requestId: requestIdentity,
+        ),
+      );
+    }
+    if (record.transportFirstByteMs case final firstByte?) {
+      emit(
+        StageTimingEvent(
+          stage: RunStage.firstResponseByte,
+          offsetMs: requestOffset + firstByte,
+          source: RunTimingSource.transport,
+          provider: record.providerId,
+          modelId: record.model,
+          requestId: requestIdentity,
+        ),
+      );
+    }
+    if (record.firstModelEventMs case final firstDelta?) {
+      emit(
+        StageTimingEvent(
+          stage: RunStage.firstModelDelta,
+          offsetMs: requestOffset + firstDelta,
+          source: RunTimingSource.provider,
+          provider: record.providerId,
+          modelId: record.model,
+          requestId: requestIdentity,
+        ),
+      );
+    }
+    if (record.usageReported && contextWindow != null) {
+      emit(
+        ContextWindowEvent(
+          contextTokens:
+              usage.inputTokens +
+              usage.cacheReadTokens +
+              usage.cacheWriteTokens +
+              usage.outputTokens,
+          windowTokens: contextWindow,
+          compactions: compactions,
+        ),
+      );
+    }
+  }
+
+  /// The delivered-context cursor the resumed transcript records, or null when
+  /// it recorded none (continuity was never established).
+  DeliveredPromptContext? _deliveredPromptCursor(HarnessTranscript? t) {
+    final raw = t?.metadata[_promptCursorMetadataKey];
+    if (raw is! Map) {
+      return null;
+    }
+    List<String> keys(String name) => raw[name] is List
+        ? [
+            for (final k in raw[name] as List)
+              if (k is String) k,
+          ]
+        : const [];
+    final revision = raw['revision'];
+    if (revision is! String || revision.isEmpty) {
+      return null;
+    }
+    return DeliveredPromptContext(
+      revision: revision,
+      conversationKeys: keys('conversationKeys'),
+      sectionKeys: keys('sectionKeys'),
+      producedRunIds: keys('producedRunIds'),
+    );
+  }
+
+  /// The transcript metadata for this run: the previous metadata with the
+  /// prompt cursor ADVANCED to what this run is about to deliver.
+  ///
+  /// Advanced at config time on purpose — the loop's first save happens at a
+  /// turn boundary, so a run that dies before delivering anything leaves the
+  /// stored cursor untouched.
+  Map<String, Object?> _promptCursorMetadata(HarnessTranscript? t) {
+    final parts = promptParts;
+    if (parts == null) {
+      return {...?t?.metadata};
+    }
+    return {
+      ...?t?.metadata,
+      _promptCursorMetadataKey: {
+        'revision': parts.conversationRevision,
+        'standingRevision': parts.standingRevision,
+        'conversationKeys': ClaudeNativeSessionRecord.bound(
+          parts.deliveredConversationKeysFor(),
+        ),
+        'sectionKeys': ClaudeNativeSessionRecord.bound(
+          parts.deliveredSectionKeysFor(),
+        ),
+        'producedRunIds': ClaudeNativeSessionRecord.bound([
+          ...?_deliveredPromptCursor(t)?.producedRunIds,
+          if (runLogId != null && runLogId!.isNotEmpty) runLogId!,
+        ]),
+      },
+    };
   }
 
   Future<HarnessTranscript?> _loadResumeTranscript() async {
@@ -784,6 +1023,7 @@ extension _DispatchSessionHarness on DispatchSession {
           ws,
           image.data,
           mediaType: image.mediaType,
+          creatorId: agentId,
         );
         if (stored != null) {
           refs.add(

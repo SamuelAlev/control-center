@@ -2,7 +2,7 @@
 title: Cópia de segurança, exportação e importação
 description: A estrutura do instantâneo, o manifesto, todas as operações de cópia de segurança e rotas de transferência, e exatamente que ficheiros uma cópia de segurança contém e não contém.
 slug: pt-PT/manual/referencia/copia-de-seguranca
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
@@ -25,6 +25,13 @@ diferentes.
 Todos são escritos com o `VACUUM INTO` do SQLite, que é seguro contra uma base de dados WAL
 em funcionamento: abre uma transação de leitura, produz uma cópia desfragmentada e
 transacionalmente consistente e nunca exige parar o servidor.
+
+Estes ficheiros e as cópias descarregadas **não estão cifrados em repouso** pelo
+Control Center. A transferência cifrada ponto a ponto protege os bytes em trânsito
+entre um cliente emparelhado e o seu `cc_server`, em ligações diretas ou através do
+relay. Proteja em separado o armazenamento local e as cópias fora da máquina; o
+servidor e qualquer destinatário autorizado conseguem ler os ficheiros de base de
+dados.
 
 ## Estrutura do instantâneo
 
@@ -206,11 +213,16 @@ desatualizado.
 
 ## Rotas de transferência
 
-Todas as operações acima falam em caminhos do lado do servidor, o que só é uma resposta
-completa quando o servidor é a sua própria máquina. Estas três transportam os bytes, na mesma
-via assinada por PSK que o proxy de multimédia e o armazenamento de blobs utilizam. O
-chamador assina uma cadeia de destino com a chave pré-partilhada do dispositivo e passa a
-assinatura como `s`.
+As operações de exportação/importação e de listagem de instantâneos acima falam em
+caminhos do lado do servidor, o que só é uma resposta completa quando o servidor é
+a sua própria máquina. Estas rotas em forma de HTTP transportam os bytes de cópia
+de segurança **dentro do mesmo túnel de recursos autenticado e cifrado ponto a
+ponto** de outros recursos sensíveis, quer a ligação RPC seja direta quer
+intermediada. Não são endpoints públicos de transferência de ficheiros HTTP: um
+pedido a um deles no listener público devolve `426 Upgrade Required`, mesmo do
+loopback. Dentro do túnel cifrado, o dispositivo autenticado com Noise tem de
+corresponder a `d`; o handler verifica ainda a assinatura do dispositivo sobre a
+sua cadeia de destino usando a sua PSK de emparelhamento e o papel abaixo.
 
 | Rota                    | Método | Query           | Alvo assinado                    | Exige                          |
 | ----------------------- | ------ | --------------- | -------------------------------- | ------------------------------ |
@@ -230,6 +242,7 @@ diretório que a listagem não teria mostrado.
 | `404`  | Não há porta de cópia de segurança neste anfitrião, ou o instantâneo/o ficheiro de espaço de trabalho indicado não existe |
 | `405`  | `/backup/restore` chamado com algo que não `POST`                                   |
 | `413`  | O corpo do envio excede 8 GiB, pelo content-length declarado ou pelos bytes realmente lidos |
+| `426`  | Qualquer pedido direto a uma rota de transferência no listener HTTP público; use o túnel de recursos cifrado de um cliente emparelhado |
 | `500`  | A exportação ou o arquivo falhou do lado do servidor                                |
 
 Ambos os descarregamentos respondem com `Cache-Control: no-store` e `Accept-Ranges: none`.
@@ -246,12 +259,15 @@ O `/backup/restore` transmite o corpo diretamente para um ficheiro de preparaç�
 colocar em memória intermédia, limita-o antes e durante a leitura e elimina o ficheiro
 preparado em **todos** os caminhos de saída, incluindo uma recusa.
 
-:::caution[Uma ligação através de relay não tem origem HTTP]
-O relay intermediário transporta frames RPC, não transferências de ficheiros. Tudo o que fala
-em caminhos do lado do servidor continua a funcionar através dele; as três rotas de
-transferência precisam de uma ligação direta, e a interface desativa-as com uma nota em vez
-de falhar a meio do descarregamento.
-:::
+::::caution[A ligação direta e o relay usam a mesma transferência cifrada]
+O relay transporta pedidos de recursos, respostas em fluxo e bytes de envio como
+texto cifrado; não consegue ler o conteúdo das cópias de segurança. Um caminho do
+lado do servidor continua a ser um caminho no anfitrião do servidor, e não um
+ficheiro no relay. O acesso continua a exigir o dispositivo emparelhado, a
+assinatura do alvo e o papel aplicável de espaço de trabalho ou de instalação.
+Nenhum dos transportes cifra em repouso os ficheiros de cópia de segurança
+resultantes.
+::::
 
 ## Caminhos e limites
 
@@ -262,7 +278,7 @@ de falhar a meio do descarregamento.
 | Exportações de espaços de trabalho          | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Preparação de transferências                | `<dataDir>/backups/transfer/` — uma bancada de trabalho, limpa pela rota que a escreve |
 | Nome do arquivo do instantâneo              | `<snapshot directory name>.zip`                              |
-| Limite de envio                             | 8 GiB por `POST /backup/restore`                             |
+| Limite de envio                             | 8 GiB por envio cifrado para `/backup/restore`               |
 | Retenção                                    | Instantâneos da instalação: eliminação manual. Cópias de segurança de espaços de trabalho: pipeline semanal, predefinição de 30 dias |
 
 Os diretórios `exports/`, `transfer/` e `workspace-backups/` não são instantâneos da

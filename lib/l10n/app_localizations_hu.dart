@@ -14198,6 +14198,31 @@ class AppLocalizationsHu extends AppLocalizations {
   String get composerDropToAttach => 'Ejtsen a csatoláshoz';
 
   @override
+  String get composerAttachmentUploading => 'Feltöltés…';
+
+  @override
+  String get composerAttachmentReady => 'Kész';
+
+  @override
+  String get composerAttachmentUploadFailed => 'A feltöltés sikertelen';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'A fájl meghaladja a $limit-os korlátot';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Ez a fájl nem olvasható';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Várja meg, amíg a mellékletek feltöltődnek';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Küldés előtt próbálja újra feltölteni vagy távolítsa el a sikertelen mellékleteket';
+
+  @override
   String get attachmentUnavailable => 'A melléklet nem elérhető';
 
   @override
@@ -15367,11 +15392,11 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Egy ügynök Önre vár';
+  String get notificationAgentAwaitingInput => 'Egy ügynök figyelmet igényel';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Ha egy ügynöknek az Ön jóváhagyására, válaszára vagy működő hitelesítő adatokra van szüksége';
+      'Ha egy ügynök jóváhagyást, választ vagy érvényes hitelesítő adatokat igényel, vagy egy szabályzat blokkol egy műveletet';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15445,4 +15470,386 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'A szerver leáll';
+
+  @override
+  String get skillEvalAbsent => 'Hiányzó és elérhető';
+
+  @override
+  String get skillEvalAmbient => 'Környezeti készségek';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Műtermék hivatkozása: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · $repeatString. ismétlés';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Próbálkozások';
+
+  @override
+  String get skillEvalAvailableEvent => 'Elérhető';
+
+  @override
+  String get skillEvalBaseline => 'Előző verzió hash-e';
+
+  @override
+  String get skillEvalBodyLoad => 'Törzs betöltve';
+
+  @override
+  String get skillEvalBudgetCents => 'Keret (amerikai cent)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'A fizetős értékelés a kiválasztott szolgáltatót és keretet használja. A biztonsági ellenőrzés eredményei külön jelennek meg.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Az előfizetési keret az API-árakon számított használatot követi, nem a számlázott összeget. Egy folyamatban lévő hívás túllépheti a keretet; annak elérése után új hívás nem indul. A biztonsági ellenőrzések ettől függetlenek.';
+
+  @override
+  String get skillEvalCancel => 'Futtatás megszakítása';
+
+  @override
+  String get skillEvalCancelled => 'Megszakítva';
+
+  @override
+  String get skillEvalCancelling => 'Megszakítás…';
+
+  @override
+  String get skillEvalComparison => 'Összehasonlítás';
+
+  @override
+  String get skillEvalCompleted => 'Befejezve';
+
+  @override
+  String get skillEvalComposition => 'Összetétel';
+
+  @override
+  String get skillEvalCorpus => 'Feladatkészlet';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString ismétlés';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => 'Minden tervezett próba megfigyelve';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Jelenlegi csomag hash-e: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates =>
+      'Frissítések értékelésének kikapcsolása';
+
+  @override
+  String get skillEvalEnableUpdates => 'Frissítések értékelésének bekapcsolása';
+
+  @override
+  String get skillEvalExport => 'Anonimizált JSON másolása';
+
+  @override
+  String get skillEvalFailed => 'Sikertelen';
+
+  @override
+  String get skillEvalForced => 'Kényszerített betöltés és hiányzás';
+
+  @override
+  String get skillEvalForcedEvent => 'Kényszerített betöltés';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'A csomag hash-e nem érhető el ezen a szerveren. Az értékelés le van tiltva.';
+
+  @override
+  String get skillEvalHistory => 'Verzióelőzmények';
+
+  @override
+  String get skillEvalImproved => 'Javult';
+
+  @override
+  String get skillEvalIncomplete => 'Hiányos';
+
+  @override
+  String get skillEvalInconclusive => 'Nem dönthető el';
+
+  @override
+  String get skillEvalInferred => 'Kikövetkeztetett';
+
+  @override
+  String get skillEvalInterrupted => 'Megszakadt';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'A készség betöltése nem figyelhető meg; az esemény hiánya nem bizonyítja, hogy figyelmen kívül maradt.';
+
+  @override
+  String get skillEvalModel => 'Kiválasztott modell';
+
+  @override
+  String get skillEvalNoAttempts => 'Még nincs próbálkozás.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Nincs elérhető csatlakoztatott modell. Előbb csatlakoztasson egy szolgáltatót a Beállításokban.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Nincs korábbi hash a kampányelőzményekben. A lecserélése előtt értékelje az előző verziót.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Még nincs jelentés; a részleges próbálkozások továbbra is elérhetők.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Nincs kiválasztott munkaterület.';
+
+  @override
+  String get skillEvalNoTasks => 'Még nincs jelentett feladat.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Nincs rögzített ellenőrzési bizonyíték.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Ezeket a pontos bájtokat nem értékelték. Az ellenőrzés nem bizonyítja a viselkedést.';
+
+  @override
+  String get skillEvalNotVerified => 'Nem ellenőrzött';
+
+  @override
+  String get skillEvalObserved => 'Megfigyelt';
+
+  @override
+  String get skillEvalOpenQuality => 'Minőség megnyitása';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Alapértelmezés szerint a készség mentése nem indít fizetős értékelést. Ha kifejezetten bekapcsolja az automatikus újraértékelést frissítéskor, a mentés költségkerethez kötött fizetős értékelést indít.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'A frissítési szabályzat beállításához előbb értékeljen egy verziót.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Frissítési szabályzat beállítása';
+
+  @override
+  String get skillEvalPartial =>
+      'Részleges bizonyíték; nincs döntés az átvételről';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString / $plannedString próbálkozás';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Szolgáltató: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Munkaterületi készségkampányok és verzióspecifikus bizonyítékok.';
+
+  @override
+  String get skillEvalQueued => 'Sorban áll';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Újracsatlakozás a kampány pillanatképeihez…';
+
+  @override
+  String get skillEvalRefresh => 'Frissítés';
+
+  @override
+  String get skillEvalReferenceLoad => 'Referencia betöltve';
+
+  @override
+  String get skillEvalRepetitions => 'Ismétlések feladatonként';
+
+  @override
+  String get skillEvalReport => 'Bizonyítékjelentés';
+
+  @override
+  String get skillEvalRunning => 'Fut';
+
+  @override
+  String get skillEvalScriptExecution => 'Szkript végrehajtva';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Költés: $spent / keret: $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Értékelés indítása';
+
+  @override
+  String get skillEvalStartTitle => 'Készségverziók összehasonlítása';
+
+  @override
+  String get skillEvalStale => 'Elavult';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Elavult: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Különböző feladatcsoportok: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes ellenőrzött) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Feladatok áganként';
+
+  @override
+  String get skillEvalToolError => 'Eszközhiba';
+
+  @override
+  String get skillEvalTools => 'Eszközesemények';
+
+  @override
+  String get skillEvalTitle => 'Készségértékelés';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Nem érhető el: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Ismeretlen';
+
+  @override
+  String get skillEvalUnsaved =>
+      'A nem mentett módosítások nem szerepelnek az értékelésben. Értékelés előtt mentse őket.';
+
+  @override
+  String get skillEvalUncertainty => 'Bizonytalansági intervallum';
+
+  @override
+  String get skillEvalVerified => 'Ellenőrzött';
+
+  @override
+  String get skillEvalVerifiers => 'Ellenőrzés';
+
+  @override
+  String get skillEvalVerdict => 'Eredmény';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Másolás kész: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Terv megsértése';
+
+  @override
+  String get skillEvalPreserved => 'A minőség megmaradt';
+
+  @override
+  String get skillEvalPrevious => 'Előző és jelenlegi';
+
+  @override
+  String get skillEvalRegressed => 'Visszaesés igazolva';
+
+  @override
+  String get skillEvalCostRegression => 'Költségregresszió';
+
+  @override
+  String get skillEvalHarnessError => 'Tesztkeret hibája';
+
+  @override
+  String get skillBehaviorRouting => 'Készségútválasztás';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive elvárt használat · $falsePositive váratlan használat · $falseNegative kihagyott használat · $trueNegative helyes kihagyás';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive bizonytalan használat · $negative bizonytalan kihagyás · $notOffered nem volt felajánlva';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Megfigyelt pontosság $precision · visszahívás $recall · téves pozitív arány $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Kényszerített ág · csak diagnosztika';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Az arányok csak a megfigyelhető hozzáféréseken alapulnak. A shellen vagy keresésen át történő hozzáférés ismeretlen maradhat; a készség betöltése nem bizonyítja az alkalmazását.';
+
+  @override
+  String get skillBehaviorSafety => 'Szimulált biztonság';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts sikeres műtermék-ellenőrzés · $denials szabályzati elutasítás · $violations védett fájl megsértése';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'A műtermék-ellenőrzések szimuláltak, nem a valós támadási arányokat mutatják; a tényleges mellékhatásokat nem figyeljük.';
+
+  @override
+  String get skillBehaviorUtility => 'Hasznosság feladatcsaládonként';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts igazolt siker';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Minden próbálkozás beleszámít a hasznosság nevezőjébe, a sikertelen és befejezetlen is.';
 }

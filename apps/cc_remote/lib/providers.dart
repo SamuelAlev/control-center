@@ -86,15 +86,9 @@ final activeWorkspaceIdProvider = StreamProvider<String?>((ref) {
   return controller.stream;
 });
 
-/// The live connection's signed-media origin, reactively — how the phone loads
-/// a forge avatar without ever dialling an upstream itself.
-///
-/// Null until connected, and for the whole life of a broker-relayed session
-/// (see [RemoteMediaEndpoint]); consumers fall back to a monogram rather than
-/// showing a broken image. Avatars stay on this lane rather than moving to the
-/// RPC channel the way [workspaceLogoProvider] did, because a PR list holds
-/// dozens of them: one identity-carrying mark per workspace is worth a
-/// base64 frame, a screenful of 22px faces is not.
+/// The session's signed local resource capability, reactively. It remains
+/// available when the authenticated channel reconnects through the relay and
+/// disappears when the pairing is retired; media never uses a remote HTTP URL.
 ///
 /// Seeded with the session's current value for the same reason as
 /// [rpcClientProvider]: the underlying stream is a non-replaying broadcast.

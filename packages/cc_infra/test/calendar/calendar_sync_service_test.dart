@@ -1,17 +1,17 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_infra/cc_infra.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-class _NullDio implements Dio {
+class _NullHttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 // Fake Google Calendar API client
 class FakeGoogleCalendarApiClient extends GoogleCalendarApiClient {
-  FakeGoogleCalendarApiClient() : super(_NullDio());
+  FakeGoogleCalendarApiClient() : super(_NullHttpClient());
 
   /// Scripted full-sync result (used when `syncToken` is null).
   GoogleCalendarEventsSyncResult fullResult =

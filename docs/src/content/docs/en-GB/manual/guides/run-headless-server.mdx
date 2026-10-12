@@ -1,9 +1,9 @@
 ---
 title: Run a headless server
 description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: en-GB/manual/guides/run-headless-server
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Run `cc_server` on a machine that stays on, then connect to it from your desktop,
@@ -24,7 +24,7 @@ or ride `latest`.
 | `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | The encrypted connection relay (optional)    | `-p 8788:8788`   |
 
 The whole stack as a compose file:
 
@@ -55,12 +55,14 @@ volumes:
 Things worth knowing before you expose any of this beyond loopback:
 
 - **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
+  to receive published-port traffic). Use a TLS-terminating reverse proxy —
+  Caddy, Traefik, nginx or a Cloudflare Tunnel — on a trusted network, or
+  mount a certificate and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`
+  (then unset `CC_SERVER_INSECURE`). This setting controls only the server's
+  outer HTTP/WebSocket listener. It never disables the mandatory end-to-end
+  encrypted client session. TLS still protects login/bootstrap traffic,
+  connection metadata, public endpoints and web-client delivery. Everything
+  is overridable with `docker run -e …` or the compose `environment:` block.
 - **`/data` is the only state.** The SQLite databases, paired-device secrets,
   downloaded models and meeting audio all live in the volume — back it up and
   the container becomes disposable.
@@ -72,13 +74,16 @@ Things worth knowing before you expose any of this beyond loopback:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signalling relay likewise needs only its port
+- **The two client images are static nginx hosts.** Embedded browser editors use
+  the same app origin and encrypted connection, as described
+  [below](#browser-editor-resources). Each client's connect form takes your server
+  URL, device id and pairing key. The signalling relay needs only its port
   (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+  pairing keys and is a **fallback** — a phone uses loopback, LAN, tailnet or
+  a direct `wss://` path when one is reachable, and only falls back to the
+  relay when none is. Skip it if your clients always reach the server directly.
+  The broker can see routing identifiers, IP addresses, sizes and timing, and
+  can interrupt traffic; it cannot decrypt the client/server resource stream.
 
 The rest of this guide builds the server from source; the flags and behaviour it
 covers are the same ones the image's environment variables feed.
@@ -173,6 +178,14 @@ A credential minted by `cc_server pair` carries **no expiry**; one minted in the
 app always expires after 30 days. Revoke a CLI-minted device from
 **Settings → You → Your devices** when you are done with it.
 
+The pairing key authenticates the mandatory Noise handshake; each session derives
+fresh traffic keys and checks the server's signed identity. Protect the pairing
+key and get it from a trusted source (including a trusted QR), then verify a
+new server fingerprint through a separate trusted channel or against a known
+pin. Do not silently accept a changed pin: re-pair through a trusted channel
+if you intentionally replace the server identity. TLS by itself cannot
+establish that end-to-end identity pin.
+
 ## Step 4: Start the server
 
 On loopback — the default and all you need for a client on the same machine:
@@ -200,8 +213,13 @@ plaintext bind behind it:
 ```
 
 `--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+always wins. The server advertises the outer listener's plaintext state as
+`insecure: true` in `GET /healthz`. This does not turn off Noise encryption
+on `/rpc`, whether the client connects directly or through the relay. Upgrade
+the server, relay and clients together: old plaintext RPC clients are rejected,
+with no compatibility fallback. Public requests to sensitive resource routes
+(including backup transfers) get HTTP `426`, even from loopback; paired clients
+use the encrypted tunnel instead.
 
 The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
 
@@ -222,6 +240,32 @@ on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the defaul
 list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
 allowed.
 :::
+
+### Browser editor resources
+
+The editor frontend is trusted application code and runs on the web app's own
+origin. Its Service Worker routes HTTP and WebSocket traffic through the same
+authenticated encrypted session as the rest of the client. `cc_server`
+decrypts each request, forwards it to its local code-server backend, and
+encrypts the response back to the client. The files remain server-owned.
+
+Host the web client over HTTPS or a secure loopback origin so Service Workers
+can run. The normal web build and release scripts include the shared resource
+assets. If you build a bundle manually, stage those assets afterwards from the
+repository root:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+For the phone web build, substitute `apps/cc_remote/build/web`. This copies
+`cc_resource_bridge.js`, `cc_resource_worker.js` and `cc_resource_ws_shim.js`
+into the app bundle.
+
+Native editor traffic uses a capability-scoped loopback facade instead.
+Do not expose the server-launched editor extension's private loopback
+report/command gateway through a public proxy. Sensitive public HTTP requests
+are rejected; resources require an authenticated encrypted session.
 
 ## Step 6: Connect a Google Calendar (optional)
 
@@ -278,7 +322,8 @@ The dispatcher is **stateless**: there is no per-session workspace binding.
 Every workspace-scoped call carries its own `workspace_id` and access is decided
 by the caller's workspace membership and role — not by holding a pairing key.
 
-Two things to know before you expose the port beyond loopback:
+Two things to know before you expose the port beyond loopback (TLS alone does
+not provide the paired client's end-to-end encryption or authorise resources):
 
 - **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
 - **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.

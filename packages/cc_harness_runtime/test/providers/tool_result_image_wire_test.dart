@@ -15,6 +15,8 @@ class _CapturingHttp extends ProviderHttp {
     Uri uri, {
     required Map<String, String> headers,
     required Map<String, dynamic> body,
+    void Function()? onRequestSent,
+    void Function()? onFirstBodyByte,
   }) async* {
     this.body = body;
     // One terminal event so the stream completes and the caller stops.

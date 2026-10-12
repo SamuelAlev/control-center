@@ -153,6 +153,22 @@ PipelineDefinition _twoStartGraph() {
 Finder _iconButton(String tooltip) =>
     find.byWidgetPredicate((w) => w is CcIconButton && w.tooltip == tooltip);
 
+/// [_graph] with the two mid-column body steps swapped in the definition.
+///
+/// Nothing moves on the canvas — every tile keeps its stored coordinates — so
+/// the only change is the order the graph lists its steps in, which is what a
+/// reorder in the editor produces.
+PipelineDefinition _reorderedGraph() {
+  final byId = {for (final s in _graph().steps) s.id: s};
+  return _definition([
+    byId['start']!,
+    byId['branch']!,
+    byId['work']!,
+    byId['later']!,
+    byId['end']!,
+  ]);
+}
+
 void main() {
   late AppLocalizations l10n;
   final library = defaultNodeTypeLibrary();
@@ -203,6 +219,28 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
   }
+
+  group('scene identity', () {
+    testWidgets('reordering the definition keeps each tile with its node', (
+      tester,
+    ) async {
+      Finder tileFor(String label) => find.ancestor(
+        of: find.text(label),
+        matching: find.byType(PipelineEditorNodeTile),
+      );
+
+      await pumpEditor(tester, definition: _graph());
+      final review = tester.state(tileFor('Review'));
+
+      // Same nodes, same coordinates, different list order. A tile matched by
+      // position rather than by node id would have handed Review's state to the
+      // branch tile on the way past.
+      await pumpEditor(tester, definition: _reorderedGraph());
+
+      expect(find.text('Review'), findsOneWidget);
+      expect(identical(review, tester.state(tileFor('Review'))), isTrue);
+    });
+  });
 
   group('nodes', () {
     testWidgets('renders body tiles only — entry step is not a tile', (

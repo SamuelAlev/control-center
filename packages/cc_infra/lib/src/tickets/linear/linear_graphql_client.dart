@@ -1,16 +1,44 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/tickets/linear/linear_issue_dto.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Client for the Linear GraphQL API. Adapter-internal — nothing outside
 /// `lib/features/ticketing/data/providers/linear/` may import this; the rest of
 /// the codebase talks to `TicketProviderPort` instead.
 class LinearGraphQlClient {
-  /// Creates a [LinearGraphQlClient] backed by [Dio].
-  LinearGraphQlClient(this._dio);
+  /// Creates a [LinearGraphQlClient] backed by an [RhttpClient].
+  LinearGraphQlClient(this._httpClient);
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
+
+  /// Linear's GraphQL endpoint answers JSON; ask for it explicitly rather than
+  /// relying on whatever default the shared client carries.
+  static const HttpHeaders _headers = HttpHeaders.rawMap({
+    'Accept': 'application/json',
+  });
+
+  /// POSTs one GraphQL document as a JSON body and returns the decoded text
+  /// response.
+  Future<Map<String, dynamic>?> _post(
+    Map<String, dynamic> payload, {
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _httpClient.post(
+      '',
+      headers: _headers,
+      body: HttpBody.json(payload),
+      cancelToken: cancelToken,
+    );
+    final body = httpJsonBody(response);
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
+    if (body is Map) {
+      return body.cast<String, dynamic>();
+    }
+    return null;
+  }
 
   /// Fetches issues assigned to the current user.
   Future<List<LinearIssueDto>> getAssignedIssues({
@@ -35,12 +63,7 @@ class LinearGraphQlClient {
       }
     ''';
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {'query': query},
-        cancelToken: cancelToken,
-      );
-      final data = response.data;
+      final data = await _post({'query': query}, cancelToken: cancelToken);
       _checkGraphQLErrors(data);
       final graphData = data?['data'] as Map<String, dynamic>?;
       final issuesMap = graphData?['issues'] as Map<String, dynamic>?;
@@ -55,11 +78,8 @@ class LinearGraphQlClient {
             .toList();
       }
       return [];
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
   }
 
@@ -85,15 +105,10 @@ class LinearGraphQlClient {
       }
     ''';
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {
-          'query': query,
-          'variables': {'id': issueId},
-        },
-        cancelToken: cancelToken,
-      );
-      final data = response.data;
+      final data = await _post({
+        'query': query,
+        'variables': {'id': issueId},
+      }, cancelToken: cancelToken);
       _checkGraphQLErrors(data);
       final graphData = data?['data'] as Map<String, dynamic>?;
       final issue = graphData?['issue'];
@@ -101,11 +116,8 @@ class LinearGraphQlClient {
         return LinearIssueDto.fromJson(issue);
       }
       return null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
   }
 
@@ -149,15 +161,10 @@ class LinearGraphQlClient {
       input['assigneeId'] = assigneeId;
     }
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {
-          'query': mutation,
-          'variables': {'input': input},
-        },
-        cancelToken: cancelToken,
-      );
-      final data = response.data;
+      final data = await _post({
+        'query': mutation,
+        'variables': {'input': input},
+      }, cancelToken: cancelToken);
       _checkGraphQLErrors(data);
       final graphData = data?['data'] as Map<String, dynamic>?;
       final create = graphData?['issueCreate'] as Map<String, dynamic>?;
@@ -166,11 +173,8 @@ class LinearGraphQlClient {
         return LinearIssueDto.fromJson(issue);
       }
       return null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
   }
 
@@ -198,20 +202,13 @@ class LinearGraphQlClient {
       input['priority'] = priority;
     }
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {
-          'query': mutation,
-          'variables': {'id': issueId, 'input': input},
-        },
-        cancelToken: cancelToken,
-      );
-      _checkGraphQLErrors(response.data);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+      final data = await _post({
+        'query': mutation,
+        'variables': {'id': issueId, 'input': input},
+      }, cancelToken: cancelToken);
+      _checkGraphQLErrors(data);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
   }
 
@@ -227,20 +224,13 @@ class LinearGraphQlClient {
       }
     ''';
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {
-          'query': mutation,
-          'variables': {'id': issueId, 'assigneeId': assigneeId},
-        },
-        cancelToken: cancelToken,
-      );
-      _checkGraphQLErrors(response.data);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+      final data = await _post({
+        'query': mutation,
+        'variables': {'id': issueId, 'assigneeId': assigneeId},
+      }, cancelToken: cancelToken);
+      _checkGraphQLErrors(data);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
   }
 
@@ -257,15 +247,10 @@ class LinearGraphQlClient {
       }
     ''';
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {
-          'query': query,
-          'variables': {'id': issueId},
-        },
-        cancelToken: cancelToken,
-      );
-      final data = response.data;
+      final data = await _post({
+        'query': query,
+        'variables': {'id': issueId},
+      }, cancelToken: cancelToken);
       _checkGraphQLErrors(data);
       final issue =
           (data?['data'] as Map<String, dynamic>?)?['issue']
@@ -285,11 +270,8 @@ class LinearGraphQlClient {
             .toList();
       }
       return const [];
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
   }
 
@@ -305,21 +287,24 @@ class LinearGraphQlClient {
       }
     ''';
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '',
-        data: {
-          'query': mutation,
-          'variables': {'id': issueId, 'stateId': stateId},
-        },
-        cancelToken: cancelToken,
-      );
-      _checkGraphQLErrors(response.data);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        rethrow;
-      }
-      throw mapDioException(e);
+      final data = await _post({
+        'query': mutation,
+        'variables': {'id': issueId, 'stateId': stateId},
+      }, cancelToken: cancelToken);
+      _checkGraphQLErrors(data);
+    } on RhttpException catch (e) {
+      throw _mapOrRethrowCancel(e);
     }
+  }
+
+  /// Re-throws a cancellation untouched (a subscriber standing down, not a
+  /// failure) and maps every other transport failure to the app's typed
+  /// [NetworkException].
+  Object _mapOrRethrowCancel(RhttpException e) {
+    if (e is RhttpCancelException) {
+      return e;
+    }
+    return mapHttpException(e);
   }
 
   void _checkGraphQLErrors(Map<String, dynamic>? data) {

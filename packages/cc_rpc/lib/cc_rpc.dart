@@ -12,23 +12,27 @@
 /// `RpcDispatcher` seam and `RemoteRpcChannelPort`.
 library;
 
-export 'src/channel/chunked_relay_codec.dart';
 export 'src/channel/frame_codec.dart' show decodeJsonFrame, encodeJsonFrame;
 export 'src/channel/in_process_rpc_channel.dart';
 export 'src/channel/relay_client_channel.dart';
 export 'src/channel/relay_signaling_channel.dart';
 export 'src/channel/remote_rpc_channel_port.dart';
+export 'src/channel/secure_channel_handshake.dart';
+export 'src/channel/secure_rpc_channel.dart';
 export 'src/channel/ws_client_channel.dart';
 export 'src/client/remote_channel_auth.dart';
 export 'src/client/remote_rpc_client.dart';
 export 'src/client/rpc_snapshot_cache.dart';
 export 'src/client/server_build.dart';
-export 'src/crypto/relay_frame_crypto.dart';
+export 'src/crypto/credential_seal.dart';
+export 'src/crypto/noise_session.dart' show ccNoiseProtocol, NoiseProtocolException;
 export 'src/crypto/remote_control_crypto.dart';
 export 'src/crypto/server_identity.dart';
 export 'src/resolver/connection_failure.dart';
 export 'src/resolver/connection_supervisor.dart';
 export 'src/resolver/reachability_resolver.dart';
 export 'src/resolver/resilient_rpc_client.dart';
+export 'src/resource/local_resource_proxy.dart';
+export 'src/resources/resource_tunnel.dart';
 export 'src/rpc_dispatcher.dart';
 export 'src/transport_security_policy.dart';

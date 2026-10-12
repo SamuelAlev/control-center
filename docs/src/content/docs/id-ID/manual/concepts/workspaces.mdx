@@ -2,7 +2,7 @@
 title: Ruang kerja dan isolasi
 description: Mengapa ruang kerja merupakan batas penyewa yang keras, bagaimana pemisahan basis data membuat batas itu bersifat struktural, dan apa yang sengaja melintasinya.
 slug: id-ID/panduan-pengguna/konsep/ruang-kerja
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Apa itu ruang kerja?
@@ -110,13 +110,15 @@ Yang tidak dibawa oleh satu pun dari operasi itu adalah sisa direktori ruang ker
 
 ## Memindahkan cadangan antara server dan perangkat Anda
 
-Setiap op di atas berbicara dalam jalur di **server**, yang merupakan jawaban utuh hanya jika server itu adalah mesin Anda sendiri. Tiga rute HTTP bertanda tangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/id-ID/panduan-pengguna/referensi/cadangan/#transfer-routes) — membawa byte untuk semua topologi lainnya, di jalur terautentikasi yang sama yang sudah dipakai proksi media dan penyimpan gambar. Di halaman, ini berupa tombol **Unduh** di samping setiap ekspor dan setiap snapshot (Anda memilih tempat penyimpanannya), dan **Pilih file lalu unggah** untuk memulihkan dari berkas yang berada di mesin yang Anda pakai. Unggahan inilah yang berfungsi saat server bukan mesin Anda: `workspace.import` memerlukan berkasnya sudah ada di host, dan beginilah cara berkas itu sampai ke sana.
+Setiap op di atas berbicara dalam jalur di **server**, yang merupakan jawaban utuh hanya jika server itu adalah mesin Anda sendiri. Tiga rute transfer bertanda tangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/id-ID/panduan-pengguna/referensi/cadangan/#rute-transfer) — membawa byte untuk semua topologi lainnya melalui terowongan sumber daya terautentikasi dan terenkripsi, baik pada koneksi langsung maupun melalui relay. Rute HTTP publik tidak menyajikan byte cadangan yang dapat dibaca, dan jalur bertanda tangan tetap memerlukan otorisasi. Di halaman, ini berupa tombol **Unduh** di samping setiap ekspor dan setiap snapshot (Anda memilih tempat penyimpanannya), dan **Pilih file lalu unggah** untuk memulihkan dari berkas yang berada di mesin yang Anda pakai. Unggahan berfungsi saat server bukan mesin Anda: `workspace.import` memerlukan berkasnya sudah ada di host, dan begitulah cara berkas itu sampai ke sana.
 
 Ada tiga sifat yang perlu diketahui:
 
 - **Unduhan membuat salinan baru dan server tidak menyimpan satu pun.** Mengunduh bukan berarti "mengambil berkas yang dibuat tombol ekspor" — ia mengekspor ulang, menyalurkan hasilnya, lalu menghapusnya. Responsnya `no-store` dengan `Accept-Ranges: none` karena alasan yang sama: rentang yang dilanjutkan akan menyambung dua ekspor berbeda menjadi satu berkas yang terlihat valid padahal tidak.
 - **Unggahan disalurkan ke disk, tidak pernah ditampung di memori**, di kedua ujungnya, dan salinan yang di-staging dihapus pada setiap jalur keluar — termasuk saat ditolak. Basis data ruang kerja bukanlah tangkapan layar.
-- **Koneksi yang direlai tidak memiliki origin HTTP**, sehingga kontrol transfer dinonaktifkan di sana disertai catatan yang menjelaskan alasannya. Semua hal yang berbicara dalam jalur sisi server tetap berfungsi lewat relay; hanya jalur byte yang memerlukan koneksi langsung.
+- **Transfer juga bekerja melalui relay.** Unduhan dan unggahan memakai terowongan sumber daya terenkripsi yang sama seperti koneksi langsung; origin HTTP langsung tidak diperlukan.
+
+Enkripsi melindungi transfer saat transit, bukan basis data sisi server, direktori snapshot, atau salinan yang diunduh saat tersimpan. Operator server dapat mengakses data yang tersimpan di host itu.
 
 :::note[Jalur mana milik siapa]
 Jalur yang *ditampilkan* halaman — direktori snapshot, berkas yang ditulis sebuah ekspor, sumber yang dibaca sebuah impor — berada di mesin yang menjalankan `cc_server`. Jalur yang dilaporkan sebuah **unduhan** berada di mesin tempat Anda duduk. Perbedaan itulah alasan keduanya ada: yang pertama adalah yang dibutuhkan skrip pemeliharaan atau sesi ssh, yang kedua adalah yang dibutuhkan orang yang mengumpulkan cadangan.

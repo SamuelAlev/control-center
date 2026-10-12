@@ -1,9 +1,16 @@
 ---
 title: Evals dan kualiti
-description: Suite eval, set permulaan yang disemai ke dalam setiap ruang kerja dan tempat ia muncul dalam Kebolehcerapan.
+description: Suite eval dan kempen kemahiran yang dipinkan pada semakan, serta cara mentafsir buktinya.
 slug: ms-MY/manual-pengguna/konsep/evals-dan-kualiti
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Kebolehcerapan → Kualiti** mengandungi kedua-dua suite eval satu tugasan dan
+kempen kemahiran berpasangan. Kempen kemahiran mengukur pakej sebagaimana
+digunakan oleh model dan harness tertentu, bukan kualiti Markdown-nya secara
+berasingan.
+
+## Suite eval
 
 Satu **suite eval** ialah definisi berlingkup ruang kerja bagi sesuatu tugasan
 untuk dijalankan terhadap ejen: satu prompt, ejen sasaran dan modus, persediaan
@@ -18,7 +25,7 @@ Penyemaian mendengar `WorkspaceCreated` (`workspace.upsert` atau
 `workspace.create`), melangkau nama yang sudah wujud dan tidak mengisi semula
 ruang kerja lama.
 
-## Di mana ia muncul
+### Di mana ia muncul
 
 **Kebolehcerapan → Kualiti** (`/workspaces/<id>/observability`)
 menyenaraikan setiap suite dalam ruang kerja itu.
@@ -27,10 +34,122 @@ Cipta, senaraikan, sunting dan padam suite melalui `evals.upsertSuite`,
 `evals.deleteSuite` dan `evals.watchSuites`. Tab Kualiti ialah senarai itu;
 operasi tersebut ialah editor.
 
+## Kempen kemahiran
+
+Kempen membandingkan dua lengan di bawah tugasan dan konfigurasi pelaksanaan
+yang sama. Calon itu tiada, tersedia secara biasa, dimuatkan secara eksplisit,
+atau dibandingkan dengan semakan terdahulu atau inventori kemahiran latar yang
+tetap. Semuanya menjawab soalan yang berbeza; pemuatan paksa ialah diagnostik,
+bukan skor untuk penemuan biasa. [Panduan
+kemahiran](/ms-MY/manual-pengguna/panduan-cara/urus-kemahiran/#nilai-kemahiran)
+menerangkan cara memilih perbandingan dan membenarkan larian berbelanjawan.
+
+Bukti tergolong pada **hash keseluruhan pakej** yang tepat: `SKILL.md`,
+metadata, skrip, rujukan dan aset. Pelayan menangkap pakej tak boleh ubah yang
+telah diimbas dan meminkan korpus, penyesuai, pengecam penyedia/model asli,
+protokol, skema alat dan inventori latar. Kempen Claude asli juga meminkan akaun
+terurus dan versi CLI yang diperhatikan. Menyunting sesuatu rujukan membatalkan
+bukti semasa walaupun `SKILL.md` tidak berubah. Alias model merekodkan apa yang diminta,
+bukan pemberat penyedia yang tak boleh ubah.
+
+Setiap percubaan mendapat konteks, home dan keadaan fixture yang baharu. Lengan
+berpasangan menggunakan dasar dan keadaan tugasan yang sama kecuali campur
+tangan kemahiran yang diisytiharkan. Sasaran tiada bermakna metadata dan fail
+calon tidak tersedia, bukan semua arahan atau kemahiran latar telah dibuang.
+Prompt tugasan tidak boleh menamakan calon dalam perbandingan penemuan biasa.
+
+Pelayan memiliki kebenaran, pelaksanaan, bajet dan kegigihan ruang kerja.
+Klien memilih tetapan dan memaparkan bukti. Kemajuan bertahan melepasi
+sambungan semula; pembatalan mengekalkan hasil separa, dan mulakan semula
+menandakan kerja yang belum selesai sebagai terhenti dan bukannya mengulang
+panggilan berbayar secara senyap. Kempen ini tidak menyediakan kontrak pelaksana
+berasingan untuk suite eval sewenang-wenangnya.
+
+## Baca bukti secara konservatif
+
+- **Hasil menentukan ketepatan.** Pengesah bertipe bebas memeriksa artifak dan
+  tingkah laku yang terhasil, bukan dakwaan ejen bahawa ia berjaya. Jawapan
+  yang dijangka kekal di luar kurungan calon; kod yang dihasilkan digred dalam
+  salinan yang dikurung secara berasingan.
+- **Pemuatan dan kegunaan adalah berbeza.** Ketersediaan, pemuatan
+  isi/rujukan dan penggunaan skrip yang diperhatikan menerangkan pelaksanaan.
+  Membaca fail tidak membuktikan model mengikut arahannya; akses yang tidak
+  dapat diperhatikan kekal tidak diketahui.
+- **Kekalkan garis dasar yang dipadankan.** Satu larian calon yang berjaya
+  sahaja tidak menetapkan manfaat. Sertakan percubaan apabila kemahiran yang
+  tersedia diabaikan, percubaan yang gagal dan kosnya; jangan simpan hanya
+  cubaan semula yang terbaik.
+- **Ulangan bukan tugasan baharu.** Laporan mengelompokkan ketidakpastian
+  mengikut tugasan. Sampel kecil, liputan yang hilang, hanyutan identiti dan
+  perbelanjaan yang tidak diketahui tidak dapat mewajarkan cadangan penerimaan
+  pakai. Kempen yang selesai masih boleh menjadi tiada kesimpulan; kegagalan
+  menunjukkan penambahbaikan bukan bukti kesetaraan atau kemerosotan.
+- **Periksa kemerosotan individu.** Keuntungan agregat tidak boleh
+  menyembunyikan tugasan yang terjejas atau kesan sampingan yang tidak
+  dibenarkan. Imbasan keselamatan, pemerhatian keselamatan masa jalan dan
+  kegunaan kekal berasingan; pelaksanaan yang lebih murah tidak boleh
+  menggantikan bukti kualiti atau keselamatan yang hilang.
+- **Jangan gabungkan hasil yang tidak serasi.** Model, harness, dasar, fixture
+  atau gabungan kemahiran yang lain ialah konfigurasi yang lain. Asingkan bukti
+  pemindahan dan komposisi yang disimpan daripada kes pembangunan.
+
+Sembilan korpus perintis yang ditulis secara setempat mengandungi 108 entri
+tugasan merentas kegunaan, penghalaan/keselamatan khusus keluarga dan
+pemindahan/komposisi yang disimpan. Pilih keluarga yang sepadan dengan tujuan
+kemahiran. Penyelesaian rujukan dan output yang diketahui buruk menguji para
+pengesah; fixture ini bukan pengeluaran semula penanda aras awam, dan bukan
+bukti bahawa mana-mana kemahiran yang dipasang itu berguna. Larian asap
+pelaksanaan dengan respons penyedia berskrip bukan pengukuran kualiti kemahiran
+pada model sebenar.
+
+## Had pelaksanaan dan bukti
+
+**Harness terbina dalam** yang dikawal dan penyesuai **Claude Code** disokong.
+Pengasingan dan bukti kelayakan yang aktif mesti lulus sebelum pelaksanaan.
+Penyedia terbina dalam memerlukan sokongan alat, had token dan harga yang
+didokumenkan; **Codex OAuth** mengesahkan akaunnya sendiri dan bukannya
+memerlukan kunci API OpenAI yang berasingan. **Claude Code** menggunakan akaun
+terurus lalai, ID model yang konkrit dan laporan kos setara API aslinya.
+
+**Claude Code** dan **Codex OAuth** menggunakan **ambang pemberhentian
+penggunaan**: panggilan yang sedang berjalan boleh melebihi bajet, kemudian
+panggilan selanjutnya berhenti. Ini bukan perbelanjaan langganan yang dibilkan
+atau siling invois yang keras. Penyedia berkunci API mengekalkan tempahan sebelum
+panggilan yang konservatif. Perbelanjaan yang diperhatikan tetapi tidak diketahui
+menghentikan panggilan selanjutnya bagi setiap penyesuai. Liputan yang tidak
+lengkap kekal separa atau tiada kesimpulan.
+
+**Claude** menjalankan gelung model aslinya dalam direktori pengawal peribadi,
+dengan alat terbina dalam dan kemahiran latar dilumpuhkan. Satu-satunya alatnya
+ialah jambatan MCP yang disahkan dan dimiliki pelayan ke tetamu terkukung yang
+sama seperti yang digunakan oleh harness terbina dalam. Bukti kelayakan kekal di
+luar tetamu itu. Identiti CLI atau permukaan alat yang berubah membatalkan
+percubaan itu dan bukannya menukar pelaksana secara senyap. Penilaian armada dan
+Windows tidak disokong. Probe Git pekerja atau gema prompt yang berjaya tidak
+dikira sebagai penilaian.
+
+Pengasingan macOS menolak rangkaian tetamu dan akses sistem fail luaran,
+menyekat pelepasan proses, mengehadkan CPU/fail/output dan membersihkan
+keturunan yang dimilikinya, tetapi **tidak menguatkuasakan kuota memori yang
+keras**. Linux memerlukan bubblewrap dan menggunakan had ruang alamat.
+Pengesahan pengasingan awal menguji macOS, bukan Linux. Pengasingan yang
+hilang tidak pernah jatuh semula kepada shell hos. Bukti kelayakan penyedia
+kekal pada pelayan, di luar alat tetamu.
+
+Bukti percubaan disunting dan dihadkan pada 256 KiB; eksport dihadkan pada
+16 MiB. Eksport besar mengekalkan ringkasan hasil/kos yang padat untuk semua
+percubaan yang diterima dan melaporkan secara eksplisit kandungan jejak yang
+ditinggalkan atau diringkaskan. Eksport mahupun laporan tidak mengandungi
+bundel main semula sumber peribadi yang lengkap. Pemeriksaan keselamatan
+sintetik tidak menetapkan ketahanan penyeludupan yang sebenar, tidak mengatasi
+kuarantin dan tidak memperakui kemahiran sebagai selamat.
+
 ## Konsep berkaitan
 
 - [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): konfigurasi yang
   dipinkan oleh satu suite
+- [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/):
+  pengasingan dan sempadan kuasa
 - [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): dail autonomi
 - [Urus kos dan belanjawan](/ms-MY/manual-pengguna/panduan-cara/urus-kos/):
   perbelanjaan yang direkodkan bersebelahan satu larian

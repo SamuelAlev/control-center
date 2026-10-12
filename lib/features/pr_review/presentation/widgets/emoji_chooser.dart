@@ -1,11 +1,10 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/emoji_data.dart';
+import 'package:control_center/shared/emoji_parser.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_emoji/flutter_emoji.dart';
-
-final _emojiParser = EmojiParser();
+import 'package:flutter_emoji/flutter_emoji.dart' show Emoji;
 
 /// Toolbar emoji picker: a [CcIconButton] that opens a grouped grid popover.
 ///
@@ -117,7 +116,7 @@ class _EmojiGrid extends StatelessWidget {
   }
 
   String _shortcodeFor(String emoji) {
-    final match = _emojiParser.getEmoji(emoji);
+    final match = emojiParser.getEmoji(emoji);
     if (match != Emoji.None) {
       return match.full;
     }

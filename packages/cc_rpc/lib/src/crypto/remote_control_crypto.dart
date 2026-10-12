@@ -4,21 +4,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
-/// Cryptographic primitives for remote-control pairing and channel auth.
-///
-/// Reuses the `Random.secure()` + base64url + `sha256`/`Hmac` patterns from
-/// `GoogleOAuthService`. Everything here is pure (no `dart:io`) so it runs
-/// identically on the desktop and in tests. Lives in the data layer because it
-/// depends on `package:crypto` (an infrastructure package the architecture
-/// rules keep out of `domain/`).
-///
-/// Two layers protect the WebRTC DataChannel:
-///  1. **SDP signature** — the offerer HMAC-signs its SDP (which embeds the
-///     DTLS fingerprint) with the PSK so a MITM signaling broker can't swap
-///     fingerprints. The answerer verifies before accepting the connection.
-///  2. **Nonce challenge** — after the channel opens, each side proves it
-///     holds the PSK with an HMAC over a fresh nonce bound to both DTLS
-///     fingerprints, compared in constant time.
+/// Pairing credential generation, broker room admission and signed proxy
+/// targets. The data-channel authentication protocol is Noise; its handshake
+/// and record encryption live in the secure channel.
 class RemoteControlCrypto {
   RemoteControlCrypto._();
 
@@ -38,60 +26,6 @@ class RemoteControlCrypto {
       List<int>.generate(16, (_) => rnd.nextInt(256)),
     );
     return base64UrlEncode(bytes).replaceAll('=', '');
-  }
-
-  /// Generates an 8-byte nonce, base64url-encoded without padding.
-  static String generateNonce([Random? random]) {
-    final rnd = random ?? Random.secure();
-    final bytes = Uint8List.fromList(
-      List<int>.generate(8, (_) => rnd.nextInt(256)),
-    );
-    return base64UrlEncode(bytes).replaceAll('=', '');
-  }
-
-  /// HMAC-SHA256 of [sdp] keyed by the [psk], base64url without padding.
-  /// Binds the SDP (and its DTLS fingerprint) to the PSK so a broker can't
-  /// substitute a different fingerprint unnoticed.
-  static String signSdp(String sdp, String psk) {
-    final digest = Hmac(sha256, utf8.encode(psk)).convert(utf8.encode(sdp));
-    return base64UrlEncode(digest.bytes).replaceAll('=', '');
-  }
-
-  /// Verifies an SDP signature in constant time.
-  static bool verifySdpSignature(String sdp, String psk, String signature) {
-    final expected = signSdp(sdp, psk);
-    return constantTimeEquals(utf8.encode(expected), utf8.encode(signature));
-  }
-
-  /// HMAC-SHA256 over `nonce|localFp|remoteFp` keyed by [psk], base64url
-  /// without padding. Binding both fingerprints ties the proof to this exact
-  /// DTLS session, not a replayed nonce.
-  static String respondToChallenge({
-    required String nonce,
-    required String psk,
-    required String localFingerprint,
-    required String remoteFingerprint,
-  }) {
-    final message = '$nonce|$localFingerprint|$remoteFingerprint';
-    final digest = Hmac(sha256, utf8.encode(psk)).convert(utf8.encode(message));
-    return base64UrlEncode(digest.bytes).replaceAll('=', '');
-  }
-
-  /// Verifies a challenge response in constant time.
-  static bool verifyChallengeResponse({
-    required String nonce,
-    required String psk,
-    required String localFingerprint,
-    required String remoteFingerprint,
-    required String response,
-  }) {
-    final expected = respondToChallenge(
-      nonce: nonce,
-      psk: psk,
-      localFingerprint: localFingerprint,
-      remoteFingerprint: remoteFingerprint,
-    );
-    return constantTimeEquals(utf8.encode(expected), utf8.encode(response));
   }
 
   /// Derives the relay-room **admission token** for a device: HMAC-SHA256 of
@@ -121,10 +55,9 @@ class RemoteControlCrypto {
   /// HMAC-SHA256 over a proxy [target] (a raw image URL) keyed by [psk], base64url without
   /// padding.
   ///
-  /// Authenticates media-proxy `GET`s, which cannot carry the WebSocket session (a browser
-  /// `<img>`/CanvasKit fetch can set no headers).
-  /// The thin client signs each image URL with the device PSK it already holds; the server
-  /// re-derives the signature from the same PSK before fetching.
+  /// Binds a resource URL to its target and device credential. Browser URL
+  /// consumers reach it through the local facade and authenticated encrypted
+  /// resource tunnel; this signature is authorization, not confidentiality.
   static String signProxyTarget(String target, String psk) {
     final digest = Hmac(sha256, utf8.encode(psk)).convert(utf8.encode(target));
     return base64UrlEncode(digest.bytes).replaceAll('=', '');

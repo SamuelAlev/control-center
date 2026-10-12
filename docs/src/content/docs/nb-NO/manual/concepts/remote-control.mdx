@@ -1,34 +1,35 @@
 ---
 title: Fjernstyring og mobil
-description: Hvordan telefonen når serveren din over et formidlet, ende-til-ende-forseglet relé i stedet for en peer-to-peer-forbindelse, og den lagdelte tilgangsmodellen som holder den rekkevidden smal.
+description: Hvordan telefonen når serveren din over direkte eller formidlede ende-til-ende-krypterte tilkoblinger, og den lagdelte tilgangsmodellen som holder den rekkevidden smal.
 slug: nb-NO/handbok/konsepter/fjernstyring
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center er en skrivebordsapp, men arbeidet den følger med på, stopper
 ikke når du forlater skrivebordet. **Fjernstyring** parer telefonen din med
 `cc_server` ved hjelp av **[Remote](https://remote.usectrl.dev/)**, følgeappen
 på remote.usectrl.dev, slik at du kan følge flåten derfra: lese meldinger og
-saker, svare en agent, prioritere nyhetsstrømmen din — uten at lyden,
-transkripsjonen, kildekoden eller legitimasjonen som ligger på serveren, noen
-gang forlater den.
+saker, svare en agent og prioritere nyhetsstrømmen din over en
+ende-til-ende-kryptert tilkobling. Telefonen og `cc_server` er klarerte
+klartekstendepunkter; et relé frakter bare krypterte applikasjonsposter.
 
 Se på den som en ledsager til skrivebordet som stort sett leser. Den er ikke
 ment å erstatte den fulle skrivebordsklienten.
 
-:::note[To ulike fjernveier]
-Telefonledsageren pares med en `cc_server` over et **formidlet WebSocket-relé**
-som frakter ende-til-ende-forseglede JSON-RPC-rammer. Det fulle **nettbygget**
-(og et skrivebord rettet mot en ekstern server) er den andre fjernveien; det
-kobler til `cc_server` over WebSocket og rendrer hele appen. Se
-[Drift og klienter](/nb-NO/handbok/konsepter/drift/) for hvordan de to skiller seg.
+:::note[To ulike fjernklienter]
+Telefonledsageren og det fulle **nettbygget** (eller et skrivebord rettet mot en
+ekstern server) kan koble direkte til `cc_server` eller bruke et formidlet
+WebSocket-relé. Begge veier krever den samme krypterte økten; telefonen
+eksponerer et mindre sett med operasjoner enn fullklienten. Se
+[Drift og klienter](/nb-NO/handbok/konsepter/drift/) for hvordan klientene skiller seg.
 :::
 
 ## Transport
 
 Telefonen når `cc_server` over en WebSocket: enten en direkte tilkobling
 (loopback, LAN, tailnet eller `wss://`) eller et invitasjonsbeskyttet rom hos en
-signalmegler som videresender forseglede rammer. Det finnes ingen
+signalmegler. Begge veier krever en autentisert, ende-til-ende-kryptert økt;
+megleren videresender bare sine krypterte poster. Det finnes ingen
 peer-to-peer-datakanal.
 
 ## Hva telefonen kan gjøre
@@ -51,22 +52,26 @@ bare å være ment.
 
 ## Hvordan forbindelsen bygges
 
-Forbindelsen går over et **formidlet relé**: serveren blir med i ett
-invitasjonsbeskyttet rom hos en `wss://`-megler som eieren sin, og hver parede
-klient — skrivebord, nett, telefon — blir med i samme rom med et tidsbegrenset
-adgangstoken. Tre brikker spiller sammen:
+Når telefonen ikke når serveren direkte, bruker forbindelsen et **formidlet
+relé**: serveren blir med i ett invitasjonsbeskyttet rom hos en `wss://`-megler
+som eieren sin, og parede klienter blir med ved hjelp av tidsbegrensede
+adgangstokener. Tre brikker spiller sammen:
 
 | Brikke                 | Rolle                                                                                                                                                                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (telefonappen)** | Følgenettappen, hostet på `remote.usectrl.dev` som standard, eller selvhostet. Lastes i en nettleser, holder paringsoppføringen i IndexedDB.                                                                                                                                  |
-| **Relémegleren**       | Et tilstandsløst `wss://`-relé (`cc_signaling_server`) som er vert for rom med N parter. Det frakter **bare ugjennomsiktige rammer**: hver nyttelast forsegles ende-til-ende mellom telefonen og serveren, så megleren ser aldri appdata eller paringshemmeligheten og tolker aldri det den videresender. |
+| **Relémegleren**       | Et tilstandsløst `wss://`-relé (`cc_signaling_server`) som er vert for rom med N parter. Det videresender krypterte poster uten paringshemmeligheten eller appens klartekst, men ser ruteidentifikatorer, IP-er, poststørrelser og timing. |
 | **`cc_server`**        | Eieren av rommet. Den svarer på telefonens kall gjennom den samme dispatcheren som alle andre klienter bruker.                                                                                                                                                                |
 
 Et paringstilbud inneholder en **tilkoblingsbeskrivelse** som lister opp alle
 veier til serveren (LAN, tailnet, offentlig `wss://`, relé) pluss
 identitetsfingeravtrykket. Telefonens oppslager velger den beste tilgjengelige
-veien og fester fingeravtrykket ved første tilkobling (TOFU); reléet garanterer
-tilkobling selv når ingen direkte vei finnes, uten å kunne lese trafikken.
+veien. Serveren signerer det krypterte håndtrykket, og klienten fester
+fingeravtrykket. Ved første tilkobling bør du kontrollere fingeravtrykket mot en
+QR-kode eller en annen klarert kilde: en første signert identitet alene beviser
+ikke hvilken server du nådde. En endret pin avvises i stedet for å bli
+stilltiende betrodd på nytt. Reléet frakter chiffertekst når ingen direkte vei
+finnes, men kan fortsatt avbryte eller forsinke forbindelsen.
 
 ## Hva paringsnyttelasten består av
 
@@ -78,26 +83,32 @@ det som betyr noe her.
 https://<pwa-host>/#<payload>
 ```
 
-Nyttelasten ligger i URL-**fragmentet**, delen etter `#` som nettlesere aldri
-sender til serveren, så PWA-ens HTTPS-vert ser den aldri. Den inneholder alt
-telefonen trenger for å nå serveren og bevise hvem den er:
-tilkoblingsbeskrivelsen (alle veier pluss identitetsfingeravtrykket), en
-nyutstedt enhets-id, en forhåndsdelt nøkkel på 32 byte og et utløpstidsstempel.
-Telefonen dekoder den, lagrer en paringsoppføring lokalt og fjerner fragmentet,
-slik at hemmeligheten forlater URL-en.
+Nyttelasten ligger i URL-**fragmentet**, delen etter `#` som nettlesere ikke
+sender i HTTP-forespørselen til PWA-verten. Den inneholder alt telefonen trenger
+for å nå serveren og bevise hvem den er: tilkoblingsbeskrivelsen (alle veier
+pluss identitetsfingeravtrykket), en nyutstedt enhets-id, en forhåndsdelt nøkkel
+på 32 byte og et utløpstidsstempel. Telefonen dekoder den, lagrer en
+paringsoppføring lokalt og fjerner fragmentet fra URL-en. Nettappens kode kan
+lese fragmentet, så bruk en klarert appvert og behandle lenken som en
+hemmelighet.
 
 Det finnes to former for nyttelast, og de er **ikke utbyttbare**. Telefon-QR-en
 som utstedes fra paringspanelet i appen, er v2-`PairingPayload` over, rettet mot
-Remote PWA-verten. `cc_server pair --client-url` sender ut en annen, eldre
-v1-lenke (`{s, i, k}` — server-URL, enhets-id, nøkkel) som bare er ment for
-**nett**klienten.
+Remote PWA-verten. `cc_server pair --client-url` sender ut en v1-lenke
+(`{s, i, k}` — server-URL, enhets-id, nøkkel) som bare er ment for
+**nett**klienten. Dette er paringsdataformater, ikke transportreserver: begge
+klientene må støtte den gjeldende krypterte øktprotokollen.
 
 De skiller seg også i levetid, noe det er lett å ta feil av:
 
 | Utstedt av                            | Legitimasjonens utløp                      |
 | ------------------------------------- | ------------------------------------------ |
 | Paringspanelet i appen (`pairing.mint`) | 30 dager, alltid                          |
-| `cc_server pair` på kommandolinjen    | **Ingen** — legitimasjonen utløper ikke    |
+| `cc_server pair` på kommandolinjen    | Ingen utløpstid kodet inn; serverretningslinjer gjelder fortsatt |
+
+Serveromfattende retningslinjer for maksimal enhetsalder og tidsavbrudd ved
+inaktivitet kan avvise begge legitimasjonene tidligere. Ingen av
+paringsformatene omgår disse retningslinjene.
 
 ## Tilgangsmodellen
 
@@ -153,13 +164,15 @@ fordi medlemskapskontrollen i sperre 1 fortsatt gjelder. Dette er den samme
 invarianten for [arbeidsområdeisolering](/nb-NO/handbok/konsepter/arbeidsomrader/) som resten av
 produktet håndhever.
 
-### 5. Ende-til-ende-forseglede rammer nøklet med den forhåndsdelt nøkkelen
+### 5. Ende-til-ende-kryptering på direkte og reléerte tilkoblinger
 
-Hver ramme mellom telefon og server forsegles med paringsnøkkelen;
-adgangstokenet slipper bare en klient inn i rommet og dekrypterer ingenting.
-Megleren videresender chiffertekst og ser aldri nøkkelen. En enhet som
-tilbakekalles, oppdager at legitimasjonen allerede er borte, så den **svikter
-lukket** ved gjentilkobling.
+Hver direkte eller reléerte klientøkt krever et signert Noise-håndtrykk.
+Paringsnøkkelen autentiserer dette håndtrykket; ferske efemere nøkler utleder
+trafikknøklene i stedet for å bruke paringsnøkkelen til å forsegle hver ramme.
+Serveren signerer identiteten sin inn i utvekslingen, og klienten kontrollerer
+den lagrede fingeravtrykk-pinen. Det finnes ingen klartekst- eller
+eldre-klient-reserve. Et relé-adgangstoken slipper bare en klient inn i et rom;
+det kan ikke dekryptere postene.
 
 En legitimasjon utstedt av appen er tidsbegrenset til 30 dager; etter det
 avviser tilkoblingssperren den, og telefonen må pares på nytt. Tilbakekalling
@@ -175,20 +188,24 @@ dine trekker på én og samme kvote, så en kapret klient kan ikke kjøpe seg
 spillerom ved å åpne flere økter, og ett støyende medlem kan ikke sulte ut de
 andre.
 
-### 7. En megler som ikke får vite noe
+### 7. En megler som ikke kan lese appinnhold
 
-Relémegleren er med vilje dum: den er vert for rom, videresender forseglede
-rammer og har ingen kontoer, ingen appdata og ingen nøkler. Rommene er
-invitasjonsbeskyttede og kortvarige. Appdata, lyd, transkripsjon, kildekode og
-legitimasjon blir alt sammen på serveren.
+Relémegleren er vert for kortvarige, invitasjonsbeskyttede rom og videresender
+krypterte poster uten appens klartekst eller paringsnøkler. Den ser likevel
+IP-adresser, rom- og peer-identifikatorer, poststørrelser, timing og
+tilkoblingens levetid, og kan droppe eller forsinke trafikk. Den parede klienten
+og den valgte `cc_server` er klartekstendepunktene; serveroperatøren og
+tjenester den sender innhold til, kan se det innholdet. Kryptering under
+overføring krypterer ikke serverdata i ro.
 
 ## Sanntidsoppdateringer
 
 Når telefonen er paret, mottar den **sanntidsoppdateringer** som varselrammer —
 nye agentmeldinger, saker tildelt deg, statusendringer — som speiler
-skrivebordets egne varsler. Serveren kringkaster disse rammene til hver
-tilkoblet økt, og arbeidsområdefilteret brukes på klientsiden, så det du ser, er
-avgrenset til arbeidsområdet du ser på.
+skrivebordets egne varsler. Serveren kontrollerer arbeidsområdemedlemskapet før
+den videresender en hendelse til en økt. Klienten filtrerer deretter disse
+allerede autoriserte hendelsene til arbeidsområdet du ser på; det
+visningsfilteret er ikke tilgangsgrensen.
 
 ## Hvor du finner det
 
@@ -201,8 +218,8 @@ ikke bare telefoner — flyten er identisk, bare dyplenken er forskjellig.
 
 ::::note
 Fjernstyring er på serversiden og eksponeres **ikke** over MCP. Telefonen snakker
-med serverens egen dispatcher over reléet; den er ikke en MCP-klient for en
-ekstern server.
+med serverens egen dispatcher over sin krypterte direkte eller reléerte
+tilkobling; den er ikke en MCP-klient for en ekstern server.
 ::::
 
 ## Se også

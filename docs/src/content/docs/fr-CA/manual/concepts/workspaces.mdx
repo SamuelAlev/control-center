@@ -2,7 +2,7 @@
 title: Espaces de travail et isolation
 description: Pourquoi un espace de travail est une frontière de locataire étanche, comment la séparation des bases de données rend cette frontière structurelle et ce qui la franchit délibérément.
 slug: fr-CA/manuel/concepts/espaces-de-travail
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Qu’est-ce qu’un espace de travail ?
@@ -118,13 +118,17 @@ Ce qu’aucune de ces opérations ne transporte, c’est le reste du répertoire
 
 ## Déplacer une sauvegarde entre le serveur et votre appareil
 
-Toutes les opérations ci-dessus s’expriment en chemins sur le **serveur**, ce qui n’est une réponse complète que lorsque le serveur est votre propre machine. Trois routes HTTP signées — [`/backup/workspace`, `/backup/snapshot` et `/backup/restore`](/fr-CA/manuel/reference/sauvegarde/#transfer-routes) — transportent les octets pour toute autre topologie, sur la même voie authentifiée que celle qu’utilisent déjà le proxy de médias et le magasin d’images. Dans la page, cela se présente comme un bouton **Télécharger** à côté de chaque export et de chaque instantané (vous choisissez où il aboutit), et **Choisir un fichier et l’envoyer** pour restaurer à partir d’un fichier qui se trouve sur la machine que vous utilisez. C’est le téléversement qui fonctionne lorsque le serveur n’est pas votre machine : `workspace.import` exige que le fichier soit déjà sur l’hôte, et c’est ainsi qu’il s’y retrouve.
+Toutes les opérations ci-dessus s’expriment en chemins sur le **serveur**, ce qui n’est une réponse complète que lorsque le serveur est votre propre machine. Trois routes de transfert signées — [`/backup/workspace`, `/backup/snapshot` et `/backup/restore`](/fr-CA/manuel/reference/sauvegarde/#transfer-routes) — transportent les octets pour toute autre topologie par le tunnel de ressources authentifié et chiffré, sur les connexions directes comme par le relais. Les routes HTTP publiques ne servent pas d’octets de sauvegarde lisibles, et les chemins signés exigent tout de même une autorisation. Dans la page, cela se présente comme un bouton **Télécharger** à côté de chaque export et de chaque instantané (vous choisissez où il aboutit), et **Choisir un fichier et l’envoyer** pour restaurer à partir d’un fichier qui se trouve sur la machine que vous utilisez. Le téléversement fonctionne lorsque le serveur n’est pas votre machine : `workspace.import` exige que le fichier soit déjà sur l’hôte, et c’est ainsi qu’il s’y retrouve.
 
 Trois propriétés méritent d’être connues :
 
 - **Un téléchargement crée une copie fraîche et le serveur n’en conserve rien.** Télécharger, ce n’est pas « aller chercher le fichier que le bouton d’export a créé » : cela exporte de nouveau, diffuse ce résultat, puis le supprime. La réponse est `no-store` avec `Accept-Ranges: none` pour la même raison : une plage reprise souderait deux exports différents en un seul fichier qui a l’air valide sans l’être.
 - **Un téléversement est diffusé vers le disque, jamais mis en mémoire tampon**, aux deux extrémités, et la copie intermédiaire est supprimée sur chaque chemin de sortie — y compris en cas de refus. Une base de données d’espace de travail n’est pas une capture d’écran.
-- **Une connexion relayée n’a pas d’origine HTTP**, donc les commandes de transfert y sont désactivées, avec une note qui en explique la raison. Tout ce qui s’exprime en chemins côté serveur continue de fonctionner par le relais ; seules les voies d’octets ont besoin d’une connexion directe.
+- **Le transfert fonctionne aussi par le relais.** Les téléchargements et les téléversements empruntent le même tunnel de ressources chiffré que les connexions directes; une origine HTTP directe n’est pas nécessaire.
+
+Le chiffrement protège le transfert en transit, et non la base de données côté
+serveur, le répertoire d’instantanés ni une copie téléchargée au repos.
+L’exploitant du serveur peut accéder aux données détenues sur cet hôte.
 
 :::note[À qui appartiennent ces chemins]
 Les chemins que la page *affiche* — le répertoire d’instantané, le fichier qu’un export a écrit, la source qu’un import lit — se trouvent sur la machine qui exécute `cc_server`. Le chemin qu’un **téléchargement** indique se trouve sur la machine où vous êtes. C’est cette distinction qui explique que les deux existent : le premier est ce dont un script de maintenance ou une session ssh a besoin, le deuxième est ce dont une personne qui recueille une sauvegarde a besoin.

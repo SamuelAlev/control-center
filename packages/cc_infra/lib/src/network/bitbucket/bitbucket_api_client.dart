@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_activity_entry.dart';
@@ -11,18 +12,19 @@ import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pipeline.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_workspace_member.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Client for the Bitbucket Cloud REST API 2.0.
 ///
-/// Wire vocabulary only (`Bitbucket*` models). Injected [Dio] owns base URL and
-/// credentials; paths are relative. [DioException]s propagate untouched.
+/// Wire vocabulary only (`Bitbucket*` models). Injected [RhttpClient] owns base
+/// URL and credentials; paths are relative. [RhttpException]s propagate
+/// untouched.
 class BitbucketApiClient {
-  /// Creates a [BitbucketApiClient] over [dio], which must already carry the
-  /// Bitbucket API base URL and an auth interceptor.
-  BitbucketApiClient(Dio dio) : _dio = dio;
+  /// Creates a [BitbucketApiClient] over [httpClient], which must already
+  /// carry the Bitbucket API base URL and an auth interceptor.
+  BitbucketApiClient(RhttpClient httpClient) : _httpClient = httpClient;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Bitbucket's maximum page size for list endpoints.
   static const int pageLen = 100;
@@ -62,14 +64,14 @@ class BitbucketApiClient {
   }) async {
     _requireCoordinate(workspace, repo);
     try {
-      final response = await _dio.get<Object?>(
+      final response = await _httpClient.get(
         '/repositories/$workspace/$repo/pullrequests/$id',
         cancelToken: cancelToken,
       );
-      final json = asJsonMap(response.data);
+      final json = asJsonMap(_decoded(response));
       return json == null ? null : BitbucketPullRequest.fromJson(json);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return null;
       }
       rethrow;
@@ -100,18 +102,18 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.get<Object?>(
+    final response = await _httpClient.get(
       '/repositories/$workspace/$repo/pullrequests',
-      queryParameters: <String, dynamic>{
+      query: <String, String>{
         'state': state,
         'sort': sort,
-        'pagelen': limit.clamp(1, pullRequestPageLen),
+        'pagelen': '${limit.clamp(1, pullRequestPageLen)}',
         'fields': _rosterFields,
         if (query != null && query.isNotEmpty) 'q': query,
       },
       cancelToken: cancelToken,
     );
-    final body = asJsonMap(response.data);
+    final body = asJsonMap(_decoded(response));
     final next = body?['next'] as String?;
     return (
       items: decodeJsonList(body?['values'], BitbucketPullRequest.fromJson),
@@ -133,8 +135,8 @@ class BitbucketApiClient {
   ///
   /// Bitbucket serves this endpoint as `text/plain` (via a redirect to a
   /// content-addressed URL), so the request asks for text and takes the
-  /// response body raw — letting Dio's JSON transformer near it would throw on
-  /// the first `@@` line.
+  /// response body raw — decoding it as JSON would throw on the first `@@`
+  /// line.
   Future<String> getPullRequestDiff(
     String workspace,
     String repo,
@@ -216,7 +218,7 @@ class BitbucketApiClient {
     return _getPagedResult(
       '/repositories/$workspace/$repo/commits/${_encodePath(revision)}',
       BitbucketCommit.fromJson,
-      queryParameters: <String, dynamic>{'exclude': exclude},
+      query: <String, String>{'exclude': exclude},
       cancelToken: cancelToken,
     );
   }
@@ -280,12 +282,12 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.post<Object?>(
+    final response = await _httpClient.post(
       '/repositories/$workspace/$repo/pullrequests/$id/comments',
-      data: payload,
+      body: HttpBody.json(payload),
       cancelToken: cancelToken,
     );
-    final json = asJsonMap(response.data);
+    final json = asJsonMap(_decoded(response));
     return json == null ? null : BitbucketComment.fromJson(json);
   }
 
@@ -300,12 +302,12 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.put<Object?>(
+    final response = await _httpClient.put(
       '/repositories/$workspace/$repo/pullrequests/$id/comments/$commentId',
-      data: payload,
+      body: HttpBody.json(payload),
       cancelToken: cancelToken,
     );
-    final json = asJsonMap(response.data);
+    final json = asJsonMap(_decoded(response));
     return json == null ? null : BitbucketComment.fromJson(json);
   }
 
@@ -318,7 +320,7 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    await _dio.delete<Object?>(
+    await _httpClient.delete(
       '/repositories/$workspace/$repo/pullrequests/$id/comments/$commentId',
       cancelToken: cancelToken,
     );
@@ -332,7 +334,7 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    await _dio.post<Object?>(
+    await _httpClient.post(
       '/repositories/$workspace/$repo/pullrequests/$id/approve',
       cancelToken: cancelToken,
     );
@@ -346,7 +348,7 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    await _dio.delete<Object?>(
+    await _httpClient.delete(
       '/repositories/$workspace/$repo/pullrequests/$id/approve',
       cancelToken: cancelToken,
     );
@@ -360,7 +362,7 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    await _dio.post<Object?>(
+    await _httpClient.post(
       '/repositories/$workspace/$repo/pullrequests/$id/request-changes',
       cancelToken: cancelToken,
     );
@@ -382,16 +384,16 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.post<Object?>(
+    final response = await _httpClient.post(
       '/repositories/$workspace/$repo/pullrequests/$id/merge',
-      data: payload,
+      body: HttpBody.json(payload),
       cancelToken: cancelToken,
     );
-    final json = asJsonMap(response.data);
+    final json = asJsonMap(_decoded(response));
     final pr = json != null && json['id'] is num
         ? BitbucketPullRequest.fromJson(json)
         : null;
-    return (statusCode: response.statusCode ?? 0, pullRequest: pr);
+    return (statusCode: response.statusCode, pullRequest: pr);
   }
 
   /// Declines (closes without merging) a pull request.
@@ -402,7 +404,7 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    await _dio.post<Object?>(
+    await _httpClient.post(
       '/repositories/$workspace/$repo/pullrequests/$id/decline',
       cancelToken: cancelToken,
     );
@@ -417,12 +419,12 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.post<Object?>(
+    final response = await _httpClient.post(
       '/repositories/$workspace/$repo/pullrequests',
-      data: payload,
+      body: HttpBody.json(payload),
       cancelToken: cancelToken,
     );
-    final json = asJsonMap(response.data);
+    final json = asJsonMap(_decoded(response));
     return json == null ? null : BitbucketPullRequest.fromJson(json);
   }
 
@@ -440,12 +442,12 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.put<Object?>(
+    final response = await _httpClient.put(
       '/repositories/$workspace/$repo/pullrequests/$id',
-      data: payload,
+      body: HttpBody.json(payload),
       cancelToken: cancelToken,
     );
-    final json = asJsonMap(response.data);
+    final json = asJsonMap(_decoded(response));
     return json == null ? null : BitbucketPullRequest.fromJson(json);
   }
 
@@ -482,10 +484,7 @@ class BitbucketApiClient {
     return _getPaged(
       '/repositories/$workspace/$repo/pipelines/',
       BitbucketPipeline.fromJson,
-      queryParameters: <String, dynamic>{
-        'target.commit.hash': sha,
-        'sort': '-created_on',
-      },
+      query: <String, String>{'target.commit.hash': sha, 'sort': '-created_on'},
       cancelToken: cancelToken,
     );
   }
@@ -505,25 +504,22 @@ class BitbucketApiClient {
   }) async {
     _requireCoordinate(workspace, repo);
     final path = '/repositories/$workspace/$repo/refs/branches';
-    const sort = <String, dynamic>{'sort': '-target.date'};
+    const sort = <String, String>{'sort': '-target.date'};
     if (limit == null || limit <= 0) {
       return _getPaged(
         path,
         BitbucketBranch.fromJson,
-        queryParameters: sort,
+        query: sort,
         cancelToken: cancelToken,
       );
     }
-    final response = await _dio.get<Object?>(
+    final response = await _httpClient.get(
       path,
-      queryParameters: <String, dynamic>{
-        ...sort,
-        'pagelen': limit.clamp(1, pageLen),
-      },
+      query: <String, String>{...sort, 'pagelen': '${limit.clamp(1, pageLen)}'},
       cancelToken: cancelToken,
     );
     return decodeJsonList(
-      asJsonMap(response.data)?['values'],
+      asJsonMap(_decoded(response))?['values'],
       BitbucketBranch.fromJson,
     );
   }
@@ -540,11 +536,11 @@ class BitbucketApiClient {
     CancelToken? cancelToken,
   }) async {
     _requireCoordinate(workspace, repo);
-    final response = await _dio.get<Object?>(
+    final response = await _httpClient.get(
       '/repositories/$workspace/$repo',
       cancelToken: cancelToken,
     );
-    final body = asJsonMap(response.data);
+    final body = asJsonMap(_decoded(response));
     return asJsonMap(body?['mainbranch'])?['name'] as String? ?? '';
   }
 
@@ -587,15 +583,12 @@ class BitbucketApiClient {
   /// rejected (401/403). Every other failure propagates.
   Future<BitbucketUser?> getCurrentUser({CancelToken? cancelToken}) async {
     try {
-      final response = await _dio.get<Object?>(
-        '/user',
-        cancelToken: cancelToken,
-      );
-      final json = asJsonMap(response.data);
+      final response = await _httpClient.get('/user', cancelToken: cancelToken);
+      final json = asJsonMap(_decoded(response));
       return json == null ? null : BitbucketUser.fromJson(json);
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 401 || status == 403) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException &&
+          (e.statusCode == 401 || e.statusCode == 403)) {
         return null;
       }
       rethrow;
@@ -639,20 +632,20 @@ class BitbucketApiClient {
   /// [maxPages] pages.
   ///
   /// The `next` link is an absolute URL, but re-requesting it verbatim would
-  /// route around the injected Dio's base URL. Only its query string is
-  /// carried forward instead — that is where the cursor lives (`page` on most
-  /// endpoints, an opaque `ctx` on the commit feeds), so paging stays correct
-  /// AND every request stays relative.
+  /// route around the injected client's base URL. Only its query string is
+  /// carried forward instead — that is where the cursor lives (`page` on
+  /// most endpoints, an opaque `ctx` on the commit feeds), so paging stays
+  /// correct AND every request stays relative.
   Future<List<T>> _getPaged<T>(
     String path,
     T Function(Map<String, dynamic>) fromJson, {
-    Map<String, dynamic>? queryParameters,
+    Map<String, String>? query,
     CancelToken? cancelToken,
   }) async {
     final result = await _getPagedResult(
       path,
       fromJson,
-      queryParameters: queryParameters,
+      query: query,
       cancelToken: cancelToken,
     );
     return result.items;
@@ -668,19 +661,19 @@ class BitbucketApiClient {
   Future<({List<T> items, int? size})> _getPagedResult<T>(
     String path,
     T Function(Map<String, dynamic>) fromJson, {
-    Map<String, dynamic>? queryParameters,
+    Map<String, String>? query,
     CancelToken? cancelToken,
   }) async {
     final results = <T>[];
     int? size;
-    var params = <String, dynamic>{...?queryParameters, 'pagelen': pageLen};
+    var params = <String, String>{...?query, 'pagelen': '$pageLen'};
     for (var page = 0; page < maxPages; page++) {
-      final response = await _dio.get<Object?>(
+      final response = await _httpClient.get(
         path,
-        queryParameters: params,
+        query: params,
         cancelToken: cancelToken,
       );
-      final body = asJsonMap(response.data);
+      final body = asJsonMap(_decoded(response));
       if (page == 0) {
         size = (body?['size'] as num?)?.toInt();
       }
@@ -693,36 +686,31 @@ class BitbucketApiClient {
       if (uri == null || uri.queryParameters.isEmpty) {
         break;
       }
-      params = <String, dynamic>{...uri.queryParameters};
+      params = <String, String>{...uri.queryParameters};
     }
     return (items: results, size: size);
   }
 
   /// GETs [path] as plain text, bypassing JSON decoding.
   Future<String> _getText(String path, {CancelToken? cancelToken}) async {
-    final response = await _dio.get<String>(
+    final response = await _httpClient.get(
       path,
-      options: Options(
-        headers: <String, dynamic>{'Accept': 'text/plain'},
-        responseType: ResponseType.plain,
-      ),
+      headers: const HttpHeaders.rawMap(<String, String>{
+        'Accept': 'text/plain',
+      }),
       cancelToken: cancelToken,
     );
-    return response.data ?? '';
+    return response.body;
   }
 
   /// GETs [path] as raw bytes, bypassing JSON decoding.
   Future<Uint8List> _getBytes(String path, {CancelToken? cancelToken}) async {
-    final response = await _dio.get<List<int>>(
-      path,
-      options: Options(responseType: ResponseType.bytes),
-      cancelToken: cancelToken,
-    );
-    final data = response.data;
-    if (data == null || data.isEmpty) {
+    final response = await _httpClient.getBytes(path, cancelToken: cancelToken);
+    final data = response.body;
+    if (data.isEmpty) {
       return Uint8List(0);
     }
-    return data is Uint8List ? data : Uint8List.fromList(data);
+    return data;
   }
 
   /// Percent-encodes each segment of [value] while preserving the `/`
@@ -730,6 +718,21 @@ class BitbucketApiClient {
   /// survives interpolation into a URL.
   static String _encodePath(String value) =>
       value.split('/').map(Uri.encodeComponent).join('/');
+
+  /// JSON-decodes a text response, answering null for an empty body or one
+  /// that is not JSON — the "no usable document" answer [asJsonMap] already
+  /// treats as absent.
+  static Object? _decoded(HttpTextResponse response) {
+    final text = response.body;
+    if (text.trim().isEmpty) {
+      return null;
+    }
+    try {
+      return jsonDecode(text);
+    } on FormatException {
+      return null;
+    }
+  }
 
   static void _requireCoordinate(String workspace, String repo) {
     if (workspace.isEmpty || repo.isEmpty) {

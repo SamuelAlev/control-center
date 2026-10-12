@@ -2,7 +2,7 @@
 title: Bir cihaz eşleştirme
 description: Telefonunuzu (ya da ikinci bir tarayıcıyı veya masaüstünü) Control Center sunucunuzla eşleştirin; böylece filoyu uzaktan izleyebilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Bu kılavuz, bir telefonu Control Center ile nasıl eşleştireceğinizi gösterir;
@@ -23,9 +23,11 @@ kaynaktır: telefon uygulaması (`apps/cc_remote` — `wrangler.jsonc` dosyası
 üzerinden Cloudflare Pages’e, `docker/cc_remote` nginx imajına ya da HTTPS
 destekli herhangi bir statik barındırıcıya dağıtabileceğiniz bir Flutter web
 PWA’sı; service worker’lar ve IndexedDB yalnızca güvenli bağlamda çalışır) ve
-aktarıcı (`apps/cc_signaling_server` — uygulama verisi tutmayan ve eşleme sırrını
-asla görmeyen, yalnızca uçtan uca mühürlenmiş çerçeveleri ileten tek bir
-durumsuz Dart ikilisi). Derleme ve çalıştırma adımları için README’lerine bakın.
+aktarıcı (`apps/cc_signaling_server` — uygulama verisi tutmayan, şifrelenmiş
+kayıtların şifresini çözemeyen ve eşleme sırrını göremeyen tek bir durumsuz Dart
+ikilisi). Ancak yine de IP'leri, yönlendirme tanımlayıcılarını, boyutları ve
+zamanlamayı görür ve trafiği düşürebilir. Derleme ve çalıştırma adımları için
+README’lerine bakın.
 
 ## 1. Adım: Eşleme panelini açma
 
@@ -49,14 +51,18 @@ için sunucunun tam bağlantı tanımlayıcısını ve kimlik parmak izini taş�
 
 Telefon tarafında, bir eşleme bağlantısını açmak sessizce eşleme yapmaz. Remote,
 sunucunun duyurduğu adı gösterir ve herhangi bir şeyi saklamadan önce sizden onay
-ister; böylece sahte bir bağlantı uygulamayı başkasının sunucusuna yönlendiremez.
+ister. QR kodundaki parmak izini güvenilir bir kaynakla karşılaştırın: doğrulanmamış
+bir adı ya da sahte bir QR kodunu onaylamak, sunucunun sizin olduğunu kanıtlamaz.
+İstemci imzalı kimliği sabitler ve sonraki bağlantılarda değişen parmak izini
+reddeder.
 
 :::caution[Taranan bir QR kodu erişimi anında verir]
 Önce bekleme, sonra onaylama diye bir adım yoktur: üretilen bir cihaz,
 oluşturulduğu andan itibaren etkindir ve bağlantı kapısı yalnızca kimlik
 bilgisinin etkin ve süresi dolmamış olduğunu denetler. QR kodunu ve eşleme
 anahtarını bir parola gibi değerlendirin ve vermek istemediğiniz her şeyi iptal
-edin.
+edin. Hem doğrudan hem de aktarıcı üzerinden istemci oturumları uçtan uca şifreleme
+gerektirir; eski istemciler düz metin RPC'ye geri düşemez.
 :::
 
 ## Eşlenmiş cihazları yönetme

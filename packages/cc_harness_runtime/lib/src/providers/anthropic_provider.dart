@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/src/providers/anthropic_tool_deferral.dart';
 import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 
 /// Talks to the Anthropic Messages API (`POST /v1/messages`, streaming SSE).
@@ -12,7 +13,13 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// (`thinking: {type: "adaptive"}`) — the current models reject a fixed
 /// `budget_tokens` — and sampling parameters are sent only when explicitly set,
 /// since the current models reject them too.
-class AnthropicProvider implements LlmProviderPort {
+///
+/// Implements [LlmDeferredToolSupport]: on a model that supports tool search,
+/// schemas marked [LlmToolSchema.deferLoading] travel in the `tools` array with
+/// `defer_loading: true` (still sent in full — the API expands references
+/// server-side) and a tool result may carry `tool_reference` blocks, so an
+/// activation no longer rewrites the cached tools+system prefix.
+class AnthropicProvider implements LlmProviderPort, LlmDeferredToolSupport {
   /// Creates an [AnthropicProvider].
   ///
   /// Authenticates with an [_apiKey] (`x-api-key`) and nothing else. A Claude
@@ -22,11 +29,20 @@ class AnthropicProvider implements LlmProviderPort {
   /// is presenting this app as Claude Code, which its terms do not allow. Use
   /// the `claude-code` ADAPTER when you want to run on the subscription; it is
   /// Claude Code, driving its own login.
+  ///
+  /// [_nativeToolSearch] overrides the endpoint's native-deferral capability.
+  /// Null (the default) derives it from the base URL, because the same class
+  /// serves user-defined Anthropic-COMPATIBLE endpoints (vLLM, LM Studio, a
+  /// private gateway) that accept the Messages shape but not `defer_loading` —
+  /// and there, a model id that looks like a supported Claude would otherwise
+  /// earn a request the endpoint rejects. Set it explicitly only for a proxy
+  /// that passes tool search through to the real API.
   AnthropicProvider({
     this._apiKey,
     this._baseUrl = 'https://api.anthropic.com',
     this._defaultModel = 'claude-opus-4-8',
     this._anthropicVersion = '2023-06-01',
+    this._nativeToolSearch,
     ProviderHttp? http,
   }) : _http = http ?? ProviderHttp.shared;
 
@@ -34,6 +50,7 @@ class AnthropicProvider implements LlmProviderPort {
   final String _baseUrl;
   final String _defaultModel;
   final String _anthropicVersion;
+  final bool? _nativeToolSearch;
   final ProviderHttp _http;
 
   /// Auth + version headers. One credential kind, so no branch.
@@ -47,6 +64,23 @@ class AnthropicProvider implements LlmProviderPort {
 
   @override
   String get defaultModel => _defaultModel;
+
+  @override
+  bool supportsDeferredTools({String? model}) =>
+      _supportsNativeToolSearch &&
+      anthropicSupportsToolDeferral(model ?? _defaultModel);
+
+  /// Whether this ENDPOINT implements native tool search.
+  ///
+  /// Derived from the base URL unless explicitly overridden: the official API
+  /// is the only endpoint this class can assume implements `defer_loading`.
+  bool get _supportsNativeToolSearch =>
+      _nativeToolSearch ?? _isAnthropicApiHost(_baseUrl);
+
+  static bool _isAnthropicApiHost(String baseUrl) {
+    final host = Uri.tryParse(baseUrl)?.host ?? '';
+    return host == 'anthropic.com' || host.endsWith('.anthropic.com');
+  }
 
   @override
   Future<List<ProviderModel>> listModels() async {
@@ -83,7 +117,7 @@ class AnthropicProvider implements LlmProviderPort {
 
     final Stream<LlmEvent> events;
     try {
-      events = _stream(uri, body);
+      events = _stream(uri, body, config.trace);
     } on ProviderHttpException catch (e) {
       yield _mapHttpError(e);
       yield const LlmDone(stopReason: LlmStopReason.unknown);
@@ -92,7 +126,11 @@ class AnthropicProvider implements LlmProviderPort {
     yield* events;
   }
 
-  Stream<LlmEvent> _stream(Uri uri, Map<String, dynamic> body) async* {
+  Stream<LlmEvent> _stream(
+    Uri uri,
+    Map<String, dynamic> body,
+    LlmCallTrace? trace,
+  ) async* {
     // Accumulators keyed by content-block index.
     final toolNames = <int, String>{};
     final toolIds = <int, String>{};
@@ -113,6 +151,12 @@ class AnthropicProvider implements LlmProviderPort {
         // An API key does not renew, so a 401 is a bad key — retrying the
         // request with the same header would only spend a second round trip.
         retryOnUnauthorized: false,
+        // The earliest transport boundary this client can observe: the first
+        // byte of the response BODY (headers complete earlier, and the first
+        // TCP/TLS byte is not surfaced at all). Reported per response, so an
+        // auth retry does not move the boundary already recorded.
+        onFirstBodyByte: trace?.transportFirstByte,
+        onRequestSent: trace?.requestSent,
       );
       await for (final sse in events) {
         final data = sse.data;
@@ -128,15 +172,27 @@ class AnthropicProvider implements LlmProviderPort {
         final type = json['type'] as String?;
         switch (type) {
           case 'message_start':
-            final usage =
-                (json['message'] as Map<String, dynamic>?)?['usage']
-                    as Map<String, dynamic>?;
+            final message = json['message'] as Map<String, dynamic>?;
+            // A proxy or router may serve a different model than requested;
+            // report the authoritative one so the ledger prices the right row.
+            final served = message?['model'] as String?;
+            if (served != null) {
+              trace?.servedModel(served);
+            }
+            final usage = message?['usage'] as Map<String, dynamic>?;
             if (usage != null) {
               inputTokens = (usage['input_tokens'] as num?)?.toInt() ?? 0;
+              outputTokens = (usage['output_tokens'] as num?)?.toInt() ?? 0;
               cacheReadTokens =
                   (usage['cache_read_input_tokens'] as num?)?.toInt() ?? 0;
               cacheWriteTokens =
                   (usage['cache_creation_input_tokens'] as num?)?.toInt() ?? 0;
+              yield LlmUsage(
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                cacheReadTokens: cacheReadTokens,
+                cacheWriteTokens: cacheWriteTokens,
+              );
             }
           case 'content_block_start':
             final index = (json['index'] as num?)?.toInt() ?? 0;
@@ -192,6 +248,12 @@ class AnthropicProvider implements LlmProviderPort {
             final usage = json['usage'] as Map<String, dynamic>?;
             if (usage != null) {
               outputTokens = (usage['output_tokens'] as num?)?.toInt() ?? 0;
+              yield LlmUsage(
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                cacheReadTokens: cacheReadTokens,
+                cacheWriteTokens: cacheWriteTokens,
+              );
             }
           case 'message_stop':
             yield LlmUsage(
@@ -260,6 +322,34 @@ class AnthropicProvider implements LlmProviderPort {
     List<LlmToolSchema> tools,
     LlmCompleteConfig config,
   ) {
+    final model = config.model ?? _defaultModel;
+    // Native deferral is a capability of the ENDPOINT AND the model, and
+    // sending `defer_loading` (or a `tool_reference`) to one that does not
+    // implement tool search is a rejected request rather than an ignored field
+    // — so the decision is made once, up front, and both the tools array and
+    // the message content consult it.
+    final deferralSupported = supportsDeferredTools(model: model);
+    final toolList = <Map<String, dynamic>>[
+      for (final tool in tools)
+        {
+          'name': tool.name,
+          'description': tool.description,
+          'input_schema': tool.inputSchema,
+          // The definition is still sent in FULL: `defer_loading` controls what
+          // enters the context window, not what travels on the wire — the API
+          // needs the schema server-side to expand a reference back into it.
+          if (deferralSupported && tool.deferLoading) 'defer_loading': true,
+        },
+    ];
+    // When every tool would be deferred the API rejects the request, so the
+    // flags are dropped and the catalog is sent plainly (the pre-existing
+    // behavior) instead of failing the run.
+    final deferralApplied =
+        deferralSupported && applyAnthropicDeferral(toolList);
+    final availableTools = deferralSupported
+        ? {for (final tool in toolList) tool['name'] as String}
+        : const <String>{};
+
     // The stable system prefix. Only the CONFIG system prompt lives here — it
     // must stay byte-identical across turns so the prompt cache hits.
     // Mid-conversation `system` messages (stream-rule reminders, advisor notes,
@@ -288,7 +378,14 @@ class AnthropicProvider implements LlmProviderPort {
           });
         case HarnessRole.user:
         case HarnessRole.tool:
-          wireMessages.add({'role': 'user', 'content': _userContent(message)});
+          wireMessages.add({
+            'role': 'user',
+            'content': _userContent(
+              message,
+              nativeReferences: deferralSupported,
+              availableTools: availableTools,
+            ),
+          });
         case HarnessRole.assistant:
           wireMessages.add({
             'role': 'assistant',
@@ -345,25 +442,25 @@ class AnthropicProvider implements LlmProviderPort {
       }
     }
     if (tools.isNotEmpty) {
-      final toolList = <Map<String, dynamic>>[
-        for (final tool in tools)
-          {
-            'name': tool.name,
-            'description': tool.description,
-            'input_schema': tool.inputSchema,
-          },
-      ];
       if (config.cacheEnabled) {
         // Anchored to the last RESIDENT tool, not the last tool sent: tools
         // activated mid-run are appended after this point, so a breakpoint at
         // the end would move every time one loads and invalidate the whole
         // tools+system prefix — turning a ~200-token append into a full
         // rebuild of the largest cached region in the request.
-        final requested = config.toolCacheBreakpointIndex;
-        final index = (requested == null || requested < 0)
-            ? toolList.length - 1
-            : requested.clamp(0, toolList.length - 1);
-        toolList[index]['cache_control'] = stableTtl;
+        //
+        // With native deferral the whole admitted catalog is present from the
+        // first turn, so the boundary is the last NON-deferred tool and is
+        // derived from the flags rather than trusted from the caller.
+        final index = deferralApplied
+            ? residentToolBreakpointIndex(
+                toolList,
+                config.toolCacheBreakpointIndex,
+              )
+            : _plainBreakpointIndex(toolList.length, config);
+        if (index >= 0) {
+          toolList[index]['cache_control'] = stableTtl;
+        }
       }
       request['tools'] = toolList;
     }
@@ -390,7 +487,20 @@ class AnthropicProvider implements LlmProviderPort {
     return request;
   }
 
-  List<Map<String, dynamic>> _userContent(HarnessMessage message) {
+  /// The plain (non-deferring) tools-array cache breakpoint: the last tool, or
+  /// the caller's resident-block index when it supplies one.
+  int _plainBreakpointIndex(int length, LlmCompleteConfig config) {
+    final requested = config.toolCacheBreakpointIndex;
+    return (requested == null || requested < 0)
+        ? length - 1
+        : requested.clamp(0, length - 1);
+  }
+
+  List<Map<String, dynamic>> _userContent(
+    HarnessMessage message, {
+    required bool nativeReferences,
+    required Set<String> availableTools,
+  }) {
     final blocks = <Map<String, dynamic>>[];
     for (final block in message.content) {
       switch (block) {
@@ -406,19 +516,41 @@ class AnthropicProvider implements LlmProviderPort {
           :final content,
           :final isError,
           :final images,
+          :final toolReferences,
         ):
+          // A reference is only valid for a tool the request actually offers
+          // (the API rejects a dangling one), and only on a model that
+          // implements tool search. Anything else — an unsupported model, a
+          // provider-independent history replayed against a smaller catalog —
+          // degrades to naming the activated tools in the text instead of
+          // dropping the activation or sending a rejected block.
+          final references = <String>[
+            if (nativeReferences)
+              for (final name in toolReferences)
+                if (availableTools.contains(name)) name,
+          ];
+          final unlisted = <String>[
+            for (final name in toolReferences)
+              if (!references.contains(name)) name,
+          ];
+          final text = unlisted.isEmpty
+              ? content
+              : _activatedNote(content, unlisted);
           blocks.add({
             'type': 'tool_result',
             'tool_use_id': toolUseId,
             // A tool_result's content is either a plain string or a block
-            // array. Only widen to the array form when there are images —
-            // the string form is what every existing test and cache entry
-            // sees, and changing it unconditionally would break prompt-cache
-            // prefixes for every run that returns no images.
-            'content': images.isEmpty
-                ? content
+            // array. Only widen to the array form when there is something the
+            // string form cannot carry — references or images. The string form
+            // is what every existing test and cache entry sees, and changing it
+            // unconditionally would break prompt-cache prefixes for every run
+            // that returns neither.
+            'content': (references.isEmpty && images.isEmpty)
+                ? text
                 : [
-                    if (content.isNotEmpty) {'type': 'text', 'text': content},
+                    if (text.isNotEmpty) {'type': 'text', 'text': text},
+                    for (final name in references)
+                      {'type': 'tool_reference', 'tool_name': name},
                     for (final image in images)
                       {
                         'type': 'image',
@@ -439,6 +571,12 @@ class AnthropicProvider implements LlmProviderPort {
       blocks.add({'type': 'text', 'text': message.textContent});
     }
     return blocks;
+  }
+
+  /// Appends the portable "these tools are now callable" note to [content].
+  static String _activatedNote(String content, List<String> names) {
+    final note = 'Activated tools: ${names.join(', ')}.';
+    return content.isEmpty ? note : '$content\n\n$note';
   }
 
   List<Map<String, dynamic>> _assistantContent(HarnessMessage message) {

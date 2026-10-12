@@ -1,42 +1,15 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart';
 import 'package:cc_infra/src/tickets/sync/clickup_ticket_sync_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart';
 
-/// Canned-response adapter capturing each outgoing request so we can assert the
-/// method/path/body the ClickUp adapter builds, without any network.
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(Object body) => ResponseBody.fromString(
-  jsonEncode(body),
-  200,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
+/// The JSON body the adapter sent, decoded from the recorded request.
+Map<String, dynamic> _jsonBody(HttpRequest request) =>
+    ((request.body! as HttpBodyJson).json as Map).cast<String, dynamic>();
 
 Ticket _ticket({
   String title = 'Fix the thing',
@@ -55,25 +28,28 @@ Ticket _ticket({
 );
 
 void main() {
-  ({ClickUpTicketSyncAdapter adapter, _FakeAdapter fake}) build(
-    ResponseBody Function(RequestOptions) handler,
+  // Canned transport capturing each outgoing request so we can assert the
+  // method/path/body the ClickUp adapter builds, without any network.
+  ({ClickUpTicketSyncAdapter adapter, TestHttpClient fake}) build(
+    HttpResponse Function(HttpRequest) handler,
   ) {
-    final fake = _FakeAdapter(handler);
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.clickup.com'))
-      ..httpClientAdapter = fake;
-    return (adapter: ClickUpTicketSyncAdapter(dio), fake: fake);
+    final fake = TestHttpClient(
+      settings: const ClientSettings(baseUrl: 'https://api.clickup.com'),
+      handler: handler,
+    );
+    return (adapter: ClickUpTicketSyncAdapter(fake), fake: fake);
   }
 
   group('ClickUpTicketSyncAdapter', () {
     test('vendorId + allowedDomains', () {
-      final b = build((_) => _json(const {}));
+      final b = build((request) => httpTextResponse(request, const {}));
       expect(b.adapter.vendorId, 'clickup');
       expect(b.adapter.allowedDomains, contains('api.clickup.com'));
     });
 
     test('pullChanges parses tasks from the list into deltas', () async {
       final b = build(
-        (_) => _json({
+        (request) => httpTextResponse(request, {
           'tasks': [
             {
               'id': '86a1',
@@ -98,8 +74,8 @@ void main() {
       // page 0 only and silently drop every change past the first hundred).
       // This fake answers every page identically, so the id-dedupe
       // terminator stops it after the repeat.
-      expect(b.fake.requests.first.path, '/api/v2/list/list123/task');
-      expect(b.fake.requests.first.queryParameters['page'], 0);
+      expect(b.fake.requests.first.url, '/api/v2/list/list123/task');
+      expect(b.fake.requests.first.query?['page'], '0');
       expect(deltas, hasLength(1), reason: 'the repeated task is deduped');
       final d = deltas.single;
       expect(d.externalId, '86a1');
@@ -113,7 +89,10 @@ void main() {
 
     test('pushChange creates a task when externalId is absent', () async {
       final b = build(
-        (_) => _json({'id': 'new1', 'url': 'https://app.clickup.com/t/new1'}),
+        (request) => httpTextResponse(request, {
+          'id': 'new1',
+          'url': 'https://app.clickup.com/t/new1',
+        }),
       );
       final outcome = await b.adapter.pushChange(
         workspaceId: 'ws1',
@@ -122,9 +101,9 @@ void main() {
         vendorProjectId: 'list123',
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect(req.path, '/api/v2/list/list123/task');
-      final body = req.data as Map<String, dynamic>;
+      expect(req.method, HttpMethod.post);
+      expect(req.url, '/api/v2/list/list123/task');
+      final body = _jsonBody(req);
       expect(body['name'], 'Fix the thing');
       expect(body['description'], 'details');
       expect(body['priority'], 2); // high → 2
@@ -133,7 +112,7 @@ void main() {
     });
 
     test('a status change PUTs the mapped status name by task id', () async {
-      final b = build((_) => _json(const {}));
+      final b = build((request) => httpTextResponse(request, const {}));
       await b.adapter.pushChange(
         workspaceId: 'ws1',
         ticket: _ticket(status: TicketStatus.done),
@@ -141,26 +120,26 @@ void main() {
         externalId: '86a1',
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'PUT');
-      expect(req.path, '/api/v2/task/86a1');
-      expect((req.data as Map)['status'], 'done');
+      expect(req.method, HttpMethod.put);
+      expect(req.url, '/api/v2/task/86a1');
+      expect(_jsonBody(req)['status'], 'done');
     });
 
     test('an update PUTs title + description, not status', () async {
-      final b = build((_) => _json(const {}));
+      final b = build((request) => httpTextResponse(request, const {}));
       await b.adapter.pushChange(
         workspaceId: 'ws1',
         ticket: _ticket(title: 'Renamed'),
         changeType: TicketChangeType.updated,
         externalId: '86a1',
       );
-      final body = b.fake.requests.single.data as Map;
+      final body = _jsonBody(b.fake.requests.single);
       expect(body['name'], 'Renamed');
       expect(body.containsKey('status'), isFalse);
     });
 
     test('resolveVendorUrl extracts the task id from a ClickUp URL', () async {
-      final b = build((_) => _json(const {}));
+      final b = build((request) => httpTextResponse(request, const {}));
       expect(
         await b.adapter.resolveVendorUrl('https://app.clickup.com/t/86a1xyz'),
         '86a1xyz',

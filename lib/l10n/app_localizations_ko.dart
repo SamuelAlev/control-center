@@ -13840,6 +13840,30 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerDropToAttach => '놓아서 첨부';
 
   @override
+  String get composerAttachmentUploading => '업로드 중…';
+
+  @override
+  String get composerAttachmentReady => '준비됨';
+
+  @override
+  String get composerAttachmentUploadFailed => '업로드 실패';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return '파일 크기가 $limit 제한을 초과합니다';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => '이 파일을 읽을 수 없습니다';
+
+  @override
+  String get composerAttachmentWaitForUploads => '첨부 파일 업로드가 끝날 때까지 기다리세요';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      '보내기 전에 업로드에 실패한 첨부 파일을 다시 시도하거나 삭제하세요';
+
+  @override
   String get attachmentUnavailable => '첨부 파일을 사용할 수 없음';
 
   @override
@@ -14969,10 +14993,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => '에이전트가 기다리는 중';
+  String get notificationAgentAwaitingInput => '에이전트 확인 필요';
 
   @override
-  String get notifyAgentAwaitingInput => '에이전트에게 승인, 답변 또는 유효한 자격 증명이 필요할 때';
+  String get notifyAgentAwaitingInput =>
+      '에이전트에게 승인, 답변 또는 유효한 자격 증명이 필요하거나 정책으로 작업이 차단될 때';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15044,4 +15069,378 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => '서버를 중지하는 중';
+
+  @override
+  String get skillEvalAbsent => '없음 vs 사용 가능';
+
+  @override
+  String get skillEvalAmbient => '기본 제공 스킬';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return '결과물 참조: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · 반복 $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => '시도';
+
+  @override
+  String get skillEvalAvailableEvent => '사용 가능';
+
+  @override
+  String get skillEvalBaseline => '이전 리비전 해시';
+
+  @override
+  String get skillEvalBodyLoad => '본문 로드됨';
+
+  @override
+  String get skillEvalBudgetCents => '예산 (미국 센트)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      '유료 평가에는 선택한 제공업체와 예산이 적용됩니다. 보안 검사 결과는 별개입니다.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      '구독 예산은 청구액이 아닌 API 요금 기준 사용량을 추적합니다. 진행 중인 호출은 예산을 초과할 수 있으며, 한도에 도달하면 새 호출을 시작하지 않습니다. 보안 검사는 별개입니다.';
+
+  @override
+  String get skillEvalCancel => '실행 취소';
+
+  @override
+  String get skillEvalCancelled => '취소됨';
+
+  @override
+  String get skillEvalCancelling => '취소 중';
+
+  @override
+  String get skillEvalComparison => '비교';
+
+  @override
+  String get skillEvalCompleted => '완료됨';
+
+  @override
+  String get skillEvalComposition => '구성';
+
+  @override
+  String get skillEvalCorpus => '작업 모음';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString회 반복';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => '계획된 모든 시험 관측됨';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return '현재 패키지 해시: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => '업데이트 평가 비활성화';
+
+  @override
+  String get skillEvalEnableUpdates => '업데이트 평가 활성화';
+
+  @override
+  String get skillEvalExport => '민감 정보 제거된 JSON 복사';
+
+  @override
+  String get skillEvalFailed => '실패';
+
+  @override
+  String get skillEvalForced => '강제 로드 vs 없음';
+
+  @override
+  String get skillEvalForcedEvent => '강제 로드';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      '이 서버에서 패키지 해시를 사용할 수 없습니다. 평가가 비활성화됩니다.';
+
+  @override
+  String get skillEvalHistory => '리비전 기록';
+
+  @override
+  String get skillEvalImproved => '개선됨';
+
+  @override
+  String get skillEvalIncomplete => '미완료';
+
+  @override
+  String get skillEvalInconclusive => '결론 불가';
+
+  @override
+  String get skillEvalInferred => '추론됨';
+
+  @override
+  String get skillEvalInterrupted => '중단됨';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      '스킬 로드를 관측할 수 없습니다. 이벤트가 없다고 해서 무시되었다는 뜻은 아닙니다.';
+
+  @override
+  String get skillEvalModel => '선택한 모델';
+
+  @override
+  String get skillEvalNoAttempts => '아직 시도가 없습니다.';
+
+  @override
+  String get skillEvalNoModels => '사용 가능한 연결 모델이 없습니다. 먼저 설정에서 제공업체를 연결하세요.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      '캠페인 기록에 이전 해시가 없습니다. 교체하기 전에 이전 리비전을 평가하세요.';
+
+  @override
+  String get skillEvalNoReport => '아직 보고서가 없습니다. 부분 시도 결과는 계속 확인할 수 있습니다.';
+
+  @override
+  String get skillEvalNoWorkspace => '선택한 워크스페이스가 없습니다.';
+
+  @override
+  String get skillEvalNoTasks => '아직 보고된 작업이 없습니다.';
+
+  @override
+  String get skillEvalNoVerifiers => '기록된 검증 근거가 없습니다.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      '이 정확한 바이트에 대해 평가되지 않았습니다. 검사 결과는 동작 근거가 아닙니다.';
+
+  @override
+  String get skillEvalNotVerified => '검증되지 않음';
+
+  @override
+  String get skillEvalObserved => '관측됨';
+
+  @override
+  String get skillEvalOpenQuality => '품질 열기';
+
+  @override
+  String get skillEvalPolicyNote =>
+      '기본적으로 스킬을 저장해도 유료 평가가 시작되지 않습니다. 업데이트 시 자동 재평가를 명시적으로 활성화하면 저장할 때 예산 한도 내에서 유료 평가가 시작됩니다.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign => '업데이트 정책을 설정하려면 먼저 리비전을 평가하세요.';
+
+  @override
+  String get skillEvalPolicyTemplate => '업데이트 정책 설정';
+
+  @override
+  String get skillEvalPartial => '근거 부족; 채택 판정 불가';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$plannedString회 시도 중 $completedString회 완료';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return '제공업체: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro => '워크스페이스 스킬 캠페인과 리비전별 근거.';
+
+  @override
+  String get skillEvalQueued => '대기 중';
+
+  @override
+  String get skillEvalReconnecting => '캠페인 스냅샷에 다시 연결 중…';
+
+  @override
+  String get skillEvalRefresh => '새로고침';
+
+  @override
+  String get skillEvalReferenceLoad => '참조 로드됨';
+
+  @override
+  String get skillEvalRepetitions => '작업당 반복 횟수';
+
+  @override
+  String get skillEvalReport => '근거 보고서';
+
+  @override
+  String get skillEvalRunning => '실행 중';
+
+  @override
+  String get skillEvalScriptExecution => '스크립트 실행됨';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return '지출: $spent / 예산 $budget';
+  }
+
+  @override
+  String get skillEvalStart => '평가 시작';
+
+  @override
+  String get skillEvalStartTitle => '스킬 리비전 비교';
+
+  @override
+  String get skillEvalStale => '오래됨';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return '오래됨: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return '서로 다른 작업 묶음: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate (검증 $passes회) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => '비교군별 작업';
+
+  @override
+  String get skillEvalToolError => '도구 오류';
+
+  @override
+  String get skillEvalTools => '도구 이벤트';
+
+  @override
+  String get skillEvalTitle => '스킬 평가';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return '사용 불가: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => '알 수 없음';
+
+  @override
+  String get skillEvalUnsaved => '저장하지 않은 수정 사항은 포함되지 않습니다. 평가 전에 저장하세요.';
+
+  @override
+  String get skillEvalUncertainty => '불확실성 구간';
+
+  @override
+  String get skillEvalVerified => '검증됨';
+
+  @override
+  String get skillEvalVerifiers => '검증';
+
+  @override
+  String get skillEvalVerdict => '판정';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return '복사 완료: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => '계획 위반';
+
+  @override
+  String get skillEvalPreserved => '품질 유지';
+
+  @override
+  String get skillEvalPrevious => '이전 vs 현재';
+
+  @override
+  String get skillEvalRegressed => '성능 저하 확인됨';
+
+  @override
+  String get skillEvalCostRegression => '비용 회귀';
+
+  @override
+  String get skillEvalHarnessError => '하네스 오류';
+
+  @override
+  String get skillBehaviorRouting => '스킬 경로 지정';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '예상대로 사용 $truePositive회 · 예상 밖 사용 $falsePositive회 · 사용 누락 $falseNegative회 · 올바른 건너뛰기 $trueNegative회';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '불확실한 사용 $positive회 · 불확실한 건너뛰기 $negative회 · 제공되지 않음 $notOffered회';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return '관측된 정밀도 $precision · 재현율 $recall · 거짓 양성률 $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => '강제 적용 그룹 · 진단 전용';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      '비율에는 관측 가능한 접근만 포함됩니다. 셸이나 검색을 통한 접근은 알 수 없을 수 있으며, 스킬을 불러왔다고 실제로 적용한 것은 아닙니다.';
+
+  @override
+  String get skillBehaviorSafety => '합성 안전성';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '아티팩트 검사 통과 $passes/$attempts · 정책 거부 $denials회 · 보호 파일 위반 $violations회';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      '아티팩트 검사는 합성 검사로, 실제 환경의 공격률을 나타내지 않습니다. 실제 부작용은 계측되지 않습니다.';
+
+  @override
+  String get skillBehaviorUtility => '작업군별 효용';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '검증된 성공 $verified/$attempts';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      '실패하거나 완료되지 않은 시도를 포함한 모든 시도가 효용의 분모에 포함됩니다.';
 }

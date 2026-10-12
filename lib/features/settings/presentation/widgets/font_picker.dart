@@ -20,6 +20,7 @@ Future<FontSelection?> showFontPicker({
 }) async {
   return showCcDialog<FontSelection>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (_) => _FontPickerDialog(
       currentSelection: currentSelection,
       contextType: contextType,

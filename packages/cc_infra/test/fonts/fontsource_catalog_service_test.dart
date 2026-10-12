@@ -1,40 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_infra/src/fonts/fontsource_catalog_service.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:test/test.dart';
-
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-
-  final Object? Function(RequestOptions) handler;
-  int calls = 0;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    calls++;
-    final result = handler(options);
-    if (result is Exception) {
-      throw result;
-    }
-    return ResponseBody.fromString(
-      result is String ? result : jsonEncode(result),
-      200,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
 
 /// One catalogue row. Mirrors the upstream shape: a lowercase-hyphenated [id]
 /// and a Title Case display family (defaulted from [id] here).
@@ -67,18 +35,23 @@ void main() {
   String cachePath() => '${tempDir.path}/font_catalog.json';
 
   FontsourceCatalogService serviceOver(
-    _FakeAdapter adapter, {
+    TestHttpClient httpClient, {
     Duration ttl = const Duration(days: 1),
   }) => FontsourceCatalogService(
     cacheFilePath: cachePath(),
-    dio: Dio()..httpClientAdapter = adapter,
+    httpClient: httpClient,
     ttl: ttl,
   );
 
   group('catalog', () {
     test('parses and sorts families by display name', () async {
       final service = serviceOver(
-        _FakeAdapter((_) => [_row('roboto', family: 'Roboto'), _row('inter')]),
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, [
+            _row('roboto', family: 'Roboto'),
+            _row('inter'),
+          ]),
+        ),
       );
 
       final catalog = await service.catalog();
@@ -90,12 +63,12 @@ void main() {
       // Icon sets are glyph tables, not text faces and a non-Google origin is
       // not served by the CDN path this resolves against.
       final service = serviceOver(
-        _FakeAdapter(
-          (_) => [
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, [
             _row('inter'),
             _row('material-icons', category: 'icons'),
             _row('some-open-font', type: 'other'),
-          ],
+          ]),
         ),
       );
 
@@ -106,13 +79,13 @@ void main() {
 
     test('drops rows missing the fields a variant needs', () async {
       final service = serviceOver(
-        _FakeAdapter(
-          (_) => [
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, [
             _row('inter'),
             _row('no-weights', weights: []),
             _row('no-subsets', subsets: []),
             {'id': 'no-family', 'type': 'google'},
-          ],
+          ]),
         ),
       );
 
@@ -123,10 +96,10 @@ void main() {
 
     test('falls back to the first subset when defSubset is not offered', () {
       final service = serviceOver(
-        _FakeAdapter(
-          (_) => [
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, [
             _row('inter', subsets: ['latin'], defSubset: 'greek'),
-          ],
+          ]),
         ),
       );
 
@@ -137,37 +110,49 @@ void main() {
     });
 
     test('fetches once and memoises', () async {
-      final adapter = _FakeAdapter((_) => [_row('inter')]);
-      final service = serviceOver(adapter);
+      final httpClient = TestHttpClient(
+        handler: (request) => httpTextResponse(request, [_row('inter')]),
+      );
+      final service = serviceOver(httpClient);
 
       await service.catalog();
       await service.catalog();
 
-      expect(adapter.calls, 1);
+      expect(httpClient.requests, hasLength(1));
     });
 
     test('concurrent callers share one fetch', () async {
-      final adapter = _FakeAdapter((_) => [_row('inter')]);
-      final service = serviceOver(adapter);
+      final httpClient = TestHttpClient(
+        handler: (request) => httpTextResponse(request, [_row('inter')]),
+      );
+      final service = serviceOver(httpClient);
 
       await Future.wait([service.catalog(), service.catalog()]);
 
-      expect(adapter.calls, 1);
+      expect(httpClient.requests, hasLength(1));
     });
 
     test('a second service reads the fresh disk cache', () async {
-      final first = _FakeAdapter((_) => [_row('inter')]);
+      final first = TestHttpClient(
+        handler: (request) => httpTextResponse(request, [_row('inter')]),
+      );
       await serviceOver(first).catalog();
 
-      final second = _FakeAdapter((_) => Exception('should not be called'));
+      final second = TestHttpClient(
+        handler: (_) => throw Exception('should not be called'),
+      );
       final catalog = await serviceOver(second).catalog();
 
-      expect(second.calls, 0, reason: 'a restart costs no network');
+      expect(second.requests, isEmpty, reason: 'a restart costs no network');
       expect(catalog.map((f) => f.family), ['Inter']);
     });
 
     test('a stale cache serves when the fetch fails', () async {
-      await serviceOver(_FakeAdapter((_) => [_row('inter')])).catalog();
+      await serviceOver(
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, [_row('inter')]),
+        ),
+      ).catalog();
       // Backdate the cache so ttl: zero is UNAMBIGUOUSLY stale: Windows'
       // coarse wall clock can read `now - mtime` as 0 (or negative) for a
       // file written this instant, which would make the just-written cache
@@ -176,18 +161,23 @@ void main() {
         DateTime.now().subtract(const Duration(minutes: 1)),
       );
 
-      final offline = _FakeAdapter((_) => Exception('offline'));
-      final catalog = await serviceOver(
-        offline,
-        ttl: Duration.zero,
-      ).catalog();
+      final offline = TestHttpClient(
+        handler: (_) => throw Exception('offline'),
+      );
+      final catalog = await serviceOver(offline, ttl: Duration.zero).catalog();
 
-      expect(offline.calls, 1, reason: 'staleness is retried first');
+      expect(
+        offline.requests,
+        hasLength(1),
+        reason: 'staleness is retried first',
+      );
       expect(catalog.map((f) => f.family), ['Inter']);
     });
 
     test('an unreachable catalogue is empty, never an error', () async {
-      final service = serviceOver(_FakeAdapter((_) => Exception('offline')));
+      final service = serviceOver(
+        TestHttpClient(handler: (_) => throw Exception('offline')),
+      );
 
       expect(await service.catalog(), isEmpty);
     });
@@ -196,8 +186,10 @@ void main() {
       // Otherwise one offline start would leave the picker fontless for the
       // rest of the session.
       var payload = <Object?>[];
-      final adapter = _FakeAdapter((_) => payload);
-      final service = serviceOver(adapter);
+      final httpClient = TestHttpClient(
+        handler: (request) => httpTextResponse(request, payload),
+      );
+      final service = serviceOver(httpClient);
 
       expect(await service.catalog(), isEmpty);
       payload = [_row('inter')];
@@ -206,15 +198,17 @@ void main() {
     });
 
     test('does not fetch when the network is disallowed', () async {
-      final adapter = _FakeAdapter((_) => [_row('inter')]);
+      final httpClient = TestHttpClient(
+        handler: (request) => httpTextResponse(request, [_row('inter')]),
+      );
       final service = FontsourceCatalogService(
         cacheFilePath: cachePath(),
-        dio: Dio()..httpClientAdapter = adapter,
+        httpClient: httpClient,
         allowNetwork: false,
       );
 
       expect(await service.catalog(), isEmpty);
-      expect(adapter.calls, 0);
+      expect(httpClient.requests, isEmpty);
     });
   });
 
@@ -223,8 +217,8 @@ void main() {
 
     setUp(() {
       service = serviceOver(
-        _FakeAdapter(
-          (_) => [
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, [
             _row('inter', family: 'Inter'),
             _row(
               'roboto-mono',
@@ -233,7 +227,7 @@ void main() {
               styles: ['normal'],
               subsets: ['latin'],
             ),
-          ],
+          ]),
         ),
       );
     });
@@ -248,7 +242,8 @@ void main() {
       expect(
         url.toString(),
         '$kFontsourceCdnBase/inter@latest/latin-700-italic.ttf',
-        reason: 'Skia decodes ttf; the woff2 an upstream serves a browser is '
+        reason:
+            'Skia decodes ttf; the woff2 an upstream serves a browser is '
             'unusable',
       );
     });

@@ -16,7 +16,7 @@ import 'package:cc_infra/src/code_graph/code_indexer.dart';
 import 'package:cc_infra/src/code_graph/extraction_isolate.dart'
     show ExtractionRequest;
 import 'package:cc_natives/cc_natives.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart' show CancelToken;
 import 'package:test/test.dart';
 
 // ---------------------------------------------------------------------------

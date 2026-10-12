@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show JsonRpcRequest;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
@@ -14,26 +15,24 @@ import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
+import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:test/test.dart';
 
-/// The `/rig/clipboard/<id>` and `/rig/files/<id>` lanes.
-///
-/// These carry BYTES, which is why they are HTTP routes rather than RPC ops
-/// (the RPC socket closes a connection on an inbound frame over 256 KB). That
-/// makes their auth a thing of their own rather than something inherited from
-/// the RPC session, so it is what this file mostly pins: a signature over a
-/// target of their own, an active device, workspace membership, and a
-/// principal resolved for attribution.
+/// The rig clipboard, files and audio lanes use the Noise-authenticated
+/// resource tunnel. Their signed targets remain separate operation gates.
 void main() {
   group('rig transfer routes', () {
-    const psk = 'test-psk-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
+    final otherPsk = RemoteControlCrypto.generatePsk();
     const deviceId = 'device-a';
     const workspaceId = 'wsA';
     const rigId = 'rig-1';
 
     late LocalRpcServer server;
     late _RecordingRigPort rigs;
-    late HttpClient client;
+    late RemoteRpcClient remote;
+    late HttpClient publicClient;
+    late Directory dataDir;
     late int port;
     late Uint8List microphoneBytes;
     late Principal microphoneActor;
@@ -44,44 +43,47 @@ void main() {
     String sign(String target) =>
         RemoteControlCrypto.signProxyTarget(target, psk);
 
-    Uri url(String path, {Map<String, String> extra = const {}}) =>
-        Uri.parse('http://127.0.0.1:$port$path').replace(
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': sign(LocalRpcServer.rigTransferTarget(workspaceId, rigId)),
-            ...extra,
-          },
-        );
+    Uri url(String path, {Map<String, String> extra = const {}}) => Uri(
+      path: path,
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': sign(LocalRpcServer.rigTransferTarget(workspaceId, rigId)),
+        ...extra,
+      },
+    );
 
-    Uri microphoneUrl({bool start = false, bool end = false}) =>
-        Uri.parse('http://127.0.0.1:$port/rig/stream/$rigId').replace(
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': sign('rig:$workspaceId/$rigId'),
-            'lane': 'microphone',
-            'rate': '16000',
-            'channels': '1',
-            'session': 'capture-a',
-            if (start) 'start': '1',
-            if (end) 'end': '1',
-          },
-        );
+    Uri microphoneUrl({bool start = false, bool end = false}) => Uri(
+      path: '/rig/stream/$rigId',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': sign('rig:$workspaceId/$rigId'),
+        'lane': 'microphone',
+        'rate': '16000',
+        'channels': '1',
+        'session': 'capture-a',
+        if (start) 'start': '1',
+        if (end) 'end': '1',
+      },
+    );
 
-    Uri audioUrl() =>
-        Uri.parse('http://127.0.0.1:$port/rig/stream/$rigId').replace(
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': sign('rig:$workspaceId/$rigId'),
-            'lane': 'audio',
-          },
-        );
+    Uri audioUrl() => Uri(
+      path: '/rig/stream/$rigId',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': sign('rig:$workspaceId/$rigId'),
+        'lane': 'audio',
+      },
+    );
 
     setUp(() async {
+      dataDir = await Directory.systemTemp.createTemp('rig-transfer-routes-');
+      addTearDown(() => dataDir.delete(recursive: true));
       rigs = _RecordingRigPort();
-      client = HttpClient();
+      publicClient = HttpClient();
+      addTearDown(() => publicClient.close(force: true));
       microphoneBytes = Uint8List(0);
       microphoneActor = const UserPrincipal('unset');
       microphoneEnd = false;
@@ -90,9 +92,11 @@ void main() {
       server = LocalRpcServer(
         dispatcher: _StubDispatcher(),
         devicesDao: _StubDevicesDao(),
-        secrets: _StubSecrets(psk),
+        secrets: _StubSecrets({deviceId: psk, 'device-b': otherPsk}),
+        identity: await ServerIdentityStore.load(dataDir.path),
         eventBus: DomainEventBus(),
         workspaceResolver: (_) async => const [],
+        workspaceExists: (id) async => id == workspaceId,
         rigTransfer: rigs,
         rigStream:
             ({
@@ -124,41 +128,51 @@ void main() {
               microphoneEnd = end;
               return sampleRate == 16000 && channels == 1;
             },
-        // Membership is the access boundary in this product, not possession
-        // of a pairing key — the routes check it on top of the signature.
+        // Membership is checked in addition to the signed target and the
+        // Noise-authenticated device identity.
         resolveRole: (ws, userId) async =>
-            ws == workspaceId ? WorkspaceRole.member : null,
+            ws == workspaceId && userId == 'user-a'
+            ? WorkspaceRole.member
+            : null,
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
+      addTearDown(server.stop);
       await server.start();
       port = server.boundPort;
+      remote = await connectRemoteRpc(
+        uri: Uri.parse('ws://127.0.0.1:$port/rpc'),
+        deviceId: deviceId,
+        psk: psk,
+        insecureAllowed: true,
+      );
+      addTearDown(() => remote.close());
     });
 
-    tearDown(() async {
-      client.close(force: true);
-      await server.stop();
-    });
+    Future<RemoteResourceResponse> get(Uri uri) =>
+        remote.resources.request('GET', uri);
 
-    Future<HttpClientResponse> get(Uri uri) async =>
-        (await client.getUrl(uri)).close();
-
-    Future<HttpClientResponse> post(Uri uri, Object body) async {
-      final request = await client.postUrl(uri);
+    Future<RemoteResourceResponse> post(Uri uri, Object body) {
       final bytes = utf8.encode(jsonEncode(body));
-      request.headers.contentType = ContentType.json;
-      request.contentLength = bytes.length;
-      request.add(bytes);
-      return request.close();
+      return remote.resources.request(
+        'POST',
+        uri,
+        headers: const {
+          'content-type': ['application/json'],
+        },
+        body: Stream<List<int>>.value(bytes),
+      );
     }
 
-    Future<HttpClientResponse> postBytes(Uri uri, Uint8List bytes) async {
-      final request = await client.postUrl(uri);
-      request.headers.contentType = ContentType.binary;
-      request.contentLength = bytes.length;
-      request.add(bytes);
-      return request.close();
-    }
+    Future<RemoteResourceResponse> postBytes(Uri uri, Uint8List bytes) =>
+        remote.resources.request(
+          'POST',
+          uri,
+          headers: const {
+            'content-type': ['application/octet-stream'],
+          },
+          body: Stream<List<int>>.value(bytes),
+        );
 
     test('GET /rig/clipboard returns the guest clipboard as JSON', () async {
       rigs.clipboard = const RigClipboardData(
@@ -168,7 +182,7 @@ void main() {
 
       final response = await get(url('/rig/clipboard/$rigId'));
       final body =
-          jsonDecode(await utf8.decoder.bind(response).join())
+          jsonDecode(await utf8.decoder.bind(response.body).join())
               as Map<String, dynamic>;
 
       expect(response.statusCode, 200);
@@ -182,10 +196,10 @@ void main() {
       () async {
         await (await get(
           url('/rig/clipboard/$rigId', extra: {'sel': 'xdnd'}),
-        )).drain<void>();
+        )).body.drain<void>();
         expect(rigs.lastSelection, RigClipboardSelection.xdnd);
 
-        await (await get(url('/rig/clipboard/$rigId'))).drain<void>();
+        await (await get(url('/rig/clipboard/$rigId'))).body.drain<void>();
         expect(rigs.lastSelection, RigClipboardSelection.clipboard);
       },
     );
@@ -193,14 +207,14 @@ void main() {
     test('the caller is attributed to their USER, not their device', () async {
       // Every one of these lands in `rig_action_log`, and "device 4f2a" is not
       // an answer to "who took that file out of the machine".
-      await (await get(url('/rig/clipboard/$rigId'))).drain<void>();
+      await (await get(url('/rig/clipboard/$rigId'))).body.drain<void>();
 
       expect(rigs.lastActor, const UserPrincipal('user-a'));
     });
 
     test('POST /rig/stream microphone attributes and forwards PCM', () async {
       final start = await postBytes(microphoneUrl(start: true), Uint8List(0));
-      await start.drain<void>();
+      await start.body.drain<void>();
       expect(start.statusCode, HttpStatus.noContent);
       expect(microphoneSession, 'capture-a');
       expect(microphoneStart, isTrue);
@@ -209,7 +223,7 @@ void main() {
         microphoneUrl(),
         Uint8List.fromList([0, 1, 255, 127]),
       );
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, HttpStatus.noContent);
       expect(microphoneBytes, [0, 1, 255, 127]);
@@ -219,7 +233,7 @@ void main() {
       expect(microphoneStart, isFalse);
 
       final end = await postBytes(microphoneUrl(end: true), Uint8List(0));
-      await end.drain<void>();
+      await end.body.drain<void>();
       expect(end.statusCode, HttpStatus.noContent);
       expect(microphoneBytes, isEmpty);
       expect(microphoneEnd, isTrue);
@@ -227,10 +241,13 @@ void main() {
 
     test('GET /rig/stream audio relays the guest output unchanged', () async {
       final response = await get(audioUrl());
-      final bytes = await response.expand((chunk) => chunk).toList();
+      final bytes = await response.body.expand((chunk) => chunk).toList();
 
       expect(response.statusCode, HttpStatus.ok);
-      expect(response.headers.contentType?.mimeType, 'audio/mpeg');
+      expect(
+        response.headers['content-type']?.single,
+        startsWith('audio/mpeg'),
+      );
       expect(bytes, [0x49, 0x44, 0x33]);
     });
 
@@ -241,7 +258,7 @@ void main() {
         'image_media_type': 'image/png',
       });
       final body =
-          jsonDecode(await utf8.decoder.bind(response).join())
+          jsonDecode(await utf8.decoder.bind(response.body).join())
               as Map<String, dynamic>;
 
       expect(response.statusCode, 200);
@@ -257,7 +274,7 @@ void main() {
 
       final response = await post(url('/rig/clipboard/$rigId'), {'text': 'x'});
       final body =
-          jsonDecode(await utf8.decoder.bind(response).join())
+          jsonDecode(await utf8.decoder.bind(response.body).join())
               as Map<String, dynamic>;
 
       expect(response.statusCode, 200);
@@ -273,7 +290,7 @@ void main() {
         'x': 40,
         'y': 12,
       });
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 200);
       expect(rigs.dropped?.files.single.name, 'a.txt');
@@ -288,7 +305,7 @@ void main() {
           {'name': 'a.txt', 'bytes': 'not base64!!'},
         ],
       });
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 400);
     });
@@ -311,7 +328,7 @@ void main() {
           },
         ),
       );
-      final bytes = await response.fold<List<int>>(
+      final bytes = await response.body.fold<List<int>>(
         [],
         (acc, chunk) => acc..addAll(chunk),
       );
@@ -319,11 +336,14 @@ void main() {
       expect(response.statusCode, 200);
       expect(bytes, [1, 2, 3]);
       expect(rigs.lastPath, '/home/cc/Drops/report.pdf');
-      expect(response.headers.contentType?.mimeType, 'application/pdf');
+      expect(
+        response.headers['content-type']?.single,
+        startsWith('application/pdf'),
+      );
       // RFC 5987: the name is guest-controlled, so a quote in it must not be
       // able to end the header value early.
       expect(
-        response.headers.value('content-disposition'),
+        response.headers['content-disposition']?.single,
         contains("filename*=UTF-8''report.pdf"),
       );
     });
@@ -339,14 +359,14 @@ void main() {
           },
         ),
       );
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 404);
     });
 
     test('a bad signature is refused', () async {
       final response = await get(
-        Uri.parse('http://127.0.0.1:$port/rig/clipboard/$rigId').replace(
+        Uri(path: '/rig/clipboard/$rigId').replace(
           queryParameters: {
             'w': workspaceId,
             'd': deviceId,
@@ -354,7 +374,7 @@ void main() {
           },
         ),
       );
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 403);
       expect(rigs.reads, 0, reason: 'the port must not have been touched');
@@ -365,7 +385,7 @@ void main() {
       // machine should not, by being pasted somewhere, also write files into
       // it.
       final response = await get(
-        Uri.parse('http://127.0.0.1:$port/rig/clipboard/$rigId').replace(
+        Uri(path: '/rig/clipboard/$rigId').replace(
           queryParameters: {
             'w': workspaceId,
             'd': deviceId,
@@ -373,14 +393,14 @@ void main() {
           },
         ),
       );
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 403);
     });
 
     test('a signature for ANOTHER rig does not open this one', () async {
       final response = await get(
-        Uri.parse('http://127.0.0.1:$port/rig/clipboard/$rigId').replace(
+        Uri(path: '/rig/clipboard/$rigId').replace(
           queryParameters: {
             'w': workspaceId,
             'd': deviceId,
@@ -390,7 +410,7 @@ void main() {
           },
         ),
       );
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 403);
     });
@@ -398,7 +418,7 @@ void main() {
     test('a non-member is refused even with a valid signature', () async {
       // Membership, not possession of a pairing key, is the access boundary.
       final response = await get(
-        Uri.parse('http://127.0.0.1:$port/rig/clipboard/$rigId').replace(
+        Uri(path: '/rig/clipboard/$rigId').replace(
           queryParameters: {
             'w': 'wsForeign',
             'd': deviceId,
@@ -406,61 +426,151 @@ void main() {
           },
         ),
       );
-      await response.drain<void>();
+      await response.body.drain<void>();
 
       expect(response.statusCode, 403);
       expect(rigs.reads, 0);
     });
 
-    test('a preflight allows the JSON POST a browser has to make', () async {
-      // The shared proxy CORS allows GET only; a JSON POST is preflighted and
-      // would be blocked by it.
-      final request = await client.openUrl(
+    test(
+      'a different authenticated device cannot reuse the signed URL',
+      () async {
+        final other = await connectRemoteRpc(
+          uri: Uri.parse('ws://127.0.0.1:$port/rpc'),
+          deviceId: 'device-b',
+          psk: otherPsk,
+          insecureAllowed: true,
+        );
+        try {
+          final response = await other.resources.request(
+            'GET',
+            url('/rig/clipboard/$rigId'),
+          );
+          await response.body.drain<void>();
+          expect(response.statusCode, HttpStatus.forbidden);
+          final ownUrl = Uri(
+            path: '/rig/clipboard/$rigId',
+            queryParameters: {
+              'w': workspaceId,
+              'd': 'device-b',
+              's': RemoteControlCrypto.signProxyTarget(
+                LocalRpcServer.rigTransferTarget(workspaceId, rigId),
+                otherPsk,
+              ),
+            },
+          );
+          final nonMember = await other.resources.request('GET', ownUrl);
+          await nonMember.body.drain<void>();
+          expect(nonMember.statusCode, HttpStatus.forbidden);
+          expect(rigs.reads, 0);
+        } finally {
+          await other.close();
+        }
+      },
+    );
+
+    test(
+      'an unregistered workspace is refused before reaching the rig',
+      () async {
+        final response = await get(
+          Uri(
+            path: '/rig/files/$rigId',
+            queryParameters: {
+              'w': 'wsForeign',
+              'd': deviceId,
+              's': sign(LocalRpcServer.rigTransferTarget('wsForeign', rigId)),
+              'p': base64Url.encode(utf8.encode('/secret')).replaceAll('=', ''),
+            },
+          ),
+        );
+        await response.body.drain<void>();
+        expect(response.statusCode, HttpStatus.forbidden);
+        expect(rigs.lastPath, isNull);
+      },
+    );
+
+    test('sealed OPTIONS retains the JSON POST preflight metadata', () async {
+      final response = await remote.resources.request(
         'OPTIONS',
         url('/rig/clipboard/$rigId'),
       );
-      final response = await request.close();
-      await response.drain<void>();
-
+      await response.body.drain<void>();
       expect(response.statusCode, HttpStatus.noContent);
       expect(
-        response.headers.value('access-control-allow-methods'),
+        response.headers['access-control-allow-methods']?.single,
         contains('POST'),
       );
       expect(
-        response.headers.value('access-control-allow-headers'),
+        response.headers['access-control-allow-headers']?.single,
         contains('Content-Type'),
       );
     });
 
-    test('a host with no enclosure support 404s rather than hanging', () async {
+    test('signed public rig routes reject all byte methods with 426', () async {
+      for (final (method, uri) in [
+        ('GET', url('/rig/clipboard/$rigId')),
+        ('POST', url('/rig/clipboard/$rigId')),
+        ('OPTIONS', url('/rig/clipboard/$rigId')),
+        ('GET', url('/rig/files/$rigId')),
+        ('POST', url('/rig/files/$rigId')),
+        ('GET', audioUrl()),
+        ('POST', microphoneUrl()),
+      ]) {
+        final request = await publicClient.openUrl(
+          method,
+          Uri.parse('http://127.0.0.1:$port').resolveUri(uri),
+        );
+        final response = await request.close();
+        await response.drain<void>();
+        expect(
+          response.statusCode,
+          HttpStatus.upgradeRequired,
+          reason: '$method ${uri.path}',
+        );
+      }
+      expect(rigs.reads, 0);
+      expect(rigs.written, isNull);
+      expect(rigs.dropped, isNull);
+      expect(microphoneSession, isEmpty);
+    });
+
+    test('a host with no enclosure support 404s through Noise', () async {
       final bare = LocalRpcServer(
         dispatcher: _StubDispatcher(),
         devicesDao: _StubDevicesDao(),
-        secrets: _StubSecrets(psk),
+        secrets: _StubSecrets({deviceId: psk}),
+        identity: await ServerIdentityStore.load(dataDir.path),
         eventBus: DomainEventBus(),
         workspaceResolver: (_) async => const [],
-        resolveRole: (ws, userId) async => WorkspaceRole.member,
+        workspaceExists: (id) async => id == workspaceId,
+        resolveRole: (ws, userId) async =>
+            ws == workspaceId && userId == 'user-a'
+            ? WorkspaceRole.member
+            : null,
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
-      addTearDown(bare.stop);
       await bare.start();
-
-      final response = await (await client.getUrl(
-        Uri.parse(
-          'http://127.0.0.1:${bare.boundPort}/rig/clipboard/$rigId',
-        ).replace(
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': sign(LocalRpcServer.rigTransferTarget(workspaceId, rigId)),
-          },
-        ),
-      )).close();
-      await response.drain<void>();
-
-      expect(response.statusCode, 404);
+      try {
+        final client = await connectRemoteRpc(
+          uri: Uri.parse('ws://127.0.0.1:${bare.boundPort}/rpc'),
+          deviceId: deviceId,
+          psk: psk,
+          insecureAllowed: true,
+        );
+        try {
+          final response = await client.resources.request(
+            'GET',
+            url('/rig/clipboard/$rigId'),
+          );
+          await response.body.drain<void>();
+          expect(response.statusCode, HttpStatus.notFound);
+        } finally {
+          await client.close();
+        }
+      } finally {
+        await bare.stop();
+      }
     });
   });
 }
@@ -533,7 +643,10 @@ class _RecordingRigPort implements RigPort {
 
 class _StubDispatcher implements RpcDispatcher {
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<Map<String, dynamic>> handleRequest(JsonRpcRequest request) async =>
+      request.id == null
+      ? const {}
+      : {'jsonrpc': '2.0', 'id': request.id, 'result': <String, dynamic>{}};
 }
 
 class _StubDevicesDao implements PairedDeviceDao {
@@ -544,28 +657,34 @@ class _StubDevicesDao implements PairedDeviceDao {
   /// answer with one.
   @override
   Future<PairedDevicesTableData?> getById(String id) async =>
-      PairedDevicesTableData(
-        id: id,
-        userId: 'user-a',
-        label: 'test device',
-        platform: 'macos',
-        pskRef: 'paired_device_psk_\$id',
-        status: 'active',
-        pairedAt: DateTime.now(),
-        lastSeenAt: DateTime.now(),
-      );
+      id == 'device-a' || id == 'device-b'
+      ? PairedDevicesTableData(
+          id: id,
+          userId: id == 'device-a' ? 'user-a' : 'user-b',
+          label: 'test device',
+          platform: 'macos',
+          pskRef: 'paired_device_psk_$id',
+          status: 'active',
+          pairedAt: DateTime.now(),
+          lastSeenAt: DateTime.now(),
+        )
+      : null;
+
+  @override
+  Future<int> markSeen(String id, DateTime at) async =>
+      id == 'device-a' || id == 'device-b' ? 1 : 0;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _StubSecrets implements PairedDeviceSecretsPort {
-  _StubSecrets(this.psk);
+  _StubSecrets(this.psks);
 
-  final String psk;
+  final Map<String, String> psks;
 
   @override
-  Future<String?> readPsk(String deviceId) async => psk;
+  Future<String?> readPsk(String deviceId) async => psks[deviceId];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

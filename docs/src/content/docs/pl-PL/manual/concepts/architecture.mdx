@@ -3,7 +3,7 @@ title: Architektura
 description: Jak zbudowany jest Control Center — model serwera z cienkim klientem, Clean Architecture w podejściu feature-first oraz porty i adaptery.
 dateModified: 2026-09-19
 slug: pl-PL/podrecznik/koncepcje/architektura
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Przegląd
@@ -26,7 +26,7 @@ To pojedynczy **Dart workspace** współdzielący jeden rozwiązany plik lockfil
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Warstwa domenowa**: encje, obiekty wartości, interfejsy repozytoriów, porty i usługi domenowe w czystym Darcie. Zero importów infrastruktury (żadnego dio, drift ani modeli sieciowych).
+- **Warstwa domenowa**: encje, obiekty wartości, interfejsy repozytoriów, porty i usługi domenowe w czystym Darcie. Zero importów infrastruktury (żadnego rhttp, drift ani modeli sieciowych).
 - **Warstwa prezentacji**: ekrany, widżety, notifiery. Brak bezpośredniego dostępu do drift/DAO/warstwy danych; wszystko przechodzi przez providery Riverpod → repozytoria.
 - **Warstwa infrastruktury**: konkretne implementacje portów domenowych i interfejsów repozytoriów. Zależy od domeny, nigdy odwrotnie.
 
@@ -122,7 +122,7 @@ Obie bazy danych należą do `cc_persistence` i otwiera je wyłącznie `cc_serve
 
 Cały zewnętrzny ruch HTTP mieszka w serwerze. Klienci nigdy nie łączą się bezpośrednio z GitHubem, Linear ani Google — wywołują operacje RPC serwera, a nawet zdalne multimedia są pobierane przez punkt końcowy `/proxy/media` serwera, a nie z pierwotnego źródła.
 
-- Klienty **dio** w `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` i `GoogleCalendarApiClient`
+- Klienty **rhttp** w `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` i `GoogleCalendarApiClient`
 - Wstrzykiwanie tokenów uwierzytelniania przez interceptory, w tym interceptor Google OAuth dla poszczególnych kont w `cc_server_core`, który odświeża tokeny przy kodzie 401
 - Wszystkie błędy mapowane przez `packages/cc_infra/lib/src/network/error_mapper.dart` → typowane podklasy `AppException` zdefiniowane w `cc_domain`
 

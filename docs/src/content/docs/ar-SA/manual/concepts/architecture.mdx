@@ -3,7 +3,7 @@ title: البنية
 description: كيف تنتظم Control Center حول نموذج عميل خفيف فوق خادم بلا واجهة، وبنية نظيفة حسب الميزة، ونمط المنافذ والمحوّلات.
 dateModified: 2026-09-19
 slug: ar-SA/دليل-المستخدم/مفاهيم/بنية
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## نظرة عامة
@@ -26,7 +26,7 @@ Control Center **بنية عميل خفيف**. لا يفتح أي عميل قا�
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **طبقة النطاق**: كيانات Dart خالصة، وكائنات قيمة، وواجهات مستودعات، ومنافذ، وخدمات نطاق. بلا أي استيراد من البنية التحتية (لا dio ولا drift ولا نماذج شبكة).
+- **طبقة النطاق**: كيانات Dart خالصة، وكائنات قيمة، وواجهات مستودعات، ومنافذ، وخدمات نطاق. بلا أي استيراد من البنية التحتية (لا rhttp ولا drift ولا نماذج شبكة).
 - **طبقة العرض**: الشاشات والودجات ومُخطِرات الحالة. بلا وصول مباشر إلى drift أو DAO أو طبقة البيانات، وكل شيء يمر عبر موفّري Riverpod → المستودعات.
 - **طبقة البنية التحتية**: التنفيذات الملموسة لمنافذ النطاق وواجهات المستودعات. تعتمد على النطاق، ولا ينعكس الاتجاه.
 
@@ -122,7 +122,7 @@ Control Center متعدد المستخدمين: البشر والوكلاء فا
 
 كل HTTP الخارجي في الخادم. لا يتصل العملاء بـ GitHub أو Linear أو Google مباشرة. يستدعون عمليات RPC على الخادم، وحتى الوسائط البعيدة تُجلب عبر نقطة `/proxy/media` على الخادم لا من المصدر الأصلي.
 
-- عملاء **dio** في `packages/cc_infra/lib/src/`: `GitHubApiClient` و`GitHubPrClient` و`GitHubContentClient` و`GitHubGraphQLClient` و`GitLabApiClient` و`BitbucketApiClient` و`LinearGraphQlClient` و`GoogleCalendarApiClient`
+- عملاء **rhttp** في `packages/cc_infra/lib/src/`: `GitHubApiClient` و`GitHubPrClient` و`GitHubContentClient` و`GitHubGraphQLClient` و`GitLabApiClient` و`BitbucketApiClient` و`LinearGraphQlClient` و`GoogleCalendarApiClient`
 - تُحقن رموز المصادقة عبر المعترِضات، ومنها معترِض Google OAuth لكل حساب في `cc_server_core` يجدّد الرموز عند 401
 - تُحوَّل الأخطاء كلها عبر `packages/cc_infra/lib/src/network/error_mapper.dart` إلى أصناف فرعية من `AppException` معرَّفة في `cc_domain`
 

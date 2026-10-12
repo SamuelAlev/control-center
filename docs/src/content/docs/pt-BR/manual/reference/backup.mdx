@@ -2,7 +2,7 @@
 title: Backup, exportação e importação
 description: A estrutura do snapshot, o manifesto, cada operação de backup e rota de transferência, e exatamente quais arquivos um backup contém e não contém.
 slug: pt-BR/manual/referencia/backup
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
@@ -25,6 +25,13 @@ diferentes.
 Todos são gravados com `VACUUM INTO` do SQLite, que é seguro em relação a um banco de
 dados WAL em uso: ele faz uma transação de leitura, produz uma cópia desfragmentada e
 transacionalmente consistente e nunca exige parar o servidor.
+
+Esses arquivos e as cópias baixadas **não são cifrados em repouso** pelo Control
+Center. A transferência cifrada de ponta a ponta protege os bytes em trânsito
+entre um cliente emparelhado e o seu `cc_server`, em conexões diretas ou pelo
+relay. Proteja separadamente o armazenamento local e as cópias fora da máquina; o
+servidor e qualquer destinatário autorizado conseguem ler os arquivos de banco de
+dados.
 
 ## Estrutura do snapshot
 
@@ -209,11 +216,16 @@ desatualizado.
 
 ## Rotas de transferência
 
-Toda operação acima fala em caminhos do lado do servidor, o que é uma resposta completa
-apenas quando o servidor é a sua própria máquina. Estas três carregam os bytes, na mesma
-via assinada por PSK que o proxy de mídia e o armazenamento de blobs usam. O chamador
-assina uma string de destino com a chave pré-compartilhada do dispositivo e passa a
-assinatura como `s`.
+As operações de exportação/importação e de listagem de snapshots acima falam em
+caminhos do lado do servidor, o que é uma resposta completa apenas quando o
+servidor é a sua própria máquina. Estas rotas em formato HTTP carregam os bytes de
+backup **dentro do mesmo túnel de recursos autenticado e cifrado de ponta a
+ponta** de outros recursos sensíveis, quer a conexão RPC seja direta quer
+intermediada. Elas não são endpoints públicos de transferência de arquivos HTTP:
+uma requisição a uma delas no listener público retorna `426 Upgrade Required`,
+mesmo do loopback. No túnel cifrado, o dispositivo autenticado com Noise precisa
+corresponder a `d`; o handler ainda verifica a assinatura do dispositivo sobre a
+string de destino dele usando a sua PSK de emparelhamento e a função abaixo.
 
 | Rota                    | Método | Query           | Destino assinado                 | Exige                   |
 | ----------------------- | ------ | --------------- | -------------------------------- | ----------------------- |
@@ -233,6 +245,7 @@ diretório que a listagem não teria mostrado.
 | `404`  | Nenhuma porta de backup neste host, ou o snapshot/arquivo de espaço de trabalho nomeado não existe |
 | `405`  | `/backup/restore` chamado com qualquer coisa diferente de `POST`                     |
 | `413`  | O corpo do upload excede 8 GiB, pelo content-length declarado ou pelos bytes realmente lidos |
+| `426`  | Qualquer requisição direta a uma rota de transferência no listener HTTP público; use o túnel de recursos cifrado de um cliente emparelhado |
 | `500`  | A exportação ou o arquivamento falhou no lado do servidor                            |
 
 Os dois downloads respondem `Cache-Control: no-store` com `Accept-Ranges: none`. Cada
@@ -249,12 +262,14 @@ snapshot são o mesmo arquivo.
 colocá-lo em buffer, limita o tamanho antes e durante a leitura, e exclui o arquivo
 preparado em **todas** as saídas, inclusive numa recusa.
 
-:::caution[Uma conexão via relay não tem origem HTTP]
-O relay intermediado transporta quadros de RPC, não transferências de arquivos. Tudo o que
-fala em caminhos do lado do servidor continua funcionando por ele; as três rotas de
-transferência precisam de uma conexão direta, e a UI as desativa com uma observação em vez
-de falhar no meio do download.
-:::
+::::caution[A conexão direta e o relay usam a mesma transferência cifrada]
+O relay transporta requisições de recursos, respostas em streaming e bytes de
+upload como texto cifrado; ele não consegue ler o conteúdo dos backups. Um caminho
+do lado do servidor continua sendo um caminho no host do servidor, não um arquivo
+no relay. O acesso ainda exige o dispositivo emparelhado, a assinatura do destino
+e a função aplicável de espaço de trabalho ou instalação. Nenhum dos dois
+transportes cifra em repouso os arquivos de backup resultantes.
+::::
 
 ## Caminhos e limites
 
@@ -265,7 +280,7 @@ de falhar no meio do download.
 | Exportações de espaços de trabalho | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`  |
 | Preparação de transferência    | `<dataDir>/backups/transfer/` — uma bancada de trabalho, varrida pela rota que a grava |
 | Nome do arquivo do snapshot    | `<snapshot directory name>.zip`                              |
-| Teto de upload                 | 8 GiB por `POST /backup/restore`                             |
+| Teto de upload                 | 8 GiB por upload cifrado para `/backup/restore`              |
 | Retenção                       | Snapshots da instalação: exclusão manual. Backups de espaços de trabalho: pipeline semanal, 30 dias por padrão |
 
 Os diretórios `exports/`, `transfer/` e `workspace-backups/` não são snapshots da

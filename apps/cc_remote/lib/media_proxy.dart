@@ -3,13 +3,9 @@ import 'dart:convert';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter/widgets.dart';
 
-/// Signed-media origin plus pairing credential for this device.
-///
-/// Phone never fetches remote media directly — all via cc_server
-/// (`/workspace/logo`, `/proxy/media`), PSK-signed
-/// ([RemoteControlCrypto.signProxyTarget]) then membership-checked. Origin is
-/// live `probeUri` (failover). Broker relay has no HTTP origin — callers fall
-/// back to initials/monograms.
+/// Signed local-resource base for this device. All bytes traverse the
+/// authenticated encrypted RPC channel, including broker-only relay paths.
+/// The host still checks each PSK signature and workspace membership.
 @immutable
 class RemoteMediaEndpoint {
   /// Creates a [RemoteMediaEndpoint].
@@ -19,7 +15,18 @@ class RemoteMediaEndpoint {
     required this.psk,
   });
 
-  /// `http(s)://host:port` of the server hosting the media endpoints.
+  /// Preserve the per-session local URL capability before every signed route.
+  Uri resourceUri(String path, {Map<String, String>? queryParameters}) {
+    final prefix = httpBase.path.endsWith('/')
+        ? httpBase.path.substring(0, httpBase.path.length - 1)
+        : httpBase.path;
+    return httpBase.replace(
+      path: '$prefix$path',
+      queryParameters: queryParameters,
+    );
+  }
+
+  /// Local same-origin virtual URL capability, not the remote server origin.
   final Uri httpBase;
 
   /// The paired device id, echoed back so the host picks the verifying PSK.
@@ -29,9 +36,8 @@ class RemoteMediaEndpoint {
   final String psk;
 
   /// The `/workspace/logo` URL for [workspaceId].
-  String workspaceLogoUrl(String workspaceId) => httpBase
-      .replace(
-        path: '/workspace/logo',
+  String workspaceLogoUrl(String workspaceId) => resourceUri(
+        '/workspace/logo',
         queryParameters: {
           'w': workspaceId,
           'd': deviceId,
@@ -62,9 +68,8 @@ class RemoteMediaEndpoint {
       return rawUrl;
     }
     final bucketed = maxWidth == null ? null : _bucketWidth(maxWidth);
-    return httpBase
-        .replace(
-          path: '/proxy/media',
+    return resourceUri(
+          '/proxy/media',
           queryParameters: {
             'u': base64Url.encode(utf8.encode(rawUrl)),
             'd': deviceId,
@@ -91,9 +96,8 @@ class RemoteMediaEndpoint {
     if (hash.length != 64 || !RegExp(r'^[0-9a-f]{64}$').hasMatch(hash)) {
       return '';
     }
-    return httpBase
-        .replace(
-          path: '/blob',
+    return resourceUri(
+          '/blob',
           queryParameters: {
             'w': workspaceId,
             'h': hash,
@@ -114,9 +118,8 @@ class RemoteMediaEndpoint {
   /// server has not stored yet. Membership is still checked server-side, so the
   /// signature only ever buys a write into a workspace this device's user
   /// belongs to.
-  String blobUploadUrl({required String workspaceId}) => httpBase
-      .replace(
-        path: '/blob',
+  String blobUploadUrl({required String workspaceId}) => resourceUri(
+        '/blob',
         queryParameters: {
           'w': workspaceId,
           'd': deviceId,

@@ -1,0 +1,41 @@
+{
+  "id": "memory-masking-3d",
+  "seed": 3939,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Current text policy (quality default)"
+    },
+    {
+      "id": "masking",
+      "axis": "memory_policy",
+      "memoryPolicy": "masking",
+      "label": "Batched masking of stale observations, recoverable"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 6000,
+  "memoryExperiment": {
+    "id": "observation-masking",
+    "enabled": true,
+    "mode": "masking",
+    "requireRecoverableReferences": true,
+    "notes": "Report 3D. Masking must keep every masked observation recoverable; the long-context task is the fidelity canary because its last turn depends on facts from its first."
+  },
+  "notes": "Compares the current policy against batched masking on the same tasks. Masking+structured summarization is the next experiment to declare once its own wrapper (and fidelity checks) exist: an arm whose policy has no matching enabled experiment would be rejected as an unattributed deviation."
+}

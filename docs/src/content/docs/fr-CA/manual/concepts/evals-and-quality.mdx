@@ -1,38 +1,164 @@
 ---
 title: Évaluations et qualité
-description: Les suites d’évaluation, l’ensemble de base amorcé dans chaque espace de travail et l’endroit où elles apparaissent dans Observabilité.
+description: Les suites d'évaluation et les campagnes de skills épinglées à des révisions, et comment interpréter leurs preuves.
 slug: fr-CA/manuel/concepts/evaluations-et-qualite
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
 
-Une **suite d’évaluation** est la définition, propre à un espace de travail, d’une
+**Observabilité → Qualité** contient à la fois des suites d'évaluation à tâche
+unique et des campagnes de skills appariées. Une campagne de skills mesure un
+paquet tel qu'utilisé par un modèle et un harnais donnés, pas la qualité de son
+Markdown en soi.
+
+## Suites d'évaluation
+
+Une **suite d'évaluation** est la définition, propre à un espace de travail, d'une
 tâche à exécuter contre un agent : un prompt, un agent et un mode cibles, une
-configuration facultative, une fixture facultative accompagnée d’un SHA épinglé
-et une liste de correcteurs. Les correcteurs sont déterministes d’abord ; un juge
-à grille d’évaluation LLM couvre ce que ces vérifications ne peuvent pas
+configuration facultative, une fixture facultative accompagnée d'un SHA épinglé
+et une liste de correcteurs. Les correcteurs sont déterministes d'abord ; un juge
+à grille d'évaluation LLM couvre ce que ces vérifications ne peuvent pas
 exprimer.
 
-Cinq suites de base s’amorcent à la création d’un espace de travail. Elles
-couvrent les propositions d’orchestration, une révision qui détecte un bogue
+Cinq suites de base s'amorcent à la création d'un espace de travail. Elles
+couvrent les propositions d'orchestration, une révision qui détecte un bogue
 introduit volontairement, le mode plan qui reste en lecture seule, le mode plan
-qui produit un plan et un aller-retour de ticket. L’amorçage écoute
+qui produit un plan et un aller-retour de ticket. L'amorçage écoute
 `WorkspaceCreated` (`workspace.upsert` ou `workspace.create`), ignore un nom qui
 existe déjà et ne remplit pas rétroactivement les espaces de travail plus
 anciens.
 
-## Où elles apparaissent
+### Où elles apparaissent
 
 **Observabilité → Qualité** (`/workspaces/<id>/observability`) répertorie chaque
-suite de l’espace de travail.
+suite de l'espace de travail.
 
 Créez, listez, modifiez et supprimez des suites au moyen de `evals.upsertSuite`,
-`evals.deleteSuite` et `evals.watchSuites`. L’onglet Qualité est la liste ; ces
-opérations constituent l’éditeur.
+`evals.deleteSuite` et `evals.watchSuites`. L'onglet Qualité est la liste ; ces
+opérations constituent l'éditeur.
+
+## Campagnes de skills
+
+Une campagne compare deux bras sous la même tâche et la même configuration
+d'exécution. Le candidat est absent, normalement disponible, chargé
+explicitement, ou comparé à une révision antérieure ou à un inventaire fixe de
+skills ambiants. Ces options répondent à des questions différentes ; le
+chargement forcé est un diagnostic, pas une note de découverte normale. Le
+[guide des skills](/fr-CA/manuel/guides/gerer-skills/#évaluer-un-skill) explique
+comment choisir une comparaison et autoriser une exécution budgétée.
+
+Les preuves appartiennent à une **empreinte du paquet entier** exacte :
+`SKILL.md`, métadonnées, scripts, références et ressources. Le serveur capture
+des paquets immuables déjà analysés et épingle le corpus, l'adaptateur,
+l'identifiant de fournisseur/modèle natif, le protocole, les schémas d'outils et
+l'inventaire ambiant. Les campagnes Claude natives épinglent aussi le compte géré
+et la version observée de la CLI. Modifier une référence invalide les preuves
+actuelles même si `SKILL.md` est inchangé. Un alias de modèle consigne ce qui a
+été demandé, pas des poids immuables du fournisseur.
+
+Chaque tentative reçoit un contexte, un état de foyer et de fixture neufs. Les
+bras appariés utilisent la même politique et les mêmes conditions de tâche,
+hormis l'intervention de skill déclarée. L'absence de cible signifie que les
+métadonnées et les fichiers du candidat sont indisponibles, pas que toutes les
+instructions d'arrière-plan ou tous les skills ont été retirés. Les prompts de
+tâche ne doivent pas nommer le candidat dans une comparaison de découverte
+normale.
+
+Le serveur détient l'autorisation, l'exécution, les budgets et la persistance de
+l'espace de travail. Les clients choisissent les réglages et affichent les
+preuves. La progression survit aux reconnexions ; l'annulation conserve les
+résultats partiels, et un redémarrage marque le travail inachevé comme
+interrompu plutôt que de répéter silencieusement des appels payants. Ces
+campagnes ne fournissent pas le contrat d'exécuteur distinct pour des suites
+d'évaluation arbitraires.
+
+## Lire les preuves avec prudence
+
+- **Les résultats décident de l'exactitude.** Des vérificateurs typés
+  indépendants contrôlent les artefacts et le comportement qui en résulte, pas
+  l'affirmation de l'agent qu'il a réussi. Les réponses attendues restent hors
+  de l'enceinte du candidat ; le code généré est évalué dans une copie confinée
+  séparément.
+- **Charger et être utile sont deux choses différentes.** La disponibilité, les
+  chargements de corps/références et l'usage observé des scripts expliquent
+  l'exécution. La lecture d'un fichier ne prouve pas que le modèle a suivi ses
+  instructions ; l'accès non observable reste inconnu.
+- **Conservez la base de référence appariée.** Une exécution réussie du candidat
+  seule n'établit pas un bénéfice. Incluez les tentatives où un skill
+  disponible a été ignoré, les tentatives échouées et leurs coûts ; ne gardez
+  pas seulement le meilleur essai.
+- **Les répétitions ne sont pas de nouvelles tâches.** Les rapports regroupent
+  l'incertitude par tâche. De petits échantillons, une couverture manquante, une
+  dérive d'identité et des dépenses inconnues ne peuvent justifier une
+  recommandation d'adoption. Une campagne terminée peut rester non concluante ;
+  l'absence de gain démontré n'est pas une preuve d'équivalence ni de
+  régression.
+- **Examinez les régressions individuelles.** Les gains agrégés ne doivent pas
+  masquer une tâche compromise ni un effet secondaire non autorisé. Les analyses
+  de sécurité, les observations de sûreté à l'exécution et l'utilité restent
+  distinctes ; une exécution moins chère ne compense pas l'absence de preuves de
+  qualité ou de sûreté.
+- **Ne regroupez pas des résultats incompatibles.** Un autre modèle, harnais,
+  politique, fixture ou combinaison de skills est une autre configuration.
+  Gardez les preuves de transfert et de composition réservées à part des cas de
+  développement.
+
+Les neuf corpus pilotes rédigés localement contiennent 108 entrées de tâches
+couvrant l'utilité, le routage/la sûreté propres à chaque famille et le
+transfert/la composition réservés. Choisissez une famille correspondant à
+l'usage du skill. Les solutions de référence et les sorties mal connues
+contrôlent les vérificateurs ; ces fixtures ne sont ni une reproduction d'un
+référentiel public ni une preuve qu'un skill installé est utile. Les exécutions
+de fumée d'implémentation avec des réponses de fournisseur scriptées ne sont pas
+des mesures de qualité de skill par un modèle en direct.
+
+## Limites d'exécution et de preuves
+
+Seuls le **harnais intégré** contrôlé et **Claude Code** sont pris en charge. Le
+confinement et des identifiants actifs doivent être validés avant l'exécution.
+Les fournisseurs intégrés exigent une prise en charge documentée des outils, des
+limites de jetons et une tarification ; Codex OAuth authentifie son propre compte
+plutôt que d'exiger une clé API OpenAI distincte. Claude Code utilise le compte
+géré par défaut, un ID de modèle concret et son propre rapport de coûts
+équivalent à l'API.
+
+Claude Code et Codex OAuth utilisent un **seuil d'arrêt d'utilisation** : un appel
+en cours peut dépasser le budget, puis les appels suivants s'arrêtent. Il ne
+s'agit pas de dépenses d'abonnement facturées ni d'un plafond de facturation
+strict. Les fournisseurs à clé API conservent des réservations prudentes avant
+l'appel. Une dépense observée inconnue arrête les appels suivants pour chaque
+adaptateur ; une couverture incomplète reste partielle ou non concluante.
+
+Claude exécute sa boucle de modèle native dans un répertoire de contrôleur privé,
+avec les outils intégrés et les skills ambiants désactivés. Ses seuls outils sont
+le pont MCP authentifié et détenu par le serveur vers le même invité confiné que
+celui utilisé par le harnais intégré. Les identifiants restent à l'extérieur de
+cet invité. Un changement d'identité de la CLI ou de surface d'outils invalide la
+tentative au lieu de changer silencieusement d'exécuteur. L'évaluation de parc et
+Windows ne sont pas pris en charge ; une sonde Git de worker réussie ou un écho
+de prompt ne compte pas comme évaluation.
+
+Le confinement sous macOS refuse le réseau de l'invité et l'accès au système de
+fichiers externe, bloque le détachement des processus, borne CPU/fichiers/sortie
+et nettoie les descendants détenus, mais **n'impose pas de quota de mémoire
+strict**. Linux exige bubblewrap et applique une limite d'espace d'adressage. La
+validation initiale du confinement a exercé macOS, pas Linux. L'absence de
+confinement ne retombe jamais sur un shell de l'hôte. Les identifiants du
+fournisseur restent sur le serveur, hors des outils de l'invité.
+
+Les preuves des tentatives sont expurgées et plafonnées à 256 Kio ; un export est
+plafonné à 16 Mio. Les exports volumineux conservent des résumés compacts de
+résultats/coûts pour toutes les tentatives admises et signalent explicitement le
+contenu de trace omis ou résumé. Ni un export ni un rapport ne contient un
+paquet complet de relecture d'une source privée. Les contrôles de sûreté
+synthétiques n'établissent pas une résistance réelle à l'exfiltration, ne
+contournent pas la quarantaine et ne certifient pas un skill comme sûr.
 
 ## Concepts connexes
 
-- [Le modèle d’agent](/fr-CA/manuel/concepts/modele-agent/) : la configuration
-  qu’épingle une suite
-- [Garde-fous](/fr-CA/manuel/concepts/garde-fous/) : le réglage d’autonomie
+- [Le modèle d'agent](/fr-CA/manuel/concepts/modele-agent/) : la configuration
+  qu'épingle une suite
+- [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) : le confinement et
+  les limites d'autorité
+- [Garde-fous](/fr-CA/manuel/concepts/garde-fous/) : le réglage d'autonomie
 - [Gérer les coûts et les budgets](/fr-CA/manuel/guides/gerer-couts/) : les
-  dépenses consignées en parallèle d’une exécution
+  dépenses consignées en parallèle d'une exécution

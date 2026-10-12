@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/usage.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/daos/agent_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
@@ -78,10 +80,9 @@ class DaoAgentRunLogRepository
     String workspaceId,
     DateTime since,
   ) async {
-    final rows = await _dao(workspaceId).costHistory(
+    final rows = await _dao(
       workspaceId,
-      since.millisecondsSinceEpoch ~/ 1000,
-    );
+    ).costHistory(workspaceId, since.millisecondsSinceEpoch ~/ 1000);
     return [
       for (final row in rows)
         UsageCostHistoryEntry(
@@ -111,7 +112,9 @@ class DaoAgentRunLogRepository
     String workspaceId,
     String conversationId,
   ) => distinctRows(
-    _dao(workspaceId).watchActiveLogsByConversation(workspaceId, conversationId),
+    _dao(
+      workspaceId,
+    ).watchActiveLogsByConversation(workspaceId, conversationId),
   ).map(_mapper.toDomainList);
 
   @override
@@ -157,6 +160,169 @@ class DaoAgentRunLogRepository
     return row == null ? null : _mapper.toDomain(row);
   }
 
+  static AgentRunLogsTableCompanion _costColumns(RunCost cost) =>
+      AgentRunLogsTableCompanion(
+        inputTokens: drift.Value(cost.inputTokens),
+        outputTokens: drift.Value(cost.outputTokens),
+        thoughtTokens: drift.Value(cost.thoughtTokens),
+        cachedReadTokens: drift.Value(cost.cachedReadTokens),
+        cachedWriteTokens: drift.Value(cost.cachedWriteTokens),
+        estimatedCostCents: drift.Value(cost.estimatedCostCents),
+        costMicros: drift.Value(cost.costMicros),
+        costBasis: drift.Value(cost.costBasis.name),
+        durationMs: drift.Value(cost.durationMs),
+        timeToFirstTokenMs: drift.Value(cost.timeToFirstTokenMs),
+      );
+
+  @override
+  Future<void> updateCost(
+    String workspaceId,
+    String runId,
+    RunCost cost,
+  ) async {
+    await _dao(
+      workspaceId,
+    ).updateLogCost(workspaceId, runId, _costColumns(cost));
+  }
+
+  @override
+  Future<void> addChildCostMicros(
+    String workspaceId,
+    String runId,
+    int amountMicros,
+  ) async {
+    if (amountMicros < 0) {
+      throw ArgumentError.value(amountMicros, 'amountMicros', 'must be >= 0');
+    }
+    if (amountMicros == 0) {
+      // Still resolve the workspace, so an invalid id cannot silently pass.
+      _dao(workspaceId);
+      return;
+    }
+    await _dao(
+      workspaceId,
+    ).addLogChildCostMicros(workspaceId, runId, amountMicros);
+  }
+
+  @override
+  Future<bool> updateRuntime(
+    String workspaceId,
+    String runId, {
+    int? pid,
+    bool markRunning = false,
+    String? logPath,
+    String? contextSnapshotJson,
+    DateTime? lastOutputAt,
+    RunLiveness? liveness,
+    RunErrorFamily? errorFamily,
+    String? summary,
+    String? modelId,
+    String? effort,
+    String? taskFamily,
+  }) async {
+    final dao = _dao(workspaceId);
+    final hasMetadata =
+        pid != null ||
+        logPath != null ||
+        contextSnapshotJson != null ||
+        lastOutputAt != null ||
+        liveness != null ||
+        errorFamily != null ||
+        summary != null ||
+        modelId != null ||
+        effort != null ||
+        taskFamily != null;
+    if (!hasMetadata && !markRunning) {
+      return false;
+    }
+    return await dao.updateLogRuntime(
+          workspaceId,
+          runId,
+          AgentRunLogsTableCompanion(
+            pid: drift.Value.absentIfNull(pid),
+            status: const drift.Value.absent(),
+            logPath: drift.Value.absentIfNull(logPath),
+            contextSnapshotJson: drift.Value.absentIfNull(contextSnapshotJson),
+            lastOutputAt: drift.Value.absentIfNull(lastOutputAt),
+            livenessClass: drift.Value.absentIfNull(liveness?.name),
+            errorFamily: drift.Value.absentIfNull(errorFamily?.name),
+            summary: drift.Value.absentIfNull(summary),
+            modelId: drift.Value.absentIfNull(modelId),
+            effort: drift.Value.absentIfNull(effort),
+            taskFamily: drift.Value.absentIfNull(taskFamily),
+          ),
+          hasMetadata: hasMetadata,
+          markRunning: markRunning,
+        ) !=
+        0;
+  }
+
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) async {
+    final workspaceId = completed.workspaceId;
+    if (workspaceId == null || workspaceId.isEmpty) {
+      throw ArgumentError.value(
+        completed.id,
+        'completed.workspaceId',
+        'a run log must carry the workspace it belongs to',
+      );
+    }
+    if (completed.completedAt == null ||
+        (completed.status != RunStatus.completed &&
+            completed.status != RunStatus.error)) {
+      throw ArgumentError.value(
+        completed.id,
+        'completed',
+        'terminal write requires a completed/error status and timestamp',
+      );
+    }
+    final row = AgentRunLogsTableCompanion(
+      completedAt: drift.Value(completed.completedAt),
+      status: drift.Value(completed.status.name),
+      summary: drift.Value(completed.summary),
+      livenessClass: drift.Value(completed.liveness?.name),
+      latencyJson: drift.Value(
+        completed.latency.isEmpty
+            ? null
+            : jsonEncode(completed.latency.toJson()),
+      ),
+      verificationStatus: drift.Value(completed.verification.status.wire),
+      verificationJson: drift.Value(
+        completed.verification.status == VerificationStatus.unverified
+            ? null
+            : jsonEncode(completed.verification.toJson()),
+      ),
+      nativeSessionId: drift.Value(completed.nativeSessionId),
+      resumedNativeSession: drift.Value(completed.resumedNativeSession),
+      // No final cost report: stamp elapsed time, but preserve usage that a
+      // concurrent updateCost may already have recorded.
+      durationMs: writeCost
+          ? const drift.Value.absent()
+          : drift.Value(completed.cost.durationMs),
+    );
+    final terminal = writeCost
+        ? row.copyWith(
+            inputTokens: drift.Value(completed.cost.inputTokens),
+            outputTokens: drift.Value(completed.cost.outputTokens),
+            thoughtTokens: drift.Value(completed.cost.thoughtTokens),
+            cachedReadTokens: drift.Value(completed.cost.cachedReadTokens),
+            cachedWriteTokens: drift.Value(completed.cost.cachedWriteTokens),
+            estimatedCostCents: drift.Value(completed.cost.estimatedCostCents),
+            costMicros: drift.Value(completed.cost.costMicros),
+            costBasis: drift.Value(completed.cost.costBasis.name),
+            durationMs: drift.Value(completed.cost.durationMs),
+            timeToFirstTokenMs: drift.Value(completed.cost.timeToFirstTokenMs),
+          )
+        : row;
+    return await _dao(
+          workspaceId,
+        ).completeLogIfActive(workspaceId, completed.id, terminal) !=
+        0;
+  }
+
   @override
   Future<void> upsert(AgentRunLog log) async {
     // A run log is stored in its own workspace's file, so [AgentRunLog
@@ -197,7 +363,26 @@ class DaoAgentRunLogRepository
         cachedReadTokens: drift.Value(log.cost.cachedReadTokens),
         cachedWriteTokens: drift.Value(log.cost.cachedWriteTokens),
         estimatedCostCents: drift.Value(log.cost.estimatedCostCents),
+        costMicros: drift.Value(log.cost.costMicros),
+        costBasis: drift.Value(log.cost.costBasis.name),
         childCostCents: drift.Value(log.childCostCents),
+        childCostMicros: drift.Value(log.childCostMicros),
+        effort: drift.Value.absentIfNull(log.effort),
+        taskFamily: drift.Value.absentIfNull(log.taskFamily),
+        nativeSessionId: drift.Value.absentIfNull(log.nativeSessionId),
+        resumedNativeSession: drift.Value(log.resumedNativeSession),
+        latencyJson: drift.Value.absentIfNull(
+          // An empty profile is written as NULL, not `[]`: "no stage was ever
+          // observed" and "the array is empty" are the same fact, and NULL is
+          // what a legacy row has.
+          log.latency.isEmpty ? null : jsonEncode(log.latency.toJson()),
+        ),
+        verificationStatus: drift.Value(log.verification.status.wire),
+        verificationJson: drift.Value.absentIfNull(
+          log.verification.status == VerificationStatus.unverified
+              ? null
+              : jsonEncode(log.verification.toJson()),
+        ),
         agentRole: drift.Value(log.role.name),
         durationMs: drift.Value.absentIfNull(log.cost.durationMs),
         timeToFirstTokenMs: drift.Value.absentIfNull(

@@ -209,4 +209,38 @@ void main() {
           '${locked.group(1)} (and the sqlite_vector patch, if its hook moved)',
     );
   });
+
+  test('the rhttp native pin matches the pub package and its patch', () {
+    // rhttp is the only native built from a PUB package rather than a git
+    // checkout, so ONE version is described in three places: this pin file
+    // (what scripts/natives/build_rhttp.sh compiles), pubspec.lock (what the
+    // Dart bindings resolve to) and patches/rhttp@<version>.patch (the headless
+    // patchwork patch, which only applies to that exact version). Let any of
+    // them drift and either the patch stops applying or the compiled wire code
+    // no longer matches the Dart bindings — a mismatch that surfaces on the
+    // first HTTP request, not at build time.
+    final lock = File('$root/pubspec.lock').readAsStringSync();
+    final locked = RegExp(
+      r'\n  rhttp:\n(?:    .*\n)*?    version: "([^"]+)"',
+    ).firstMatch(lock);
+    expect(locked, isNotNull, reason: 'rhttp is not in pubspec.lock');
+    expect(
+      values['RHTTP_VERSION'],
+      locked!.group(1),
+      reason: 'RHTTP_VERSION and the resolved rhttp package disagree',
+    );
+
+    expect(
+      values['RHTTP_URL'],
+      endsWith('rhttp-${values['RHTTP_VERSION']}.tar.gz'),
+      reason: 'the pinned URL must name the pinned version',
+    );
+    expect(
+      File('$root/patches/rhttp@${values['RHTTP_VERSION']}.patch').existsSync(),
+      isTrue,
+      reason:
+          'patchwork matches patches/rhttp@<version>.patch by EXACT version: '
+          'bump the pin and the patch together',
+    );
+  });
 }

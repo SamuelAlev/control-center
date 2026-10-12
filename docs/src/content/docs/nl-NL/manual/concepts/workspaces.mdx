@@ -2,7 +2,7 @@
 title: Werkruimtes en isolatie
 description: Waarom een werkruimte een harde tenantgrens is, hoe de databasesplitsing die grens structureel maakt en wat er bewust overheen gaat.
 slug: nl-NL/handleiding/concepten/werkruimtes
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Wat is een werkruimte?
@@ -118,13 +118,15 @@ Wat geen van alle meeneemt, is de rest van de werkruimtemap. Een werkruimte verz
 
 ## Een back-up verplaatsen tussen de server en je apparaat
 
-Elke operatie hierboven spreekt in paden op de **server**, wat alleen een volledig antwoord is als de server je eigen machine is. Drie ondertekende HTTP-routes — [`/backup/workspace`, `/backup/snapshot` en `/backup/restore`](/nl-NL/handleiding/referentie/backup/#transfer-routes) — dragen de bytes voor elke andere topologie, op dezelfde geauthenticeerde baan die de mediaproxy en het afbeeldingsarchief al gebruiken. Op de pagina is dit een knop **Downloaden** naast elke export en elke momentopname (jij kiest waar hij landt), en **Bestand kiezen en uploaden** om te herstellen uit een bestand dat op de machine staat die je gebruikt. De upload is degene die werkt als de server niet je machine is: `workspace.import` heeft het bestand al op de host nodig, en zo komt het daar.
+Elke operatie hierboven spreekt in paden op de **server**, wat alleen een volledig antwoord is als de server je eigen machine is. Drie ondertekende overdrachtsroutes — [`/backup/workspace`, `/backup/snapshot` en `/backup/restore`](/nl-NL/handleiding/referentie/backup/#transfer-routes) — dragen de bytes voor elke andere topologie via de geauthenticeerde, versleutelde brontunnel, op directe verbindingen en via de relay. De openbare HTTP-routes serveren geen leesbare back-upbytes, en ondertekende paden vereisen nog steeds autorisatie. Op de pagina is dit een knop **Downloaden** naast elke export en elke momentopname (jij kiest waar hij landt), en **Bestand kiezen en uploaden** om te herstellen uit een bestand dat op de machine staat die je gebruikt. De upload werkt als de server niet je machine is: `workspace.import` heeft het bestand al op de host nodig, en zo komt het daar.
 
 Drie eigenschappen zijn het kennen waard:
 
 - **Een download maakt een verse kopie en de server houdt er niets van.** Downloaden is niet "het bestand ophalen dat de exportknop heeft gemaakt" — er wordt opnieuw geëxporteerd, dat wordt gestreamd en daarna verwijderd. Het antwoord is `no-store` met `Accept-Ranges: none` om dezelfde reden: een hervat bereik zou twee verschillende exports aan elkaar plakken tot één bestand dat geldig lijkt maar het niet is.
 - **Een upload wordt naar schijf gestreamd, nooit gebufferd**, aan beide kanten, en de klaargezette kopie wordt op elk uitpad verwijderd — ook bij een weigering. Een werkruimtedatabase is geen schermafbeelding.
-- **Een doorgestuurde verbinding heeft geen HTTP-origin**, dus daar zijn de overdrachtsbedieningselementen uitgeschakeld met een melding waarom. Alles wat in paden aan de serverkant spreekt, blijft via de relay werken; alleen de byte-banen hebben een directe verbinding nodig.
+- **Overdracht werkt ook via de relay.** Downloads en uploads gebruiken dezelfde versleutelde brontunnel als directe verbindingen; een directe HTTP-origin is niet nodig.
+
+Versleuteling beschermt de overdracht tijdens transport, niet de databaseserver, de momentopnamemap of een gedownloade kopie in rust. De serveroperator kan gegevens op die host benaderen.
 
 :::note[Welke paden van wie zijn]
 De paden die de pagina *toont* — de momentopnamemap, het bestand dat een export heeft geschreven, de bron die een import leest — staan op de machine waar `cc_server` draait. Het pad dat een **download** meldt, staat op de machine waar jij zit. Dat onderscheid is waarom beide bestaan: het eerste is wat een onderhoudsscript of een ssh-sessie nodig heeft, het tweede is wat iemand die een back-up verzamelt nodig heeft.

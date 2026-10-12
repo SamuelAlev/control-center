@@ -88,14 +88,17 @@ List<HarnessMessage> clampProviderContextImages(
           toDrop -= images.length - keep.length;
           changed = true;
           blocks.add(
-            HarnessToolResultBlock(
-              toolUseId: block.toolUseId,
+            // Built through copyWith so everything this pass does not touch —
+            // the transcript output handle and any activated tool references —
+            // survives. Rebuilding from scratch would silently strip the handle
+            // the compactor uses to keep an observation recoverable, and the
+            // references the model needs to call a deferred tool.
+            block.copyWith(
               content: keep.isEmpty && block.content.trim().isEmpty
                   ? providerImageOmittedMarker
                   : (keep.length < images.length
                         ? '${block.content}\n$providerImageOmittedMarker'
                         : block.content),
-              isError: block.isError,
               images: keep,
             ),
           );
@@ -110,9 +113,11 @@ List<HarnessMessage> clampProviderContextImages(
       }
     }
     out.add(
-      changed
-          ? HarnessMessage(role: message.role, content: blocks)
-          : message,
+      // copyWith rather than a fresh message: this pass reshapes CONTENT for
+      // the wire and must not be the reason a message's metadata (an activated
+      // tool, a snapshot page's identity) disappears from the list the caller
+      // keeps working with.
+      changed ? message.copyWith(content: blocks) : message,
     );
   }
   return out;

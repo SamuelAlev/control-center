@@ -2,7 +2,6 @@
 import StructuredData from '../components/shared/StructuredData.astro';
 import WebMcpScript from '../components/shared/WebMcpScript.astro';
 import AcquisitionScript from '../components/shared/AcquisitionScript.astro';
-import SiteLocaleScript from '../components/shared/SiteLocaleScript.astro';
 import { ISSUES_URL, REPO_URL } from '../data/site';
 import '../styles/global.css';
 import '../styles/landing.css';
@@ -168,7 +167,6 @@ if (breadcrumbName) {
       Silent no-op where the API is absent (every browser by default). */}
   <WebMcpScript />
   <AcquisitionScript />
-  {isLanding && <SiteLocaleScript />}
 
   <link rel="preload" href={cdn.fonts.manrope} as="font" type="font/woff2" crossorigin />
   <link rel="preload" href={cdn.fonts.firaCode} as="font" type="font/woff2" crossorigin />

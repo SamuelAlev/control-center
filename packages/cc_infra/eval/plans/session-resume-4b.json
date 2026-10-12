@@ -1,0 +1,40 @@
+{
+  "id": "session-resume-4b",
+  "seed": 4242,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Reconstructed conversation (current behaviour)"
+    },
+    {
+      "id": "native-resume",
+      "axis": "session_continuity",
+      "sessionContinuity": "native_resume",
+      "label": "Explicit native session resume for follow-up turns"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 32000,
+  "caveats": [
+    {
+      "code": "resume_reconstruction_is_prompt_side",
+      "message": "The baseline arm reconstructs the conversation in the prompt; the native arm sends only the delta. The difference in prompt tokens is the thing being measured, so a cost win here is expected rather than surprising."
+    }
+  ],
+  "notes": "Report 4B. Only multi-turn tasks (long_context) exercise the difference; on single-turn tasks the arms are identical by construction, which the report's per-task table shows."
+}

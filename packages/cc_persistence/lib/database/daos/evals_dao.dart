@@ -1,12 +1,15 @@
+import 'dart:convert';
+
+import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
 import 'package:cc_persistence/database/tables/evals_tables.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
 part 'evals_dao.g.dart';
 
-/// Data access for agent evals, replay & regression (PRD 21): session
-/// recordings, golden sessions, eval suites/runs and agent config versions.
-/// Every read filters by `workspaceId` (workspace isolation invariant).
+/// Workspace-scoped evaluation storage: legacy suites and paired skill
+/// campaigns, attempts and opt-in policies. Skill evaluation reads and writes
+/// enforce ownership of the attached workspace database.
 @DriftAccessor(
   tables: [
     SessionRecordingsTable,
@@ -14,6 +17,9 @@ part 'evals_dao.g.dart';
     EvalSuitesTable,
     EvalRunsTable,
     AgentConfigVersionsTable,
+    SkillEvalCampaignsTable,
+    SkillEvalAttemptsTable,
+    SkillEvalPoliciesTable,
   ],
 )
 class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
@@ -331,4 +337,232 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
                   : Value(scorecardJson),
             ),
           );
+
+  // ── Paired skill evaluation campaigns ──
+
+  void _requireWorkspace(String workspaceId) {
+    if (workspaceId != attachedDatabase.workspaceId) {
+      throw StateError('Skill evaluation workspace does not own this database');
+    }
+  }
+
+  bool _sameJson(dynamic first, dynamic second) {
+    if (first is Map<String, dynamic> && second is Map<String, dynamic>) {
+      return first.length == second.length && first.keys.every(
+        (key) => second.containsKey(key) && _sameJson(first[key], second[key]),
+      );
+    }
+    if (first is List && second is List) {
+      if (first.length != second.length) return false;
+      for (var i = 0; i < first.length; i++) {
+        if (!_sameJson(first[i], second[i])) return false;
+      }
+      return true;
+    }
+    return first == second;
+  }
+
+  bool _canMoveCampaign(
+    SkillEvaluationCampaignStatus from,
+    SkillEvaluationCampaignStatus to,
+  ) {
+    if (from == to) return true;
+    return switch (from) {
+      SkillEvaluationCampaignStatus.queued =>
+        to == SkillEvaluationCampaignStatus.running ||
+        to == SkillEvaluationCampaignStatus.cancelling ||
+        to == SkillEvaluationCampaignStatus.cancelled ||
+        to == SkillEvaluationCampaignStatus.failed ||
+        to == SkillEvaluationCampaignStatus.interrupted,
+      SkillEvaluationCampaignStatus.running =>
+        to == SkillEvaluationCampaignStatus.cancelling ||
+        to == SkillEvaluationCampaignStatus.cancelled ||
+        to == SkillEvaluationCampaignStatus.completed ||
+        to == SkillEvaluationCampaignStatus.failed ||
+        to == SkillEvaluationCampaignStatus.interrupted,
+      SkillEvaluationCampaignStatus.cancelling =>
+        to == SkillEvaluationCampaignStatus.cancelled ||
+        to == SkillEvaluationCampaignStatus.failed ||
+        to == SkillEvaluationCampaignStatus.interrupted,
+      SkillEvaluationCampaignStatus.cancelled ||
+      SkillEvaluationCampaignStatus.completed ||
+      SkillEvaluationCampaignStatus.failed ||
+      SkillEvaluationCampaignStatus.interrupted => false,
+    };
+  }
+
+  /// An existing id cannot change workspace or skill, even through an upsert.
+  Future<void> upsertSkillCampaign(SkillEvalCampaignsTableCompanion entry) async {
+    final workspaceId = entry.workspaceId.value;
+    _requireWorkspace(workspaceId);
+    await transaction(() async {
+      final existing = await (select(skillEvalCampaignsTable)
+            ..where((t) => t.id.equals(entry.id.value))).getSingleOrNull();
+      if (existing == null) {
+        await into(skillEvalCampaignsTable).insert(entry);
+      } else {
+        if (existing.workspaceId != workspaceId ||
+            existing.skillKey != entry.skillKey.value) {
+          throw StateError('Cannot reassign an existing skill campaign');
+        }
+        final previous = jsonDecode(existing.payloadJson) as Map<String, dynamic>;
+        final replacement = jsonDecode(entry.payloadJson.value) as Map<String, dynamic>;
+        for (final key in [
+          'skillSlug', 'skillHash', 'corpusId', 'providerId', 'modelId',
+          'configurationHash', 'baselineHash', 'repoId', 'comparison',
+          'repetitions', 'budgetMicros', 'plannedAttempts', 'createdAt',
+          'actor', 'triggeredBy',
+        ]) {
+          if (previous[key] != replacement[key]) {
+            throw StateError('Cannot change the identity of a skill campaign');
+          }
+        }
+        final oldStatus = SkillEvaluationCampaignStatus.fromWire(existing.status);
+        final newStatus = SkillEvaluationCampaignStatus.fromWire(entry.status.value);
+        if (!_sameJson(previous['configuration'], replacement['configuration']) ||
+            !_canMoveCampaign(oldStatus, newStatus) ||
+            (previous['completedAttempts'] as int) >
+                (replacement['completedAttempts'] as int)) {
+          throw StateError('Invalid skill campaign lifecycle transition');
+        }
+        await (update(skillEvalCampaignsTable)
+              ..where((t) => t.id.equals(entry.id.value) &
+                  t.workspaceId.equals(workspaceId) &
+                  t.skillKey.equals(entry.skillKey.value)))
+            .write(SkillEvalCampaignsTableCompanion(
+              status: entry.status,
+              payloadJson: entry.payloadJson,
+            ));
+      }
+    });
+  }
+
+  Future<SkillEvalCampaignsTableData?> skillCampaignById(
+    String workspaceId, String id,
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalCampaignsTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<List<SkillEvalCampaignsTableData>> skillCampaigns(
+    String workspaceId, {String? skillKey, int limit = 100}
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalCampaignsTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) &
+              (skillKey == null ? const Constant(true) : t.skillKey.equals(skillKey)))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt),
+                     (t) => OrderingTerm.desc(t.id)])
+          ..limit(limit))
+        .get();
+  }
+
+  Stream<List<SkillEvalCampaignsTableData>> watchSkillCampaigns(
+    String workspaceId, {String? skillKey}
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalCampaignsTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) &
+              (skillKey == null ? const Constant(true) : t.skillKey.equals(skillKey)))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt),
+                     (t) => OrderingTerm.desc(t.id)]))
+        .watch();
+  }
+
+  Stream<SkillEvalCampaignsTableData?> watchSkillCampaign(
+    String workspaceId, String id,
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalCampaignsTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
+        .watchSingleOrNull();
+  }
+
+  /// An attempt must belong to an existing campaign in this same workspace.
+  Future<void> upsertSkillAttempt(SkillEvalAttemptsTableCompanion entry) async {
+    final workspaceId = entry.workspaceId.value;
+    _requireWorkspace(workspaceId);
+    await transaction(() async {
+      final campaign = await (select(skillEvalCampaignsTable)
+            ..where((t) => t.id.equals(entry.campaignId.value) &
+                t.workspaceId.equals(workspaceId))).getSingleOrNull();
+      if (campaign == null) {
+        throw StateError('Skill evaluation campaign does not belong to workspace');
+      }
+      final existing = await (select(skillEvalAttemptsTable)
+            ..where((t) => t.id.equals(entry.id.value))).getSingleOrNull();
+      if (existing == null) {
+        await into(skillEvalAttemptsTable).insert(entry);
+      } else {
+        if (existing.workspaceId != workspaceId ||
+            existing.campaignId != entry.campaignId.value ||
+            existing.ordinal != entry.ordinal.value) {
+          throw StateError('Cannot reassign an existing skill attempt');
+        }
+        final previous = jsonDecode(existing.payloadJson) as Map<String, dynamic>;
+        final replacement = jsonDecode(entry.payloadJson.value) as Map<String, dynamic>;
+        for (final key in ['taskId', 'armId', 'repetition', 'createdAt']) {
+          if (previous[key] != replacement[key]) {
+            throw StateError('Cannot change the identity of a skill attempt');
+          }
+        }
+        await (update(skillEvalAttemptsTable)
+              ..where((t) => t.id.equals(entry.id.value) &
+                  t.workspaceId.equals(workspaceId) &
+                  t.campaignId.equals(entry.campaignId.value)))
+            .write(SkillEvalAttemptsTableCompanion(
+              payloadJson: entry.payloadJson,
+            ));
+      }
+    });
+  }
+
+  Future<List<SkillEvalAttemptsTableData>> skillAttempts(
+    String workspaceId, String campaignId,
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalAttemptsTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) &
+              t.campaignId.equals(campaignId))
+          ..orderBy([(t) => OrderingTerm.asc(t.ordinal),
+                     (t) => OrderingTerm.asc(t.id)]))
+        .get();
+  }
+
+  Future<SkillEvalAttemptsTableData?> skillAttemptById(
+    String workspaceId, String campaignId, String id,
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalAttemptsTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) &
+              t.campaignId.equals(campaignId) & t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertSkillPolicy(SkillEvalPoliciesTableCompanion entry) {
+    _requireWorkspace(entry.workspaceId.value);
+    return into(skillEvalPoliciesTable).insertOnConflictUpdate(entry);
+  }
+
+  Future<SkillEvalPoliciesTableData?> skillPolicy(
+    String workspaceId, String skillKey,
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalPoliciesTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) &
+              t.skillKey.equals(skillKey)))
+        .getSingleOrNull();
+  }
+
+  Future<List<SkillEvalPoliciesTableData>> enabledSkillPolicies(
+    String workspaceId,
+  ) {
+    _requireWorkspace(workspaceId);
+    return (select(skillEvalPoliciesTable)
+          ..where((t) => t.workspaceId.equals(workspaceId) & t.enabled.equals(true))
+          ..orderBy([(t) => OrderingTerm.asc(t.skillKey)]))
+        .get();
+  }
 }

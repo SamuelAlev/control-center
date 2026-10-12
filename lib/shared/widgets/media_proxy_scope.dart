@@ -4,14 +4,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/shared/utils/media_width_ladder.dart';
 import 'package:flutter/widgets.dart';
 
-/// Configures how remote media URLs (images, favicons, audio, video, documents)
-/// are rewritten to load through the host's media proxy.
-///
-/// Both the web/remote thin client AND the desktop (which talks to a loopback
-/// `cc_server`) install one — the north-star invariant is that every outbound
-/// fetch goes through `cc_server`, never the client. A build with no live
-/// connection leaves the ambient [MediaProxyScope] absent, so
-/// [MediaProxyScope.urlOf] becomes a pass-through there.
+/// Configures signed remote media URLs on the encrypted local resource
+/// facade. All first-party bulk content stays inside the authenticated RPC
+/// channel, whether direct or broker-relayed.
 @immutable
 class MediaProxyConfig {
   /// Creates a [MediaProxyConfig].
@@ -24,40 +19,19 @@ class MediaProxyConfig {
     required this.psk,
   });
 
-  /// Builds a config from the live RPC connection's WebSocket [serverUri]
-  /// (`ws(s)://host:port/rpc`), the paired [deviceId] and the connection [psk].
-  /// Returns null when [serverUri] is not a `ws`/`wss` URL or fields are blank,
-  /// so callers fall back to direct media loading.
-  static MediaProxyConfig? fromConnection({
-    required Uri serverUri,
-    required String deviceId,
-    required String psk,
-  }) {
-    if (deviceId.isEmpty || psk.isEmpty) {
-      return null;
-    }
-    final scheme = switch (serverUri.scheme) {
-      'wss' => 'https',
-      'ws' => 'http',
-      _ => '',
-    };
-    if (scheme.isEmpty || serverUri.host.isEmpty) {
-      return null;
-    }
-    return MediaProxyConfig(
-      // Same host:port as the RPC socket — the origin the client is already
-      // paired with — but the http(s) scheme the `/proxy/media` GET needs.
-      httpBase: Uri(
-        scheme: scheme,
-        host: serverUri.host,
-        port: serverUri.hasPort ? serverUri.port : null,
-      ),
-      deviceId: deviceId,
-      psk: psk,
+  /// Appends a resource route after this connection's unguessable local prefix.
+  /// Uri.replace(path: '/route') would silently discard that capability.
+  Uri resourceUri(String path, {Map<String, String>? queryParameters}) {
+    final prefix = httpBase.path.endsWith('/')
+        ? httpBase.path.substring(0, httpBase.path.length - 1)
+        : httpBase.path;
+    return httpBase.replace(
+      path: '$prefix$path',
+      queryParameters: queryParameters,
     );
   }
 
-  /// `http(s)://host:port` of the server hosting `/proxy/media`.
+  /// Local loopback or same-origin browser resource capability base.
   final Uri httpBase;
 
   /// The paired device id, echoed back to the server to pick the verifying PSK.
@@ -95,17 +69,15 @@ class MediaProxyConfig {
     if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
       return rawUrl;
     }
-    final resolvedUrl = httpBase
-        .replace(
-          path: '/proxy/media',
-          queryParameters: {
-            'u': base64Url.encode(utf8.encode(rawUrl)),
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(rawUrl, psk),
-            if (bucketed != null) 'w': '$bucketed',
-          },
-        )
-        .toString();
+    final resolvedUrl = resourceUri(
+      '/proxy/media',
+      queryParameters: {
+        'u': base64Url.encode(utf8.encode(rawUrl)),
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(rawUrl, psk),
+        if (bucketed != null) 'w': '$bucketed',
+      },
+    ).toString();
     // Bounded: a long session scrolling a feed would otherwise retain a signed
     // URL for every image it ever saw. Oldest-first eviction is enough — this
     // is a pure function's memo, so a miss just re-signs.
@@ -133,17 +105,15 @@ class MediaProxyConfig {
     required String meetingId,
   }) {
     final target = 'meeting-audio:$workspaceId/$meetingId';
-    return httpBase
-        .replace(
-          path: '/meeting/audio',
-          queryParameters: {
-            'w': workspaceId,
-            'm': meetingId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/meeting/audio',
+      queryParameters: {
+        'w': workspaceId,
+        'm': meetingId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+      },
+    ).toString();
   }
 
   /// Builds the `/workspace/logo` URL that serves a workspace's persisted logo
@@ -154,16 +124,14 @@ class MediaProxyConfig {
   /// [workspaceId].
   String workspaceLogoUrl({required String workspaceId}) {
     final target = 'workspace-logo:$workspaceId';
-    return httpBase
-        .replace(
-          path: '/workspace/logo',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/workspace/logo',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+      },
+    ).toString();
   }
 
   /// Builds the `/blob` URL for a stored tool-result image — the screenshot an
@@ -188,17 +156,15 @@ class MediaProxyConfig {
       return '';
     }
     final target = 'blob:$workspaceId:$hash';
-    return httpBase
-        .replace(
-          path: '/blob',
-          queryParameters: {
-            'w': workspaceId,
-            'h': hash,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/blob',
+      queryParameters: {
+        'w': workspaceId,
+        'h': hash,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+      },
+    ).toString();
   }
 
   /// Builds the `POST /blob` URL the composer uploads an attached picture to.
@@ -215,16 +181,14 @@ class MediaProxyConfig {
   /// the client cannot sign for bytes the server has not stored yet.
   String blobUploadUrl({required String workspaceId}) {
     final target = 'blob-put:$workspaceId';
-    return httpBase
-        .replace(
-          path: '/blob',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/blob',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+      },
+    ).toString();
   }
 
   /// Builds the `GET /backup/workspace` URL that downloads [workspaceId]'s
@@ -239,19 +203,17 @@ class MediaProxyConfig {
   /// signer to be an ADMIN of that workspace, because this is its whole
   /// history.
   String backupWorkspaceUrl({required String workspaceId}) {
-    return httpBase
-        .replace(
-          path: '/backup/workspace',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(
-              'backup-workspace:$workspaceId',
-              psk,
-            ),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/backup/workspace',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(
+          'backup-workspace:$workspaceId',
+          psk,
+        ),
+      },
+    ).toString();
   }
 
   /// Builds the `GET /backup/snapshot` URL that downloads install snapshot
@@ -263,19 +225,14 @@ class MediaProxyConfig {
   /// workspace buys nothing here. The signed target is
   /// `backup-snapshot:<name>`.
   String backupSnapshotUrl({required String name}) {
-    return httpBase
-        .replace(
-          path: '/backup/snapshot',
-          queryParameters: {
-            'n': name,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(
-              'backup-snapshot:$name',
-              psk,
-            ),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/backup/snapshot',
+      queryParameters: {
+        'n': name,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget('backup-snapshot:$name', psk),
+      },
+    ).toString();
   }
 
   /// Builds the `POST /backup/restore` URL that uploads a workspace database
@@ -288,19 +245,17 @@ class MediaProxyConfig {
   /// signer to be the workspace's OWNER, because adopting a file destroys
   /// everything that workspace currently holds.
   String backupRestoreUrl({required String workspaceId}) {
-    return httpBase
-        .replace(
-          path: '/backup/restore',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(
-              'backup-restore:$workspaceId',
-              psk,
-            ),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/backup/restore',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(
+          'backup-restore:$workspaceId',
+          psk,
+        ),
+      },
+    ).toString();
   }
 
   /// Builds the `/proxy/font` URL for one variant of [family] — the bytes the
@@ -321,19 +276,17 @@ class MediaProxyConfig {
   }) {
     final style = italic ? 'italic' : 'normal';
     final target = 'font:$family/$subset/$weight/$style';
-    return httpBase
-        .replace(
-          path: '/proxy/font',
-          queryParameters: {
-            'f': family,
-            'wt': '$weight',
-            'st': style,
-            'sub': subset,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/proxy/font',
+      queryParameters: {
+        'f': family,
+        'wt': '$weight',
+        'st': style,
+        'sub': subset,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+      },
+    ).toString();
   }
 
   /// The canonical signed target for a soundscape stream. The stream identity is
@@ -361,28 +314,26 @@ class MediaProxyConfig {
     String? guestKey,
   }) {
     final target = 'rig:$workspaceId/$rigId';
-    return httpBase
-        .replace(
-          path: '/rig/stream/$rigId',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-            'width': '$width',
-            'height': '$height',
-            'fps': '$fps',
-            'quality': '$quality',
-            // The guest's CURRENT display size, ignored by the server. Its
-            // only job is to change the URL when the guest re-modes: the
-            // in-guest capture keeps grabbing the geometry it opened with,
-            // and when the screen GROWS x11grab silently crops the old
-            // region instead of erroring — so without this the viewer shows
-            // the previous screen size until some unrelated resize happens
-            // to reconnect the stream.
-            'g': ?guestKey,
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/rig/stream/$rigId',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+        'width': '$width',
+        'height': '$height',
+        'fps': '$fps',
+        'quality': '$quality',
+        // The guest's CURRENT display size, ignored by the server. Its
+        // only job is to change the URL when the guest re-modes: the
+        // in-guest capture keeps grabbing the geometry it opened with,
+        // and when the screen GROWS x11grab silently crops the old
+        // region instead of erroring — so without this the viewer shows
+        // the previous screen size until some unrelated resize happens
+        // to reconnect the stream.
+        'g': ?guestKey,
+      },
+    ).toString();
   }
 
   /// Builds a `/rig/clipboard/<rigId>` or `/rig/files/<rigId>` URL.
@@ -397,20 +348,18 @@ class MediaProxyConfig {
     String workspaceId,
     String rigId, [
     Map<String, String> extra = const {},
-  ]) => httpBase
-      .replace(
-        path: '$path/$rigId',
-        queryParameters: {
-          'w': workspaceId,
-          'd': deviceId,
-          's': RemoteControlCrypto.signProxyTarget(
-            'rig-files:$workspaceId/$rigId',
-            psk,
-          ),
-          ...extra,
-        },
-      )
-      .toString();
+  ]) => resourceUri(
+    '$path/$rigId',
+    queryParameters: {
+      'w': workspaceId,
+      'd': deviceId,
+      's': RemoteControlCrypto.signProxyTarget(
+        'rig-files:$workspaceId/$rigId',
+        psk,
+      ),
+      ...extra,
+    },
+  ).toString();
 
   /// The `/rig/clipboard/<rigId>` URL. GET reads the guest's clipboard, POST
   /// writes it. [selection] picks which X selection to read (see
@@ -444,17 +393,15 @@ class MediaProxyConfig {
   /// selects between two streams the same viewer is already authorized for).
   String rigAudioUrl({required String workspaceId, required String rigId}) {
     final target = 'rig:$workspaceId/$rigId';
-    return httpBase
-        .replace(
-          path: '/rig/stream/$rigId',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-            'lane': 'audio',
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/rig/stream/$rigId',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+        'lane': 'audio',
+      },
+    ).toString();
   }
 
   /// The signed microphone-input URL. PCM16 chunks are POSTed to this lane;
@@ -467,20 +414,18 @@ class MediaProxyConfig {
     bool end = false,
   }) {
     final target = 'rig:$workspaceId/$rigId';
-    return httpBase
-        .replace(
-          path: '/rig/stream/$rigId',
-          queryParameters: {
-            'w': workspaceId,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(target, psk),
-            'lane': 'microphone',
-            'rate': '$sampleRate',
-            'channels': '$channels',
-            if (end) 'end': '1',
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/rig/stream/$rigId',
+      queryParameters: {
+        'w': workspaceId,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(target, psk),
+        'lane': 'microphone',
+        'rate': '$sampleRate',
+        'channels': '$channels',
+        if (end) 'end': '1',
+      },
+    ).toString();
   }
 
   /// Builds the infinite progressive-MP3 `/soundscape/stream` URL for the given
@@ -491,20 +436,18 @@ class MediaProxyConfig {
     required String workspaceId,
     required String mood,
   }) {
-    return httpBase
-        .replace(
-          path: '/soundscape/stream',
-          queryParameters: {
-            'w': workspaceId,
-            'mood': mood,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(
-              _soundscapeTarget(workspaceId, mood),
-              psk,
-            ),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/soundscape/stream',
+      queryParameters: {
+        'w': workspaceId,
+        'mood': mood,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(
+          _soundscapeTarget(workspaceId, mood),
+          psk,
+        ),
+      },
+    ).toString();
   }
 
   /// Builds the HLS `/soundscape/playlist.m3u8` URL for the given [mood] — the
@@ -517,20 +460,18 @@ class MediaProxyConfig {
     required String workspaceId,
     required String mood,
   }) {
-    return httpBase
-        .replace(
-          path: '/soundscape/playlist.m3u8',
-          queryParameters: {
-            'w': workspaceId,
-            'mood': mood,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(
-              _soundscapeTarget(workspaceId, mood),
-              psk,
-            ),
-          },
-        )
-        .toString();
+    return resourceUri(
+      '/soundscape/playlist.m3u8',
+      queryParameters: {
+        'w': workspaceId,
+        'mood': mood,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(
+          _soundscapeTarget(workspaceId, mood),
+          psk,
+        ),
+      },
+    ).toString();
   }
 
   @override
@@ -550,8 +491,7 @@ class MediaProxyConfig {
 /// threading connection state.
 ///
 /// Install it above the app on both the web/remote client and the desktop
-/// (loopback `cc_server`); leaf widgets call [MediaProxyScope.urlOf] (which
-/// no-ops when no scope is present — the not-yet-connected case).
+/// (local encrypted resource facade); without it, remote HTTP media is hidden.
 class MediaProxyScope extends InheritedWidget {
   /// Creates a [MediaProxyScope].
   const MediaProxyScope({
@@ -563,15 +503,13 @@ class MediaProxyScope extends InheritedWidget {
   /// The active proxy configuration for the subtree.
   final MediaProxyConfig config;
 
-  /// Resolves [url] against the nearest [MediaProxyScope], or returns it
-  /// unchanged when none is present (the not-yet-connected / direct-load case).
-  ///
-  /// [maxWidth] (device pixels) asks the host proxy to downscale a served raster
-  /// image; it is ignored when no scope is present and by the proxy for
-  /// non-image bodies.
+  /// Resolves [url] against the nearest [MediaProxyScope]. Without a scope,
+  /// never load a remote HTTP URL directly; local/data URLs remain unchanged.
+  /// [maxWidth] asks the host proxy to downscale a served raster image.
   static String urlOf(BuildContext context, String url, {int? maxWidth}) {
     final scope = context.dependOnInheritedWidgetOfExactType<MediaProxyScope>();
-    return scope?.config.resolve(url, maxWidth: maxWidth) ?? url;
+    return scope?.config.resolve(url, maxWidth: maxWidth) ??
+        (_isRemoteHttp(url) ? '' : url);
   }
 
   /// Like [urlOf] but WITHOUT subscribing the calling element to scope changes,
@@ -582,16 +520,17 @@ class MediaProxyScope extends InheritedWidget {
   /// fetch off `initState`.
   static String resolveOf(BuildContext context, String url, {int? maxWidth}) {
     final scope = context.getInheritedWidgetOfExactType<MediaProxyScope>();
-    return scope?.config.resolve(url, maxWidth: maxWidth) ?? url;
+    return scope?.config.resolve(url, maxWidth: maxWidth) ??
+        (_isRemoteHttp(url) ? '' : url);
   }
 
-  /// The `http(s)://host:port` base of the connected server (the origin hosting
-  /// the proxy endpoints), or null when there is no ambient scope. Lets a caller
-  /// build an ABSOLUTE same-server URL for a server route (e.g.
-  /// `/proxy/vscode/<sid>/`) that must NOT be resolved against the client's own
-  /// (web) origin — a relative such path would hit the Flutter SPA and route to
-  /// go_router (`no routes for location`) instead of the server. Does not create
-  /// a dependency (the config is boot-fixed), so it is safe from callbacks.
+  static bool _isRemoteHttp(String url) {
+    final scheme = Uri.tryParse(url)?.scheme.toLowerCase();
+    return scheme == 'http' || scheme == 'https';
+  }
+
+  /// Capability-scoped local base of the encrypted resource facade, or null
+  /// without an ambient verified connection.
   static Uri? httpBaseOf(BuildContext context) {
     final scope = context.getInheritedWidgetOfExactType<MediaProxyScope>();
     return scope?.config.httpBase;

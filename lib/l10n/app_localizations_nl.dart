@@ -14188,6 +14188,31 @@ class AppLocalizationsNl extends AppLocalizations {
   String get composerDropToAttach => 'Neerzetten om bij te voegen';
 
   @override
+  String get composerAttachmentUploading => 'Bezig met uploaden…';
+
+  @override
+  String get composerAttachmentReady => 'Gereed';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Upload mislukt';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Bestand overschrijdt de limiet van $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Kon dit bestand niet lezen';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Wacht tot de bijlagen zijn geüpload';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Probeer mislukte bijlagen opnieuw te uploaden of verwijder ze voordat je verzendt';
+
+  @override
   String get attachmentUnavailable => 'Bijlage niet beschikbaar';
 
   @override
@@ -15354,11 +15379,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Agent wacht op je';
+  String get notificationAgentAwaitingInput => 'Agent heeft aandacht nodig';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Wanneer een agent je goedkeuring, een antwoord of werkende inloggegevens nodig heeft';
+      'Wanneer een agent goedkeuring, een antwoord of geldige inloggegevens nodig heeft, of beleid een actie blokkeert';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15432,4 +15457,385 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'De server wordt gestopt';
+
+  @override
+  String get skillEvalAbsent => 'Afwezig vs beschikbaar';
+
+  @override
+  String get skillEvalAmbient => 'Op de achtergrond beschikbare vaardigheden';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Artefactreferentie: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · herhaling $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Pogingen';
+
+  @override
+  String get skillEvalAvailableEvent => 'Beschikbaar';
+
+  @override
+  String get skillEvalBaseline => 'Hash van vorige revisie';
+
+  @override
+  String get skillEvalBodyLoad => 'Inhoud geladen';
+
+  @override
+  String get skillEvalBudgetCents => 'Budget (Amerikaanse centen)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Betaalde evaluatie gebruikt de geselecteerde provider en het budget. Resultaten van de beveiligingsscan staan los hiervan.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Abonnementsbudgetten volgen het gebruik tegen equivalente API-tarieven, niet de factuurbedragen. Een lopende aanroep kan het budget overschrijden; zodra het is bereikt, starten er geen nieuwe aanroepen. Beveiligingsscans staan hier los van.';
+
+  @override
+  String get skillEvalCancel => 'Uitvoering annuleren';
+
+  @override
+  String get skillEvalCancelled => 'Geannuleerd';
+
+  @override
+  String get skillEvalCancelling => 'Annuleren';
+
+  @override
+  String get skillEvalComparison => 'Vergelijking';
+
+  @override
+  String get skillEvalCompleted => 'Voltooid';
+
+  @override
+  String get skillEvalComposition => 'Samenstelling';
+
+  @override
+  String get skillEvalCorpus => 'Takencorpus';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString herhalingen';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => 'Alle geplande tests waargenomen';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Huidige pakkethash: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Update-evaluaties uitschakelen';
+
+  @override
+  String get skillEvalEnableUpdates => 'Update-evaluaties inschakelen';
+
+  @override
+  String get skillEvalExport => 'Bewerkte JSON kopiëren';
+
+  @override
+  String get skillEvalFailed => 'Mislukt';
+
+  @override
+  String get skillEvalForced => 'Geforceerd laden vs afwezig';
+
+  @override
+  String get skillEvalForcedEvent => 'Geforceerd geladen';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Pakkethash niet beschikbaar op deze server. Evaluatie is uitgeschakeld.';
+
+  @override
+  String get skillEvalHistory => 'Revisiegeschiedenis';
+
+  @override
+  String get skillEvalImproved => 'Verbeterd';
+
+  @override
+  String get skillEvalIncomplete => 'Onvolledig';
+
+  @override
+  String get skillEvalInconclusive => 'Geen uitsluitsel';
+
+  @override
+  String get skillEvalInferred => 'Afgeleid';
+
+  @override
+  String get skillEvalInterrupted => 'Onderbroken';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Laden van de vaardigheid is niet waarneembaar; het ontbreken van een gebeurtenis bewijst niet dat deze is genegeerd.';
+
+  @override
+  String get skillEvalModel => 'Geselecteerd model';
+
+  @override
+  String get skillEvalNoAttempts => 'Nog geen pogingen.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Geen verbonden modellen beschikbaar. Verbind eerst een provider in Instellingen.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Geen vorige hash in de campagnegeschiedenis. Evalueer de vorige revisie voordat u deze vervangt.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Nog geen rapport; gedeeltelijke pogingen blijven beschikbaar.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Geen werkruimte geselecteerd.';
+
+  @override
+  String get skillEvalNoTasks => 'Nog geen taken gerapporteerd.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Geen verificatiebewijs vastgelegd.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Niet geëvalueerd voor exact deze bytes. Een scan is geen bewijs van gedrag.';
+
+  @override
+  String get skillEvalNotVerified => 'Niet geverifieerd';
+
+  @override
+  String get skillEvalObserved => 'Waargenomen';
+
+  @override
+  String get skillEvalOpenQuality => 'Kwaliteit openen';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Standaard start het opslaan van een vaardigheid geen betaalde evaluatie. Als je automatische herevaluatie bij updates expliciet inschakelt, start opslaan een betaalde herevaluatie binnen het ingestelde budget.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Evalueer eerst een revisie om het updatebeleid in te stellen.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Configuratie van updatebeleid';
+
+  @override
+  String get skillEvalPartial =>
+      'Gedeeltelijk bewijs; geen oordeel over ingebruikname';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString van $plannedString pogingen';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Provider: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Vaardigheidscampagnes in de werkruimte en bewijs per revisie.';
+
+  @override
+  String get skillEvalQueued => 'In wachtrij';
+
+  @override
+  String get skillEvalReconnecting =>
+      'Opnieuw verbinden met campagne-snapshots…';
+
+  @override
+  String get skillEvalRefresh => 'Vernieuwen';
+
+  @override
+  String get skillEvalReferenceLoad => 'Referentie geladen';
+
+  @override
+  String get skillEvalRepetitions => 'Herhalingen per taak';
+
+  @override
+  String get skillEvalReport => 'Bewijsrapport';
+
+  @override
+  String get skillEvalRunning => 'Wordt uitgevoerd';
+
+  @override
+  String get skillEvalScriptExecution => 'Script uitgevoerd';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Uitgaven: $spent / budget $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Evaluatie starten';
+
+  @override
+  String get skillEvalStartTitle => 'Vaardigheidsrevisies vergelijken';
+
+  @override
+  String get skillEvalStale => 'Verouderd';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Verouderd: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Verschillende taakclusters: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes geverifieerd) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Taken per testgroep';
+
+  @override
+  String get skillEvalToolError => 'Toolfout';
+
+  @override
+  String get skillEvalTools => 'Toolgebeurtenissen';
+
+  @override
+  String get skillEvalTitle => 'Vaardigheidsevaluatie';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Niet beschikbaar: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Onbekend';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Niet-opgeslagen wijzigingen zijn niet inbegrepen. Sla op vóór de evaluatie.';
+
+  @override
+  String get skillEvalUncertainty => 'Onzekerheidsinterval';
+
+  @override
+  String get skillEvalVerified => 'Geverifieerd';
+
+  @override
+  String get skillEvalVerifiers => 'Verificatie';
+
+  @override
+  String get skillEvalVerdict => 'Oordeel';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Kopiëren voltooid: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Schending van het plan';
+
+  @override
+  String get skillEvalPreserved => 'Kwaliteit behouden';
+
+  @override
+  String get skillEvalPrevious => 'Vorige vs huidige';
+
+  @override
+  String get skillEvalRegressed => 'Verslechtering aangetoond';
+
+  @override
+  String get skillEvalCostRegression => 'Kostenregressie';
+
+  @override
+  String get skillEvalHarnessError => 'Fout in de testomgeving';
+
+  @override
+  String get skillBehaviorRouting => 'Skillroutering';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive verwachte toepassingen · $falsePositive onverwachte toepassingen · $falseNegative gemiste toepassingen · $trueNegative terechte overslagen';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive onzekere toepassingen · $negative onzekere overslagen · $notOffered niet aangeboden';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Waargenomen precisie $precision · sensitiviteit $recall · fout-positiefpercentage $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Geforceerde groep · alleen diagnostisch';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Percentages omvatten alleen waarneembare toegang. Toegang via shell of zoeken kan onbekend blijven; het laden van een skill bewijst niet dat die is toegepast.';
+
+  @override
+  String get skillBehaviorSafety => 'Synthetische veiligheid';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts geslaagde artefactcontroles · $denials beleidsweigeringen · $violations schendingen van beveiligde bestanden';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Artefactcontroles zijn synthetisch en geven geen aanvalscijfers uit de praktijk weer; werkelijke neveneffecten worden niet gemeten.';
+
+  @override
+  String get skillBehaviorUtility => 'Nut per familie';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts geverifieerde successen';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Alle pogingen tellen mee in de noemer voor nut, ook mislukte en onvoltooide pogingen.';
 }

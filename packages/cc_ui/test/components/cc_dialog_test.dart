@@ -6,6 +6,7 @@ import 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -243,6 +244,80 @@ void main() {
     await tester.pump(CcMotion.slowExit + const Duration(milliseconds: 10));
     expect(find.text('Quick leave'), findsNothing);
   });
+
+  testWidgets(
+    'immediate dialog is usable and fully closes without elapsed time',
+    (tester) async {
+      final trigger = FocusNode(debugLabel: 'trigger');
+      final first = FocusNode(debugLabel: 'first');
+      final last = FocusNode(debugLabel: 'last');
+      addTearDown(trigger.dispose);
+      addTearDown(first.dispose);
+      addTearDown(last.dispose);
+      late BuildContext host;
+
+      await tester.pumpWidget(
+        WidgetsApp(
+          color: const Color(0xFF000000),
+          pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
+            settings: settings,
+            pageBuilder: (context, _, _) => builder(context),
+          ),
+          home: ccTestApp(
+            Navigator(
+              onGenerateRoute: (_) => PageRouteBuilder<void>(
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  host = context;
+                  return Focus(
+                    focusNode: trigger,
+                    autofocus: true,
+                    child: const Text('Opener'),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(trigger.hasPrimaryFocus, isTrue);
+
+      final closed = showCcDialog<void>(
+        context: host,
+        presentation: CcDialogPresentation.immediate,
+        builder: (_) => CcDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Focus(
+                focusNode: first,
+                autofocus: true,
+                child: const Text('First command'),
+              ),
+              Focus(focusNode: last, child: const Text('Last command')),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('First command'), findsOneWidget);
+      expect(first.hasPrimaryFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(last.hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(first.hasPrimaryFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump();
+      await closed;
+      expect(find.text('First command'), findsNothing);
+      expect(trigger.hasPrimaryFocus, isTrue);
+    },
+  );
 
   testWidgets('CcDialog renders a close control that fires onClose', (
     tester,

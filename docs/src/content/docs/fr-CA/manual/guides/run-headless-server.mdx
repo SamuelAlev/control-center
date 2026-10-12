@@ -1,9 +1,9 @@
 ---
 title: Exécuter un serveur sans interface
 description: Exécutez le binaire sans interface cc_server ou son image Docker, associez-y un client et configurez-le avec l’ensemble des options de ligne de commande et des variables d’environnement.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: fr-CA/manuel/guides/executer-serveur-sans-interface
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Exécutez `cc_server` sur une machine qui reste allumée, puis connectez-vous-y
@@ -27,7 +27,7 @@ une étiquette de version (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ou suivez
 | `ghcr.io/samuelalev/cc-server`                    | Le backend : base de données, agents, MCP, webhooks | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | Le client web (nginx statique)               | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | La PWA compagnon pour téléphone (nginx statique) | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Le relais d’appairage WebRTC (facultatif)    | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Le relais de connexion chiffrée (facultatif) | `-p 8788:8788`   |
 
 Toute la pile dans un fichier compose :
 
@@ -58,12 +58,15 @@ volumes:
 Ce qu’il faut savoir avant d’exposer tout cela au-delà de la boucle locale :
 
 - **L’image `cc-server` livre `CC_SERVER_INSECURE=1`** (elle doit se lier à `0.0.0.0`
-  pour recevoir le trafic des ports publiés), ce qui n’est sûr que derrière un
-  proxy inverse qui termine le TLS — Caddy, Traefik, nginx ou un tunnel Cloudflare —
-  sur un réseau de confiance. Pour plutôt terminer le TLS dans le processus, montez
-  un certificat et définissez `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (puis
-  retirez `CC_SERVER_INSECURE`). Tout est modifiable avec `docker run -e …` ou le
-  bloc `environment:` de compose.
+  pour recevoir le trafic des ports publiés). Utilisez un proxy inverse qui termine
+  le TLS — Caddy, Traefik, nginx ou un tunnel Cloudflare — sur un réseau de
+  confiance, ou montez un certificat et définissez `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (puis retirez `CC_SERVER_INSECURE`). Ce réglage ne contrôle
+  que l’écouteur HTTP/WebSocket externe du serveur. Il ne désactive jamais la
+  session de client chiffrée de bout en bout obligatoire. TLS protège encore le
+  trafic de connexion/amorçage, les métadonnées de connexion, les points de
+  terminaison publics et la livraison du client web. Tout est modifiable avec
+  `docker run -e …` ou le bloc `environment:` de compose.
 - **`/data` est le seul état.** Les bases de données SQLite, les secrets des
   appareils associés, les modèles téléchargés et l’audio des réunions vivent tous
   dans le volume — sauvegardez-le et le conteneur devient jetable.
@@ -75,15 +78,19 @@ Ce qu’il faut savoir avant d’exposer tout cela au-delà de la boucle locale 
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Les deux images client sont des hôtes nginx statiques** — rien à configurer à
-  l’exécution ; le formulaire de connexion de chaque client demande l’URL du
-  serveur, l’identifiant d’appareil et la clé d’appairage. Le relais de
-  signalisation n’a lui aussi besoin que de son port
+- **Les deux images client sont des hôtes nginx statiques.** Les éditeurs de
+  navigateur intégrés utilisent la même origine d’application et la même connexion
+  chiffrée, comme décrit [ci-dessous](#ressources-de-léditeur-de-navigateur). Le
+  formulaire de connexion de chaque client demande l’URL du serveur,
+  l’identifiant d’appareil et la clé d’appairage. Le relais de signalisation n’a besoin que de son port
   (`SIGNALING_HOST` / `SIGNALING_PORT` modifiables) ; il est sans état, ne détient
-  aucun secret et n’est qu’un **repli** — un téléphone utilise la boucle locale, le
-  réseau local, le tailnet ou un chemin `wss://` direct quand l’un d’eux est
-  joignable, et ne se replie sur le relais que si aucun ne l’est. Omettez-le si vos
-  clients joignent toujours le serveur directement.
+  aucune clé d’appairage et n’est qu’un **repli** — un téléphone utilise la boucle
+  locale, le réseau local, le tailnet ou un chemin `wss://` direct quand l’un d’eux
+  est joignable, et ne se replie sur le relais que si aucun ne l’est. Omettez-le si
+  vos clients joignent toujours le serveur directement. Le courtier voit les
+  identifiants de routage, les adresses IP, les tailles et le minutage, et peut
+  interrompre du trafic ; il ne peut pas déchiffrer le flux de ressources entre
+  client et serveur.
 
 Le reste de ce guide compile le serveur à partir des sources ; les options et le
 comportement qu’il couvre sont les mêmes que ceux qu’alimentent les variables
@@ -185,6 +192,15 @@ justificatif créé dans l’application expire toujours après 30 jours. Révoq
 appareil créé par la CLI depuis **Paramètres → Vous → Vos appareils** lorsque vous
 n’en avez plus besoin.
 
+La clé d’appairage authentifie la poignée de main Noise obligatoire ; chaque
+session dérive de nouvelles clés de trafic et vérifie l’identité signée du
+serveur. Protégez la clé d’appairage et obtenez-la d’une source fiable (y compris
+un code QR fiable), puis vérifiez une nouvelle empreinte de serveur par un canal
+fiable distinct ou par rapport à une épinglure connue. N’acceptez pas en silence
+une épinglure modifiée : associez de nouveau par un canal fiable si vous remplacez
+intentionnellement l’identité du serveur. TLS seul ne peut pas établir cette
+épinglure d’identité de bout en bout.
+
 ## Étape 4 : Démarrer le serveur
 
 Sur la boucle locale — le réglage par défaut, et tout ce qu’il faut pour un client
@@ -213,9 +229,14 @@ pour une liaison en clair derrière lui :
 ```
 
 `--insecure` est ignoré lorsque `--tls-cert` et `--tls-key` sont tous deux définis —
-le TLS l’emporte toujours. Le serveur annonce l’état en clair sous la forme
-`insecure: true` dans `GET /healthz` et les clients marquent une telle connexion
-comme non sécurisée.
+le TLS l’emporte toujours. Le serveur annonce l’état en clair de l’écouteur externe
+sous la forme `insecure: true` dans `GET /healthz`. Cela ne désactive pas le
+chiffrement Noise sur `/rpc`, que le client se connecte directement ou par le
+relais. Mettez à niveau le serveur, le relais et les clients ensemble : les anciens
+clients RPC en clair sont rejetés, sans solution de compatibilité. Les requêtes
+publiques vers des routes de ressources sensibles (y compris les transferts de
+sauvegarde) reçoivent HTTP `426`, même depuis la boucle locale ; les clients
+associés utilisent plutôt le tunnel chiffré.
 
 Le serveur fonctionne jusqu’à `SIGINT`/`SIGTERM`, puis s’arrête proprement.
 
@@ -236,6 +257,34 @@ boucle locale doit figurer dans `--allowed-origins`, sinon la mise à niveau Web
 vers `/rpc` est refusée ; la liste par défaut est `https://app.usectrl.dev` et
 `localhost` / `127.0.0.1` sont toujours autorisés.
 :::
+
+### Ressources de l’éditeur de navigateur
+
+Le frontend de l’éditeur est du code applicatif de confiance et s’exécute sur
+l’origine propre à l’application web. Son service worker achemine le trafic HTTP
+et WebSocket par la même session chiffrée authentifiée que le reste du client.
+`cc_server` déchiffre chaque requête, la transmet à son backend code-server local
+et chiffre la réponse en retour vers le client. Les fichiers restent la propriété
+du serveur.
+
+Hébergez le client web en HTTPS ou sur une origine de boucle locale sécurisée
+pour que les service workers puissent s’exécuter. La compilation web normale et
+les scripts de publication incluent les ressources partagées. Si vous compilez un
+paquet à la main, ajoutez ces ressources ensuite depuis la racine du dépôt :
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Pour la compilation web du téléphone, remplacez par `apps/cc_remote/build/web`.
+Cela copie `cc_resource_bridge.js`, `cc_resource_worker.js` et
+`cc_resource_ws_shim.js` dans le paquet de l’application.
+
+Le trafic de l’éditeur natif utilise plutôt une façade en boucle locale à portée
+de capacités. N’exposez pas la passerelle privée de rapports/commandes en boucle
+locale de l’extension d’éditeur lancée par le serveur au moyen d’un proxy public.
+Les requêtes HTTP publiques sensibles sont rejetées ; les ressources exigent une
+session chiffrée authentifiée.
 
 ## Étape 6 : Connecter un Google Calendar (facultatif)
 
@@ -299,7 +348,9 @@ session. Chaque appel limité à un espace de travail porte son propre `workspac
 et l’accès est décidé par l’appartenance et le rôle de l’appelant dans l’espace de
 travail — et non par la possession d’une clé d’appairage.
 
-Deux choses à savoir avant d’exposer le port au-delà de la boucle locale :
+Deux choses à savoir avant d’exposer le port au-delà de la boucle locale (TLS seul
+ne fournit pas le chiffrement de bout en bout du client associé et n’autorise pas
+les ressources) :
 
 - **MCP échoue en mode fermé hors de l’hôte.** Une surface MCP sans jeton ne répond qu’à la boucle locale. La liaison `any` ne l’élargit pas — une requête hors hôte est refusée avec « MCP requires a bearer token to answer non-loopback clients » jusqu’à ce que vous en configuriez un (`mcp.setToken`, ou **Paramètres → Serveur → Serveurs MCP**).
 - **`GET /healthz` est non authentifié par conception**, avec un CORS générique, et publie l’identifiant, le nom, l’empreinte d’identité et la version de compilation du serveur. Les clients ont besoin de l’empreinte pour épingler le serveur, c’est donc délibéré — mais cela signifie que tout `cc_server` joignable divulgue ces renseignements à quiconque les demande.

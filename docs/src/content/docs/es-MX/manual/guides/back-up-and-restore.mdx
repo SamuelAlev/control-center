@@ -2,7 +2,7 @@
 title: Respaldar y restaurar
 description: Toma una instantánea de la instalación, mueve un espacio de trabajo entre máquinas, restaura un espacio de trabajo o todos, y guarda copias en otro lugar.
 slug: es-MX/manual/guias/respaldar-y-restaurar
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Esta guía cubre las cinco cosas que la gente realmente hace con los respaldos: crear uno,
@@ -17,7 +17,7 @@ Todo lo que hay aquí está en **Ajustes → Servidor → Copia de seguridad y r
 - Un **cliente completo** — la aplicación de escritorio o la web. Un teléfono emparejado no puede desencadenar nada de esto, por diseño.
 - Para crear, listar, descargar o eliminar una **instantánea de la instalación**: el **propietario** de la instalación.
 - Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportar, **propietario** para importarlo o eliminarlo.
-- Para las descargas y las subidas: una conexión **directa** al servidor. El relevo intermediado transporta tramas RPC, no transferencias de archivos, y los controles de transferencia se desactivan con una nota cuando estás en una.
+- Para las descargas y las subidas: un cliente completo emparejado, ya sea por una conexión directa o por el relevo intermediado. Ambas rutas transportan los bytes del archivo por el mismo túnel de recursos autenticado y cifrado de extremo a extremo; el relevo no puede leerlos.
 
 :::caution[Las instantáneas de la instalación son manuales]
 **Crear copia ahora** solo crea una instantánea de toda la instalación cuando se lo pides.
@@ -26,7 +26,15 @@ de datos de un espacio de trabajo una vez a la semana y eliminar los respaldos d
 espacio de trabajo con más de 30 días. No copia `global.db`, ni otros espacios de trabajo,
 ni los archivos que están junto a la base de datos. Guarda las copias fuera de la máquina
 por separado.
-:::
+::::
+
+::::caution[Los respaldos no están cifrados en reposo]
+La transferencia cifrada termina en tu cliente y en `cc_server`. Los directorios de
+instantáneas, las exportaciones de espacios de trabajo, los archivos descargados y las
+bases de datos del servidor no están cifrados en reposo por Control Center. Protege el
+host del servidor, tus descargas y las copias fuera de la máquina con tu propio cifrado de
+almacenamiento y tus controles de acceso.
+::::
 
 ## Qué cubre un respaldo
 
@@ -331,7 +339,7 @@ guardan.
 
 | Síntoma                                                                  | Causa y solución                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Los controles de descarga y subida están deshabilitados con una nota sobre un relevo | Estás conectado a través del relevo intermediado, que no transporta transferencias de archivos. Conéctate directamente      |
+| La descarga o la subida falla tras cambiar de conexión | Vuelve a intentarlo en la conexión emparejada activa. Tanto la conexión directa como la del relevo admiten transferencia de archivos cifrada; ninguna expone una alternativa HTTP en texto plano |
 | «El servidor lo rechazó»                                                 | Rol. Crear o listar una instantánea de la instalación requiere al operador de la instalación. Descargar un espacio de trabajo requiere admin, restaurar uno requiere owner y un zip de una instantánea completa requiere al operador de la instalación |
 | «Este servidor no expone ninguna superficie de copia de seguridad»       | El host no tiene conectado ningún puerto de respaldo — un servidor de demostración. Las operaciones están ausentes en lugar de rechazarse |
 | «El archivo supera el tamaño que acepta el servidor»                     | Las subidas están limitadas a 8 GiB. Pon el archivo en el host del servidor y usa **Importar** → **Elegir archivo** en su lugar |
@@ -345,7 +353,7 @@ guardan.
 
 - [Ejecutar un servidor headless](/es-MX/manual/guias/ejecutar-servidor-headless/): de dónde viene el directorio de datos
 - [Conectarte a un servidor remoto](/es-MX/manual/guias/conectar-servidor-remoto/): conexiones directas frente a las que pasan por el relevo
-- [Emparejar un dispositivo](/es-MX/manual/guias/emparejar-dispositivo/): la credencial con la que firman las rutas de transferencia
+- [Emparejar un dispositivo](/es-MX/manual/guias/emparejar-dispositivo/): la credencial del dispositivo emparejado que usa la transferencia cifrada y sus solicitudes de recursos firmadas
 
 ## Conceptos y referencia relacionados
 

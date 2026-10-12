@@ -1,7 +1,7 @@
 import 'package:cc_infra/src/network/github_content_client.dart';
 import 'package:cc_infra/src/network/github_graphql_client.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Facade for GitHub API operations, composing focused sub-clients.
 ///
@@ -11,11 +11,11 @@ import 'package:dio/dio.dart';
 /// - [content] — Content and user operations (file content, blobs, file
 ///   uploads, user profile)
 class GitHubApiClient {
-  /// Creates a [GitHubApiClient] backed by [Dio].
-  GitHubApiClient(Dio dio)
-    : pr = GitHubPrClient(dio),
-      graphql = GitHubGraphQLClient(dio),
-      content = GitHubContentClient(dio);
+  /// Creates a [GitHubApiClient] backed by [RhttpClient].
+  GitHubApiClient(RhttpClient httpClient)
+    : pr = GitHubPrClient(httpClient),
+      graphql = GitHubGraphQLClient(httpClient),
+      content = GitHubContentClient(httpClient);
 
   /// Pull request operations.
   final GitHubPrClient pr;

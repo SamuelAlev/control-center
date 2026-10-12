@@ -35,7 +35,7 @@ void main() {
       addTearDown(() => tmp.deleteSync(recursive: true));
 
       const deviceId = 'desktop-thin-local';
-      const psk = 'thin-boot-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
       const workspaceId = 'ws-thin';
 
       // Seed ONLY a workspace (so the scoped read has something) — but NOT the
@@ -51,7 +51,7 @@ void main() {
         dataDir: tmp.path,
         repoRoot: repoRoot,
         port: 0,
-        environment: const {
+        environment: {
           'CC_BOOTSTRAP_DEVICE_ID': deviceId,
           'CC_BOOTSTRAP_PSK': psk,
         },

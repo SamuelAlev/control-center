@@ -14163,6 +14163,31 @@ class AppLocalizationsMs extends AppLocalizations {
   String get composerDropToAttach => 'Lepaskan untuk lampirkan';
 
   @override
+  String get composerAttachmentUploading => 'Sedang memuat naik…';
+
+  @override
+  String get composerAttachmentReady => 'Sedia';
+
+  @override
+  String get composerAttachmentUploadFailed => 'Muat naik gagal';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'Fail melebihi had $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'Fail ini tidak dapat dibaca';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'Tunggu sehingga lampiran selesai dimuat naik';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'Cuba semula atau buang lampiran yang gagal sebelum menghantar';
+
+  @override
   String get attachmentUnavailable => 'Lampiran tidak tersedia';
 
   @override
@@ -15326,11 +15351,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'Ejen menunggu anda';
+  String get notificationAgentAwaitingInput => 'Ejen memerlukan perhatian';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'Apabila ejen memerlukan kelulusan, jawapan atau kelayakan yang berfungsi daripada anda';
+      'Apabila ejen memerlukan kelulusan, jawapan atau kelayakan yang sah, atau dasar menyekat tindakan';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15403,4 +15428,384 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'Pelayan sedang berhenti';
+
+  @override
+  String get skillEvalAbsent => 'Tiada lwn tersedia';
+
+  @override
+  String get skillEvalAmbient => 'Kemahiran latar';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'Rujukan artifak: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · ulangan $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'Percubaan';
+
+  @override
+  String get skillEvalAvailableEvent => 'Tersedia';
+
+  @override
+  String get skillEvalBaseline => 'Hash semakan terdahulu';
+
+  @override
+  String get skillEvalBodyLoad => 'Kandungan dimuatkan';
+
+  @override
+  String get skillEvalBudgetCents => 'Bajet (sen AS)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'Penilaian berbayar menggunakan penyedia dan bajet yang dipilih. Hasil imbasan keselamatan adalah berasingan.';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'Bajet langganan menjejak penggunaan setara API, bukan invois. Panggilan yang sedang berjalan mungkin melebihi bajet; tiada panggilan baharu bermula setelah had dicapai. Imbasan keselamatan adalah berasingan.';
+
+  @override
+  String get skillEvalCancel => 'Batalkan proses';
+
+  @override
+  String get skillEvalCancelled => 'Dibatalkan';
+
+  @override
+  String get skillEvalCancelling => 'Sedang membatalkan';
+
+  @override
+  String get skillEvalComparison => 'Perbandingan';
+
+  @override
+  String get skillEvalCompleted => 'Selesai';
+
+  @override
+  String get skillEvalComposition => 'Komposisi';
+
+  @override
+  String get skillEvalCorpus => 'Korpus tugas';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · $repeatsString ulangan';
+  }
+
+  @override
+  String get skillEvalCoverageComplete =>
+      'Semua percubaan yang dirancang telah diperhatikan';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'Hash pakej semasa: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'Lumpuhkan penilaian kemas kini';
+
+  @override
+  String get skillEvalEnableUpdates => 'Dayakan penilaian kemas kini';
+
+  @override
+  String get skillEvalExport => 'Salin JSON yang telah disunting';
+
+  @override
+  String get skillEvalFailed => 'Gagal';
+
+  @override
+  String get skillEvalForced => 'Muat paksa lwn tiada';
+
+  @override
+  String get skillEvalForcedEvent => 'Muat paksa';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'Hash pakej tidak tersedia pada pelayan ini. Penilaian dilumpuhkan.';
+
+  @override
+  String get skillEvalHistory => 'Sejarah semakan';
+
+  @override
+  String get skillEvalImproved => 'Bertambah baik';
+
+  @override
+  String get skillEvalIncomplete => 'Tidak lengkap';
+
+  @override
+  String get skillEvalInconclusive => 'Tiada kesimpulan';
+
+  @override
+  String get skillEvalInferred => 'Disimpulkan';
+
+  @override
+  String get skillEvalInterrupted => 'Terganggu';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'Pemuatan kemahiran tidak dapat diperhatikan; ketiadaan peristiwa tidak membuktikan bahawa kemahiran itu diabaikan.';
+
+  @override
+  String get skillEvalModel => 'Model dipilih';
+
+  @override
+  String get skillEvalNoAttempts => 'Belum ada percubaan.';
+
+  @override
+  String get skillEvalNoModels =>
+      'Tiada model tersambung tersedia. Sambungkan penyedia dalam Tetapan dahulu.';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'Tiada hash terdahulu dalam sejarah kempen. Nilai semakan terdahulu sebelum menggantikannya.';
+
+  @override
+  String get skillEvalNoReport =>
+      'Belum ada laporan; percubaan separa masih tersedia.';
+
+  @override
+  String get skillEvalNoWorkspace => 'Tiada ruang kerja dipilih.';
+
+  @override
+  String get skillEvalNoTasks => 'Belum ada tugas dilaporkan.';
+
+  @override
+  String get skillEvalNoVerifiers => 'Tiada bukti pengesah direkodkan.';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'Belum dinilai untuk bait tepat ini. Imbasan bukan bukti tingkah laku.';
+
+  @override
+  String get skillEvalNotVerified => 'Belum disahkan';
+
+  @override
+  String get skillEvalObserved => 'Diperhatikan';
+
+  @override
+  String get skillEvalOpenQuality => 'Buka Kualiti';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'Secara lalai, menyimpan kemahiran tidak memulakan penilaian berbayar. Jika anda mengaktifkan penilaian semula automatik apabila dikemas kini secara jelas, penyimpanan akan memulakan penilaian berbayar mengikut had bajet.';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'Nilai semakan dahulu untuk mengkonfigurasi dasar kemas kini.';
+
+  @override
+  String get skillEvalPolicyTemplate => 'Konfigurasi dasar kemas kini';
+
+  @override
+  String get skillEvalPartial => 'Bukti separa; tiada keputusan penerimaan';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '$completedString daripada $plannedString percubaan';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'Penyedia: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'Kempen kemahiran ruang kerja dan bukti khusus semakan.';
+
+  @override
+  String get skillEvalQueued => 'Dalam giliran';
+
+  @override
+  String get skillEvalReconnecting => 'Menyambung semula ke syot kilat kempen…';
+
+  @override
+  String get skillEvalRefresh => 'Muat semula';
+
+  @override
+  String get skillEvalReferenceLoad => 'Rujukan dimuatkan';
+
+  @override
+  String get skillEvalRepetitions => 'Ulangan bagi setiap tugas';
+
+  @override
+  String get skillEvalReport => 'Laporan bukti';
+
+  @override
+  String get skillEvalRunning => 'Sedang berjalan';
+
+  @override
+  String get skillEvalScriptExecution => 'Skrip dilaksanakan';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'Perbelanjaan: $spent / bajet $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'Mulakan penilaian';
+
+  @override
+  String get skillEvalStartTitle => 'Bandingkan semakan kemahiran';
+
+  @override
+  String get skillEvalStale => 'Lapuk';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'Lapuk: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'Kelompok tugas berbeza: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes disahkan) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'Tugas mengikut kumpulan';
+
+  @override
+  String get skillEvalToolError => 'Ralat alat';
+
+  @override
+  String get skillEvalTools => 'Peristiwa alat';
+
+  @override
+  String get skillEvalTitle => 'Penilaian kemahiran';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'Tidak tersedia: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'Tidak diketahui';
+
+  @override
+  String get skillEvalUnsaved =>
+      'Suntingan yang belum disimpan tidak disertakan. Simpan sebelum menilai.';
+
+  @override
+  String get skillEvalUncertainty => 'Selang ketidakpastian';
+
+  @override
+  String get skillEvalVerified => 'Disahkan';
+
+  @override
+  String get skillEvalVerifiers => 'Pengesahan';
+
+  @override
+  String get skillEvalVerdict => 'Keputusan';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'Salinan selesai: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'Pelanggaran pelan';
+
+  @override
+  String get skillEvalPreserved => 'Kualiti dikekalkan';
+
+  @override
+  String get skillEvalPrevious => 'Terdahulu lwn semasa';
+
+  @override
+  String get skillEvalRegressed => 'Kemerosotan terbukti';
+
+  @override
+  String get skillEvalCostRegression => 'Regresi kos';
+
+  @override
+  String get skillEvalHarnessError => 'Ralat kerangka ujian';
+
+  @override
+  String get skillBehaviorRouting => 'Penghalaan kemahiran';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive penggunaan dijangka · $falsePositive penggunaan tidak dijangka · $falseNegative penggunaan terlepas · $trueNegative langkauan betul';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive penggunaan tidak pasti · $negative langkauan tidak pasti · $notOffered tidak ditawarkan';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'Ketepatan diperhatikan $precision · dapatan semula $recall · kadar positif palsu $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'Lengan dipaksa · diagnostik sahaja';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'Kadar hanya meliputi akses yang dapat diperhatikan. Akses melalui shell atau carian mungkin kekal tidak diketahui; memuatkan kemahiran tidak membuktikan penggunaannya.';
+
+  @override
+  String get skillBehaviorSafety => 'Keselamatan sintetik';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts semakan artifak lulus · $denials penolakan dasar · $violations pelanggaran fail terlindung';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'Semakan artifak adalah sintetik dan tidak mencerminkan kadar serangan di dunia sebenar; kesan sampingan sebenar tidak dipantau.';
+
+  @override
+  String get skillBehaviorUtility => 'Kegunaan mengikut keluarga';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts kejayaan disahkan';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'Semua percubaan dikira dalam penyebut kegunaan, termasuk kegagalan dan yang tidak selesai.';
 }

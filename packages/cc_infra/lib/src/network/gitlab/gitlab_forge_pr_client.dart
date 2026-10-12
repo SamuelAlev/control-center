@@ -27,7 +27,7 @@ import 'package:cc_infra/src/network/gitlab/models/gitlab_award_emoji.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_project.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_tree_entry.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_user.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// GitLab [ForgePrClient] over merge requests.
 ///
@@ -198,8 +198,8 @@ class GitLabForgePrClient implements ForgePrClient {
         return false;
       }
       return null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       return null;
@@ -654,8 +654,8 @@ class GitLabForgePrClient implements ForgePrClient {
     try {
       final project = await _resolveProject(_token(cancelToken));
       return project?.defaultBranch ?? '';
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       return '';
@@ -695,8 +695,8 @@ class GitLabForgePrClient implements ForgePrClient {
         return null;
       }
       return forgeBranchComparisonFromGitLab(comparison);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       return null;
@@ -1593,10 +1593,10 @@ class GitLabForgePrClient implements ForgePrClient {
 
   // ── Internals ────────────────────────────────────────────────────────────
 
-  /// Narrows the port's opaque cancellation handle to dio's [CancelToken].
+  /// Narrows the port's opaque cancellation handle to rhttp's [CancelToken].
   ///
-  /// The port keeps it `Object?` so no domain type learns about dio; anything
-  /// that is not a token is simply no cancellation.
+  /// The port keeps it `Object?` so no domain type learns about rhttp;
+  /// anything that is not a token is simply no cancellation.
   static CancelToken? _token(Object? cancelToken) =>
       cancelToken is CancelToken ? cancelToken : null;
 

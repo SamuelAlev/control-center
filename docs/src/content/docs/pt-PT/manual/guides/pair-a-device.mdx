@@ -2,7 +2,7 @@
 title: Emparelhar um dispositivo
 description: Emparelhe o seu telemóvel (ou um segundo navegador ou computador) com o seu servidor do Control Center para poder acompanhar a frota à distância.
 slug: pt-PT/manual/guias/emparelhar-dispositivo
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Este guia mostra-lhe como emparelhar um telemóvel com o Control Center, para que
@@ -23,9 +23,10 @@ pode implementar no Cloudflare Pages através do seu `wrangler.jsonc`, na imagem
 nginx `docker/cc_remote`, ou em qualquer alojamento estático com HTTPS — os
 service workers e o IndexedDB exigem um contexto seguro) e o
 relay (`apps/cc_signaling_server`, um único binário Dart sem estado que não
-guarda dados da aplicação e nunca vê o segredo de emparelhamento — apenas
-reencaminha frames selados ponto a ponto). Consulte os respetivos READMEs para os
-passos de compilação e execução.
+guarda dados da aplicação e não consegue decifrar registos cifrados nem ver o
+segredo de emparelhamento). Ainda assim, vê IPs, identificadores de
+encaminhamento, tamanhos e temporização, e pode descartar tráfego. Consulte os
+respetivos READMEs para os passos de compilação e execução.
 
 ## Passo 1: Abrir o painel de emparelhamento
 
@@ -51,15 +52,19 @@ para a PWA Remote.
 
 Do lado do telemóvel, abrir um link de emparelhamento não emparelha em silêncio.
 O Remote mostra o nome anunciado do servidor e pede-lhe que confirme antes de
-guardar seja o que for, pelo que um link forjado não pode desviar a aplicação
-para o servidor de outra pessoa.
+guardar seja o que for. Verifique a impressão digital do código QR contra uma
+fonte fidedigna: confirmar um nome não verificado ou um QR forjado não estabelece
+que o servidor é seu. O cliente fixa a identidade assinada e rejeita uma impressão
+digital alterada nas ligações seguintes.
 
 :::caution[Um código QR lido concede acesso imediatamente]
 Não existe um passo de pendente e depois aprovar: um dispositivo emitido fica
 ativo desde o momento em que é criado, e a verificação de ligação apenas confirma
 que a credencial está ativa e não expirou. Trate o código QR e a chave de
 emparelhamento como uma palavra-passe e revogue tudo o que não tencionava
-entregar.
+entregar. Tanto as sessões de cliente diretas como as que passam pelo relay exigem
+cifragem ponto a ponto; os clientes mais antigos não conseguem recorrer a RPC em
+texto simples.
 :::
 
 ## Gerir dispositivos emparelhados

@@ -5,21 +5,23 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_status_normalizer.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_adapter.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_delta.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// [TicketSyncAdapter] for ClickUp, over the REST v2 API. `vendorProjectId` is
-/// the ClickUp **list id** that tickets sync into. Construct from a [Dio]
-/// authorized with the caller's personal token (`Authorization: <token>`,
-/// no `Bearer` prefix) and based at `https://api.clickup.com`.
+/// the ClickUp **list id** that tickets sync into. Construct from an
+/// [RhttpClient] authorized with the caller's personal token
+/// (`Authorization: <token>`, no `Bearer` prefix) and based at
+/// `https://api.clickup.com`.
 ///
 /// Simpler than the Jira adapter: ClickUp descriptions are plain text/markdown
 /// (no ADF) and a task's status is a direct field set by name (no transition
 /// workflow), so a status change is a single `PUT` with `{status: "<name>"}`.
 class ClickUpTicketSyncAdapter implements TicketSyncAdapter {
-  /// Creates a [ClickUpTicketSyncAdapter] over an authorized [Dio].
-  ClickUpTicketSyncAdapter(this._dio);
+  /// Creates a [ClickUpTicketSyncAdapter] over an authorized [RhttpClient].
+  ClickUpTicketSyncAdapter(this._httpClient);
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Hard ceiling on pages pulled in one sync (100 tasks each). Bounded so a
   /// vendor that never reports `last_page` cannot spin forever.
@@ -44,17 +46,18 @@ class ClickUpTicketSyncAdapter implements TicketSyncAdapter {
     final deltas = <TicketSyncDelta>[];
     final seen = <String>{};
     for (var page = 0; page < _maxPages; page++) {
-      final response = await _dio.get<Map<String, dynamic>>(
+      final response = await _httpClient.get(
         '/api/v2/list/$vendorProjectId/task',
-        queryParameters: {
-          'subtasks': true,
+        query: {
+          'subtasks': 'true',
           'order_by': 'updated',
-          'page': page,
+          'page': '$page',
           if (since != null)
             'date_updated_gt': since.millisecondsSinceEpoch.toString(),
         },
       );
-      final tasks = (response.data?['tasks'] as List?) ?? const [];
+      final data = _jsonObject(response);
+      final tasks = (data?['tasks'] as List?) ?? const [];
       var added = 0;
       for (final task in tasks.whereType<Map<String, dynamic>>()) {
         final delta = _toDelta(task);
@@ -69,7 +72,7 @@ class ClickUpTicketSyncAdapter implements TicketSyncAdapter {
       }
       // `last_page` is the documented terminator; a page that adds nothing new
       // (empty, or all duplicates) ends it too.
-      if (response.data?['last_page'] == true || added == 0) {
+      if (data?['last_page'] == true || added == 0) {
         break;
       }
     }
@@ -85,16 +88,16 @@ class ClickUpTicketSyncAdapter implements TicketSyncAdapter {
     String vendorProjectId = '',
   }) async {
     if (externalId == null || externalId.isEmpty) {
-      final response = await _dio.post<Map<String, dynamic>>(
+      final response = await _httpClient.post(
         '/api/v2/list/$vendorProjectId/task',
-        data: {
+        body: HttpBody.json({
           'name': ticket.title,
           if (ticket.description != null) 'description': ticket.description,
           if (_priorityInt(ticket.priority) != null)
             'priority': _priorityInt(ticket.priority),
-        },
+        }),
       );
-      final data = response.data ?? const {};
+      final data = _jsonObject(response) ?? const {};
       return TicketPushOutcome(
         externalId: '${data['id'] ?? ''}',
         url: data['url'] as String?,
@@ -104,18 +107,18 @@ class ClickUpTicketSyncAdapter implements TicketSyncAdapter {
     switch (changeType) {
       case TicketChangeType.statusChanged:
         // ClickUp sets status directly by name — no transition workflow.
-        await _dio.put<void>(
+        await _httpClient.put(
           '/api/v2/task/$externalId',
-          data: {'status': mapCcStatus(ticket.status)},
+          body: HttpBody.json({'status': mapCcStatus(ticket.status)}),
         );
       case TicketChangeType.created:
       case TicketChangeType.updated:
-        await _dio.put<void>(
+        await _httpClient.put(
           '/api/v2/task/$externalId',
-          data: {
+          body: HttpBody.json({
             'name': ticket.title,
             if (ticket.description != null) 'description': ticket.description,
-          },
+          }),
         );
       case TicketChangeType.assigned:
       case TicketChangeType.commented:
@@ -201,4 +204,16 @@ class ClickUpTicketSyncAdapter implements TicketSyncAdapter {
           : null,
     );
   }
+}
+
+/// The response's JSON object, or null when the body is empty or not an object.
+Map<String, dynamic>? _jsonObject(HttpResponse response) {
+  final body = httpJsonBody(response);
+  if (body is Map<String, dynamic>) {
+    return body;
+  }
+  if (body is Map) {
+    return body.cast<String, dynamic>();
+  }
+  return null;
 }

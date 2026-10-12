@@ -4,6 +4,13 @@
 /// resolving each primitive's ROLE to a color from the stylesheet. No geometry
 /// decisions happen here (that is layout's job), which is what keeps a theme
 /// flip a repaint instead of a relayout.
+///
+/// Tracing is not free, and paint runs far more often than layout: a rebuild, a
+/// zoom, a scroll or a recolor repaints the SAME scene. So the tracing itself is
+/// retained per scene, in scene space, by [_RetainedSceneGeometry] — a path or a
+/// dash decomposition is built once and stroked by every paint that follows.
+/// Colors are never retained: they are resolved from the current stylesheet on
+/// every paint, which is what makes a recolor correct rather than merely cheap.
 library;
 
 import 'dart:math' as math;
@@ -15,6 +22,11 @@ import 'package:cc_markdown/src/mermaid/render/text_ruler.dart';
 import 'package:flutter/widgets.dart';
 
 /// Paints a [CcMermaidScene], scaled by [scale] about the origin.
+///
+/// The scale is applied to the CANVAS rather than baked into the geometry: what
+/// is retained is a `Path`, in scene units, and the canvas transform multiplies
+/// it at stroke time. Zooming therefore re-rasterizes vectors — it never
+/// magnifies a flattened copy of the diagram.
 class CcMermaidScenePainter extends CustomPainter {
   /// Creates a [CcMermaidScenePainter].
   CcMermaidScenePainter({
@@ -49,18 +61,24 @@ class CcMermaidScenePainter extends CustomPainter {
         Paint()..color = background,
       );
     }
-    for (final primitive in scene.primitives) {
-      switch (primitive) {
-        case final CcMermaidShapePrim shape:
-          _paintShape(canvas, shape);
-        case final CcMermaidTextPrim text:
-          _paintText(canvas, text);
-        case final CcMermaidPathPrim path:
-          _paintPath(canvas, path);
-        case final CcMermaidArcPrim arc:
-          _paintArc(canvas, arc);
-        case final CcMermaidActorPrim actor:
-          _paintActor(canvas, actor);
+    final primitives = scene.primitives;
+    if (primitives.isNotEmpty) {
+      // Retained per scene, fetched once per paint: every primitive below reads
+      // its path from here instead of tracing a new one.
+      final geometry = _geometryFor(scene);
+      for (var i = 0; i < primitives.length; i++) {
+        switch (primitives[i]) {
+          case final CcMermaidShapePrim shape:
+            _paintShape(canvas, geometry, i, shape);
+          case final CcMermaidTextPrim text:
+            _paintText(canvas, text);
+          case final CcMermaidPathPrim path:
+            _paintPath(canvas, geometry, i, path);
+          case final CcMermaidArcPrim arc:
+            _paintArc(canvas, arc);
+          case final CcMermaidActorPrim actor:
+            _paintActor(canvas, actor);
+        }
       }
     }
     canvas.restore();
@@ -94,12 +112,25 @@ class CcMermaidScenePainter extends CustomPainter {
 
   // ── shapes ────────────────────────────────────────────────────────────────
 
-  void _paintShape(Canvas canvas, CcMermaidShapePrim shape) {
+  void _paintShape(
+    Canvas canvas,
+    _RetainedSceneGeometry geometry,
+    int index,
+    CcMermaidShapePrim shape,
+  ) {
     if (shape.shape == CcMermaidNodeShape.endPoint) {
       _paintTerminal(canvas, shape.rect);
       return;
     }
-    final path = shapeOutline(shape.rect, shape.shape, style.cornerRadius);
+    // Traced once per radius: the outline is a function of the shape's box and
+    // [style.cornerRadius], both of which are the scene's own — a recolor, a
+    // rescale and a rebuilt widget all find the path already here.
+    final path = geometry.outlineAt(
+      index,
+      shape.rect,
+      shape.shape,
+      style.cornerRadius,
+    );
     if (shape.filled) {
       canvas.drawPath(path, Paint()..color = _fillColor(shape));
     }
@@ -109,7 +140,11 @@ class CcMermaidScenePainter extends CustomPainter {
         ..strokeWidth = shape.strokeWidth ?? style.edgeStrokeWidth
         ..color = _strokeColor(shape.role);
       if (shape.dashed) {
-        _drawDashed(canvas, path, paint);
+        _drawDashed(
+          canvas,
+          geometry.dashesAt(index, path, _dashOn, _dashOff),
+          paint,
+        );
       } else {
         canvas.drawPath(path, paint);
       }
@@ -200,7 +235,12 @@ class CcMermaidScenePainter extends CustomPainter {
 
   // ── paths ─────────────────────────────────────────────────────────────────
 
-  void _paintPath(Canvas canvas, CcMermaidPathPrim prim) {
+  void _paintPath(
+    Canvas canvas,
+    _RetainedSceneGeometry geometry,
+    int index,
+    CcMermaidPathPrim prim,
+  ) {
     if (prim.points.length < 2) {
       return;
     }
@@ -213,9 +253,15 @@ class CcMermaidScenePainter extends CustomPainter {
           : (isThick ? style.thickStrokeWidth : style.edgeStrokeWidth)
       ..color = _strokeColor(prim.role);
 
-    final path = roundedPolyline(prim.points, prim.cornerRadius);
+    // Rounded once: the polyline is a function of the scene's own points and
+    // corner radius, so an edge keeps its path across every later paint.
+    final path = geometry.polylineAt(index, prim.points, prim.cornerRadius);
     if (prim.stroke == CcMermaidEdgeStroke.dotted) {
-      _drawDashed(canvas, path, paint);
+      _drawDashed(
+        canvas,
+        geometry.dashesAt(index, path, _dashOn, _dashOff),
+        paint,
+      );
     } else {
       canvas.drawPath(path, paint);
     }
@@ -378,16 +424,25 @@ class CcMermaidScenePainter extends CustomPainter {
     canvas.drawLine(tip, base, stroke);
   }
 
-  void _drawDashed(Canvas canvas, Path path, Paint paint) {
-    final on = style.dashPattern.isEmpty ? 5.0 : style.dashPattern.first;
-    final off = style.dashPattern.length > 1 ? style.dashPattern[1] : on;
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final next = math.min(distance + on, metric.length);
-        canvas.drawPath(metric.extractPath(distance, next), paint);
-        distance = next + off;
-      }
+  /// Dash on/off lengths, resolved from the stylesheet in ONE place.
+  ///
+  /// Both are part of a decomposition's identity: a style whose pattern changed
+  /// gets fresh segments for the new pattern instead of the ones cut for the
+  /// old one, which is what keeps a dash-pattern change visible immediately.
+  double get _dashOn =>
+      style.dashPattern.isEmpty ? 5.0 : style.dashPattern.first;
+
+  double get _dashOff =>
+      style.dashPattern.length > 1 ? style.dashPattern[1] : _dashOn;
+
+  /// Strokes dash segments the geometry cache already cut.
+  ///
+  /// The decomposition — walking a path's metrics and extracting every on-run —
+  /// is the expensive half and it is retained per path, so this is a plain loop
+  /// of draws over segment paths that were built once.
+  void _drawDashed(Canvas canvas, List<Path> segments, Paint paint) {
+    for (final segment in segments) {
+      canvas.drawPath(segment, paint);
     }
   }
 
@@ -451,6 +506,204 @@ class CcMermaidScenePainter extends CustomPainter {
   @override
   bool shouldRepaint(CcMermaidScenePainter old) =>
       old.scene != scene || old.style != style || old.scale != scale;
+}
+
+// ── retained paint geometry ─────────────────────────────────────────────────
+
+/// How many scenes keep their paint geometry. A screenful plus scrollback, in
+/// line with the scene memo: an entry here holds paths, not rendered pictures,
+/// so it is small — but a session's worth of diagrams still has no business
+/// being retained.
+const int _paintGeometryCapacity = 8;
+
+/// Paint geometry retained per scene, in least-recently-painted order.
+///
+/// Keyed by scene IDENTITY: [CcMermaidScene] has no value equality, so an entry
+/// describes its scene exactly as long as layout keeps handing back that same
+/// instance — which is precisely the window in which the geometry is unchanged.
+/// Layout is what decides that window (it re-lays out for anything that moves a
+/// primitive or changes what text measures), so this cache never has to guess.
+///
+/// Bounded, so diagrams scrolled away are dropped rather than accumulated.
+/// Nothing here is a raster: a retained path is stroked by the canvas at stroke
+/// time, at whatever scale that canvas carries.
+final Map<CcMermaidScene, _RetainedSceneGeometry> _paintGeometry =
+    <CcMermaidScene, _RetainedSceneGeometry>{};
+
+/// The geometry for [scene], building an entry on first paint.
+_RetainedSceneGeometry _geometryFor(CcMermaidScene scene) {
+  final cached = _paintGeometry.remove(scene);
+  if (cached != null) {
+    _paintGeometry[scene] = cached; // Most recently painted.
+    return cached;
+  }
+  final geometry = _RetainedSceneGeometry(scene.primitives.length);
+  _paintGeometry[scene] = geometry;
+  while (_paintGeometry.length > _paintGeometryCapacity) {
+    // `Map` preserves insertion order, so the first key is the oldest paint.
+    _paintGeometry.remove(_paintGeometry.keys.first);
+  }
+  return geometry;
+}
+
+/// How many path geometries — shape outlines and rounded polylines — the
+/// painter has traced for [scene] since it was last laid out.
+///
+/// Exposed for tests. Reuse is INVISIBLE in rendered output by design (a reused
+/// path strokes the same pixels as a fresh one), so the honest assertion that a
+/// second paint, a rebuilt painter or a zoom skips the tracing is that this
+/// number stops moving. Zero for a scene that has not been painted, or that has
+/// aged out of the cache.
+@visibleForTesting
+int mermaidPaintPathBuilds(CcMermaidScene scene) =>
+    _paintGeometry[scene]?.pathBuilds ?? 0;
+
+/// How many dash decompositions the painter has run for [scene].
+///
+/// The expensive half of a dotted edge is walking its metrics and extracting
+/// every on-run; this reports how many times that has actually been done.
+@visibleForTesting
+int mermaidPaintDashBuilds(CcMermaidScene scene) =>
+    _paintGeometry[scene]?.dashBuilds ?? 0;
+
+/// Drops every retained paint geometry.
+///
+/// Entries are keyed by scene identity and bounded, so this exists for tests
+/// that want each case to start cold — and for a host that knows the scene
+/// objects it hands the painter are about to be replaced wholesale and wants the
+/// memory back now rather than on the next eviction.
+@visibleForTesting
+void clearMermaidPaintGeometryCache() => _paintGeometry.clear();
+
+/// Scene-space paint geometry for one [CcMermaidScene], built on first use.
+///
+/// Entries are index-aligned with [CcMermaidScene.primitives] and are only ever
+/// read for the scene they were built from, so an entry never has to keep a
+/// copy of the geometry it was cut from. The inputs that do NOT live in the
+/// scene are the ones recorded here:
+///
+///  * `style.cornerRadius`, which the shape outlines are traced with — layout
+///    already re-runs when it changes, and this keeps a reused scene honest if
+///    it ever stops doing so;
+///  * the dash pattern, which decorates a stroke rather than moving anything —
+///    a paint-only change, so the same scene is reused and the decomposition
+///    has to notice the new on/off lengths by itself.
+///
+/// Nothing else about the stylesheet is consulted: stroke widths and arrow
+/// sizes are applied to a `Paint` at draw time and are never cached, so they
+/// need no invalidation here.
+class _RetainedSceneGeometry {
+  _RetainedSceneGeometry(int count)
+    : _outlines = List<Path?>.filled(count, null),
+      _polylines = List<Path?>.filled(count, null),
+      _dashes = List<_DashDecomposition?>.filled(count, null);
+
+  final List<Path?> _outlines;
+  final List<Path?> _polylines;
+  final List<_DashDecomposition?> _dashes;
+
+  /// The corner radius [_outlines] were traced with; NaN until the first one.
+  double _outlineRadius = double.nan;
+
+  int _pathBuilds = 0;
+  int _dashBuilds = 0;
+
+  /// How many shapes and polylines have been traced for the scene.
+  int get pathBuilds => _pathBuilds;
+
+  /// How many paths have been decomposed into dashes for the scene.
+  int get dashBuilds => _dashBuilds;
+
+  /// The outline of the shape at [index], traced once per corner radius.
+  Path outlineAt(
+    int index,
+    Rect rect,
+    CcMermaidNodeShape shape,
+    double radius,
+  ) {
+    if (_outlineRadius != radius) {
+      // Every shape with corners is a different outline at a different radius,
+      // so the ones already traced describe a shape nobody asked for.
+      _outlineRadius = radius;
+      _outlines.fillRange(0, _outlines.length, null);
+    }
+    final cached = _outlines[index];
+    if (cached != null) {
+      return cached;
+    }
+    _pathBuilds++;
+    return _outlines[index] = shapeOutline(rect, shape, radius);
+  }
+
+  /// The rounded polyline through [points] at [index], built once.
+  Path polylineAt(int index, List<Offset> points, double radius) {
+    final cached = _polylines[index];
+    if (cached != null) {
+      return cached;
+    }
+    _pathBuilds++;
+    return _polylines[index] = roundedPolyline(points, radius);
+  }
+
+  /// The dash segments of [path] at [index], cut once per on/off pair.
+  List<Path> dashesAt(int index, Path path, double on, double off) {
+    final cached = _dashes[index];
+    if (cached != null &&
+        identical(cached.path, path) &&
+        cached.on == on &&
+        cached.off == off) {
+      return cached.segments;
+    }
+    _dashBuilds++;
+    final segments = _dashSegments(path, on, off);
+    _dashes[index] = _DashDecomposition(
+      path: path,
+      on: on,
+      off: off,
+      segments: segments,
+    );
+    return segments;
+  }
+}
+
+/// One path's dash segments, with the pattern that cut them.
+class _DashDecomposition {
+  const _DashDecomposition({
+    required this.path,
+    required this.on,
+    required this.off,
+    required this.segments,
+  });
+
+  final Path path;
+
+  /// Dash length, in scene units.
+  final double on;
+
+  /// Gap length, in scene units.
+  final double off;
+
+  /// The drawable segments, in path order.
+  final List<Path> segments;
+}
+
+/// Cuts [path] into dash segments of [on] followed by [off], per contour.
+///
+/// The segments are kept as separate paths, and stroked as separate paths, so a
+/// dashed line paints exactly what it always has: same runs, same order, same
+/// round caps where they overlap at a corner — caching changes how often this
+/// walk happens, never what it produces.
+List<Path> _dashSegments(Path path, double on, double off) {
+  final segments = <Path>[];
+  for (final metric in path.computeMetrics()) {
+    var distance = 0.0;
+    while (distance < metric.length) {
+      final next = math.min(distance + on, metric.length);
+      segments.add(metric.extractPath(distance, next));
+      distance = next + off;
+    }
+  }
+  return segments;
 }
 
 /// Traces the outline of [shape] inside [rect].

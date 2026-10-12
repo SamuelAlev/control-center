@@ -3,7 +3,7 @@ import 'package:cc_natives/cc_natives.dart';
 
 /// Resolves the tree-sitter runtime + grammar for one language, or null.
 ///
-/// A function rather than a `GrammarManager`, so this stays free of the Dio
+/// A function rather than a `GrammarManager`, so this stays free of the HTTP
 /// and data-dir plumbing the manager needs to DOWNLOAD a grammar. Nothing here
 /// installs anything; it only asks where the staged libraries are.
 typedef GrammarPathResolver = Future<GrammarPaths?> Function(String languageId);

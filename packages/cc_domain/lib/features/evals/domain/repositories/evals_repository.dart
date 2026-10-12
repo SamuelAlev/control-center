@@ -1,4 +1,6 @@
 import 'package:cc_domain/features/evals/domain/entities/evals_entities.dart';
+import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
+
 
 /// Persistence contract for agent evals, replay & regression (PRD 21).
 ///
@@ -146,4 +148,32 @@ abstract interface class EvalsRepository {
     DateTime? promotedAt,
     String? scorecardJson,
   });
+  // ── Skill evaluation campaigns ──
+
+  Future<void> upsertSkillCampaign(SkillEvaluationCampaign campaign);
+  Future<SkillEvaluationCampaign?> skillCampaignById(String workspaceId, String id);
+  Future<List<SkillEvaluationCampaign>> skillCampaigns(
+    String workspaceId, {
+    String? skillKey,
+    int limit = 100,
+  });
+  Stream<List<SkillEvaluationCampaign>> watchSkillCampaigns(
+    String workspaceId, {
+    String? skillKey,
+  });
+  Stream<SkillEvaluationCampaign?> watchSkillCampaign(String workspaceId, String id);
+  Future<void> upsertSkillAttempt(SkillEvaluationAttemptRecord attempt);
+  Future<List<SkillEvaluationAttemptRecord>> skillAttempts(
+    String workspaceId,
+    String campaignId,
+  );
+  Future<SkillEvaluationAttemptRecord?> skillAttemptById(
+    String workspaceId,
+    String campaignId,
+    String id,
+  );
+  Future<void> upsertSkillPolicy(SkillEvaluationPolicy policy);
+  Future<SkillEvaluationPolicy?> skillPolicy(String workspaceId, String skillKey);
+  Future<List<SkillEvaluationPolicy>> enabledSkillPolicies(String workspaceId);
+
 }

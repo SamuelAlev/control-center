@@ -2,7 +2,7 @@
 title: Een apparaat koppelen
 description: Koppel je telefoon (of een tweede browser of desktop) aan je Control Center-server, zodat je de fleet op afstand kunt volgen.
 slug: nl-NL/handleiding/gidsen/apparaat-koppelen
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Deze gids laat zien hoe je een telefoon aan Control Center koppelt, zodat je
@@ -22,8 +22,9 @@ telefoonapp (`apps/cc_remote`, een Flutter-web-PWA die je naar Cloudflare Pages
 kunt deployen via zijn `wrangler.jsonc`, naar de nginx-image `docker/cc_remote`,
 of naar elke statische host met HTTPS — service workers en IndexedDB zijn
 gebonden aan een secure context) en de relay (`apps/cc_signaling_server`, één
-stateless Dart-binary die geen app-gegevens bevat en het koppelingsgeheim nooit
-ziet — hij stuurt alleen end-to-end verzegelde frames door). Zie hun README's
+stateless Dart-binary die geen app-gegevens bevat en versleutelde records niet
+kan ontsleutelen of het koppelingsgeheim kan zien). Hij ziet wel IP's,
+routerings-id's, groottes en timing en kan verkeer laten vallen. Zie hun README's
 voor de stappen om te builden en te draaien.
 
 ## Stap 1: Het koppelingspaneel openen
@@ -49,15 +50,20 @@ Remote-PWA.
 
 Aan de telefoonkant koppelt het openen van een koppelingslink niet
 stilzwijgend. Remote toont de naam die de server adverteert en vraagt je om te
-bevestigen voordat er iets wordt opgeslagen, zodat een vervalste link de app niet
-kan kapen naar de server van iemand anders.
+bevestigen voordat er iets wordt opgeslagen. Controleer de vingerafdruk in de QR
+aan de hand van een vertrouwde bron: het bevestigen van een niet-geverifieerde
+naam of een vervalste QR bewijst niet dat de server de jouwe is. De client pint
+de ondertekende identiteit vast en weigert een gewijzigde vingerafdruk bij
+latere verbindingen.
 
 :::caution[Een gescande QR geeft onmiddellijk toegang]
 Er is geen stap waarbij een apparaat eerst in behandeling is en daarna wordt
 goedgekeurd: een aangemaakt apparaat is actief vanaf het moment dat het wordt
 gemaakt en de verbindingscontrole kijkt alleen of de referentie actief en niet
 verlopen is. Behandel de QR en de koppelingssleutel als een wachtwoord en trek
-alles in wat je niet van plan was weg te geven.
+alles in wat je niet van plan was weg te geven. Zowel directe als via een relay
+verlopen clientsessies vereisen end-to-end-encryptie; oudere clients kunnen niet
+terugvallen op plaintext-RPC.
 :::
 
 ## Gekoppelde apparaten beheren

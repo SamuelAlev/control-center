@@ -9,11 +9,10 @@ function localizeLink(link: HTMLAnchorElement) {
 
   const choice = link.dataset.siteLocale;
   if (isSiteLocale(choice)) {
-    // Translated pages carry their exact destination: manual slugs differ per
-    // locale and only the server knows them.
-    if (!('siteLocaleExact' in link.dataset)) url.pathname = localizePath(location.pathname, choice);
+    // The server supplies the exact translated article or landing destination.
+    // Keep crawlable links clean; the preference marker belongs to activation.
     url.search = location.search;
-    url.searchParams.set(localeChoiceParameter, choice);
+    url.searchParams.delete(localeChoiceParameter);
     url.hash = location.hash;
   } else {
     // Explicit language links stay explicit; authored root links follow the reader.
@@ -37,9 +36,19 @@ if (isSiteLocale(canonical.searchParams.get(localeChoiceParameter))) {
 updateLinks();
 
 function followLink(event: MouseEvent) {
+  if (event.defaultPrevented || event.button > 1) return;
   const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
   if (!link) return;
   localizeLink(link);
+  const choice = link.dataset.siteLocale;
+  if (!isSiteLocale(choice) || link.hasAttribute('download')) return;
+  const url = new URL(link.href);
+  if (url.origin !== location.origin) return;
+  url.searchParams.set(localeChoiceParameter, choice);
+  link.href = url.href;
+  // Native navigation keeps keyboard and modified clicks working. Restore the
+  // clean link afterward, including when navigation opened another tab.
+  setTimeout(() => localizeLink(link), 0);
 }
 
 // Capture before disclosure menus close; also covers search results added later.

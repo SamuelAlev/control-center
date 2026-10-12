@@ -1,36 +1,11 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pr_search_query.dart';
 import 'package:cc_infra/src/git/github_pr_search_adapter.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
-
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => handler(options);
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(Object? body, {int status = 200}) => ResponseBody.fromString(
-  body == null ? '' : jsonEncode(body),
-  status,
-  headers: {
-    Headers.contentTypeHeader: [Headers.jsonContentType],
-  },
-);
 
 Repo _repo({String id = 'r1', String owner = 'acme', String name = 'widget'}) =>
     Repo(
@@ -63,9 +38,10 @@ Map<String, dynamic> _envelope(List<Map<String, dynamic>> nodes) => {
 };
 
 GitHubApiClient _client(Object? Function() body) {
-  final fake = _FakeAdapter((_) => _json(body()));
-  final dio = Dio()..httpClientAdapter = fake;
-  return GitHubApiClient(dio);
+  final fake = TestHttpClient(
+    handler: (request) => httpTextResponse(request, body()),
+  );
+  return GitHubApiClient(fake);
 }
 
 void main() {
@@ -300,13 +276,14 @@ void main() {
     test(
       'passes author qualifiers and repo scope to the GraphQL client',
       () async {
-        late RequestOptions captured;
-        final fake = _FakeAdapter((options) {
-          captured = options;
-          return _json(_envelope([]));
-        });
-        final dio = Dio()..httpClientAdapter = fake;
-        final client = GitHubApiClient(dio);
+        late HttpRequest captured;
+        final fake = TestHttpClient(
+          handler: (request) {
+            captured = request;
+            return httpTextResponse(request, _envelope([]));
+          },
+        );
+        final client = GitHubApiClient(fake);
         final adapter = GitHubPrSearchAdapter(client);
 
         await adapter.search(
@@ -315,8 +292,8 @@ void main() {
         );
 
         // Confirm the request hit the GraphQL endpoint with a query body.
-        expect(captured.path, contains('/graphql'));
-        final body = captured.data as Map;
+        expect(httpRequestUri(captured).path, contains('/graphql'));
+        final body = (captured.body as HttpBodyJson).json as Map;
         final variables = body['variables'] as Map;
         final q = variables['q'] as String;
         expect(q, contains('repo:acme/widget'));

@@ -5,10 +5,11 @@ import 'package:cc_domain/features/ticketing/domain/ports/remote_ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/ports/ticket_query.dart';
 import 'package:cc_infra/src/tickets/linear/linear_issue_dto.dart';
 import 'package:cc_infra/src/tickets/linear/linear_ticket_adapter.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart';
 
-import 'fake_dio.dart';
+import 'fake_http_client.dart';
 
 /// Returns a minimal Linear issue JSON map suitable for GraphQL responses.
 Map<String, dynamic> issueJson({
@@ -117,25 +118,17 @@ Map<String, dynamic> graphqlErrorResponse(String message) {
   };
 }
 
-/// Creates a [Response] with [data] for Dio stubbing.
-Response<Map<String, dynamic>> mockResponse(
-  Map<String, dynamic> data, {
-  int statusCode = 200,
-}) {
-  return Response<Map<String, dynamic>>(
-    requestOptions: RequestOptions(path: ''),
-    data: data,
-    statusCode: statusCode,
-  );
-}
+/// Creates an rhttp [HttpResponse] carrying [data] as JSON, for stubbing.
+HttpResponse mockResponse(Map<String, dynamic> data, {int statusCode = 200}) =>
+    httpTextResponse(HttpRequest(url: ''), data, statusCode: statusCode);
 
 void main() {
-  late FakeDio dio;
+  late FakeHttpClient client;
   late LinearTicketAdapter adapter;
 
   setUp(() {
-    dio = FakeDio();
-    adapter = LinearTicketAdapter(dio, defaultTeamId: 'team-default');
+    client = FakeHttpClient();
+    adapter = LinearTicketAdapter(client, defaultTeamId: 'team-default');
   });
 
   // ---------------------------------------------------------------------------
@@ -230,7 +223,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('getByExternalId', () {
     test('maps all DTO fields to RemoteTicket', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(
           issueResponse(
             id: 'abc',
@@ -262,7 +255,7 @@ void main() {
     });
 
     test('returns null when issue not found', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse({
           'data': {'issue': null},
         }),
@@ -274,7 +267,7 @@ void main() {
     });
 
     test('maps priority 0 to TicketPriority.none', () async {
-      dio.stubPost(() async => mockResponse(issueResponse(priority: 0)));
+      client.stubPost(() async => mockResponse(issueResponse(priority: 0)));
 
       final ticket = await adapter.getByExternalId('abc');
 
@@ -282,7 +275,7 @@ void main() {
     });
 
     test('maps priority 1 to TicketPriority.urgent', () async {
-      dio.stubPost(() async => mockResponse(issueResponse(priority: 1)));
+      client.stubPost(() async => mockResponse(issueResponse(priority: 1)));
 
       final ticket = await adapter.getByExternalId('abc');
 
@@ -290,7 +283,7 @@ void main() {
     });
 
     test('maps priority 3 to TicketPriority.medium', () async {
-      dio.stubPost(() async => mockResponse(issueResponse(priority: 3)));
+      client.stubPost(() async => mockResponse(issueResponse(priority: 3)));
 
       final ticket = await adapter.getByExternalId('abc');
 
@@ -298,7 +291,7 @@ void main() {
     });
 
     test('maps priority 4 to TicketPriority.low', () async {
-      dio.stubPost(() async => mockResponse(issueResponse(priority: 4)));
+      client.stubPost(() async => mockResponse(issueResponse(priority: 4)));
 
       final ticket = await adapter.getByExternalId('abc');
 
@@ -311,7 +304,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('status normalization', () {
     test('"In Progress" -> inProgress', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'In Progress')),
       );
 
@@ -322,7 +315,7 @@ void main() {
     });
 
     test('"In Review" -> inReview', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'In Review')),
       );
 
@@ -332,7 +325,9 @@ void main() {
     });
 
     test('"Done" -> done', () async {
-      dio.stubPost(() async => mockResponse(issueResponse(stateName: 'Done')));
+      client.stubPost(
+        () async => mockResponse(issueResponse(stateName: 'Done')),
+      );
 
       final ticket = await adapter.getByExternalId('abc');
 
@@ -340,7 +335,7 @@ void main() {
     });
 
     test('"Completed" -> done', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Completed')),
       );
 
@@ -350,7 +345,7 @@ void main() {
     });
 
     test('"Merged" -> done', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Merged')),
       );
 
@@ -360,7 +355,7 @@ void main() {
     });
 
     test('"Cancelled" -> cancelled', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Cancelled')),
       );
 
@@ -370,7 +365,7 @@ void main() {
     });
 
     test('"Duplicate" -> cancelled', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Duplicate')),
       );
 
@@ -380,7 +375,7 @@ void main() {
     });
 
     test('"Blocked" -> blocked', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Blocked')),
       );
 
@@ -390,7 +385,7 @@ void main() {
     });
 
     test('"Backlog" -> backlog', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Backlog')),
       );
 
@@ -400,7 +395,7 @@ void main() {
     });
 
     test('unknown state -> open (default)', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'Triage')),
       );
 
@@ -410,7 +405,7 @@ void main() {
     });
 
     test('case-insensitive matching', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issueResponse(stateName: 'IN PROGRESS')),
       );
 
@@ -425,7 +420,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('list', () {
     test('returns all assigned issues mapped to RemoteTicket', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(
           issuesListResponse([
             issueJson(
@@ -452,7 +447,7 @@ void main() {
     });
 
     test('empty list when no issues', () async {
-      dio.stubPost(() async => mockResponse(issuesListResponse([])));
+      client.stubPost(() async => mockResponse(issuesListResponse([])));
 
       final tickets = await adapter.list();
 
@@ -460,7 +455,7 @@ void main() {
     });
 
     test('filters by status when query.statuses is set', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(
           issuesListResponse([
             issueJson(id: 'i1', stateName: 'Done'),
@@ -479,7 +474,7 @@ void main() {
     });
 
     test('respects query.limit', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(
           issuesListResponse([
             issueJson(id: 'i1'),
@@ -497,7 +492,7 @@ void main() {
     });
 
     test('no filter when query.statuses is null', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(issuesListResponse([issueJson(id: 'i1')])),
       );
 
@@ -512,7 +507,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('create', () {
     test('creates issue and returns mapped RemoteTicket', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(
           createIssueResponse(
             issueJson(
@@ -539,7 +534,9 @@ void main() {
     });
 
     test('uses defaultTeamId when draft has no teamId', () async {
-      dio.stubPost(() async => mockResponse(createIssueResponse(issueJson())));
+      client.stubPost(
+        () async => mockResponse(createIssueResponse(issueJson())),
+      );
 
       final ticket = await adapter.create(
         const RemoteTicketDraft(title: 'No team override'),
@@ -549,7 +546,7 @@ void main() {
     });
 
     test('throws StateError when no teamId available', () async {
-      final noDefault = LinearTicketAdapter(dio);
+      final noDefault = LinearTicketAdapter(client);
 
       await expectLater(
         () => noDefault.create(const RemoteTicketDraft(title: 'No team')),
@@ -576,7 +573,7 @@ void main() {
     });
 
     test('throws StateError when create returns null issue', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse({
           'data': {
             'issueCreate': {'success': true, 'issue': null},
@@ -608,7 +605,7 @@ void main() {
   group('update', () {
     test('updates and returns refreshed ticket', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse(updateIssueSuccessResponse());
@@ -627,7 +624,7 @@ void main() {
 
     test('throws StateError when issue not found after update', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse(updateIssueSuccessResponse());
@@ -656,7 +653,7 @@ void main() {
   group('transitionStatus', () {
     test('transitions when a matching state exists', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse(
@@ -690,7 +687,7 @@ void main() {
 
     test('skips state update when no matching state found', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse(
@@ -710,7 +707,7 @@ void main() {
 
     test('throws StateError when issue not found after transition', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse(
@@ -750,7 +747,7 @@ void main() {
   group('assign', () {
     test('assigns a user and returns refreshed ticket', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse({
@@ -770,7 +767,7 @@ void main() {
 
     test('clears assignee when assigneeExternalId is null', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse({
@@ -789,7 +786,7 @@ void main() {
 
     test('throws StateError when issue not found after assign', () async {
       var callCount = 0;
-      dio.stubPost(() async {
+      client.stubPost(() async {
         callCount++;
         if (callCount == 1) {
           return mockResponse({
@@ -815,7 +812,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('watchAssigned', () {
     test('yields all assigned issues as RemoteTickets', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(
           issuesListResponse([
             issueJson(id: 'w1', title: 'Watch 1', stateName: 'Todo'),
@@ -832,7 +829,7 @@ void main() {
     });
 
     test('yields empty when no assigned issues', () async {
-      dio.stubPost(() async => mockResponse(issuesListResponse([])));
+      client.stubPost(() async => mockResponse(issuesListResponse([])));
 
       final tickets = await adapter.watchAssigned().toList();
 
@@ -841,17 +838,11 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Error handling — DioException / GraphQL errors
+  // Error handling — RhttpTimeoutException / GraphQL errors
   // ---------------------------------------------------------------------------
   group('error handling', () {
-    test('getByExternalId propagates DioException (non-cancel)', () async {
-      dio.stubPostError(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionTimeout,
-          message: 'Timeout',
-        ),
-      );
+    test('getByExternalId propagates RhttpTimeoutException', () async {
+      client.stubPostError(RhttpTimeoutException(HttpRequest(url: '')));
 
       await expectLater(
         () => adapter.getByExternalId('abc'),
@@ -860,7 +851,7 @@ void main() {
     });
 
     test('create propagates GraphQL errors', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(graphqlErrorResponse('Team not found')),
       );
 
@@ -882,7 +873,7 @@ void main() {
     });
 
     test('list propagates GraphQL errors', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse(graphqlErrorResponse('Unauthorized')),
       );
 
@@ -925,7 +916,7 @@ void main() {
       final json = issueJson(assigneeId: 'ignored');
       json.remove('assignee');
 
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse({
           'data': {'issue': json},
         }),
@@ -940,7 +931,7 @@ void main() {
       final json = issueJson();
       json.remove('url');
 
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse({
           'data': {'issue': json},
         }),
@@ -955,7 +946,7 @@ void main() {
       final json = issueJson(labels: null);
       json.remove('labels');
 
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse({
           'data': {'issue': json},
         }),
@@ -967,7 +958,7 @@ void main() {
     });
 
     test('handles issues list response with non-list nodes', () async {
-      dio.stubPost(
+      client.stubPost(
         () async => mockResponse({
           'data': {
             'issues': {'nodes': 'not-a-list'},

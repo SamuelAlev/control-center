@@ -663,9 +663,12 @@ class RepoOpDispatcher {
         );
         if (audit != null) {
           unawaited(
-            audit.catchError((Object e) {
-              CcHostLog.warning('audit append for ${op.name} failed: $e');
-            }),
+            audit.then<void>(
+              (_) {},
+              onError: (Object e) {
+                CcHostLog.warning('audit append for ${op.name} failed: $e');
+              },
+            ),
           );
         }
       }

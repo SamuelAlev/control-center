@@ -5,7 +5,7 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provide
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider_descriptor.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/chat/chat_provider_plugin.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Slack, as one plugin among (eventually) several.
 ///
@@ -14,9 +14,9 @@ import 'package:dio/dio.dart';
 /// identity is proven, that the app is reshaped through the App Manifest API —
 /// is stated here instead. That is what makes the layers above provider-blind.
 class SlackChatProviderPlugin implements ChatProviderPlugin {
-  /// Creates the Slack plugin. [_dioFactory] hands out a configured HTTP client
-  /// per call site, so a probe never shares state with a live connection.
-  SlackChatProviderPlugin({required this._dioFactory});
+  /// Creates the Slack plugin. [_httpClientFactory] hands out a configured HTTP
+  /// client per call site, so a probe never shares state with a live connection.
+  SlackChatProviderPlugin({required this._httpClientFactory});
 
   /// The credential field holding the bot user OAuth token.
   static const botTokenField = 'botToken';
@@ -75,7 +75,7 @@ class SlackChatProviderPlugin implements ChatProviderPlugin {
     supportsSetupLink: true,
   );
 
-  final Dio Function() _dioFactory;
+  final RhttpClient Function() _httpClientFactory;
 
   @override
   ChatProviderDescriptor get descriptor => slackDescriptor;
@@ -99,7 +99,7 @@ class SlackChatProviderPlugin implements ChatProviderPlugin {
     // here — `apps.connections.open` is the only call that accepts it — so it is
     // proven by the socket and surfaces through the connection's status.
     final identity = await SlackApiClient(
-      dio: _dioFactory(),
+      httpClient: _httpClientFactory(),
       botToken: clean[botTokenField] ?? '',
     ).authTest();
     return ChatBridgeConnection(
@@ -120,7 +120,7 @@ class SlackChatProviderPlugin implements ChatProviderPlugin {
       SlackChatAdapter(
         workspaceId: connection.workspaceId,
         api: SlackApiClient(
-          dio: _dioFactory(),
+          httpClient: _httpClientFactory(),
           botToken: connection.credential(botTokenField) ?? '',
         ),
         appToken: connection.credential(appTokenField) ?? '',
@@ -139,7 +139,7 @@ class SlackChatProviderPlugin implements ChatProviderPlugin {
     service: SlackManifestService(
       // Manifest calls authenticate per call with the configuration token; the
       // bot token has no authority here and is deliberately absent.
-      api: SlackApiClient(dio: _dioFactory(), botToken: ''),
+      api: SlackApiClient(httpClient: _httpClientFactory(), botToken: ''),
       readRefreshToken: context.readCredential,
       writeRefreshToken: context.writeCredential,
     ),

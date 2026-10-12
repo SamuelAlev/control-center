@@ -2,7 +2,7 @@
 title: Kopia zapasowa i przywracanie
 description: Wykonaj migawkę instalacji, przenieś obszar roboczy między maszynami, przywróć jeden obszar roboczy lub wszystkie i zachowaj kopie w innym miejscu.
 slug: pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Ten poradnik obejmuje pięć rzeczy, które faktycznie robi się z kopiami zapasowymi:
@@ -19,7 +19,7 @@ przywracanie**.
 - **Pełny klient** — aplikacja desktopowa lub webowa. Sparowany telefon celowo nie może wywołać żadnej z tych operacji.
 - Aby wykonać, wyświetlić, pobrać lub usunąć **migawkę instalacji**: rola **właściciela** instalacji.
 - W przypadku działań w obrębie poszczególnych obszarów roboczych: **administrator** tego obszaru roboczego może eksportować, a **właściciel** — importować go lub usuwać.
-- Do pobierania i wysyłania: **bezpośrednie** połączenie z serwerem. Relay pośredniczący przenosi ramki RPC, a nie transfery plików, więc elementy sterujące transferem wyłączają się z odpowiednią adnotacją, gdy przez niego przechodzisz.
+- Do pobierania i wysyłania: sparowany pełny klient, w połączeniu bezpośrednim albo przez przekaźnik. Obie ścieżki przenoszą bajty pliku przez ten sam uwierzytelniony, szyfrowany end-to-end tunel zasobów; przekaźnik nie może ich odczytać.
 
 :::caution[Migawki instalacji wykonuje się ręcznie]
 **Wykonaj kopię teraz** nadal tworzy migawkę całej instalacji tylko na żądanie.
@@ -27,7 +27,14 @@ Wbudowany potok **Workspace backup** może za to raz w tygodniu wykonać kopię 
 bazy danych obszaru roboczego i usuwać kopie tego obszaru roboczego starsze niż 30 dni.
 Nie kopiuje przy tym `global.db`, innych obszarów roboczych ani plików leżących obok
 bazy danych. Kopie poza maszyną przechowuj osobno.
-:::
+::::
+
+::::caution[Kopie zapasowe nie są szyfrowane w spoczynku]
+Szyfrowany transfer kończy się na Twoim kliencie i na `cc_server`. Katalogi
+migawek, eksporty obszarów roboczych, pobrane pliki i bazy danych serwera nie są
+szyfrowane w spoczynku przez Control Center. Chroń host serwera, swoje pobrane
+pliki i kopie poza maszyną własnym szyfrowaniem pamięci i kontrolą dostępu.
+::::
 
 ## Co obejmuje kopia zapasowa
 
@@ -328,7 +335,7 @@ miejsce ich przechowywania.
 
 | Objaw | Przyczyna i rozwiązanie |
 | --- | --- |
-| Elementy sterujące pobieraniem i wysyłaniem są wyłączone, z adnotacją o relay | Połączenie przechodzi przez relay pośredniczący, który nie przenosi transferów plików. Połącz się bezpośrednio |
+| Pobieranie albo wysyłanie kończy się niepowodzeniem po zmianie połączenia | Spróbuj ponownie na aktywnym sparowanym połączeniu. Zarówno połączenie bezpośrednie, jak i przez przekaźnik obsługują szyfrowany transfer plików; żadne nie oferuje awaryjnego tekstu jawnego HTTP |
 | „Serwer odmówił” | Rola. Wykonanie lub wyświetlenie migawki instalacji wymaga operatora instalacji. Pobranie obszaru roboczego wymaga roli administratora, przywrócenie go — roli właściciela, a archiwum całej migawki — operatora instalacji |
 | „Ten serwer nie ma powierzchni kopii zapasowych” | Na hoście nie podłączono portu kopii zapasowych — to serwer demonstracyjny. Operacje są nieobecne, a nie odrzucane |
 | „Plik jest większy, niż serwer akceptuje” | Wysyłanie jest ograniczone do 8 GiB. Umieść plik na hoście serwera i użyj zamiast tego **Importuj** → **Wybierz plik** |
@@ -342,7 +349,7 @@ miejsce ich przechowywania.
 
 - [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): skąd pochodzi katalog danych
 - [Połącz się ze zdalnym serwerem](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/): połączenia bezpośrednie a połączenia przez relay
-- [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/): poświadczenie, którym podpisują się trasy transferu
+- [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/): poświadczenie sparowanego urządzenia, którego używa szyfrowany transfer i jego podpisane żądania zasobów
 
 ## Powiązane koncepcje i dokumentacja referencyjna
 

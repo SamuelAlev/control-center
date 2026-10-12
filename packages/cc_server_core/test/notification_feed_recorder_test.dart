@@ -124,6 +124,35 @@ void main() {
     expect(item.isResolved, isFalse);
   });
 
+  test('records a policy refusal with no wait to resolve', () async {
+    bus.publish(
+      AgentActionBlocked(
+        workspaceId: 'ws-1',
+        reason: 'Pushing to main is denied by workspace policy',
+        spaceId: 'space-1',
+        agentId: 'agent-1',
+        agentName: 'Ada',
+        actionSummary: 'git push origin main',
+        occurredAt: DateTime(2026, 10, 9),
+      ),
+    );
+    await _pump();
+
+    final item = (await repository.watchFeed('ws-1').first).single;
+    expect(item.method, 'notifications/agent_action_blocked');
+    expect(
+      item.params['reason'],
+      'Pushing to main is denied by workspace policy',
+    );
+    expect(item.params['summary'], 'git push origin main');
+    expect(item.params['space_id'], 'space-1');
+    expect(item.params['agent_name'], 'Ada');
+    // Not a wait: nothing will ever stamp this row resolved.
+    expect(item.isResolved, isFalse);
+    // It landed in the owning workspace's file only.
+    expect(await repository.watchFeed('ws-2').first, isEmpty);
+  });
+
   test('stamps the waiting row resolved when the wait ends', () async {
     AgentAwaitingInput wait(String waitId) => AgentAwaitingInput(
       workspaceId: 'ws-1',

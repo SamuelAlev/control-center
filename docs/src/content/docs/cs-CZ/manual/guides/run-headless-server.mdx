@@ -1,9 +1,9 @@
 ---
 title: Spusťte headless server
 description: Spusť headless binárku cc_server nebo její obraz pro Docker, spáruj s ní klienta a nastav ji přes celou plochu příznaků CLI a proměnných prostředí.
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: cs-CZ/prirucka/navody/spusteni-headless-serveru
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 Spusť `cc_server` na stroji, který zůstane zapnutý, a připoj se k němu z počítače,
@@ -24,7 +24,7 @@ nepotřebuje checkout zdrojů. Připni tag verze
 | `ghcr.io/samuelalev/cc-server`                    | Backend: databáze, agenti, MCP, webhooky     | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | Webový klient (statický nginx)               | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | PWA telefonního společníka (statický nginx)  | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | Relé párování WebRTC (volitelné)             | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Šifrované spojovací relé (volitelné)          | `-p 8788:8788`   |
 
 Celá sestava jako compose soubor:
 
@@ -55,11 +55,14 @@ volumes:
 Než cokoli z toho vystavíš mimo loopback, vyplatí se vědět:
 
 - **Obraz `cc-server` vozí `CC_SERVER_INSECURE=1`** (musí se vázat na `0.0.0.0`,
-  aby přijímal provoz z publikovaných portů), což je bezpečné jen za reverzní
-  proxy, která ukončuje TLS (Caddy, Traefik, nginx nebo Cloudflare Tunnel),
-  v důvěryhodné síti. Když chceš TLS ukončit přímo v procesu, připoj certifikát
-  a nastav `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (a pak zruš
-  `CC_SERVER_INSECURE`). Všechno přepíšeš přes `docker run -e …` nebo blok
+  aby přijímal provoz z publikovaných portů). Použij reverzní proxy, která
+  ukončuje TLS (Caddy, Traefik, nginx nebo Cloudflare Tunnel), v důvěryhodné
+  síti, nebo připoj certifikát a nastav `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (a pak zruš `CC_SERVER_INSECURE`). Toto nastavení
+  ovládá jen vnější posluchač HTTP/WebSocket serveru. Nikdy nevypne povinnou
+  šifrovanou klientskou relaci od konce ke konci. TLS pořád chrání přihlašovací
+  a bootstrapový provoz, metadata spojení, veřejné koncové body a doručení
+  webového klienta. Všechno přepíšeš přes `docker run -e …` nebo blok
   `environment:` v compose.
 - **`/data` je jediný stav.** Databáze SQLite, tajemství spárovaných zařízení,
   stažené modely i zvuk schůzek žijí ve svazku. Zálohuj ho a kontejner je na
@@ -72,13 +75,17 @@ Než cokoli z toho vystavíš mimo loopback, vyplatí se vědět:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **Oba klientské obrazy jsou statičtí hostitelé nginx.** Za běhu není co
-  nastavovat. Formulář připojení každého klienta bere URL serveru, ID zařízení
-  a párovací klíč. Signalizační relé stejně potřebuje jen svůj port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` se dají přepsat). Je bezstavové, nedrží
-  žádná tajemství a je to **záloha**: telefon použije loopback, LAN, tailnet
-  nebo přímou cestu `wss://`, když je některá dosažitelná, a na relé spadne,
-  až když žádná není. Přeskoč ho, když klienti na server dosáhnou vždy přímo.
+- **Oba klientské obrazy jsou statičtí hostitelé nginx.** Vložené prohlížečové
+  editory používají tentýž origin aplikace a šifrovanou relaci, jak je popsáno
+  [níže](#prostředky-prohlížečového-editoru). Formulář připojení každého
+  klienta bere URL serveru, ID zařízení a párovací klíč. Signalizační relé
+  potřebuje jen svůj port (`SIGNALING_HOST` / `SIGNALING_PORT` se dají
+  přepsat). Je bezstavové, nedrží žádné párovací klíče a je to **záloha**:
+  telefon použije loopback, LAN, tailnet nebo přímou cestu `wss://`, když je
+  některá dosažitelná, a na relé spadne, až když žádná není. Přeskoč ho, když
+  klienti na server dosáhnou vždy přímo. Zprostředkovatel vidí směrovací
+  identifikátory, IP adresy, velikosti a časování a může provoz přerušit;
+  dešifrovat proud prostředků mezi klientem a serverem ale neumí.
 
 Zbytek návodu sestavuje server ze zdrojů. Příznaky a chování, které popisuje,
 jsou ty samé, které do obrazu přivádějí proměnné prostředí.
@@ -173,6 +180,14 @@ Pověření vystavené přes `cc_server pair` **neexpiruje**. Pověření vystav
 v aplikaci vyprší vždy po 30 dnech. Zařízení vystavené z CLI odvolej v
 **Nastavení → Vy → Vaše zařízení**, až ho nebudeš potřebovat.
 
+Párovací klíč ověřuje povinný handshake Noise; každá relace odvozuje čerstvé
+provozní klíče a kontroluje podepsanou identitu serveru. Párovací klíč chraň a
+získej ho z důvěryhodného zdroje (i z důvěryhodného QR), pak nový otisk serveru
+ověř přes samostatný důvěryhodný kanál nebo proti známému pinu. Změněný pin
+tiše nepřijímej: když identitu serveru schválně vyměníš, spáruj se znovu přes
+důvěryhodný kanál. TLS samo o sobě ten otisk identity od konce ke konci
+nedokáže prokázat.
+
 ## Krok 4: Spusť server
 
 Na loopbacku, což je výchozí hodnota a všechno, co potřebuješ pro klienta na
@@ -201,8 +216,13 @@ k nešifrované vazbě:
 ```
 
 `--insecure` se ignoruje, když jsou nastavené `--tls-cert` i `--tls-key`. TLS
-vždy vyhraje. Server nešifrovaný stav inzeruje jako `insecure: true` v
-`GET /healthz` a klienti takové spojení označí jako nezabezpečené.
+vždy vyhraje. Server inzeruje nešifrovaný stav vnějšího posluchače jako
+`insecure: true` v `GET /healthz`. Nevypíná to ale šifrování Noise na `/rpc`,
+ať se klient připojí přímo, nebo přes relé. Server, relé i klienty povyšuj
+společně: staří klienti s otevřeným RPC se odmítají a žádná záložní varianta
+pro kompatibilitu neexistuje. Veřejné požadavky na citlivé cesty prostředků
+(včetně přenosů záloh) dostanou HTTP `426`, a to i z loopbacku; spárovaní
+klienti místo toho používají šifrovaný tunel.
 
 Server běží do `SIGINT`/`SIGTERM` a pak se čistě vypne.
 
@@ -223,6 +243,33 @@ přesně tohle). Origin prohlížeče jiný než loopback musí být v
 seznam je `https://app.usectrl.dev` a `localhost` / `127.0.0.1` jsou povolené
 vždy.
 :::
+
+### Prostředky prohlížečového editoru
+
+Frontend editoru je důvěryhodný kód aplikace a běží na vlastním originu webové
+aplikace. Jeho service worker vede HTTP i WebSocket provoz touž ověřenou
+šifrovanou relací jako zbytek klienta. `cc_server` každý požadavek dešifruje,
+předá ho svému lokálnímu backendu code-server a odpověď zašifruje zpět
+klientovi. Soubory zůstávají v držení serveru.
+
+Webového klienta hostuj přes HTTPS nebo zabezpečený origin loopbacku, aby
+service workery mohly běžet. Sdílené prostředky jsou součástí běžného sestavení
+webu i skriptů pro vydání. Když balík sestavuješ ručně, dožeň tyto prostředky
+dodatečně z kořene repozitáře:
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+Pro webové sestavení telefonu dosaď `apps/cc_remote/build/web`. Tím se do
+balíku aplikace zkopírují `cc_resource_bridge.js`, `cc_resource_worker.js` a
+`cc_resource_ws_shim.js`.
+
+Provoz nativního editoru místo toho používá fasádu loopback s rozsahem podle
+schopnosti. Soukromou bránu pro hlášení a příkazy přes loopback, kterou má
+rozšíření editoru spouštěné serverem, nevystavuj přes veřejnou proxy. Citlivé
+veřejné HTTP požadavky se odmítají; prostředky vyžadují ověřenou šifrovanou
+relaci.
 
 ## Krok 6: Připoj Google Calendar (volitelné)
 
@@ -281,7 +328,8 @@ Každé volání v rozsahu pracovního prostoru veze vlastní `workspace_id` a p
 rozhoduje členství volajícího v pracovním prostoru a jeho role, ne držení
 párovacího klíče.
 
-Než port vystavíš mimo loopback, platí dvě věci:
+Než port vystavíš mimo loopback, platí dvě věci (TLS samo o sobě nedodává
+spárovanému klientovi šifrování od konce ke konci ani neautorizuje prostředky):
 
 - **MCP mimo hostitele selhává do zamítnutí.** Plocha MCP bez tokenu odpovídá jen na loopback. Vazba `any` ji nerozšíří. Požadavek mimo hostitele se odmítne hláškou „MCP requires a bearer token to answer non-loopback clients“, dokud token nenastavíš (`mcp.setToken`, nebo **Nastavení → Server → Servery MCP**).
 - **`GET /healthz` je schválně bez ověření**, s CORS na všechny originy, a publikuje id serveru, název, otisk identity a verzi sestavení. Klienti otisk potřebují, aby si server připnuli, takže je to záměr. Znamená to ale, že každý dosažitelný `cc_server` tolik prozradí komukoli, kdo se zeptá.

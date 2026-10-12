@@ -2,7 +2,7 @@
 title: Obszary robocze i izolacja
 description: Dlaczego obszar roboczy jest twardą granicą dzierżawcy, jak podział bazy danych czyni tę granicę strukturalną i co celowo ją przekracza.
 slug: pl-PL/podrecznik/koncepcje/obszary-robocze
-sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
+sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
 ---
 
 ## Czym jest obszar roboczy?
@@ -110,13 +110,15 @@ Operacje kopii zapasowej znajdują się w **Ustawienia → Serwer → Kopia zapa
 
 ## Przenoszenie kopii zapasowej między serwerem a Twoim urządzeniem
 
-Każda z powyższych operacji mówi ścieżkami na **serwerze**, co jest pełną odpowiedzią tylko wtedy, gdy serwer jest Twoją własną maszyną. Trzy podpisane trasy HTTP — [`/backup/workspace`, `/backup/snapshot` i `/backup/restore`](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#transfer-routes) — przenoszą bajty w każdej innej topologii, tym samym uwierzytelnionym torem, z którego korzystają już proxy multimediów i magazyn obrazów. Na stronie jest to przycisk **Pobierz** obok każdego eksportu i każdej migawki (wybierasz, gdzie trafi), oraz **Wybierz plik i wyślij**, aby przywrócić z pliku leżącego na maszynie, której używasz. To wysyłanie działa, gdy serwer nie jest Twoją maszyną: `workspace.import` potrzebuje pliku już na hoście i właśnie w ten sposób się tam znajduje.
+Każda z powyższych operacji mówi ścieżkami na **serwerze**, co jest pełną odpowiedzią tylko wtedy, gdy serwer jest Twoją własną maszyną. Trzy podpisane trasy transferu — [`/backup/workspace`, `/backup/snapshot` i `/backup/restore`](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#transfer-routes) — przenoszą bajty w każdej innej topologii przez uwierzytelniony, szyfrowany tunel zasobów, w połączeniach bezpośrednich i przez przekaźnik. Publiczne trasy HTTP nie udostępniają czytelnych bajtów kopii zapasowej, a podpisane ścieżki nadal wymagają autoryzacji. Na stronie jest to przycisk **Pobierz** obok każdego eksportu i każdej migawki (wybierasz, gdzie trafi), oraz **Wybierz plik i wyślij**, aby przywrócić z pliku leżącego na maszynie, której używasz. To wysyłanie działa, gdy serwer nie jest Twoją maszyną: `workspace.import` potrzebuje pliku już na hoście i właśnie w ten sposób się tam znajduje.
 
 Warto znać trzy właściwości:
 
 - **Pobieranie tworzy świeżą kopię, a serwer nie zachowuje z niej nic.** Pobieranie to nie „pobierz plik, który zrobił przycisk eksportu” — to ponowny eksport, strumieniowanie go i usunięcie. Odpowiedź ma `no-store` i `Accept-Ranges: none` z tego samego powodu: wznowiony zakres skleiłby dwa różne eksporty w jeden plik, który wygląda na poprawny, a nim nie jest.
 - **Przesyłanie jest strumieniowane na dysk, nigdy buforowane** po obu stronach, a kopia tymczasowa jest usuwana na każdej ścieżce wyjścia — także przy odmowie. Baza danych obszaru roboczego to nie zrzut ekranu.
-- **Połączenie przekazywane przez relay nie ma źródła HTTP**, więc kontrolki transferu są tam wyłączone wraz z informacją, dlaczego tak jest. Wszystko, co mówi ścieżkami po stronie serwera, działa dalej przez relay; bezpośredniego połączenia wymagają tylko tory bajtów.
+- **Transfer działa też przez przekaźnik.** Pobieranie i wysyłanie korzystają z tego samego szyfrowanego tunelu zasobów co połączenia bezpośrednie; bezpośrednie pochodzenie HTTP nie jest wymagane.
+
+Szyfrowanie chroni transfer w tranzycie, a nie bazę danych po stronie serwera, katalog migawek ani pobraną kopię w spoczynku. Operator serwera może uzyskać dostęp do danych przechowywanych na tym hoście.
 
 :::note[Które ścieżki są czyje]
 Ścieżki, które strona *pokazuje* — katalog migawki, plik zapisany przez eksport, źródło czytane przez import — są na maszynie uruchamiającej `cc_server`. Ścieżka, którą podaje **pobieranie**, jest na maszynie, przy której siedzisz. To rozróżnienie jest powodem, dla którego istnieją obie: pierwsza jest tym, czego potrzebuje skrypt konserwacyjny albo sesja ssh, druga — tym, czego potrzebuje osoba zbierająca kopię zapasową.

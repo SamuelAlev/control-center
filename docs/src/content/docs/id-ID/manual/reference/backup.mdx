@@ -2,7 +2,7 @@
 title: Cadangan, ekspor, dan impor
 description: Tata letak snapshot, manifest, setiap operasi cadangan dan rute transfer, serta persisnya file yang dimuat dan tidak dimuat oleh cadangan.
 slug: id-ID/panduan-pengguna/referensi/cadangan
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Semua yang bisa disalin, diserahkan, atau diadopsi Control Center, beserta bentuk persis
@@ -23,6 +23,13 @@ Ada tiga artefak salinan basis data, dengan cakupan dan kebijakan penghapusan ya
 Semuanya ditulis dengan `VACUUM INTO` SQLite, yang aman terhadap basis data WAL yang
 aktif: perintah ini mengambil transaksi baca, menghasilkan salinan yang didefragmentasi
 dan konsisten secara transaksional, serta tidak pernah memerlukan penghentian server.
+
+File-file ini dan salinan yang diunduh **tidak dienkripsi saat tersimpan** oleh
+Control Center. Transfer terenkripsi ujung ke ujung melindungi byte saat transit
+antara klien yang dipasangkan dan `cc_server`-nya, baik pada koneksi langsung
+maupun melalui relay yang diperantarai. Lindungi penyimpanan lokal serta salinan di
+luar mesin secara terpisah; server dan penerima mana pun yang berwenang dapat
+membaca file basis data.
 
 ## Tata letak snapshot
 
@@ -204,11 +211,16 @@ mungkin sudah usang.
 
 ## Rute transfer
 
-Setiap operasi di atas berbicara dalam path sisi server, yang merupakan jawaban lengkap
-hanya ketika server itu mesin Anda sendiri. Ketiga rute ini yang membawa byte-nya, di
-jalur bertanda tangan PSK yang sama dengan yang dipakai proksi media dan penyimpanan blob.
-Pemanggil menandatangani string target dengan kunci pra-bersama perangkatnya dan
-meneruskan tanda tangannya sebagai `s`.
+Operasi ekspor/impor dan penampilan daftar snapshot di atas berbicara dalam path
+sisi server, yang merupakan jawaban lengkap hanya ketika server itu mesin Anda
+sendiri. Rute berbentuk HTTP ini membawa byte cadangan **di dalam terowongan
+sumber daya terautentikasi dan terenkripsi ujung ke ujung yang sama** dengan
+sumber daya sensitif lainnya, baik koneksi RPC-nya langsung maupun diperantarai.
+Rute ini bukan endpoint transfer file HTTP publik: permintaan ke salah satunya
+pada listener publik mengembalikan `426 Upgrade Required`, bahkan dari loopback.
+Di dalam terowongan terenkripsi, perangkat yang terautentikasi Noise harus cocok
+dengan `d`; handler juga memeriksa tanda tangan perangkat pada string targetnya
+memakai PSK pairing dan peran di bawah ini.
 
 | Rute                    | Metode | Kueri           | Target bertanda tangan         | Memerlukan             |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
@@ -228,6 +240,7 @@ oleh daftar.
 | `404`  | Tidak ada port cadangan di host ini, atau snapshot/file ruang kerja yang disebut tidak ada |
 | `405`  | `/backup/restore` dipanggil dengan apa pun selain `POST`                            |
 | `413`  | Isi unggahan melebihi 8 GiB, baik menurut content-length yang dideklarasikan maupun menurut byte yang benar-benar dibaca |
+| `426`  | Permintaan langsung apa pun ke rute transfer pada listener HTTP publik; gunakan terowongan sumber daya terenkripsi milik klien yang dipasangkan |
 | `500`  | Ekspor atau arsip gagal di sisi server                                              |
 
 Kedua unduhan merespons `Cache-Control: no-store` dengan `Accept-Ranges: none`. Setiap
@@ -244,12 +257,14 @@ snapshot yang sama adalah arsip yang sama.
 buffer, membatasinya sebelum dan selama pembacaan, dan menghapus file yang di-staging pada
 **setiap** jalur keluar termasuk saat penolakan.
 
-:::caution[Koneksi yang direlai tidak memiliki origin HTTP]
-Relay yang diperantarai membawa frame RPC, bukan transfer file. Semua yang berbicara
-dalam path sisi server tetap berfungsi melaluinya; ketiga rute transfer memerlukan
-koneksi langsung, dan UI menonaktifkannya dengan catatan alih-alih gagal di tengah
-unduhan.
-:::
+::::caution[Koneksi langsung dan relay memakai transfer terenkripsi yang sama]
+Relay membawa permintaan sumber daya, respons yang dialirkan, dan byte unggahan
+sebagai ciphertext; ia tidak dapat membaca isi cadangan. Path sisi server tetap
+merupakan path pada host server, bukan file pada relay. Akses tetap memerlukan
+perangkat yang dipasangkan, tanda tangan target, dan peran ruang kerja atau
+instalasi yang berlaku. Tidak ada transport yang mengenkripsi file cadangan yang
+dihasilkan saat tersimpan.
+::::
 
 ## Path dan batas
 
@@ -260,7 +275,7 @@ unduhan.
 | Ekspor ruang kerja             | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Staging transfer               | `<dataDir>/backups/transfer/` — sebuah meja kerja, dibersihkan oleh rute yang menulisinya |
 | Nama arsip snapshot            | `<snapshot directory name>.zip`                              |
-| Batas unggahan                 | 8 GiB per `POST /backup/restore`                             |
+| Batas unggahan                 | 8 GiB per unggahan terenkripsi ke `/backup/restore`          |
 | Retensi                        | Snapshot instalasi: penghapusan manual. Cadangan ruang kerja: pipeline mingguan, bawaan 30 hari |
 
 Direktori `exports/`, `transfer/`, dan `workspace-backups/` bukan snapshot instalasi dan

@@ -2,7 +2,7 @@
 title: Backup, export en import
 description: De indeling van de momentopname, het manifest, elke back-upbewerking en overdrachtsroute, en precies welke bestanden een back-up wel en niet bevat.
 slug: nl-NL/handleiding/referentie/backup
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Alles wat Control Center kan kopiëren, overdragen of overnemen, en de exacte vorm van elk
@@ -23,6 +23,13 @@ Er zijn drie artefacten die een database kopiëren, met verschillende bereiken e
 Alle drie worden geschreven met SQLite `VACUUM INTO`, wat veilig is tegen een actieve
 WAL-database: het neemt een leestransactie, produceert een gedefragmenteerde en transactioneel
 consistente kopie en vraagt er nooit om de server te stoppen.
+
+Deze bestanden en gedownloade kopieën worden door Control Center **niet in rust
+versleuteld**. De end-to-end-versleutelde overdracht beschermt bytes tijdens het
+transport tussen een gekoppelde client en zijn `cc_server`, op rechtstreekse of
+via een relay bemiddelde verbindingen. Bescherm lokale opslag en kopieën buiten
+de machine apart; de server en elke gemachtigde ontvanger kunnen de
+databasebestanden lezen.
 
 ## Indeling van de momentopname
 
@@ -201,10 +208,15 @@ geïmporteerd bestand zijn gevuld, maar de index kan verouderd zijn.
 
 ## Overdrachtroutes
 
-Elke bewerking hierboven spreekt in paden aan de serverkant, wat alleen een volledig antwoord is
-als de server je eigen machine is. Deze drie dragen de bytes, op dezelfde met PSK ondertekende
-baan die de mediaproxy en het blobarchief gebruiken. De aanroeper ondertekent een doeltekenreeks
-met de vooraf gedeelde sleutel van zijn apparaat en geeft de handtekening mee als `s`.
+De export-/import- en momentopnamelijstbewerkingen hierboven spreken in paden aan de
+serverkant, wat alleen een volledig antwoord is als de server je eigen machine is. Deze
+HTTP-vormige routes dragen back-upbytes **binnen dezelfde geauthenticeerde,
+end-to-end-versleutelde brontunnel** als andere gevoelige bronnen, of de RPC-verbinding nu
+rechtstreeks of bemiddeld is. Het zijn geen openbare HTTP-bestandsoverdrachtsendpoints: een
+verzoek aan een ervan op de openbare listener retourneert `426 Upgrade Required`, ook vanaf
+loopback. In de versleutelde tunnel moet het met Noise geauthenticeerde apparaat overeenkomen
+met `d`; de handler controleert daarnaast de handtekening van het apparaat over zijn
+doeltekenreeks met zijn koppelings-PSK en de rol hieronder.
 
 | Route                   | Methode | Query           | Ondertekend doel               | Vereist                 |
 | ----------------------- | ------- | --------------- | ------------------------------ | ----------------------- |
@@ -224,6 +236,7 @@ niet zou hebben getoond.
 | `404`  | Geen back-uppoort op deze host, of de genoemde momentopname/het genoemde werkruimtebestand bestaat niet |
 | `405`  | `/backup/restore` aangeroepen met iets anders dan `POST`                             |
 | `413`  | De uploadbody is groter dan 8 GiB, volgens de opgegeven content-length of volgens de werkelijk gelezen bytes |
+| `426`  | Elk rechtstreeks verzoek aan een overdrachtspad op de openbare HTTP-listener; gebruik de versleutelde brontunnel van een gekoppelde client |
 | `500`  | De export of het archief is aan de serverkant mislukt                                |
 
 Beide downloads antwoorden met `Cache-Control: no-store` en `Accept-Ranges: none`. Elk verzoek
@@ -240,12 +253,13 @@ momentopname zijn hetzelfde archief.
 bufferen, begrenst hem vóór en tijdens het lezen, en verwijdert het klaargezette bestand op
 **elk** uitpad, ook bij een weigering.
 
-:::caution[Een doorgestuurde verbinding heeft geen HTTP-origin]
-De relay via de broker draagt RPC-frames, geen bestandsoverdrachten. Alles wat in paden aan de
-serverkant spreekt, blijft erover werken; de drie overdrachtroutes hebben een directe
-verbinding nodig, en de UI schakelt ze uit met een melding in plaats van midden in een download
-te falen.
-:::
+::::caution[Rechtstreeks en via een relay gebruiken dezelfde versleutelde overdracht]
+De relay draagt bronverzoeken, gestreamde antwoorden en uploadbytes als ciphertext; hij
+kan de inhoud van de back-up niet lezen. Een pad aan de serverkant blijft een pad op de
+serverhost, geen bestand op de relay. Toegang vereist nog steeds het gekoppelde apparaat,
+de doeltekenreekshandtekening en de geldende werkruimte- of installatierol. Geen van beide
+transports versleutelt de resulterende back-upbestanden in rust.
+::::
 
 ## Paden en limieten
 
@@ -256,7 +270,7 @@ te falen.
 | Werkruimte-exports             | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Staging voor overdrachten      | `<dataDir>/backups/transfer/` — een werkbank, opgeruimd door de route die hem schrijft |
 | Naam van het momentopnamearchief | `<snapshot directory name>.zip`                            |
-| Uploadplafond                  | 8 GiB per `POST /backup/restore`                             |
+| Uploadplafond                  | 8 GiB per versleutelde `/backup/restore`-upload              |
 | Bewaring                       | Installatiemomentopnamen: handmatige verwijdering. Werkruimteback-ups: wekelijkse pipeline, standaard 30 dagen |
 
 De mappen `exports/`, `transfer/` en `workspace-backups/` zijn geen

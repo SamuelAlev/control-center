@@ -113,8 +113,9 @@ class TranscriptFolder {
   /// Folds [event] into the transcript.
   ///
   /// Returns false for the events the folder does not own — [UsageEvent],
-  /// [DebugEvent] and [DoneEvent] — so the caller can handle cost accounting,
-  /// diagnostics and stream completion itself.
+  /// [ContextWindowEvent], [StageTimingEvent], [DebugEvent] and [DoneEvent] —
+  /// so the caller can handle cost accounting, latency profiling, diagnostics
+  /// and stream completion itself.
   bool add(AgentProcessEvent event) {
     switch (event) {
       case TextEvent():
@@ -145,6 +146,7 @@ class TranscriptFolder {
         );
       case UsageEvent():
       case ContextWindowEvent():
+      case StageTimingEvent():
       case DebugEvent():
       case DoneEvent():
         return false;

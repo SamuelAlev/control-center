@@ -2375,6 +2375,29 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _costMicrosMeta = const VerificationMeta(
+    'costMicros',
+  );
+  @override
+  late final GeneratedColumn<int> costMicros = GeneratedColumn<int>(
+    'cost_micros',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _costBasisMeta = const VerificationMeta(
+    'costBasis',
+  );
+  @override
+  late final GeneratedColumn<String> costBasis = GeneratedColumn<String>(
+    'cost_basis',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _childCostCentsMeta = const VerificationMeta(
     'childCostCents',
   );
@@ -2386,6 +2409,96 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _childCostMicrosMeta = const VerificationMeta(
+    'childCostMicros',
+  );
+  @override
+  late final GeneratedColumn<int> childCostMicros = GeneratedColumn<int>(
+    'child_cost_micros',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _effortMeta = const VerificationMeta('effort');
+  @override
+  late final GeneratedColumn<String> effort = GeneratedColumn<String>(
+    'effort',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _taskFamilyMeta = const VerificationMeta(
+    'taskFamily',
+  );
+  @override
+  late final GeneratedColumn<String> taskFamily = GeneratedColumn<String>(
+    'task_family',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nativeSessionIdMeta = const VerificationMeta(
+    'nativeSessionId',
+  );
+  @override
+  late final GeneratedColumn<String> nativeSessionId = GeneratedColumn<String>(
+    'native_session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resumedNativeSessionMeta =
+      const VerificationMeta('resumedNativeSession');
+  @override
+  late final GeneratedColumn<bool> resumedNativeSession = GeneratedColumn<bool>(
+    'resumed_native_session',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("resumed_native_session" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _latencyJsonMeta = const VerificationMeta(
+    'latencyJson',
+  );
+  @override
+  late final GeneratedColumn<String> latencyJson = GeneratedColumn<String>(
+    'latency_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _verificationStatusMeta =
+      const VerificationMeta('verificationStatus');
+  @override
+  late final GeneratedColumn<String> verificationStatus =
+      GeneratedColumn<String>(
+        'verification_status',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _verificationJsonMeta = const VerificationMeta(
+    'verificationJson',
+  );
+  @override
+  late final GeneratedColumn<String> verificationJson = GeneratedColumn<String>(
+    'verification_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _agentRoleMeta = const VerificationMeta(
     'agentRole',
@@ -2656,7 +2769,17 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     cachedReadTokens,
     cachedWriteTokens,
     estimatedCostCents,
+    costMicros,
+    costBasis,
     childCostCents,
+    childCostMicros,
+    effort,
+    taskFamily,
+    nativeSessionId,
+    resumedNativeSession,
+    latencyJson,
+    verificationStatus,
+    verificationJson,
     agentRole,
     durationMs,
     timeToFirstTokenMs,
@@ -2840,12 +2963,90 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
         ),
       );
     }
+    if (data.containsKey('cost_micros')) {
+      context.handle(
+        _costMicrosMeta,
+        costMicros.isAcceptableOrUnknown(data['cost_micros']!, _costMicrosMeta),
+      );
+    }
+    if (data.containsKey('cost_basis')) {
+      context.handle(
+        _costBasisMeta,
+        costBasis.isAcceptableOrUnknown(data['cost_basis']!, _costBasisMeta),
+      );
+    }
     if (data.containsKey('child_cost_cents')) {
       context.handle(
         _childCostCentsMeta,
         childCostCents.isAcceptableOrUnknown(
           data['child_cost_cents']!,
           _childCostCentsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('child_cost_micros')) {
+      context.handle(
+        _childCostMicrosMeta,
+        childCostMicros.isAcceptableOrUnknown(
+          data['child_cost_micros']!,
+          _childCostMicrosMeta,
+        ),
+      );
+    }
+    if (data.containsKey('effort')) {
+      context.handle(
+        _effortMeta,
+        effort.isAcceptableOrUnknown(data['effort']!, _effortMeta),
+      );
+    }
+    if (data.containsKey('task_family')) {
+      context.handle(
+        _taskFamilyMeta,
+        taskFamily.isAcceptableOrUnknown(data['task_family']!, _taskFamilyMeta),
+      );
+    }
+    if (data.containsKey('native_session_id')) {
+      context.handle(
+        _nativeSessionIdMeta,
+        nativeSessionId.isAcceptableOrUnknown(
+          data['native_session_id']!,
+          _nativeSessionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resumed_native_session')) {
+      context.handle(
+        _resumedNativeSessionMeta,
+        resumedNativeSession.isAcceptableOrUnknown(
+          data['resumed_native_session']!,
+          _resumedNativeSessionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('latency_json')) {
+      context.handle(
+        _latencyJsonMeta,
+        latencyJson.isAcceptableOrUnknown(
+          data['latency_json']!,
+          _latencyJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification_status')) {
+      context.handle(
+        _verificationStatusMeta,
+        verificationStatus.isAcceptableOrUnknown(
+          data['verification_status']!,
+          _verificationStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification_json')) {
+      context.handle(
+        _verificationJsonMeta,
+        verificationJson.isAcceptableOrUnknown(
+          data['verification_json']!,
+          _verificationJsonMeta,
         ),
       );
     }
@@ -3124,10 +3325,50 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
         DriftSqlType.int,
         data['${effectivePrefix}estimated_cost_cents'],
       )!,
+      costMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cost_micros'],
+      )!,
+      costBasis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cost_basis'],
+      ),
       childCostCents: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}child_cost_cents'],
       )!,
+      childCostMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}child_cost_micros'],
+      )!,
+      effort: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}effort'],
+      ),
+      taskFamily: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_family'],
+      ),
+      nativeSessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}native_session_id'],
+      ),
+      resumedNativeSession: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}resumed_native_session'],
+      )!,
+      latencyJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}latency_json'],
+      ),
+      verificationStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verification_status'],
+      ),
+      verificationJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verification_json'],
+      ),
       agentRole: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}agent_role'],
@@ -3287,10 +3528,59 @@ class AgentRunLogsTableData extends DataClass
   /// Estimated cost in US cents for this run.
   final int estimatedCostCents;
 
+  /// Exact cost in MICRO-USD (`1e-6` USD) for this run, or 0 when no precise
+  /// figure was recorded.
+  ///
+  /// Whole cents is not enough precision: a sub-cent priced request rounded to
+  /// `estimatedCostCents = 0`, so hundreds of small auxiliary calls summed to a
+  /// persisted total of zero with nothing on the row to say the cost was
+  /// actually unknown. Micro-USD keeps the arithmetic exact.
+  final int costMicros;
+
+  /// How the cost was obtained: `estimated` | `providerReported` |
+  /// `subscription` | `mixed`. Nullable; null on legacy rows (read as
+  /// estimated).
+  final String? costBasis;
+
   /// Cost in US cents rolled up from this run's subagent (child) runs, summed
   /// as each child completes. `estimatedCostCents + childCostCents` is the
   /// run's total spend including everything it delegated. Zero for leaf runs.
   final int childCostCents;
+
+  /// Exact child rollup in micro-USD — the precise companion to
+  /// [childCostCents], which rounds sub-cent children to zero.
+  final int childCostMicros;
+
+  /// Reasoning-effort level the run actually executed at, when recorded. Null
+  /// means unknown (not "the default"): latency percentiles group by this and
+  /// an unknown must form its own bucket.
+  final String? effort;
+
+  /// Caller-assigned task-family label, when recorded. Null means
+  /// unclassified.
+  final String? taskFamily;
+
+  /// The adapter's OWN session/thread id for this run, when it has one (e.g. a
+  /// Claude CLI session id). Stored as data so the evaluation's resume-vs-fresh
+  /// stratum is queryable rather than parseable out of a log line.
+  final String? nativeSessionId;
+
+  /// Whether this run RESUMED [nativeSessionId] rather than starting fresh.
+  final bool resumedNativeSession;
+
+  /// JSON array of observed run-stage timings (`RunLatencyProfile.toJson`).
+  /// Nullable: a run from before stage instrumentation has no timings at all,
+  /// which is unknown rather than zero.
+  final String? latencyJson;
+
+  /// Independent verification verdict: `passed` | `failed` | `unverified`.
+  /// Nullable; null on legacy rows (read as unverified). Distinct from
+  /// [status]: a run can complete and fail verification.
+  final String? verificationStatus;
+
+  /// JSON detail for [verificationStatus] (`RunVerification.toJson`): who
+  /// verified, when, and any notes.
+  final String? verificationJson;
 
   /// The role this run played in the agent tree for per-role cost attribution:
   /// `main` | `sub` | `advisor`. Nullable; null/legacy rows attribute to main.
@@ -3402,7 +3692,17 @@ class AgentRunLogsTableData extends DataClass
     required this.cachedReadTokens,
     required this.cachedWriteTokens,
     required this.estimatedCostCents,
+    required this.costMicros,
+    this.costBasis,
     required this.childCostCents,
+    required this.childCostMicros,
+    this.effort,
+    this.taskFamily,
+    this.nativeSessionId,
+    required this.resumedNativeSession,
+    this.latencyJson,
+    this.verificationStatus,
+    this.verificationJson,
     this.agentRole,
     this.durationMs,
     this.timeToFirstTokenMs,
@@ -3469,7 +3769,31 @@ class AgentRunLogsTableData extends DataClass
     map['cached_read_tokens'] = Variable<int>(cachedReadTokens);
     map['cached_write_tokens'] = Variable<int>(cachedWriteTokens);
     map['estimated_cost_cents'] = Variable<int>(estimatedCostCents);
+    map['cost_micros'] = Variable<int>(costMicros);
+    if (!nullToAbsent || costBasis != null) {
+      map['cost_basis'] = Variable<String>(costBasis);
+    }
     map['child_cost_cents'] = Variable<int>(childCostCents);
+    map['child_cost_micros'] = Variable<int>(childCostMicros);
+    if (!nullToAbsent || effort != null) {
+      map['effort'] = Variable<String>(effort);
+    }
+    if (!nullToAbsent || taskFamily != null) {
+      map['task_family'] = Variable<String>(taskFamily);
+    }
+    if (!nullToAbsent || nativeSessionId != null) {
+      map['native_session_id'] = Variable<String>(nativeSessionId);
+    }
+    map['resumed_native_session'] = Variable<bool>(resumedNativeSession);
+    if (!nullToAbsent || latencyJson != null) {
+      map['latency_json'] = Variable<String>(latencyJson);
+    }
+    if (!nullToAbsent || verificationStatus != null) {
+      map['verification_status'] = Variable<String>(verificationStatus);
+    }
+    if (!nullToAbsent || verificationJson != null) {
+      map['verification_json'] = Variable<String>(verificationJson);
+    }
     if (!nullToAbsent || agentRole != null) {
       map['agent_role'] = Variable<String>(agentRole);
     }
@@ -3569,7 +3893,31 @@ class AgentRunLogsTableData extends DataClass
       cachedReadTokens: Value(cachedReadTokens),
       cachedWriteTokens: Value(cachedWriteTokens),
       estimatedCostCents: Value(estimatedCostCents),
+      costMicros: Value(costMicros),
+      costBasis: costBasis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(costBasis),
       childCostCents: Value(childCostCents),
+      childCostMicros: Value(childCostMicros),
+      effort: effort == null && nullToAbsent
+          ? const Value.absent()
+          : Value(effort),
+      taskFamily: taskFamily == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskFamily),
+      nativeSessionId: nativeSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nativeSessionId),
+      resumedNativeSession: Value(resumedNativeSession),
+      latencyJson: latencyJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latencyJson),
+      verificationStatus: verificationStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verificationStatus),
+      verificationJson: verificationJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verificationJson),
       agentRole: agentRole == null && nullToAbsent
           ? const Value.absent()
           : Value(agentRole),
@@ -3655,7 +4003,21 @@ class AgentRunLogsTableData extends DataClass
       cachedReadTokens: serializer.fromJson<int>(json['cachedReadTokens']),
       cachedWriteTokens: serializer.fromJson<int>(json['cachedWriteTokens']),
       estimatedCostCents: serializer.fromJson<int>(json['estimatedCostCents']),
+      costMicros: serializer.fromJson<int>(json['costMicros']),
+      costBasis: serializer.fromJson<String?>(json['costBasis']),
       childCostCents: serializer.fromJson<int>(json['childCostCents']),
+      childCostMicros: serializer.fromJson<int>(json['childCostMicros']),
+      effort: serializer.fromJson<String?>(json['effort']),
+      taskFamily: serializer.fromJson<String?>(json['taskFamily']),
+      nativeSessionId: serializer.fromJson<String?>(json['nativeSessionId']),
+      resumedNativeSession: serializer.fromJson<bool>(
+        json['resumedNativeSession'],
+      ),
+      latencyJson: serializer.fromJson<String?>(json['latencyJson']),
+      verificationStatus: serializer.fromJson<String?>(
+        json['verificationStatus'],
+      ),
+      verificationJson: serializer.fromJson<String?>(json['verificationJson']),
       agentRole: serializer.fromJson<String?>(json['agentRole']),
       durationMs: serializer.fromJson<int?>(json['durationMs']),
       timeToFirstTokenMs: serializer.fromJson<int?>(json['timeToFirstTokenMs']),
@@ -3712,7 +4074,17 @@ class AgentRunLogsTableData extends DataClass
       'cachedReadTokens': serializer.toJson<int>(cachedReadTokens),
       'cachedWriteTokens': serializer.toJson<int>(cachedWriteTokens),
       'estimatedCostCents': serializer.toJson<int>(estimatedCostCents),
+      'costMicros': serializer.toJson<int>(costMicros),
+      'costBasis': serializer.toJson<String?>(costBasis),
       'childCostCents': serializer.toJson<int>(childCostCents),
+      'childCostMicros': serializer.toJson<int>(childCostMicros),
+      'effort': serializer.toJson<String?>(effort),
+      'taskFamily': serializer.toJson<String?>(taskFamily),
+      'nativeSessionId': serializer.toJson<String?>(nativeSessionId),
+      'resumedNativeSession': serializer.toJson<bool>(resumedNativeSession),
+      'latencyJson': serializer.toJson<String?>(latencyJson),
+      'verificationStatus': serializer.toJson<String?>(verificationStatus),
+      'verificationJson': serializer.toJson<String?>(verificationJson),
       'agentRole': serializer.toJson<String?>(agentRole),
       'durationMs': serializer.toJson<int?>(durationMs),
       'timeToFirstTokenMs': serializer.toJson<int?>(timeToFirstTokenMs),
@@ -3759,7 +4131,17 @@ class AgentRunLogsTableData extends DataClass
     int? cachedReadTokens,
     int? cachedWriteTokens,
     int? estimatedCostCents,
+    int? costMicros,
+    Value<String?> costBasis = const Value.absent(),
     int? childCostCents,
+    int? childCostMicros,
+    Value<String?> effort = const Value.absent(),
+    Value<String?> taskFamily = const Value.absent(),
+    Value<String?> nativeSessionId = const Value.absent(),
+    bool? resumedNativeSession,
+    Value<String?> latencyJson = const Value.absent(),
+    Value<String?> verificationStatus = const Value.absent(),
+    Value<String?> verificationJson = const Value.absent(),
     Value<String?> agentRole = const Value.absent(),
     Value<int?> durationMs = const Value.absent(),
     Value<int?> timeToFirstTokenMs = const Value.absent(),
@@ -3805,7 +4187,23 @@ class AgentRunLogsTableData extends DataClass
     cachedReadTokens: cachedReadTokens ?? this.cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens ?? this.cachedWriteTokens,
     estimatedCostCents: estimatedCostCents ?? this.estimatedCostCents,
+    costMicros: costMicros ?? this.costMicros,
+    costBasis: costBasis.present ? costBasis.value : this.costBasis,
     childCostCents: childCostCents ?? this.childCostCents,
+    childCostMicros: childCostMicros ?? this.childCostMicros,
+    effort: effort.present ? effort.value : this.effort,
+    taskFamily: taskFamily.present ? taskFamily.value : this.taskFamily,
+    nativeSessionId: nativeSessionId.present
+        ? nativeSessionId.value
+        : this.nativeSessionId,
+    resumedNativeSession: resumedNativeSession ?? this.resumedNativeSession,
+    latencyJson: latencyJson.present ? latencyJson.value : this.latencyJson,
+    verificationStatus: verificationStatus.present
+        ? verificationStatus.value
+        : this.verificationStatus,
+    verificationJson: verificationJson.present
+        ? verificationJson.value
+        : this.verificationJson,
     agentRole: agentRole.present ? agentRole.value : this.agentRole,
     durationMs: durationMs.present ? durationMs.value : this.durationMs,
     timeToFirstTokenMs: timeToFirstTokenMs.present
@@ -3887,9 +4285,35 @@ class AgentRunLogsTableData extends DataClass
       estimatedCostCents: data.estimatedCostCents.present
           ? data.estimatedCostCents.value
           : this.estimatedCostCents,
+      costMicros: data.costMicros.present
+          ? data.costMicros.value
+          : this.costMicros,
+      costBasis: data.costBasis.present ? data.costBasis.value : this.costBasis,
       childCostCents: data.childCostCents.present
           ? data.childCostCents.value
           : this.childCostCents,
+      childCostMicros: data.childCostMicros.present
+          ? data.childCostMicros.value
+          : this.childCostMicros,
+      effort: data.effort.present ? data.effort.value : this.effort,
+      taskFamily: data.taskFamily.present
+          ? data.taskFamily.value
+          : this.taskFamily,
+      nativeSessionId: data.nativeSessionId.present
+          ? data.nativeSessionId.value
+          : this.nativeSessionId,
+      resumedNativeSession: data.resumedNativeSession.present
+          ? data.resumedNativeSession.value
+          : this.resumedNativeSession,
+      latencyJson: data.latencyJson.present
+          ? data.latencyJson.value
+          : this.latencyJson,
+      verificationStatus: data.verificationStatus.present
+          ? data.verificationStatus.value
+          : this.verificationStatus,
+      verificationJson: data.verificationJson.present
+          ? data.verificationJson.value
+          : this.verificationJson,
       agentRole: data.agentRole.present ? data.agentRole.value : this.agentRole,
       durationMs: data.durationMs.present
           ? data.durationMs.value
@@ -3978,7 +4402,17 @@ class AgentRunLogsTableData extends DataClass
           ..write('cachedReadTokens: $cachedReadTokens, ')
           ..write('cachedWriteTokens: $cachedWriteTokens, ')
           ..write('estimatedCostCents: $estimatedCostCents, ')
+          ..write('costMicros: $costMicros, ')
+          ..write('costBasis: $costBasis, ')
           ..write('childCostCents: $childCostCents, ')
+          ..write('childCostMicros: $childCostMicros, ')
+          ..write('effort: $effort, ')
+          ..write('taskFamily: $taskFamily, ')
+          ..write('nativeSessionId: $nativeSessionId, ')
+          ..write('resumedNativeSession: $resumedNativeSession, ')
+          ..write('latencyJson: $latencyJson, ')
+          ..write('verificationStatus: $verificationStatus, ')
+          ..write('verificationJson: $verificationJson, ')
           ..write('agentRole: $agentRole, ')
           ..write('durationMs: $durationMs, ')
           ..write('timeToFirstTokenMs: $timeToFirstTokenMs, ')
@@ -4027,7 +4461,17 @@ class AgentRunLogsTableData extends DataClass
     cachedReadTokens,
     cachedWriteTokens,
     estimatedCostCents,
+    costMicros,
+    costBasis,
     childCostCents,
+    childCostMicros,
+    effort,
+    taskFamily,
+    nativeSessionId,
+    resumedNativeSession,
+    latencyJson,
+    verificationStatus,
+    verificationJson,
     agentRole,
     durationMs,
     timeToFirstTokenMs,
@@ -4075,7 +4519,17 @@ class AgentRunLogsTableData extends DataClass
           other.cachedReadTokens == this.cachedReadTokens &&
           other.cachedWriteTokens == this.cachedWriteTokens &&
           other.estimatedCostCents == this.estimatedCostCents &&
+          other.costMicros == this.costMicros &&
+          other.costBasis == this.costBasis &&
           other.childCostCents == this.childCostCents &&
+          other.childCostMicros == this.childCostMicros &&
+          other.effort == this.effort &&
+          other.taskFamily == this.taskFamily &&
+          other.nativeSessionId == this.nativeSessionId &&
+          other.resumedNativeSession == this.resumedNativeSession &&
+          other.latencyJson == this.latencyJson &&
+          other.verificationStatus == this.verificationStatus &&
+          other.verificationJson == this.verificationJson &&
           other.agentRole == this.agentRole &&
           other.durationMs == this.durationMs &&
           other.timeToFirstTokenMs == this.timeToFirstTokenMs &&
@@ -4122,7 +4576,17 @@ class AgentRunLogsTableCompanion
   final Value<int> cachedReadTokens;
   final Value<int> cachedWriteTokens;
   final Value<int> estimatedCostCents;
+  final Value<int> costMicros;
+  final Value<String?> costBasis;
   final Value<int> childCostCents;
+  final Value<int> childCostMicros;
+  final Value<String?> effort;
+  final Value<String?> taskFamily;
+  final Value<String?> nativeSessionId;
+  final Value<bool> resumedNativeSession;
+  final Value<String?> latencyJson;
+  final Value<String?> verificationStatus;
+  final Value<String?> verificationJson;
   final Value<String?> agentRole;
   final Value<int?> durationMs;
   final Value<int?> timeToFirstTokenMs;
@@ -4167,7 +4631,17 @@ class AgentRunLogsTableCompanion
     this.cachedReadTokens = const Value.absent(),
     this.cachedWriteTokens = const Value.absent(),
     this.estimatedCostCents = const Value.absent(),
+    this.costMicros = const Value.absent(),
+    this.costBasis = const Value.absent(),
     this.childCostCents = const Value.absent(),
+    this.childCostMicros = const Value.absent(),
+    this.effort = const Value.absent(),
+    this.taskFamily = const Value.absent(),
+    this.nativeSessionId = const Value.absent(),
+    this.resumedNativeSession = const Value.absent(),
+    this.latencyJson = const Value.absent(),
+    this.verificationStatus = const Value.absent(),
+    this.verificationJson = const Value.absent(),
     this.agentRole = const Value.absent(),
     this.durationMs = const Value.absent(),
     this.timeToFirstTokenMs = const Value.absent(),
@@ -4213,7 +4687,17 @@ class AgentRunLogsTableCompanion
     this.cachedReadTokens = const Value.absent(),
     this.cachedWriteTokens = const Value.absent(),
     this.estimatedCostCents = const Value.absent(),
+    this.costMicros = const Value.absent(),
+    this.costBasis = const Value.absent(),
     this.childCostCents = const Value.absent(),
+    this.childCostMicros = const Value.absent(),
+    this.effort = const Value.absent(),
+    this.taskFamily = const Value.absent(),
+    this.nativeSessionId = const Value.absent(),
+    this.resumedNativeSession = const Value.absent(),
+    this.latencyJson = const Value.absent(),
+    this.verificationStatus = const Value.absent(),
+    this.verificationJson = const Value.absent(),
     this.agentRole = const Value.absent(),
     this.durationMs = const Value.absent(),
     this.timeToFirstTokenMs = const Value.absent(),
@@ -4260,7 +4744,17 @@ class AgentRunLogsTableCompanion
     Expression<int>? cachedReadTokens,
     Expression<int>? cachedWriteTokens,
     Expression<int>? estimatedCostCents,
+    Expression<int>? costMicros,
+    Expression<String>? costBasis,
     Expression<int>? childCostCents,
+    Expression<int>? childCostMicros,
+    Expression<String>? effort,
+    Expression<String>? taskFamily,
+    Expression<String>? nativeSessionId,
+    Expression<bool>? resumedNativeSession,
+    Expression<String>? latencyJson,
+    Expression<String>? verificationStatus,
+    Expression<String>? verificationJson,
     Expression<String>? agentRole,
     Expression<int>? durationMs,
     Expression<int>? timeToFirstTokenMs,
@@ -4307,7 +4801,18 @@ class AgentRunLogsTableCompanion
       if (cachedWriteTokens != null) 'cached_write_tokens': cachedWriteTokens,
       if (estimatedCostCents != null)
         'estimated_cost_cents': estimatedCostCents,
+      if (costMicros != null) 'cost_micros': costMicros,
+      if (costBasis != null) 'cost_basis': costBasis,
       if (childCostCents != null) 'child_cost_cents': childCostCents,
+      if (childCostMicros != null) 'child_cost_micros': childCostMicros,
+      if (effort != null) 'effort': effort,
+      if (taskFamily != null) 'task_family': taskFamily,
+      if (nativeSessionId != null) 'native_session_id': nativeSessionId,
+      if (resumedNativeSession != null)
+        'resumed_native_session': resumedNativeSession,
+      if (latencyJson != null) 'latency_json': latencyJson,
+      if (verificationStatus != null) 'verification_status': verificationStatus,
+      if (verificationJson != null) 'verification_json': verificationJson,
       if (agentRole != null) 'agent_role': agentRole,
       if (durationMs != null) 'duration_ms': durationMs,
       if (timeToFirstTokenMs != null)
@@ -4360,7 +4865,17 @@ class AgentRunLogsTableCompanion
     Value<int>? cachedReadTokens,
     Value<int>? cachedWriteTokens,
     Value<int>? estimatedCostCents,
+    Value<int>? costMicros,
+    Value<String?>? costBasis,
     Value<int>? childCostCents,
+    Value<int>? childCostMicros,
+    Value<String?>? effort,
+    Value<String?>? taskFamily,
+    Value<String?>? nativeSessionId,
+    Value<bool>? resumedNativeSession,
+    Value<String?>? latencyJson,
+    Value<String?>? verificationStatus,
+    Value<String?>? verificationJson,
     Value<String?>? agentRole,
     Value<int?>? durationMs,
     Value<int?>? timeToFirstTokenMs,
@@ -4406,7 +4921,17 @@ class AgentRunLogsTableCompanion
       cachedReadTokens: cachedReadTokens ?? this.cachedReadTokens,
       cachedWriteTokens: cachedWriteTokens ?? this.cachedWriteTokens,
       estimatedCostCents: estimatedCostCents ?? this.estimatedCostCents,
+      costMicros: costMicros ?? this.costMicros,
+      costBasis: costBasis ?? this.costBasis,
       childCostCents: childCostCents ?? this.childCostCents,
+      childCostMicros: childCostMicros ?? this.childCostMicros,
+      effort: effort ?? this.effort,
+      taskFamily: taskFamily ?? this.taskFamily,
+      nativeSessionId: nativeSessionId ?? this.nativeSessionId,
+      resumedNativeSession: resumedNativeSession ?? this.resumedNativeSession,
+      latencyJson: latencyJson ?? this.latencyJson,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      verificationJson: verificationJson ?? this.verificationJson,
       agentRole: agentRole ?? this.agentRole,
       durationMs: durationMs ?? this.durationMs,
       timeToFirstTokenMs: timeToFirstTokenMs ?? this.timeToFirstTokenMs,
@@ -4496,8 +5021,40 @@ class AgentRunLogsTableCompanion
     if (estimatedCostCents.present) {
       map['estimated_cost_cents'] = Variable<int>(estimatedCostCents.value);
     }
+    if (costMicros.present) {
+      map['cost_micros'] = Variable<int>(costMicros.value);
+    }
+    if (costBasis.present) {
+      map['cost_basis'] = Variable<String>(costBasis.value);
+    }
     if (childCostCents.present) {
       map['child_cost_cents'] = Variable<int>(childCostCents.value);
+    }
+    if (childCostMicros.present) {
+      map['child_cost_micros'] = Variable<int>(childCostMicros.value);
+    }
+    if (effort.present) {
+      map['effort'] = Variable<String>(effort.value);
+    }
+    if (taskFamily.present) {
+      map['task_family'] = Variable<String>(taskFamily.value);
+    }
+    if (nativeSessionId.present) {
+      map['native_session_id'] = Variable<String>(nativeSessionId.value);
+    }
+    if (resumedNativeSession.present) {
+      map['resumed_native_session'] = Variable<bool>(
+        resumedNativeSession.value,
+      );
+    }
+    if (latencyJson.present) {
+      map['latency_json'] = Variable<String>(latencyJson.value);
+    }
+    if (verificationStatus.present) {
+      map['verification_status'] = Variable<String>(verificationStatus.value);
+    }
+    if (verificationJson.present) {
+      map['verification_json'] = Variable<String>(verificationJson.value);
     }
     if (agentRole.present) {
       map['agent_role'] = Variable<String>(agentRole.value);
@@ -4598,7 +5155,17 @@ class AgentRunLogsTableCompanion
           ..write('cachedReadTokens: $cachedReadTokens, ')
           ..write('cachedWriteTokens: $cachedWriteTokens, ')
           ..write('estimatedCostCents: $estimatedCostCents, ')
+          ..write('costMicros: $costMicros, ')
+          ..write('costBasis: $costBasis, ')
           ..write('childCostCents: $childCostCents, ')
+          ..write('childCostMicros: $childCostMicros, ')
+          ..write('effort: $effort, ')
+          ..write('taskFamily: $taskFamily, ')
+          ..write('nativeSessionId: $nativeSessionId, ')
+          ..write('resumedNativeSession: $resumedNativeSession, ')
+          ..write('latencyJson: $latencyJson, ')
+          ..write('verificationStatus: $verificationStatus, ')
+          ..write('verificationJson: $verificationJson, ')
           ..write('agentRole: $agentRole, ')
           ..write('durationMs: $durationMs, ')
           ..write('timeToFirstTokenMs: $timeToFirstTokenMs, ')
@@ -9541,6 +10108,767 @@ class SpaceReposTableCompanion extends UpdateCompanion<SpaceReposTableData> {
           ..write('repoId: $repoId, ')
           ..write('branch: $branch, ')
           ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CatalogFilesTableTable extends CatalogFilesTable
+    with TableInfo<$CatalogFilesTableTable, CatalogFilesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CatalogFilesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _uploaderUserIdMeta = const VerificationMeta(
+    'uploaderUserId',
+  );
+  @override
+  late final GeneratedColumn<String> uploaderUserId = GeneratedColumn<String>(
+    'uploader_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatorIdMeta = const VerificationMeta(
+    'creatorId',
+  );
+  @override
+  late final GeneratedColumn<String> creatorId = GeneratedColumn<String>(
+    'creator_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mediaTypeMeta = const VerificationMeta(
+    'mediaType',
+  );
+  @override
+  late final GeneratedColumn<String> mediaType = GeneratedColumn<String>(
+    'media_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownedBytesMeta = const VerificationMeta(
+    'ownedBytes',
+  );
+  @override
+  late final GeneratedColumn<bool> ownedBytes = GeneratedColumn<bool>(
+    'owned_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("owned_bytes" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    uploaderUserId,
+    name,
+    creatorId,
+    path,
+    mediaType,
+    bytes,
+    source,
+    ownedBytes,
+    state,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'catalog_files';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CatalogFilesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('uploader_user_id')) {
+      context.handle(
+        _uploaderUserIdMeta,
+        uploaderUserId.isAcceptableOrUnknown(
+          data['uploader_user_id']!,
+          _uploaderUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('creator_id')) {
+      context.handle(
+        _creatorIdMeta,
+        creatorId.isAcceptableOrUnknown(data['creator_id']!, _creatorIdMeta),
+      );
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('media_type')) {
+      context.handle(
+        _mediaTypeMeta,
+        mediaType.isAcceptableOrUnknown(data['media_type']!, _mediaTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mediaTypeMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('owned_bytes')) {
+      context.handle(
+        _ownedBytesMeta,
+        ownedBytes.isAcceptableOrUnknown(data['owned_bytes']!, _ownedBytesMeta),
+      );
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CatalogFilesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CatalogFilesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      uploaderUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uploader_user_id'],
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      creatorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creator_id'],
+      ),
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      mediaType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}media_type'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      ownedBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}owned_bytes'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CatalogFilesTableTable createAlias(String alias) {
+    return $CatalogFilesTableTable(attachedDatabase, alias);
+  }
+}
+
+class CatalogFilesTableData extends DataClass
+    implements Insertable<CatalogFilesTableData> {
+  final String id;
+  final String workspaceId;
+  final String? uploaderUserId;
+  final String name;
+  final String? creatorId;
+  final String path;
+  final String mediaType;
+  final int bytes;
+  final String source;
+  final bool ownedBytes;
+  final String state;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CatalogFilesTableData({
+    required this.id,
+    required this.workspaceId,
+    this.uploaderUserId,
+    required this.name,
+    this.creatorId,
+    required this.path,
+    required this.mediaType,
+    required this.bytes,
+    required this.source,
+    required this.ownedBytes,
+    required this.state,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || uploaderUserId != null) {
+      map['uploader_user_id'] = Variable<String>(uploaderUserId);
+    }
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || creatorId != null) {
+      map['creator_id'] = Variable<String>(creatorId);
+    }
+    map['path'] = Variable<String>(path);
+    map['media_type'] = Variable<String>(mediaType);
+    map['bytes'] = Variable<int>(bytes);
+    map['source'] = Variable<String>(source);
+    map['owned_bytes'] = Variable<bool>(ownedBytes);
+    map['state'] = Variable<String>(state);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CatalogFilesTableCompanion toCompanion(bool nullToAbsent) {
+    return CatalogFilesTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      uploaderUserId: uploaderUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploaderUserId),
+      name: Value(name),
+      creatorId: creatorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creatorId),
+      path: Value(path),
+      mediaType: Value(mediaType),
+      bytes: Value(bytes),
+      source: Value(source),
+      ownedBytes: Value(ownedBytes),
+      state: Value(state),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CatalogFilesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CatalogFilesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      uploaderUserId: serializer.fromJson<String?>(json['uploaderUserId']),
+      name: serializer.fromJson<String>(json['name']),
+      creatorId: serializer.fromJson<String?>(json['creatorId']),
+      path: serializer.fromJson<String>(json['path']),
+      mediaType: serializer.fromJson<String>(json['mediaType']),
+      bytes: serializer.fromJson<int>(json['bytes']),
+      source: serializer.fromJson<String>(json['source']),
+      ownedBytes: serializer.fromJson<bool>(json['ownedBytes']),
+      state: serializer.fromJson<String>(json['state']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'uploaderUserId': serializer.toJson<String?>(uploaderUserId),
+      'name': serializer.toJson<String>(name),
+      'creatorId': serializer.toJson<String?>(creatorId),
+      'path': serializer.toJson<String>(path),
+      'mediaType': serializer.toJson<String>(mediaType),
+      'bytes': serializer.toJson<int>(bytes),
+      'source': serializer.toJson<String>(source),
+      'ownedBytes': serializer.toJson<bool>(ownedBytes),
+      'state': serializer.toJson<String>(state),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CatalogFilesTableData copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> uploaderUserId = const Value.absent(),
+    String? name,
+    Value<String?> creatorId = const Value.absent(),
+    String? path,
+    String? mediaType,
+    int? bytes,
+    String? source,
+    bool? ownedBytes,
+    String? state,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CatalogFilesTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    uploaderUserId: uploaderUserId.present
+        ? uploaderUserId.value
+        : this.uploaderUserId,
+    name: name ?? this.name,
+    creatorId: creatorId.present ? creatorId.value : this.creatorId,
+    path: path ?? this.path,
+    mediaType: mediaType ?? this.mediaType,
+    bytes: bytes ?? this.bytes,
+    source: source ?? this.source,
+    ownedBytes: ownedBytes ?? this.ownedBytes,
+    state: state ?? this.state,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CatalogFilesTableData copyWithCompanion(CatalogFilesTableCompanion data) {
+    return CatalogFilesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      uploaderUserId: data.uploaderUserId.present
+          ? data.uploaderUserId.value
+          : this.uploaderUserId,
+      name: data.name.present ? data.name.value : this.name,
+      creatorId: data.creatorId.present ? data.creatorId.value : this.creatorId,
+      path: data.path.present ? data.path.value : this.path,
+      mediaType: data.mediaType.present ? data.mediaType.value : this.mediaType,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      source: data.source.present ? data.source.value : this.source,
+      ownedBytes: data.ownedBytes.present
+          ? data.ownedBytes.value
+          : this.ownedBytes,
+      state: data.state.present ? data.state.value : this.state,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CatalogFilesTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('uploaderUserId: $uploaderUserId, ')
+          ..write('name: $name, ')
+          ..write('creatorId: $creatorId, ')
+          ..write('path: $path, ')
+          ..write('mediaType: $mediaType, ')
+          ..write('bytes: $bytes, ')
+          ..write('source: $source, ')
+          ..write('ownedBytes: $ownedBytes, ')
+          ..write('state: $state, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    uploaderUserId,
+    name,
+    creatorId,
+    path,
+    mediaType,
+    bytes,
+    source,
+    ownedBytes,
+    state,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CatalogFilesTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.uploaderUserId == this.uploaderUserId &&
+          other.name == this.name &&
+          other.creatorId == this.creatorId &&
+          other.path == this.path &&
+          other.mediaType == this.mediaType &&
+          other.bytes == this.bytes &&
+          other.source == this.source &&
+          other.ownedBytes == this.ownedBytes &&
+          other.state == this.state &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CatalogFilesTableCompanion
+    extends UpdateCompanion<CatalogFilesTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> uploaderUserId;
+  final Value<String> name;
+  final Value<String?> creatorId;
+  final Value<String> path;
+  final Value<String> mediaType;
+  final Value<int> bytes;
+  final Value<String> source;
+  final Value<bool> ownedBytes;
+  final Value<String> state;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CatalogFilesTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.uploaderUserId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.creatorId = const Value.absent(),
+    this.path = const Value.absent(),
+    this.mediaType = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.source = const Value.absent(),
+    this.ownedBytes = const Value.absent(),
+    this.state = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CatalogFilesTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.uploaderUserId = const Value.absent(),
+    required String name,
+    this.creatorId = const Value.absent(),
+    required String path,
+    required String mediaType,
+    required int bytes,
+    required String source,
+    this.ownedBytes = const Value.absent(),
+    required String state,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       name = Value(name),
+       path = Value(path),
+       mediaType = Value(mediaType),
+       bytes = Value(bytes),
+       source = Value(source),
+       state = Value(state),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<CatalogFilesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? uploaderUserId,
+    Expression<String>? name,
+    Expression<String>? creatorId,
+    Expression<String>? path,
+    Expression<String>? mediaType,
+    Expression<int>? bytes,
+    Expression<String>? source,
+    Expression<bool>? ownedBytes,
+    Expression<String>? state,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (uploaderUserId != null) 'uploader_user_id': uploaderUserId,
+      if (name != null) 'name': name,
+      if (creatorId != null) 'creator_id': creatorId,
+      if (path != null) 'path': path,
+      if (mediaType != null) 'media_type': mediaType,
+      if (bytes != null) 'bytes': bytes,
+      if (source != null) 'source': source,
+      if (ownedBytes != null) 'owned_bytes': ownedBytes,
+      if (state != null) 'state': state,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CatalogFilesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? uploaderUserId,
+    Value<String>? name,
+    Value<String?>? creatorId,
+    Value<String>? path,
+    Value<String>? mediaType,
+    Value<int>? bytes,
+    Value<String>? source,
+    Value<bool>? ownedBytes,
+    Value<String>? state,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return CatalogFilesTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      uploaderUserId: uploaderUserId ?? this.uploaderUserId,
+      name: name ?? this.name,
+      creatorId: creatorId ?? this.creatorId,
+      path: path ?? this.path,
+      mediaType: mediaType ?? this.mediaType,
+      bytes: bytes ?? this.bytes,
+      source: source ?? this.source,
+      ownedBytes: ownedBytes ?? this.ownedBytes,
+      state: state ?? this.state,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (uploaderUserId.present) {
+      map['uploader_user_id'] = Variable<String>(uploaderUserId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (creatorId.present) {
+      map['creator_id'] = Variable<String>(creatorId.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (mediaType.present) {
+      map['media_type'] = Variable<String>(mediaType.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (ownedBytes.present) {
+      map['owned_bytes'] = Variable<bool>(ownedBytes.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CatalogFilesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('uploaderUserId: $uploaderUserId, ')
+          ..write('name: $name, ')
+          ..write('creatorId: $creatorId, ')
+          ..write('path: $path, ')
+          ..write('mediaType: $mediaType, ')
+          ..write('bytes: $bytes, ')
+          ..write('source: $source, ')
+          ..write('ownedBytes: $ownedBytes, ')
+          ..write('state: $state, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -31802,7 +33130,8 @@ class CodeIndexCheckpointsTableData extends DataClass
   /// this delta was measured against. 0 for linked checkouts.
   final int baseGeneration;
 
-  /// When the checkpoint was written.
+  /// When the run that wrote the checkpoint started: what it proves holds as
+  /// of then, so anything written while it ran is newer and re-checked.
   final DateTime indexedAt;
   const CodeIndexCheckpointsTableData({
     required this.id,
@@ -64175,6 +65504,1156 @@ class AgentConfigVersionsTableCompanion
   }
 }
 
+class $SkillEvalCampaignsTableTable extends SkillEvalCampaignsTable
+    with TableInfo<$SkillEvalCampaignsTableTable, SkillEvalCampaignsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SkillEvalCampaignsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _skillKeyMeta = const VerificationMeta(
+    'skillKey',
+  );
+  @override
+  late final GeneratedColumn<String> skillKey = GeneratedColumn<String>(
+    'skill_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    skillKey,
+    status,
+    createdAt,
+    payloadJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'skill_eval_campaigns';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SkillEvalCampaignsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('skill_key')) {
+      context.handle(
+        _skillKeyMeta,
+        skillKey.isAcceptableOrUnknown(data['skill_key']!, _skillKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_skillKeyMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SkillEvalCampaignsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SkillEvalCampaignsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      skillKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skill_key'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+    );
+  }
+
+  @override
+  $SkillEvalCampaignsTableTable createAlias(String alias) {
+    return $SkillEvalCampaignsTableTable(attachedDatabase, alias);
+  }
+}
+
+class SkillEvalCampaignsTableData extends DataClass
+    implements Insertable<SkillEvalCampaignsTableData> {
+  final String id;
+  final String workspaceId;
+  final String skillKey;
+  final String status;
+  final DateTime createdAt;
+  final String payloadJson;
+  const SkillEvalCampaignsTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.skillKey,
+    required this.status,
+    required this.createdAt,
+    required this.payloadJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['skill_key'] = Variable<String>(skillKey);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['payload_json'] = Variable<String>(payloadJson);
+    return map;
+  }
+
+  SkillEvalCampaignsTableCompanion toCompanion(bool nullToAbsent) {
+    return SkillEvalCampaignsTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      skillKey: Value(skillKey),
+      status: Value(status),
+      createdAt: Value(createdAt),
+      payloadJson: Value(payloadJson),
+    );
+  }
+
+  factory SkillEvalCampaignsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SkillEvalCampaignsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      skillKey: serializer.fromJson<String>(json['skillKey']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'skillKey': serializer.toJson<String>(skillKey),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+    };
+  }
+
+  SkillEvalCampaignsTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? skillKey,
+    String? status,
+    DateTime? createdAt,
+    String? payloadJson,
+  }) => SkillEvalCampaignsTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    skillKey: skillKey ?? this.skillKey,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    payloadJson: payloadJson ?? this.payloadJson,
+  );
+  SkillEvalCampaignsTableData copyWithCompanion(
+    SkillEvalCampaignsTableCompanion data,
+  ) {
+    return SkillEvalCampaignsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      skillKey: data.skillKey.present ? data.skillKey.value : this.skillKey,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillEvalCampaignsTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('skillKey: $skillKey, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('payloadJson: $payloadJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, workspaceId, skillKey, status, createdAt, payloadJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SkillEvalCampaignsTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.skillKey == this.skillKey &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt &&
+          other.payloadJson == this.payloadJson);
+}
+
+class SkillEvalCampaignsTableCompanion
+    extends UpdateCompanion<SkillEvalCampaignsTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> skillKey;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<String> payloadJson;
+  final Value<int> rowid;
+  const SkillEvalCampaignsTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.skillKey = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SkillEvalCampaignsTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String skillKey,
+    required String status,
+    required DateTime createdAt,
+    required String payloadJson,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       skillKey = Value(skillKey),
+       status = Value(status),
+       createdAt = Value(createdAt),
+       payloadJson = Value(payloadJson);
+  static Insertable<SkillEvalCampaignsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? skillKey,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<String>? payloadJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (skillKey != null) 'skill_key': skillKey,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SkillEvalCampaignsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? skillKey,
+    Value<String>? status,
+    Value<DateTime>? createdAt,
+    Value<String>? payloadJson,
+    Value<int>? rowid,
+  }) {
+    return SkillEvalCampaignsTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      skillKey: skillKey ?? this.skillKey,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      payloadJson: payloadJson ?? this.payloadJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (skillKey.present) {
+      map['skill_key'] = Variable<String>(skillKey.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillEvalCampaignsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('skillKey: $skillKey, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SkillEvalAttemptsTableTable extends SkillEvalAttemptsTable
+    with TableInfo<$SkillEvalAttemptsTableTable, SkillEvalAttemptsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SkillEvalAttemptsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _campaignIdMeta = const VerificationMeta(
+    'campaignId',
+  );
+  @override
+  late final GeneratedColumn<String> campaignId = GeneratedColumn<String>(
+    'campaign_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES skill_eval_campaigns (id)',
+    ),
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    campaignId,
+    ordinal,
+    payloadJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'skill_eval_attempts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SkillEvalAttemptsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('campaign_id')) {
+      context.handle(
+        _campaignIdMeta,
+        campaignId.isAcceptableOrUnknown(data['campaign_id']!, _campaignIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_campaignIdMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SkillEvalAttemptsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SkillEvalAttemptsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      campaignId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}campaign_id'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+    );
+  }
+
+  @override
+  $SkillEvalAttemptsTableTable createAlias(String alias) {
+    return $SkillEvalAttemptsTableTable(attachedDatabase, alias);
+  }
+}
+
+class SkillEvalAttemptsTableData extends DataClass
+    implements Insertable<SkillEvalAttemptsTableData> {
+  final String id;
+  final String workspaceId;
+  final String campaignId;
+  final int ordinal;
+  final String payloadJson;
+  const SkillEvalAttemptsTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.campaignId,
+    required this.ordinal,
+    required this.payloadJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['campaign_id'] = Variable<String>(campaignId);
+    map['ordinal'] = Variable<int>(ordinal);
+    map['payload_json'] = Variable<String>(payloadJson);
+    return map;
+  }
+
+  SkillEvalAttemptsTableCompanion toCompanion(bool nullToAbsent) {
+    return SkillEvalAttemptsTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      campaignId: Value(campaignId),
+      ordinal: Value(ordinal),
+      payloadJson: Value(payloadJson),
+    );
+  }
+
+  factory SkillEvalAttemptsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SkillEvalAttemptsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      campaignId: serializer.fromJson<String>(json['campaignId']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'campaignId': serializer.toJson<String>(campaignId),
+      'ordinal': serializer.toJson<int>(ordinal),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+    };
+  }
+
+  SkillEvalAttemptsTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? campaignId,
+    int? ordinal,
+    String? payloadJson,
+  }) => SkillEvalAttemptsTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    campaignId: campaignId ?? this.campaignId,
+    ordinal: ordinal ?? this.ordinal,
+    payloadJson: payloadJson ?? this.payloadJson,
+  );
+  SkillEvalAttemptsTableData copyWithCompanion(
+    SkillEvalAttemptsTableCompanion data,
+  ) {
+    return SkillEvalAttemptsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      campaignId: data.campaignId.present
+          ? data.campaignId.value
+          : this.campaignId,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillEvalAttemptsTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('campaignId: $campaignId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, workspaceId, campaignId, ordinal, payloadJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SkillEvalAttemptsTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.campaignId == this.campaignId &&
+          other.ordinal == this.ordinal &&
+          other.payloadJson == this.payloadJson);
+}
+
+class SkillEvalAttemptsTableCompanion
+    extends UpdateCompanion<SkillEvalAttemptsTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> campaignId;
+  final Value<int> ordinal;
+  final Value<String> payloadJson;
+  final Value<int> rowid;
+  const SkillEvalAttemptsTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.campaignId = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SkillEvalAttemptsTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String campaignId,
+    required int ordinal,
+    required String payloadJson,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       campaignId = Value(campaignId),
+       ordinal = Value(ordinal),
+       payloadJson = Value(payloadJson);
+  static Insertable<SkillEvalAttemptsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? campaignId,
+    Expression<int>? ordinal,
+    Expression<String>? payloadJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (campaignId != null) 'campaign_id': campaignId,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SkillEvalAttemptsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? campaignId,
+    Value<int>? ordinal,
+    Value<String>? payloadJson,
+    Value<int>? rowid,
+  }) {
+    return SkillEvalAttemptsTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      campaignId: campaignId ?? this.campaignId,
+      ordinal: ordinal ?? this.ordinal,
+      payloadJson: payloadJson ?? this.payloadJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (campaignId.present) {
+      map['campaign_id'] = Variable<String>(campaignId.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillEvalAttemptsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('campaignId: $campaignId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SkillEvalPoliciesTableTable extends SkillEvalPoliciesTable
+    with TableInfo<$SkillEvalPoliciesTableTable, SkillEvalPoliciesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SkillEvalPoliciesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _skillKeyMeta = const VerificationMeta(
+    'skillKey',
+  );
+  @override
+  late final GeneratedColumn<String> skillKey = GeneratedColumn<String>(
+    'skill_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enabledMeta = const VerificationMeta(
+    'enabled',
+  );
+  @override
+  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
+    'enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("enabled" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    workspaceId,
+    skillKey,
+    enabled,
+    payloadJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'skill_eval_policies';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SkillEvalPoliciesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('skill_key')) {
+      context.handle(
+        _skillKeyMeta,
+        skillKey.isAcceptableOrUnknown(data['skill_key']!, _skillKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_skillKeyMeta);
+    }
+    if (data.containsKey('enabled')) {
+      context.handle(
+        _enabledMeta,
+        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_enabledMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {workspaceId, skillKey};
+  @override
+  SkillEvalPoliciesTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SkillEvalPoliciesTableData(
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      skillKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skill_key'],
+      )!,
+      enabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}enabled'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+    );
+  }
+
+  @override
+  $SkillEvalPoliciesTableTable createAlias(String alias) {
+    return $SkillEvalPoliciesTableTable(attachedDatabase, alias);
+  }
+}
+
+class SkillEvalPoliciesTableData extends DataClass
+    implements Insertable<SkillEvalPoliciesTableData> {
+  final String workspaceId;
+  final String skillKey;
+  final bool enabled;
+  final String payloadJson;
+  const SkillEvalPoliciesTableData({
+    required this.workspaceId,
+    required this.skillKey,
+    required this.enabled,
+    required this.payloadJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['skill_key'] = Variable<String>(skillKey);
+    map['enabled'] = Variable<bool>(enabled);
+    map['payload_json'] = Variable<String>(payloadJson);
+    return map;
+  }
+
+  SkillEvalPoliciesTableCompanion toCompanion(bool nullToAbsent) {
+    return SkillEvalPoliciesTableCompanion(
+      workspaceId: Value(workspaceId),
+      skillKey: Value(skillKey),
+      enabled: Value(enabled),
+      payloadJson: Value(payloadJson),
+    );
+  }
+
+  factory SkillEvalPoliciesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SkillEvalPoliciesTableData(
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      skillKey: serializer.fromJson<String>(json['skillKey']),
+      enabled: serializer.fromJson<bool>(json['enabled']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'skillKey': serializer.toJson<String>(skillKey),
+      'enabled': serializer.toJson<bool>(enabled),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+    };
+  }
+
+  SkillEvalPoliciesTableData copyWith({
+    String? workspaceId,
+    String? skillKey,
+    bool? enabled,
+    String? payloadJson,
+  }) => SkillEvalPoliciesTableData(
+    workspaceId: workspaceId ?? this.workspaceId,
+    skillKey: skillKey ?? this.skillKey,
+    enabled: enabled ?? this.enabled,
+    payloadJson: payloadJson ?? this.payloadJson,
+  );
+  SkillEvalPoliciesTableData copyWithCompanion(
+    SkillEvalPoliciesTableCompanion data,
+  ) {
+    return SkillEvalPoliciesTableData(
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      skillKey: data.skillKey.present ? data.skillKey.value : this.skillKey,
+      enabled: data.enabled.present ? data.enabled.value : this.enabled,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillEvalPoliciesTableData(')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('skillKey: $skillKey, ')
+          ..write('enabled: $enabled, ')
+          ..write('payloadJson: $payloadJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(workspaceId, skillKey, enabled, payloadJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SkillEvalPoliciesTableData &&
+          other.workspaceId == this.workspaceId &&
+          other.skillKey == this.skillKey &&
+          other.enabled == this.enabled &&
+          other.payloadJson == this.payloadJson);
+}
+
+class SkillEvalPoliciesTableCompanion
+    extends UpdateCompanion<SkillEvalPoliciesTableData> {
+  final Value<String> workspaceId;
+  final Value<String> skillKey;
+  final Value<bool> enabled;
+  final Value<String> payloadJson;
+  final Value<int> rowid;
+  const SkillEvalPoliciesTableCompanion({
+    this.workspaceId = const Value.absent(),
+    this.skillKey = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SkillEvalPoliciesTableCompanion.insert({
+    required String workspaceId,
+    required String skillKey,
+    required bool enabled,
+    required String payloadJson,
+    this.rowid = const Value.absent(),
+  }) : workspaceId = Value(workspaceId),
+       skillKey = Value(skillKey),
+       enabled = Value(enabled),
+       payloadJson = Value(payloadJson);
+  static Insertable<SkillEvalPoliciesTableData> custom({
+    Expression<String>? workspaceId,
+    Expression<String>? skillKey,
+    Expression<bool>? enabled,
+    Expression<String>? payloadJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (skillKey != null) 'skill_key': skillKey,
+      if (enabled != null) 'enabled': enabled,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SkillEvalPoliciesTableCompanion copyWith({
+    Value<String>? workspaceId,
+    Value<String>? skillKey,
+    Value<bool>? enabled,
+    Value<String>? payloadJson,
+    Value<int>? rowid,
+  }) {
+    return SkillEvalPoliciesTableCompanion(
+      workspaceId: workspaceId ?? this.workspaceId,
+      skillKey: skillKey ?? this.skillKey,
+      enabled: enabled ?? this.enabled,
+      payloadJson: payloadJson ?? this.payloadJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (skillKey.present) {
+      map['skill_key'] = Variable<String>(skillKey.value);
+    }
+    if (enabled.present) {
+      map['enabled'] = Variable<bool>(enabled.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillEvalPoliciesTableCompanion(')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('skillKey: $skillKey, ')
+          ..write('enabled: $enabled, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SkillScanResultsTableTable extends SkillScanResultsTable
     with TableInfo<$SkillScanResultsTableTable, SkillScanResultsTableData> {
   @override
@@ -76023,6 +78502,1343 @@ class RepoScriptRunsTableCompanion
   }
 }
 
+class $RunCallUsagesTableTable extends RunCallUsagesTable
+    with TableInfo<$RunCallUsagesTableTable, RunCallUsagesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RunCallUsagesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _runIdMeta = const VerificationMeta('runId');
+  @override
+  late final GeneratedColumn<String> runId = GeneratedColumn<String>(
+    'run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptMeta = const VerificationMeta(
+    'attempt',
+  );
+  @override
+  late final GeneratedColumn<int> attempt = GeneratedColumn<int>(
+    'attempt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _purposeMeta = const VerificationMeta(
+    'purpose',
+  );
+  @override
+  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
+    'purpose',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('main'),
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
+  );
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  @override
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _inputTokensMeta = const VerificationMeta(
+    'inputTokens',
+  );
+  @override
+  late final GeneratedColumn<int> inputTokens = GeneratedColumn<int>(
+    'input_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _outputTokensMeta = const VerificationMeta(
+    'outputTokens',
+  );
+  @override
+  late final GeneratedColumn<int> outputTokens = GeneratedColumn<int>(
+    'output_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _thoughtTokensMeta = const VerificationMeta(
+    'thoughtTokens',
+  );
+  @override
+  late final GeneratedColumn<int> thoughtTokens = GeneratedColumn<int>(
+    'thought_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _cachedReadTokensMeta = const VerificationMeta(
+    'cachedReadTokens',
+  );
+  @override
+  late final GeneratedColumn<int> cachedReadTokens = GeneratedColumn<int>(
+    'cached_read_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _cachedWriteTokensMeta = const VerificationMeta(
+    'cachedWriteTokens',
+  );
+  @override
+  late final GeneratedColumn<int> cachedWriteTokens = GeneratedColumn<int>(
+    'cached_write_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _costMicrosMeta = const VerificationMeta(
+    'costMicros',
+  );
+  @override
+  late final GeneratedColumn<int> costMicros = GeneratedColumn<int>(
+    'cost_micros',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _costBasisMeta = const VerificationMeta(
+    'costBasis',
+  );
+  @override
+  late final GeneratedColumn<String> costBasis = GeneratedColumn<String>(
+    'cost_basis',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('estimated'),
+  );
+  static const VerificationMeta _transportFirstByteMsMeta =
+      const VerificationMeta('transportFirstByteMs');
+  @override
+  late final GeneratedColumn<int> transportFirstByteMs = GeneratedColumn<int>(
+    'transport_first_byte_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _firstModelEventMsMeta = const VerificationMeta(
+    'firstModelEventMs',
+  );
+  @override
+  late final GeneratedColumn<int> firstModelEventMs = GeneratedColumn<int>(
+    'first_model_event_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _outcomeMeta = const VerificationMeta(
+    'outcome',
+  );
+  @override
+  late final GeneratedColumn<String> outcome = GeneratedColumn<String>(
+    'outcome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('success'),
+  );
+  static const VerificationMeta _errorCodeMeta = const VerificationMeta(
+    'errorCode',
+  );
+  @override
+  late final GeneratedColumn<String> errorCode = GeneratedColumn<String>(
+    'error_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    runId,
+    workspaceId,
+    conversationId,
+    requestId,
+    attempt,
+    purpose,
+    provider,
+    modelId,
+    inputTokens,
+    outputTokens,
+    thoughtTokens,
+    cachedReadTokens,
+    cachedWriteTokens,
+    costMicros,
+    costBasis,
+    transportFirstByteMs,
+    firstModelEventMs,
+    durationMs,
+    outcome,
+    errorCode,
+    startedAt,
+    recordedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'run_call_usages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RunCallUsagesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('run_id')) {
+      context.handle(
+        _runIdMeta,
+        runId.isAcceptableOrUnknown(data['run_id']!, _runIdMeta),
+      );
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('attempt')) {
+      context.handle(
+        _attemptMeta,
+        attempt.isAcceptableOrUnknown(data['attempt']!, _attemptMeta),
+      );
+    }
+    if (data.containsKey('purpose')) {
+      context.handle(
+        _purposeMeta,
+        purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta),
+      );
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
+    }
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    }
+    if (data.containsKey('input_tokens')) {
+      context.handle(
+        _inputTokensMeta,
+        inputTokens.isAcceptableOrUnknown(
+          data['input_tokens']!,
+          _inputTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('output_tokens')) {
+      context.handle(
+        _outputTokensMeta,
+        outputTokens.isAcceptableOrUnknown(
+          data['output_tokens']!,
+          _outputTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('thought_tokens')) {
+      context.handle(
+        _thoughtTokensMeta,
+        thoughtTokens.isAcceptableOrUnknown(
+          data['thought_tokens']!,
+          _thoughtTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cached_read_tokens')) {
+      context.handle(
+        _cachedReadTokensMeta,
+        cachedReadTokens.isAcceptableOrUnknown(
+          data['cached_read_tokens']!,
+          _cachedReadTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cached_write_tokens')) {
+      context.handle(
+        _cachedWriteTokensMeta,
+        cachedWriteTokens.isAcceptableOrUnknown(
+          data['cached_write_tokens']!,
+          _cachedWriteTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cost_micros')) {
+      context.handle(
+        _costMicrosMeta,
+        costMicros.isAcceptableOrUnknown(data['cost_micros']!, _costMicrosMeta),
+      );
+    }
+    if (data.containsKey('cost_basis')) {
+      context.handle(
+        _costBasisMeta,
+        costBasis.isAcceptableOrUnknown(data['cost_basis']!, _costBasisMeta),
+      );
+    }
+    if (data.containsKey('transport_first_byte_ms')) {
+      context.handle(
+        _transportFirstByteMsMeta,
+        transportFirstByteMs.isAcceptableOrUnknown(
+          data['transport_first_byte_ms']!,
+          _transportFirstByteMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('first_model_event_ms')) {
+      context.handle(
+        _firstModelEventMsMeta,
+        firstModelEventMs.isAcceptableOrUnknown(
+          data['first_model_event_ms']!,
+          _firstModelEventMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    }
+    if (data.containsKey('outcome')) {
+      context.handle(
+        _outcomeMeta,
+        outcome.isAcceptableOrUnknown(data['outcome']!, _outcomeMeta),
+      );
+    }
+    if (data.containsKey('error_code')) {
+      context.handle(
+        _errorCodeMeta,
+        errorCode.isAcceptableOrUnknown(data['error_code']!, _errorCodeMeta),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RunCallUsagesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RunCallUsagesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      runId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_id'],
+      ),
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      ),
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      ),
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      attempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt'],
+      )!,
+      purpose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}purpose'],
+      )!,
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
+      )!,
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      )!,
+      inputTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}input_tokens'],
+      )!,
+      outputTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}output_tokens'],
+      )!,
+      thoughtTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}thought_tokens'],
+      )!,
+      cachedReadTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cached_read_tokens'],
+      )!,
+      cachedWriteTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cached_write_tokens'],
+      )!,
+      costMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cost_micros'],
+      ),
+      costBasis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cost_basis'],
+      )!,
+      transportFirstByteMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}transport_first_byte_ms'],
+      ),
+      firstModelEventMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_model_event_ms'],
+      ),
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      ),
+      outcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outcome'],
+      )!,
+      errorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_code'],
+      ),
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RunCallUsagesTableTable createAlias(String alias) {
+    return $RunCallUsagesTableTable(attachedDatabase, alias);
+  }
+}
+
+class RunCallUsagesTableData extends DataClass
+    implements Insertable<RunCallUsagesTableData> {
+  /// Deterministic dedup key: `runId/requestId/attempt`.
+  final String id;
+
+  /// Run this call belongs to. Nullable: a call can be recorded before its run
+  /// row exists (or by a scheduler that has no run log), and dropping the usage
+  /// in that case would lose real spend.
+  final String? runId;
+
+  /// Workspace the call was made in. Nullable for the same reason as [runId];
+  /// rows are still filed in that workspace's own database file, so the file
+  /// boundary is the isolation boundary either way.
+  final String? workspaceId;
+
+  /// Conversation the run belongs to, when known. Backs the conversation-level
+  /// cost breakdown.
+  final String? conversationId;
+
+  /// Provider-assigned/loop-assigned request id (stable across retries).
+  final String requestId;
+
+  /// 1-based attempt number for calls sharing [requestId].
+  final int attempt;
+
+  /// What the call was for: `main` | `compaction` | `advisor` |
+  /// `side_request` | `subagent`.
+  final String purpose;
+
+  /// Provider that served the call (e.g. `anthropic`, `claude-cli`).
+  final String provider;
+
+  /// The model that ACTUALLY served the call (a re-route is not the requested
+  /// alias).
+  final String modelId;
+
+  /// Non-cached input tokens.
+  final int inputTokens;
+
+  /// Output (completion) tokens.
+  final int outputTokens;
+
+  /// Reasoning / thinking tokens, when reported separately.
+  final int thoughtTokens;
+
+  /// Cache-hit read tokens.
+  final int cachedReadTokens;
+
+  /// Cache-write tokens.
+  final int cachedWriteTokens;
+
+  /// Exact cost in micro-USD (`1e-6` USD). NULLABLE on purpose: null means the
+  /// call was UNPRICED, which is a different fact from a genuinely free call and
+  /// must not be flattened to zero in a cost report.
+  final int? costMicros;
+
+  /// How [costMicros] was obtained: `estimated` | `providerReported` |
+  /// `subscription` | `mixed`.
+  final String costBasis;
+
+  /// Milliseconds from request start to the first response byte on the
+  /// transport. Null when unobservable (a CLI that hides its socket) — never
+  /// fabricated.
+  final int? transportFirstByteMs;
+
+  /// Milliseconds from request start to the first model delta. Null when
+  /// unobserved.
+  final int? firstModelEventMs;
+
+  /// Total call duration in milliseconds, when measured.
+  final int? durationMs;
+
+  /// How the call ended: `success` | `failure` | `cancelled`.
+  final String outcome;
+
+  /// Structured provider error code when the call did not succeed.
+  final String? errorCode;
+
+  /// When the call started.
+  final DateTime startedAt;
+
+  /// When the record was captured.
+  final DateTime recordedAt;
+  const RunCallUsagesTableData({
+    required this.id,
+    this.runId,
+    this.workspaceId,
+    this.conversationId,
+    required this.requestId,
+    required this.attempt,
+    required this.purpose,
+    required this.provider,
+    required this.modelId,
+    required this.inputTokens,
+    required this.outputTokens,
+    required this.thoughtTokens,
+    required this.cachedReadTokens,
+    required this.cachedWriteTokens,
+    this.costMicros,
+    required this.costBasis,
+    this.transportFirstByteMs,
+    this.firstModelEventMs,
+    this.durationMs,
+    required this.outcome,
+    this.errorCode,
+    required this.startedAt,
+    required this.recordedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || runId != null) {
+      map['run_id'] = Variable<String>(runId);
+    }
+    if (!nullToAbsent || workspaceId != null) {
+      map['workspace_id'] = Variable<String>(workspaceId);
+    }
+    if (!nullToAbsent || conversationId != null) {
+      map['conversation_id'] = Variable<String>(conversationId);
+    }
+    map['request_id'] = Variable<String>(requestId);
+    map['attempt'] = Variable<int>(attempt);
+    map['purpose'] = Variable<String>(purpose);
+    map['provider'] = Variable<String>(provider);
+    map['model_id'] = Variable<String>(modelId);
+    map['input_tokens'] = Variable<int>(inputTokens);
+    map['output_tokens'] = Variable<int>(outputTokens);
+    map['thought_tokens'] = Variable<int>(thoughtTokens);
+    map['cached_read_tokens'] = Variable<int>(cachedReadTokens);
+    map['cached_write_tokens'] = Variable<int>(cachedWriteTokens);
+    if (!nullToAbsent || costMicros != null) {
+      map['cost_micros'] = Variable<int>(costMicros);
+    }
+    map['cost_basis'] = Variable<String>(costBasis);
+    if (!nullToAbsent || transportFirstByteMs != null) {
+      map['transport_first_byte_ms'] = Variable<int>(transportFirstByteMs);
+    }
+    if (!nullToAbsent || firstModelEventMs != null) {
+      map['first_model_event_ms'] = Variable<int>(firstModelEventMs);
+    }
+    if (!nullToAbsent || durationMs != null) {
+      map['duration_ms'] = Variable<int>(durationMs);
+    }
+    map['outcome'] = Variable<String>(outcome);
+    if (!nullToAbsent || errorCode != null) {
+      map['error_code'] = Variable<String>(errorCode);
+    }
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    return map;
+  }
+
+  RunCallUsagesTableCompanion toCompanion(bool nullToAbsent) {
+    return RunCallUsagesTableCompanion(
+      id: Value(id),
+      runId: runId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(runId),
+      workspaceId: workspaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(workspaceId),
+      conversationId: conversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversationId),
+      requestId: Value(requestId),
+      attempt: Value(attempt),
+      purpose: Value(purpose),
+      provider: Value(provider),
+      modelId: Value(modelId),
+      inputTokens: Value(inputTokens),
+      outputTokens: Value(outputTokens),
+      thoughtTokens: Value(thoughtTokens),
+      cachedReadTokens: Value(cachedReadTokens),
+      cachedWriteTokens: Value(cachedWriteTokens),
+      costMicros: costMicros == null && nullToAbsent
+          ? const Value.absent()
+          : Value(costMicros),
+      costBasis: Value(costBasis),
+      transportFirstByteMs: transportFirstByteMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transportFirstByteMs),
+      firstModelEventMs: firstModelEventMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstModelEventMs),
+      durationMs: durationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMs),
+      outcome: Value(outcome),
+      errorCode: errorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorCode),
+      startedAt: Value(startedAt),
+      recordedAt: Value(recordedAt),
+    );
+  }
+
+  factory RunCallUsagesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RunCallUsagesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      runId: serializer.fromJson<String?>(json['runId']),
+      workspaceId: serializer.fromJson<String?>(json['workspaceId']),
+      conversationId: serializer.fromJson<String?>(json['conversationId']),
+      requestId: serializer.fromJson<String>(json['requestId']),
+      attempt: serializer.fromJson<int>(json['attempt']),
+      purpose: serializer.fromJson<String>(json['purpose']),
+      provider: serializer.fromJson<String>(json['provider']),
+      modelId: serializer.fromJson<String>(json['modelId']),
+      inputTokens: serializer.fromJson<int>(json['inputTokens']),
+      outputTokens: serializer.fromJson<int>(json['outputTokens']),
+      thoughtTokens: serializer.fromJson<int>(json['thoughtTokens']),
+      cachedReadTokens: serializer.fromJson<int>(json['cachedReadTokens']),
+      cachedWriteTokens: serializer.fromJson<int>(json['cachedWriteTokens']),
+      costMicros: serializer.fromJson<int?>(json['costMicros']),
+      costBasis: serializer.fromJson<String>(json['costBasis']),
+      transportFirstByteMs: serializer.fromJson<int?>(
+        json['transportFirstByteMs'],
+      ),
+      firstModelEventMs: serializer.fromJson<int?>(json['firstModelEventMs']),
+      durationMs: serializer.fromJson<int?>(json['durationMs']),
+      outcome: serializer.fromJson<String>(json['outcome']),
+      errorCode: serializer.fromJson<String?>(json['errorCode']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'runId': serializer.toJson<String?>(runId),
+      'workspaceId': serializer.toJson<String?>(workspaceId),
+      'conversationId': serializer.toJson<String?>(conversationId),
+      'requestId': serializer.toJson<String>(requestId),
+      'attempt': serializer.toJson<int>(attempt),
+      'purpose': serializer.toJson<String>(purpose),
+      'provider': serializer.toJson<String>(provider),
+      'modelId': serializer.toJson<String>(modelId),
+      'inputTokens': serializer.toJson<int>(inputTokens),
+      'outputTokens': serializer.toJson<int>(outputTokens),
+      'thoughtTokens': serializer.toJson<int>(thoughtTokens),
+      'cachedReadTokens': serializer.toJson<int>(cachedReadTokens),
+      'cachedWriteTokens': serializer.toJson<int>(cachedWriteTokens),
+      'costMicros': serializer.toJson<int?>(costMicros),
+      'costBasis': serializer.toJson<String>(costBasis),
+      'transportFirstByteMs': serializer.toJson<int?>(transportFirstByteMs),
+      'firstModelEventMs': serializer.toJson<int?>(firstModelEventMs),
+      'durationMs': serializer.toJson<int?>(durationMs),
+      'outcome': serializer.toJson<String>(outcome),
+      'errorCode': serializer.toJson<String?>(errorCode),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+    };
+  }
+
+  RunCallUsagesTableData copyWith({
+    String? id,
+    Value<String?> runId = const Value.absent(),
+    Value<String?> workspaceId = const Value.absent(),
+    Value<String?> conversationId = const Value.absent(),
+    String? requestId,
+    int? attempt,
+    String? purpose,
+    String? provider,
+    String? modelId,
+    int? inputTokens,
+    int? outputTokens,
+    int? thoughtTokens,
+    int? cachedReadTokens,
+    int? cachedWriteTokens,
+    Value<int?> costMicros = const Value.absent(),
+    String? costBasis,
+    Value<int?> transportFirstByteMs = const Value.absent(),
+    Value<int?> firstModelEventMs = const Value.absent(),
+    Value<int?> durationMs = const Value.absent(),
+    String? outcome,
+    Value<String?> errorCode = const Value.absent(),
+    DateTime? startedAt,
+    DateTime? recordedAt,
+  }) => RunCallUsagesTableData(
+    id: id ?? this.id,
+    runId: runId.present ? runId.value : this.runId,
+    workspaceId: workspaceId.present ? workspaceId.value : this.workspaceId,
+    conversationId: conversationId.present
+        ? conversationId.value
+        : this.conversationId,
+    requestId: requestId ?? this.requestId,
+    attempt: attempt ?? this.attempt,
+    purpose: purpose ?? this.purpose,
+    provider: provider ?? this.provider,
+    modelId: modelId ?? this.modelId,
+    inputTokens: inputTokens ?? this.inputTokens,
+    outputTokens: outputTokens ?? this.outputTokens,
+    thoughtTokens: thoughtTokens ?? this.thoughtTokens,
+    cachedReadTokens: cachedReadTokens ?? this.cachedReadTokens,
+    cachedWriteTokens: cachedWriteTokens ?? this.cachedWriteTokens,
+    costMicros: costMicros.present ? costMicros.value : this.costMicros,
+    costBasis: costBasis ?? this.costBasis,
+    transportFirstByteMs: transportFirstByteMs.present
+        ? transportFirstByteMs.value
+        : this.transportFirstByteMs,
+    firstModelEventMs: firstModelEventMs.present
+        ? firstModelEventMs.value
+        : this.firstModelEventMs,
+    durationMs: durationMs.present ? durationMs.value : this.durationMs,
+    outcome: outcome ?? this.outcome,
+    errorCode: errorCode.present ? errorCode.value : this.errorCode,
+    startedAt: startedAt ?? this.startedAt,
+    recordedAt: recordedAt ?? this.recordedAt,
+  );
+  RunCallUsagesTableData copyWithCompanion(RunCallUsagesTableCompanion data) {
+    return RunCallUsagesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      runId: data.runId.present ? data.runId.value : this.runId,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      attempt: data.attempt.present ? data.attempt.value : this.attempt,
+      purpose: data.purpose.present ? data.purpose.value : this.purpose,
+      provider: data.provider.present ? data.provider.value : this.provider,
+      modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      inputTokens: data.inputTokens.present
+          ? data.inputTokens.value
+          : this.inputTokens,
+      outputTokens: data.outputTokens.present
+          ? data.outputTokens.value
+          : this.outputTokens,
+      thoughtTokens: data.thoughtTokens.present
+          ? data.thoughtTokens.value
+          : this.thoughtTokens,
+      cachedReadTokens: data.cachedReadTokens.present
+          ? data.cachedReadTokens.value
+          : this.cachedReadTokens,
+      cachedWriteTokens: data.cachedWriteTokens.present
+          ? data.cachedWriteTokens.value
+          : this.cachedWriteTokens,
+      costMicros: data.costMicros.present
+          ? data.costMicros.value
+          : this.costMicros,
+      costBasis: data.costBasis.present ? data.costBasis.value : this.costBasis,
+      transportFirstByteMs: data.transportFirstByteMs.present
+          ? data.transportFirstByteMs.value
+          : this.transportFirstByteMs,
+      firstModelEventMs: data.firstModelEventMs.present
+          ? data.firstModelEventMs.value
+          : this.firstModelEventMs,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      errorCode: data.errorCode.present ? data.errorCode.value : this.errorCode,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RunCallUsagesTableData(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('requestId: $requestId, ')
+          ..write('attempt: $attempt, ')
+          ..write('purpose: $purpose, ')
+          ..write('provider: $provider, ')
+          ..write('modelId: $modelId, ')
+          ..write('inputTokens: $inputTokens, ')
+          ..write('outputTokens: $outputTokens, ')
+          ..write('thoughtTokens: $thoughtTokens, ')
+          ..write('cachedReadTokens: $cachedReadTokens, ')
+          ..write('cachedWriteTokens: $cachedWriteTokens, ')
+          ..write('costMicros: $costMicros, ')
+          ..write('costBasis: $costBasis, ')
+          ..write('transportFirstByteMs: $transportFirstByteMs, ')
+          ..write('firstModelEventMs: $firstModelEventMs, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('outcome: $outcome, ')
+          ..write('errorCode: $errorCode, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('recordedAt: $recordedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    runId,
+    workspaceId,
+    conversationId,
+    requestId,
+    attempt,
+    purpose,
+    provider,
+    modelId,
+    inputTokens,
+    outputTokens,
+    thoughtTokens,
+    cachedReadTokens,
+    cachedWriteTokens,
+    costMicros,
+    costBasis,
+    transportFirstByteMs,
+    firstModelEventMs,
+    durationMs,
+    outcome,
+    errorCode,
+    startedAt,
+    recordedAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RunCallUsagesTableData &&
+          other.id == this.id &&
+          other.runId == this.runId &&
+          other.workspaceId == this.workspaceId &&
+          other.conversationId == this.conversationId &&
+          other.requestId == this.requestId &&
+          other.attempt == this.attempt &&
+          other.purpose == this.purpose &&
+          other.provider == this.provider &&
+          other.modelId == this.modelId &&
+          other.inputTokens == this.inputTokens &&
+          other.outputTokens == this.outputTokens &&
+          other.thoughtTokens == this.thoughtTokens &&
+          other.cachedReadTokens == this.cachedReadTokens &&
+          other.cachedWriteTokens == this.cachedWriteTokens &&
+          other.costMicros == this.costMicros &&
+          other.costBasis == this.costBasis &&
+          other.transportFirstByteMs == this.transportFirstByteMs &&
+          other.firstModelEventMs == this.firstModelEventMs &&
+          other.durationMs == this.durationMs &&
+          other.outcome == this.outcome &&
+          other.errorCode == this.errorCode &&
+          other.startedAt == this.startedAt &&
+          other.recordedAt == this.recordedAt);
+}
+
+class RunCallUsagesTableCompanion
+    extends UpdateCompanion<RunCallUsagesTableData> {
+  final Value<String> id;
+  final Value<String?> runId;
+  final Value<String?> workspaceId;
+  final Value<String?> conversationId;
+  final Value<String> requestId;
+  final Value<int> attempt;
+  final Value<String> purpose;
+  final Value<String> provider;
+  final Value<String> modelId;
+  final Value<int> inputTokens;
+  final Value<int> outputTokens;
+  final Value<int> thoughtTokens;
+  final Value<int> cachedReadTokens;
+  final Value<int> cachedWriteTokens;
+  final Value<int?> costMicros;
+  final Value<String> costBasis;
+  final Value<int?> transportFirstByteMs;
+  final Value<int?> firstModelEventMs;
+  final Value<int?> durationMs;
+  final Value<String> outcome;
+  final Value<String?> errorCode;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> recordedAt;
+  final Value<int> rowid;
+  const RunCallUsagesTableCompanion({
+    this.id = const Value.absent(),
+    this.runId = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.provider = const Value.absent(),
+    this.modelId = const Value.absent(),
+    this.inputTokens = const Value.absent(),
+    this.outputTokens = const Value.absent(),
+    this.thoughtTokens = const Value.absent(),
+    this.cachedReadTokens = const Value.absent(),
+    this.cachedWriteTokens = const Value.absent(),
+    this.costMicros = const Value.absent(),
+    this.costBasis = const Value.absent(),
+    this.transportFirstByteMs = const Value.absent(),
+    this.firstModelEventMs = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.errorCode = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RunCallUsagesTableCompanion.insert({
+    required String id,
+    this.runId = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    required String requestId,
+    this.attempt = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.provider = const Value.absent(),
+    this.modelId = const Value.absent(),
+    this.inputTokens = const Value.absent(),
+    this.outputTokens = const Value.absent(),
+    this.thoughtTokens = const Value.absent(),
+    this.cachedReadTokens = const Value.absent(),
+    this.cachedWriteTokens = const Value.absent(),
+    this.costMicros = const Value.absent(),
+    this.costBasis = const Value.absent(),
+    this.transportFirstByteMs = const Value.absent(),
+    this.firstModelEventMs = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.errorCode = const Value.absent(),
+    required DateTime startedAt,
+    required DateTime recordedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       requestId = Value(requestId),
+       startedAt = Value(startedAt),
+       recordedAt = Value(recordedAt);
+  static Insertable<RunCallUsagesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? runId,
+    Expression<String>? workspaceId,
+    Expression<String>? conversationId,
+    Expression<String>? requestId,
+    Expression<int>? attempt,
+    Expression<String>? purpose,
+    Expression<String>? provider,
+    Expression<String>? modelId,
+    Expression<int>? inputTokens,
+    Expression<int>? outputTokens,
+    Expression<int>? thoughtTokens,
+    Expression<int>? cachedReadTokens,
+    Expression<int>? cachedWriteTokens,
+    Expression<int>? costMicros,
+    Expression<String>? costBasis,
+    Expression<int>? transportFirstByteMs,
+    Expression<int>? firstModelEventMs,
+    Expression<int>? durationMs,
+    Expression<String>? outcome,
+    Expression<String>? errorCode,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? recordedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (runId != null) 'run_id': runId,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (requestId != null) 'request_id': requestId,
+      if (attempt != null) 'attempt': attempt,
+      if (purpose != null) 'purpose': purpose,
+      if (provider != null) 'provider': provider,
+      if (modelId != null) 'model_id': modelId,
+      if (inputTokens != null) 'input_tokens': inputTokens,
+      if (outputTokens != null) 'output_tokens': outputTokens,
+      if (thoughtTokens != null) 'thought_tokens': thoughtTokens,
+      if (cachedReadTokens != null) 'cached_read_tokens': cachedReadTokens,
+      if (cachedWriteTokens != null) 'cached_write_tokens': cachedWriteTokens,
+      if (costMicros != null) 'cost_micros': costMicros,
+      if (costBasis != null) 'cost_basis': costBasis,
+      if (transportFirstByteMs != null)
+        'transport_first_byte_ms': transportFirstByteMs,
+      if (firstModelEventMs != null) 'first_model_event_ms': firstModelEventMs,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (outcome != null) 'outcome': outcome,
+      if (errorCode != null) 'error_code': errorCode,
+      if (startedAt != null) 'started_at': startedAt,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RunCallUsagesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? runId,
+    Value<String?>? workspaceId,
+    Value<String?>? conversationId,
+    Value<String>? requestId,
+    Value<int>? attempt,
+    Value<String>? purpose,
+    Value<String>? provider,
+    Value<String>? modelId,
+    Value<int>? inputTokens,
+    Value<int>? outputTokens,
+    Value<int>? thoughtTokens,
+    Value<int>? cachedReadTokens,
+    Value<int>? cachedWriteTokens,
+    Value<int?>? costMicros,
+    Value<String>? costBasis,
+    Value<int?>? transportFirstByteMs,
+    Value<int?>? firstModelEventMs,
+    Value<int?>? durationMs,
+    Value<String>? outcome,
+    Value<String?>? errorCode,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? recordedAt,
+    Value<int>? rowid,
+  }) {
+    return RunCallUsagesTableCompanion(
+      id: id ?? this.id,
+      runId: runId ?? this.runId,
+      workspaceId: workspaceId ?? this.workspaceId,
+      conversationId: conversationId ?? this.conversationId,
+      requestId: requestId ?? this.requestId,
+      attempt: attempt ?? this.attempt,
+      purpose: purpose ?? this.purpose,
+      provider: provider ?? this.provider,
+      modelId: modelId ?? this.modelId,
+      inputTokens: inputTokens ?? this.inputTokens,
+      outputTokens: outputTokens ?? this.outputTokens,
+      thoughtTokens: thoughtTokens ?? this.thoughtTokens,
+      cachedReadTokens: cachedReadTokens ?? this.cachedReadTokens,
+      cachedWriteTokens: cachedWriteTokens ?? this.cachedWriteTokens,
+      costMicros: costMicros ?? this.costMicros,
+      costBasis: costBasis ?? this.costBasis,
+      transportFirstByteMs: transportFirstByteMs ?? this.transportFirstByteMs,
+      firstModelEventMs: firstModelEventMs ?? this.firstModelEventMs,
+      durationMs: durationMs ?? this.durationMs,
+      outcome: outcome ?? this.outcome,
+      errorCode: errorCode ?? this.errorCode,
+      startedAt: startedAt ?? this.startedAt,
+      recordedAt: recordedAt ?? this.recordedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (runId.present) {
+      map['run_id'] = Variable<String>(runId.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (attempt.present) {
+      map['attempt'] = Variable<int>(attempt.value);
+    }
+    if (purpose.present) {
+      map['purpose'] = Variable<String>(purpose.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (inputTokens.present) {
+      map['input_tokens'] = Variable<int>(inputTokens.value);
+    }
+    if (outputTokens.present) {
+      map['output_tokens'] = Variable<int>(outputTokens.value);
+    }
+    if (thoughtTokens.present) {
+      map['thought_tokens'] = Variable<int>(thoughtTokens.value);
+    }
+    if (cachedReadTokens.present) {
+      map['cached_read_tokens'] = Variable<int>(cachedReadTokens.value);
+    }
+    if (cachedWriteTokens.present) {
+      map['cached_write_tokens'] = Variable<int>(cachedWriteTokens.value);
+    }
+    if (costMicros.present) {
+      map['cost_micros'] = Variable<int>(costMicros.value);
+    }
+    if (costBasis.present) {
+      map['cost_basis'] = Variable<String>(costBasis.value);
+    }
+    if (transportFirstByteMs.present) {
+      map['transport_first_byte_ms'] = Variable<int>(
+        transportFirstByteMs.value,
+      );
+    }
+    if (firstModelEventMs.present) {
+      map['first_model_event_ms'] = Variable<int>(firstModelEventMs.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(outcome.value);
+    }
+    if (errorCode.present) {
+      map['error_code'] = Variable<String>(errorCode.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RunCallUsagesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('requestId: $requestId, ')
+          ..write('attempt: $attempt, ')
+          ..write('purpose: $purpose, ')
+          ..write('provider: $provider, ')
+          ..write('modelId: $modelId, ')
+          ..write('inputTokens: $inputTokens, ')
+          ..write('outputTokens: $outputTokens, ')
+          ..write('thoughtTokens: $thoughtTokens, ')
+          ..write('cachedReadTokens: $cachedReadTokens, ')
+          ..write('cachedWriteTokens: $cachedWriteTokens, ')
+          ..write('costMicros: $costMicros, ')
+          ..write('costBasis: $costBasis, ')
+          ..write('transportFirstByteMs: $transportFirstByteMs, ')
+          ..write('firstModelEventMs: $firstModelEventMs, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('outcome: $outcome, ')
+          ..write('errorCode: $errorCode, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   _$WorkspaceDatabase(QueryExecutor e) : super(e);
   $WorkspaceDatabaseManager get managers => $WorkspaceDatabaseManager(this);
@@ -76044,6 +79860,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final $SpaceReposTableTable spaceReposTable = $SpaceReposTableTable(
     this,
   );
+  late final $CatalogFilesTableTable catalogFilesTable =
+      $CatalogFilesTableTable(this);
   late final $SpaceNotesTableTable spaceNotesTable = $SpaceNotesTableTable(
     this,
   );
@@ -76203,6 +80021,12 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final $EvalRunsTableTable evalRunsTable = $EvalRunsTableTable(this);
   late final $AgentConfigVersionsTableTable agentConfigVersionsTable =
       $AgentConfigVersionsTableTable(this);
+  late final $SkillEvalCampaignsTableTable skillEvalCampaignsTable =
+      $SkillEvalCampaignsTableTable(this);
+  late final $SkillEvalAttemptsTableTable skillEvalAttemptsTable =
+      $SkillEvalAttemptsTableTable(this);
+  late final $SkillEvalPoliciesTableTable skillEvalPoliciesTable =
+      $SkillEvalPoliciesTableTable(this);
   late final $SkillScanResultsTableTable skillScanResultsTable =
       $SkillScanResultsTableTable(this);
   late final $ActionPoliciesTableTable actionPoliciesTable =
@@ -76240,6 +80064,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
       $SkillSourcesTableTable(this);
   late final $RepoScriptRunsTableTable repoScriptRunsTable =
       $RepoScriptRunsTableTable(this);
+  late final $RunCallUsagesTableTable runCallUsagesTable =
+      $RunCallUsagesTableTable(this);
   late final Index idxAgentsWorkspaceId = Index(
     'idx_agents_workspaceId',
     'CREATE INDEX idx_agents_workspaceId ON agents (workspace_id)',
@@ -76303,6 +80129,14 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxSpaceReposSpaceId = Index(
     'idx_space_repos_spaceId',
     'CREATE INDEX idx_space_repos_spaceId ON space_repos (space_id)',
+  );
+  late final Index idxCatalogFilesLifecycle = Index(
+    'idx_catalog_files_lifecycle',
+    'CREATE INDEX idx_catalog_files_lifecycle ON catalog_files (state, created_at)',
+  );
+  late final Index idxCatalogFilesPath = Index(
+    'idx_catalog_files_path',
+    'CREATE INDEX idx_catalog_files_path ON catalog_files (path)',
   );
   late final Index idxSpaceNotesWorkspaceId = Index(
     'idx_space_notes_workspaceId',
@@ -76968,6 +80802,22 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     'idx_agent_config_versions_agent',
     'CREATE INDEX idx_agent_config_versions_agent ON agent_config_versions (agent_id, status)',
   );
+  late final Index idxSkillEvalCampaignsSkillCreated = Index(
+    'idx_skill_eval_campaigns_skill_created',
+    'CREATE INDEX idx_skill_eval_campaigns_skill_created ON skill_eval_campaigns (workspace_id, skill_key, created_at)',
+  );
+  late final Index idxSkillEvalCampaignsStatus = Index(
+    'idx_skill_eval_campaigns_status',
+    'CREATE INDEX idx_skill_eval_campaigns_status ON skill_eval_campaigns (workspace_id, status)',
+  );
+  late final Index idxSkillEvalAttemptsCampaign = Index(
+    'idx_skill_eval_attempts_campaign',
+    'CREATE INDEX idx_skill_eval_attempts_campaign ON skill_eval_attempts (workspace_id, campaign_id, ordinal)',
+  );
+  late final Index idxSkillEvalPoliciesEnabled = Index(
+    'idx_skill_eval_policies_enabled',
+    'CREATE INDEX idx_skill_eval_policies_enabled ON skill_eval_policies (workspace_id, enabled)',
+  );
   late final Index idxSkillScanResultsWorkspace = Index(
     'idx_skill_scan_results_workspace',
     'CREATE INDEX idx_skill_scan_results_workspace ON skill_scan_results (workspace_id)',
@@ -77059,6 +80909,22 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxRepoScriptRunsSpace = Index(
     'idx_repo_script_runs_space',
     'CREATE INDEX idx_repo_script_runs_space ON repo_script_runs (workspace_id, space_id)',
+  );
+  late final Index idxRunCallUsagesRunId = Index(
+    'idx_run_call_usages_runId',
+    'CREATE INDEX idx_run_call_usages_runId ON run_call_usages (run_id)',
+  );
+  late final Index idxRunCallUsagesWorkspace = Index(
+    'idx_run_call_usages_workspace',
+    'CREATE INDEX idx_run_call_usages_workspace ON run_call_usages (workspace_id)',
+  );
+  late final Index idxRunCallUsagesConversation = Index(
+    'idx_run_call_usages_conversation',
+    'CREATE INDEX idx_run_call_usages_conversation ON run_call_usages (workspace_id, conversation_id)',
+  );
+  late final Index idxRunCallUsagesStarted = Index(
+    'idx_run_call_usages_started',
+    'CREATE INDEX idx_run_call_usages_started ON run_call_usages (workspace_id, started_at)',
   );
   late final WorkspaceSettingDao workspaceSettingDao = WorkspaceSettingDao(
     this as WorkspaceDatabase,
@@ -77249,6 +81115,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     conversationsTable,
     spaceParticipantsTable,
     spaceReposTable,
+    catalogFilesTable,
     spaceNotesTable,
     spaceAutonomyTable,
     conversationMessagesTable,
@@ -77330,6 +81197,9 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     evalSuitesTable,
     evalRunsTable,
     agentConfigVersionsTable,
+    skillEvalCampaignsTable,
+    skillEvalAttemptsTable,
+    skillEvalPoliciesTable,
     skillScanResultsTable,
     actionPoliciesTable,
     sandboxExecGrantsTable,
@@ -77348,6 +81218,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     rigActionLogTable,
     skillSourcesTable,
     repoScriptRunsTable,
+    runCallUsagesTable,
     idxAgentsWorkspaceId,
     idxAgentsWorkspaceName,
     idxAgentRunLogsWorkspaceId,
@@ -77364,6 +81235,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxConversationsWorkspaceId,
     idxSpaceParticipantsSpaceId,
     idxSpaceReposSpaceId,
+    idxCatalogFilesLifecycle,
+    idxCatalogFilesPath,
     idxSpaceNotesWorkspaceId,
     idxSpaceAutonomyWorkspaceId,
     idxMessageReactionsWorkspaceId,
@@ -77530,6 +81403,10 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxEvalRunsWorkspaceSuiteConfig,
     idxAgentConfigVersionsWorkspace,
     idxAgentConfigVersionsAgent,
+    idxSkillEvalCampaignsSkillCreated,
+    idxSkillEvalCampaignsStatus,
+    idxSkillEvalAttemptsCampaign,
+    idxSkillEvalPoliciesEnabled,
     idxSkillScanResultsWorkspace,
     idxSkillScanResultsHash,
     idxActionPoliciesWorkspace,
@@ -77553,6 +81430,10 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxSkillSourcesWorkspace,
     idxRepoScriptRunsRepo,
     idxRepoScriptRunsSpace,
+    idxRunCallUsagesRunId,
+    idxRunCallUsagesWorkspace,
+    idxRunCallUsagesConversation,
+    idxRunCallUsagesStarted,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -78500,7 +82381,7 @@ class $$ReposTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ReposTableTable, ReposTableData>(table),
                   $$ReposTableTableReferences(db, table, e),
                 ),
               )
@@ -79614,7 +83495,7 @@ class $$AgentsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AgentsTableTable, AgentsTableData>(table),
                   $$AgentsTableTableReferences(db, table, e),
                 ),
               )
@@ -79805,7 +83686,17 @@ typedef $$AgentRunLogsTableTableCreateCompanionBuilder =
       Value<int> cachedReadTokens,
       Value<int> cachedWriteTokens,
       Value<int> estimatedCostCents,
+      Value<int> costMicros,
+      Value<String?> costBasis,
       Value<int> childCostCents,
+      Value<int> childCostMicros,
+      Value<String?> effort,
+      Value<String?> taskFamily,
+      Value<String?> nativeSessionId,
+      Value<bool> resumedNativeSession,
+      Value<String?> latencyJson,
+      Value<String?> verificationStatus,
+      Value<String?> verificationJson,
       Value<String?> agentRole,
       Value<int?> durationMs,
       Value<int?> timeToFirstTokenMs,
@@ -79852,7 +83743,17 @@ typedef $$AgentRunLogsTableTableUpdateCompanionBuilder =
       Value<int> cachedReadTokens,
       Value<int> cachedWriteTokens,
       Value<int> estimatedCostCents,
+      Value<int> costMicros,
+      Value<String?> costBasis,
       Value<int> childCostCents,
+      Value<int> childCostMicros,
+      Value<String?> effort,
+      Value<String?> taskFamily,
+      Value<String?> nativeSessionId,
+      Value<bool> resumedNativeSession,
+      Value<String?> latencyJson,
+      Value<String?> verificationStatus,
+      Value<String?> verificationJson,
       Value<String?> agentRole,
       Value<int?> durationMs,
       Value<int?> timeToFirstTokenMs,
@@ -80037,8 +83938,58 @@ class $$AgentRunLogsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get costBasis => $composableBuilder(
+    column: $table.costBasis,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get childCostCents => $composableBuilder(
     column: $table.childCostCents,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get childCostMicros => $composableBuilder(
+    column: $table.childCostMicros,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get effort => $composableBuilder(
+    column: $table.effort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskFamily => $composableBuilder(
+    column: $table.taskFamily,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nativeSessionId => $composableBuilder(
+    column: $table.nativeSessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get resumedNativeSession => $composableBuilder(
+    column: $table.resumedNativeSession,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get latencyJson => $composableBuilder(
+    column: $table.latencyJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verificationStatus => $composableBuilder(
+    column: $table.verificationStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verificationJson => $composableBuilder(
+    column: $table.verificationJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -80305,8 +84256,58 @@ class $$AgentRunLogsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get costBasis => $composableBuilder(
+    column: $table.costBasis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get childCostCents => $composableBuilder(
     column: $table.childCostCents,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get childCostMicros => $composableBuilder(
+    column: $table.childCostMicros,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get effort => $composableBuilder(
+    column: $table.effort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskFamily => $composableBuilder(
+    column: $table.taskFamily,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nativeSessionId => $composableBuilder(
+    column: $table.nativeSessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get resumedNativeSession => $composableBuilder(
+    column: $table.resumedNativeSession,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get latencyJson => $composableBuilder(
+    column: $table.latencyJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get verificationStatus => $composableBuilder(
+    column: $table.verificationStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get verificationJson => $composableBuilder(
+    column: $table.verificationJson,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -80528,8 +84529,54 @@ class $$AgentRunLogsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get costBasis =>
+      $composableBuilder(column: $table.costBasis, builder: (column) => column);
+
   GeneratedColumn<int> get childCostCents => $composableBuilder(
     column: $table.childCostCents,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get childCostMicros => $composableBuilder(
+    column: $table.childCostMicros,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get effort =>
+      $composableBuilder(column: $table.effort, builder: (column) => column);
+
+  GeneratedColumn<String> get taskFamily => $composableBuilder(
+    column: $table.taskFamily,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nativeSessionId => $composableBuilder(
+    column: $table.nativeSessionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get resumedNativeSession => $composableBuilder(
+    column: $table.resumedNativeSession,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get latencyJson => $composableBuilder(
+    column: $table.latencyJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get verificationStatus => $composableBuilder(
+    column: $table.verificationStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get verificationJson => $composableBuilder(
+    column: $table.verificationJson,
     builder: (column) => column,
   );
 
@@ -80742,7 +84789,17 @@ class $$AgentRunLogsTableTableTableManager
                 Value<int> cachedReadTokens = const Value.absent(),
                 Value<int> cachedWriteTokens = const Value.absent(),
                 Value<int> estimatedCostCents = const Value.absent(),
+                Value<int> costMicros = const Value.absent(),
+                Value<String?> costBasis = const Value.absent(),
                 Value<int> childCostCents = const Value.absent(),
+                Value<int> childCostMicros = const Value.absent(),
+                Value<String?> effort = const Value.absent(),
+                Value<String?> taskFamily = const Value.absent(),
+                Value<String?> nativeSessionId = const Value.absent(),
+                Value<bool> resumedNativeSession = const Value.absent(),
+                Value<String?> latencyJson = const Value.absent(),
+                Value<String?> verificationStatus = const Value.absent(),
+                Value<String?> verificationJson = const Value.absent(),
                 Value<String?> agentRole = const Value.absent(),
                 Value<int?> durationMs = const Value.absent(),
                 Value<int?> timeToFirstTokenMs = const Value.absent(),
@@ -80787,7 +84844,17 @@ class $$AgentRunLogsTableTableTableManager
                 cachedReadTokens: cachedReadTokens,
                 cachedWriteTokens: cachedWriteTokens,
                 estimatedCostCents: estimatedCostCents,
+                costMicros: costMicros,
+                costBasis: costBasis,
                 childCostCents: childCostCents,
+                childCostMicros: childCostMicros,
+                effort: effort,
+                taskFamily: taskFamily,
+                nativeSessionId: nativeSessionId,
+                resumedNativeSession: resumedNativeSession,
+                latencyJson: latencyJson,
+                verificationStatus: verificationStatus,
+                verificationJson: verificationJson,
                 agentRole: agentRole,
                 durationMs: durationMs,
                 timeToFirstTokenMs: timeToFirstTokenMs,
@@ -80834,7 +84901,17 @@ class $$AgentRunLogsTableTableTableManager
                 Value<int> cachedReadTokens = const Value.absent(),
                 Value<int> cachedWriteTokens = const Value.absent(),
                 Value<int> estimatedCostCents = const Value.absent(),
+                Value<int> costMicros = const Value.absent(),
+                Value<String?> costBasis = const Value.absent(),
                 Value<int> childCostCents = const Value.absent(),
+                Value<int> childCostMicros = const Value.absent(),
+                Value<String?> effort = const Value.absent(),
+                Value<String?> taskFamily = const Value.absent(),
+                Value<String?> nativeSessionId = const Value.absent(),
+                Value<bool> resumedNativeSession = const Value.absent(),
+                Value<String?> latencyJson = const Value.absent(),
+                Value<String?> verificationStatus = const Value.absent(),
+                Value<String?> verificationJson = const Value.absent(),
                 Value<String?> agentRole = const Value.absent(),
                 Value<int?> durationMs = const Value.absent(),
                 Value<int?> timeToFirstTokenMs = const Value.absent(),
@@ -80879,7 +84956,17 @@ class $$AgentRunLogsTableTableTableManager
                 cachedReadTokens: cachedReadTokens,
                 cachedWriteTokens: cachedWriteTokens,
                 estimatedCostCents: estimatedCostCents,
+                costMicros: costMicros,
+                costBasis: costBasis,
                 childCostCents: childCostCents,
+                childCostMicros: childCostMicros,
+                effort: effort,
+                taskFamily: taskFamily,
+                nativeSessionId: nativeSessionId,
+                resumedNativeSession: resumedNativeSession,
+                latencyJson: latencyJson,
+                verificationStatus: verificationStatus,
+                verificationJson: verificationJson,
                 agentRole: agentRole,
                 durationMs: durationMs,
                 timeToFirstTokenMs: timeToFirstTokenMs,
@@ -80907,7 +84994,9 @@ class $$AgentRunLogsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AgentRunLogsTableTable, AgentRunLogsTableData>(
+                    table,
+                  ),
                   $$AgentRunLogsTableTableReferences(db, table, e),
                 ),
               )
@@ -81463,7 +85552,18 @@ class $$AgentGoalRunsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AgentGoalRunsTableTable, AgentGoalRunsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $AgentGoalRunsTableTable,
+                    AgentGoalRunsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -81794,7 +85894,18 @@ class $$PullRequestsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$PullRequestsTableTable, PullRequestsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $PullRequestsTableTable,
+                    PullRequestsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -82025,7 +86136,16 @@ class $$ReviewDraftsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ReviewDraftsTable, ReviewDraft>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ReviewDraftsTable,
+                    ReviewDraft
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -82233,7 +86353,16 @@ class $$CachesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$CachesTableTable, CachesTableData>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $CachesTableTable,
+                    CachesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -82812,7 +86941,7 @@ class $$SpacesTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$SpacesTableTable, SpacesTableData>(table),
                   $$SpacesTableTableReferences(db, table, e),
                 ),
               )
@@ -83441,7 +87570,9 @@ class $$ConversationsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ConversationsTableTable, ConversationsTableData>(
+                    table,
+                  ),
                   $$ConversationsTableTableReferences(db, table, e),
                 ),
               )
@@ -83797,7 +87928,19 @@ class $$SpaceParticipantsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SpaceParticipantsTableTable,
+                    SpaceParticipantsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SpaceParticipantsTableTable,
+                    SpaceParticipantsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -84009,7 +88152,18 @@ class $$SpaceReposTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$SpaceReposTableTable, SpaceReposTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SpaceReposTableTable,
+                    SpaceReposTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -84035,6 +88189,388 @@ typedef $$SpaceReposTableTableProcessedTableManager =
         >,
       ),
       SpaceReposTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$CatalogFilesTableTableCreateCompanionBuilder =
+    CatalogFilesTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      Value<String?> uploaderUserId,
+      required String name,
+      Value<String?> creatorId,
+      required String path,
+      required String mediaType,
+      required int bytes,
+      required String source,
+      Value<bool> ownedBytes,
+      required String state,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$CatalogFilesTableTableUpdateCompanionBuilder =
+    CatalogFilesTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String?> uploaderUserId,
+      Value<String> name,
+      Value<String?> creatorId,
+      Value<String> path,
+      Value<String> mediaType,
+      Value<int> bytes,
+      Value<String> source,
+      Value<bool> ownedBytes,
+      Value<String> state,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$CatalogFilesTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $CatalogFilesTableTable> {
+  $$CatalogFilesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uploaderUserId => $composableBuilder(
+    column: $table.uploaderUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mediaType => $composableBuilder(
+    column: $table.mediaType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get ownedBytes => $composableBuilder(
+    column: $table.ownedBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CatalogFilesTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $CatalogFilesTableTable> {
+  $$CatalogFilesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uploaderUserId => $composableBuilder(
+    column: $table.uploaderUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mediaType => $composableBuilder(
+    column: $table.mediaType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get ownedBytes => $composableBuilder(
+    column: $table.ownedBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CatalogFilesTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $CatalogFilesTableTable> {
+  $$CatalogFilesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get uploaderUserId => $composableBuilder(
+    column: $table.uploaderUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get creatorId =>
+      $composableBuilder(column: $table.creatorId, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaType =>
+      $composableBuilder(column: $table.mediaType, builder: (column) => column);
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<bool> get ownedBytes => $composableBuilder(
+    column: $table.ownedBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CatalogFilesTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $CatalogFilesTableTable,
+          CatalogFilesTableData,
+          $$CatalogFilesTableTableFilterComposer,
+          $$CatalogFilesTableTableOrderingComposer,
+          $$CatalogFilesTableTableAnnotationComposer,
+          $$CatalogFilesTableTableCreateCompanionBuilder,
+          $$CatalogFilesTableTableUpdateCompanionBuilder,
+          (
+            CatalogFilesTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $CatalogFilesTableTable,
+              CatalogFilesTableData
+            >,
+          ),
+          CatalogFilesTableData,
+          PrefetchHooks Function()
+        > {
+  $$CatalogFilesTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $CatalogFilesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CatalogFilesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CatalogFilesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CatalogFilesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String?> uploaderUserId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> creatorId = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<String> mediaType = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<bool> ownedBytes = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CatalogFilesTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                uploaderUserId: uploaderUserId,
+                name: name,
+                creatorId: creatorId,
+                path: path,
+                mediaType: mediaType,
+                bytes: bytes,
+                source: source,
+                ownedBytes: ownedBytes,
+                state: state,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                Value<String?> uploaderUserId = const Value.absent(),
+                required String name,
+                Value<String?> creatorId = const Value.absent(),
+                required String path,
+                required String mediaType,
+                required int bytes,
+                required String source,
+                Value<bool> ownedBytes = const Value.absent(),
+                required String state,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CatalogFilesTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                uploaderUserId: uploaderUserId,
+                name: name,
+                creatorId: creatorId,
+                path: path,
+                mediaType: mediaType,
+                bytes: bytes,
+                source: source,
+                ownedBytes: ownedBytes,
+                state: state,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CatalogFilesTableTable, CatalogFilesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $CatalogFilesTableTable,
+                    CatalogFilesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CatalogFilesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $CatalogFilesTableTable,
+      CatalogFilesTableData,
+      $$CatalogFilesTableTableFilterComposer,
+      $$CatalogFilesTableTableOrderingComposer,
+      $$CatalogFilesTableTableAnnotationComposer,
+      $$CatalogFilesTableTableCreateCompanionBuilder,
+      $$CatalogFilesTableTableUpdateCompanionBuilder,
+      (
+        CatalogFilesTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $CatalogFilesTableTable,
+          CatalogFilesTableData
+        >,
+      ),
+      CatalogFilesTableData,
       PrefetchHooks Function()
     >;
 typedef $$SpaceNotesTableTableCreateCompanionBuilder =
@@ -84345,7 +88881,9 @@ class $$SpaceNotesTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$SpaceNotesTableTable, SpaceNotesTableData>(
+                    table,
+                  ),
                   $$SpaceNotesTableTableReferences(db, table, e),
                 ),
               )
@@ -84701,7 +89239,9 @@ class $$SpaceAutonomyTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$SpaceAutonomyTableTable, SpaceAutonomyTableData>(
+                    table,
+                  ),
                   $$SpaceAutonomyTableTableReferences(db, table, e),
                 ),
               )
@@ -85333,7 +89873,10 @@ class $$ConversationMessagesTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $ConversationMessagesTableTable,
+                    ConversationMessagesTableData
+                  >(table),
                   $$ConversationMessagesTableTableReferences(db, table, e),
                 ),
               )
@@ -85734,7 +90277,10 @@ class $$MessageReactionsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $MessageReactionsTableTable,
+                    MessageReactionsTableData
+                  >(table),
                   $$MessageReactionsTableTableReferences(db, table, e),
                 ),
               )
@@ -86067,7 +90613,18 @@ class $$ReviewSpacesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ReviewSpacesTableTable, ReviewSpacesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ReviewSpacesTableTable,
+                    ReviewSpacesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -86458,7 +91015,9 @@ class $$ActivityLogTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ActivityLogTableTable, ActivityLogTableData>(
+                    table,
+                  ),
                   $$ActivityLogTableTableReferences(db, table, e),
                 ),
               )
@@ -86854,7 +91413,18 @@ class $$BudgetPolicyTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$BudgetPolicyTableTable, BudgetPolicyTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $BudgetPolicyTableTable,
+                    BudgetPolicyTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -87160,7 +91730,10 @@ class $$AgentWorkingMemoryTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $AgentWorkingMemoryTableTable,
+                    AgentWorkingMemoryTableData
+                  >(table),
                   $$AgentWorkingMemoryTableTableReferences(db, table, e),
                 ),
               )
@@ -87455,7 +92028,18 @@ class $$MemoryDomainsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$MemoryDomainsTableTable, MemoryDomainsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryDomainsTableTable,
+                    MemoryDomainsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -87995,7 +92579,18 @@ class $$MemoryFactsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$MemoryFactsTableTable, MemoryFactsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryFactsTableTable,
+                    MemoryFactsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -88293,7 +92888,19 @@ class $$MemoryPoliciesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $MemoryPoliciesTableTable,
+                    MemoryPoliciesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryPoliciesTableTable,
+                    MemoryPoliciesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -88499,7 +93106,19 @@ class $$MemoryAccessGrantsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $MemoryAccessGrantsTableTable,
+                    MemoryAccessGrantsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryAccessGrantsTableTable,
+                    MemoryAccessGrantsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -88801,7 +93420,19 @@ class $$MemoryConflictsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $MemoryConflictsTableTable,
+                    MemoryConflictsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryConflictsTableTable,
+                    MemoryConflictsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -89058,7 +93689,18 @@ class $$EpisodicEdgesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$EpisodicEdgesTableTable, EpisodicEdgesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $EpisodicEdgesTableTable,
+                    EpisodicEdgesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -89378,7 +94020,19 @@ class $$WorkingMemoryItemsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $WorkingMemoryItemsTableTable,
+                    WorkingMemoryItemsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WorkingMemoryItemsTableTable,
+                    WorkingMemoryItemsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -89704,7 +94358,19 @@ class $$MemoryConsolidationLogTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $MemoryConsolidationLogTableTable,
+                    MemoryConsolidationLogTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryConsolidationLogTableTable,
+                    MemoryConsolidationLogTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -90060,7 +94726,18 @@ class $$MemoryBeliefsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$MemoryBeliefsTableTable, MemoryBeliefsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $MemoryBeliefsTableTable,
+                    MemoryBeliefsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -90712,7 +95389,9 @@ class $$PipelineRunsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PipelineRunsTableTable, PipelineRunsTableData>(
+                    table,
+                  ),
                   $$PipelineRunsTableTableReferences(db, table, e),
                 ),
               )
@@ -91230,7 +95909,10 @@ class $$PipelineStepRunsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $PipelineStepRunsTableTable,
+                    PipelineStepRunsTableData
+                  >(table),
                   $$PipelineStepRunsTableTableReferences(db, table, e),
                 ),
               )
@@ -91647,7 +96329,19 @@ class $$PipelineTemplatesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $PipelineTemplatesTableTable,
+                    PipelineTemplatesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $PipelineTemplatesTableTable,
+                    PipelineTemplatesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -92051,7 +96745,19 @@ class $$PipelineTriggersTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $PipelineTriggersTableTable,
+                    PipelineTriggersTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $PipelineTriggersTableTable,
+                    PipelineTriggersTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -92945,7 +97651,7 @@ class $$TicketsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TicketsTableTable, TicketsTableData>(table),
                   $$TicketsTableTableReferences(db, table, e),
                 ),
               )
@@ -93223,7 +97929,19 @@ class $$TicketCollaboratorsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $TicketCollaboratorsTableTable,
+                    TicketCollaboratorsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TicketCollaboratorsTableTable,
+                    TicketCollaboratorsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -93458,7 +98176,18 @@ class $$TicketLinksTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$TicketLinksTableTable, TicketLinksTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TicketLinksTableTable,
+                    TicketLinksTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -93729,7 +98458,16 @@ class $$ProjectsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ProjectsTableTable, ProjectsTableData>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ProjectsTableTable,
+                    ProjectsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -93981,7 +98719,16 @@ class $$TeamsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$TeamsTableTable, TeamsTableData>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TeamsTableTable,
+                    TeamsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -94149,7 +98896,18 @@ class $$TeamMembersTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$TeamMembersTableTable, TeamMembersTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TeamMembersTableTable,
+                    TeamMembersTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -94805,7 +99563,9 @@ class $$IsolatedReposTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$IsolatedReposTableTable, IsolatedReposTableData>(
+                    table,
+                  ),
                   $$IsolatedReposTableTableReferences(db, table, e),
                 ),
               )
@@ -95513,7 +100273,9 @@ class $$CodeSymbolsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CodeSymbolsTableTable, CodeSymbolsTableData>(
+                    table,
+                  ),
                   $$CodeSymbolsTableTableReferences(db, table, e),
                 ),
               )
@@ -96057,7 +100819,7 @@ class $$CodeEdgesTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CodeEdgesTableTable, CodeEdgesTableData>(table),
                   $$CodeEdgesTableTableReferences(db, table, e),
                 ),
               )
@@ -96557,7 +101319,7 @@ class $$CodeFilesTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CodeFilesTableTable, CodeFilesTableData>(table),
                   $$CodeFilesTableTableReferences(db, table, e),
                 ),
               )
@@ -97092,7 +101854,10 @@ class $$CodeIndexCheckpointsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $CodeIndexCheckpointsTableTable,
+                    CodeIndexCheckpointsTableData
+                  >(table),
                   $$CodeIndexCheckpointsTableTableReferences(db, table, e),
                 ),
               )
@@ -97487,7 +102252,19 @@ class $$SpaceStackEntriesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SpaceStackEntriesTableTable,
+                    SpaceStackEntriesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SpaceStackEntriesTableTable,
+                    SpaceStackEntriesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -98322,7 +103099,7 @@ class $$MeetingsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$MeetingsTableTable, MeetingsTableData>(table),
                   $$MeetingsTableTableReferences(db, table, e),
                 ),
               )
@@ -98863,7 +103640,10 @@ class $$MeetingTranscriptSegmentsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $MeetingTranscriptSegmentsTableTable,
+                    MeetingTranscriptSegmentsTableData
+                  >(table),
                   $$MeetingTranscriptSegmentsTableTableReferences(db, table, e),
                 ),
               )
@@ -99306,7 +104086,10 @@ class $$MeetingActionItemsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $MeetingActionItemsTableTable,
+                    MeetingActionItemsTableData
+                  >(table),
                   $$MeetingActionItemsTableTableReferences(db, table, e),
                 ),
               )
@@ -99686,7 +104469,10 @@ class $$MeetingDecisionsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $MeetingDecisionsTableTable,
+                    MeetingDecisionsTableData
+                  >(table),
                   $$MeetingDecisionsTableTableReferences(db, table, e),
                 ),
               )
@@ -100105,7 +104891,10 @@ class $$MeetingSpeakersTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $MeetingSpeakersTableTable,
+                    MeetingSpeakersTableData
+                  >(table),
                   $$MeetingSpeakersTableTableReferences(db, table, e),
                 ),
               )
@@ -100632,7 +105421,10 @@ class $$CalendarAccountsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $CalendarAccountsTableTable,
+                    CalendarAccountsTableData
+                  >(table),
                   $$CalendarAccountsTableTableReferences(db, table, e),
                 ),
               )
@@ -101323,7 +106115,10 @@ class $$CalendarEventsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $CalendarEventsTableTable,
+                    CalendarEventsTableData
+                  >(table),
                   $$CalendarEventsTableTableReferences(db, table, e),
                 ),
               )
@@ -101815,7 +106610,10 @@ class $$CalendarSourcesTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $CalendarSourcesTableTable,
+                    CalendarSourcesTableData
+                  >(table),
                   $$CalendarSourcesTableTableReferences(db, table, e),
                 ),
               )
@@ -102238,7 +107036,10 @@ class $$MeetingCalendarLinksTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $MeetingCalendarLinksTableTable,
+                    MeetingCalendarLinksTableData
+                  >(table),
                   $$MeetingCalendarLinksTableTableReferences(db, table, e),
                 ),
               )
@@ -102551,7 +107352,18 @@ class $$VoiceProfilesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$VoiceProfilesTableTable, VoiceProfilesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $VoiceProfilesTableTable,
+                    VoiceProfilesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -103193,7 +108005,10 @@ class $$OrchestrationsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $OrchestrationsTableTable,
+                    OrchestrationsTableData
+                  >(table),
                   $$OrchestrationsTableTableReferences(db, table, e),
                 ),
               )
@@ -103597,7 +108412,10 @@ class $$OrchestrationRevisionsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $OrchestrationRevisionsTableTable,
+                    OrchestrationRevisionsTableData
+                  >(table),
                   $$OrchestrationRevisionsTableTableReferences(db, table, e),
                 ),
               )
@@ -103931,7 +108749,18 @@ class $$PlanDocumentsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$PlanDocumentsTableTable, PlanDocumentsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $PlanDocumentsTableTable,
+                    PlanDocumentsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -104225,7 +109054,16 @@ class $$PlaybooksTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$PlaybooksTableTable, PlaybooksTableData>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $PlaybooksTableTable,
+                    PlaybooksTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -104667,7 +109505,18 @@ class $$ReviewCohortsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ReviewCohortsTableTable, ReviewCohortsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ReviewCohortsTableTable,
+                    ReviewCohortsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -105008,7 +109857,19 @@ class $$ApiContractSnapshotsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ApiContractSnapshotsTableTable,
+                    ApiContractSnapshotsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ApiContractSnapshotsTableTable,
+                    ApiContractSnapshotsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -105332,7 +110193,19 @@ class $$VisualDiffSnapshotsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $VisualDiffSnapshotsTableTable,
+                    VisualDiffSnapshotsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $VisualDiffSnapshotsTableTable,
+                    VisualDiffSnapshotsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -105654,7 +110527,19 @@ class $$ReviewAxisResultsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ReviewAxisResultsTableTable,
+                    ReviewAxisResultsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ReviewAxisResultsTableTable,
+                    ReviewAxisResultsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -105953,7 +110838,19 @@ class $$ReviewDependencyDiffsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ReviewDependencyDiffsTableTable,
+                    ReviewDependencyDiffsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ReviewDependencyDiffsTableTable,
+                    ReviewDependencyDiffsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -106258,7 +111155,19 @@ class $$ReviewRunSnapshotsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ReviewRunSnapshotsTableTable,
+                    ReviewRunSnapshotsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ReviewRunSnapshotsTableTable,
+                    ReviewRunSnapshotsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -106536,7 +111445,19 @@ class $$ProviderPoliciesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ProviderPoliciesTableTable,
+                    ProviderPoliciesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ProviderPoliciesTableTable,
+                    ProviderPoliciesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -106906,7 +111827,16 @@ class $$GoalsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$GoalsTableTable, GoalsTableData>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $GoalsTableTable,
+                    GoalsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -107223,7 +112153,19 @@ class $$BudgetIncidentsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $BudgetIncidentsTableTable,
+                    BudgetIncidentsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $BudgetIncidentsTableTable,
+                    BudgetIncidentsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -107767,7 +112709,7 @@ class $$ApprovalsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ApprovalsTableTable, ApprovalsTableData>(table),
                   $$ApprovalsTableTableReferences(db, table, e),
                 ),
               )
@@ -108138,7 +113080,10 @@ class $$ApprovalCommentsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $ApprovalCommentsTableTable,
+                    ApprovalCommentsTableData
+                  >(table),
                   $$ApprovalCommentsTableTableReferences(db, table, e),
                 ),
               )
@@ -108361,7 +113306,19 @@ class $$ApprovalRoutingPoliciesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ApprovalRoutingPoliciesTableTable,
+                    ApprovalRoutingPoliciesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ApprovalRoutingPoliciesTableTable,
+                    ApprovalRoutingPoliciesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -108744,7 +113701,9 @@ class $$WorkProductsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$WorkProductsTableTable, WorkProductsTableData>(
+                    table,
+                  ),
                   $$WorkProductsTableTableReferences(db, table, e),
                 ),
               )
@@ -109183,7 +114142,10 @@ class $$WorkProductRevisionsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $WorkProductRevisionsTableTable,
+                    WorkProductRevisionsTableData
+                  >(table),
                   $$WorkProductRevisionsTableTableReferences(db, table, e),
                 ),
               )
@@ -109571,7 +114533,10 @@ class $$AgentRuntimeStateTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $AgentRuntimeStateTableTable,
+                    AgentRuntimeStateTableData
+                  >(table),
                   $$AgentRuntimeStateTableTableReferences(db, table, e),
                 ),
               )
@@ -109909,7 +114874,19 @@ class $$RuntimeProfilesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $RuntimeProfilesTableTable,
+                    RuntimeProfilesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $RuntimeProfilesTableTable,
+                    RuntimeProfilesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -110203,7 +115180,19 @@ class $$TeamActivityLogTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $TeamActivityLogTableTable,
+                    TeamActivityLogTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TeamActivityLogTableTable,
+                    TeamActivityLogTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -110607,7 +115596,19 @@ class $$WebhookDeliveriesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $WebhookDeliveriesTableTable,
+                    WebhookDeliveriesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WebhookDeliveriesTableTable,
+                    WebhookDeliveriesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -110844,7 +115845,19 @@ class $$CronExecutionsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $CronExecutionsTableTable,
+                    CronExecutionsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $CronExecutionsTableTable,
+                    CronExecutionsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -111187,7 +116200,19 @@ class $$TicketSyncConfigsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $TicketSyncConfigsTableTable,
+                    TicketSyncConfigsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TicketSyncConfigsTableTable,
+                    TicketSyncConfigsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -111491,7 +116516,19 @@ class $$TicketSyncLinksTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $TicketSyncLinksTableTable,
+                    TicketSyncLinksTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TicketSyncLinksTableTable,
+                    TicketSyncLinksTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -111782,7 +116819,18 @@ class $$TicketSyncLogTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$TicketSyncLogTableTable, TicketSyncLogTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TicketSyncLogTableTable,
+                    TicketSyncLogTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -112005,7 +117053,19 @@ class $$TicketWriteLedgerTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $TicketWriteLedgerTableTable,
+                    TicketWriteLedgerTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $TicketWriteLedgerTableTable,
+                    TicketWriteLedgerTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -112221,7 +117281,18 @@ class $$WriteLedgerTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$WriteLedgerTableTable, WriteLedgerTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WriteLedgerTableTable,
+                    WriteLedgerTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -112566,7 +117637,7 @@ class $$TodosTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TodosTableTable, TodosTableData>(table),
                   $$TodosTableTableReferences(db, table, e),
                 ),
               )
@@ -112924,7 +117995,19 @@ class $$WorkspaceMembersTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $WorkspaceMembersTableTable,
+                    WorkspaceMembersTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WorkspaceMembersTableTable,
+                    WorkspaceMembersTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -113261,7 +118344,19 @@ class $$WorkspaceInvitesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $WorkspaceInvitesTableTable,
+                    WorkspaceInvitesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WorkspaceInvitesTableTable,
+                    WorkspaceInvitesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -113594,7 +118689,18 @@ class $$UserActivityTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$UserActivityTableTable, UserActivityTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $UserActivityTableTable,
+                    UserActivityTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -113922,7 +119028,10 @@ class $$WorkspaceMemberRepoGrantsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $WorkspaceMemberRepoGrantsTableTable,
+                    WorkspaceMemberRepoGrantsTableData
+                  >(table),
                   $$WorkspaceMemberRepoGrantsTableTableReferences(db, table, e),
                 ),
               )
@@ -114348,7 +119457,19 @@ class $$SessionRecordingsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SessionRecordingsTableTable,
+                    SessionRecordingsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SessionRecordingsTableTable,
+                    SessionRecordingsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -114686,7 +119807,19 @@ class $$GoldenSessionsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $GoldenSessionsTableTable,
+                    GoldenSessionsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $GoldenSessionsTableTable,
+                    GoldenSessionsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -115041,7 +120174,18 @@ class $$EvalSuitesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$EvalSuitesTableTable, EvalSuitesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $EvalSuitesTableTable,
+                    EvalSuitesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -115432,7 +120576,16 @@ class $$EvalRunsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$EvalRunsTableTable, EvalRunsTableData>(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $EvalRunsTableTable,
+                    EvalRunsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -115779,7 +120932,19 @@ class $$AgentConfigVersionsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $AgentConfigVersionsTableTable,
+                    AgentConfigVersionsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $AgentConfigVersionsTableTable,
+                    AgentConfigVersionsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -115805,6 +120970,935 @@ typedef $$AgentConfigVersionsTableTableProcessedTableManager =
         >,
       ),
       AgentConfigVersionsTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$SkillEvalCampaignsTableTableCreateCompanionBuilder =
+    SkillEvalCampaignsTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String skillKey,
+      required String status,
+      required DateTime createdAt,
+      required String payloadJson,
+      Value<int> rowid,
+    });
+typedef $$SkillEvalCampaignsTableTableUpdateCompanionBuilder =
+    SkillEvalCampaignsTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> skillKey,
+      Value<String> status,
+      Value<DateTime> createdAt,
+      Value<String> payloadJson,
+      Value<int> rowid,
+    });
+
+final class $$SkillEvalCampaignsTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $SkillEvalCampaignsTableTable,
+          SkillEvalCampaignsTableData
+        > {
+  $$SkillEvalCampaignsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<
+    $SkillEvalAttemptsTableTable,
+    List<SkillEvalAttemptsTableData>
+  >
+  _skillEvalAttemptsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.skillEvalAttemptsTable,
+        aliasName: 'skill_eval_campaigns__id__skill_eval_attempts__campaign_id',
+      );
+
+  $$SkillEvalAttemptsTableTableProcessedTableManager
+  get skillEvalAttemptsTableRefs {
+    final manager = $$SkillEvalAttemptsTableTableTableManager(
+      $_db,
+      $_db.skillEvalAttemptsTable,
+    ).filter((f) => f.campaignId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _skillEvalAttemptsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$SkillEvalCampaignsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalCampaignsTableTable> {
+  $$SkillEvalCampaignsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skillKey => $composableBuilder(
+    column: $table.skillKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> skillEvalAttemptsTableRefs(
+    Expression<bool> Function($$SkillEvalAttemptsTableTableFilterComposer f) f,
+  ) {
+    final $$SkillEvalAttemptsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.skillEvalAttemptsTable,
+          getReferencedColumn: (t) => t.campaignId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SkillEvalAttemptsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.skillEvalAttemptsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$SkillEvalCampaignsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalCampaignsTableTable> {
+  $$SkillEvalCampaignsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get skillKey => $composableBuilder(
+    column: $table.skillKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SkillEvalCampaignsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalCampaignsTableTable> {
+  $$SkillEvalCampaignsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get skillKey =>
+      $composableBuilder(column: $table.skillKey, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  Expression<T> skillEvalAttemptsTableRefs<T extends Object>(
+    Expression<T> Function($$SkillEvalAttemptsTableTableAnnotationComposer a) f,
+  ) {
+    final $$SkillEvalAttemptsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.skillEvalAttemptsTable,
+          getReferencedColumn: (t) => t.campaignId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SkillEvalAttemptsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.skillEvalAttemptsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$SkillEvalCampaignsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $SkillEvalCampaignsTableTable,
+          SkillEvalCampaignsTableData,
+          $$SkillEvalCampaignsTableTableFilterComposer,
+          $$SkillEvalCampaignsTableTableOrderingComposer,
+          $$SkillEvalCampaignsTableTableAnnotationComposer,
+          $$SkillEvalCampaignsTableTableCreateCompanionBuilder,
+          $$SkillEvalCampaignsTableTableUpdateCompanionBuilder,
+          (
+            SkillEvalCampaignsTableData,
+            $$SkillEvalCampaignsTableTableReferences,
+          ),
+          SkillEvalCampaignsTableData,
+          PrefetchHooks Function({bool skillEvalAttemptsTableRefs})
+        > {
+  $$SkillEvalCampaignsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $SkillEvalCampaignsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SkillEvalCampaignsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SkillEvalCampaignsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SkillEvalCampaignsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> skillKey = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SkillEvalCampaignsTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                skillKey: skillKey,
+                status: status,
+                createdAt: createdAt,
+                payloadJson: payloadJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String skillKey,
+                required String status,
+                required DateTime createdAt,
+                required String payloadJson,
+                Value<int> rowid = const Value.absent(),
+              }) => SkillEvalCampaignsTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                skillKey: skillKey,
+                status: status,
+                createdAt: createdAt,
+                payloadJson: payloadJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SkillEvalCampaignsTableTable,
+                    SkillEvalCampaignsTableData
+                  >(table),
+                  $$SkillEvalCampaignsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({skillEvalAttemptsTableRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (skillEvalAttemptsTableRefs) db.skillEvalAttemptsTable,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (skillEvalAttemptsTableRefs)
+                    await $_getPrefetchedData<
+                      SkillEvalCampaignsTableData,
+                      $SkillEvalCampaignsTableTable,
+                      SkillEvalAttemptsTableData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$SkillEvalCampaignsTableTableReferences
+                          ._skillEvalAttemptsTableRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$SkillEvalCampaignsTableTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).skillEvalAttemptsTableRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.campaignId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SkillEvalCampaignsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $SkillEvalCampaignsTableTable,
+      SkillEvalCampaignsTableData,
+      $$SkillEvalCampaignsTableTableFilterComposer,
+      $$SkillEvalCampaignsTableTableOrderingComposer,
+      $$SkillEvalCampaignsTableTableAnnotationComposer,
+      $$SkillEvalCampaignsTableTableCreateCompanionBuilder,
+      $$SkillEvalCampaignsTableTableUpdateCompanionBuilder,
+      (SkillEvalCampaignsTableData, $$SkillEvalCampaignsTableTableReferences),
+      SkillEvalCampaignsTableData,
+      PrefetchHooks Function({bool skillEvalAttemptsTableRefs})
+    >;
+typedef $$SkillEvalAttemptsTableTableCreateCompanionBuilder =
+    SkillEvalAttemptsTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String campaignId,
+      required int ordinal,
+      required String payloadJson,
+      Value<int> rowid,
+    });
+typedef $$SkillEvalAttemptsTableTableUpdateCompanionBuilder =
+    SkillEvalAttemptsTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> campaignId,
+      Value<int> ordinal,
+      Value<String> payloadJson,
+      Value<int> rowid,
+    });
+
+final class $$SkillEvalAttemptsTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $SkillEvalAttemptsTableTable,
+          SkillEvalAttemptsTableData
+        > {
+  $$SkillEvalAttemptsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $SkillEvalCampaignsTableTable _campaignIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.skillEvalCampaignsTable.createAlias(
+    'skill_eval_attempts__campaign_id__skill_eval_campaigns__id',
+  );
+
+  $$SkillEvalCampaignsTableTableProcessedTableManager get campaignId {
+    final $_column = $_itemColumn<String>('campaign_id')!;
+
+    final manager = $$SkillEvalCampaignsTableTableTableManager(
+      $_db,
+      $_db.skillEvalCampaignsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_campaignIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SkillEvalAttemptsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalAttemptsTableTable> {
+  $$SkillEvalAttemptsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SkillEvalCampaignsTableTableFilterComposer get campaignId {
+    final $$SkillEvalCampaignsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.campaignId,
+          referencedTable: $db.skillEvalCampaignsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SkillEvalCampaignsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.skillEvalCampaignsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$SkillEvalAttemptsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalAttemptsTableTable> {
+  $$SkillEvalAttemptsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SkillEvalCampaignsTableTableOrderingComposer get campaignId {
+    final $$SkillEvalCampaignsTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.campaignId,
+          referencedTable: $db.skillEvalCampaignsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SkillEvalCampaignsTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.skillEvalCampaignsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$SkillEvalAttemptsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalAttemptsTableTable> {
+  $$SkillEvalAttemptsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get ordinal =>
+      $composableBuilder(column: $table.ordinal, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  $$SkillEvalCampaignsTableTableAnnotationComposer get campaignId {
+    final $$SkillEvalCampaignsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.campaignId,
+          referencedTable: $db.skillEvalCampaignsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SkillEvalCampaignsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.skillEvalCampaignsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$SkillEvalAttemptsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $SkillEvalAttemptsTableTable,
+          SkillEvalAttemptsTableData,
+          $$SkillEvalAttemptsTableTableFilterComposer,
+          $$SkillEvalAttemptsTableTableOrderingComposer,
+          $$SkillEvalAttemptsTableTableAnnotationComposer,
+          $$SkillEvalAttemptsTableTableCreateCompanionBuilder,
+          $$SkillEvalAttemptsTableTableUpdateCompanionBuilder,
+          (SkillEvalAttemptsTableData, $$SkillEvalAttemptsTableTableReferences),
+          SkillEvalAttemptsTableData,
+          PrefetchHooks Function({bool campaignId})
+        > {
+  $$SkillEvalAttemptsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $SkillEvalAttemptsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SkillEvalAttemptsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SkillEvalAttemptsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SkillEvalAttemptsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> campaignId = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SkillEvalAttemptsTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                campaignId: campaignId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String campaignId,
+                required int ordinal,
+                required String payloadJson,
+                Value<int> rowid = const Value.absent(),
+              }) => SkillEvalAttemptsTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                campaignId: campaignId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SkillEvalAttemptsTableTable,
+                    SkillEvalAttemptsTableData
+                  >(table),
+                  $$SkillEvalAttemptsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({campaignId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (campaignId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.campaignId,
+                                referencedTable:
+                                    $$SkillEvalAttemptsTableTableReferences
+                                        ._campaignIdTable(db),
+                                referencedColumn:
+                                    $$SkillEvalAttemptsTableTableReferences
+                                        ._campaignIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SkillEvalAttemptsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $SkillEvalAttemptsTableTable,
+      SkillEvalAttemptsTableData,
+      $$SkillEvalAttemptsTableTableFilterComposer,
+      $$SkillEvalAttemptsTableTableOrderingComposer,
+      $$SkillEvalAttemptsTableTableAnnotationComposer,
+      $$SkillEvalAttemptsTableTableCreateCompanionBuilder,
+      $$SkillEvalAttemptsTableTableUpdateCompanionBuilder,
+      (SkillEvalAttemptsTableData, $$SkillEvalAttemptsTableTableReferences),
+      SkillEvalAttemptsTableData,
+      PrefetchHooks Function({bool campaignId})
+    >;
+typedef $$SkillEvalPoliciesTableTableCreateCompanionBuilder =
+    SkillEvalPoliciesTableCompanion Function({
+      required String workspaceId,
+      required String skillKey,
+      required bool enabled,
+      required String payloadJson,
+      Value<int> rowid,
+    });
+typedef $$SkillEvalPoliciesTableTableUpdateCompanionBuilder =
+    SkillEvalPoliciesTableCompanion Function({
+      Value<String> workspaceId,
+      Value<String> skillKey,
+      Value<bool> enabled,
+      Value<String> payloadJson,
+      Value<int> rowid,
+    });
+
+class $$SkillEvalPoliciesTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalPoliciesTableTable> {
+  $$SkillEvalPoliciesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skillKey => $composableBuilder(
+    column: $table.skillKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SkillEvalPoliciesTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalPoliciesTableTable> {
+  $$SkillEvalPoliciesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get skillKey => $composableBuilder(
+    column: $table.skillKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SkillEvalPoliciesTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $SkillEvalPoliciesTableTable> {
+  $$SkillEvalPoliciesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get skillKey =>
+      $composableBuilder(column: $table.skillKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get enabled =>
+      $composableBuilder(column: $table.enabled, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+}
+
+class $$SkillEvalPoliciesTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $SkillEvalPoliciesTableTable,
+          SkillEvalPoliciesTableData,
+          $$SkillEvalPoliciesTableTableFilterComposer,
+          $$SkillEvalPoliciesTableTableOrderingComposer,
+          $$SkillEvalPoliciesTableTableAnnotationComposer,
+          $$SkillEvalPoliciesTableTableCreateCompanionBuilder,
+          $$SkillEvalPoliciesTableTableUpdateCompanionBuilder,
+          (
+            SkillEvalPoliciesTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $SkillEvalPoliciesTableTable,
+              SkillEvalPoliciesTableData
+            >,
+          ),
+          SkillEvalPoliciesTableData,
+          PrefetchHooks Function()
+        > {
+  $$SkillEvalPoliciesTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $SkillEvalPoliciesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SkillEvalPoliciesTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SkillEvalPoliciesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SkillEvalPoliciesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> skillKey = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SkillEvalPoliciesTableCompanion(
+                workspaceId: workspaceId,
+                skillKey: skillKey,
+                enabled: enabled,
+                payloadJson: payloadJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String workspaceId,
+                required String skillKey,
+                required bool enabled,
+                required String payloadJson,
+                Value<int> rowid = const Value.absent(),
+              }) => SkillEvalPoliciesTableCompanion.insert(
+                workspaceId: workspaceId,
+                skillKey: skillKey,
+                enabled: enabled,
+                payloadJson: payloadJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SkillEvalPoliciesTableTable,
+                    SkillEvalPoliciesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SkillEvalPoliciesTableTable,
+                    SkillEvalPoliciesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SkillEvalPoliciesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $SkillEvalPoliciesTableTable,
+      SkillEvalPoliciesTableData,
+      $$SkillEvalPoliciesTableTableFilterComposer,
+      $$SkillEvalPoliciesTableTableOrderingComposer,
+      $$SkillEvalPoliciesTableTableAnnotationComposer,
+      $$SkillEvalPoliciesTableTableCreateCompanionBuilder,
+      $$SkillEvalPoliciesTableTableUpdateCompanionBuilder,
+      (
+        SkillEvalPoliciesTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $SkillEvalPoliciesTableTable,
+          SkillEvalPoliciesTableData
+        >,
+      ),
+      SkillEvalPoliciesTableData,
       PrefetchHooks Function()
     >;
 typedef $$SkillScanResultsTableTableCreateCompanionBuilder =
@@ -116105,7 +122199,19 @@ class $$SkillScanResultsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SkillScanResultsTableTable,
+                    SkillScanResultsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SkillScanResultsTableTable,
+                    SkillScanResultsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -116504,7 +122610,19 @@ class $$ActionPoliciesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ActionPoliciesTableTable,
+                    ActionPoliciesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ActionPoliciesTableTable,
+                    ActionPoliciesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -116744,7 +122862,19 @@ class $$SandboxExecGrantsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SandboxExecGrantsTableTable,
+                    SandboxExecGrantsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SandboxExecGrantsTableTable,
+                    SandboxExecGrantsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -117465,7 +123595,19 @@ class $$GuardDecisionsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $GuardDecisionsTableTable,
+                    GuardDecisionsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $GuardDecisionsTableTable,
+                    GuardDecisionsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -117744,7 +123886,19 @@ class $$WorkspaceRolesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $WorkspaceRolesTableTable,
+                    WorkspaceRolesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WorkspaceRolesTableTable,
+                    WorkspaceRolesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -118051,7 +124205,10 @@ class $$ConversationGoalsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $ConversationGoalsTableTable,
+                    ConversationGoalsTableData
+                  >(table),
                   $$ConversationGoalsTableTableReferences(db, table, e),
                 ),
               )
@@ -118473,7 +124630,10 @@ class $$RunTranscriptsTableTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $RunTranscriptsTableTable,
+                    RunTranscriptsTableData
+                  >(table),
                   $$RunTranscriptsTableTableReferences(db, table, e),
                 ),
               )
@@ -118834,7 +124994,19 @@ class $$ChatSpaceLinksTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ChatSpaceLinksTableTable,
+                    ChatSpaceLinksTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ChatSpaceLinksTableTable,
+                    ChatSpaceLinksTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -119110,7 +125282,18 @@ class $$ChatUserLinksTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ChatUserLinksTableTable, ChatUserLinksTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ChatUserLinksTableTable,
+                    ChatUserLinksTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -119321,7 +125504,18 @@ class $$WorkspaceMetaTableTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$WorkspaceMetaTableTable, WorkspaceMetaTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WorkspaceMetaTableTable,
+                    WorkspaceMetaTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -119523,7 +125717,19 @@ class $$WorkspaceSettingsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $WorkspaceSettingsTableTable,
+                    WorkspaceSettingsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $WorkspaceSettingsTableTable,
+                    WorkspaceSettingsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -119746,7 +125952,19 @@ class $$NotificationFeedTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $NotificationFeedTableTable,
+                    NotificationFeedTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $NotificationFeedTableTable,
+                    NotificationFeedTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -119952,7 +126170,19 @@ class $$NotificationReadMarksTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $NotificationReadMarksTableTable,
+                    NotificationReadMarksTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $NotificationReadMarksTableTable,
+                    NotificationReadMarksTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -120175,7 +126405,19 @@ class $$NotificationItemStatesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $NotificationItemStatesTableTable,
+                    NotificationItemStatesTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $NotificationItemStatesTableTable,
+                    NotificationItemStatesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -120709,7 +126951,18 @@ class $$RigSessionsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$RigSessionsTableTable, RigSessionsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $RigSessionsTableTable,
+                    RigSessionsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -121101,7 +127354,18 @@ class $$RigActionLogTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$RigActionLogTableTable, RigActionLogTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $RigActionLogTableTable,
+                    RigActionLogTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -121457,7 +127721,18 @@ class $$SkillSourcesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$SkillSourcesTableTable, SkillSourcesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SkillSourcesTableTable,
+                    SkillSourcesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -121812,7 +128087,19 @@ class $$RepoScriptRunsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $RepoScriptRunsTableTable,
+                    RepoScriptRunsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $RepoScriptRunsTableTable,
+                    RepoScriptRunsTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -121838,6 +128125,596 @@ typedef $$RepoScriptRunsTableTableProcessedTableManager =
         >,
       ),
       RepoScriptRunsTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$RunCallUsagesTableTableCreateCompanionBuilder =
+    RunCallUsagesTableCompanion Function({
+      required String id,
+      Value<String?> runId,
+      Value<String?> workspaceId,
+      Value<String?> conversationId,
+      required String requestId,
+      Value<int> attempt,
+      Value<String> purpose,
+      Value<String> provider,
+      Value<String> modelId,
+      Value<int> inputTokens,
+      Value<int> outputTokens,
+      Value<int> thoughtTokens,
+      Value<int> cachedReadTokens,
+      Value<int> cachedWriteTokens,
+      Value<int?> costMicros,
+      Value<String> costBasis,
+      Value<int?> transportFirstByteMs,
+      Value<int?> firstModelEventMs,
+      Value<int?> durationMs,
+      Value<String> outcome,
+      Value<String?> errorCode,
+      required DateTime startedAt,
+      required DateTime recordedAt,
+      Value<int> rowid,
+    });
+typedef $$RunCallUsagesTableTableUpdateCompanionBuilder =
+    RunCallUsagesTableCompanion Function({
+      Value<String> id,
+      Value<String?> runId,
+      Value<String?> workspaceId,
+      Value<String?> conversationId,
+      Value<String> requestId,
+      Value<int> attempt,
+      Value<String> purpose,
+      Value<String> provider,
+      Value<String> modelId,
+      Value<int> inputTokens,
+      Value<int> outputTokens,
+      Value<int> thoughtTokens,
+      Value<int> cachedReadTokens,
+      Value<int> cachedWriteTokens,
+      Value<int?> costMicros,
+      Value<String> costBasis,
+      Value<int?> transportFirstByteMs,
+      Value<int?> firstModelEventMs,
+      Value<int?> durationMs,
+      Value<String> outcome,
+      Value<String?> errorCode,
+      Value<DateTime> startedAt,
+      Value<DateTime> recordedAt,
+      Value<int> rowid,
+    });
+
+class $$RunCallUsagesTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $RunCallUsagesTableTable> {
+  $$RunCallUsagesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get runId => $composableBuilder(
+    column: $table.runId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get inputTokens => $composableBuilder(
+    column: $table.inputTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get outputTokens => $composableBuilder(
+    column: $table.outputTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get thoughtTokens => $composableBuilder(
+    column: $table.thoughtTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cachedReadTokens => $composableBuilder(
+    column: $table.cachedReadTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cachedWriteTokens => $composableBuilder(
+    column: $table.cachedWriteTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get costBasis => $composableBuilder(
+    column: $table.costBasis,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get transportFirstByteMs => $composableBuilder(
+    column: $table.transportFirstByteMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstModelEventMs => $composableBuilder(
+    column: $table.firstModelEventMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorCode => $composableBuilder(
+    column: $table.errorCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RunCallUsagesTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $RunCallUsagesTableTable> {
+  $$RunCallUsagesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get runId => $composableBuilder(
+    column: $table.runId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get inputTokens => $composableBuilder(
+    column: $table.inputTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get outputTokens => $composableBuilder(
+    column: $table.outputTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get thoughtTokens => $composableBuilder(
+    column: $table.thoughtTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cachedReadTokens => $composableBuilder(
+    column: $table.cachedReadTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cachedWriteTokens => $composableBuilder(
+    column: $table.cachedWriteTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get costBasis => $composableBuilder(
+    column: $table.costBasis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get transportFirstByteMs => $composableBuilder(
+    column: $table.transportFirstByteMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstModelEventMs => $composableBuilder(
+    column: $table.firstModelEventMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorCode => $composableBuilder(
+    column: $table.errorCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RunCallUsagesTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $RunCallUsagesTableTable> {
+  $$RunCallUsagesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get runId =>
+      $composableBuilder(column: $table.runId, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get requestId =>
+      $composableBuilder(column: $table.requestId, builder: (column) => column);
+
+  GeneratedColumn<int> get attempt =>
+      $composableBuilder(column: $table.attempt, builder: (column) => column);
+
+  GeneratedColumn<String> get purpose =>
+      $composableBuilder(column: $table.purpose, builder: (column) => column);
+
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<int> get inputTokens => $composableBuilder(
+    column: $table.inputTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get outputTokens => $composableBuilder(
+    column: $table.outputTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get thoughtTokens => $composableBuilder(
+    column: $table.thoughtTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cachedReadTokens => $composableBuilder(
+    column: $table.cachedReadTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cachedWriteTokens => $composableBuilder(
+    column: $table.cachedWriteTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get costBasis =>
+      $composableBuilder(column: $table.costBasis, builder: (column) => column);
+
+  GeneratedColumn<int> get transportFirstByteMs => $composableBuilder(
+    column: $table.transportFirstByteMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get firstModelEventMs => $composableBuilder(
+    column: $table.firstModelEventMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get outcome =>
+      $composableBuilder(column: $table.outcome, builder: (column) => column);
+
+  GeneratedColumn<String> get errorCode =>
+      $composableBuilder(column: $table.errorCode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$RunCallUsagesTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $RunCallUsagesTableTable,
+          RunCallUsagesTableData,
+          $$RunCallUsagesTableTableFilterComposer,
+          $$RunCallUsagesTableTableOrderingComposer,
+          $$RunCallUsagesTableTableAnnotationComposer,
+          $$RunCallUsagesTableTableCreateCompanionBuilder,
+          $$RunCallUsagesTableTableUpdateCompanionBuilder,
+          (
+            RunCallUsagesTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $RunCallUsagesTableTable,
+              RunCallUsagesTableData
+            >,
+          ),
+          RunCallUsagesTableData,
+          PrefetchHooks Function()
+        > {
+  $$RunCallUsagesTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $RunCallUsagesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RunCallUsagesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RunCallUsagesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RunCallUsagesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> runId = const Value.absent(),
+                Value<String?> workspaceId = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<String> requestId = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<String> purpose = const Value.absent(),
+                Value<String> provider = const Value.absent(),
+                Value<String> modelId = const Value.absent(),
+                Value<int> inputTokens = const Value.absent(),
+                Value<int> outputTokens = const Value.absent(),
+                Value<int> thoughtTokens = const Value.absent(),
+                Value<int> cachedReadTokens = const Value.absent(),
+                Value<int> cachedWriteTokens = const Value.absent(),
+                Value<int?> costMicros = const Value.absent(),
+                Value<String> costBasis = const Value.absent(),
+                Value<int?> transportFirstByteMs = const Value.absent(),
+                Value<int?> firstModelEventMs = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
+                Value<String> outcome = const Value.absent(),
+                Value<String?> errorCode = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RunCallUsagesTableCompanion(
+                id: id,
+                runId: runId,
+                workspaceId: workspaceId,
+                conversationId: conversationId,
+                requestId: requestId,
+                attempt: attempt,
+                purpose: purpose,
+                provider: provider,
+                modelId: modelId,
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                thoughtTokens: thoughtTokens,
+                cachedReadTokens: cachedReadTokens,
+                cachedWriteTokens: cachedWriteTokens,
+                costMicros: costMicros,
+                costBasis: costBasis,
+                transportFirstByteMs: transportFirstByteMs,
+                firstModelEventMs: firstModelEventMs,
+                durationMs: durationMs,
+                outcome: outcome,
+                errorCode: errorCode,
+                startedAt: startedAt,
+                recordedAt: recordedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> runId = const Value.absent(),
+                Value<String?> workspaceId = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                required String requestId,
+                Value<int> attempt = const Value.absent(),
+                Value<String> purpose = const Value.absent(),
+                Value<String> provider = const Value.absent(),
+                Value<String> modelId = const Value.absent(),
+                Value<int> inputTokens = const Value.absent(),
+                Value<int> outputTokens = const Value.absent(),
+                Value<int> thoughtTokens = const Value.absent(),
+                Value<int> cachedReadTokens = const Value.absent(),
+                Value<int> cachedWriteTokens = const Value.absent(),
+                Value<int?> costMicros = const Value.absent(),
+                Value<String> costBasis = const Value.absent(),
+                Value<int?> transportFirstByteMs = const Value.absent(),
+                Value<int?> firstModelEventMs = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
+                Value<String> outcome = const Value.absent(),
+                Value<String?> errorCode = const Value.absent(),
+                required DateTime startedAt,
+                required DateTime recordedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => RunCallUsagesTableCompanion.insert(
+                id: id,
+                runId: runId,
+                workspaceId: workspaceId,
+                conversationId: conversationId,
+                requestId: requestId,
+                attempt: attempt,
+                purpose: purpose,
+                provider: provider,
+                modelId: modelId,
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                thoughtTokens: thoughtTokens,
+                cachedReadTokens: cachedReadTokens,
+                cachedWriteTokens: cachedWriteTokens,
+                costMicros: costMicros,
+                costBasis: costBasis,
+                transportFirstByteMs: transportFirstByteMs,
+                firstModelEventMs: firstModelEventMs,
+                durationMs: durationMs,
+                outcome: outcome,
+                errorCode: errorCode,
+                startedAt: startedAt,
+                recordedAt: recordedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RunCallUsagesTableTable, RunCallUsagesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $RunCallUsagesTableTable,
+                    RunCallUsagesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RunCallUsagesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $RunCallUsagesTableTable,
+      RunCallUsagesTableData,
+      $$RunCallUsagesTableTableFilterComposer,
+      $$RunCallUsagesTableTableOrderingComposer,
+      $$RunCallUsagesTableTableAnnotationComposer,
+      $$RunCallUsagesTableTableCreateCompanionBuilder,
+      $$RunCallUsagesTableTableUpdateCompanionBuilder,
+      (
+        RunCallUsagesTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $RunCallUsagesTableTable,
+          RunCallUsagesTableData
+        >,
+      ),
+      RunCallUsagesTableData,
       PrefetchHooks Function()
     >;
 
@@ -121869,6 +128746,8 @@ class $WorkspaceDatabaseManager {
       );
   $$SpaceReposTableTableTableManager get spaceReposTable =>
       $$SpaceReposTableTableTableManager(_db, _db.spaceReposTable);
+  $$CatalogFilesTableTableTableManager get catalogFilesTable =>
+      $$CatalogFilesTableTableTableManager(_db, _db.catalogFilesTable);
   $$SpaceNotesTableTableTableManager get spaceNotesTable =>
       $$SpaceNotesTableTableTableManager(_db, _db.spaceNotesTable);
   $$SpaceAutonomyTableTableTableManager get spaceAutonomyTable =>
@@ -122118,6 +128997,21 @@ class $WorkspaceDatabaseManager {
         _db,
         _db.agentConfigVersionsTable,
       );
+  $$SkillEvalCampaignsTableTableTableManager get skillEvalCampaignsTable =>
+      $$SkillEvalCampaignsTableTableTableManager(
+        _db,
+        _db.skillEvalCampaignsTable,
+      );
+  $$SkillEvalAttemptsTableTableTableManager get skillEvalAttemptsTable =>
+      $$SkillEvalAttemptsTableTableTableManager(
+        _db,
+        _db.skillEvalAttemptsTable,
+      );
+  $$SkillEvalPoliciesTableTableTableManager get skillEvalPoliciesTable =>
+      $$SkillEvalPoliciesTableTableTableManager(
+        _db,
+        _db.skillEvalPoliciesTable,
+      );
   $$SkillScanResultsTableTableTableManager get skillScanResultsTable =>
       $$SkillScanResultsTableTableTableManager(_db, _db.skillScanResultsTable);
   $$ActionPoliciesTableTableTableManager get actionPoliciesTable =>
@@ -122171,4 +129065,6 @@ class $WorkspaceDatabaseManager {
       $$SkillSourcesTableTableTableManager(_db, _db.skillSourcesTable);
   $$RepoScriptRunsTableTableTableManager get repoScriptRunsTable =>
       $$RepoScriptRunsTableTableTableManager(_db, _db.repoScriptRunsTable);
+  $$RunCallUsagesTableTableTableManager get runCallUsagesTable =>
+      $$RunCallUsagesTableTableTableManager(_db, _db.runCallUsagesTable);
 }

@@ -238,7 +238,7 @@ void main() {
       expect(series[2].runs, 1);
     });
 
-    test('sums all five token axes, cost and counts errors per bucket', () {
+    test('counts unique tokens, cost and errors per bucket', () {
       final hour = DateTime(2026, 1, 1, 9);
       final runs = [
         _run(
@@ -246,7 +246,7 @@ void main() {
           status: RunStatus.error,
           inputTokens: 1,
           outputTokens: 2,
-          thoughtTokens: 3,
+          thoughtTokens: 1,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
           estimatedCostCents: 10,
@@ -256,7 +256,7 @@ void main() {
           status: RunStatus.completed,
           inputTokens: 10,
           outputTokens: 20,
-          thoughtTokens: 30,
+          thoughtTokens: 10,
           cachedReadTokens: 40,
           cachedWriteTokens: 50,
           estimatedCostCents: 90,
@@ -268,8 +268,8 @@ void main() {
       expect(b.bucketStart, hour);
       expect(b.runs, 2);
       expect(b.errors, 1);
-      // (1+2+3+4+5) + (10+20+30+40+50) = 15 + 150 = 165
-      expect(b.tokens, 165);
+      // Reasoning is a subset of output: 12 + 120, not another token axis.
+      expect(b.tokens, 132);
       expect(b.costCents, 100);
     });
 

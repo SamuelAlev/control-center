@@ -1,6 +1,7 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -119,6 +120,60 @@ void main() {
       expect(args['workspace_id'], 'ws1');
       final wire = args['log'] as Map;
       expect(wire['id'], 'rl9');
+    });
+
+    test('atomic partial writes forward workspace, run and exact cost', () async {
+      final repo = RemoteAgentRunLogRepository(client);
+      await repo.updateCost(
+        'ws1',
+        'rl1',
+        const RunCost(inputTokens: 3, costMicros: 1250),
+      );
+      final costArgs = host.lastCall('agent_run_log.updateCost')!.args;
+      expect(costArgs['workspace_id'], 'ws1');
+      expect(costArgs['run_id'], 'rl1');
+      expect((costArgs['cost'] as Map)['cost_micros'], 1250);
+      await repo.addChildCostMicros('ws1', 'rl1', 123);
+      final childArgs = host.lastCall('agent_run_log.addChildCostMicros')!.args;
+      expect(childArgs['workspace_id'], 'ws1');
+      expect(childArgs['run_id'], 'rl1');
+      expect(childArgs['amount_micros'], 123);
+      host.callResults['agent_run_log.updateRuntime'] = {'updated': true};
+      final runtimeUpdated = await RpcAgentRunLogRepository(client).updateRuntime(
+        'ws1',
+        'rl1',
+        markRunning: true,
+        pid: 77,
+        lastOutputAt: DateTime.utc(2026, 1, 2),
+        liveness: RunLiveness.alive,
+      );
+      expect(runtimeUpdated, true);
+      final runtimeArgs = host.lastCall('agent_run_log.updateRuntime')!.args;
+      expect(runtimeArgs['workspace_id'], 'ws1');
+      expect(runtimeArgs['run_id'], 'rl1');
+      expect(runtimeArgs['mark_running'], true);
+      expect(runtimeArgs['pid'], 77);
+      expect(runtimeArgs['last_output_at'], '2026-01-02T00:00:00.000Z');
+      expect(runtimeArgs['liveness'], 'alive');
+      expect(runtimeArgs.containsKey('summary'), false);
+      host.callResults['agent_run_log.completeIfActive'] = {
+        'completed': true,
+      };
+      final completed = await repo.completeIfActive(
+        AgentRunLogDto(
+          id: 'rl1',
+          agentId: 'a1',
+          workspaceId: 'ws1',
+          startedAt: '2026-01-01T00:00:00.000',
+          status: 'completed',
+        ),
+        writeCost: false,
+      );
+      expect(completed, true);
+      final terminalArgs = host.lastCall('agent_run_log.completeIfActive')!.args;
+      expect(terminalArgs['workspace_id'], 'ws1');
+      expect(terminalArgs['write_cost'], false);
+      expect((terminalArgs['log'] as Map)['id'], 'rl1');
     });
 
     test(

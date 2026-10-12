@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/tables/server_meta_table.dart';
 import 'package:cc_persistence/database/tables/workspace_routes_table.dart';
@@ -31,6 +32,24 @@ class WorkspaceRouteDao extends DatabaseAccessor<GlobalDatabase>
     return row?.workspaceId;
   }
 
+  /// Resolves a public Noise invite route without revealing its stored PSK
+  /// hash to the pre-auth caller. Both fields are checked against the
+  /// workspace's invite row by the repository before admitting a handshake.
+  Future<({String codeHash, String workspaceId})?> resolveSecureInvite(
+    String routeId,
+  ) async {
+    final rows = await customSelect(
+      'SELECT code_hash, workspace_id FROM invite_secure_routes '
+      'WHERE route_id = ?',
+      variables: [Variable.withString(routeId)],
+    ).get();
+    if (rows.isEmpty) return null;
+    return (
+      codeHash: rows.single.read<String>('code_hash'),
+      workspaceId: rows.single.read<String>('workspace_id'),
+    );
+  }
+
   /// Records that [keyHash] of [kind] belongs to [workspaceId]. Idempotent.
   ///
   /// Callers write the entity into its workspace database FIRST, then the route:
@@ -41,14 +60,23 @@ class WorkspaceRouteDao extends DatabaseAccessor<GlobalDatabase>
     WorkspaceRouteKind kind,
     String keyHash,
     String workspaceId,
-  ) => into(workspaceRoutesTable).insertOnConflictUpdate(
-    WorkspaceRoutesTableCompanion.insert(
-      kind: kind.wireName,
-      keyHash: keyHash,
-      workspaceId: workspaceId,
-      createdAt: Value(DateTime.now()),
-    ),
-  );
+  ) async {
+    await into(workspaceRoutesTable).insertOnConflictUpdate(
+      WorkspaceRoutesTableCompanion.insert(
+        kind: kind.wireName,
+        keyHash: keyHash,
+        workspaceId: workspaceId,
+        createdAt: Value(DateTime.now()),
+      ),
+    );
+    if (kind == WorkspaceRouteKind.inviteCode) {
+      await customStatement(
+        'INSERT OR REPLACE INTO invite_secure_routes '
+        '(route_id, code_hash, workspace_id) VALUES (?, ?, ?)',
+        [InvitePairingProof.routeIdFromHash(keyHash), keyHash, workspaceId],
+      );
+    }
+  }
 
   /// Removes the route for [keyHash] of [kind], if any.
   Future<void> remove(WorkspaceRouteKind kind, String keyHash) async {
@@ -56,6 +84,12 @@ class WorkspaceRouteDao extends DatabaseAccessor<GlobalDatabase>
           (t) => t.kind.equals(kind.wireName) & t.keyHash.equals(keyHash),
         ))
         .go();
+    if (kind == WorkspaceRouteKind.inviteCode) {
+      await customStatement(
+        'DELETE FROM invite_secure_routes WHERE route_id = ?',
+        [InvitePairingProof.routeIdFromHash(keyHash)],
+      );
+    }
   }
 
   /// Drops every route belonging to [workspaceId] — called when a workspace is
@@ -65,6 +99,10 @@ class WorkspaceRouteDao extends DatabaseAccessor<GlobalDatabase>
     await (delete(
       workspaceRoutesTable,
     )..where((t) => t.workspaceId.equals(workspaceId))).go();
+    await customStatement(
+      'DELETE FROM invite_secure_routes WHERE workspace_id = ?',
+      [workspaceId],
+    );
   }
 
   /// Reads a [ServerMetaTable] value, or `null`.

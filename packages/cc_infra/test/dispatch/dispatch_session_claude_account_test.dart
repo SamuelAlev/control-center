@@ -13,9 +13,11 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:test/test.dart';
 
 import '../helpers/windows_safe_delete.dart';
@@ -97,6 +99,28 @@ String _textDelta(String text) => jsonEncode({
   },
 });
 
+/// Prompt parts whose delta is [userText] with no new context.
+AgentPromptParts _resumeParts(String userText) => AgentPromptParts(
+  userText: userText,
+  standing: 'standing brief',
+  turnContext: '',
+  conversationContext: '',
+  conversationEntries: const [],
+  turnSections: const [],
+  fullPrompt: userText,
+  standingRevision: PromptBuilder.promptRevisionOf('standing brief'),
+);
+
+/// One NDJSON line: `system/init`, carrying the native session id.
+String _init(String sessionId) => jsonEncode({
+  'type': 'system',
+  'subtype': 'init',
+  'session_id': sessionId,
+  'model': 'claude-sonnet-4-5-20250929',
+  'tools': ['Bash'],
+  'mcp_servers': const [],
+});
+
 class _NoopBroker implements CredentialBrokerPort {
   @override
   Future<ScopedCredentials> mint({
@@ -136,6 +160,8 @@ _dispatchClaude({
   List<List<String>> stdoutPerAttempt = const [],
   RunCredentialGatePort? credentialGate,
   Future<bool> Function(String accountId)? syncClaudeCredential,
+  ClaudeNativeSessionStore? claudeSessionStore,
+  AgentPromptParts? promptParts,
 }) async {
   final sandbox = _RecordingSandbox(stdoutPerAttempt: stdoutPerAttempt);
   final specs = <SandboxSpec>[];
@@ -153,6 +179,7 @@ _dispatchClaude({
     backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     credentialGate: credentialGate,
     syncClaudeCredential: syncClaudeCredential,
+    claudeSessionStore: claudeSessionStore,
   );
 
   final session = DispatchSession(
@@ -174,6 +201,7 @@ _dispatchClaude({
     dispatchId: 'd-claude',
     cliName: 'claude',
     prompt: 'hello',
+    promptParts: promptParts,
     agentDirHostPath: cwd,
     modelId: null,
     callerEnv: const {},
@@ -222,6 +250,14 @@ void main() {
 
   setUp(() {
     temp = Directory.systemTemp.createTempSync('cc_dispatch_claude_');
+    // The real probe needs Claude Code installed; tests assert behaviour for a
+    // CLI that ADVERTISES resume/effort, not for an unknown build (which is now
+    // conservatively flag-less).
+    ClaudeCliBackend.cacheFor(
+      '/usr/local/bin/claude',
+      ClaudeCliCapabilities.baseline,
+    );
+
     account = Directory('${temp.path}/claude-accounts/work')
       ..createSync(recursive: true);
   });
@@ -651,6 +687,102 @@ void main() {
         containsAll([a.configDir, b.configDir]),
       );
     });
+
+    // Resume is scoped to an account, so a fallback attempt must not be handed
+    // the failed account's session id — and must not write ITS id under that
+    // account's scope either, or a later run would resume a session the first
+    // account's directory does not hold.
+    test('a failover neither resumes nor records the other account\'s '
+        'session', () async {
+      final a = account('work');
+      final b = account('personal');
+      final store = InMemoryClaudeNativeSessionStore();
+
+      final run = await _dispatchClaude(
+        cwd: temp.path,
+        claudeConfigDir: a.configDir,
+        accounts: [a, b],
+        claudeSessionStore: store,
+        promptParts: _resumeParts('delta'),
+        stdoutPerAttempt: [
+          [
+            _init('sess-A'),
+            _resultError('Claude AI usage limit reached|1787601441'),
+          ],
+          [_init('sess-B'), _textDelta('hello')],
+        ],
+      );
+
+      expect(run.sandbox.execArgs, hasLength(2));
+      // No cross-account resume on the fallback attempt.
+      expect(run.sandbox.execArgs[1], isNot(contains('--resume')));
+      // The scope record still names the FIRST account's session.
+      expect(store.records.values.single.sessionId, 'sess-A');
+    });
+
+    test(
+      'a session recorded before a failover still resumes afterwards',
+      () async {
+        final a = account('work');
+        final b = account('personal');
+        final store = InMemoryClaudeNativeSessionStore();
+
+        // First dispatch: no failover, records sess-A under account A's scope.
+        await _dispatchClaude(
+          cwd: temp.path,
+          claudeConfigDir: a.configDir,
+          accounts: [a, b],
+          claudeSessionStore: store,
+          promptParts: _resumeParts('delta'),
+          stdoutPerAttempt: [
+            [
+              _init('sess-A'),
+              _textDelta('hello'),
+              jsonEncode({
+                'type': 'result',
+                'subtype': 'success',
+                'session_id': 'sess-A',
+                'total_cost_usd': 0.01,
+                'usage': {'input_tokens': 1, 'output_tokens': 1},
+              }),
+            ],
+          ],
+        );
+        expect(store.records.values.single.sessionId, 'sess-A');
+
+        // Second dispatch fails over: the fallback attempt still starts fresh,
+        // and the recorded session is untouched.
+        final run = await _dispatchClaude(
+          cwd: temp.path,
+          claudeConfigDir: a.configDir,
+          accounts: [a, b],
+          claudeSessionStore: store,
+          promptParts: _resumeParts('delta'),
+          stdoutPerAttempt: [
+            [_resultError('Claude AI usage limit reached|1787601441')],
+            [_init('sess-B'), _textDelta('hello')],
+          ],
+        );
+        expect(run.sandbox.execArgs, hasLength(2));
+        expect(store.records.values.single.sessionId, 'sess-A');
+
+        // And a later dispatch resumes it, on the account that owns it.
+        final resumed = await _dispatchClaude(
+          cwd: temp.path,
+          claudeConfigDir: a.configDir,
+          accounts: [a, b],
+          claudeSessionStore: store,
+          promptParts: _resumeParts('delta'),
+          stdoutPerAttempt: [
+            [_init('sess-A'), _textDelta('hello')],
+          ],
+        );
+        expect(
+          resumed.sandbox.execArgs.single,
+          containsAll(['--resume', 'sess-A']),
+        );
+      },
+    );
   });
 
   group('all accounts spent', () {

@@ -38,6 +38,7 @@ class MessageAttachment {
     this.size,
     this.order = 0,
     this.mediaType,
+    this.fileId,
     this.localPath,
   });
 
@@ -57,6 +58,7 @@ class MessageAttachment {
         size: json['size'] as int?,
         order: json['order'] as int? ?? 0,
         mediaType: json['mediaType'] as String?,
+        fileId: json['fileId'] as String?,
         localPath: json['localPath'] as String?,
       );
 
@@ -80,6 +82,7 @@ class MessageAttachment {
     final order = raw['order'];
     final mediaType = raw['mediaType'];
     final localPath = raw['localPath'];
+    final fileId = raw['fileId'];
     return MessageAttachment(
       id: id is String && id.isNotEmpty ? id : 'attachment-$index',
       path: path,
@@ -88,6 +91,7 @@ class MessageAttachment {
       size: size is int ? size : null,
       order: order is int ? order : index,
       mediaType: mediaType is String && mediaType.isNotEmpty ? mediaType : null,
+      fileId: fileId is String && fileId.isNotEmpty ? fileId : null,
       localPath: localPath is String && localPath.isNotEmpty ? localPath : null,
     );
   }
@@ -143,6 +147,9 @@ class MessageAttachment {
   /// MIME type as the sending composer resolved it, when it recorded one.
   final String? mediaType;
 
+  /// Durable workspace file identity (old transcript entries omit it).
+  final String? fileId;
+
   /// The sender's own path, kept as a hint for an agent that DOES share this
   /// filesystem. Never what a preview resolves from — the sending device is
   /// routinely not the machine anything later runs on.
@@ -178,6 +185,7 @@ class MessageAttachment {
     if (size != null) 'size': size,
     'order': order,
     if (mediaType != null) 'mediaType': mediaType,
+    if (fileId != null) 'fileId': fileId,
     if (localPath != null) 'localPath': localPath,
   };
 
@@ -193,12 +201,22 @@ class MessageAttachment {
           kind == other.kind &&
           size == other.size &&
           order == other.order &&
+          fileId == other.fileId &&
           mediaType == other.mediaType &&
           localPath == other.localPath;
 
   /// Hash based on all fields.
 
   @override
-  int get hashCode =>
-      Object.hash(id, path, name, kind, size, order, mediaType, localPath);
+  int get hashCode => Object.hash(
+    id,
+    path,
+    name,
+    kind,
+    size,
+    order,
+    mediaType,
+    localPath,
+    fileId,
+  );
 }

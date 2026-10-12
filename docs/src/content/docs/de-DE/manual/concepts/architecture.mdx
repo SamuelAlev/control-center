@@ -3,7 +3,7 @@ title: "Architektur"
 description: "Wie Control Center aufgebaut ist: Thin Client über einem Headless-Server, Clean Architecture nach Features sowie Ports und Adapter."
 dateModified: 2026-09-19
 slug: de-DE/handbuch/konzepte/architektur
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Überblick
@@ -26,7 +26,7 @@ Das ist ein einzelnes **Dart-Workspace** mit aufgelöstem Lockfile und 21 Mitgli
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domänenschicht**: Entitäten in reinem Dart, Wertobjekte, Repository-Schnittstellen, Ports und Domänendienste. Keine Infrastruktur-Imports (kein dio, kein Drift, keine Netzwerkmodelle).
+- **Domänenschicht**: Entitäten in reinem Dart, Wertobjekte, Repository-Schnittstellen, Ports und Domänendienste. Keine Infrastruktur-Imports (kein rhttp, kein Drift, keine Netzwerkmodelle).
 - **Präsentationsschicht**: Screens, Widgets, Notifier. Kein direkter Zugriff auf Drift, DAOs oder die Datenschicht. Alles läuft über Riverpod-Provider → Repositories.
 - **Infrastrukturschicht**: konkrete Implementierungen der Domänenports und Repository-Schnittstellen. Sie hängt von der Domäne ab, nur in dieser Richtung.
 
@@ -122,7 +122,7 @@ Beide Datenbanken gehören `cc_persistence`, und nur `cc_server` öffnet sie. Ke
 
 Sämtliches externes HTTP liegt auf dem Server. Clients sprechen GitHub, Linear und Google nicht direkt an. Sie rufen RPC-Operationen des Servers auf, und auch entfernte Medien kommen über den Endpunkt `/proxy/media` des Servers, nicht vom ursprünglichen Host.
 
-- **dio**-Clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` und `GoogleCalendarApiClient`
+- **rhttp**-Clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` und `GoogleCalendarApiClient`
 - Interceptoren setzen die Auth-Tokens ein, einschließlich eines Google-OAuth-Interceptors pro Konto in `cc_server_core`, der Tokens bei einem 401 erneuert
 - Alle Fehler laufen über `packages/cc_infra/lib/src/network/error_mapper.dart` → typisierte Unterklassen von `AppException`, definiert in `cc_domain`
 

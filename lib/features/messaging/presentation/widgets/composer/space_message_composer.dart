@@ -3,6 +3,8 @@ import 'package:control_center/features/messaging/presentation/widgets/composer/
 import 'package:control_center/features/messaging/providers/conversation_checkpoint_providers.dart';
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/message_edit_providers.dart';
+import 'package:control_center/features/messaging/providers/space_attachment_upload_provider.dart';
+import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart';
@@ -198,8 +200,16 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
     final editing = ref.watch(editingMessageProvider(_key));
     ref.listen<EditingMessage?>(editingMessageProvider(_key), _onEditChanged);
     final isEditing = editing != null;
+    final workspaceId = ref.requireWorkspaceId();
+    final uploadService = ref.watch(
+      spaceAttachmentUploadServiceProvider(workspaceId),
+    );
     return Composer(
       attachedTop: widget.attachedTop,
+      attachmentScope:
+          '$workspaceId/${widget.spaceId}/${widget.conversationId}',
+      attachmentUpload: uploadService.upload,
+      attachmentDiscard: uploadService.discard,
       controller: widget.controller,
       focusNode: _focus,
       sources: widget.sources,

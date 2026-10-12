@@ -2,7 +2,7 @@
 title: Fazer backup e restaurar
 description: Tire um instantâneo da instalação, mova um espaço de trabalho entre máquinas, restaure um espaço de trabalho ou todos eles e mantenha cópias em outro lugar.
 slug: pt-BR/manual/guias/backup-e-restauracao
-sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
+sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
 ---
 
 Este guia cobre as cinco coisas que as pessoas realmente fazem com backups: criar um,
@@ -17,7 +17,7 @@ Tudo aqui fica em **Configurações → Servidor → Backup e restauração**.
 - Um **cliente completo** — o app de desktop ou o da web. Um celular emparelhado não dispara nada disso, por design.
 - Para criar, listar, baixar ou excluir um **instantâneo da instalação**: o **owner** da instalação.
 - Para ações por espaço de trabalho: **admin** desse espaço de trabalho para exportar, **owner** para importar ou excluir.
-- Para downloads e uploads: uma conexão **direta** com o servidor. O relay intermediado transporta frames RPC, não transferências de arquivos, e os controles de transferência se desabilitam com uma observação quando você está em um.
+- Para downloads e uploads: um cliente completo emparelhado, em uma conexão direta ou pelo relay intermediado. Os dois caminhos carregam os bytes do arquivo pelo mesmo túnel de recursos autenticado e cifrado de ponta a ponta; o relay não consegue lê-los.
 
 :::caution[Instantâneos da instalação são manuais]
 **Fazer backup agora** ainda cria um instantâneo da instalação inteira somente quando você
@@ -25,7 +25,15 @@ pede. O pipeline embutido **Workspace backup** pode, em vez disso, fazer um back
 de dados de um espaço de trabalho uma vez por semana e remover os backups desse espaço de
 trabalho com mais de 30 dias. Ele não copia o `global.db`, outros espaços de trabalho nem
 arquivos ao lado do banco de dados. Mantenha as cópias fora da máquina separadamente.
-:::
+::::
+
+::::caution[Backups não são cifrados em repouso]
+A transferência cifrada termina no seu cliente e no `cc_server`. Os diretórios de
+instantâneos, as exportações de espaços de trabalho, os arquivos baixados e os bancos de
+dados do servidor não são cifrados em repouso pelo Control Center. Proteja o host do
+servidor, os seus downloads e as cópias fora da máquina com a sua própria criptografia de
+armazenamento e os seus controles de acesso.
+::::
 
 ## O que um backup cobre
 
@@ -321,7 +329,7 @@ Faça isso uma vez quando configurar os backups, e de novo sempre que mudar onde
 
 | Sintoma                                                                  | Causa e correção                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Os controles de download e upload ficam desabilitados com uma observação sobre um relay | Você está conectado pelo relay intermediado, que não transporta arquivos. Conecte-se diretamente                          |
+| O download ou o upload falha após uma mudança de conexão | Tente de novo na conexão emparelhada ativa. Tanto a conexão direta quanto a do relay suportam transferência de arquivos cifrada; nenhuma expõe um fallback HTTP em texto claro |
 | "O servidor recusou"                                                     | Papel. Criar ou listar um instantâneo da instalação exige o operador da instalação. Baixar um espaço de trabalho exige admin, restaurar um exige owner, e um zip de instantâneo inteiro exige o operador da instalação |
 | "Este servidor não expõe nenhuma superfície de backup"                   | O host não tem uma porta de backup configurada — um servidor de demonstração. As operações ficam ausentes em vez de serem recusadas                          |
 | "O arquivo é maior do que o servidor aceita"                             | Os uploads têm limite de 8 GiB. Coloque o arquivo no host do servidor e use **Importar** → **Escolher arquivo**                 |
@@ -335,7 +343,7 @@ Faça isso uma vez quando configurar os backups, e de novo sempre que mudar onde
 
 - [Executar um servidor headless](/pt-BR/manual/guias/executar-servidor-headless/): de onde vem o diretório de dados
 - [Conectar a um servidor remoto](/pt-BR/manual/guias/conectar-servidor-remoto/): conexões diretas versus por relay
-- [Emparelhar um dispositivo](/pt-BR/manual/guias/emparelhar-dispositivo/): a credencial com que as rotas de transferência são assinadas
+- [Emparelhar um dispositivo](/pt-BR/manual/guias/emparelhar-dispositivo/): a credencial do dispositivo emparelhado usada pela transferência cifrada e pelas suas requisições de recursos assinadas
 
 ## Conceitos e referência relacionados
 

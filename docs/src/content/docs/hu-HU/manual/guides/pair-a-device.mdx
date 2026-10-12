@@ -2,7 +2,7 @@
 title: Eszköz párosítása
 description: Párosítsa a telefonját (vagy egy második böngészőt vagy asztali alkalmazást) a Control Center szerverével, hogy távolról is követhesse a flottát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa
-sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
+sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
 ---
 
 Ez az útmutató megmutatja, hogyan párosíthat egy telefont a Control Centerrel,
@@ -23,9 +23,10 @@ telepíthet a Cloudflare Pagesre a `wrangler.jsonc` fájlján keresztül, a
 `docker/cc_remote` nginx image-re vagy bármely HTTPS-t használó statikus hosztra —
 a service workerek és az IndexedDB biztonságos kontextushoz kötöttek) és a relé
 (`apps/cc_signaling_server`, egyetlen állapotmentes Dart bináris, amely nem tárol
-alkalmazásadatot, és soha nem látja a párosítási titkot — csak a végpontok között
-lezárt kereteket továbbítja). A build- és futtatási lépéseket a README-jükben
-találja.
+alkalmazásadatot, és nem tudja visszafejteni a titkosított rekordokat vagy látni a
+párosítási titkot). Továbbra is látja az IP-címeket, az útvonal-azonosítókat, a
+méreteket és az időzítést, és el is dobhatja a forgalmat. A build- és futtatási
+lépéseket a README-jükben találja.
 
 ## 1. lépés: A párosítási panel megnyitása
 
@@ -51,14 +52,19 @@ Remote PWA számára.
 
 A telefon oldalán a párosítási hivatkozás megnyitása nem párosít csendben. A
 Remote megmutatja a szerver által hirdetett nevet, és megerősítést kér, mielőtt
-bármit tárolna, így egy hamisított hivatkozás nem tudja más szerverére
-eltéríteni az alkalmazást.
+bármit tárolna. Ellenőrizze a QR-kódban lévő ujjlenyomatot egy megbízható
+forrással szemben: egy nem ellenőrzött név vagy egy hamisított QR-kód
+megerősítése nem bizonyítja, hogy a szerver az Öné. A kliens rögzíti az aláírt
+identitást, és a későbbi kapcsolatoknál elutasítja a megváltozott ujjlenyomatot.
 
 :::caution[A beolvasott QR-kód azonnal hozzáférést ad]
 Nincs függőben lévő, majd jóváhagyandó lépés: a kiállított eszköz a
 létrehozása pillanatától aktív, és a csatlakozási kapu csak azt ellenőrzi, hogy a
 hitelesítő adat aktív és nem járt le. Kezelje a QR-kódot és a párosítási kulcsot
-jelszóként, és vonjon vissza mindent, amit nem szándékozott kiadni.
+jelszóként, és vonjon vissza mindent, amit nem szándékozott kiadni. A közvetlen és
+a relén átvezetett kliensmunkamenetek egyaránt végponttól végpontig terjedő
+titkosítást igényelnek; a régebbi kliensek nem eshetnek vissza nyílt szöveges
+RPC-re.
 :::
 
 ## A párosított eszközök kezelése

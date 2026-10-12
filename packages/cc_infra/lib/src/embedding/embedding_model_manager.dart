@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/value_objects/embedding_model_paths.dart';
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/util/http_file_download.dart';
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart';
 
 // Re-export the relocated value type so existing consumers that import this
 // manager keep naming `EmbeddingModelPaths` without a churned import. The
@@ -93,12 +94,14 @@ class EmbeddingModelManager {
   /// supplies the `models/` directory).
   EmbeddingModelManager({
     required this._paths,
-    Dio? dio,
+    RhttpClient? httpClient,
     this.model = EmbeddingModelInfo.allMiniLmL6V2,
-  }) : _dio = dio ?? createDio();
+  }) : _httpClient =
+           httpClient ??
+           createHttpClient(settings: modelDownloadClientSettings);
 
   final CcPaths _paths;
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Model to manage.
   final EmbeddingModelInfo model;
@@ -155,7 +158,8 @@ class EmbeddingModelManager {
     onProgress?.call(0, 'downloading');
 
     try {
-      await _dio.download(
+      await downloadToFile(
+        _httpClient,
         model.modelUrl,
         modelPart,
         cancelToken: cancelToken,
@@ -164,18 +168,14 @@ class EmbeddingModelManager {
           final pct = (received / expected).clamp(0.0, 1.0) * 0.95;
           onProgress?.call(pct, 'downloading');
         },
-        options: Options(
-          followRedirects: true,
-          responseType: ResponseType.bytes,
-        ),
       );
 
       onProgress?.call(0.96, 'downloading');
-      await _dio.download(
+      await downloadToFile(
+        _httpClient,
         model.vocabUrl,
         vocabPart,
         cancelToken: cancelToken,
-        options: Options(followRedirects: true),
       );
 
       await File(modelPart).rename(modelPath);

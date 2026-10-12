@@ -1,9 +1,9 @@
 ---
 title: 运行无界面服务器
 description: 运行 cc_server 无界面二进制文件或其 Docker 镜像，将客户端与它配对，并用完整的 CLI 标志与环境变量对其进行配置。
-dateModified: 2026-09-10
+dateModified: 2026-10-11
 slug: zh-CN/手册/操作指南/运行无界面服务器
-sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
+sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
 ---
 
 在一台常开的机器上运行 `cc_server`，然后从桌面端、浏览器或手机连接它。该服务器是纯 Dart 原生二进制文件——不含 Flutter 引擎——因此可在 macOS、Linux 或 Windows 上无界面运行。它掌控数据库、运行智能体，并发出所有外部 API 调用；客户端只负责渲染。
@@ -17,7 +17,7 @@ sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 | `ghcr.io/samuelalev/cc-server`                    | 后端：数据库、智能体、MCP、webhook | `-p 9030:9030`   |
 | `ghcr.io/samuelalev/cc-webapp`           | Web 客户端（静态 nginx）                | `-p 8080:8080`  |
 | `ghcr.io/samuelalev/cc-remote`        | 手机伴侣 PWA（静态 nginx）       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC 配对中继（可选）          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-signaling-server`     | 加密连接中继（可选）          | `-p 8788:8788`   |
 
 整个技术栈的 compose 文件如下：
 
@@ -48,8 +48,8 @@ volumes:
 在把其中任何一项暴露到回环之外以前，有几件事值得了解：
 
 - **`cc-server` 镜像自带 `CC_SERVER_INSECURE=1`**（它必须绑定 `0.0.0.0`
-  才能接收发布端口的流量），这只有在可信网络上、位于终止 TLS 的反向代理——Caddy、Traefik、nginx 或 Cloudflare Tunnel——之后才安全。若要在进程内终止 TLS，请挂载证书并设置 `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`（然后取消设置
-  `CC_SERVER_INSECURE`）。这一切都可以用 `docker run -e …` 或 compose 的 `environment:` 块覆盖。
+  才能接收发布端口的流量）。请在可信网络上使用终止 TLS 的反向代理——Caddy、Traefik、nginx 或 Cloudflare Tunnel，或者挂载证书并设置 `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`（然后取消设置
+  `CC_SERVER_INSECURE`）。此设置只控制服务器的外层 HTTP/WebSocket 监听器。它绝不会禁用强制性的端到端加密客户端会话。TLS 仍然保护登录/引导流量、连接元数据、公开端点以及 Web 客户端的投递。这一切都可以用 `docker run -e …` 或 compose 的 `environment:` 块覆盖。
 - **`/data` 是唯一的状态。** SQLite 数据库、已配对设备的密钥、下载的模型和会议音频全都存放在该卷中——只要备份它，容器就可以随时丢弃。
 - **在首次连接之前，从镜像内部配对客户端**，这相当于容器版的[第 3 步](#第-3-步在首次启动前配对客户端)：
 
@@ -58,8 +58,8 @@ volumes:
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **两个客户端镜像都是静态 nginx 主机**——运行时无需任何配置；各客户端的连接表单接受你的服务器 URL、设备 ID 和配对密钥。信令中继同样只需要它的端口
-  （`SIGNALING_HOST` / `SIGNALING_PORT` 可覆盖）；它无状态、不保存任何密钥，并且只是一条**兜底路径**——只要有可达的路径，手机就会使用回环、LAN、tailnet 或直连 `wss://`，只有在全部不可达时才回退到中继。如果你的客户端总能直连服务器，可以跳过它。
+- **两个客户端镜像都是静态 nginx 主机。** 嵌入式浏览器编辑器使用相同的应用来源和相同的加密连接，如[下文](#浏览器编辑器资源)所述。各客户端的连接表单接受你的服务器 URL、设备 ID 和配对密钥。信令中继只需要它的端口
+  （`SIGNALING_HOST` / `SIGNALING_PORT` 可覆盖）；它无状态、不保存配对密钥，并且只是一条**兜底路径**——只要有可达的路径，手机就会使用回环、LAN、tailnet 或直连 `wss://`，只有在全部不可达时才回退到中继。如果你的客户端总能直连服务器，可以跳过它。代理能看到路由标识符、IP 地址、大小和时序，也能中断流量；但它无法解密客户端与服务器之间的资源流。
 
 本指南余下的部分从源代码构建服务器；其中涉及的标志和行为，与镜像通过环境变量注入的是同一套。
 
@@ -135,6 +135,8 @@ Connect a thin client (paste into its connect form):
 由 `cc_server pair` 生成的凭据**没有有效期**；而在应用中生成的凭据总是在 30 天后过期。用完之后，请从
 **设置 → 你 → 你的设备**中吊销 CLI 生成的设备。
 
+配对密钥为强制性的 Noise 握手提供身份验证；每个会话都会派生出新的流量密钥，并校验服务器的已签名身份。请妥善保管配对密钥，并从可信来源（包括可信的二维码）获取它，然后通过另一条可信渠道或对照已知的固定值来核验新的服务器指纹。不要静默接受发生变化的指纹：如果你是有意更换服务器身份，请通过可信渠道重新配对。仅凭 TLS 无法确立这种端到端身份固定。
+
 ## 第 4 步：启动服务器
 
 在回环地址上——这是默认值，也是同一台机器上的客户端唯一需要的：
@@ -160,7 +162,7 @@ without TLS`），因此请提供证书：
 ```
 
 当 `--tls-cert` 和 `--tls-key` 都已设置时，`--insecure` 会被忽略——TLS
-始终优先。服务器会在 `GET /healthz` 中以 `insecure: true` 公布明文状态，客户端会把这类连接标记为不安全。
+始终优先。服务器会在 `GET /healthz` 中以 `insecure: true` 公布外层监听器的明文状态。无论客户端是直连还是经中继，这都不会关闭 `/rpc` 上的 Noise 加密。请一并升级服务器、中继和客户端：旧的明文 RPC 客户端会被拒绝，没有兼容性回退。对敏感资源路由（包括备份传输）的公开请求会得到 HTTP `426`，即使来自回环地址也是如此；已配对的客户端改用加密隧道。
 
 服务器会一直运行，直到收到 `SIGINT`/`SIGTERM`，然后干净地关闭。
 
@@ -179,6 +181,29 @@ without TLS`），因此请提供证书：
 列表为 `https://app.usectrl.dev`，而 `localhost` / `127.0.0.1`
 始终被允许。
 :::
+
+### 浏览器编辑器资源
+
+编辑器前端是受信任的应用程序代码，运行在 Web 应用自身的来源上。其
+Service Worker 通过与客户端其余部分相同的已认证加密会话路由 HTTP 和
+WebSocket 流量。`cc_server` 会解密每个请求，将其转发到本机的
+code-server 后端，再把响应加密回传给客户端。文件仍由服务器掌管。
+
+请通过 HTTPS 或安全的环回来源托管 Web 客户端，以便 Service Worker 能够运行。
+常规的 Web 构建和发布脚本都包含共用的资源文件。如果你手动构建打包产物，
+请随后在仓库根目录准备这些文件：
+
+```bash
+node tool/stage_resource_assets.mjs build/web
+```
+
+对于手机的 Web 构建，请改用 `apps/cc_remote/build/web`。这会把
+`cc_resource_bridge.js`、`cc_resource_worker.js` 和
+`cc_resource_ws_shim.js` 复制到应用打包产物中。
+
+原生编辑器流量则改用按能力限定的环回外观。不要通过公开代理暴露由服务器启动的
+编辑器扩展的私有环回上报/命令网关。敏感的公开 HTTP 请求会被拒绝；资源需要
+已认证的加密会话。
 
 ## 第 6 步：连接 Google Calendar（可选）
 
@@ -223,7 +248,7 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
 调度器是**无状态的**：不存在按会话的工作区绑定。
 每一次限定工作区范围的调用都自带 `workspace_id`，访问权限由调用方的工作区成员资格和角色决定——而不是由是否持有配对密钥决定。
 
-在把端口暴露到回环之外以前，有两件事需要了解：
+在把端口暴露到回环之外以前，有两件事需要了解（仅凭 TLS 并不能提供已配对客户端的端到端加密，也不能授权资源）：
 
 - **MCP 在主机之外失败即关闭。** 没有令牌的 MCP 接口面只应答回环。绑定 `any` 并不会放宽这一点——在你配置令牌之前（`mcp.setToken`，或 **设置 → 服务器 → MCP 服务器**），来自主机之外的请求会被以 "MCP requires a bearer token to answer non-loopback clients" 拒绝。
 - **`GET /healthz` 按设计不需要认证**，带通配符 CORS，并公布服务器的 id、名称、身份指纹和构建版本。客户端需要该指纹来固定服务器，因此这是有意为之——但它确实意味着任何可达的 `cc_server` 都会向任何询问者披露这些信息。

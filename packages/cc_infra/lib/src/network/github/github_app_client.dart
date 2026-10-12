@@ -3,7 +3,7 @@ import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/sandboxing/github_app_token_minter.dart'
     show GitHubAppConfig, GitHubAppTokenMinter, MintedToken;
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The server's own bot identity on GitHub: what a PR author @mentions and
 /// what the app's comments are authored as.
@@ -65,14 +65,15 @@ class GitHubInstallation {
 class GitHubAppClient {
   /// Creates a [GitHubAppClient].
   ///
-  /// [dio] is injected by tests; production builds get an `api.github.com`
-  /// client.
+  /// [httpClient] is injected by tests; production builds get an
+  /// `api.github.com` client.
   GitHubAppClient({
     required this._appId,
     required this._privateKeyPem,
-    Dio? dio,
+    RhttpClient? httpClient,
     DateTime Function()? now,
-  }) : _dio = dio ?? createDio(baseUrl: 'https://api.github.com'),
+  }) : _httpClient =
+           httpClient ?? createHttpClient(baseUrl: 'https://api.github.com'),
        _now = now ?? (() => DateTime.now().toUtc());
 
   /// Builds a client, or null when the credentials are absent or the private
@@ -81,7 +82,7 @@ class GitHubAppClient {
   static GitHubAppClient? tryCreate({
     required String appId,
     required String privateKeyPem,
-    Dio? dio,
+    RhttpClient? httpClient,
   }) {
     if (appId.isEmpty || privateKeyPem.isEmpty) {
       return null;
@@ -96,13 +97,13 @@ class GitHubAppClient {
     return GitHubAppClient(
       appId: appId,
       privateKeyPem: privateKeyPem,
-      dio: dio,
+      httpClient: httpClient,
     );
   }
 
   final String _appId;
   final String _privateKeyPem;
-  final Dio _dio;
+  final RhttpClient _httpClient;
   final DateTime Function() _now;
 
   final Map<int, ({String token, DateTime expiresAt})> _tokens = {};
@@ -119,7 +120,7 @@ class GitHubAppClient {
   static const _suspendedRecheck = Duration(minutes: 5);
 
   GitHubAppTokenMinter _minterFor(int installationId) => GitHubAppTokenMinter(
-    dio: _dio,
+    httpClient: _httpClient,
     config: GitHubAppConfig(
       appId: _appId,
       privateKeyPem: _privateKeyPem,
@@ -148,8 +149,8 @@ class GitHubAppClient {
       return cached;
     }
     try {
-      final response = await _dio.get<dynamic>('/app', options: _appOptions());
-      final data = response.data;
+      final response = await _httpClient.get('/app', headers: _appOptions());
+      final data = httpJsonBody(response);
       if (data is! Map<String, dynamic>) {
         return null;
       }
@@ -163,7 +164,7 @@ class GitHubAppClient {
             (data['bot'] as Map<String, dynamic>?)?['username'] as String? ??
             '$slug[bot]',
       );
-    } on DioException {
+    } on RhttpException {
       return null;
     }
   }
@@ -186,11 +187,11 @@ class GitHubAppClient {
       return cached;
     }
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/app/installations',
-        options: _appOptions(),
+        headers: _appOptions(),
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is! List) {
         _adoptInstallations(const []);
         return const [];
@@ -208,7 +209,7 @@ class GitHubAppClient {
       ].where((i) => i.id != 0).toList();
       _adoptInstallations(parsed);
       return parsed;
-    } on DioException {
+    } on RhttpException {
       // Do NOT cache a failure: a network blip would otherwise leave the app
       // permanently "not installed anywhere" until the next restart.
       return const [];
@@ -422,11 +423,9 @@ class GitHubAppClient {
     _installationsFetchedAt ??= _now();
   }
 
-  Options _appOptions() => Options(
-    headers: {
-      'Authorization': 'Bearer ${buildAppJwt()}',
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  );
+  HttpHeaders _appOptions() => HttpHeaders.rawMap({
+    'Authorization': 'Bearer ${buildAppJwt()}',
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  });
 }

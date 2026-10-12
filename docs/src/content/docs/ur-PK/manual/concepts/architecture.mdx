@@ -3,7 +3,7 @@ title: آرکیٹیکچر
 description: Control Center کی ساخت کیسی ہے — تھن-کلائنٹ سرور ماڈل، فیچر-فرسٹ کلین آرکیٹیکچر اور پورٹس اینڈ اڈاپٹرز کے ساتھ۔
 dateModified: 2026-09-19
 slug: ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## جائزہ
@@ -26,7 +26,7 @@ RPC پرت خود **اسٹیٹ لیس** ہے: سیشن تصدیق شدہ ہوت�
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **ڈومین پرت**: خالص Dart اینٹٹیز، ویلیو آبجیکٹس، ریپوزٹری انٹرفیسز، پورٹس اور ڈومین سروسز۔ انفراسٹرکچر کے زیرو امپورٹس (نہ dio، نہ drift، نہ نیٹ ورک ماڈلز)۔
+- **ڈومین پرت**: خالص Dart اینٹٹیز، ویلیو آبجیکٹس، ریپوزٹری انٹرفیسز، پورٹس اور ڈومین سروسز۔ انفراسٹرکچر کے زیرو امپورٹس (نہ rhttp، نہ drift، نہ نیٹ ورک ماڈلز)۔
 - **پریزنٹیشن پرت**: اسکرینز، ویجٹس، نوٹیفائرز۔ drift/DAO/ڈیٹا-پرت تک براہِ راست رسائی نہیں؛ سب کچھ Riverpod پرووائیڈرز → ریپوزٹریز سے گزرتا ہے۔
 - **انفراسٹرکچر پرت**: ڈومین پورٹس اور ریپوزٹری انٹرفیسز کی ٹھوس امپلیمنٹیشنز۔ ڈومین پر منحصر ہے، کبھی اُلٹ نہیں۔
 
@@ -122,7 +122,7 @@ Control Center ملٹی یوزر ہے: انسان اور ایجنٹس ہم پل�
 
 تمام بیرونی HTTP سرور میں رہتی ہے۔ کلائنٹس کبھی براہِ راست GitHub، Linear یا Google سے رابطہ نہیں کرتے — وہ سرور کے RPC اوپس کال کرتے ہیں اور حتیٰ کہ ریموٹ میڈیا بھی اپ اسٹریم اوریجن سے نہیں بلکہ سرور کے `/proxy/media` اینڈ پوائنٹ سے حاصل کیا جاتا ہے۔
 
-- `packages/cc_infra/lib/src/` میں **dio** کلائنٹس: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` اور `GoogleCalendarApiClient`
+- `packages/cc_infra/lib/src/` میں **rhttp** کلائنٹس: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` اور `GoogleCalendarApiClient`
 - انٹرسیپٹرز کے ذریعے auth ٹوکن انجیکشن، بشمول `cc_server_core` میں فی اکاؤنٹ Google OAuth انٹرسیپٹر جو 401 پر ٹوکنز ریفریش کرتا ہے
 - تمام ایررز `packages/cc_infra/lib/src/network/error_mapper.dart` سے گزر کر → `cc_domain` میں متعین ٹائپ شدہ `AppException` سب کلاسز میں map ہوتے ہیں
 

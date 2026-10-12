@@ -15,6 +15,7 @@ void main() {
         expect(AgentProcessEventType.toolCall.name, 'tool_call');
         expect(AgentProcessEventType.toolResult.name, 'tool_result');
         expect(AgentProcessEventType.usage.name, 'usage');
+        expect(AgentProcessEventType.stageTiming.name, 'stage_timing');
         expect(AgentProcessEventType.error.name, 'error');
         expect(
           AgentProcessEventType.sandboxViolation.name,

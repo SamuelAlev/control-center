@@ -4,11 +4,16 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_change_type.dart
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_status_normalizer.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_adapter.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_delta.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
-Future<Dio> Function({required String workspaceId, required String owner})
-_fixedGitHubIssuesDio(Dio dio) {
-  return ({required String workspaceId, required String owner}) async => dio;
+Future<RhttpClient> Function({
+  required String workspaceId,
+  required String owner,
+})
+_fixedGitHubIssuesHttpClient(RhttpClient httpClient) {
+  return ({required String workspaceId, required String owner}) async =>
+      httpClient;
 }
 
 /// [TicketSyncAdapter] for GitHub Issues, over the REST API. `vendorProjectId`
@@ -16,24 +21,26 @@ _fixedGitHubIssuesDio(Dio dio) {
 ///
 /// The client is resolved **per (workspace, owner)**: a workspace mixing orgs
 /// (or using its own GitHub App / PAT) must not share one installation token
-/// that 404s every other owner. Tests may still pass a single [Dio].
+/// that 404s every other owner. Tests may still pass a single [RhttpClient].
 class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
-  /// Creates a [GitHubIssuesTicketSyncAdapter] over a single authorized [Dio].
-  GitHubIssuesTicketSyncAdapter(Dio dio) : _dioFor = _fixedGitHubIssuesDio(dio);
+  /// Creates a [GitHubIssuesTicketSyncAdapter] over a single authorized
+  /// [RhttpClient].
+  GitHubIssuesTicketSyncAdapter(RhttpClient httpClient)
+    : _httpClientFor = _fixedGitHubIssuesHttpClient(httpClient);
 
   /// Creates a [GitHubIssuesTicketSyncAdapter] that resolves a client per
   /// workspace and repo owner.
-  GitHubIssuesTicketSyncAdapter.resolving(this._dioFor);
+  GitHubIssuesTicketSyncAdapter.resolving(this._httpClientFor);
 
-  final Future<Dio> Function({
+  final Future<RhttpClient> Function({
     required String workspaceId,
     required String owner,
   })
-  _dioFor;
+  _httpClientFor;
 
-  Future<Dio> _client(String workspaceId, String vendorProjectId) {
+  Future<RhttpClient> _client(String workspaceId, String vendorProjectId) {
     final r = _split(vendorProjectId);
-    return _dioFor(workspaceId: workspaceId, owner: r.owner);
+    return _httpClientFor(workspaceId: workspaceId, owner: r.owner);
   }
 
   @override
@@ -59,16 +66,17 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
     DateTime? since,
   }) async {
     final r = _split(vendorProjectId);
-    final dio = await _client(workspaceId, vendorProjectId);
-    final response = await dio.get<List<dynamic>>(
+    final httpClient = await _client(workspaceId, vendorProjectId);
+    final response = await httpClient.get(
       '/repos/${r.owner}/${r.repo}/issues',
-      queryParameters: {
+      query: {
         'state': 'all',
-        'per_page': 100,
+        'per_page': '100',
         if (since != null) 'since': since.toUtc().toIso8601String(),
       },
     );
-    final items = response.data ?? const [];
+    final decoded = httpJsonBody(response);
+    final items = decoded is List ? decoded : const [];
     return items
         .whereType<Map<String, dynamic>>()
         // Exclude PRs: the issues endpoint returns PRs too, flagged by a
@@ -87,19 +95,19 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
     String vendorProjectId = '',
   }) async {
     final r = _split(vendorProjectId);
-    final dio = await _client(workspaceId, vendorProjectId);
+    final httpClient = await _client(workspaceId, vendorProjectId);
     final base = '/repos/${r.owner}/${r.repo}/issues';
 
     if (externalId == null || externalId.isEmpty) {
-      final response = await dio.post<Map<String, dynamic>>(
+      final response = await httpClient.post(
         base,
-        data: {
+        body: HttpBody.json({
           'title': ticket.title,
           if (ticket.description != null) 'body': ticket.description,
           if (ticket.labels.isNotEmpty) 'labels': ticket.labels,
-        },
+        }),
       );
-      final issue = response.data ?? const {};
+      final issue = _jsonObject(response) ?? const {};
       final number = (issue['number'] as num?)?.toInt();
       return TicketPushOutcome(
         externalId: '${number ?? ''}',
@@ -111,25 +119,28 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
     final issueUrl = '$base/$externalId';
     switch (changeType) {
       case TicketChangeType.statusChanged:
-        await dio.patch<Map<String, dynamic>>(
+        await httpClient.patch(
           issueUrl,
-          data: _stateBody(ticket.status),
+          body: HttpBody.json(_stateBody(ticket.status)),
         );
       case TicketChangeType.created:
       case TicketChangeType.updated:
-        await dio.patch<Map<String, dynamic>>(
+        await httpClient.patch(
           issueUrl,
-          data: {
+          body: HttpBody.json({
             'title': ticket.title,
             if (ticket.description != null) 'body': ticket.description,
             if (ticket.labels.isNotEmpty) 'labels': ticket.labels,
-          },
+          }),
         );
       case TicketChangeType.deleted:
         // REST cannot delete an issue; close it as not-planned.
-        await dio.patch<Map<String, dynamic>>(
+        await httpClient.patch(
           issueUrl,
-          data: {'state': 'closed', 'state_reason': 'not_planned'},
+          body: const HttpBody.json({
+            'state': 'closed',
+            'state_reason': 'not_planned',
+          }),
         );
       case TicketChangeType.commented:
       case TicketChangeType.assigned:
@@ -206,4 +217,16 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
           : null,
     );
   }
+}
+
+/// The response's JSON object, or null when the body is empty or not an object.
+Map<String, dynamic>? _jsonObject(HttpResponse response) {
+  final body = httpJsonBody(response);
+  if (body is Map<String, dynamic>) {
+    return body;
+  }
+  if (body is Map) {
+    return body.cast<String, dynamic>();
+  }
+  return null;
 }

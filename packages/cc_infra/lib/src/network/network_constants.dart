@@ -1,10 +1,8 @@
 /// Network endpoint constants for the infra layer's HTTP clients.
 ///
-/// These live with the dio clients that consume them (`cc_infra`) rather than
-/// in the app's `app_constants` — they are an infrastructure concern and the
-/// clients link into the Flutter-free server binary. The desktop composition
-/// root (`di/providers.dart`) imports the same values when it wires the
-/// Calendar dio + auth interceptor.
+/// These live with the HTTP clients that consume them (`cc_infra`) rather
+/// than the app's constants. `cc_server_core` uses the same endpoints when
+/// composing Calendar clients and their account-scoped auth interceptor.
 library;
 
 /// Base URL for the Slack Web API. Every Slack call is an outbound HTTPS POST,
@@ -16,7 +14,7 @@ const String slackApiBaseUrl = 'https://slack.com/api';
 const String googleCalendarApiBaseUrl =
     'https://www.googleapis.com/calendar/v3';
 
-/// Request `extra` key naming which connected Google account a Calendar API
+/// Request `additionalData` key naming which connected Google account a Calendar API
 /// call is for. Every calendar request sets it so the auth interceptor can
 /// attach (and refresh) that specific account's token.
 const String googleAccountIdExtraKey = 'googleAccountId';

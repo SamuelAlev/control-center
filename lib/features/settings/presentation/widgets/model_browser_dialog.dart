@@ -18,6 +18,7 @@ Future<String?> showModelBrowserDialog({
   String? selectedModelId,
 }) => showCcDialog<String>(
   context: context,
+  presentation: CcDialogPresentation.immediate,
   builder: (_) => ModelBrowserDialog(
     adapterId: adapterId,
     selectedModelId: selectedModelId,

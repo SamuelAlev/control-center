@@ -1,105 +1,40 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/network/github_graphql_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-class _FakeDio implements Dio {
-  _FakeDio();
-
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    CancelToken? cancelToken,
-    Options? options,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onPost;
-
-  @override
-  Future<Response<T>> post<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onPost;
-    if (cb == null) {
-      throw UnimplementedError('onPost not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      cancelToken: cancelToken,
-      options: options,
-      onSendProgress: onSendProgress,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import 'package:rhttp/rhttp.dart';
 
 void main() {
-  late _FakeDio fakeDio;
+  late TestHttpClient fake;
   late GitHubGraphQLClient client;
 
   setUp(() {
-    fakeDio = _FakeDio();
-    client = GitHubGraphQLClient(fakeDio);
+    fake = TestHttpClient(handler: (_) => throw StateError('handler not set'));
+    client = GitHubGraphQLClient(fake);
   });
-
-  RequestOptions ro() => RequestOptions();
 
   group('markFileAsViewed', () {
     test('sends correct GraphQL mutation', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            actualUrl = path;
-            actualBody = data as Map<String, dynamic>?;
-            return Response(requestOptions: ro(), data: {}) as Response<T>;
-          };
+      fake.handler = (request) => httpTextResponse(request, {});
 
       await client.markFileAsViewed(
         pullRequestId: 'PR_1',
         path: 'lib/main.dart',
       );
 
-      expect(actualUrl, '/graphql');
-      expect(actualBody?['query'], contains('markFileAsViewed'));
-      expect(actualBody?['variables'], {
+      final request = fake.requests.single;
+      expect(request.url, '/graphql');
+      expect(request.method.value, 'POST');
+      final body = (request.body as HttpBodyJson).json as Map<String, dynamic>;
+      expect(body['query'] as String, contains('markFileAsViewed'));
+      expect(body['variables'], {
         'pullRequestId': 'PR_1',
         'path': 'lib/main.dart',
       });
     });
 
     test('completes without error', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async => Response(requestOptions: ro(), data: {}) as Response<T>;
+      fake.handler = (request) => httpTextResponse(request, {});
 
       await expectLater(
         client.markFileAsViewed(pullRequestId: 'PR_1', path: 'src/foo.dart'),
@@ -109,19 +44,10 @@ void main() {
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            received = cancelToken;
-            return Response(requestOptions: ro(), data: {}) as Response<T>;
-          };
+      fake.handler = (request) {
+        received = request.cancelToken;
+        return httpTextResponse(request, {});
+      };
       final ct = CancelToken();
       await client.markFileAsViewed(
         pullRequestId: 'PR_1',
@@ -131,38 +57,18 @@ void main() {
       expect(received, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
 
       await expectLater(
         client.markFileAsViewed(pullRequestId: 'PR_1', path: 'lib/main.dart'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '404');
+    test('wraps other exceptions', () async {
+      fake.handler = (request) =>
+          httpTextResponse(request, 'not found', statusCode: 404);
 
       await expectLater(
         client.markFileAsViewed(pullRequestId: 'PR_1', path: 'lib/main.dart'),
@@ -170,21 +76,9 @@ void main() {
       );
     });
 
-    test('wraps connection error DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-
-            message: 'No connection',
-          );
+    test('wraps connection error exceptions', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'No connection');
 
       await expectLater(
         client.markFileAsViewed(pullRequestId: 'PR_1', path: 'lib/main.dart'),
@@ -195,47 +89,26 @@ void main() {
 
   group('unmarkFileAsViewed', () {
     test('sends correct GraphQL mutation', () async {
-      String? actualUrl;
-      Map<String, dynamic>? actualBody;
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            actualUrl = path;
-            actualBody = data as Map<String, dynamic>?;
-            return Response(requestOptions: ro(), data: {}) as Response<T>;
-          };
+      fake.handler = (request) => httpTextResponse(request, {});
 
       await client.unmarkFileAsViewed(
         pullRequestId: 'PR_2',
         path: 'test/foo_test.dart',
       );
 
-      expect(actualUrl, '/graphql');
-      expect(actualBody?['query'], contains('unmarkFileAsViewed'));
-      expect(actualBody?['variables'], {
+      final request = fake.requests.single;
+      expect(request.url, '/graphql');
+      expect(request.method.value, 'POST');
+      final body = (request.body as HttpBodyJson).json as Map<String, dynamic>;
+      expect(body['query'] as String, contains('unmarkFileAsViewed'));
+      expect(body['variables'], {
         'pullRequestId': 'PR_2',
         'path': 'test/foo_test.dart',
       });
     });
 
     test('completes without error', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async => Response(requestOptions: ro(), data: {}) as Response<T>;
+      fake.handler = (request) => httpTextResponse(request, {});
 
       await expectLater(
         client.unmarkFileAsViewed(pullRequestId: 'PR_1', path: 'src/bar.dart'),
@@ -245,19 +118,10 @@ void main() {
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            received = cancelToken;
-            return Response(requestOptions: ro(), data: {}) as Response<T>;
-          };
+      fake.handler = (request) {
+        received = request.cancelToken;
+        return httpTextResponse(request, {});
+      };
       final ct = CancelToken();
       await client.unmarkFileAsViewed(
         pullRequestId: 'PR_1',
@@ -267,38 +131,18 @@ void main() {
       expect(received, same(ct));
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      fake.handler = (request) => throw RhttpCancelException(request);
 
       await expectLater(
         client.unmarkFileAsViewed(pullRequestId: 'PR_1', path: 'lib/main.dart'),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('wraps other DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: '500');
+    test('wraps other exceptions', () async {
+      fake.handler = (request) =>
+          httpTextResponse(request, 'server error', statusCode: 500);
 
       await expectLater(
         client.unmarkFileAsViewed(pullRequestId: 'PR_1', path: 'lib/main.dart'),
@@ -306,17 +150,8 @@ void main() {
       );
     });
 
-    test('wraps timeout DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(requestOptions: ro(), message: 'timeout');
+    test('wraps timeout exceptions', () async {
+      fake.handler = (request) => throw RhttpTimeoutException(request);
 
       await expectLater(
         client.unmarkFileAsViewed(pullRequestId: 'PR_1', path: 'lib/main.dart'),
@@ -326,49 +161,35 @@ void main() {
   });
 
   group('searchReviewRequestedPullRequests', () {
-    Response<T> ok<T>(Object nodes) =>
-        Response(
-              requestOptions: ro(),
-              data: {
-                'data': {
-                  'search': {'nodes': nodes},
-                },
-              },
-            )
-            as Response<T>;
+    void respondWithNodes(Object nodes) {
+      fake.handler = (request) => httpTextResponse(request, {
+        'data': {
+          'search': {'nodes': nodes},
+        },
+      });
+    }
 
     test('builds a review-requested search scoped to the repos', () async {
-      final bodies = <Map<String, dynamic>>[];
-      fakeDio.onPost =
-          <T>(
-            path, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            bodies.add(data as Map<String, dynamic>);
-            return ok<T>([
-              {
-                'number': 7,
-                'title': 'Fix the thing',
-                'url': 'https://github.com/o/r/pull/7',
-                'repository': {'nameWithOwner': 'o/r'},
-              },
-            ]);
-          };
+      respondWithNodes([
+        {
+          'number': 7,
+          'title': 'Fix the thing',
+          'url': 'https://github.com/o/r/pull/7',
+          'repository': {'nameWithOwner': 'o/r'},
+        },
+      ]);
 
       final nodes = await client.searchReviewRequestedPullRequests(
         reviewerLogin: 'octocat',
         repos: [(owner: 'o', name: 'r')],
       );
 
-      expect(bodies, hasLength(1));
+      expect(fake.requests, hasLength(1));
+      final request = fake.requests.single;
+      final body = (request.body as HttpBodyJson).json as Map<String, dynamic>;
       // The search string is a *variable*, not interpolated into the query.
-      expect(bodies.first['query'] as String, contains(r'search(query: $q'));
-      final q = (bodies.first['variables'] as Map)['q'] as String;
+      expect(body['query'] as String, contains(r'search(query: $q'));
+      final q = (body['variables'] as Map)['q'] as String;
       expect(q, contains('is:pr is:open draft:false review-requested:octocat'));
       expect(q, contains('repo:o/r'));
       expect(nodes, hasLength(1));
@@ -376,44 +197,18 @@ void main() {
     });
 
     test('chunks repos into separate requests (5 per query)', () async {
-      var posts = 0;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            posts++;
-            return ok<T>(const []);
-          };
+      respondWithNodes(const []);
 
       await client.searchReviewRequestedPullRequests(
         reviewerLogin: 'me',
         repos: List.generate(6, (i) => (owner: 'o', name: 'r$i')),
       );
 
-      expect(posts, 2);
+      expect(fake.requests, hasLength(2));
     });
 
     test('returns empty without a request when there are no repos', () async {
-      var posts = 0;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            posts++;
-            return ok<T>(const []);
-          };
+      respondWithNodes(const []);
 
       final nodes = await client.searchReviewRequestedPullRequests(
         reviewerLogin: 'me',
@@ -421,23 +216,11 @@ void main() {
       );
 
       expect(nodes, isEmpty);
-      expect(posts, 0);
+      expect(fake.requests, isEmpty);
     });
 
     test('swallows cancellation and returns empty', () async {
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+      fake.handler = (request) => throw RhttpCancelException(request);
 
       final nodes = await client.searchReviewRequestedPullRequests(
         reviewerLogin: 'me',
@@ -452,44 +235,29 @@ void main() {
     test(
       'builds a reviewed-by search and returns (repo, number) pairs',
       () async {
-        Map<String, dynamic>? body;
-        fakeDio.onPost =
-            <T>(
-              path, {
-              data,
-              queryParameters,
-              cancelToken,
-              options,
-              onSendProgress,
-              onReceiveProgress,
-            }) async {
-              body = data as Map<String, dynamic>;
-              return Response(
-                    requestOptions: ro(),
-                    data: {
-                      'data': {
-                        'search': {
-                          'nodes': [
-                            {
-                              'number': 7,
-                              'repository': {'nameWithOwner': 'o/r'},
-                            },
-                            // A non-PR hit deserializes empty — must be skipped.
-                            <String, dynamic>{},
-                          ],
-                        },
-                      },
-                    },
-                  )
-                  as Response<T>;
-            };
+        fake.handler = (request) => httpTextResponse(request, {
+          'data': {
+            'search': {
+              'nodes': [
+                {
+                  'number': 7,
+                  'repository': {'nameWithOwner': 'o/r'},
+                },
+                // A non-PR hit deserializes empty — must be skipped.
+                <String, dynamic>{},
+              ],
+            },
+          },
+        });
 
         final pairs = await client.searchReviewedByPullRequests(
           reviewerLogin: 'octocat',
           repos: [(owner: 'o', name: 'r')],
         );
 
-        final q = (body!['variables'] as Map)['q'] as String;
+        final request = fake.requests.single;
+        final body = (request.body as HttpBodyJson).json as Map;
+        final q = (body['variables'] as Map)['q'] as String;
         expect(q, contains('is:pr is:open reviewed-by:octocat'));
         expect(q, contains('repo:o/r'));
         expect(pairs, hasLength(1));
@@ -499,20 +267,7 @@ void main() {
     );
 
     test('returns empty without a request when there are no repos', () async {
-      var posts = 0;
-      fakeDio.onPost =
-          <T>(
-            _, {
-            data,
-            queryParameters,
-            cancelToken,
-            options,
-            onSendProgress,
-            onReceiveProgress,
-          }) async {
-            posts++;
-            return Response(requestOptions: ro(), data: {}) as Response<T>;
-          };
+      fake.handler = (request) => httpTextResponse(request, {});
 
       final pairs = await client.searchReviewedByPullRequests(
         reviewerLogin: 'me',
@@ -520,7 +275,7 @@ void main() {
       );
 
       expect(pairs, isEmpty);
-      expect(posts, 0);
+      expect(fake.requests, isEmpty);
     });
   });
 }

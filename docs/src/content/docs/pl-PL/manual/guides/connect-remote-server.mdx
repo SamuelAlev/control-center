@@ -2,7 +2,7 @@
 title: Połącz się ze zdalnym serwerem
 description: Skieruj aplikację desktopową lub klienta webowego na serwer cc_server działający gdzie indziej i przełączaj się między serwerami bez ponownego uruchamiania.
 slug: pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Każdy klient to renderer działający nad serwerem `cc_server`, do którego należą dane. Aplikacja desktopowa może uruchomić taki serwer u siebie; aplikacja webowa pod [app.usectrl.dev](https://app.usectrl.dev) nie może, bo karta przeglądarki nie może hostować serwera. Tak czy inaczej, ten poradnik kieruje klienta na serwer działający gdzie indziej — mały komputer, maszynę wirtualną w chmurze albo serwer budowania.
@@ -10,7 +10,7 @@ Każdy klient to renderer działający nad serwerem `cc_server`, do którego nal
 ## Wymagania wstępne
 
 - Działający `cc_server`. Jeśli go nie masz, zobacz [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/).
-- Albo trzy wartości parowania wygenerowane przez serwer — **adres URL serwera** (`ws://…/rpc` lub `wss://…/rpc`), **identyfikator urządzenia** i **klucz parowania** — **albo** jednorazowy **kod zaproszenia** od administratora obszaru roboczego. Wykorzystanie zaproszenia zakłada Twoje konto użytkownika, zapisuje Twoje członkostwo i generuje poświadczenie tego klienta za Ciebie, więc nigdy nie musisz posługiwać się identyfikatorem urządzenia ani kluczem.
+- Albo trzy wartości parowania wygenerowane przez serwer — **adres URL serwera** (`ws://…/rpc` lub `wss://…/rpc`), **identyfikator urządzenia** i **klucz parowania** — **albo** jednorazowy **kod zaproszenia** od administratora obszaru roboczego. Wykorzystanie zaproszenia zakłada Twoje konto użytkownika, zapisuje Twoje członkostwo i generuje poświadczenie tego klienta za Ciebie, więc nigdy nie musisz posługiwać się identyfikatorem urządzenia ani kluczem. Zdobądź je zaufanym kanałem i przy pierwszym połączeniu sprawdź odcisk serwera na podstawie zaufanego kodu QR albo znanego przypięcia.
 
 ### Upewnij się, że serwer jest osiągalny
 
@@ -24,7 +24,7 @@ ufa — a `cc_server` i tak odmawia powiązania adresu innego niż loopback bez 
 na samym początku. Zapewnij mu jedno z poniższych:
 
 - certyfikat bezpośrednio, przez `--tls-cert` i `--tls-key`
-- zakończenie TLS w odwrotnym proxy przed serwerem, przy serwerze uruchomionym z `--insecure` (plaintext za proxy, wyłącznie w zaufanej sieci)
+- zakończenie TLS w odwrotnym proxy przed serwerem, przy serwerze uruchomionym z `--insecure` (tekst jawny między proxy a serwerem na zewnętrznym nasłuchu, wyłącznie w zaufanej sieci; nie wyłącza to obowiązkowej szyfrowanej sesji klienta)
 - tunel lub VPN, który dostarcza certyfikat — Tailscale, cloudflared lub podobny. **Ustawienia → Serwer → Połączenie i status** zawierają wbudowane włączanie tunelu w sekcji **Udostępnij ten serwer**.
 
 Dwa ustawienia po stronie serwera łatwo przeoczyć. Za proxy, NAT lub tunelem
@@ -53,7 +53,8 @@ serwerze i widzisz błąd. Wiersz serwera, na którym jesteś, nie ma akcji **Pr
 lokalny serwer to pierwszy wiersz, oznaczony **Uruchom w tej aplikacji**.
 
 Po przełączeniu aplikacja desktopowa nie posiada własnej bazy danych. Każdy ekran
-czyta i zapisuje przez zdalny serwer za pośrednictwem gniazda WebSocket.
+czyta i zapisuje przez zdalny serwer za pośrednictwem podpisanej sesji WebSocket
+szyfrowanej end-to-end; ta sama ochrona dotyczy loopbacku i przekaźnika.
 
 ## Połącz klienta webowego
 
@@ -65,13 +66,17 @@ Build webowy jest zawsze zdalny.
 
 Jeśli w adresie URL znajduje się bezpośredni link do parowania, pola są wstępnie
 wypełnione. Klucz parowania jedzie we **fragmencie** adresu URL, którego przeglądarki
-nigdy nie wysyłają do serwera hostującego stronę, więc statyczny host nigdy go nie widzi.
+nigdy nie wysyłają do serwera hostującego stronę. Traktuj link jak sekret i ufaj stronie
+serwującej klienta webowego: fragment nie chroni przed złośliwym kodem strony.
 
-:::note[Media i bezpieczeństwo]
-Media (awatary, obrazy z newsfeedu, zrzuty ekranu z PR) są przekazywane przez proxy na
-podłączonym serwerze, więc przeglądarka nigdy nie pobiera ich bezpośrednio z hosta
-źródłowego. Polityka Content-Security Policy dla każdego żądania, oznaczana na podstawie
-nieczułego pliku cookie, zezwala wyłącznie na origin podłączonego serwera.
+:::note[Media, edytory i bezpieczeństwo]
+Media (awatary, obrazy z newsfeedu, zrzuty ekranu z PR), transfery kopii zapasowych oraz
+ruch wbudowanego edytora korzystają z szyfrowanego tunelu zasobów, a nie z czytelnych
+publicznych tras HTTP. Zaufany edytor w przeglądarce działa w origin samej aplikacji
+webowej; jego Service Worker przekazuje żądania przez uwierzytelnioną szyfrowaną sesję do
+zaplecza code-server na `cc_server`. Hostuj klienta webowego przez HTTPS lub bezpieczny
+loopback, aby Service Workery były dostępne. Klienci natywni korzystają z fasady
+loopback o ograniczonym zakresie uprawnień.
 :::
 
 ### Czego przeglądarka nie robi
@@ -93,6 +98,7 @@ _serwera_, więc przycisk ukrywa się na hoście headless bez zainstalowanych ed
 
 - **Przekroczono limit czasu połączenia**: serwer musi być osiągalny z klienta. Sprawdź powiązanie (`--bind any`), czy port jest otwarty i czy `--public-url` wskazuje adres, z którym klient faktycznie może się połączyć. W otwartym internecie TLS jest obowiązkowy — powiązanie adresu innego niż loopback bez szyfrowania jest odrzucane przy starcie, chyba że serwer uruchomiono z `--insecure` za proxy.
 - **Przeglądarka odmawia połączenia, ale klient natywny działa**: origin przeglądarki nie znajduje się na liście `--allowed-origins` serwera. Domyślnie dozwolony jest wyłącznie `https://app.usectrl.dev` (plus loopback).
+- **Tożsamość serwera się zmieniła**: klient odrzuca odcisk inny niż zapisane przypięcie. Zweryfikuj tożsamość serwera poza kanałem i sparuj ponownie przez zaufany kanał; nie ignoruj ostrzeżenia i nie przełączaj się na starszego klienta ani na tekst jawny.
 - **Klucz parowania odrzucony**: uruchom ponownie `cc_server pair` na serwerze, aby wymienić klucz tego urządzenia, a następnie wprowadź nowy. Odwołane urządzenie stwierdza brak poświadczenia i odmawia połączenia; odwołanie zrywa aktywną sesję w kilka sekund.
 - **Nie ten obszar roboczy**: obszar roboczy jest częścią adresu URL (`/workspaces/:workspaceId/…`) i towarzyszy każdemu wywołaniu, więc przełączenie obszaru roboczego w jednym kliencie zmienia tylko Twój własny widok. Możesz sięgnąć wyłącznie do obszarów roboczych, których jesteś członkiem — wszystko inne jest odrzucane komunikatem "Not a member of this workspace". Zobacz [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/).
 

@@ -1,66 +1,61 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
 import 'package:cc_infra/src/network/models/github_review.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises the GitHub REST PR client's request building (URLs, query params,
 /// payloads, headers), pagination (Link-header probing), decode tolerance and
-/// error mapping — using a stubbed [HttpClientAdapter] so no live network is
-/// needed. Mirrors the pattern in `github_app_token_minter_test.dart`.
+/// error mapping — using a [TestHttpClient] so no live network is needed.
+/// Mirrors the pattern in `github_app_token_minter_test.dart`.
 
-class _FakeAdapter implements HttpClientAdapter {
-  _FakeAdapter(this.handler);
-  final ResponseBody Function(RequestOptions options) handler;
-  final List<RequestOptions> requests = [];
+typedef Handler = FutureOr<HttpResponse> Function(HttpRequest request);
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return handler(options);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
-ResponseBody _json(
-  Object? body, {
-  int status = 200,
-  Map<String, List<String>> headers = const {},
-}) {
-  return ResponseBody.fromString(
-    body == null ? '' : jsonEncode(body),
-    status,
-    headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-      ...headers,
-    },
+({GitHubPrClient client, TestHttpClient fake}) build(Handler handler) {
+  final fake = TestHttpClient(handler: handler);
+  return (
+    client: GitHubPrClient(
+      fake,
+      downloadHttpClient: fake,
+      redirectlessHttpClient: fake,
+    ),
+    fake: fake,
   );
 }
 
-ResponseBody _text(String body, {int status = 200}) => ResponseBody.fromString(
-  body,
-  status,
-  headers: {
-    Headers.contentTypeHeader: ['text/plain'],
-  },
-);
-
-typedef Handler = ResponseBody Function(RequestOptions o);
-
-({GitHubPrClient client, _FakeAdapter fake}) build(Handler handler) {
-  final fake = _FakeAdapter(handler);
-  final dio = Dio()..httpClientAdapter = fake;
-  return (client: GitHubPrClient(dio), fake: fake);
+/// The value of [name] on a captured request, matched case-insensitively.
+String? _header(HttpRequest request, String name) {
+  final headers = request.headers?.toMapList();
+  if (headers == null) {
+    return null;
+  }
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == name.toLowerCase()) {
+      return entry.value.first;
+    }
+  }
+  return null;
 }
+
+/// The decoded JSON body of a captured request.
+Object? _jsonBody(HttpRequest request) => (request.body as HttpBodyJson).json;
+
+/// A streamed body for the log-download hop, which the client reads with
+/// `getStream` — [httpTextResponse]/[httpBytesResponse] would fail that cast.
+HttpStreamResponse _streamResponse(HttpRequest request, String text) =>
+    HttpStreamResponse(
+      remoteIp: null,
+      request: request,
+      version: HttpVersion.http1_1,
+      statusCode: 200,
+      headers: const [],
+      body: Stream.value(Uint8List.fromList(utf8.encode(text))),
+    );
 
 void main() {
   const owner = 'octo';
@@ -71,15 +66,15 @@ void main() {
       'GETs the pulls page and reports hasMore from the Link header',
       () async {
         final b = build(
-          (o) => _json(
+          (r) => httpTextResponse(
+            r,
             [
               {'number': 1, 'title': 'A', 'state': 'open'},
               {'number': 2, 'title': 'B', 'state': 'open'},
             ],
             headers: {
-              'link': [
-                '<https://api.github.com/repos/o/c/pulls?page=2>; rel="next"',
-              ],
+              'link':
+                  '<https://api.github.com/repos/o/c/pulls?page=2>; rel="next"',
             },
           ),
         );
@@ -87,23 +82,23 @@ void main() {
         expect(page.items.map((p) => p.number), [1, 2]);
         expect(page.hasMore, isTrue);
         final req = b.fake.requests.single;
-        expect(req.method, 'GET');
-        expect(req.path, '/repos/$owner/$repo/pulls');
-        expect(req.queryParameters['state'], 'open');
-        expect(req.queryParameters['per_page'], 100);
-        expect(req.queryParameters['page'], 1);
+        expect(req.method.value, 'GET');
+        expect(req.url, '/repos/$owner/$repo/pulls');
+        expect(req.query!['state'], 'open');
+        expect(req.query!['per_page'], '100');
+        expect(req.query!['page'], '1');
       },
     );
 
     test('hasMore is false when no rel="next" link is present', () async {
-      final b = build((_) => _json(<Object>[]));
+      final b = build((r) => httpTextResponse(r, <Object>[]));
       final page = await b.client.listOpenPullRequestsPage(owner, repo);
       expect(page.items, isEmpty);
       expect(page.hasMore, isFalse);
     });
 
     test('throws ArgumentError when owner or repo is empty', () {
-      final b = build((_) => _json(<Object>[]));
+      final b = build((r) => httpTextResponse(r, <Object>[]));
       expect(
         () => b.client.listOpenPullRequestsPage('', repo),
         throwsA(isA<ArgumentError>()),
@@ -114,8 +109,10 @@ void main() {
       );
     });
 
-    test('maps a non-cancel DioException via mapDioException', () async {
-      final b = build((_) => _json({'message': 'nope'}, status: 404));
+    test('maps a non-cancel RhttpException via mapHttpException', () async {
+      final b = build(
+        (r) => httpTextResponse(r, {'message': 'nope'}, statusCode: 404),
+      );
       await expectLater(
         b.client.listOpenPullRequestsPage(owner, repo),
         throwsA(isA<NetworkException>()),
@@ -128,7 +125,7 @@ void main() {
       'search/issues query for requested reviews decodes PR nodes',
       () async {
         final b = build(
-          (o) => _json({
+          (r) => httpTextResponse(r, {
             'items': [
               {'number': 7, 'title': 'review me', 'state': 'open'},
               {'number': 8, 'title': 'and me', 'state': 'open'},
@@ -138,7 +135,7 @@ void main() {
         final prs = await b.client.listRequestedReviews(owner, repo);
         expect(prs.map((p) => p.number), [7, 8]);
         expect(
-          b.fake.requests.single.queryParameters['q'],
+          b.fake.requests.single.query!['q'],
           'type:pr state:open review-requested:@me repo:$owner/$repo',
         );
       },
@@ -146,7 +143,7 @@ void main() {
 
     test('reviewed-by-me returns the set of PR numbers > 0', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'items': [
             {'number': 11},
             {'number': 0}, // filtered out
@@ -159,7 +156,7 @@ void main() {
     });
 
     test('reviewed-by-me tolerates a missing items array', () async {
-      final b = build((_) => _json({'items': null}));
+      final b = build((r) => httpTextResponse(r, {'items': null}));
       final nums = await b.client.listReviewedByMePrNumbers(owner, repo);
       expect(nums, isEmpty);
     });
@@ -168,15 +165,14 @@ void main() {
   group('GitHubPrClient.searchClosedPullRequestsByAuthor', () {
     test('encodes the author query and forwards hasMore', () async {
       final b = build(
-        (o) => _json(
+        (r) => httpTextResponse(
+          r,
           {
             'items': [
               {'number': 5, 'title': 'old', 'state': 'closed'},
             ],
           },
-          headers: {
-            'link': ['<x>; rel="next"'],
-          },
+          headers: {'link': '<x>; rel="next"'},
         ),
       );
       final page = await b.client.searchClosedPullRequestsByAuthor(
@@ -187,36 +183,37 @@ void main() {
       );
       expect(page.items.single.number, 5);
       expect(page.hasMore, isTrue);
-      final qp = b.fake.requests.single.queryParameters;
+      final qp = b.fake.requests.single.query!;
       expect(qp['q'], 'type:pr state:closed author:alice repo:$owner/$repo');
       expect(qp['sort'], 'updated');
       expect(qp['order'], 'desc');
-      expect(qp['page'], 2);
+      expect(qp['page'], '2');
     });
   });
 
   group('GitHubPrClient.getPullRequest / getIssueReactionSummary', () {
     test('getPullRequest returns the mapped PR', () async {
       final b = build(
-        (_) => _json({'number': 42, 'title': 'hi', 'state': 'open'}),
+        (r) =>
+            httpTextResponse(r, {'number': 42, 'title': 'hi', 'state': 'open'}),
       );
       final pr = await b.client.getPullRequest(owner, repo, 42);
       expect(pr?.number, 42);
       expect(
-        b.fake.requests.single.headers['Accept'],
+        _header(b.fake.requests.single, 'Accept'),
         'application/vnd.github.full+json',
       );
     });
 
     test('getPullRequest returns null on non-map data', () async {
-      final b = build((_) => _json(<Object>[1, 2, 3]));
+      final b = build((r) => httpTextResponse(r, <Object>[1, 2, 3]));
       final pr = await b.client.getPullRequest(owner, repo, 1);
       expect(pr, isNull);
     });
 
     test('getIssueReactionSummary decodes the reactions sub-map', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'reactions': {'total_count': 4, '+1': 3, 'heart': 1},
         }),
       );
@@ -224,7 +221,7 @@ void main() {
       expect(summary?.totalCount, 4);
       expect(summary?.plusOne, 3);
       expect(
-        b.fake.requests.single.headers['Accept'],
+        _header(b.fake.requests.single, 'Accept'),
         'application/vnd.github.squirrel-girl-preview+json',
       );
     });
@@ -232,7 +229,7 @@ void main() {
     test(
       'getIssueReactionSummary returns null when reactions missing',
       () async {
-        final b = build((_) => _json({'number': 9}));
+        final b = build((r) => httpTextResponse(r, {'number': 9}));
         final summary = await b.client.getIssueReactionSummary(owner, repo, 9);
         expect(summary, isNull);
       },
@@ -241,16 +238,15 @@ void main() {
 
   group('GitHubPrClient.getPullRequestDiff', () {
     test('requests the diff media type and returns plain text', () async {
-      final b = build((_) => _text('diff --git a/x b/x'));
+      final b = build((r) => httpTextResponse(r, 'diff --git a/x b/x'));
       final diff = await b.client.getPullRequestDiff(owner, repo, 3);
       expect(diff, 'diff --git a/x b/x');
       final req = b.fake.requests.single;
-      expect(req.headers['Accept'], 'application/vnd.github.diff');
-      expect(req.responseType, ResponseType.plain);
+      expect(_header(req, 'Accept'), 'application/vnd.github.diff');
     });
 
     test('returns empty string when response data is null', () async {
-      final b = build((_) => ResponseBody.fromString('', 200));
+      final b = build((r) => httpTextResponse(r, ''));
       final diff = await b.client.getPullRequestDiff(owner, repo, 3);
       expect(diff, '');
     });
@@ -260,10 +256,10 @@ void main() {
     test('streams pages and stops early when a page is short', () async {
       // Page 1: full page (100). Page 2: 2 entries -> stop.
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
         if (page == 1) {
-          return _json([
+          return httpTextResponse(r, [
             for (var i = 0; i < 100; i++)
               {
                 'filename': 'f$i.dart',
@@ -273,7 +269,7 @@ void main() {
               },
           ]);
         }
-        return _json([
+        return httpTextResponse(r, [
           {
             'filename': 'last1.dart',
             'patch': 'p',
@@ -294,7 +290,7 @@ void main() {
     });
 
     test('yields only non-empty pages', () async {
-      final b = build((_) => _json(<Object>[]));
+      final b = build((r) => httpTextResponse(r, <Object>[]));
       final all = await b.client.listPullRequestFiles(owner, repo, 1);
       expect(all, isEmpty);
     });
@@ -305,7 +301,7 @@ void main() {
     () {
       test('single-page commits use per_page=100', () async {
         final b = build(
-          (_) => _json([
+          (r) => httpTextResponse(r, [
             {
               'sha': 'abc',
               'commit': {
@@ -317,17 +313,18 @@ void main() {
         );
         final commits = await b.client.listPullRequestCommits(owner, repo, 1);
         expect(commits.single.sha, 'abc');
-        expect(b.fake.requests.single.queryParameters['per_page'], 100);
+        expect(b.fake.requests.single.query!['per_page'], '100');
       });
 
       test(
         'listAllPullRequestCommits paginates while hasMore + full pages',
         () async {
           var page = 0;
-          final b = build((_) {
+          final b = build((r) {
             page++;
             final hasNext = page == 1;
-            return _json(
+            return httpTextResponse(
+              r,
               [
                 for (var i = 0; i < 100; i++)
                   {
@@ -338,9 +335,7 @@ void main() {
                     },
                   },
               ],
-              headers: {
-                if (hasNext) 'link': ['<x>; rel="next"'],
-              },
+              headers: {if (hasNext) 'link': '<x>; rel="next"'},
             );
           });
           final all = await b.client.listAllPullRequestCommits(owner, repo, 1);
@@ -352,14 +347,14 @@ void main() {
 
   group('GitHubPrClient.getCommit / getCommitFiles', () {
     test('getCommit returns null for empty sha', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       expect(await b.client.getCommit(owner, repo, ''), isNull);
       expect(b.fake.requests, isEmpty);
     });
 
     test('getCommit maps the commit envelope', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'sha': 'deadbeef',
           'commit': {
             'message': 'hello',
@@ -373,13 +368,13 @@ void main() {
     });
 
     test('getCommitFiles returns empty for empty sha', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       expect(await b.client.getCommitFiles(owner, repo, ''), isEmpty);
     });
 
     test('getCommitFiles decodes the files array', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'files': [
             {'filename': 'a.dart', 'patch': 'p'},
           ],
@@ -393,7 +388,7 @@ void main() {
   group('GitHubPrClient review / comment listings', () {
     test('listPullRequestReviews decodes', () async {
       final b = build(
-        (_) => _json([
+        (r) => httpTextResponse(r, [
           {
             'id': 1,
             'state': 'APPROVED',
@@ -407,7 +402,7 @@ void main() {
 
     test('listPullRequestReviewComments sends full+json header', () async {
       final b = build(
-        (_) => _json([
+        (r) => httpTextResponse(r, [
           {
             'id': 9,
             'body': 'nit',
@@ -417,14 +412,14 @@ void main() {
       );
       await b.client.listPullRequestReviewComments(owner, repo, 1);
       expect(
-        b.fake.requests.single.headers['Accept'],
+        _header(b.fake.requests.single, 'Accept'),
         'application/vnd.github.full+json',
       );
     });
 
     test('listIssueComments decodes issue comments', () async {
       final b = build(
-        (_) => _json([
+        (r) => httpTextResponse(r, [
           {
             'id': 1,
             'body': 'b',
@@ -439,14 +434,14 @@ void main() {
 
   group('GitHubPrClient check runs / workflow runs', () {
     test('listCheckRuns returns empty for empty ref', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       expect(await b.client.listCheckRuns(owner, repo, ''), isEmpty);
       expect(b.fake.requests, isEmpty);
     });
 
     test('listCheckRuns decodes the check_runs envelope', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'check_runs': [
             {
               'id': 1,
@@ -462,13 +457,13 @@ void main() {
     });
 
     test('listWorkflowRuns returns empty for empty headSha', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       expect(await b.client.listWorkflowRuns(owner, repo, ''), isEmpty);
     });
 
     test('listWorkflowRuns decodes the workflow_runs envelope', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'workflow_runs': [
             {
               'id': 7,
@@ -487,7 +482,7 @@ void main() {
   group('GitHubPrClient write endpoints', () {
     test('postReviewComment builds the single-line payload', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'id': 1,
           'body': 'b',
           'user': {'login': 'me'},
@@ -503,7 +498,7 @@ void main() {
         side: 'RIGHT',
         body: 'nit',
       );
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
       expect(body['commit_id'], 'abc');
       expect(body['line'], 9);
       expect(body['side'], 'RIGHT');
@@ -513,7 +508,7 @@ void main() {
     test(
       'postReviewComment includes start_line/side for multi-line anchors',
       () async {
-        final b = build((_) => _json({'id': 1}));
+        final b = build((r) => httpTextResponse(r, {'id': 1}));
         await b.client.postReviewComment(
           owner,
           repo,
@@ -526,14 +521,14 @@ void main() {
           startLine: 9,
           startSide: 'RIGHT',
         );
-        final body = b.fake.requests.single.data as Map<String, dynamic>;
+        final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
         expect(body['start_line'], 9);
         expect(body['start_side'], 'RIGHT');
       },
     );
 
     test('postReviewComment throws when the POST returns a non-map', () async {
-      final b = build((_) => _json(<Object>[1, 2]));
+      final b = build((r) => httpTextResponse(r, <Object>[1, 2]));
       await expectLater(
         b.client.postReviewComment(
           owner,
@@ -550,7 +545,7 @@ void main() {
     });
 
     test('replyToReviewComment POSTs to the replies sub-path', () async {
-      final b = build((_) => _json({'id': 1}));
+      final b = build((r) => httpTextResponse(r, {'id': 1}));
       await b.client.replyToReviewComment(
         owner,
         repo,
@@ -559,21 +554,21 @@ void main() {
         body: 'reply',
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect(req.path, '/repos/$owner/$repo/pulls/5/comments/42/replies');
-      expect((req.data as Map)['body'], 'reply');
+      expect(req.method.value, 'POST');
+      expect(req.url, '/repos/$owner/$repo/pulls/5/comments/42/replies');
+      expect((_jsonBody(req) as Map)['body'], 'reply');
     });
 
     test('deleteReviewComment DELETEs the comment', () async {
-      final b = build((_) => _json({}, status: 204));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 204));
       await b.client.deleteReviewComment(owner, repo, commentId: 88);
       final req = b.fake.requests.single;
-      expect(req.method, 'DELETE');
-      expect(req.path, contains('/comments/88'));
+      expect(req.method.value, 'DELETE');
+      expect(req.url, contains('/comments/88'));
     });
 
     test('editReviewComment PATCHes the body', () async {
-      final b = build((_) => _json({'id': 88}));
+      final b = build((r) => httpTextResponse(r, {'id': 88}));
       final c = await b.client.editReviewComment(
         owner,
         repo,
@@ -581,21 +576,23 @@ void main() {
         body: 'edited',
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'PATCH');
-      expect((req.data as Map)['body'], 'edited');
+      expect(req.method.value, 'PATCH');
+      expect((_jsonBody(req) as Map)['body'], 'edited');
       expect(c.id, 88);
     });
 
     test('deleteIssueComment DELETEs /issues/comments/{id}', () async {
-      final b = build((_) => _json({}, status: 204));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 204));
       await b.client.deleteIssueComment(owner, repo, commentId: 12);
       final req = b.fake.requests.single;
-      expect(req.method, 'DELETE');
-      expect(req.path, '/repos/$owner/$repo/issues/comments/12');
+      expect(req.method.value, 'DELETE');
+      expect(req.url, '/repos/$owner/$repo/issues/comments/12');
     });
 
     test('updateIssueComment PATCHes /issues/comments/{id}', () async {
-      final b = build((_) => _json({'id': 12, 'body': '- [x] done'}));
+      final b = build(
+        (r) => httpTextResponse(r, {'id': 12, 'body': '- [x] done'}),
+      );
       final c = await b.client.updateIssueComment(
         owner,
         repo,
@@ -603,9 +600,9 @@ void main() {
         body: '- [x] done',
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'PATCH');
-      expect(req.path, '/repos/$owner/$repo/issues/comments/12');
-      expect((req.data as Map)['body'], '- [x] done');
+      expect(req.method.value, 'PATCH');
+      expect(req.url, '/repos/$owner/$repo/issues/comments/12');
+      expect((_jsonBody(req) as Map)['body'], '- [x] done');
       expect(c.id, 12);
       expect(c.body, '- [x] done');
     });
@@ -613,7 +610,9 @@ void main() {
     test(
       'submitReview includes body/commitId/comments only when provided',
       () async {
-        final b = build((_) => _json({'id': 1, 'state': 'APPROVED'}));
+        final b = build(
+          (r) => httpTextResponse(r, {'id': 1, 'state': 'APPROVED'}),
+        );
         await b.client.submitReview(
           owner,
           repo,
@@ -625,7 +624,7 @@ void main() {
             {'path': 'a.dart', 'line': 1, 'side': 'RIGHT', 'body': 'x'},
           ],
         );
-        final body = b.fake.requests.single.data as Map<String, dynamic>;
+        final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
         expect(body['event'], 'APPROVE');
         expect(body['body'], 'lgtm');
         expect(body['commit_id'], 'sha1');
@@ -634,14 +633,14 @@ void main() {
     );
 
     test('submitReview omits empty optional fields', () async {
-      final b = build((_) => _json({'id': 1}));
+      final b = build((r) => httpTextResponse(r, {'id': 1}));
       await b.client.submitReview(owner, repo, prNumber: 3, event: 'COMMENT');
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
       expect(body, {'event': 'COMMENT'});
     });
 
     test('createPullRequest returns the raw map', () async {
-      final b = build((_) => _json({'number': 99}));
+      final b = build((r) => httpTextResponse(r, {'number': 99}));
       final pr = await b.client.createPullRequest(
         owner,
         repo,
@@ -652,13 +651,15 @@ void main() {
         draft: true,
       );
       expect(pr['number'], 99);
-      expect((b.fake.requests.single.data as Map)['draft'], true);
+      expect((_jsonBody(b.fake.requests.single) as Map)['draft'], true);
     });
 
     test(
       'mergePullRequest only includes non-empty commit title/message',
       () async {
-        final b = build((_) => _json({'merged': true, 'sha': 'abc'}));
+        final b = build(
+          (r) => httpTextResponse(r, {'merged': true, 'sha': 'abc'}),
+        );
         final res = await b.client.mergePullRequest(
           owner,
           repo,
@@ -667,7 +668,7 @@ void main() {
           commitTitle: 't',
         );
         expect(res['merged'], true);
-        final body = b.fake.requests.single.data as Map<String, dynamic>;
+        final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
         expect(body['merge_method'], 'squash');
         expect(body['commit_title'], 't');
         expect(body, isNot(contains('commit_message')));
@@ -676,9 +677,9 @@ void main() {
 
     test('mergePullRequest turns a 405 into the forge\'s reason', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'message': 'Pull Request has merge conflicts',
-        }, status: 405),
+        }, statusCode: 405),
       );
       await expectLater(
         b.client.mergePullRequest(
@@ -689,7 +690,11 @@ void main() {
         ),
         throwsA(
           isA<PrNotMergeableException>()
-              .having((e) => e.message, 'message', 'Pull Request has merge conflicts')
+              .having(
+                (e) => e.message,
+                'message',
+                'Pull Request has merge conflicts',
+              )
               .having((e) => e.hasConflicts, 'hasConflicts', isTrue),
         ),
       );
@@ -697,9 +702,9 @@ void main() {
 
     test('mergePullRequest 405 without a conflict is not a conflict', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'message': 'Required status check "ci" is expected.',
-        }, status: 405),
+        }, statusCode: 405),
       );
       await expectLater(
         b.client.mergePullRequest(
@@ -719,16 +724,17 @@ void main() {
     });
 
     test('closePullRequest PATCHes state=closed', () async {
-      final b = build((_) => _json({}, status: 200));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 200));
       await b.client.closePullRequest(owner, repo, prNumber: 4);
       final req = b.fake.requests.single;
-      expect(req.method, 'PATCH');
-      expect((req.data as Map)['state'], 'closed');
+      expect(req.method.value, 'PATCH');
+      expect((_jsonBody(req) as Map)['state'], 'closed');
     });
 
     test('updatePullRequest only sends non-null fields', () async {
       final b = build(
-        (_) => _json({'number': 4, 'title': 'x', 'state': 'open'}),
+        (r) =>
+            httpTextResponse(r, {'number': 4, 'title': 'x', 'state': 'open'}),
       );
       await b.client.updatePullRequest(
         owner,
@@ -736,7 +742,7 @@ void main() {
         prNumber: 4,
         title: 'new title',
       );
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
       expect(body['title'], 'new title');
       expect(body, isNot(contains('body')));
     });
@@ -744,13 +750,13 @@ void main() {
 
   group('GitHubPrClient assignees / reviewers', () {
     test('addAssignees is a no-op for an empty logins list', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       await b.client.addAssignees(owner, repo, prNumber: 1, logins: const []);
       expect(b.fake.requests, isEmpty);
     });
 
     test('addAssignees POSTs the logins', () async {
-      final b = build((_) => _json({}, status: 201));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 201));
       await b.client.addAssignees(
         owner,
         repo,
@@ -758,12 +764,12 @@ void main() {
         logins: const ['a', 'b'],
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect((req.data as Map)['assignees'], ['a', 'b']);
+      expect(req.method.value, 'POST');
+      expect((_jsonBody(req) as Map)['assignees'], ['a', 'b']);
     });
 
     test('removeAssignees DELETEs the logins', () async {
-      final b = build((_) => _json({}, status: 200));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 200));
       await b.client.removeAssignees(
         owner,
         repo,
@@ -771,18 +777,18 @@ void main() {
         logins: const ['a'],
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'DELETE');
-      expect((req.data as Map)['assignees'], ['a']);
+      expect(req.method.value, 'DELETE');
+      expect((_jsonBody(req) as Map)['assignees'], ['a']);
     });
 
     test('addLabels is a no-op for an empty name list', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       await b.client.addLabels(owner, repo, prNumber: 1, names: const []);
       expect(b.fake.requests, isEmpty);
     });
 
     test('addLabels POSTs the names', () async {
-      final b = build((_) => _json({}, status: 200));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 200));
       await b.client.addLabels(
         owner,
         repo,
@@ -790,13 +796,13 @@ void main() {
         names: const ['bug', 'docs'],
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect(req.path, '/repos/$owner/$repo/issues/1/labels');
-      expect((req.data as Map)['labels'], ['bug', 'docs']);
+      expect(req.method.value, 'POST');
+      expect(req.url, '/repos/$owner/$repo/issues/1/labels');
+      expect((_jsonBody(req) as Map)['labels'], ['bug', 'docs']);
     });
 
     test('removeLabels encodes the name into the path', () async {
-      final b = build((_) => _json({}, status: 200));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 200));
       await b.client.removeLabels(
         owner,
         repo,
@@ -804,21 +810,20 @@ void main() {
         names: const ['bug/triage'],
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'DELETE');
-      expect(req.path, '/repos/$owner/$repo/issues/1/labels/bug%2Ftriage');
+      expect(req.method.value, 'DELETE');
+      expect(req.url, '/repos/$owner/$repo/issues/1/labels/bug%2Ftriage');
     });
 
     test('listLabels paginates and decodes color', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
-        return _json(
+        return httpTextResponse(
+          r,
           [
             {'name': 'bug$page', 'color': 'd73a4a', 'description': 'Broken'},
           ],
-          headers: {
-            if (page == 1) 'link': ['<x>; rel="next"'],
-          },
+          headers: {if (page == 1) 'link': '<x>; rel="next"'},
         );
       });
       final labels = await b.client.listLabels(owner, repo);
@@ -828,13 +833,13 @@ void main() {
     });
 
     test('requestReviewers is a no-op when both lists are empty', () async {
-      final b = build((_) => _json({}));
+      final b = build((r) => httpTextResponse(r, {}));
       await b.client.requestReviewers(owner, repo, prNumber: 1);
       expect(b.fake.requests, isEmpty);
     });
 
     test('requestReviewers POSTs reviewers + team_reviewers', () async {
-      final b = build((_) => _json({}, status: 201));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 201));
       await b.client.requestReviewers(
         owner,
         repo,
@@ -842,13 +847,13 @@ void main() {
         reviewers: const ['me'],
         teamReviewers: const ['eng'],
       );
-      final body = b.fake.requests.single.data as Map<String, dynamic>;
+      final body = _jsonBody(b.fake.requests.single) as Map<String, dynamic>;
       expect(body['reviewers'], ['me']);
       expect(body['team_reviewers'], ['eng']);
     });
 
     test('removeRequestedReviewers DELETEs reviewers', () async {
-      final b = build((_) => _json({}, status: 200));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 200));
       await b.client.removeRequestedReviewers(
         owner,
         repo,
@@ -856,15 +861,15 @@ void main() {
         reviewers: const ['me'],
       );
       final req = b.fake.requests.single;
-      expect(req.method, 'DELETE');
-      expect((req.data as Map)['team_reviewers'], isEmpty);
+      expect(req.method.value, 'DELETE');
+      expect((_jsonBody(req) as Map)['team_reviewers'], isEmpty);
     });
   });
 
   group('GitHubPrClient reactions', () {
     test('createReviewCommentReaction maps the reaction', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'id': 1,
           'user': {'login': 'x'},
           'content': '+1',
@@ -880,7 +885,7 @@ void main() {
     });
 
     test('createReviewCommentReaction throws on non-map', () async {
-      final b = build((_) => _json(<Object>[]));
+      final b = build((r) => httpTextResponse(r, <Object>[]));
       await expectLater(
         b.client.createReviewCommentReaction(
           owner,
@@ -893,19 +898,19 @@ void main() {
     });
 
     test('deleteReviewCommentReaction DELETEs', () async {
-      final b = build((_) => _json({}, status: 204));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 204));
       await b.client.deleteReviewCommentReaction(
         owner,
         repo,
         commentId: 5,
         reactionId: 9,
       );
-      expect(b.fake.requests.single.method, 'DELETE');
+      expect(b.fake.requests.single.method.value, 'DELETE');
     });
 
     test('listReviewCommentReactions decodes', () async {
       final b = build(
-        (_) => _json([
+        (r) => httpTextResponse(r, [
           {
             'id': 1,
             'user': {'login': 'x'},
@@ -923,7 +928,7 @@ void main() {
 
     test('createIssueCommentReaction / listIssueCommentReactions', () async {
       final b = build(
-        (_) => _json([
+        (r) => httpTextResponse(r, [
           {
             'id': 1,
             'user': {'login': 'x'},
@@ -942,7 +947,7 @@ void main() {
     });
 
     test('deleteIssueCommentReaction DELETEs', () async {
-      final b = build((_) => _json({}, status: 204));
+      final b = build((r) => httpTextResponse(r, {}, statusCode: 204));
       await b.client.deleteIssueCommentReaction(
         owner,
         repo,
@@ -950,7 +955,7 @@ void main() {
         reactionId: 9,
       );
       expect(
-        b.fake.requests.single.path,
+        b.fake.requests.single.url,
         contains('/issues/comments/5/reactions/9'),
       );
     });
@@ -959,17 +964,17 @@ void main() {
       'createIssueReaction / listIssueReactions / deleteIssueReaction',
       () async {
         var n = 0;
-        final b = build((o) {
+        final b = build((r) {
           n++;
           switch (n) {
             case 1:
-              return _json({
+              return httpTextResponse(r, {
                 'id': 1,
                 'user': {'login': 'x'},
                 'content': '+1',
               });
             case 2:
-              return _json([
+              return httpTextResponse(r, [
                 {
                   'id': 1,
                   'user': {'login': 'x'},
@@ -977,7 +982,7 @@ void main() {
                 },
               ]);
             default:
-              return _json({}, status: 204);
+              return httpTextResponse(r, {}, statusCode: 204);
           }
         });
         final created = await b.client.createIssueReaction(
@@ -1001,7 +1006,7 @@ void main() {
           issueNumber: 7,
           reactionId: 9,
         );
-        expect(b.fake.requests.last.method, 'DELETE');
+        expect(b.fake.requests.last.method.value, 'DELETE');
       },
     );
   });
@@ -1009,15 +1014,14 @@ void main() {
   group('GitHubPrClient pagination loops', () {
     test('listAssignableUsers paginates while rel="next" present', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
-        return _json(
+        return httpTextResponse(
+          r,
           [
             {'login': 'u$page', 'avatar_url': 'a'},
           ],
-          headers: {
-            if (page == 1) 'link': ['<x>; rel="next"'],
-          },
+          headers: {if (page == 1) 'link': '<x>; rel="next"'},
         );
       });
       final users = await b.client.listAssignableUsers(owner, repo);
@@ -1025,14 +1029,16 @@ void main() {
     });
 
     test('listRequestableTeams returns [] on 404', () async {
-      final b = build((_) => _json({'message': 'not found'}, status: 404));
+      final b = build(
+        (r) => httpTextResponse(r, {'message': 'not found'}, statusCode: 404),
+      );
       final teams = await b.client.listRequestableTeams(owner, repo);
       expect(teams, isEmpty);
     });
 
     test('listRequestableTeams maps team nodes', () async {
       final b = build(
-        (_) => _json([
+        (r) => httpTextResponse(r, [
           {'id': 1, 'name': 'Eng', 'slug': 'eng'},
         ]),
       );
@@ -1046,16 +1052,15 @@ void main() {
 
     test('listBranches paginates and skips empty names', () async {
       var page = 0;
-      final b = build((_) {
+      final b = build((r) {
         page++;
-        return _json(
+        return httpTextResponse(
+          r,
           [
             {'name': 'main'},
             if (page == 1) {'name': ''}, // skipped
           ],
-          headers: {
-            if (page == 1) 'link': ['<x>; rel="next"'],
-          },
+          headers: {if (page == 1) 'link': '<x>; rel="next"'},
         );
       });
       final branches = await b.client.listBranches(owner, repo);
@@ -1063,12 +1068,14 @@ void main() {
     });
 
     test('getDefaultBranch returns the default_branch field', () async {
-      final b = build((_) => _json({'default_branch': 'develop'}));
+      final b = build(
+        (r) => httpTextResponse(r, {'default_branch': 'develop'}),
+      );
       expect(await b.client.getDefaultBranch(owner, repo), 'develop');
     });
 
     test('getDefaultBranch returns empty string for non-map data', () async {
-      final b = build((_) => _json(<Object>[1]));
+      final b = build((r) => httpTextResponse(r, <Object>[1]));
       expect(await b.client.getDefaultBranch(owner, repo), '');
     });
   });
@@ -1076,7 +1083,7 @@ void main() {
   group('GitHubPrClient.compareBranches', () {
     test('sums additions/deletions across files and counts commits', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'total_commits': 3,
           'files': [
             {
@@ -1116,7 +1123,7 @@ void main() {
     });
 
     test('tolerates a non-map response', () async {
-      final b = build((_) => _json(<Object>[1]));
+      final b = build((r) => httpTextResponse(r, <Object>[1]));
       final cmp = await b.client.compareBranches(
         owner,
         repo,
@@ -1131,7 +1138,7 @@ void main() {
   group('GitHubPrClient.searchIssues', () {
     test('returns (number,title) hits for the query', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'items': [
             {'number': 11, 'title': 'first'},
             {'number': 22, 'title': 'second'},
@@ -1141,25 +1148,24 @@ void main() {
       final hits = await b.client.searchIssues(owner, repo, 'fix');
       expect(hits.map((h) => h.number), [11, 22]);
       expect(hits.last.title, 'second');
-      expect(
-        b.fake.requests.single.queryParameters['q'],
-        'repo:$owner/$repo fix',
-      );
+      expect(b.fake.requests.single.query!['q'], 'repo:$owner/$repo fix');
     });
 
     test('falls back to state:open when the query is blank', () async {
-      final b = build((_) => _json({'items': []}));
+      final b = build((r) => httpTextResponse(r, {'items': []}));
       await b.client.searchIssues(owner, repo, '   ');
       expect(
-        b.fake.requests.single.queryParameters['q'],
+        b.fake.requests.single.query!['q'],
         'repo:$owner/$repo state:open',
       );
     });
 
     test(
-      'returns [] on a non-cancel DioException (autocomplete never throws)',
+      'returns [] on a non-cancel RhttpException (autocomplete never throws)',
       () async {
-        final b = build((_) => _json({'message': 'boom'}, status: 500));
+        final b = build(
+          (r) => httpTextResponse(r, {'message': 'boom'}, statusCode: 500),
+        );
         expect(await b.client.searchIssues(owner, repo, 'x'), isEmpty);
       },
     );
@@ -1167,7 +1173,7 @@ void main() {
   group('GitHubPrClient workflow run jobs / job detail', () {
     test('listWorkflowRunJobs decodes the jobs envelope incl. steps', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'jobs': [
             {
               'id': 101,
@@ -1204,13 +1210,13 @@ void main() {
       expect(job.steps.first.conclusion, 'success');
       expect(job.steps.last.status, 'in_progress');
       final req = b.fake.requests.single;
-      expect(req.path, '/repos/$owner/$repo/actions/runs/7/jobs');
-      expect(req.queryParameters['per_page'], 100);
+      expect(req.url, '/repos/$owner/$repo/actions/runs/7/jobs');
+      expect(req.query!['per_page'], '100');
     });
 
     test('getJobRun decodes one job', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'id': 101,
           'run_id': 7,
           'name': 'build',
@@ -1226,19 +1232,21 @@ void main() {
       expect(job.status, 'in_progress');
       expect(job.steps.single.name, 'Set up job');
       expect(
-        b.fake.requests.single.path,
+        b.fake.requests.single.url,
         '/repos/$owner/$repo/actions/jobs/101',
       );
     });
 
     test('getJobRun returns null on 404', () async {
-      final b = build((_) => _json({'message': 'not found'}, status: 404));
+      final b = build(
+        (r) => httpTextResponse(r, {'message': 'not found'}, statusCode: 404),
+      );
       expect(await b.client.getJobRun(owner, repo, 999), isNull);
     });
 
     test('getWorkflowRun decodes path + head_sha', () async {
       final b = build(
-        (_) => _json({
+        (r) => httpTextResponse(r, {
           'id': 7,
           'name': 'CI',
           'check_suite_id': 42,
@@ -1253,36 +1261,41 @@ void main() {
       expect(run!.path, '.github/workflows/ci.yaml');
       expect(run.headSha, 'abc123');
       expect(run.checkSuiteId, 42);
-      expect(b.fake.requests.single.path, '/repos/$owner/$repo/actions/runs/7');
+      expect(b.fake.requests.single.url, '/repos/$owner/$repo/actions/runs/7');
     });
 
     test('getWorkflowRun returns null on 404', () async {
-      final b = build((_) => _json({'message': 'not found'}, status: 404));
+      final b = build(
+        (r) => httpTextResponse(r, {'message': 'not found'}, statusCode: 404),
+      );
       expect(await b.client.getWorkflowRun(owner, repo, 999), isNull);
     });
   });
 
   group('GitHubPrClient.getJobLogs', () {
-    GitHubPrClient clientWith(_FakeAdapter authed, _FakeAdapter download) {
-      final authedDio = Dio()..httpClientAdapter = authed;
-      final downloadDio = Dio()..httpClientAdapter = download;
-      return GitHubPrClient(authedDio, downloadDio: downloadDio);
+    GitHubPrClient clientWith(TestHttpClient authed, TestHttpClient download) {
+      return GitHubPrClient(
+        authed,
+        downloadHttpClient: download,
+        redirectlessHttpClient: authed,
+      );
     }
 
     test(
       'follows the 302 to the signed URL on the PLAIN download client',
       () async {
         const logText = 'line one\nline two\n';
-        final authed = _FakeAdapter(
-          (_) => _json(
+        final authed = TestHttpClient(
+          handler: (r) => httpTextResponse(
+            r,
             {'message': 'Found'},
-            status: 302,
-            headers: {
-              'location': ['https://signed.example/log.zip'],
-            },
+            statusCode: 302,
+            headers: {'location': 'https://signed.example/log.zip'},
           ),
         );
-        final download = _FakeAdapter((_) => _text(logText));
+        final download = TestHttpClient(
+          handler: (r) => _streamResponse(r, logText),
+        );
         final client = clientWith(authed, download);
 
         final result = await client.getJobLogs(owner, repo, 101);
@@ -1292,16 +1305,16 @@ void main() {
         // The redirect target was hit on the download client — never on the
         // authed one (the Authorization header must not leak to Azure).
         expect(authed.requests, hasLength(1));
-        expect(authed.requests.single.followRedirects, isFalse);
-        expect(download.requests.single.path, 'https://signed.example/log.zip');
+        expect(download.requests.single.url, 'https://signed.example/log.zip');
       },
     );
 
     test('returns null on 404 (job running / logs expired)', () async {
-      final authed = _FakeAdapter(
-        (_) => _json({'message': 'not found'}, status: 404),
+      final authed = TestHttpClient(
+        handler: (r) =>
+            httpTextResponse(r, {'message': 'not found'}, statusCode: 404),
       );
-      final download = _FakeAdapter((_) => _text(''));
+      final download = TestHttpClient(handler: (r) => _streamResponse(r, ''));
       final client = clientWith(authed, download);
       expect(await client.getJobLogs(owner, repo, 101), isNull);
       expect(download.requests, isEmpty);
@@ -1309,16 +1322,15 @@ void main() {
 
     test('keeps only the tail past maxBytes and reports truncation', () async {
       final big = List.generate(2000, (i) => 'log line $i').join('\n');
-      final authed = _FakeAdapter(
-        (_) => _json(
+      final authed = TestHttpClient(
+        handler: (r) => httpTextResponse(
+          r,
           {'message': 'Found'},
-          status: 302,
-          headers: {
-            'location': ['https://signed.example/log.zip'],
-          },
+          statusCode: 302,
+          headers: {'location': 'https://signed.example/log.zip'},
         ),
       );
-      final download = _FakeAdapter((_) => _text(big));
+      final download = TestHttpClient(handler: (r) => _streamResponse(r, big));
       final client = clientWith(authed, download);
 
       final result = await client.getJobLogs(owner, repo, 101, maxBytes: 1024);
@@ -1331,8 +1343,10 @@ void main() {
     test(
       'returns null when the head response has no redirect location',
       () async {
-        final authed = _FakeAdapter((_) => _json({'ok': true}, status: 200));
-        final download = _FakeAdapter((_) => _text(''));
+        final authed = TestHttpClient(
+          handler: (r) => httpTextResponse(r, {'ok': true}, statusCode: 200),
+        );
+        final download = TestHttpClient(handler: (r) => _streamResponse(r, ''));
         final client = clientWith(authed, download);
         expect(await client.getJobLogs(owner, repo, 101), isNull);
         expect(download.requests, isEmpty);
@@ -1368,7 +1382,7 @@ void main() {
     };
 
     test('listStacks GETs the endpoint with the API-version header', () async {
-      final b = build((_) => _json([stackJson]));
+      final b = build((r) => httpTextResponse(r, [stackJson]));
       final page = await b.client.listStacks(owner, repo, pullRequest: 101);
       expect(page.items.single.number, 3);
       expect(page.items.single.baseRef, 'main');
@@ -1376,40 +1390,42 @@ void main() {
       expect(page.items.single.pullRequests.last.mergedAt, isNotNull);
       expect(page.hasMore, isFalse);
       final req = b.fake.requests.single;
-      expect(req.method, 'GET');
-      expect(req.path, '/repos/$owner/$repo/stacks');
-      expect(req.queryParameters['pull_request'], 101);
-      expect(req.headers['X-GitHub-Api-Version'], '2026-03-10');
+      expect(req.method.value, 'GET');
+      expect(req.url, '/repos/$owner/$repo/stacks');
+      expect(req.query!['pull_request'], '101');
+      expect(_header(req, 'X-GitHub-Api-Version'), '2026-03-10');
     });
 
     test('getStack returns null on a 404', () async {
-      final b = build((_) => _json({'message': 'Not Found'}, status: 404));
+      final b = build(
+        (r) => httpTextResponse(r, {'message': 'Not Found'}, statusCode: 404),
+      );
       expect(await b.client.getStack(owner, repo, 3), isNull);
     });
 
     test('createStack POSTs the ordered PR numbers', () async {
-      final b = build((_) => _json(stackJson, status: 201));
+      final b = build((r) => httpTextResponse(r, stackJson, statusCode: 201));
       final stack = await b.client.createStack(owner, repo, const [101, 102]);
       expect(stack.number, 3);
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect(req.path, '/repos/$owner/$repo/stacks');
-      expect((req.data as Map)['pull_requests'], [101, 102]);
+      expect(req.method.value, 'POST');
+      expect(req.url, '/repos/$owner/$repo/stacks');
+      expect((_jsonBody(req) as Map)['pull_requests'], [101, 102]);
     });
 
     test('addToStack POSTs to the add sub-endpoint', () async {
-      final b = build((_) => _json(stackJson));
+      final b = build((r) => httpTextResponse(r, stackJson));
       await b.client.addToStack(owner, repo, 3, const [103]);
       final req = b.fake.requests.single;
-      expect(req.method, 'POST');
-      expect(req.path, '/repos/$owner/$repo/stacks/3/add');
+      expect(req.method.value, 'POST');
+      expect(req.url, '/repos/$owner/$repo/stacks/3/add');
     });
 
     test('unstack maps a 204 (dissolved stack) to null', () async {
-      final b = build((_) => _json(null, status: 204));
+      final b = build((r) => httpTextResponse(r, null, statusCode: 204));
       expect(await b.client.unstack(owner, repo, 3), isNull);
       final req = b.fake.requests.single;
-      expect(req.path, '/repos/$owner/$repo/stacks/3/unstack');
+      expect(req.url, '/repos/$owner/$repo/stacks/3/unstack');
     });
   });
 }

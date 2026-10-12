@@ -2,7 +2,7 @@
 title: Mit einem Remote-Server verbinden
 description: Richte die Desktop-App oder den Web-Client auf einen cc_server aus, der woanders läuft, und wechsle zwischen Servern, ohne neu zu starten.
 slug: de-DE/handbuch/anleitungen/remote-server-verbinden
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Jeder Client ist eine Darstellung über einem `cc_server`, dem die Daten gehören. Der
@@ -14,7 +14,7 @@ der woanders läuft — ein kleiner Rechner, eine Cloud-VM, ein Build-Server.
 ## Voraussetzungen
 
 - Ein laufender `cc_server`. Hast du noch keinen, siehe [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/).
-- Entweder die drei Kopplungswerte, die der Server ausgestellt hat — die **Server-URL** (`ws://…/rpc` oder `wss://…/rpc`), eine **Geräte-ID** und ein **Kopplungsschlüssel** — **oder** ein einmaliger **Einladungscode** von einem Admin des Arbeitsbereichs. Einen Einladungscode einzulösen legt deinen Benutzer an, trägt deine Mitgliedschaft ein und stellt die Zugangsberechtigung dieses Clients für dich aus, sodass du nie eine Geräte-ID oder einen Schlüssel anfasst.
+- Entweder die drei Kopplungswerte, die der Server ausgestellt hat — die **Server-URL** (`ws://…/rpc` oder `wss://…/rpc`), eine **Geräte-ID** und ein **Kopplungsschlüssel** — **oder** ein einmaliger **Einladungscode** von einem Admin des Arbeitsbereichs. Einen Einladungscode einzulösen legt deinen Benutzer an, trägt deine Mitgliedschaft ein und stellt die Zugangsberechtigung dieses Clients für dich aus, sodass du nie eine Geräte-ID oder einen Schlüssel anfasst. Beziehe sie über einen vertrauenswürdigen Kanal und prüfe den Server-Fingerabdruck beim ersten Verbinden gegen einen vertrauenswürdigen QR-Code oder einen bekannten Pin.
 
 ### Prüfe, ob der Server erreichbar ist
 
@@ -29,7 +29,7 @@ vornherein, eine Adresse außerhalb von Loopback ohne TLS zu binden. Gib ihm ein
 davon:
 
 - ein Zertifikat direkt, mit `--tls-cert` und `--tls-key`
-- einen TLS-terminierenden Reverse-Proxy davor, den Server mit `--insecure` gestartet (Klartext hinter dem Proxy, nur in einem vertrauenswürdigen Netz)
+- einen TLS-terminierenden Reverse-Proxy davor, den Server mit `--insecure` gestartet (Klartext zwischen Proxy und Server am äußeren Listener, nur in einem vertrauenswürdigen Netz; dies deaktiviert nicht die verpflichtende verschlüsselte Client-Sitzung)
 - einen Tunnel oder ein VPN, das das Zertifikat mitliefert — Tailscale, cloudflared oder Ähnliches. Unter **Einstellungen → Server → Verbindung und Status** liegt die eingebaute Tunnel-Option bei **Diesen Server teilen**.
 
 Zwei Einstellungen auf der Serverseite übersieht man leicht. Hinter einem Proxy,
@@ -60,7 +60,8 @@ bist, hat keine Aktion **Wechseln**; der lokale Server ist die erste Zeile,
 beschriftet mit **In dieser App ausführen**.
 
 Nach dem Wechsel besitzt der Desktop keine Datenbank. Jeder Bildschirm liest und
-schreibt über den entfernten Server per WebSocket.
+schreibt über den entfernten Server per signierter, Ende-zu-Ende-verschlüsselter
+WebSocket-Sitzung; derselbe Schutz gilt über Loopback und über das Relay.
 
 ## Den Web-Client verbinden
 
@@ -72,13 +73,19 @@ Der Web-Build ist immer entfernt.
 
 Steht ein Kopplungs-Deep-Link in der URL, sind die Felder vorausgefüllt. Der
 Kopplungsschlüssel reist im **URL-Fragment**, das Browser nie an den Server
-schicken, der die Seite ausliefert. Der statische Host sieht ihn deshalb nie.
+schicken, der die Seite ausliefert. Behandle den Link wie ein Geheimnis und
+vertraue der Seite, die den Web-Client ausliefert: Das Fragment schützt nicht
+vor bösartigem Seitencode.
 
-:::note[Medien und Sicherheit]
-Medien (Avatare, Feed-Bilder, PR-Screenshots) werden über den verbundenen Server
-vermittelt, sodass der Browser nie direkt einen vorgelagerten Host abruft. Eine
-Content-Security-Policy je Anfrage, gesetzt anhand eines nicht sensiblen Cookies,
-erlaubt nur die Origin des verbundenen Servers.
+:::note[Medien, Editoren und Sicherheit]
+Medien (Avatare, Feed-Bilder, PR-Screenshots), Sicherungsübertragungen und der
+Verkehr des eingebetteten Editors nutzen den verschlüsselten Ressourcen-Tunnel,
+nicht lesbare öffentliche HTTP-Routen. Der vertrauenswürdige Browser-Editor
+läuft auf der eigenen Origin der Web-App; sein Service Worker leitet Anfragen
+über die authentifizierte verschlüsselte Sitzung an das code-server-Backend auf
+`cc_server` weiter. Hoste den Web-Client über HTTPS oder sicheres Loopback,
+damit Service Worker verfügbar sind. Native Clients nutzen eine Fassade mit
+Capability-Begrenzung auf Loopback.
 :::
 
 ### Was der Browser nicht tut
@@ -101,6 +108,7 @@ installierte Editoren blendet sich die Schaltfläche deshalb aus.
 
 - **Zeitüberschreitung der Verbindung**: Der Server muss vom Client aus erreichbar sein. Prüfe die Bind-Adresse (`--bind any`), dass der Port offen ist und dass `--public-url` die Adresse nennt, die der Client wirklich anwählen kann. Über das offene Internet ist TLS Pflicht — ein Klartext-Bind außerhalb von Loopback wird beim Start abgelehnt, außer der Server wurde mit `--insecure` hinter einem Proxy gestartet.
 - **Der Browser verweigert die Verbindung, ein nativer Client funktioniert**: Die Origin des Browsers steht nicht auf der Liste `--allowed-origins` des Servers. Die Vorgabe erlaubt nur `https://app.usectrl.dev` (plus Loopback).
+- **Serveridentität geändert**: Der Client lehnt einen Fingerabdruck ab, der von seinem gespeicherten Pin abweicht. Verifiziere die Identität des Servers außerhalb des Kanals und koppele über einen vertrauenswürdigen Kanal neu; ignoriere die Warnung nicht und wechsle nicht zu einem älteren bzw. Klartext-Client.
 - **Kopplungsschlüssel abgelehnt**: Führe `cc_server pair` auf dem Server erneut aus, um den Schlüssel dieses Geräts zu rotieren, und gib dann den neuen ein. Ein widerrufenes Gerät findet seine Zugangsdaten schon weg und fällt geschlossen aus; der Widerruf beendet eine laufende Sitzung innerhalb von Sekunden.
 - **Falscher Arbeitsbereich**: Der Arbeitsbereich steckt in der URL (`/workspaces/:workspaceId/…`) und reist mit jedem Aufruf mit, deshalb ändert ein Wechsel des Arbeitsbereichs in einem Client nur deine eigene Ansicht. Erreichen kannst du nur Arbeitsbereiche, deren Mitglied du bist — alles andere wird mit "Not a member of this workspace" abgelehnt. Siehe [Arbeitsbereiche und Isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/).
 

@@ -50,7 +50,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'web-test-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
 
       // Seed ONLY an orphan paired device (no workspace, no user) — the state
       // of a brand-new install. Boot mints the owner and binds the device.
@@ -161,7 +161,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'ghost-test-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
 
       // Same fresh-install state as above: an orphan paired device, no user,
       // no workspace. The client below acts as one whose persisted active
@@ -244,7 +244,7 @@ void main() {
       addTearDown(() => deleteDirBestEffort(tmp));
 
       const deviceId = 'onboarded-test-device';
-      const psk = 'test-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
 
       // The fresh-install state: an orphan paired device that boot binds to
       // the owner it mints. Nobody has onboarded on this server.
@@ -309,9 +309,9 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const ownerDeviceId = 'owner-device';
-    const ownerPsk = 'owner-psk-please-and-thank-you-0123456789';
+    final ownerPsk = RemoteControlCrypto.generatePsk();
     const guestDeviceId = 'guest-device';
-    const guestPsk = 'guest-psk-please-and-thank-you-0123456789';
+    final guestPsk = RemoteControlCrypto.generatePsk();
 
     // Seed ONLY the orphan owner device (boot binds it to the minted
     // owner). The guest user + device are inserted AFTER boot: the identity

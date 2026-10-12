@@ -1,10 +1,9 @@
-import 'dart:convert';
-
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Kimi Code usage via `GET <base>/usages`.
 ///
@@ -13,15 +12,17 @@ import 'package:dio/dio.dart';
 /// `resource_exhausted` and is reported as [SubscriptionStatus.exhausted].
 class KimiUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [KimiUsageStrategy].
-  KimiUsageStrategy({required this._dio})
+  KimiUsageStrategy({required this._httpClient})
     : super(providerId: 'kimi-code', displayName: 'Kimi Code');
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   static const _usagePath = '/usages';
 
   @override
-  Future<SubscriptionUsage> fetchAccount(SubscriptionUsageAccount account) async {
+  Future<SubscriptionUsage> fetchAccount(
+    SubscriptionUsageAccount account,
+  ) async {
     final token = account.accessToken?.trim() ?? '';
     if (token.isEmpty) {
       return unconfigured(
@@ -43,32 +44,28 @@ class KimiUsageStrategy extends SubscriptionUsageStrategy {
       }
       final url = '${base.replaceAll(RegExp(r'/+$'), '')}$_usagePath';
       final deviceId = account.deviceId;
-      final resp = await _dio.getUri<Map<String, dynamic>>(
-        Uri.parse(url),
-        options: Options(
-          responseType: ResponseType.json,
-          headers: {
-            if (deviceId != null && deviceId.isNotEmpty)
-              ...KimiOAuth.headersFor(deviceId),
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-          // A spent plan IS a 429 here (see [_exhaustionReason]), read below
-          // into an `exhausted` snapshot — the pill's answer, not a failure to
-          // fetch one. Without this the shared error interceptor logs a red
-          // `HTTP 429 … | response: {code: resource_exhausted …}` line on every
-          // poll for a condition nothing is wrong about.
-          extra: expectStatuses(const [429]),
-          sendTimeout: SubscriptionUsageStrategy.requestTimeout,
-          receiveTimeout: SubscriptionUsageStrategy.requestTimeout,
+      final resp = await boundedRequest(
+        (token0) => _httpClient.send(
+          BaseHttpRequest(
+            method: HttpMethod.get,
+            url: url,
+            headers: HttpHeaders.rawMap({
+              if (deviceId != null && deviceId.isNotEmpty)
+                ...KimiOAuth.headersFor(deviceId),
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            }),
+            expectBody: HttpExpectBody.text,
+            cancelToken: token0,
+          )..additionalData.addAll(expectStatuses(const [429])),
         ),
       );
-      final windows = _parseWindows(resp.data);
+      final windows = _parseWindows(jsonObject(resp));
       if (windows.isEmpty) {
         return error('Could not read Kimi Code usage.');
       }
       return ok(windows);
-    } on DioException catch (e) {
+    } on RhttpException catch (e) {
       // A spent plan is an ANSWER, not a failure to read one. Kimi reports it
       // as a 429 carrying `resource_exhausted`, which is indistinguishable from
       // ordinary throttling at the status-code level — and reporting it as
@@ -98,29 +95,17 @@ class KimiUsageStrategy extends SubscriptionUsageStrategy {
   /// bare 429 is ordinary throttling and stays an [SubscriptionStatus.error],
   /// because guessing "you are out of credits" at a plan that is merely being
   /// rate-limited is a worse answer than admitting the reading failed.
-  static String? _exhaustionReason(DioException e) {
-    if (e.response?.statusCode != 429) {
+  static String? _exhaustionReason(RhttpException e) {
+    if (e is! RhttpStatusCodeException || e.statusCode != 429) {
       return null;
     }
-    final raw = e.response?.data;
-    final Map<String, dynamic> body;
-    if (raw is Map) {
-      body = raw.cast<String, dynamic>();
-    } else if (raw is String && raw.trim().isNotEmpty) {
-      // A 429 need not come back with a JSON content type, in which case dio
-      // hands the body over as text.
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is! Map) {
-          return null;
-        }
-        body = decoded.cast<String, dynamic>();
-      } on Object {
-        return null;
-      }
-    } else {
+    // A 429 need not come back with a JSON content type; [httpErrorBody] hands
+    // over the decoded map for JSON bodies and the raw string otherwise.
+    final raw = httpErrorBody(e);
+    if (raw is! Map) {
       return null;
     }
+    final body = raw.cast<String, dynamic>();
     if ((body['code'] as String?)?.toLowerCase() != 'resource_exhausted') {
       return null;
     }

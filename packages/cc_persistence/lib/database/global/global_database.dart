@@ -1,6 +1,7 @@
 /// @docImport 'package:cc_persistence/database/workspace/workspace_database.dart';
 library;
 
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_persistence/database/daos/fleet_dao.dart';
 import 'package:cc_persistence/database/daos/managed_action_policy_dao.dart';
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
@@ -83,7 +84,7 @@ class GlobalDatabase extends _$GlobalDatabase {
   final void Function(String tag, String message)? onError;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   /// The `server_meta` key holding this install's uuid.
   static const installIdKey = 'install_id';
@@ -141,6 +142,36 @@ class GlobalDatabase extends _$GlobalDatabase {
         workspacesTable.githubAppId,
       );
     }),
+    // v5: indexed public invite routes carry their private code hash only in
+    // local storage. A pre-auth Noise hello transmits the route id, never the
+    // stored SHA-256(code), because the latter is the handshake PSK.
+    MigrationStep(4, 5, (m) async {
+      await _createSecureInviteRoutes();
+      final existing = await customSelect(
+        "SELECT key_hash, workspace_id FROM workspace_routes WHERE kind = 'invite_code'",
+      ).get();
+      for (final row in existing) {
+        final hash = row.read<String>('key_hash');
+        await customStatement(
+          'INSERT OR REPLACE INTO invite_secure_routes '
+          '(route_id, code_hash, workspace_id) VALUES (?, ?, ?)',
+          [
+            InvitePairingProof.routeIdFromHash(hash),
+            hash,
+            row.read<String>('workspace_id'),
+          ],
+        );
+      }
+    }),
+    // v6: review publishing is opt-in. Existing installations must gain the
+    // column before identity bootstrap reads their registered workspaces.
+    MigrationStep(5, 6, (m) async {
+      await _addColumnIfMissing(
+        m,
+        workspacesTable,
+        workspacesTable.autoPublishReview,
+      );
+    }),
   ];
 
   /// Adds [column] to [table] unless the file already has it.
@@ -163,6 +194,13 @@ class GlobalDatabase extends _$GlobalDatabase {
       await m.addColumn(table, column);
     }
   }
+
+  Future<void> _createSecureInviteRoutes() => customStatement(
+    'CREATE TABLE IF NOT EXISTS invite_secure_routes ('
+    'route_id TEXT PRIMARY KEY NOT NULL, '
+    'code_hash TEXT NOT NULL, '
+    'workspace_id TEXT NOT NULL)',
+  );
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -188,6 +226,9 @@ class GlobalDatabase extends _$GlobalDatabase {
         'ON users(sso_issuer, sso_subject) '
         'WHERE sso_issuer IS NOT NULL AND sso_subject IS NOT NULL',
       );
+      // onCreate does not replay migration steps; the dedicated index must
+      // exist on fresh installations as well as upgraded ones.
+      await _createSecureInviteRoutes();
       // Wait up to 5s for a lock instead of failing a contended write
       // immediately with SQLITE_BUSY. The fleet scheduler and presence writes
       // run concurrently with live user writes; WAL lets readers proceed, but

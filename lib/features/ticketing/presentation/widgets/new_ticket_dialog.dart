@@ -36,6 +36,7 @@ Future<String?> showNewTicketDialog(
 }) {
   return showCcDialog<String>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (ctx) => _NewTicketDialog(
       workspaceId: workspaceId,
       initialProjectId: initialProjectId,

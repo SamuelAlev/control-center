@@ -9,11 +9,10 @@ import 'helpers/test_database.dart';
 
 /// Pins the per-workspace schema version and the fresh-install shape.
 ///
-/// The current schema IS the baseline: `onCreate` builds exactly the current
-/// table set and the migration chain is empty. That makes a fresh database the
-/// ONLY description of the schema, so this file has to carry everything the
-/// squashed chain used to prove on the way up — a column that survives only
-/// because some old step added it would silently stop existing.
+/// The current schema is the fresh-install baseline: `onCreate` builds the
+/// current table set while migration steps carry older workspace files forward.
+/// Pin both shapes here so a new column or table is never present only after
+/// an upgrade.
 void main() {
   group('workspace baseline schema', () {
     // Regression: the first ship of skill_sources relied on the squashed
@@ -60,18 +59,6 @@ void main() {
         expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
       },
     );
-
-    test('reports the version the code says it is', () {
-      final db = createTestDatabase();
-      addTearDown(db.close);
-
-      // Pinned against the constant rather than a literal: the constant is what
-      // `/healthz` reports and what `onUpgrade` compares against, so the thing
-      // worth guarding is that the two cannot drift apart. The literal just
-      // meant this test had to be edited by whoever bumped it, which taught it
-      // nothing.
-      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
-    });
 
     // Regression: the per-repo lifecycle scripts shipped as v4 (two nullable
     // `repos` columns + the `repo_script_runs` table). A workspace file from
@@ -1162,6 +1149,111 @@ CREATE TABLE conversation_goals (
       expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
 
+    test(
+      'the v18 step adds exact accounting, latency, verification lineage and '
+      'the call ledger to an existing file',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_v18_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/ws.db');
+
+        final setup = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        // A current file with the v18 additions removed and the version rewound
+        // — exactly what an upgraded install looks like.
+        await setup.customStatement('DROP TABLE IF EXISTS run_call_usages');
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS idx_run_call_usages_runId',
+        );
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS idx_run_call_usages_workspace',
+        );
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS idx_run_call_usages_conversation',
+        );
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS idx_run_call_usages_started',
+        );
+        for (final column in [
+          'cost_micros',
+          'cost_basis',
+          'child_cost_micros',
+          'effort',
+          'task_family',
+          'native_session_id',
+          'resumed_native_session',
+          'latency_json',
+          'verification_status',
+          'verification_json',
+        ]) {
+          await setup.customStatement(
+            'ALTER TABLE agent_run_logs DROP COLUMN $column',
+          );
+        }
+        await setup.customStatement('PRAGMA user_version = 17');
+        await setup.close();
+
+        final db = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        addTearDown(db.close);
+
+        final columns = await db
+            .customSelect("PRAGMA table_info('agent_run_logs')")
+            .get();
+        expect(
+          columns.map((r) => r.read<String>('name')),
+          containsAll(<String>[
+            'cost_micros',
+            'cost_basis',
+            'child_cost_micros',
+            'effort',
+            'task_family',
+            'native_session_id',
+            'resumed_native_session',
+            'latency_json',
+            'verification_status',
+            'verification_json',
+          ]),
+        );
+        final ledger = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'table' "
+              "AND name = 'run_call_usages'",
+            )
+            .get();
+        expect(ledger, hasLength(1), reason: 'the call ledger is missing');
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      },
+    );
+
+    test('the v18 step is safe to re-run on a file that has it', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v18b_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
+
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      // A rewound user_version on a file that already has every v18 change: a
+      // re-entered step must not throw on work a previous attempt already did,
+      // or the workspace would fail to open forever.
+      await setup.customStatement('PRAGMA user_version = 17');
+      await setup.close();
+
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+      await db.customSelect('SELECT 1').get();
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
+
     test('a fresh database carries the space stack table', () async {
       final db = createTestDatabase();
       addTearDown(db.close);
@@ -1245,6 +1337,146 @@ CREATE TABLE conversation_goals (
             .get();
         expect(index, isNotEmpty);
         expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      },
+    );
+    test('fresh workspace carries indexed skill evaluation storage', () async {
+      final db = createTestDatabase(workspaceId: 'ws');
+      addTearDown(db.close);
+      for (final (name, expected) in <(String, Set<String>)>[
+        (
+          'skill_eval_campaigns',
+          {
+            'id',
+            'workspace_id',
+            'skill_key',
+            'status',
+            'created_at',
+            'payload_json',
+          },
+        ),
+        (
+          'skill_eval_attempts',
+          {'id', 'workspace_id', 'campaign_id', 'ordinal', 'payload_json'},
+        ),
+        (
+          'skill_eval_policies',
+          {'workspace_id', 'skill_key', 'enabled', 'payload_json'},
+        ),
+      ]) {
+        final columns = await db.customSelect('PRAGMA table_info($name)').get();
+        expect(
+          columns.map((r) => r.read<String>('name')),
+          containsAll(expected),
+        );
+      }
+      final indexes = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND name LIKE 'idx_skill_eval_%'",
+          )
+          .get();
+      expect(
+        indexes.map((r) => r.read<String>('name')),
+        containsAll([
+          'idx_skill_eval_campaigns_skill_created',
+          'idx_skill_eval_campaigns_status',
+          'idx_skill_eval_attempts_campaign',
+          'idx_skill_eval_policies_enabled',
+        ]),
+      );
+    });
+
+    test(
+      'fresh workspace carries the durable file catalog and indexes',
+      () async {
+        final db = createTestDatabase(workspaceId: 'ws');
+        addTearDown(db.close);
+        final columns = await db
+            .customSelect('PRAGMA table_info(catalog_files)')
+            .get();
+        expect(
+          columns.map((row) => row.read<String>('name')),
+          containsAll([
+            'id',
+            'workspace_id',
+            'uploader_user_id',
+            'creator_id',
+            'name',
+            'path',
+            'media_type',
+            'bytes',
+            'source',
+            'state',
+            'owned_bytes',
+            'created_at',
+            'updated_at',
+          ]),
+        );
+        final indexes = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name LIKE 'idx_catalog_files_%'",
+            )
+            .get();
+        expect(
+          indexes.map((row) => row.read<String>('name')),
+          containsAll([
+            'idx_catalog_files_lifecycle',
+            'idx_catalog_files_path',
+          ]),
+        );
+      },
+    );
+
+    test(
+      'v18 workspace migrates and interrupted v19 migration resumes',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_v19_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/ws.db');
+        final setup = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        await setup.customStatement('DROP TABLE skill_eval_attempts');
+        await setup.customStatement('DROP TABLE skill_eval_policies');
+        await setup.customStatement('PRAGMA user_version = 18');
+        await setup.close();
+
+        final migrated = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        final tables = await migrated
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'table' "
+              "AND name LIKE 'skill_eval_%'",
+            )
+            .get();
+        expect(
+          tables.map((r) => r.read<String>('name')),
+          containsAll([
+            'skill_eval_campaigns',
+            'skill_eval_attempts',
+            'skill_eval_policies',
+          ]),
+        );
+        await migrated.customStatement('PRAGMA user_version = 18');
+        await migrated.close();
+
+        final resumed = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        addTearDown(resumed.close);
+        final indexes = await resumed
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name = 'idx_skill_eval_attempts_campaign'",
+            )
+            .get();
+        expect(indexes, isNotEmpty);
+        expect(resumed.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
       },
     );
   });

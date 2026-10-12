@@ -1,11 +1,9 @@
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:test/test.dart';
 
-/// `--log-level` / `CC_SERVER_LOG_LEVEL` sets the minimum severity the server
-/// emits (replacing the old boolean `--verbose`): `warning` by default, so a
-/// stock server shows warnings + errors; `debug` opens the trace tier the log
-/// façades suppress (dio request/response lines, a code-graph index run that
-/// found nothing to do).
+/// `--log-level` / `CC_SERVER_LOG_LEVEL` sets the minimum server log severity.
+/// The default is `warning`; `debug` includes HTTP request/response traces and
+/// no-op code-graph index sweeps.
 void main() {
   test('defaults to warning', () {
     expect(

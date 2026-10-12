@@ -1,74 +1,35 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/tickets/linear/linear_graphql_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rhttp/rhttp.dart';
 
-/// Minimal fake Dio for testing [LinearGraphQlClient] without a real HTTP
-/// stack.  Injects responses via [onPost] callback and captures the sent
-/// payload so query/variable assertions stay pure-logic.
-class _FakeDio implements Dio {
-  _FakeDio();
+/// The JSON body a captured GraphQL POST was sent with, decoded to a map.
+Map<String, dynamic> jsonBody(HttpRequest request) =>
+    ((request.body! as HttpBodyJson).json as Map).cast<String, dynamic>();
 
-  Future<Response<T>> Function<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    CancelToken? cancelToken,
-    Options? options,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  })?
-  onPost;
+/// Responds with the GraphQL success envelope `{'data': …}`. The client reads
+/// that envelope itself, so the handler supplies the full body, not the
+/// unwrapped payload.
+HttpResponse ok(HttpRequest request, Map<String, dynamic> graphqlData) =>
+    httpTextResponse(request, {'data': graphqlData});
 
-  @override
-  Future<Response<T>> post<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) {
-    final cb = onPost;
-    if (cb == null) {
-      throw UnimplementedError('onPost not set');
-    }
-    return cb<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      cancelToken: cancelToken,
-      options: options,
-      onSendProgress: onSendProgress,
-      onReceiveProgress: onReceiveProgress,
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+/// Responds with a GraphQL-level `{'errors': […]}` envelope.
+HttpResponse graphQlErrors(
+  HttpRequest request,
+  List<Map<String, dynamic>> errors,
+) => httpTextResponse(request, {'errors': errors});
 
 void main() {
-  late _FakeDio fakeDio;
+  late TestHttpClient httpClient;
   late LinearGraphQlClient client;
 
   setUp(() {
-    fakeDio = _FakeDio();
-    client = LinearGraphQlClient(fakeDio);
+    httpClient = TestHttpClient(
+      handler: (_) => throw StateError('handler not set'),
+    );
+    client = LinearGraphQlClient(httpClient);
   });
-
-  RequestOptions ro() => RequestOptions();
-
-  /// Builds a success [Response] wrapping [graphqlData] inside
-  /// `{'data': graphqlData}` — the shape the client expects.
-  Response<T> ok<T>(Map<String, dynamic> graphqlData) =>
-      Response(requestOptions: ro(), data: {'data': graphqlData})
-          as Response<T>;
-
-  /// Builds a [Response] whose body contains GraphQL-level errors.
-  Response<T> error<T>(List<Map<String, dynamic>> errors) =>
-      Response(requestOptions: ro(), data: {'errors': errors}) as Response<T>;
 
   // -----------------------------------------------------------------------
   // Helper: a minimal valid issue JSON node used across parsing tests.
@@ -107,21 +68,12 @@ void main() {
   group('getAssignedIssues', () {
     test('sends the correct GraphQL query with no variables', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({
-              'issues': {'nodes': <Map<String, dynamic>>[]},
-            });
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {
+          'issues': {'nodes': <Map<String, dynamic>>[]},
+        });
+      };
 
       await client.getAssignedIssues();
 
@@ -134,23 +86,14 @@ void main() {
     });
 
     test('parses an issue list into LinearIssueDto objects', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issues': {
-              'nodes': [
-                issueJson(id: 'i1', identifier: 'LIN-1', title: 'Fix a'),
-                issueJson(id: 'i2', identifier: 'LIN-2', title: 'Fix b'),
-              ],
-            },
-          });
+      httpClient.handler = (request) => ok(request, {
+        'issues': {
+          'nodes': [
+            issueJson(id: 'i1', identifier: 'LIN-1', title: 'Fix a'),
+            issueJson(id: 'i2', identifier: 'LIN-2', title: 'Fix b'),
+          ],
+        },
+      });
 
       final issues = await client.getAssignedIssues();
 
@@ -168,20 +111,11 @@ void main() {
     });
 
     test('skips non-map entries in the nodes list', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issues': {
-              'nodes': ['not-a-map', 42, true, issueJson(id: 'good')],
-            },
-          });
+      httpClient.handler = (request) => ok(request, {
+        'issues': {
+          'nodes': ['not-a-map', 42, true, issueJson(id: 'good')],
+        },
+      });
 
       final issues = await client.getAssignedIssues();
 
@@ -196,18 +130,9 @@ void main() {
         5,
         {'a': 'b'},
       ]) {
-        fakeDio.onPost =
-            <T>(
-              String path, {
-              Object? data,
-              Map<String, dynamic>? queryParameters,
-              CancelToken? cancelToken,
-              Options? options,
-              ProgressCallback? onSendProgress,
-              ProgressCallback? onReceiveProgress,
-            }) async => ok<T>({
-              'issues': {'nodes': nodes},
-            });
+        httpClient.handler = (request) => ok(request, {
+          'issues': {'nodes': nodes},
+        });
 
         final issues = await client.getAssignedIssues();
         expect(issues, isEmpty, reason: 'nodes=$nodes');
@@ -215,52 +140,23 @@ void main() {
     });
 
     test('returns empty list when response data is null', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async =>
-              Response<Map<String, dynamic>>(requestOptions: ro(), data: null)
-                  as Response<T>;
+      httpClient.handler = (request) => httpTextResponse(request, null);
 
       final issues = await client.getAssignedIssues();
       expect(issues, isEmpty);
     });
 
     test('returns empty list when response data has no issues key', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       final issues = await client.getAssignedIssues();
       expect(issues, isEmpty);
     });
 
     test('throws NetworkException on GraphQL errors', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => error<T>([
-            {'message': 'Authentication required'},
-          ]);
+      httpClient.handler = (request) => graphQlErrors(request, [
+        {'message': 'Authentication required'},
+      ]);
 
       await expectLater(
         client.getAssignedIssues(),
@@ -274,41 +170,18 @@ void main() {
       );
     });
 
-    test('rethrows cancel DioExceptions', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+    test('rethrows cancel exceptions', () async {
+      httpClient.handler = (request) => throw RhttpCancelException(request);
 
       await expectLater(
         client.getAssignedIssues(),
-        throwsA(isA<DioException>()),
+        throwsA(isA<RhttpCancelException>()),
       );
     });
 
-    test('maps non-cancel DioExceptions to NetworkException', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            message: 'Connection refused',
-          );
+    test('maps non-cancel failures to NetworkException', () async {
+      httpClient.handler = (request) =>
+          httpTextResponse(request, {}, statusCode: 500);
 
       await expectLater(
         client.getAssignedIssues(),
@@ -323,19 +196,10 @@ void main() {
   group('getIssue', () {
     test('sends query with id variable', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({'issue': issueJson()});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {'issue': issueJson()});
+      };
 
       await client.getIssue('ISSUE-42');
 
@@ -344,16 +208,8 @@ void main() {
     });
 
     test('parses an issue into LinearIssueDto', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({'issue': issueJson(id: 'iss-1', title: 'One')});
+      httpClient.handler = (request) =>
+          ok(request, {'issue': issueJson(id: 'iss-1', title: 'One')});
 
       final issue = await client.getIssue('iss-1');
 
@@ -363,68 +219,30 @@ void main() {
     });
 
     test('returns null when issue is missing from response', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       final issue = await client.getIssue('any');
       expect(issue, isNull);
     });
 
     test('returns null when issue is not a map', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({'issue': 'invalid'});
+      httpClient.handler = (request) => ok(request, {'issue': 'invalid'});
 
       final issue = await client.getIssue('any');
       expect(issue, isNull);
     });
 
     test('returns null when data is null', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async =>
-              Response<Map<String, dynamic>>(requestOptions: ro(), data: null)
-                  as Response<T>;
+      httpClient.handler = (request) => httpTextResponse(request, null);
 
       final issue = await client.getIssue('any');
       expect(issue, isNull);
     });
 
     test('throws NetworkException on GraphQL errors', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => error<T>([
-            {'message': 'Not found'},
-          ]);
+      httpClient.handler = (request) => graphQlErrors(request, [
+        {'message': 'Not found'},
+      ]);
 
       await expectLater(
         client.getIssue('any'),
@@ -440,19 +258,10 @@ void main() {
 
     test('propagates cancel token', () async {
       CancelToken? received;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            received = cancelToken;
-            return ok<T>({'issue': issueJson()});
-          };
+      httpClient.handler = (request) {
+        received = request.cancelToken;
+        return ok(request, {'issue': issueJson()});
+      };
 
       final ct = CancelToken();
       await client.getIssue('iss', cancelToken: ct);
@@ -466,21 +275,12 @@ void main() {
   group('createIssue', () {
     test('sends mutation with required input fields', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({
-              'issueCreate': {'success': true, 'issue': issueJson()},
-            });
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {
+          'issueCreate': {'success': true, 'issue': issueJson()},
+        });
+      };
 
       await client.createIssue(
         title: 'New bug',
@@ -502,21 +302,12 @@ void main() {
 
     test('includes optional priority and assigneeId in input', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({
-              'issueCreate': {'success': true, 'issue': issueJson()},
-            });
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {
+          'issueCreate': {'success': true, 'issue': issueJson()},
+        });
+      };
 
       await client.createIssue(
         title: 't',
@@ -532,21 +323,12 @@ void main() {
     });
 
     test('parses the created issue from issueCreate.issue', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issueCreate': {
-              'success': true,
-              'issue': issueJson(id: 'new-1', title: 'Created'),
-            },
-          });
+      httpClient.handler = (request) => ok(request, {
+        'issueCreate': {
+          'success': true,
+          'issue': issueJson(id: 'new-1', title: 'Created'),
+        },
+      });
 
       final issue = await client.createIssue(
         title: 't',
@@ -560,16 +342,7 @@ void main() {
     });
 
     test('returns null when issueCreate is missing', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       final issue = await client.createIssue(
         title: 't',
@@ -581,18 +354,9 @@ void main() {
     });
 
     test('returns null when issueCreate.issue is not a map', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issueCreate': {'success': true, 'issue': null},
-          });
+      httpClient.handler = (request) => ok(request, {
+        'issueCreate': {'success': true, 'issue': null},
+      });
 
       final issue = await client.createIssue(
         title: 't',
@@ -610,19 +374,10 @@ void main() {
   group('updateIssue', () {
     test('sends mutation with id and input variables', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {});
+      };
 
       await client.updateIssue('ISS-1', title: 'New title');
 
@@ -636,19 +391,10 @@ void main() {
 
     test('includes only supplied optional fields in input', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {});
+      };
 
       await client.updateIssue('ISS-1', description: 'Updated desc');
 
@@ -659,19 +405,10 @@ void main() {
 
     test('includes priority when supplied', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {});
+      };
 
       await client.updateIssue('ISS-1', priority: 3);
 
@@ -680,33 +417,15 @@ void main() {
     });
 
     test('completes without error on success response', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       await expectLater(client.updateIssue('ISS-1', title: 't'), completes);
     });
 
     test('throws on GraphQL errors', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => error<T>([
-            {'message': 'Permission denied'},
-          ]);
+      httpClient.handler = (request) => graphQlErrors(request, [
+        {'message': 'Permission denied'},
+      ]);
 
       await expectLater(
         client.updateIssue('ISS-1'),
@@ -727,19 +446,10 @@ void main() {
   group('assignIssue', () {
     test('sends mutation with id and assigneeId', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {});
+      };
 
       await client.assignIssue('ISS-1', 'U-99');
 
@@ -750,19 +460,10 @@ void main() {
 
     test('sends null assigneeId to clear assignee', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {});
+      };
 
       await client.assignIssue('ISS-1', null);
 
@@ -771,16 +472,7 @@ void main() {
     });
 
     test('completes without error on success', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       await expectLater(client.assignIssue('ISS-1', 'U-1'), completes);
     });
@@ -792,29 +484,20 @@ void main() {
   group('getWorkflowStatesForIssue', () {
     test('sends query with issue id variable', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({
-              'issue': {
-                'team': {
-                  'states': {
-                    'nodes': [
-                      {'id': 's1', 'name': 'Todo'},
-                    ],
-                  },
-                },
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {
+          'issue': {
+            'team': {
+              'states': {
+                'nodes': [
+                  {'id': 's1', 'name': 'Todo'},
+                ],
               },
-            });
-          };
+            },
+          },
+        });
+      };
 
       await client.getWorkflowStatesForIssue('ISS-1');
 
@@ -823,27 +506,18 @@ void main() {
     });
 
     test('parses state nodes into id/name records', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issue': {
-              'team': {
-                'states': {
-                  'nodes': [
-                    {'id': 'backlog', 'name': 'Backlog'},
-                    {'id': 'done', 'name': 'Done'},
-                  ],
-                },
-              },
+      httpClient.handler = (request) => ok(request, {
+        'issue': {
+          'team': {
+            'states': {
+              'nodes': [
+                {'id': 'backlog', 'name': 'Backlog'},
+                {'id': 'done', 'name': 'Done'},
+              ],
             },
-          });
+          },
+        },
+      });
 
       final states = await client.getWorkflowStatesForIssue('ISS-1');
 
@@ -855,28 +529,19 @@ void main() {
     });
 
     test('filters out entries with empty id', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issue': {
-              'team': {
-                'states': {
-                  'nodes': [
-                    {'id': '', 'name': 'Empty'},
-                    {'id': 'valid', 'name': 'Valid'},
-                    {'id': null, 'name': 'Null id'},
-                  ],
-                },
-              },
+      httpClient.handler = (request) => ok(request, {
+        'issue': {
+          'team': {
+            'states': {
+              'nodes': [
+                {'id': '', 'name': 'Empty'},
+                {'id': 'valid', 'name': 'Valid'},
+                {'id': null, 'name': 'Null id'},
+              ],
             },
-          });
+          },
+        },
+      });
 
       final states = await client.getWorkflowStatesForIssue('ISS-1');
 
@@ -898,16 +563,7 @@ void main() {
         },
       ];
       for (final tc in testCases) {
-        fakeDio.onPost =
-            <T>(
-              String path, {
-              Object? data,
-              Map<String, dynamic>? queryParameters,
-              CancelToken? cancelToken,
-              Options? options,
-              ProgressCallback? onSendProgress,
-              ProgressCallback? onReceiveProgress,
-            }) async => ok<T>(tc);
+        httpClient.handler = (request) => ok(request, tc);
 
         final states = await client.getWorkflowStatesForIssue('ISS-1');
         expect(states, isEmpty, reason: 'tc=$tc');
@@ -915,26 +571,17 @@ void main() {
     });
 
     test('handles missing name gracefully', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({
-            'issue': {
-              'team': {
-                'states': {
-                  'nodes': [
-                    {'id': 's1'},
-                  ],
-                },
-              },
+      httpClient.handler = (request) => ok(request, {
+        'issue': {
+          'team': {
+            'states': {
+              'nodes': [
+                {'id': 's1'},
+              ],
             },
-          });
+          },
+        },
+      });
 
       final states = await client.getWorkflowStatesForIssue('ISS-1');
 
@@ -950,19 +597,10 @@ void main() {
   group('updateIssueState', () {
     test('sends mutation with id and stateId variables', () async {
       Map<String, dynamic>? body;
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async {
-            body = data as Map<String, dynamic>?;
-            return ok<T>({});
-          };
+      httpClient.handler = (request) {
+        body = jsonBody(request);
+        return ok(request, {});
+      };
 
       await client.updateIssueState('ISS-1', 'state-done');
 
@@ -972,16 +610,7 @@ void main() {
     });
 
     test('completes on success', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       await expectLater(client.updateIssueState('ISS-1', 's1'), completes);
     });
@@ -994,19 +623,10 @@ void main() {
     test(
       'extracts messages from multiple errors and joins with "; "',
       () async {
-        fakeDio.onPost =
-            <T>(
-              String path, {
-              Object? data,
-              Map<String, dynamic>? queryParameters,
-              CancelToken? cancelToken,
-              Options? options,
-              ProgressCallback? onSendProgress,
-              ProgressCallback? onReceiveProgress,
-            }) async => error<T>([
-              {'message': 'First error'},
-              {'message': 'Second error'},
-            ]);
+        httpClient.handler = (request) => graphQlErrors(request, [
+          {'message': 'First error'},
+          {'message': 'Second error'},
+        ]);
 
         await expectLater(
           client.getIssue('x'),
@@ -1024,18 +644,9 @@ void main() {
     );
 
     test('includes raw response body in the exception', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => error<T>([
-            {'message': 'boom'},
-          ]);
+      httpClient.handler = (request) => graphQlErrors(request, [
+        {'message': 'boom'},
+      ]);
 
       await expectLater(
         client.getIssue('x'),
@@ -1050,18 +661,9 @@ void main() {
     });
 
     test('handles error objects without a message key', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => error<T>([
-            {'other': 'stuff'},
-          ]);
+      httpClient.handler = (request) => graphQlErrors(request, [
+        {'other': 'stuff'},
+      ]);
 
       await expectLater(
         client.getIssue('x'),
@@ -1076,18 +678,8 @@ void main() {
     });
 
     test('does not throw when errors list is empty', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async =>
-              Response(requestOptions: ro(), data: {'errors': <dynamic>[]})
-                  as Response<T>;
+      httpClient.handler = (request) =>
+          httpTextResponse(request, {'errors': <dynamic>[]});
 
       // Should not throw: getIssue returns null when issue is missing.
       final issue = await client.getIssue('x');
@@ -1095,16 +687,7 @@ void main() {
     });
 
     test('does not throw when errors key is absent', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) async => ok<T>({});
+      httpClient.handler = (request) => ok(request, {});
 
       // getIssue returns null when issue is missing — but no graphql error.
       final issue = await client.getIssue('x');
@@ -1113,41 +696,21 @@ void main() {
   });
 
   // =====================================================================
-  // DioException mapping (covers all methods via getIssue as proxy)
+  // transport error mapping (covers all methods via getIssue as proxy)
   // =====================================================================
-  group('DioException mapping', () {
-    test('rethrows cancel-type DioExceptions unchanged', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.cancel,
-          );
+  group('transport error mapping', () {
+    test('rethrows cancel-type exceptions unchanged', () async {
+      httpClient.handler = (request) => throw RhttpCancelException(request);
 
-      await expectLater(client.getIssue('x'), throwsA(isA<DioException>()));
+      await expectLater(
+        client.getIssue('x'),
+        throwsA(isA<RhttpCancelException>()),
+      );
     });
 
-    test('maps 401 DioExceptions to NetworkException', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            response: Response(requestOptions: ro(), statusCode: 401),
-          );
+    test('maps 401 responses to NetworkException', () async {
+      httpClient.handler = (request) =>
+          httpTextResponse(request, {}, statusCode: 401);
 
       await expectLater(
         client.getIssue('x'),
@@ -1161,56 +724,22 @@ void main() {
       );
     });
 
-    test('maps 404 DioExceptions to NetworkException', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            response: Response(requestOptions: ro(), statusCode: 404),
-          );
+    test('maps 404 responses to NetworkException', () async {
+      httpClient.handler = (request) =>
+          httpTextResponse(request, {}, statusCode: 404);
 
       await expectLater(client.getIssue('x'), throwsA(isA<NetworkException>()));
     });
 
-    test('maps connection-timeout DioExceptions to NetworkException', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.connectionTimeout,
-          );
+    test('maps timeouts to NetworkException', () async {
+      httpClient.handler = (request) => throw RhttpTimeoutException(request);
 
       await expectLater(client.getIssue('x'), throwsA(isA<NetworkException>()));
     });
 
-    test('maps connection-error DioExceptions to NetworkException', () async {
-      fakeDio.onPost =
-          <T>(
-            String path, {
-            Object? data,
-            Map<String, dynamic>? queryParameters,
-            CancelToken? cancelToken,
-            Options? options,
-            ProgressCallback? onSendProgress,
-            ProgressCallback? onReceiveProgress,
-          }) => throw DioException(
-            requestOptions: ro(),
-            type: DioExceptionType.connectionError,
-          );
+    test('maps connection errors to NetworkException', () async {
+      httpClient.handler = (request) =>
+          throw RhttpConnectionException(request, 'Connection refused');
 
       await expectLater(client.getIssue('x'), throwsA(isA<NetworkException>()));
     });

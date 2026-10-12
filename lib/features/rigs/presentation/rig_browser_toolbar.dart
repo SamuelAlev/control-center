@@ -14,7 +14,7 @@ library;
 
 import 'dart:async';
 
-import 'package:cc_data/cc_data.dart' show RigView;
+import 'package:cc_data/cc_data.dart' show RigBrowserStateView, RigView;
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_permission.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_url.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -24,6 +24,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+part 'rig_browser_state_poller.dart';
 
 /// Back / forward / reload / address bar for a live browser rig.
 class RigBrowserToolbar extends ConsumerStatefulWidget {
@@ -68,18 +70,19 @@ class RigBrowserToolbar extends ConsumerStatefulWidget {
   ConsumerState<RigBrowserToolbar> createState() => _RigBrowserToolbarState();
 }
 
-class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
+class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
+    with WidgetsBindingObserver {
   late final TextEditingController _address;
   final FocusNode _addressFocus = FocusNode();
+  late final _BrowserStatePoller _poller;
+  bool _visibleInTree = false;
 
   bool _canGoBack = false;
   bool _canGoForward = false;
 
-  /// Whether the page is mid-load. While true the reload button is a stop
-  /// button (the browser convention), and the state is re-polled on a short
-  /// timer because "loading finished" has no pushed signal of its own.
+  /// While loading, reload becomes stop. The visible poller observes the
+  /// browser's completion, which has no pushed signal of its own.
   bool _loading = false;
-  Timer? _loadingPoll;
   List<BrowserPermissionEntry> _permissions = const [];
 
   /// A toolbar-initiated action in flight. Drives the thin progress bar the
@@ -96,18 +99,32 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
     super.initState();
     _shownUrl = browserAddressBarText(widget.rig.currentUrl);
     _address = TextEditingController(text: _shownUrl);
-    // The pushed URL alone cannot say whether back/forward lead anywhere;
-    // that has to be asked of the session history.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshState());
-    _loadingPoll = Timer.periodic(
-      const Duration(milliseconds: 400),
-      (_) => unawaited(_refreshState()),
+    _poller = _BrowserStatePoller(
+      readState: ref.read(rigRepositoryProvider).browserState,
+      onState: _receiveState,
+      workspaceId: widget.workspaceId,
+      rigId: widget.rig.id,
+    );
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _syncPolling();
+  }
+
+  void _syncPolling() {
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _poller.setActive(
+      _visibleInTree &&
+          (lifecycle == null || lifecycle == AppLifecycleState.resumed),
     );
   }
 
   @override
   void dispose() {
-    _loadingPoll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _poller.dispose();
     _address.dispose();
     _addressFocus.dispose();
     super.dispose();
@@ -116,29 +133,26 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
   @override
   void didUpdateWidget(RigBrowserToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final changedIdentity =
+        oldWidget.workspaceId != widget.workspaceId ||
+        oldWidget.rig.id != widget.rig.id;
+    if (changedIdentity) {
+      _poller.setIdentity(widget.workspaceId, widget.rig.id);
+      _canGoBack = false;
+      _canGoForward = false;
+      _loading = false;
+      _permissions = const [];
+      _shownUrl = '';
+      _addressFocus.unfocus();
+      _address.text = '';
+    }
     final url = widget.rig.currentUrl ?? '';
     if (visibleBrowserUrl(url) == _shownUrl ||
         (isBrowserInternalUrl(url) && _shownUrl.isNotEmpty)) {
       return;
     }
     _applyAddress(url);
-    unawaited(_refreshState());
-  }
-
-  /// Writes [raw] into the field unless it is browser furniture that would
-  /// blank a real address the person is already looking at.
-  void _applyAddress(String raw) {
-    if (isBrowserInternalUrl(raw) && _shownUrl.isNotEmpty) {
-      return;
-    }
-    final url = browserAddressBarText(raw);
-    if (url == _shownUrl) {
-      return;
-    }
-    _shownUrl = url;
-    if (!_addressFocus.hasFocus) {
-      _address.text = url;
-    }
+    _poller.refresh();
   }
 
   Future<void> _act(Map<String, dynamic> action) async {
@@ -168,45 +182,33 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
         setState(() => _busy = false);
       }
     }
-    unawaited(_refreshState());
+    _poller.refresh();
   }
 
-  /// Pulls the history position. Failures keep the last known state: a
-  /// momentarily unreachable browser must not flash working buttons dead.
-  Future<void> _refreshState() async {
-    try {
-      final state = await ref
-          .read(rigRepositoryProvider)
-          .browserState(widget.workspaceId, widget.rig.id);
-      if (!mounted) {
-        return;
-      }
+  void _receiveState(RigBrowserStateView state) {
+    final changed =
+        _canGoBack != state.canGoBack ||
+        _canGoForward != state.canGoForward ||
+        _loading != state.loading ||
+        !_samePermissions(_permissions, state.permissions);
+    if (changed) {
       setState(() {
         _canGoBack = state.canGoBack;
         _canGoForward = state.canGoForward;
         _loading = state.loading;
         _permissions = state.permissions;
       });
-      _applyAddress(state.url);
-    } on Object {
-      // Keep what we have.
     }
-  }
-
-  void _submitAddress(String value) {
-    final url = normalizeBrowserAddressInput(value);
-    if (url == null) {
-      return;
-    }
-    _address.text = url;
-    _addressFocus.unfocus();
-    unawaited(_act({'action': 'navigate', 'url': url}));
+    _applyAddress(state.url);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
+    _visibleInTree =
+        Visibility.of(context) && TickerMode.valuesOf(context).enabled;
+    _syncPolling();
 
     return Column(
       mainAxisSize: MainAxisSize.min,

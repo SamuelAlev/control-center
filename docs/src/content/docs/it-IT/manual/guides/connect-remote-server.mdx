@@ -2,7 +2,7 @@
 title: Connettiti a un server remoto
 description: Punta l'app desktop o il client web su un cc_server in esecuzione altrove e passa da un server all'altro senza riavviare.
 slug: it-IT/manuale/guide/connetti-server-remoto
-sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
+sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
 ---
 
 Ogni client è un renderer sopra un `cc_server` che possiede i dati. Il desktop può
@@ -14,7 +14,7 @@ macchinetta, una VM nel cloud, un server di build.
 ## Prerequisiti
 
 - Un `cc_server` in esecuzione. Se non ne hai uno, vedi [Esegui un server headless](/it-IT/manuale/guide/esegui-server-headless/).
-- O i tre valori di abbinamento generati dal server — l'**URL del server** (`ws://…/rpc` o `wss://…/rpc`), un **ID dispositivo** e una **chiave di abbinamento** — **oppure** un **codice di invito** monouso da un amministratore dello spazio di lavoro. Riscattare un invito esegue il provisioning del tuo utente, registra la tua appartenenza e genera per te la credenziale di questo client, quindi non devi mai gestire un ID dispositivo o una chiave.
+- O i tre valori di abbinamento generati dal server — l'**URL del server** (`ws://…/rpc` o `wss://…/rpc`), un **ID dispositivo** e una **chiave di abbinamento** — **oppure** un **codice di invito** monouso da un amministratore dello spazio di lavoro. Riscattare un invito esegue il provisioning del tuo utente, registra la tua appartenenza e genera per te la credenziale di questo client, quindi non devi mai gestire un ID dispositivo o una chiave. Ottieni questi valori tramite un canale attendibile e verifica l'impronta del server rispetto a un QR attendibile o a un pin noto alla prima connessione.
 
 ### Assicurati che il server sia raggiungibile
 
@@ -28,7 +28,7 @@ già — e `cc_server` rifiuta comunque di fare il bind di un indirizzo non di
 loopback senza TLS. Dagli una di queste opzioni:
 
 - un certificato diretto, con `--tls-cert` e `--tls-key`
-- un reverse proxy che termina il TLS davanti al server, avviato con `--insecure` (testo in chiaro dietro il proxy, solo su una rete affidabile)
+- un reverse proxy che termina il TLS davanti al server, avviato con `--insecure` (testo in chiaro tra proxy e server sul listener esterno, solo su una rete affidabile; questo non disabilita la sessione client cifrata obbligatoria)
 - un tunnel o una VPN che fornisce il certificato — Tailscale, cloudflared o simili. In **Impostazioni → Server → Connessione e stato** l'opt-in del tunnel integrato si trova sotto **Condividi questo server**.
 
 Due impostazioni lato server sono facili da dimenticare. Dietro un proxy, un NAT
@@ -59,7 +59,8 @@ vedi l'errore. La riga del server su cui ti trovi non ha l'azione **Passa**; il
 server locale è la prima riga, etichettata **Esegui in questa app**.
 
 Dopo il passaggio, il desktop non possiede alcun database. Ogni schermata legge
-e scrive attraverso il server remoto su una connessione WebSocket.
+e scrive attraverso il server remoto su una sessione WebSocket firmata e cifrata
+end-to-end; la stessa protezione vale su loopback e tramite il relay.
 
 ## Connetti il client web
 
@@ -71,13 +72,19 @@ La build web è sempre remota.
 
 Se nell'URL è presente un deep link di abbinamento, i campi sono precompilati.
 La chiave di abbinamento viaggia nel **frammento** dell'URL, che i browser non
-inviano mai al server che ospita la pagina, quindi l'host statico non la vede mai.
+inviano mai al server che ospita la pagina. Tratta il link come un segreto e
+fidati della pagina che serve il client web: il frammento non protegge da codice
+di pagina malevolo.
 
-:::note[Media e sicurezza]
-I media (avatar, immagini dei feed, screenshot delle PR) passano attraverso un
-proxy sul server connesso, quindi il browser non contatta mai direttamente un
-host a monte. Una Content-Security Policy per richiesta, generata da un cookie
-non sensibile, consente solo l'origine del server connesso.
+:::note[Media, editor e sicurezza]
+I media (avatar, immagini dei feed, screenshot delle PR), i trasferimenti di backup
+e il traffico dell'editor incorporato usano il tunnel delle risorse cifrato, non
+route HTTP pubbliche leggibili. L'editor del browser attendibile gira
+sull'origine propria dell'app web; il suo service worker porta le richieste
+attraverso la sessione cifrata autenticata verso il backend code-server su
+`cc_server`. Ospita il client web su HTTPS o su un loopback sicuro così che i
+service worker siano disponibili. I client nativi usano una facade loopback con
+ambito di capacità.
 :::
 
 ### Cosa non fa il browser
@@ -100,6 +107,7 @@ quindi il pulsante si nasconde su un host headless senza editor installati.
 
 - **La connessione va in timeout**: il server deve essere raggiungibile dal client. Controlla il bind (`--bind any`), che la porta sia aperta e che `--public-url` indichi l'indirizzo che il client può effettivamente contattare. Su internet aperto il TLS è obbligatorio: un bind non di loopback in chiaro viene rifiutato all'avvio, a meno che il server non sia stato avviato con `--insecure` dietro un proxy.
 - **Il browser rifiuta di connettersi ma un client nativo funziona**: l'origine del browser non è nell'elenco `--allowed-origins` del server. Il valore predefinito consente solo `https://app.usectrl.dev` (più il loopback).
+- **L'identità del server è cambiata**: il client rifiuta un'impronta diversa dal pin salvato. Verifica l'identità del server fuori banda e riassocia tramite un canale attendibile; non ignorare l'avviso e non passare a un client più vecchio o in chiaro.
 - **Chiave di abbinamento rifiutata**: riesegui `cc_server pair` sul server per ruotare la chiave di quel dispositivo, poi inserisci quella nuova. Un dispositivo revocato non trova più la sua credenziale e fallisce in modo restrittivo; la revoca interrompe una sessione attiva entro pochi secondi.
 - **Spazio di lavoro sbagliato**: lo spazio di lavoro fa parte dell'URL (`/workspaces/:workspaceId/…`) e viaggia con ogni chiamata, quindi cambiare spazio di lavoro in un client modifica solo la tua vista. Puoi raggiungere solo gli spazi di lavoro di cui sei membro: qualsiasi altro viene rifiutato con "Not a member of this workspace". Vedi [Spazi di lavoro e isolamento](/it-IT/manuale/concetti/spazi-di-lavoro/).
 

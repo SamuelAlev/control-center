@@ -1,6 +1,10 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/core/server/client_resource_proxy.dart';
+import 'package:control_center/core/server/identity_probe_client.dart'
+    if (dart.library.js_interop) 'package:control_center/core/server/identity_probe_client_web.dart';
 import 'package:control_center/core/server/invite_redeemer.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/core/server/server_entry_factory.dart';
@@ -19,6 +23,7 @@ class RemoteServerConnection {
     required this.client,
     required this.supervisor,
     required this.entry,
+    required this.resourceProxy,
     this.mediaProxy,
   });
 
@@ -31,11 +36,17 @@ class RemoteServerConnection {
   /// The paired-server entry backing this connection.
   final ServerEntry entry;
 
-  /// Media proxy base for this connection, when an HTTP path exists.
+  /// Capability-scoped local resource listener, retained across reconnects.
+  final LocalResourceProxy resourceProxy;
+
+  /// Signed media on the local encrypted-resource listener.
   final MediaProxyConfig? mediaProxy;
 
-  /// Closes the connection.
-  Future<void> dispose() => client.close();
+  /// Retire local URLs before the authenticated RPC client is closed.
+  Future<void> dispose() async {
+    await resourceProxy.close();
+    await client.close();
+  }
 }
 
 /// Connects to a paired server entry: resolver-ranked best path, PSK
@@ -67,54 +78,39 @@ Future<RemoteServerConnection> connectToEntry({
     rethrow;
   }
   final client = ResilientRpcClient(supervisor);
-  await attachVerifiedSnapshotCache(
-    client: client,
-    serverId: entry.serverId,
-    fingerprint: supervisor.pinnedFingerprint,
-    persist: persistSnapshots,
-    supervisor: supervisor,
-  );
-  AppLog.i(
-    'cc_server',
-    'connected to ${entry.name} via ${supervisor.current.path} '
-        '(${supervisor.current.relayed ? 'relayed' : 'direct'})',
-  );
-  final mediaProxy = mediaProxyFor(supervisor, entry.deviceId, psk);
-  // A user-selected font's bytes come from the host too (see
-  // `installHostFontLoader`), so it is armed with the same connection.
-  installHostFontLoader(mediaProxy);
-  return RemoteServerConnection(
-    client: client,
-    supervisor: supervisor,
-    entry: entry,
-    mediaProxy: mediaProxy,
-  );
-}
-
-/// Bulk/media base for a connection: the descriptor's advertised HTTPS bulk
-/// base when present, else the live path's HTTP origin. Relay-only
-/// connections without any HTTP path get none (media loads direct).
-MediaProxyConfig? mediaProxyFor(
-  ServerConnectionSupervisor supervisor,
-  String deviceId,
-  String psk,
-) {
-  final bulk = supervisor.descriptor.bulkHttpBase;
-  if (bulk != null && bulk.isNotEmpty) {
-    final base = Uri.tryParse(bulk);
-    if (base != null && base.host.isNotEmpty) {
-      return MediaProxyConfig(httpBase: base, deviceId: deviceId, psk: psk);
-    }
+  LocalResourceProxy? resourceProxy;
+  try {
+    await attachVerifiedSnapshotCache(
+      client: client,
+      serverId: entry.serverId,
+      fingerprint: supervisor.pinnedFingerprint,
+      persist: persistSnapshots,
+      supervisor: supervisor,
+    );
+    resourceProxy = await createClientResourceProxy(() => client.resources);
+    AppLog.i(
+      'cc_server',
+      'connected to ${entry.name} via ${supervisor.current.path} '
+          '(${supervisor.current.relayed ? 'relayed' : 'direct'})',
+    );
+    final mediaProxy = MediaProxyConfig(
+      httpBase: resourceProxy.baseUri,
+      deviceId: entry.deviceId,
+      psk: psk,
+    );
+    installHostFontLoader(mediaProxy);
+    return RemoteServerConnection(
+      client: client,
+      supervisor: supervisor,
+      entry: entry,
+      resourceProxy: resourceProxy,
+      mediaProxy: mediaProxy,
+    );
+  } catch (_) {
+    await resourceProxy?.close();
+    await client.close();
+    rethrow;
   }
-  final rpcUri = supervisor.current.path?.rpcUri;
-  if (rpcUri == null) {
-    return null;
-  }
-  return MediaProxyConfig.fromConnection(
-    serverUri: rpcUri,
-    deviceId: deviceId,
-    psk: psk,
-  );
 }
 
 /// Pairs this client with a server and persists the entry. Two shapes:
@@ -134,20 +130,66 @@ Future<RemoteServerConnection> pairWithServer({
 }) async {
   ServerEntry entry;
   String effectivePsk;
+  final previousEntries = store.readEntries();
   if (inviteCode.trim().isNotEmpty) {
     final normalized = normalizeServerUrl(rawUrl);
     if (normalized == null) {
       throw StateError('Enter the server address the invite belongs to.');
     }
     final wsUri = Uri.parse(normalized);
-    final redeemed = await redeemInviteAt(
-      httpBase: wsUri.replace(
-        scheme: wsUri.scheme == 'wss' ? 'https' : 'http',
-        path: '',
-      ),
-      code: inviteCode.trim(),
-      platform: platform,
+    final existingPin = previousEntries
+        .where(
+          (saved) => saved.descriptor.paths.any((path) {
+            final uri = path.rpcUri;
+            return uri != null &&
+                uri.scheme == wsUri.scheme &&
+                uri.authority == wsUri.authority;
+          }),
+        )
+        .map((entry) => entry.pinnedFingerprint)
+        .toSet();
+    if (existingPin.length > 1) {
+      throw const InviteRejectedException('Server identity changed');
+    }
+    final httpBase = wsUri.replace(
+      scheme: wsUri.scheme == 'wss' ? 'https' : 'http',
+      path: '',
     );
+    final code = inviteCode.trim();
+    bool strongCode;
+    try {
+      InvitePairingProof.codeHash(code);
+      strongCode = true;
+    } on FormatException {
+      strongCode = false;
+    }
+    String? demoFingerprint;
+    final RedeemedInvite redeemed;
+    if (strongCode) {
+      redeemed = await redeemInviteAt(
+        httpBase: httpBase,
+        code: code,
+        platform: platform,
+        pinnedFingerprint: existingPin.isEmpty ? null : existingPin.single,
+      );
+    } else {
+      // Only the advertised public demo accepts a short code. A failed
+      // high-entropy Noise handshake NEVER falls back to this HTTP route.
+      final probe = await probeServerIdentity(
+        httpBase,
+        httpClientFactory: identityProbeClientFactory(httpBase),
+      );
+      if (probe?.demo != true) {
+        throw const InviteRejectedException('Invite is invalid or expired');
+      }
+      demoFingerprint = probe!.fingerprint;
+      redeemed = await redeemPublicDemoAt(
+        httpBase: httpBase,
+        code: code,
+        platform: platform,
+        httpClientFactory: identityProbeClientFactory(httpBase),
+      );
+    }
     effectivePsk = redeemed.psk;
     if (redeemed.descriptor != null) {
       entry = ServerEntryFactory.fromDescriptorMap(
@@ -164,6 +206,15 @@ Future<RemoteServerConnection> pairWithServer({
       }
       entry = manual;
     }
+    final expectedFingerprint = demoFingerprint ?? redeemed.verifiedFingerprint;
+    if (entry.descriptor.fingerprint != expectedFingerprint ||
+        previousEntries.any(
+          (saved) =>
+              saved.serverId == entry.serverId &&
+              saved.pinnedFingerprint != expectedFingerprint,
+        )) {
+      throw const InviteRejectedException('Server identity changed');
+    }
   } else {
     final manual = await ServerEntryFactory.fromManualUrl(
       rawUrl: rawUrl,
@@ -177,6 +228,21 @@ Future<RemoteServerConnection> pairWithServer({
     }
     entry = manual;
     effectivePsk = psk;
+  }
+  final candidateUri = Uri.tryParse(normalizeServerUrl(rawUrl) ?? '');
+  if (previousEntries.any(
+    (saved) =>
+        (saved.serverId == entry.serverId ||
+            saved.descriptor.paths.any((path) {
+              final uri = path.rpcUri;
+              return uri != null &&
+                  candidateUri != null &&
+                  uri.scheme == candidateUri.scheme &&
+                  uri.authority == candidateUri.authority;
+            })) &&
+        saved.pinnedFingerprint != entry.descriptor.fingerprint,
+  )) {
+    throw const InviteRejectedException('Server identity changed');
   }
 
   // Connect FIRST (this verifies the Ed25519 identity against the pin), then

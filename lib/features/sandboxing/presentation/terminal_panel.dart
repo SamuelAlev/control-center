@@ -1,8 +1,6 @@
 // Interactive terminal view — a thin client over RPC.
-// `xterm` is pure Dart and renders fine on every target; the only thing that used to
-// differ between desktop and web was the PTY transport.
-// The desktop no longer spawns a local PTY (`flutter_pty`): it is a thin client like web,
-// so both targets share this single view.
+// `xterm` renders on every target; desktop and web share the server-hosted PTY
+// transport and this view.
 // A `TerminalSessionController` (terminal_session_controller.dart) spawns a sandboxed
 // shell over the `terminal.spawn` RPC op on the connected `cc_server`, streams its output
 // over the `terminal.output` subscription into the xterm `Terminal` and forwards xterm

@@ -2,7 +2,7 @@
 title: Referensi konfigurasi SSO
 description: Setiap kenop, endpoint, operasi, dan kode error masuk tunggal.
 slug: id-ID/panduan-pengguna/referensi/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Semua hal yang dapat dikonfigurasi pada masuk tunggal, di satu tempat. Nilainya
@@ -24,7 +24,7 @@ pengaturan).
 | `displayNameAttribute` | SAML          | `displayName`   | atribut nama tampilan                                                                                                                                 |
 | `groupsAttribute`      | SAML          | `groups`        | atribut nama grup                                                                                                                                     |
 | `clockSkewSeconds`     | SAML          | 90              | toleransi pergeseran untuk validasi masa berlaku                                                                                                      |
-| `allowIdpInitiated`    | SAML          | nonaktif        | terima Response yang tidak diminta (tanpa `InResponseTo`)                                                                                            |
+| `allowIdpInitiated`    | SAML          | nonaktif        | terima Response yang tidak diminta yang valid (tanpa `InResponseTo`); browser harus mengklaim hibah berumur pendek sebelum menerima kredensial yang tersegel untuk penerimanya |
 | `wantResponseSigned`   | SAML          | nonaktif        | wajibkan tanda tangan di akar Response (tanda tangan asertion selalu diwajibkan)                                                                      |
 | `issuer`               | OIDC          | —               | URL dasar issuer (wajib untuk mengaktifkan)                                                                                                          |
 | `clientId`             | OIDC          | —               | id klien publik (wajib untuk mengaktifkan)                                                                                                           |
@@ -37,28 +37,59 @@ pengaturan).
 
 ## Konfigurasi proses
 
-Koneksi SSO tidak diisi dari environment. Satu flag proses yang tersisa
-berkaitan dengan **penyerahan ke browser**, bukan baris koneksinya:
+Koneksi SSO tidak diisi dari environment. Satu flag proses yang tersisa memilih
+tempat browser membuka klien web setelah callback SSO:
 
 | Variabel / flag                                  | Arti                                                                                                                   |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | origin yang menjadi pantulan browser oleh callback SSO (kredensial menumpang pada fragmen URL). Tanpa nilai, penyerahannya tetap se-origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | URL klien web untuk penyerahan kredensial tersegel; tanpa nilai, penyerahannya tetap se-origin (hanya berguna jika klien web disajikan di sana). Untuk login `web-popup`, `client_origin` yang diizinkan dari tab pemrakarsa lebih diutamakan. |
 
 URL issuer itu sendiri harus `https` (`http` hanya diterima untuk issuer
-loopback `localhost`, `127.0.0.1`, dan `::1`).
+loopback `localhost`, `127.0.0.1`, dan `::1`). Gunakan TLS tepercaya untuk callback
+IdP dan host klien web: halaman yang menghasilkan kunci penerima bersama
+JavaScript yang dikirimkannya adalah bagian dari batas kepercayaan. HTTPS
+melindungi bootstrap itu; setelah pairing, sesi `/rpc` langsung maupun melalui
+relay sama-sama memerlukan enkripsi Noise dan identitas server yang disematkan.
 
 ## Endpoint HTTP
 
 | Endpoint                                         | Auth                | Tujuan                                                                                                                                                                                                          |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | tidak ada (pengalihan) | mulai login yang diprakarsai SP; `relay=desktop` menyerahkan ke aplikasi, `relay=web-popup` mengirim postMessage ke tab koneksi yang menunggu (yang menyatakan `client_origin`-nya, dihormati hanya ketika daftar-izin origin mempercayainya) |
-| `POST /saml/acs`                                 | tidak ada (POST dari IdP) | konsumer asertion — memverifikasi, menyediakan, menerbitkan                                                                                                                                                |
+| `GET /saml/login?relay=…&handoff_key=…`                        | tidak ada (pengalihan) | mulai login yang diprakarsai SP dengan kunci penerima X25519 yang dipegang klien; `relay=desktop` menyerahkan ke aplikasi, `relay=web-popup` mengirim postMessage ke tab koneksi yang menunggu (`client_origin`-nya dihormati hanya ketika daftar-izin origin mempercayainya) |
+| `POST /saml/acs`                                 | tidak ada (POST dari IdP) | verifikasi asertion dan sediakan pengguna; login yang diprakarsai SP menyegel kredensial perangkat yang diterbitkan ke kunci penerima pemrakarsa; SAML tak diminta yang diizinkan menghasilkan klaim yang terikat browser sebagai gantinya |
+| `POST /saml/claim`                               | hibah browser se-origin | tukarkan hibah SAML tak diminta sekali pakai bersama cookie-nya dan `handoff_key` baru; mengembalikan kredensial tersegel untuk penerimanya, bukan kunci pairing teks polos |
 | `GET /saml/metadata`                             | tidak ada           | `EntityDescriptor` SP kami                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | tidak ada           | perjalanan bolak-balik OIDC; `relay=desktop` menyerahkan ke aplikasi, `relay=web-popup` ke tab koneksi yang menunggu (konvensi `client_origin` yang sama)                                                        |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | tidak ada           | perjalanan bolak-balik OIDC; login memerlukan kunci penerima yang dipegang klien; `relay=desktop` menyerahkan ke aplikasi, `relay=web-popup` ke tab koneksi yang menunggu (konvensi `client_origin` yang sama) |
 | `GET /auth/providers`                            | tidak ada, CORS `*` | probe layar koneksi: koneksi SSO yang ditawarkan (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                        |
 | `/scim/v2/Users…`                                | Bearer (token SCIM) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                    |
 | `/scim/v2/Groups`                                | Bearer              | hanya-baca; push grup menjawab 501 secara desain                                                                                                                                                                 |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | dokumen kapabilitas                                                                                                                                                                                              |
+
+Untuk SAML dan OIDC yang diprakarsai SP, URL mulai login memerlukan `handoff_key`
+yang valid (kunci publik X25519 milik klien pemrakarsa). Server menyimpan kunci itu
+bersama login yang tertunda dan menyegel kredensial perangkat yang diterbitkan saat
+callback memakai X25519 sementara, HKDF-SHA256, dan AES-256-GCM yang terikat pada
+origin server. Penyerahan desktop memakai `control-center://pair`, penyerahan web
+di tab yang sama memakai fragmen URL, dan `web-popup` mengirim postMessage ke
+`client_origin` yang diizinkan jika disediakan (jika tidak, ke URL klien web yang
+dikonfigurasi atau origin callback). Amplop tersegel, bukan kunci pairing teks
+polos, yang menempuh fragmen atau pesan popup itu. Klien pemrakarsa menyimpan kunci
+privat yang bersesuaian untuk membukanya. Amplop ini berbeda dari sesi Noise wajib
+yang dibangun setelah pairing.
+
+Response SAML yang diprakarsai IdP (bila diaktifkan) tidak memiliki penerima
+pemrakarsa. Sebagai gantinya, ACS menyetel cookie browser lima menit, HttpOnly,
+SameSite=Strict dan menyajikan pilihan **Open web client** / **Open desktop app**.
+Halaman itu menghasilkan kunci penerima baru dan mengirim separuh publiknya beserta
+handle hibahnya ke `POST /saml/claim` dari origin yang sama. Claim memerlukan
+cookie dan origin yang cocok (batas CSRF), memakai hibah sekali, dan hanya
+mengembalikan amplop tersegel untuk penerimanya. Fragmen web/desktop berikutnya
+membawa amplop itu beserta materi kunci privat penerima agar klien tujuan dapat
+membukanya, **bukan** kredensial perangkat teks polos. Browser lain atau hibah yang
+kedaluwarsa tidak dapat menukarkannya. Origin klien web tujuan dapat mengakses
+fragmen dan mendekripsinya; halaman callback atau origin klien web yang disusupi
+dapat mencuri kredensial. Enkripsi tidak membuat kode yang disajikan tetapi tidak
+tepercaya menjadi aman.
 
 ## Operasi RPC
 

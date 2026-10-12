@@ -153,6 +153,15 @@ class HarnessSkillScanner {
     } on Object {
       return null;
     }
+    return parseContents(content, slug: slug, path: file.path);
+  }
+
+  /// Parses captured bytes with the same metadata rules as live discovery.
+  /// [path] is the advertised document path, not a file opened by this method.
+  static HarnessSkillInfo parseContents(String content, {
+    required String slug,
+    required String path,
+  }) {
     var name = slug;
     var description = '';
     final trimmed = content.trimLeft();
@@ -178,7 +187,7 @@ class HarnessSkillScanner {
     return HarnessSkillInfo(
       name: name,
       description: description,
-      path: file.path,
+      path: path,
     );
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/infrastructure/clipboard/host_clipboard.dart';
@@ -7,6 +8,7 @@ import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/open_attachment_preview.dart';
+import 'package:control_center/shared/widgets/composer/attachment_upload_controller.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_media.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_registry.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_strip.dart';
@@ -21,6 +23,7 @@ import 'package:control_center/shared/widgets/composer/mention/mention_source.da
 import 'package:control_center/shared/widgets/composer/mention/mention_trigger.dart';
 import 'package:control_center/shared/widgets/composer/voice/voice_button.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,6 +78,9 @@ class Composer extends ConsumerStatefulWidget {
     this.banner,
     this.clearOnSubmit = true,
     this.onEscape,
+    this.attachmentUpload,
+    this.attachmentDiscard,
+    this.attachmentScope,
   });
 
   /// Pluggable mention sources, queried in order; results are grouped under
@@ -167,16 +173,24 @@ class Composer extends ConsumerStatefulWidget {
   /// uses it to name what sending will do.
   final Widget? banner;
 
-  /// When true (the default), a successful submit clears the field, its
-  /// attachments and the recall position before [onSubmit] runs. An edit
-  /// session turns this off: the host restores the parked draft itself, and
-  /// clearing first would throw away attachments that belonged to that draft.
+  /// When true (the default), a successful [onSubmit] clears the sent draft.
+  /// An edit session turns this off: the host restores the parked draft itself.
   final bool clearOnSubmit;
 
   /// Called instead of blurring when Escape is pressed and the mention popup
   /// is closed. History recall still yields to this, so a session that owns
   /// Escape (editing a message) can cancel itself.
   final VoidCallback? onEscape;
+
+  /// Injected by a host that supports eager uploads; absent for shared
+  /// composers whose attachments are references rather than client files.
+  final UploadComposerAttachment? attachmentUpload;
+
+  /// Releases uploaded files removed from this draft before sending.
+  final DiscardComposerAttachment? attachmentDiscard;
+
+  /// Draft destination identity. Changing it discards the previous draft's files.
+  final String? attachmentScope;
 
   @override
   ConsumerState<Composer> createState() => _ComposerState();
@@ -198,6 +212,8 @@ class _ComposerState extends ConsumerState<Composer> {
   bool _sending = false;
   bool _composerFocused = false;
   bool _isEmpty = true;
+  AttachmentUploadConfiguration? _uploadConfiguration;
+  int _nextAttachmentId = 0;
 
   /// True when [_focus] was created here and must be disposed here. An
   /// external [Composer.focusNode] belongs to the host.
@@ -224,6 +240,7 @@ class _ComposerState extends ConsumerState<Composer> {
     _bindRefStyling();
     _isEmpty = _controller.text.trim().isEmpty;
     _bindFocusNode(widget.focusNode);
+    _configureUploads();
     if (widget.autofocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -257,6 +274,61 @@ class _ComposerState extends ConsumerState<Composer> {
       _unbindFocusNode();
       _bindFocusNode(widget.focusNode);
     }
+    if (old.attachmentScope != widget.attachmentScope) {
+      final previous = List<ComposerAttachment>.of(_attachments);
+      _discardAllUploads();
+      _attachments.clear();
+      for (final a in previous) {
+        if (a.refName != null) {
+          _removeToken(fileRefToken(a.refName!));
+        }
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        for (final a in previous) {
+          ref.read(attachmentRegistryProvider.notifier).unregister(a.id);
+        }
+      });
+      _configureUploads();
+    } else {
+      // Keep the draft's state while replacing a stale connection. Old-scope
+      // controllers retain their own callbacks for late upload completion.
+      final config = _uploadConfiguration;
+      final upload = widget.attachmentUpload;
+      final discard = widget.attachmentDiscard;
+      if (config != null && upload != null && discard != null) {
+        config
+          ..upload = upload
+          ..discard = discard;
+      }
+    }
+  }
+
+  void _configureUploads() {
+    if (widget.attachmentUpload != null && widget.attachmentDiscard != null) {
+      _uploadConfiguration = AttachmentUploadConfiguration(
+        upload: widget.attachmentUpload!,
+        discard: widget.attachmentDiscard!,
+      );
+    } else {
+      _uploadConfiguration = null;
+    }
+  }
+
+  void _discardAllUploads() {
+    final config = _uploadConfiguration;
+    if (config == null) {
+      return;
+    }
+    // Provider writes are forbidden during didUpdateWidget's build phase.
+    // The old provider also auto-disposes as soon as the new scope is watched.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.invalidate(attachmentUploadControllerProvider(config));
+      }
+    });
   }
 
   void _bindFocusNode(FocusNode? external) {
@@ -342,12 +414,19 @@ class _ComposerState extends ConsumerState<Composer> {
     if (_attachments.isEmpty) {
       return false;
     }
-    final before = _attachments.length;
-    _attachments.removeWhere((a) {
+    final removed = _attachments.where((a) {
       final name = a.refName;
       return name != null && !fileRefSurvives(text, fileRefToken(name));
-    });
-    return _attachments.length != before;
+    }).toList();
+    if (removed.isEmpty) {
+      return false;
+    }
+    for (final a in removed) {
+      _forgetUpload(a.id);
+      ref.read(attachmentRegistryProvider.notifier).unregister(a.id);
+    }
+    _attachments.removeWhere(removed.contains);
+    return true;
   }
 
   // A click INSIDE a reference opens its preview. Detected from the caret
@@ -442,6 +521,18 @@ class _ComposerState extends ConsumerState<Composer> {
     _attachments.addAll(added);
     ref.read(attachmentRegistryProvider.notifier).register(added);
     _insertAtCaret(tokens.join(' '));
+    final config = _uploadConfiguration;
+    if (config != null && !ref.read(isDemoServerProvider)) {
+      final uploads = ref.read(
+        attachmentUploadControllerProvider(config).notifier,
+      );
+      for (final a in added) {
+        // @ menu choices are server-side checkout references, not local files.
+        if (a.payload == null && a.kind != 'scratchpad') {
+          uploads.add(a);
+        }
+      }
+    }
     setState(() {});
   }
 
@@ -584,31 +675,48 @@ class _ComposerState extends ConsumerState<Composer> {
     setState(() => _activeQuery = null);
   }
 
-  /// Reads the host clipboard and, when it holds an image, attaches it.
-  ///
-  /// Runs alongside the field's own text paste rather than replacing it: a
-  /// clipboard can hold both (copying from a browser often yields an image AND
-  /// its alt text), and the useful outcome is the picture plus whatever text
-  /// the field pasted on its own.
-  Future<void> _tryPasteImage() async {
-    final snapshot = await readHostClipboard();
+  /// Attaches clipboard files/images alongside the field's ordinary text paste.
+  Future<void> _tryPasteAttachments() async {
+    final scope = widget.attachmentScope;
+    final snapshot = await readHostClipboard(
+      maxImageBytes: null,
+      maxFileBytes: kMaxDroppedImageBytes,
+    );
+    if (!mounted || scope != widget.attachmentScope) {
+      return;
+    }
+    if (snapshot.files.isNotEmpty) {
+      _attach([
+        for (final file in snapshot.files)
+          ComposerAttachment(
+            id: 'paste:${++_nextAttachmentId}',
+            kind:
+                (file.mediaType ?? mediaTypeForFileName(file.name) ?? '')
+                    .startsWith('image/')
+                ? 'image'
+                : 'file',
+            label: file.name,
+            bytes: file.bytes,
+            mimeType: file.mediaType ?? mediaTypeForFileName(file.name),
+            sizeBytes: file.sizeBytes ?? file.bytes.length,
+          ),
+      ]);
+      return;
+    }
     final bytes = snapshot.imageBytes;
-    if (bytes == null || bytes.isEmpty || !mounted) {
+    if (bytes == null) {
       return;
     }
     final mimeType = snapshot.imageMediaType ?? 'image/png';
     final extension = mimeType.split('/').last;
     _attach([
       ComposerAttachment(
-        // Content-independent id: two pastes of the same picture are two
-        // deliberate attachments, and de-duplicating them would silently
-        // swallow the second keystroke.
-        id: 'paste:${DateTime.now().microsecondsSinceEpoch}',
+        id: 'paste:${++_nextAttachmentId}',
         kind: 'image',
         label: 'pasted.$extension',
         bytes: bytes,
         mimeType: mimeType,
-        sizeBytes: bytes.length,
+        sizeBytes: snapshot.imageSizeBytes ?? bytes.length,
       ),
     ]);
   }
@@ -635,48 +743,55 @@ class _ComposerState extends ConsumerState<Composer> {
       ]);
       return;
     }
+    final scope = widget.attachmentScope;
     final files = await openFiles();
-    if (files.isEmpty) {
-      return;
-    }
-    // Bytes are read only for pictures, and only so they can be uploaded with
-    // the message. Everything else travels as a path the agent opens itself —
-    // reading a video into memory to put a chip on a toolbar would be absurd.
-    final attachments = <ComposerAttachment>[];
     for (final file in files) {
-      final name = p.basename(file.path);
-      final mimeType = file.mimeType ?? mediaTypeForFileName(name);
-      final isImage = (mimeType ?? '').startsWith('image/');
-      final bytes = isImage ? await file.readAsBytes() : null;
-      if (bytes != null && bytes.length > kMaxDroppedImageBytes) {
-        // Over the ceiling the blob store enforces anyway: attach it as a
-        // path rather than carrying bytes that would be refused on send.
-        attachments.add(
-          ComposerAttachment(
-            id: 'file:${file.path}',
-            kind: 'file',
-            label: name,
-            path: file.path,
-            mimeType: mimeType,
-            sizeBytes: bytes.length,
-          ),
-        );
-        continue;
+      if (!mounted || scope != widget.attachmentScope) {
+        return;
       }
-      attachments.add(
+      final name = file.name;
+      final mimeType = file.mimeType ?? mediaTypeForFileName(name);
+      int? size;
+      try {
+        size = await file.length();
+      } on Object {
+        // The upload controller will report an unreadable file.
+      }
+      Uint8List? bytes;
+      if (kIsWeb && (size == null || size <= kMaxDroppedImageBytes)) {
+        try {
+          final buffer = BytesBuilder(copy: false);
+          await for (final chunk in file.openRead(
+            0,
+            kMaxDroppedImageBytes + 1,
+          )) {
+            if (buffer.length + chunk.length > kMaxDroppedImageBytes) {
+              size = kMaxDroppedImageBytes + 1;
+              break;
+            }
+            buffer.add(chunk);
+          }
+          if (size == null || size <= kMaxDroppedImageBytes) {
+            bytes = buffer.takeBytes();
+          }
+        } on Object {
+          // A visible failed card is preferable to silently losing the file.
+        }
+      }
+      if (!mounted || scope != widget.attachmentScope) {
+        return;
+      }
+      _attach([
         ComposerAttachment(
-          id: 'file:${file.path}',
-          kind: isImage ? 'image' : 'file',
+          id: 'picker:${++_nextAttachmentId}',
+          kind: (mimeType ?? '').startsWith('image/') ? 'image' : 'file',
           label: name,
-          path: file.path,
+          path: kIsWeb ? null : file.path,
           bytes: bytes,
           mimeType: mimeType,
-          sizeBytes: bytes?.length,
+          sizeBytes: size ?? bytes?.length,
         ),
-      );
-    }
-    if (mounted) {
-      _attach(attachments);
+      ]);
     }
   }
 
@@ -689,12 +804,27 @@ class _ComposerState extends ConsumerState<Composer> {
   /// coming along.
   void _removeAttachment(ComposerAttachment a) {
     _attachments.removeWhere((x) => x.id == a.id);
+    _forgetUpload(a.id);
     ref.read(attachmentRegistryProvider.notifier).unregister(a.id);
     final refName = a.refName;
     if (refName != null) {
       _removeToken(fileRefToken(refName));
     }
     setState(() {});
+  }
+
+  void _forgetUpload(String id) {
+    final config = _uploadConfiguration;
+    if (config != null) {
+      ref.read(attachmentUploadControllerProvider(config).notifier).remove(id);
+    }
+  }
+
+  void _retryAttachment(ComposerAttachment a) {
+    final config = _uploadConfiguration;
+    if (config != null) {
+      ref.read(attachmentUploadControllerProvider(config).notifier).retry(a.id);
+    }
   }
 
   /// Deletes [token] from the draft, plus one adjacent space so removing a
@@ -720,12 +850,42 @@ class _ComposerState extends ConsumerState<Composer> {
     );
   }
 
+  Map<String, ComposerAttachment> get _stagedAttachments {
+    final config = _uploadConfiguration;
+    return config == null
+        ? const {}
+        : ref.read(attachmentUploadControllerProvider(config));
+  }
+
+  String? get _blockedUploadMessage {
+    if (_uploadConfiguration == null || ref.read(isDemoServerProvider)) {
+      return null;
+    }
+    final staged = _stagedAttachments;
+    var uploading = false;
+    for (final a in _attachments) {
+      if (a.payload != null || a.kind == 'scratchpad') {
+        continue;
+      }
+      final status = staged[a.id]?.uploadState;
+      if (status == AttachmentUploadState.failed) {
+        return AppLocalizations.of(context).composerAttachmentResolveFailures;
+      }
+      if (status != AttachmentUploadState.ready) {
+        uploading = true;
+      }
+    }
+    return uploading
+        ? AppLocalizations.of(context).composerAttachmentWaitForUploads
+        : null;
+  }
+
   Future<void> _submit() async {
-    if (_sending) {
+    if (_sending || _blockedUploadMessage != null) {
       return;
     }
-    // Nothing to send and no live dictation to flush → no-op (so a stray Enter
-    // on an empty composer doesn't flash the spinner).
+    final scope = widget.attachmentScope;
+    final clearOnSubmit = widget.clearOnSubmit;
     if (_dictationBase == null &&
         _controller.text.trim().isEmpty &&
         _attachments.isEmpty) {
@@ -733,47 +893,73 @@ class _ComposerState extends ConsumerState<Composer> {
     }
     setState(() => _sending = true);
     try {
-      // If a dictation session is live, force best-effort finalization: stop
-      // the session, take the last (fully-drained) text and splice it into the
-      // pending span — never drop the span, never submit styled-pending markup.
       if (_dictationBase != null) {
         _dictationFinalizing = true;
         final finalText = await ref
             .read(dictationControllerProvider.notifier)
             .stopAndDrain();
+        if (!mounted || widget.attachmentScope != scope) {
+          return;
+        }
         _spliceDictation(finalText);
         _resetDictationSpan();
+      }
+      if (!mounted || _blockedUploadMessage != null) {
+        return;
       }
       final text = _controller.text;
       final mentions = <ResolvedMention>[
         ..._extractResolvedMentions(text),
-        // Structured `#` entity picks, kept only if their inserted token still
-        // survives in the text (so deleting the token drops the reference).
         for (final p in _picked)
           if (_tokenSurvives(text, p.token)) p.mention,
       ];
+      final staged = _stagedAttachments;
       final submission = ComposerSubmission(
         text: text,
         mentions: mentions,
-        attachments: List.unmodifiable(_attachments),
+        attachments: List.unmodifiable([
+          for (final a in _attachments)
+            (staged[a.id] ?? a).copyWith(
+              clearPath: staged[a.id]?.fileId != null,
+              clearBytes: staged[a.id]?.fileId != null,
+            ),
+        ]),
       );
       if (submission.isEmpty) {
         return;
       }
-      // Clear immediately so the user sees instant feedback and the
-      // TextField cannot re-insert a newline during the async gap. An edit
-      // session opts out: it restores a parked draft after the write, and
-      // clearing first would discard that draft's attachments.
-      if (widget.clearOnSubmit) {
-        _controller.clear();
-        _attachments.clear();
-        _picked.clear();
-        _resetDictationSpan();
-        // A sent prompt is history now, not a browsing position: the next ↑
-        // starts from the newest entry again.
-        _history.reset();
-      }
+      // Keep the draft while the host confirms its send. A failure must leave
+      // the attachment and its upload ready for a retry, not lose either.
       await widget.onSubmit(submission);
+      if (!mounted || widget.attachmentScope != scope) {
+        return;
+      }
+      if (clearOnSubmit) {
+        final config = _uploadConfiguration;
+        if (config != null) {
+          final uploads = ref.read(
+            attachmentUploadControllerProvider(config).notifier,
+          );
+          for (final a in submission.attachments) {
+            uploads.release(a.id);
+          }
+        }
+        _attachments.removeWhere(
+          (a) => submission.attachments.any((sent) => sent.id == a.id),
+        );
+        if (_controller.text == text) {
+          _controller.clear();
+          _picked.clear();
+          _history.reset();
+        } else {
+          for (final a in submission.attachments) {
+            if (a.refName != null) {
+              _removeToken(fileRefToken(a.refName!));
+            }
+          }
+        }
+        _resetDictationSpan();
+      }
     } finally {
       _dictationFinalizing = false;
       if (mounted) {
@@ -906,7 +1092,7 @@ class _ComposerState extends ConsumerState<Composer> {
     if (event.logicalKey == LogicalKeyboardKey.keyV &&
         (HardwareKeyboard.instance.isMetaPressed ||
             HardwareKeyboard.instance.isControlPressed)) {
-      unawaited(_tryPasteImage());
+      unawaited(_tryPasteAttachments());
       return KeyEventResult.ignored;
     }
     // Shift+Tab toggles plan mode (PRD 17 §8) on opted-in composers. Handled
@@ -1042,6 +1228,14 @@ class _ComposerState extends ConsumerState<Composer> {
       // `dependOnInheritedWidget` lookup on every keystroke instead.
       controller.tokens = ds;
     }
+    final config = _uploadConfiguration;
+    final staged = config == null
+        ? const <String, ComposerAttachment>{}
+        : ref.watch(attachmentUploadControllerProvider(config));
+    final visibleAttachments = [
+      for (final a in _attachments) staged[a.id] ?? a,
+    ];
+    final blockedMessage = _blockedUploadMessage;
     // Attached: the top margin belongs to whatever is stacked above (the
     // steering strip draws right down onto this box's top border).
     final margin = widget.attachedTop
@@ -1082,6 +1276,7 @@ class _ComposerState extends ConsumerState<Composer> {
         );
       },
       child: ComposerDropTarget(
+        key: ValueKey(widget.attachmentScope),
         onDrop: _handleDrop,
         // The same value the box below uses as its margin, handed over
         // rather than copied, so the drop ring cannot drift off the border.
@@ -1121,14 +1316,28 @@ class _ComposerState extends ConsumerState<Composer> {
                   widget.banner!,
                   const SizedBox(height: 6),
                 ],
-                if (_attachments.isNotEmpty)
+                if (visibleAttachments.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsetsDirectional.only(bottom: 6),
                     child: AttachmentStrip(
-                      attachments: _attachments,
+                      attachments: visibleAttachments,
                       onRemove: _removeAttachment,
+                      onRetry: _retryAttachment,
                       onOpen: (a) =>
                           unawaited(openAttachmentPreview(context, ref, a)),
+                    ),
+                  ),
+                if (blockedMessage != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      bottom: 6,
+                      start: 4,
+                    ),
+                    child: Text(
+                      blockedMessage,
+                      style: CcTypography.caption.copyWith(
+                        color: ds.textSecondary,
+                      ),
                     ),
                   ),
                 CompositedTransformTarget(
@@ -1163,11 +1372,16 @@ class _ComposerState extends ConsumerState<Composer> {
                   leading: widget.leading,
                   trailing: widget.trailing,
                   sending: _sending,
-                  showStop: widget.isBusy && _isEmpty && widget.onStop != null,
+                  showStop:
+                      widget.isBusy &&
+                      _isEmpty &&
+                      _attachments.isEmpty &&
+                      widget.onStop != null,
                   onStop: widget.onStop,
                   enableFilePicker: widget.enableFilePicker,
                   onPickFiles: _pickFiles,
                   onSubmit: _submit,
+                  blockedMessage: blockedMessage,
                   composerFocused: _composerFocused,
                   onDictationPartial: _applyDictationPartial,
                 ),
@@ -1190,6 +1404,7 @@ class _Toolbar extends StatelessWidget {
     required this.enableFilePicker,
     required this.onPickFiles,
     required this.onSubmit,
+    required this.blockedMessage,
     required this.composerFocused,
     required this.onDictationPartial,
   });
@@ -1204,9 +1419,16 @@ class _Toolbar extends StatelessWidget {
   final VoidCallback onSubmit;
   final bool composerFocused;
   final void Function(String text, {required bool isFinal}) onDictationPartial;
+  final String? blockedMessage;
 
   @override
   Widget build(BuildContext context) {
+    final sendButton = CcButton(
+      onPressed: sending || blockedMessage != null ? null : onSubmit,
+      child: sending
+          ? const CcSpinner(size: 14)
+          : const Icon(AppIcons.arrowUp, size: 16),
+    );
     return Row(
       children: [
         ?leading,
@@ -1235,13 +1457,10 @@ class _Toolbar extends StatelessWidget {
               child: const Icon(AppIcons.square, size: 14),
             ),
           )
+        else if (blockedMessage != null)
+          CcTooltip(message: blockedMessage!, child: sendButton)
         else
-          CcButton(
-            onPressed: sending ? null : onSubmit,
-            child: sending
-                ? const CcSpinner(size: 14)
-                : const Icon(AppIcons.arrowUp, size: 16),
-          ),
+          sendButton,
       ],
     );
   }

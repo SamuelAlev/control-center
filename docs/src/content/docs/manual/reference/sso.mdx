@@ -21,7 +21,7 @@ places is one the settings screen can disagree with).
 | `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
 | `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
 | `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
+| `allowIdpInitiated`    | SAML       | off             | accept valid unsolicited Responses (no `InResponseTo`); the browser must claim a short-lived grant before receiving a recipient-sealed credential |
 | `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
 | `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
 | `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
@@ -35,27 +35,57 @@ places is one the settings screen can disagree with).
 ## Process configuration
 
 SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+flag chooses where the browser opens the web client after an SSO callback:
 
 | Variable / flag                          | Meaning                                                                                                              |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | web-client URL for a sealed credential handoff; unset keeps same-origin handoff (only useful if the web client is served there). For a `web-popup` login, an allowed `client_origin` from the initiating tab takes precedence. |
 
 The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+issuers `localhost`, `127.0.0.1`, and `::1` only). Use trusted TLS for the
+IdP callback and web-client host: the page that generates the recipient key
+and its delivered JavaScript are part of the trust boundary. HTTPS protects
+that bootstrap; after pairing, direct and relayed `/rpc` sessions both
+require Noise encryption and a pinned server identity.
 
 ## HTTP endpoints
 
 | Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
+| `GET /saml/login?relay=…&handoff_key=…`         | none (redirect)     | start SP-initiated login with a client-held X25519 recipient key; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (its `client_origin` is honoured only when the origin allow-list trusts it) |
+| `POST /saml/acs`                                 | none (IdP POST)     | verify the assertion and provision the user; SP-initiated login seals the minted device credential to the initiating recipient key; allowed unsolicited SAML yields a browser-bound claim instead |
+| `POST /saml/claim`                               | same-origin browser grant | redeem a single-use unsolicited SAML grant with its cookie and a fresh `handoff_key`; returns a recipient-sealed credential, never a plaintext pairing key |
 | `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | none | the OIDC round-trip; login requires the client-held recipient key; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention) |
 | `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
 | `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
 | `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+
+For SP-initiated SAML and OIDC, the login-start URL requires a valid
+`handoff_key` (the initiating client's X25519 public key). The server retains
+that key with the pending sign-in and seals the minted device credential at
+the callback using ephemeral X25519, HKDF-SHA256 and AES-256-GCM bound to the
+server origin. Desktop handoff uses `control-center://pair`, same-tab web
+handoff uses a URL fragment, and `web-popup` postMessages to the allowed
+`client_origin` if provided (otherwise the configured web-client URL or
+callback origin). The sealed envelope, not a plaintext pairing key, travels
+in that fragment or popup message. The initiating client retains the
+corresponding private key to open it. This envelope is distinct from the
+mandatory Noise session established after pairing.
+
+An IdP-initiated SAML Response (when enabled) has no initiating recipient.
+Instead, the ACS sets a five-minute, HttpOnly, SameSite=Strict browser cookie
+and presents an **Open web client** / **Open desktop app** choice. That page
+generates a fresh recipient key and posts its public half and grant handle to
+`POST /saml/claim` from the same origin. Claim requires the matching cookie
+and origin (a CSRF boundary), consumes the grant once and returns only a
+recipient-sealed envelope. The subsequent web/desktop fragment carries that
+envelope and the recipient's private-key material so the destination client
+can open it, **not** a plaintext device credential. A different browser or
+expired grant cannot redeem it. The destination web-client origin can access
+the fragment and decrypt it; a compromised callback page or web-client origin
+can steal credentials. Encryption does not make untrusted served code safe.
 
 ## RPC ops
 

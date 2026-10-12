@@ -64,6 +64,14 @@ class SearchTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.read;
 
+  /// Audited safe for speculative (early) execution: the walk, reads and regex
+  /// scan all run in a worker isolate inside the resolved workspace boundary,
+  /// the result count is capped by [maxResults] and every file read by
+  /// `_maxFileBytes`. Nothing is written, prompted or mutated, so an early call
+  /// the model then abandons costs the scan and nothing else.
+  @override
+  bool get speculativeReadSafe => true;
+
   @override
   Map<String, dynamic> get inputSchema => {
     'type': 'object',

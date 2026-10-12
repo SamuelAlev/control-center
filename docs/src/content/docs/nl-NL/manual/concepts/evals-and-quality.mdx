@@ -1,9 +1,16 @@
 ---
 title: Evals en kwaliteit
-description: Eval-suites, de starterset die in elke werkruimte wordt geïnitialiseerd en waar ze in Observeerbaarheid verschijnen.
+description: Eval-suites en aan revisies gekoppelde vaardigheidscampagnes, en hoe je hun bewijs interpreteert.
 slug: nl-NL/handleiding/concepten/evals-en-kwaliteit
-sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
+sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 ---
+
+**Observeerbaarheid → Kwaliteit** bevat zowel eval-suites voor één taak als
+gepaarde vaardigheidscampagnes. Een vaardigheidscampagne meet een pakket zoals
+het door een bepaald model en een bepaalde harness wordt gebruikt, niet de
+kwaliteit van de Markdown op zichzelf.
+
+## Eval-suites
 
 Een **eval-suite** is een werkruimtegebonden definitie van een taak die je tegen
 een agent uitvoert: een prompt, een doelagent en een modus, een optionele
@@ -19,7 +26,7 @@ oplevert en een volledige ticketronde. De initialisatie luistert naar
 `WorkspaceCreated` (`workspace.upsert` of `workspace.create`), slaat een naam
 over die al bestaat en vult oudere werkruimtes niet retroactief aan.
 
-## Waar ze verschijnen
+### Waar ze verschijnen
 
 **Observeerbaarheid → Kwaliteit** (`/workspaces/<id>/observability`) vermeldt
 elke suite in de werkruimte.
@@ -28,10 +35,129 @@ Maak, bekijk, bewerk en verwijder suites met `evals.upsertSuite`,
 `evals.deleteSuite` en `evals.watchSuites`. Het tabblad Kwaliteit is de lijst;
 die bewerkingen vormen de editor.
 
+## Vaardigheidscampagnes
+
+Een campagne vergelijkt twee armen onder dezelfde taak en dezelfde
+uitvoeringsconfiguratie. De kandidaat is afwezig, normaal beschikbaar, expliciet
+geladen, of wordt vergeleken met een eerdere revisie of een vaste
+achtergrondinventaris aan skills. Deze antwoorden op verschillende vragen;
+geforceerd laden is een diagnostiek, niet een score voor normale ontdekking. De
+[skills-gids](/nl-NL/handleiding/gidsen/skills-beheren/#een-skill-evalueren)
+legt uit hoe je een vergelijking kiest en een uitvoering binnen een budget
+autoriseert.
+
+Bewijs hoort bij een exacte **hash van het hele pakket**: `SKILL.md`, metadata,
+scripts, referenties en assets. De server legt gescande onveranderlijke pakketten
+vast en pint het takencorpus, de adapter, de provider/natieve modelidentificatie,
+het protocol, de toolschema’s en de achtergrondinventaris. Native
+Claude-campagnes pinnen ook het beheerde account en de waargenomen CLI-versie.
+Het bewerken van een referentie maakt huidig bewijs ongeldig, zelfs als
+`SKILL.md` ongewijzigd is. Een
+modelalias legt vast wat is aangevraagd, niet de onveranderlijke gewichten van
+de provider.
+
+Elke poging krijgt een verse context, een verse home en een verse
+fixturetoestand. Gepaarde armen gebruiken hetzelfde beleid en dezelfde
+taakomstandigheden, behalve de aangegeven skill-interventie. Doel-afwezig
+betekent dat de metadata en bestanden van de kandidaat niet beschikbaar zijn,
+niet dat alle achtergrondinstructies of skills zijn verwijderd. Taakprompts
+mogen de kandidaat niet noemen in een vergelijking van normale ontdekking.
+
+De server is eigenaar van autorisatie, uitvoering, budgetten en persistentie in
+de werkruimte. Clients kiezen instellingen en tonen bewijs. Voortgang overleeft
+herverbindingen; annuleren behoudt gedeeltelijke resultaten, en een herstart
+markeert onvoltooid werk als onderbroken in plaats van betaalde aanroepen stil
+te herhalen. Deze campagnes leveren niet het aparte uitvoerdercontract voor
+willekeurige eval-suites.
+
+## Bewijs terughoudend lezen
+
+- **Uitkomsten bepalen de correctheid.** Onafhankelijke getypeerde verificateurs
+  controleren artefacten en het resulterende gedrag, niet de bewering van de
+  agent dat het is gelukt. Verwachte antwoorden blijven buiten de afscherming
+  van de kandidaat; gegenereerde code wordt beoordeeld in een apart geïsoleerde
+  kopie.
+- **Laden en nut zijn verschillend.** Beschikbaarheid, loads van body en
+  referenties en waargenomen scriptgebruik verklaren de uitvoering. Dat een
+  bestand wordt gelezen, bewijst niet dat het model de instructies heeft
+  gevolgd; niet-waarneembare toegang blijft onbekend.
+- **Houd de bijpassende basislijn aan.** Alleen een geslaagde uitvoering van de
+  kandidaat stelt geen voordeel vast. Neem pogingen op waarin een beschikbare
+  skill werd genegeerd, mislukte pogingen en hun kosten; bewaar niet alleen de
+  beste nieuwe poging.
+- **Herhalingen zijn geen nieuwe taken.** Rapporten clusteren onzekerheid per
+  taak. Kleine steekproeven, ontbrekende dekking, identiteitsdrift en onbekende
+  uitgaven kunnen een aanbeveling om over te nemen niet rechtvaardigen. Een
+  afgeronde campagne kan nog steeds geen uitsluitsel geven; geen verbetering
+  kunnen aantonen is geen bewijs van gelijkwaardigheid of regressie.
+- **Inspecteer afzonderlijke regressies.** Geaggregeerde winst mag een beschadigde
+  taak of een ongeoorloofd neveneffect niet verbergen. Beveiligingsscans,
+  observaties van runtime-veiligheid en nut blijven gescheiden; goedkopere
+  uitvoering kan ontbrekend bewijs over kwaliteit of veiligheid niet
+  compenseren.
+- **Voeg onverenigbare resultaten niet samen.** Een ander model, een andere
+  harness, beleid, fixture of skillcombinatie is een andere configuratie. Houd
+  achtergehouden overdrachts- en samenstellingsbewijs gescheiden van de
+  ontwikkelgevallen.
+
+De negen lokaal geschreven pilotcorpora bevatten 108 taakitems over nut,
+familiespecifieke routering/veiligheid en achtergehouden
+overdracht/samenstelling. Kies een familie die bij het doel van de skill past.
+Referentieoplossingen en bekende slechte uitvoer testen de verificateurs; deze
+fixtures zijn geen reproductie van een openbare benchmark, en ook geen bewijs
+dat een geïnstalleerde skill nuttig is. Implementatie-rooktests met
+gescripte providerreacties zijn geen metingen van skillkwaliteit op levende
+modellen.
+
+## Grenzen van uitvoering en bewijs
+
+De gecontroleerde **ingebouwde harness** en de **Claude Code**-adapter worden
+ondersteund. Isolatie en actieve inloggegevens moeten slagen voordat de
+uitvoering begint. Ingebouwde providers vereisen gedocumenteerde
+hulpmiddelenondersteuning, tokenlimieten en prijsstelling; **Codex OAuth**
+verifieert het eigen account in plaats van een aparte OpenAI-API-sleutel te
+vereisen. **Claude Code** gebruikt het standaard beheerde account, een concreet
+model-ID en het eigen API-equivalente kostenrapport.
+
+**Claude Code** en **Codex OAuth** gebruiken een **drempel voor gebruik dat
+stopt**: een aanroep die onderweg is, kan het budget overschrijden, waarna
+verdere aanroepen stoppen. Dit is geen gefactureerde abonnementsuitgave of een
+harde factuurlimiet. Providers met een API-sleutel houden conservatieve
+reserveringen vóór de aanroep aan. Onbekende waargenomen uitgaven stoppen
+verdere aanroepen voor elke adapter; onvolledige dekking blijft gedeeltelijk of
+zonder uitsluitsel.
+
+**Claude** draait de eigen native modellus in een privémap voor de controller,
+met ingebouwde hulpmiddelen en achtergrondskills uitgeschakeld. De enige
+hulpmiddelen zijn de geverifieerde, door de server beheerde MCP-brug naar
+dezelfde ingeperkte gast die de ingebouwde harness gebruikt. Inloggegevens
+blijven buiten die gast. Een gewijzigde CLI-identiteit of hulpmiddelenoppervlak
+maakt de poging ongeldig in plaats van stil van uitvoerder te wisselen.
+Vlootevaluatie en Windows worden niet ondersteund. Een geslaagde Git-probe van
+de worker of een prompt-echo telt niet als evaluatie.
+
+De isolatie op macOS weigert gastnetwerk en toegang tot externe
+bestandssystemen, blokkeert het loskoppelen van processen, begrenst
+CPU/bestanden/uitvoer en ruimt eigendom van afstammelingen op, maar **handhaaft
+geen harde geheugenquota**. Linux vereist bubblewrap en past een limiet op de
+adresruimte toe. De eerste validatie van de isolatie betrof macOS, niet Linux.
+Ontbrekende isolatie valt nooit terug op een hostshell. Inloggegevens van de
+provider blijven op de server, buiten de gasttools.
+
+Bewijs van pogingen wordt geredigeerd en begrensd tot 256 KiB; een export is
+begrensd tot 16 MiB. Grote exports behouden compacte samenvattingen van resultaat
+en kosten voor alle toegelaten pogingen en rapporteren expliciet welke
+trace-inhoud is weggelaten of samengevat. Noch een export, noch een rapport
+bevat een volledige replaybundel van privébroncode. Synthetische
+veiligheidscontroles stellen geen werkelijke weerstand tegen exfiltratie vast,
+overrulen quarantaine niet en certificeren een skill niet als veilig.
+
 ## Gerelateerde concepten
 
 - [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): de configuratie die een suite
   vastlegt
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/):
+  isolatie en gezagsgrenzen
 - [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): de autonomieregelaar
 - [Kosten en budgetten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/): uitgaven die naast
   een run worden vastgelegd

@@ -1,12 +1,18 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_natives/cc_natives.dart'
     show CcSaml, SamlAuthnRequest, SamlIdpMetadata, SamlIdentity;
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/src/identity/sso_provisioner.dart';
+import 'package:crypto/crypto.dart';
 
 /// SAML 2.0 service-provider configuration.
 ///
@@ -241,6 +247,7 @@ class SamlService {
     config = next;
     _pending.clear();
     _seenAssertions.clear();
+    _browserGrants.clear();
     _idpMetadata = null;
   }
 
@@ -250,8 +257,25 @@ class SamlService {
   final _pending =
       <
         String,
-        ({String trackerJson, DateTime expiresAt, String? clientOrigin})
+        ({
+          String trackerJson,
+          DateTime expiresAt,
+          String? clientOrigin,
+          String? recipientPublicKey,
+        })
       >{};
+
+  /// An unsolicited assertion creates a short-lived browser-bound grant,
+  /// never a device credential. The cookie proof is separate from the handle
+  /// displayed in the completion page; only their hashes live server-side.
+  final _browserGrants =
+      <
+        String,
+        ({String cookieHash, String userId, String label, DateTime expiresAt})
+      >{};
+
+  static const maxBrowserGrants = 64;
+  static const browserGrantLifetime = Duration(minutes: 5);
 
   /// Assertion ID → expiry. The caller-side replay cache (the native is
   /// stateless by design; see the cc_saml README).
@@ -326,6 +350,7 @@ class SamlService {
     required String origin,
     String? relayState,
     String? clientOrigin,
+    String? recipientPublicKey,
   }) {
     if (!config.enabled) {
       throw const AuthException('SAML SSO is not configured on this server');
@@ -357,6 +382,7 @@ class SamlService {
       clientOrigin: relayState == 'web-popup'
           ? SsoProvisioner.sanitizeClientOrigin(clientOrigin)
           : null,
+      recipientPublicKey: recipientPublicKey,
     );
     return Uri.parse(request.redirectUrl);
   }
@@ -370,6 +396,114 @@ class SamlService {
   Future<SsoLoginResult> handleAcs({
     required String origin,
     required String responseXml,
+    bool requireRecipientKey = false,
+  }) async {
+    final verified = await _verifyAndProvision(
+      origin: origin,
+      responseXml: responseXml,
+      requireRecipientKey: requireRecipientKey,
+    );
+    return _mintLogin(verified);
+  }
+
+  /// HTTP ACS: an unsolicited, valid assertion yields a browser-bound grant,
+  /// rather than a device secret without a client-held recipient key.
+  Future<({SsoLoginResult? login, String? handle, String? cookie})>
+  handleBrowserAcs({
+    required String origin,
+    required String responseXml,
+  }) async {
+    final verified = await _verifyAndProvision(
+      origin: origin,
+      responseXml: responseXml,
+      browser: true,
+    );
+    if (verified.recipientPublicKey != null) {
+      return (login: await _mintLogin(verified), handle: null, cookie: null);
+    }
+    _evictExpired();
+    if (_browserGrants.length >= maxBrowserGrants) {
+      final oldest = _browserGrants.entries.reduce(
+        (a, b) => a.value.expiresAt.isBefore(b.value.expiresAt) ? a : b,
+      );
+      _browserGrants.remove(oldest.key);
+    }
+    final handle = _newGrantSecret();
+    final cookie = _newGrantSecret();
+    _browserGrants[_hashGrant(handle)] = (
+      cookieHash: _hashGrant(cookie),
+      userId: verified.user.id,
+      label: 'SSO (${verified.user.handle})',
+      expiresAt: _now().add(browserGrantLifetime),
+    );
+    return (login: null, handle: handle, cookie: cookie);
+  }
+
+  /// Consumes the grant before asynchronous minting. A competing redemption,
+  /// expiry, configuration change, or mismatched browser cookie fails closed.
+  Future<({String deviceId, String psk})> redeemBrowserGrant({
+    required String handle,
+    required String cookie,
+    required String recipientPublicKey,
+  }) async {
+    _evictExpired();
+    if (!CredentialSeal.isValidPublicKey(recipientPublicKey)) {
+      throw const AuthException('Login expired — try again');
+    }
+    final key = _hashGrant(handle);
+    final grant = _browserGrants[key];
+    if (grant == null || grant.cookieHash != _hashGrant(cookie)) {
+      throw const AuthException('Login expired — try again');
+    }
+    _browserGrants.remove(key);
+    return _mintDevice(grant.userId, grant.label);
+  }
+
+  final _grantRandom = Random.secure();
+
+  String _newGrantSecret() => base64Url
+      .encode(List<int>.generate(32, (_) => _grantRandom.nextInt(256)))
+      .replaceAll('=', '');
+
+  String _hashGrant(String value) =>
+      sha256.convert(utf8.encode(value)).toString();
+
+  Future<SsoLoginResult> _mintLogin(
+    ({
+      User user,
+      SsoClaims claims,
+      String? clientOrigin,
+      String? recipientPublicKey,
+    })
+    verified,
+  ) async {
+    final device = await _mintDevice(
+      verified.user.id,
+      'SSO (${verified.user.handle})',
+    );
+    return SsoLoginResult(
+      user: verified.user,
+      deviceId: device.deviceId,
+      psk: device.psk,
+      groups: verified.claims.groups,
+      clientOrigin: verified.clientOrigin,
+      recipientPublicKey: verified.recipientPublicKey,
+    );
+  }
+
+  Future<
+    ({
+      User user,
+      SsoClaims claims,
+      String? clientOrigin,
+      String? recipientPublicKey,
+    })
+  >
+  _verifyAndProvision({
+    required String origin,
+    required String responseXml,
+    bool requireRecipientKey = false,
+    bool browser = false,
   }) async {
     if (!config.enabled) {
       throw const AuthException('SAML SSO is not configured on this server');
@@ -378,9 +512,11 @@ class SamlService {
     final inResponseTo = _peekInResponseTo(responseXml);
     final pending = inResponseTo == null ? null : _pending.remove(inResponseTo);
     if (inResponseTo != null && pending == null) {
-      // A response claiming to answer a request we never made (or one that
-      // already consumed / expired): refuse even when unsolicited is allowed.
       throw const AuthException('Login expired — try again');
+    }
+    if ((requireRecipientKey && pending?.recipientPublicKey == null) ||
+        (browser && pending != null && pending.recipientPublicKey == null)) {
+      throw const AuthException('Start sign-in from Control Center');
     }
     final identity = _backend.verifyResponse(
       idpMetadataXml: config.idpMetadataXml,
@@ -407,13 +543,11 @@ class SamlService {
       claims,
       config.provisioningPolicy,
     );
-    final device = await _mintDevice(user.id, 'SSO (${user.handle})');
-    return SsoLoginResult(
+    return (
       user: user,
-      deviceId: device.deviceId,
-      psk: device.psk,
-      groups: claims.groups,
+      claims: claims,
       clientOrigin: pending?.clientOrigin,
+      recipientPublicKey: pending?.recipientPublicKey,
     );
   }
 
@@ -467,6 +601,7 @@ class SamlService {
   void _evictExpired() {
     final now = _now();
     _pending.removeWhere((_, pending) => now.isAfter(pending.expiresAt));
+    _browserGrants.removeWhere((_, grant) => !now.isBefore(grant.expiresAt));
   }
 
   /// Peeks `InResponseTo="…"` / `InResponseTo='…'` out of the raw XML. A

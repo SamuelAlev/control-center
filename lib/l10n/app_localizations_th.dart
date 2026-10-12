@@ -14015,6 +14015,31 @@ class AppLocalizationsTh extends AppLocalizations {
   String get composerDropToAttach => 'วางเพื่อแนบ';
 
   @override
+  String get composerAttachmentUploading => 'กำลังอัปโหลด…';
+
+  @override
+  String get composerAttachmentReady => 'พร้อมแล้ว';
+
+  @override
+  String get composerAttachmentUploadFailed => 'อัปโหลดไม่สำเร็จ';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return 'ไฟล์มีขนาดเกินขีดจำกัด $limit';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => 'อ่านไฟล์นี้ไม่ได้';
+
+  @override
+  String get composerAttachmentWaitForUploads =>
+      'รอให้การอัปโหลดไฟล์แนบเสร็จสิ้น';
+
+  @override
+  String get composerAttachmentResolveFailures =>
+      'ลองอัปโหลดไฟล์แนบที่ไม่สำเร็จอีกครั้งหรือลบออกก่อนส่ง';
+
+  @override
   String get attachmentUnavailable => 'ไฟล์แนบใช้ไม่ได้';
 
   @override
@@ -15161,11 +15186,11 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => 'เอเจนต์กำลังรอคุณ';
+  String get notificationAgentAwaitingInput => 'เอเจนต์ต้องการให้คุณตรวจสอบ';
 
   @override
   String get notifyAgentAwaitingInput =>
-      'เมื่อเอเจนต์ต้องการการอนุมัติ คำตอบ หรือข้อมูลรับรองที่ใช้งานได้จากคุณ';
+      'เมื่อเอเจนต์ต้องการการอนุมัติ คำตอบ หรือข้อมูลรับรองที่ใช้ได้ หรือเมื่อนโยบายบล็อกการดำเนินการ';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -15238,4 +15263,384 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => 'เซิร์ฟเวอร์กำลังหยุดทำงาน';
+
+  @override
+  String get skillEvalAbsent => 'ไม่มีเทียบกับมี';
+
+  @override
+  String get skillEvalAmbient => 'ทักษะที่พร้อมใช้งาน';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return 'อ้างอิงอาร์ติแฟกต์: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · ทำซ้ำ $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => 'ครั้งที่ทดลอง';
+
+  @override
+  String get skillEvalAvailableEvent => 'พร้อมใช้งาน';
+
+  @override
+  String get skillEvalBaseline => 'แฮชของเวอร์ชันก่อนหน้า';
+
+  @override
+  String get skillEvalBodyLoad => 'โหลดเนื้อหาแล้ว';
+
+  @override
+  String get skillEvalBudgetCents => 'งบประมาณ (US cents)';
+
+  @override
+  String get skillEvalBudgetNote =>
+      'การประเมินแบบชำระเงินใช้ผู้ให้บริการและงบประมาณที่เลือก ผลการสแกนความปลอดภัยแยกต่างหาก';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      'งบประมาณการสมัครสมาชิกติดตามการใช้งานเทียบเท่าราคา API ไม่ใช่ยอดเรียกเก็บ การเรียกที่กำลังดำเนินอยู่อาจเกินงบประมาณได้ เมื่อถึงขีดจำกัดจะไม่เริ่มการเรียกใหม่ การสแกนความปลอดภัยแยกต่างหาก';
+
+  @override
+  String get skillEvalCancel => 'ยกเลิกการทำงาน';
+
+  @override
+  String get skillEvalCancelled => 'ยกเลิกแล้ว';
+
+  @override
+  String get skillEvalCancelling => 'กำลังยกเลิก';
+
+  @override
+  String get skillEvalComparison => 'การเปรียบเทียบ';
+
+  @override
+  String get skillEvalCompleted => 'เสร็จสิ้น';
+
+  @override
+  String get skillEvalComposition => 'องค์ประกอบ';
+
+  @override
+  String get skillEvalCorpus => 'ชุดงานทดสอบ';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · ทำซ้ำ $repeatsString ครั้ง';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => 'ตรวจพบการทดลองที่วางแผนไว้ครบแล้ว';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return 'แฮชแพ็กเกจปัจจุบัน: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => 'ปิดการประเมินการอัปเดต';
+
+  @override
+  String get skillEvalEnableUpdates => 'เปิดการประเมินการอัปเดต';
+
+  @override
+  String get skillEvalExport => 'คัดลอก JSON ที่ปกปิดข้อมูลแล้ว';
+
+  @override
+  String get skillEvalFailed => 'ล้มเหลว';
+
+  @override
+  String get skillEvalForced => 'บังคับโหลดเทียบกับไม่มี';
+
+  @override
+  String get skillEvalForcedEvent => 'บังคับโหลด';
+
+  @override
+  String get skillEvalHashUnavailable =>
+      'เซิร์ฟเวอร์นี้ไม่มีแฮชแพ็กเกจ จึงปิดการประเมิน';
+
+  @override
+  String get skillEvalHistory => 'ประวัติเวอร์ชัน';
+
+  @override
+  String get skillEvalImproved => 'ดีขึ้น';
+
+  @override
+  String get skillEvalIncomplete => 'ไม่ครบถ้วน';
+
+  @override
+  String get skillEvalInconclusive => 'ยังสรุปไม่ได้';
+
+  @override
+  String get skillEvalInferred => 'อนุมานได้';
+
+  @override
+  String get skillEvalInterrupted => 'ถูกขัดจังหวะ';
+
+  @override
+  String get skillEvalLoadUnobserved =>
+      'ตรวจสอบการโหลดทักษะไม่ได้; การไม่พบเหตุการณ์ไม่ได้พิสูจน์ว่าทักษะถูกละเลย';
+
+  @override
+  String get skillEvalModel => 'โมเดลที่เลือก';
+
+  @override
+  String get skillEvalNoAttempts => 'ยังไม่มีการทดลอง';
+
+  @override
+  String get skillEvalNoModels =>
+      'ไม่มีโมเดลที่เชื่อมต่อและพร้อมใช้งาน โปรดเชื่อมต่อผู้ให้บริการในการตั้งค่าก่อน';
+
+  @override
+  String get skillEvalNoPrevious =>
+      'ไม่มีแฮชก่อนหน้าในประวัติแคมเปญ โปรดประเมินเวอร์ชันก่อนหน้าก่อนแทนที่';
+
+  @override
+  String get skillEvalNoReport =>
+      'ยังไม่มีรายงาน; ข้อมูลการทดลองบางส่วนยังดูได้';
+
+  @override
+  String get skillEvalNoWorkspace => 'ยังไม่ได้เลือกพื้นที่ทำงาน';
+
+  @override
+  String get skillEvalNoTasks => 'ยังไม่มีรายงานงาน';
+
+  @override
+  String get skillEvalNoVerifiers => 'ยังไม่มีหลักฐานการตรวจสอบ';
+
+  @override
+  String get skillEvalNotEvaluated =>
+      'ยังไม่ได้ประเมินสำหรับข้อมูลชุดนี้โดยตรง ผลสแกนไม่ใช่หลักฐานด้านพฤติกรรม';
+
+  @override
+  String get skillEvalNotVerified => 'ยังไม่ได้ตรวจสอบ';
+
+  @override
+  String get skillEvalObserved => 'ตรวจพบ';
+
+  @override
+  String get skillEvalOpenQuality => 'เปิดคุณภาพ';
+
+  @override
+  String get skillEvalPolicyNote =>
+      'ตามค่าเริ่มต้น การบันทึกทักษะจะไม่เริ่มการประเมินแบบชำระเงิน หากคุณเปิดใช้การประเมินซ้ำอัตโนมัติเมื่ออัปเดตอย่างชัดเจน การบันทึกจะเริ่มการประเมินซ้ำแบบชำระเงินภายในงบประมาณที่กำหนด';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign =>
+      'โปรดประเมินเวอร์ชันก่อนเพื่อกำหนดนโยบายการอัปเดต';
+
+  @override
+  String get skillEvalPolicyTemplate => 'การตั้งค่านโยบายการอัปเดต';
+
+  @override
+  String get skillEvalPartial => 'หลักฐานบางส่วน; ยังตัดสินใจนำไปใช้ไม่ได้';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return 'ทดลองแล้ว $completedString จาก $plannedString ครั้ง';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return 'ผู้ให้บริการ: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro =>
+      'แคมเปญทักษะในพื้นที่ทำงานและหลักฐานเฉพาะเวอร์ชัน';
+
+  @override
+  String get skillEvalQueued => 'อยู่ในคิว';
+
+  @override
+  String get skillEvalReconnecting =>
+      'กำลังเชื่อมต่อกับสแนปช็อตแคมเปญอีกครั้ง…';
+
+  @override
+  String get skillEvalRefresh => 'รีเฟรช';
+
+  @override
+  String get skillEvalReferenceLoad => 'โหลดข้อมูลอ้างอิงแล้ว';
+
+  @override
+  String get skillEvalRepetitions => 'จำนวนครั้งที่ทำซ้ำต่องาน';
+
+  @override
+  String get skillEvalReport => 'รายงานหลักฐาน';
+
+  @override
+  String get skillEvalRunning => 'กำลังทำงาน';
+
+  @override
+  String get skillEvalScriptExecution => 'เรียกใช้สคริปต์แล้ว';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return 'ใช้ไป: $spent / งบประมาณ $budget';
+  }
+
+  @override
+  String get skillEvalStart => 'เริ่มประเมิน';
+
+  @override
+  String get skillEvalStartTitle => 'เปรียบเทียบเวอร์ชันทักษะ';
+
+  @override
+  String get skillEvalStale => 'ล้าสมัย';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return 'ล้าสมัย: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return 'กลุ่มงานที่แตกต่างกัน: $count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate (ตรวจสอบผ่าน $passes) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => 'งานตามกลุ่มทดลอง';
+
+  @override
+  String get skillEvalToolError => 'ข้อผิดพลาดของเครื่องมือ';
+
+  @override
+  String get skillEvalTools => 'เหตุการณ์ของเครื่องมือ';
+
+  @override
+  String get skillEvalTitle => 'การประเมินทักษะ';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return 'ไม่พร้อมใช้งาน: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => 'ไม่ทราบ';
+
+  @override
+  String get skillEvalUnsaved =>
+      'ไม่รวมการแก้ไขที่ยังไม่บันทึก โปรดบันทึกก่อนประเมิน';
+
+  @override
+  String get skillEvalUncertainty => 'ช่วงความไม่แน่นอน';
+
+  @override
+  String get skillEvalVerified => 'ตรวจสอบแล้ว';
+
+  @override
+  String get skillEvalVerifiers => 'การตรวจสอบ';
+
+  @override
+  String get skillEvalVerdict => 'ผลสรุป';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return 'คัดลอกเสร็จแล้ว: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => 'ไม่เป็นไปตามแผน';
+
+  @override
+  String get skillEvalPreserved => 'คุณภาพคงเดิม';
+
+  @override
+  String get skillEvalPrevious => 'เวอร์ชันก่อนหน้าเทียบกับปัจจุบัน';
+
+  @override
+  String get skillEvalRegressed => 'ยืนยันว่าประสิทธิภาพถดถอย';
+
+  @override
+  String get skillEvalCostRegression => 'ต้นทุนเพิ่มขึ้น';
+
+  @override
+  String get skillEvalHarnessError => 'ข้อผิดพลาดของระบบทดสอบ';
+
+  @override
+  String get skillBehaviorRouting => 'การเลือกใช้ทักษะ';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return 'ใช้ตามที่คาด $truePositive ครั้ง · ใช้โดยไม่คาด $falsePositive ครั้ง · พลาดการใช้ $falseNegative ครั้ง · ข้ามได้ถูกต้อง $trueNegative ครั้ง';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return 'การใช้ที่ไม่แน่ชัด $positive ครั้ง · การข้ามที่ไม่แน่ชัด $negative ครั้ง · ไม่ได้เสนอ $notOffered ครั้ง';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return 'ความแม่นยำที่สังเกตได้ $precision · ความครอบคลุม $recall · อัตราผลบวกลวง $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => 'กลุ่มบังคับ · ใช้เพื่อวินิจฉัยเท่านั้น';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      'อัตรานี้นับเฉพาะการเข้าถึงที่สังเกตได้ การเข้าถึงผ่านเชลล์หรือการค้นหาอาจยังไม่ทราบ และการโหลดทักษะไม่ได้พิสูจน์ว่ามีการนำไปใช้';
+
+  @override
+  String get skillBehaviorSafety => 'ความปลอดภัยแบบจำลอง';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return 'ตรวจผลลัพธ์ผ่าน $passes/$attempts ครั้ง · นโยบายปฏิเสธ $denials ครั้ง · ละเมิดไฟล์ที่ป้องกัน $violations ครั้ง';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote =>
+      'การตรวจผลลัพธ์เป็นแบบจำลอง ไม่ใช่อัตราการโจมตีที่เกิดขึ้นจริง และไม่ได้ตรวจวัดผลข้างเคียงที่เกิดขึ้นจริง';
+
+  @override
+  String get skillBehaviorUtility => 'ประโยชน์แยกตามกลุ่มงาน';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return 'สำเร็จและตรวจยืนยันแล้ว $verified/$attempts ครั้ง';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote =>
+      'นำทุกความพยายามมาคิดเป็นตัวหาร รวมถึงที่ล้มเหลวและยังไม่เสร็จ';
 }

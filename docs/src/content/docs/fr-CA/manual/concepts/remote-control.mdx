@@ -1,8 +1,8 @@
 ---
 title: Contrôle à distance et mobile
-description: Comment le téléphone joint votre serveur par un relais à courtier scellé de bout en bout plutôt que par un lien pair à pair, et le modèle d’accès en couches qui maintient cette portée étroite.
+description: Comment le téléphone joint votre serveur par des connexions directes ou à courtier chiffrées de bout en bout, et le modèle d’accès en couches qui maintient cette portée étroite.
 slug: fr-CA/manuel/concepts/controle-a-distance
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center est une application de bureau, mais le travail qu’elle suit ne
@@ -10,29 +10,32 @@ s’arrête pas lorsque vous quittez votre poste. Le **contrôle à distance** a
 votre téléphone à votre `cc_server` au moyen de
 **[Remote](https://remote.usectrl.dev/)**, l’application compagnon à
 remote.usectrl.dev, de sorte que vous pouvez suivre la flotte à partir de là :
-lire les messages et les tickets, répondre à un agent, trier votre fil de
-nouvelles, sans que l’audio, la transcription, le code source ou les identifiants
-qui résident sur le serveur ne le quittent jamais.
+lire les messages et les tickets, répondre à un agent et trier votre fil de
+nouvelles par une connexion chiffrée de bout en bout. Le téléphone et
+`cc_server` sont des extrémités en texte clair fiables ; un relais ne transporte
+que des enregistrements chiffrés de l’application.
 
 Voyez-la comme un compagnon essentiellement en lecture de l’application de
 bureau principale. Elle n’est pas destinée à remplacer le client de bureau
 complet.
 
-:::note[Deux chemins distants différents]
-Le compagnon téléphonique s’associe à un `cc_server` par un **relais WebSocket à
-courtier** qui transporte des trames JSON-RPC scellées de bout en bout. La
-**version web** complète (et un poste de bureau pointé vers un serveur distant)
-constitue l’autre chemin distant ; elle joint `cc_server` par WebSocket et rend
-l’application complète. Voir
-[Déploiement et clients](/fr-CA/manuel/concepts/deploiement/) pour savoir en quoi les deux diffèrent.
+:::note[Deux clients distants différents]
+Le compagnon téléphonique et la **version web** complète (ou un poste de bureau
+pointé vers un serveur distant) peuvent se connecter directement à `cc_server` ou
+passer par un relais WebSocket à courtier. Les deux chemins exigent la même
+session chiffrée ; le téléphone expose un ensemble d’opérations plus restreint
+que le client complet. Voir
+[Déploiement et clients](/fr-CA/manuel/concepts/deploiement/) pour savoir en quoi
+les clients diffèrent.
 :::
 
 ## Transport
 
 Le téléphone joint `cc_server` par un WebSocket : soit une connexion directe
 (boucle locale, réseau local, tailnet ou `wss://`), soit un salon accessible sur
-invitation sur un courtier de signalisation qui relaie des trames scellées. Il
-n’y a aucun canal de données pair à pair.
+invitation sur un courtier de signalisation. Les deux chemins exigent une session
+authentifiée et chiffrée de bout en bout ; le courtier ne fait que transmettre
+ses enregistrements chiffrés. Il n’y a aucun canal de données pair à pair.
 
 ## Ce que le téléphone peut faire
 
@@ -57,23 +60,28 @@ plutôt que simplement souhaité.
 
 ## Comment le lien est établi
 
-La connexion passe par un **relais à courtier** : le serveur rejoint un salon
-accessible sur invitation sur un courtier `wss://` à titre de propriétaire, et
-chaque client associé — bureau, web, téléphone — rejoint le même salon avec un
-jeton d’admission à durée limitée. Trois pièces entrent en jeu :
+Lorsque le téléphone ne peut pas joindre le serveur directement, la connexion
+passe par un **relais à courtier** : le serveur rejoint un salon accessible sur
+invitation sur un courtier `wss://` à titre de propriétaire, et les clients
+associés le rejoignent avec des jetons d’admission à durée limitée. Trois pièces
+entrent en jeu :
 
 | Pièce                          | Rôle                                                                                                                                                                                                                                                                                 |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (application téléphonique)** | L’application web compagnon, hébergée à `remote.usectrl.dev` par défaut, ou auto-hébergée. Se charge dans un navigateur et conserve l’enregistrement d’appairage dans IndexedDB.                                                                                             |
-| **Courtier relais**            | Un relais `wss://` sans état (`cc_signaling_server`) qui héberge des salons à N participants. Il ne transporte **que des trames opaques** : chaque charge utile est scellée de bout en bout entre le téléphone et le serveur, de sorte que le courtier ne voit jamais les données de l’application ni le secret d’appairage et n’interprète jamais ce qu’il relaie. |
+| **Courtier relais**            | Un relais `wss://` sans état (`cc_signaling_server`) qui héberge des salons à N participants. Il transmet des enregistrements chiffrés sans le secret d’appairage ni le texte en clair de l’application, mais voit les identifiants de routage, les IP, la taille des enregistrements et le minutage. |
 | **`cc_server`**                | Le propriétaire du salon. Il répond aux appels du téléphone par le même répartiteur que tout autre client.                                                                                                                                                                    |
 
 Une offre d’appairage porte un **descripteur de connexion** qui énumère tous les
 chemins vers le serveur (réseau local, tailnet, `wss://` public, relais) ainsi
 que son empreinte d’identité. Le résolveur du téléphone choisit le meilleur
-chemin joignable et épingle l’empreinte à la première connexion (TOFU) ; le
-relais garantit la connectivité même en l’absence de chemin direct, sans jamais
-pouvoir lire le trafic.
+chemin joignable. Le serveur signe la poignée de main chiffrée, et le client
+épingle son empreinte. À la première connexion, vérifiez l’empreinte au moyen
+d’un code QR ou d’une autre source fiable : une première identité signée ne
+prouve pas à elle seule à quel serveur vous êtes parvenu. Une épinglure modifiée
+est rejetée plutôt qu’acceptée de nouveau en silence. Le relais transporte du
+texte chiffré lorsqu’aucun chemin direct n’existe, mais peut tout de même
+interrompre ou retarder la connexion.
 
 ## Ce que contient la charge utile d’appairage
 
@@ -87,27 +95,34 @@ https://<pwa-host>/#<payload>
 ```
 
 La charge utile voyage dans le **fragment** de l’URL, la partie après `#` que les
-navigateurs n’envoient jamais au serveur, de sorte que l’hôte HTTPS de la PWA ne
-la voit jamais. Elle porte tout ce dont le téléphone a besoin pour joindre le
-serveur et prouver son identité : le descripteur de connexion (tous les chemins
-plus l’empreinte d’identité), un identifiant d’appareil fraîchement créé, une clé
-prépartagée de 32 octets et une estampille d’expiration. Le téléphone la décode,
-enregistre localement un enregistrement d’appairage et retire le fragment pour
-que le secret quitte l’URL.
+navigateurs n’envoient pas dans la requête HTTP vers l’hôte de la PWA. Elle porte
+tout ce dont le téléphone a besoin pour joindre le serveur et prouver son
+identité : le descripteur de connexion (tous les chemins plus l’empreinte
+d’identité), un identifiant d’appareil fraîchement créé, une clé prépartagée de
+32 octets et une estampille d’expiration. Le téléphone la décode, enregistre
+localement un enregistrement d’appairage et retire le fragment de l’URL. Le code
+de l’application web peut lire le fragment, alors utilisez un hôte d’application
+fiable et traitez le lien comme un secret.
 
 Il existe deux formes de charge utile et elles ne sont **pas interchangeables**.
 Le code QR pour téléphone créé à partir du panneau d’appairage intégré à
 l’application est le `PairingPayload` v2 ci-dessus, pointé vers l’hôte de la PWA
-Remote. `cc_server pair --client-url` produit un lien v1 différent et plus ancien
-(`{s, i, k}` — URL du serveur, identifiant d’appareil, clé) destiné uniquement au
-client **web**.
+Remote. `cc_server pair --client-url` produit un lien v1 (`{s, i, k}` — URL du
+serveur, identifiant d’appareil, clé) destiné uniquement au client **web**. Ce
+sont des formats de données d’appairage, et non des solutions de repli de
+transport : les deux clients doivent prendre en charge le protocole de session
+chiffrée actuel.
 
 Ils diffèrent aussi par leur durée de vie, ce qui est facile à confondre :
 
 | Créé par                              | Expiration du justificatif                |
 | ------------------------------------- | ----------------------------------------- |
 | Panneau d’appairage intégré (`pairing.mint`) | 30 jours, toujours                  |
-| `cc_server pair` en ligne de commande  | **Aucune** — le justificatif n’expire pas |
+| `cc_server pair` en ligne de commande  | Aucune expiration codée ; les politiques du serveur s’appliquent toujours |
+
+Les politiques d’âge maximal des appareils et de délai d’inactivité à l’échelle
+du serveur peuvent refuser l’un ou l’autre justificatif plus tôt. Aucun des deux
+formats d’appairage ne contourne ces politiques.
 
 ## Le modèle d’accès
 
@@ -168,13 +183,16 @@ que le contrôle d’appartenance de la barrière 1 s’applique encore. C’est
 invariant d’[isolation des espaces de travail](/fr-CA/manuel/concepts/espaces-de-travail/) que le reste du
 produit impose.
 
-### 5. Des trames scellées de bout en bout, chiffrées au moyen de la clé prépartagée
+### 5. Chiffrement de bout en bout sur les connexions directes et relayées
 
-Chaque trame entre le téléphone et le serveur est scellée avec la clé
-d’appairage ; le jeton d’admission ne fait qu’ouvrir le salon à un client, il ne
-déchiffre rien. Le courtier relaie du texte chiffré et ne voit jamais la clé. Un
-appareil révoqué constate que son justificatif a déjà disparu, de sorte qu’il
-**échoue en refusant** à la reconnexion.
+Chaque session de client, directe ou relayée, exige une poignée de main Noise
+signée. La clé d’appairage authentifie cette poignée de main ; de nouvelles clés
+éphémères dérivent les clés de trafic, plutôt que de sceller chaque trame avec la
+clé d’appairage. Le serveur signe son identité dans l’échange, et le client
+vérifie son épinglure d’empreinte enregistrée. Il n’y a ni texte en clair ni
+solution de repli pour les anciens clients. Un jeton d’admission de relais ne
+fait qu’ouvrir un salon à un client ; il ne peut pas déchiffrer les
+enregistrements.
 
 Un justificatif créé par l’application est limité à 30 jours ; passé ce délai, la
 barrière de connexion le refuse et le téléphone doit s’associer de nouveau. La
@@ -191,22 +209,26 @@ trois de vos appareils puisent dans une même allocation, de sorte qu’un clien
 détourné ne peut pas se procurer de marge supplémentaire en ouvrant plus de
 sessions et qu’un membre bruyant ne peut pas affamer les autres.
 
-### 7. Un courtier qui n’apprend rien
+### 7. Un courtier qui ne peut pas lire le contenu de l’application
 
-Le courtier relais est délibérément simple : il héberge des salons, transmet des
-trames scellées et ne détient aucun compte, aucune donnée d’application et aucune
-clé. Les salons sont accessibles sur invitation et éphémères. Les données
-d’application, l’audio, la transcription, le code source et les identifiants
-restent tous sur le serveur.
+Le courtier relais héberge des salons éphémères accessibles sur invitation et
+transmet des enregistrements chiffrés sans le texte en clair de l’application ni
+les clés d’appairage. Il voit tout de même les adresses IP, les identifiants de
+salon et de pair, la taille des enregistrements, le minutage et la durée de vie
+de la connexion, et peut abandonner ou retarder du trafic. Les extrémités en
+clair sont le client associé et le `cc_server` choisi ; l’exploitant du serveur
+et les services auxquels il envoie du contenu peuvent voir ce contenu. Le
+chiffrement en transit ne chiffre pas les données du serveur au repos.
 
 ## Mises à jour en direct
 
 Une fois associé, le téléphone reçoit des **mises à jour en direct** sous forme
 de trames de notification — nouveaux messages d’agent, tickets qui vous sont
 assignés, changements d’état — à l’image des notifications du poste de bureau
-lui-même. Le serveur diffuse ces trames à chaque session connectée et le filtre
-d’espace de travail est appliqué côté client, de sorte que ce que vous voyez est
-délimité à l’espace de travail que vous consultez.
+lui-même. Le serveur vérifie l’appartenance à l’espace de travail avant de
+transmettre un événement à une session. Le client filtre ensuite ces événements
+déjà autorisés vers l’espace de travail que vous consultez ; ce filtre
+d’affichage ne constitue pas la frontière d’accès.
 
 ## Où cela se trouve
 
@@ -220,8 +242,8 @@ identique, seul le lien profond diffère.
 
 ::::note
 Le contrôle à distance est côté serveur et n’est **pas** exposé par MCP. Le
-téléphone parle au répartiteur propre au serveur par le relais ; ce n’est pas un
-client MCP d’un serveur externe.
+téléphone parle au répartiteur propre au serveur par sa connexion chiffrée
+directe ou relayée ; ce n’est pas un client MCP d’un serveur externe.
 ::::
 
 ## Voir aussi

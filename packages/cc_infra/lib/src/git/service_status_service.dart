@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// URL for the GitHub status summary endpoint (Statuspage v2 API).
 const String githubStatusSummaryUrl =
@@ -23,13 +24,16 @@ const String kimiStatusSummaryUrl =
 /// Fetches Statuspage v2 summaries (githubstatus.com, status.claude.com,
 /// status.openai.com, status.moonshot.cn).
 class ServiceStatusService {
-  /// Creates a [ServiceStatusService] using the given [Dio] client, fetching
+  /// Creates a [ServiceStatusService] using the given [RhttpClient], fetching
   /// [summaryUrl] (githubstatus.com by default; pass [claudeStatusSummaryUrl],
   /// [openaiStatusSummaryUrl], or [kimiStatusSummaryUrl] for the AI
   /// providers).
-  ServiceStatusService(this._dio, {this.summaryUrl = githubStatusSummaryUrl});
+  ServiceStatusService(
+    this._httpClient, {
+    this.summaryUrl = githubStatusSummaryUrl,
+  });
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// The Statuspage `summary.json` endpoint this instance fetches.
   final String summaryUrl;
@@ -41,12 +45,13 @@ class ServiceStatusService {
   /// Fetches the raw Statuspage `summary.json` map. The `github.serviceStatus`
   /// / `claude.serviceStatus` RPC ops return this verbatim so the thin client
   /// parses it with the shared [GitHubServiceStatus.fromSummaryJson] factory
-  /// (the client holds no Dio and the browser cannot fetch the status pages
-  /// cross-origin).
+  /// (the client holds no HTTP client and the browser cannot fetch the status
+  /// pages cross-origin).
   Future<Map<String, dynamic>> fetchSummaryJson() async {
-    final response = await _dio.getUri<Map<String, dynamic>>(
-      Uri.parse(summaryUrl),
-    );
-    return response.data ?? const <String, dynamic>{};
+    final response = await _httpClient.getText(summaryUrl);
+    final decoded = httpJsonBody(response);
+    return decoded is Map
+        ? Map<String, dynamic>.from(decoded)
+        : const <String, dynamic>{};
   }
 }

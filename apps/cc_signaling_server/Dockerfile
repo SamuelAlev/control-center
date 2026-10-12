@@ -47,7 +47,7 @@ RUN printf '%s\n' \
 FROM debian:trixie-slim AS runtime
 
 LABEL org.opencontainers.image.title="Control Center signaling server" \
-      org.opencontainers.image.description="Pure-Dart stateless WebSocket signaling broker for WebRTC pairing" \
+      org.opencontainers.image.description="Pure-Dart stateless WebSocket relay for encrypted Control Center sessions" \
       org.opencontainers.image.source="https://github.com/SamuelAlev/control-center" \
       org.opencontainers.image.licenses="MIT"
 

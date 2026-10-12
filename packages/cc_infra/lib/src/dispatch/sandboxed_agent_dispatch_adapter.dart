@@ -9,6 +9,7 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
@@ -16,12 +17,15 @@ import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
+import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
+    show AgentPromptParts;
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
+import 'package:cc_harness/context.dart' show ToolOutputStore;
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart' show FileSearchPort;
@@ -37,6 +41,8 @@ import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
+import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
+import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 
 /// {@template sandboxed_agent_dispatch_adapter}
@@ -52,6 +58,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     required CredentialBrokerPort credentialBroker,
     required AgentRepository agentRepository,
     AgentRunLogRepository? runLogRepository,
+    LlmCallRecordRepository? llmCallRecordRepository,
     TodoRepository? todoRepository,
     RunTranscriptRecorder? runTranscriptRecorder,
     DomainEventBus? eventBus,
@@ -73,6 +80,10 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     LspSupervisor? lspSupervisor,
     AstParserProvider? astParsers,
     HarnessTranscriptStore? transcriptStore,
+    ToolOutputStore? toolOutputStore,
+    ClaudeNativeSessionStore? claudeSessionStore,
+    ClaudeMcpDiscoveryCachePolicy claudeMcpDiscoveryCache =
+        ClaudeMcpDiscoveryCachePolicy.disabled,
     DebugSessionSupervisor? debugSupervisor,
     Future<KernelLauncher> Function({
       required String workingDirectory,
@@ -108,6 +119,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          broker: credentialBroker,
          agentRepo: agentRepository,
          runLogRepo: runLogRepository,
+         llmCallRecordRepo: llmCallRecordRepository,
          todoRepo: todoRepository,
          runTranscriptRecorder: runTranscriptRecorder,
          eventBus: eventBus,
@@ -122,6 +134,9 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          lspSupervisor: lspSupervisor,
          astParsers: astParsers,
          transcriptStore: transcriptStore,
+         toolOutputStore: toolOutputStore,
+         claudeSessionStore: claudeSessionStore,
+         claudeMcpDiscoveryCache: claudeMcpDiscoveryCache,
          debugSupervisor: debugSupervisor,
          kernelLauncherFactory: kernelLauncherFactory,
          actionGuard: actionGuard,
@@ -181,17 +196,18 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
 
   /// Live dispatch sessions attached to [conversationId], the steering
   /// queue's delivery targets.
-  List<SteeringSessionView> sessionsForConversation(String conversationId) =>
-      [
-        for (final s in _dispatchSessions.values)
-          if (s.conversationId == conversationId) s,
-      ];
+  List<SteeringSessionView> sessionsForConversation(String conversationId) => [
+    for (final s in _dispatchSessions.values)
+      if (s.conversationId == conversationId) s,
+  ];
 
   @override
   DispatchHandle start({
     required String cliName,
     required String prompt,
     required String workingDirectory,
+    AgentPromptParts? promptParts,
+    DateTime? runStartedAt,
     String? userText,
     String? modelId,
     String? agentId,
@@ -243,6 +259,11 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       dispatchId: dispatchId,
       cliName: cliName,
       prompt: prompt,
+      // The structured prompt: the Claude CLI builds the resume delta from it
+      // against the conversation revision its stored session has already seen.
+      // Other backends ignore it.
+      promptParts: promptParts,
+      runStartedAt: runStartedAt,
       userText: userText,
       // Images the human attached to the message that triggered this run.
       // Carried as blob references (the store resolves them per workspace);

@@ -148,6 +148,10 @@ class WatchdogAdvisor implements Advisor {
         systemPrompt: _system,
         maxTokens: 256,
         cacheEnabled: false,
+        // The reviewer spends real tokens on every delta it is shown; tagging
+        // the purpose is what keeps that spend inside the run's accounting
+        // instead of making a heavily-advised run look free upstream.
+        purpose: LlmCallPurpose.advisor,
       ),
     )) {
       switch (event) {

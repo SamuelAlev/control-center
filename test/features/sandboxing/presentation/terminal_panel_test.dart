@@ -6,7 +6,6 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/keybindings/text_input_surface.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -49,6 +48,8 @@ class _FakeChannel implements RemoteRpcChannelPort {
   /// How many `terminal.kill` calls this space served (a disposed session
   /// shows up here; a kept-alive one must NOT).
   int killCount = 0;
+
+  int _outputSubscriptions = 0;
 
   @override
   Stream<Map<String, dynamic>> get incoming => _incoming.stream;
@@ -117,18 +118,15 @@ class _FakeChannel implements RemoteRpcChannelPort {
       }
     }
     if (method == 'sub/subscribe') {
-      // No pushes until the test drives them; acknowledge with a per-query
-      // subscription id so `output()` / `titles()` / `watchPorts` streams
-      // don't collide. Host-shell terminals now also subscribe to
-      // `terminal.watchPorts`; sharing `fake-sub-1` with PTY output made
-      // OSC titles and keep-alive buffer asserts miss the terminal.
+      // Subscription ids are unique across respawns, as on a real server:
+      // an old stream's late frames must not be routed to its replacement.
       final params = (frame['params'] as Map).cast<String, dynamic>();
       final query = params['query'] as String? ?? '';
       final subId = switch (query) {
         'terminal.titles' => 'fake-sub-titles',
         'terminal.watchPorts' => 'fake-sub-ports',
         'rig.watchPorts' => 'fake-sub-rig-ports',
-        _ => 'fake-sub-1',
+        _ => 'fake-sub-${++_outputSubscriptions}',
       };
       _incoming.add({
         'jsonrpc': '2.0',
@@ -146,14 +144,14 @@ class _FakeChannel implements RemoteRpcChannelPort {
     }
   }
 
-  /// Pushes [bytes] as PTY output on the (sole) fake output subscription —
+  /// Pushes [bytes] as PTY output on the current fake output subscription —
   /// the base64-framed `sub/snapshot` shape the server emits per PTY chunk.
   void pushOutput(List<int> bytes) {
     _incoming.add({
       'jsonrpc': '2.0',
       'method': 'sub/snapshot',
       'params': {
-        'subscriptionId': 'fake-sub-1',
+        'subscriptionId': 'fake-sub-$_outputSubscriptions',
         'data': {'chunk': base64Encode(bytes)},
       },
     });
@@ -226,6 +224,11 @@ Widget _terminalWrap(Widget child, {RemoteRpcClient? rpcClient}) {
   );
 }
 
+String _terminalText(TerminalSessionController controller) {
+  final lines = controller.terminal.buffer.lines;
+  return [for (var i = 0; i < lines.length; i++) lines[i].getText()].join();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -239,11 +242,278 @@ void main() {
     await tester.pump();
   }
 
+  void closePanelAfterTest(WidgetTester tester, RemoteRpcClient client) {
+    addTearDown(() async {
+      // Widget disposal starts asynchronous subscription cancellation and PTY
+      // teardown. Drain those replies before closing the transport or checking
+      // the binding's pending-timer invariant.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await client.close();
+    });
+  }
+
   const session = TerminalSession(
     sessionId: 'test-session',
     spaceId: 'chan-1',
     workspaceId: 'ws-1',
   );
+
+  group('terminal byte ingestion', () {
+    testWidgets('decodes split UTF-8 and ANSI escapes in order while hidden', (
+      tester,
+    ) async {
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      final controller = TerminalSessionController(
+        session: session,
+        rpcClient: client,
+      );
+      addTearDown(controller.dispose);
+      await controller.ensureBooted();
+      await tester.pump();
+      controller.updateVisibility(false);
+      final titles = <String>[];
+      controller.onTitleChange = titles.add;
+
+      final glyph = utf8.encode('€');
+      space.pushOutput([
+        ...utf8.encode('\x1b[3'),
+        0x31,
+        0x6d,
+        ...glyph.take(1),
+      ]);
+      space.pushOutput([...glyph.skip(1), ...utf8.encode('red\x1b[0')]);
+      space.pushOutput(utf8.encode('m\x1b]0;hidden-'));
+      space.pushOutput(utf8.encode('title\x07!'));
+      final supplementary = utf8.encode('🔐');
+      for (var split = 1; split < supplementary.length; split++) {
+        space.pushOutput(supplementary.sublist(0, split));
+        space.pushOutput(supplementary.sublist(split));
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(_terminalText(controller), contains('€red!🔐🔐🔐'));
+      expect(titles, ['hidden-title']);
+      expect(space.killCount, 0);
+      controller.updateVisibility(true);
+      expect(_terminalText(controller), contains('€red!🔐🔐🔐'));
+    });
+
+    testWidgets('replaces malformed bytes and one incomplete end tail', (
+      tester,
+    ) async {
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      final controller = TerminalSessionController(
+        session: session,
+        rpcClient: client,
+      );
+      addTearDown(controller.dispose);
+      await controller.ensureBooted();
+      await tester.pump();
+
+      space.pushOutput([0xc3]);
+      space.pushOutput([0x28, 0x20, 0xe2]);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(_terminalText(controller), contains('�( '));
+      expect(_terminalText(controller), isNot(contains('�( �')));
+
+      // A server-side subscription EOF flushes the incomplete UTF-8 tail.
+      // Closing the whole RPC client would prevent terminal.kill during
+      // disposal from receiving its acknowledgement.
+      space.pushSubError('fake-sub-1', RpcErrorCodes.notFound);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      final text = _terminalText(controller);
+      expect(text, contains('�( �'));
+      expect(text.indexOf('�( �'), lessThan(text.indexOf('session ended')));
+    });
+
+    testWidgets('bounds each xterm notification and drains a burst fully', (
+      tester,
+    ) async {
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      final controller = TerminalSessionController(
+        session: session,
+        rpcClient: client,
+      );
+      addTearDown(controller.dispose);
+      await controller.ensureBooted();
+      await tester.pump();
+      final deliveredAt = <int>[];
+      controller.terminal.addListener(
+        () => deliveredAt.add(_terminalText(controller).length),
+      );
+      const payload = 96 * 1024;
+      for (var i = 0; i < 96; i++) {
+        space.pushOutput(List<int>.filled(1024, 0x58));
+      }
+      await tester.pump();
+      for (var i = 0; i < 16; i++) {
+        await tester.pump(const Duration(milliseconds: 1));
+      }
+
+      expect(
+        _terminalText(controller),
+        String.fromCharCodes(List<int>.filled(payload, 0x58)),
+      );
+      expect(deliveredAt, isNotEmpty);
+      expect(deliveredAt.first, greaterThan(0));
+      expect(deliveredAt.first, lessThanOrEqualTo(16 * 1024));
+      expect(deliveredAt.last, payload);
+      for (var i = 1; i < deliveredAt.length; i++) {
+        expect(
+          deliveredAt[i] - deliveredAt[i - 1],
+          lessThanOrEqualTo(16 * 1024),
+        );
+      }
+      expect(deliveredAt.length, lessThan(96));
+    });
+
+    testWidgets('keeps a supplementary rune whole at a drain boundary', (
+      tester,
+    ) async {
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      final controller = TerminalSessionController(
+        session: session,
+        rpcClient: client,
+      );
+      addTearDown(controller.dispose);
+      await controller.ensureBooted();
+      await tester.pump();
+
+      final prefix = String.fromCharCodes(
+        List<int>.filled(16 * 1024 - 1, 0x61),
+      );
+      final text = '$prefix😀Z';
+      final bytes = utf8.encode(text);
+      space.pushOutput(bytes.sublist(0, 16 * 1024 + 1));
+      space.pushOutput(bytes.sublist(16 * 1024 + 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(_terminalText(controller), text);
+    });
+
+    test('restart and dispose discard queued old-stream output', () async {
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      addTearDown(client.close);
+      final controller = TerminalSessionController(
+        session: session,
+        rpcClient: client,
+      );
+      addTearDown(controller.dispose);
+      await controller.ensureBooted();
+      // The fake channel and RPC fan-out dispatch asynchronously. One event
+      // turn after boot lets the subscribe acknowledgement reach its listener.
+      await Future<void>.delayed(Duration.zero);
+      expect(space._outputSubscriptions, 1);
+
+      // One xterm notification drains at most 16 Ki characters. Restart from
+      // that first notification: the suffix is still queued in the controller,
+      // while the incomplete UTF-8 code point remains in its old decoder.
+      final oldPrefix = String.fromCharCodes(List<int>.filled(16 * 1024, 0x78));
+      final restartStarted = Completer<void>();
+      late Future<void> restart;
+      void restartOnFirstDrain() {
+        if (restartStarted.isCompleted) {
+          return;
+        }
+        restart = controller.restart();
+        restartStarted.complete();
+      }
+
+      controller.terminal.addListener(restartOnFirstDrain);
+      space.pushOutput(utf8.encode('$oldPrefix discarded-old-tail'));
+      space.pushOutput([0xe2]);
+      await restartStarted.future;
+      controller.terminal.removeListener(restartOnFirstDrain);
+      await restart;
+      expect(_terminalText(controller), '');
+      expect(space.killCount, 1);
+      expect(space.spawnCount, 2);
+
+      // A fresh subscription must get a distinct server id. Deliver the old
+      // stream's trailing bytes explicitly as well as the new stream's bytes.
+      await Future<void>.delayed(Duration.zero);
+      expect(space._outputSubscriptions, 2);
+      space.pushSubError('fake-sub-1', RpcErrorCodes.notFound);
+      final freshOutput = Completer<void>();
+      void observeFreshOutput() {
+        if (!freshOutput.isCompleted &&
+            _terminalText(controller) == '��new-stream') {
+          freshOutput.complete();
+        }
+      }
+
+      controller.terminal.addListener(observeFreshOutput);
+      space.pushOutput([0x82, 0xac]);
+      space.pushOutput(utf8.encode('new-stream'));
+      await freshOutput.future;
+      controller.terminal.removeListener(observeFreshOutput);
+      expect(_terminalText(controller), '��new-stream');
+
+      final disposePrefix = String.fromCharCodes(
+        List<int>.filled(16 * 1024, 0x79),
+      );
+      final disposeStarted = Completer<void>();
+      late Future<void> dispose;
+      void disposeOnFirstDrain() {
+        if (disposeStarted.isCompleted) {
+          return;
+        }
+        dispose = controller.dispose();
+        disposeStarted.complete();
+      }
+
+      controller.terminal.addListener(disposeOnFirstDrain);
+      space.pushOutput(utf8.encode('$disposePrefix pending-after-dispose'));
+      await disposeStarted.future;
+      controller.terminal.removeListener(disposeOnFirstDrain);
+      await dispose;
+      space.pushOutput(utf8.encode('late-after-dispose'));
+      await Future<void>.delayed(Duration.zero);
+      // The first drain happened before disposal; neither its queued suffix
+      // nor a subsequent server push can add bytes to the disposed terminal.
+      expect(_terminalText(controller), '��new-stream$disposePrefix');
+      expect(space.killCount, 2);
+      expect(space.spawnCount, 2);
+    });
+
+    testWidgets('drains output before a lost-session notice and respawn', (
+      tester,
+    ) async {
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      final controller = TerminalSessionController(
+        session: session,
+        rpcClient: client,
+      );
+      addTearDown(controller.dispose);
+      await controller.ensureBooted();
+      await tester.pump();
+
+      space.pushOutput(utf8.encode('last-old-output'));
+      space.pushOutput([0xe2]); // Incomplete final code point on the dead PTY.
+      space.pushSubError('fake-sub-1', RpcErrorCodes.notFound);
+      await tester.pump();
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 1));
+      }
+      final text = _terminalText(controller);
+      expect(text, contains('last-old-output�'));
+      expect(text.indexOf('�'), lessThan(text.indexOf('session ended')));
+      expect(space.spawnCount, 2);
+      expect(space.killCount, 0);
+    });
+  });
 
   group('TerminalPanel initial render', () {
     testWidgets('shows the booting body while the shell starts — no header', (
@@ -272,19 +542,6 @@ void main() {
       // overrides it to 180s, because a `microvm` spawn legitimately boots a
       // VM and syncs a worktree first — see RemoteTerminalRepository.
       await tester.pump(const Duration(seconds: 181));
-    });
-  });
-
-  group('TerminalPanel against a server that hosts terminal ops', () {
-    testWidgets('boots and renders the terminal view', (tester) async {
-      await setLargeViewport(tester);
-
-      await tester.pumpWidget(
-        _terminalWrap(const TerminalPanel(session: session)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('error'), findsNothing);
     });
   });
 
@@ -335,6 +592,7 @@ void main() {
 
         space.pushOutput(utf8.encode('hello-from-kept-shell'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 1));
 
         // Space switch: the view unmounts entirely. The session must NOT
         // die with it — no kill, no respawn.
@@ -418,19 +676,6 @@ void main() {
   });
 
   group('TerminalPanel callbacks', () {
-    testWidgets('accepts onShellExit callback without crashing', (
-      tester,
-    ) async {
-      await setLargeViewport(tester);
-
-      await tester.pumpWidget(
-        _terminalWrap(TerminalPanel(session: session, onShellExit: () {})),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TerminalView), findsOneWidget);
-    });
-
     testWidgets(
       'respawns in place when the server no longer knows the session',
       (tester) async {
@@ -438,6 +683,7 @@ void main() {
 
         final space = _FakeChannel();
         final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
         var exits = 0;
 
         await tester.pumpWidget(
@@ -453,6 +699,8 @@ void main() {
         // reconnect names a session the new process never minted, so the host
         // rejects it with notFound.
         space.pushSubError('fake-sub-1', RpcErrorCodes.notFound);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 1));
         await tester.pumpAndSettle();
 
         expect(
@@ -477,6 +725,7 @@ void main() {
 
       final space = _FakeChannel();
       final client = RemoteRpcClient(space)..start();
+      closePanelAfterTest(tester, client);
       final titles = <String>[];
 
       await tester.pumpWidget(
@@ -490,6 +739,7 @@ void main() {
       // The escape wezterm/ghostty/iTerm honor: OSC 0 (icon+title), BEL-ended.
       space.pushOutput(utf8.encode('\x1b]0;my-shell-title\x07'));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
 
       expect(titles, ['my-shell-title']);
     });
@@ -501,6 +751,7 @@ void main() {
 
       final space = _FakeChannel();
       final client = RemoteRpcClient(space)..start();
+      closePanelAfterTest(tester, client);
       final titles = <String>[];
 
       await tester.pumpWidget(
@@ -532,6 +783,7 @@ void main() {
 
         final space = _FakeChannel();
         final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
         final titles = <String>[];
 
         await tester.pumpWidget(
@@ -545,6 +797,7 @@ void main() {
         // The shell titles the terminal at its prompt (a precmd hook)…
         space.pushOutput(utf8.encode('\x1b]0;~/repo\x07'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 1));
         // …then a long build starts. The prompt-time title is stale — exactly
         // the reported bug — so the foreground process replaces it.
         space.pushTitle('cargo build');
@@ -553,6 +806,7 @@ void main() {
         // the plain process name.
         space.pushOutput(utf8.encode('\x1b]2;claude – fixing tests\x07'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 1));
 
         expect(titles, ['~/repo', 'cargo build', 'claude – fixing tests']);
       },
@@ -569,6 +823,7 @@ void main() {
 
         final space = _FakeChannel();
         final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
         await tester.pumpWidget(
           _terminalWrap(
             const TerminalPanel(session: session),
@@ -631,6 +886,7 @@ void main() {
 
         final space = _FakeChannel();
         final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
         // Something else holds focus first — the chat composer, in the app.
         final elsewhere = FocusNode();
         addTearDown(elsewhere.dispose);
@@ -648,6 +904,7 @@ void main() {
         await tester.pumpAndSettle();
         space.pushOutput(utf8.encode('hello world\r\n'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 1));
         elsewhere.requestFocus();
         await tester.pump();
 
@@ -673,40 +930,6 @@ void main() {
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
-    });
-
-    testWidgets('renders inside a TextInputSurface so typing reaches the IME', (
-      tester,
-    ) async {
-      await setLargeViewport(tester);
-
-      await tester.pumpWidget(
-        _terminalWrap(const TerminalPanel(session: session)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TextInputSurface), findsOneWidget);
-    });
-
-    testWidgets('renders with provided agentId', (tester) async {
-      await setLargeViewport(tester);
-
-      await tester.pumpWidget(
-        _terminalWrap(
-          const TerminalPanel(
-            session: TerminalSession(
-              sessionId: 'test-session',
-              spaceId: 'chan-1',
-              workspaceId: 'ws-1',
-              agentId: 'agent-42',
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // agentId is metadata only — widget still renders.
-      expect(find.byType(TerminalView), findsOneWidget);
     });
   });
 

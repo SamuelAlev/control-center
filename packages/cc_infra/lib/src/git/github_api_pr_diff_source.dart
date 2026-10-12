@@ -3,7 +3,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
 import 'package:cc_infra/src/network/pr_review_mapper.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// PrDiffSource backed by the GitHub REST API.
 ///

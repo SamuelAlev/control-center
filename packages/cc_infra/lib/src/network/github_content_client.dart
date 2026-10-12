@@ -3,14 +3,15 @@ import 'dart:typed_data';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/network/github/github_http.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// Client for GitHub content and user operations that don't target a specific PR.
 class GitHubContentClient {
-  /// Creates a [GitHubContentClient] backed by [Dio].
-  GitHubContentClient(this._dio);
+  /// Creates a [GitHubContentClient] backed by [RhttpClient].
+  GitHubContentClient(RhttpClient httpClient) : _httpClient = httpClient;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Fetches the raw contents of a single file at a specific [ref] (branch
   /// name, tag, or commit SHA). Used by the diff viewer for context-expansion.
@@ -23,22 +24,21 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/repos/$owner/$repo/contents/$path',
-        queryParameters: {'ref': ref},
-        options: Options(
-          headers: {'Accept': 'application/vnd.github.raw'},
-          responseType: ResponseType.plain,
-        ),
+        query: {'ref': ref},
+        headers: const HttpHeaders.rawMap({
+          'Accept': 'application/vnd.github.raw',
+        }),
         cancelToken: cancelToken,
       );
-      return response.data?.toString() ?? '';
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+      return response.body;
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -54,22 +54,21 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get<List<int>>(
+      final response = await _httpClient.getBytes(
         '/repos/$owner/$repo/contents/$path',
-        queryParameters: {'ref': ref},
-        options: Options(
-          headers: {'Accept': 'application/vnd.github.raw'},
-          responseType: ResponseType.bytes,
-        ),
+        query: {'ref': ref},
+        headers: const HttpHeaders.rawMap({
+          'Accept': 'application/vnd.github.raw',
+        }),
         cancelToken: cancelToken,
       );
-      return _asBytes(response.data);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+      return _asBytes(response.body);
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -85,16 +84,16 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/repos/$owner/$repo/commits',
-        queryParameters: {
+        query: {
           'path': path,
-          'per_page': 1,
+          'per_page': '1',
           if (branch != null && branch.isNotEmpty) 'sha': branch,
         },
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is List && data.isNotEmpty) {
         final first = data.first;
         if (first is Map<String, dynamic>) {
@@ -102,11 +101,11 @@ class GitHubContentClient {
         }
       }
       return null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -117,11 +116,11 @@ class GitHubContentClient {
   getRepoSummary(String owner, String repo, {CancelToken? cancelToken}) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/repos/$owner/$repo',
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is Map<String, dynamic>) {
         return (
           description: (data['description'] as String?) ?? '',
@@ -133,18 +132,18 @@ class GitHubContentClient {
         'GitHub returned an unexpected repository shape',
         code: 'bad_repo_response',
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      if (e.response?.statusCode == 404) {
+      if (isHttpStatus(e, 404)) {
         throw NetworkException(
           'Repository $owner/$repo was not found (or is inaccessible with the '
           'configured credentials)',
           code: 'repo_not_found',
         );
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -158,12 +157,12 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/repos/$owner/$repo/git/trees/${Uri.encodeComponent(ref)}',
-        queryParameters: recursive ? const {'recursive': '1'} : null,
+        query: recursive ? const {'recursive': '1'} : null,
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is! Map<String, dynamic>) {
         throw const NetworkException(
           'GitHub returned an unexpected tree shape',
@@ -190,11 +189,11 @@ class GitHubContentClient {
               e['type'] is String)
             (path: e['path'] as String, type: e['type'] as String),
       ];
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -210,18 +209,18 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.post(
+      final response = await _httpClient.post(
         '/repos/$owner/$repo/git/blobs',
-        data: {'content': base64Content, 'encoding': 'base64'},
+        body: HttpBody.json({'content': base64Content, 'encoding': 'base64'}),
         cancelToken: cancelToken,
       );
-      return (response.data as Map<String, dynamic>)['sha'] as String;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+      return (httpJsonBody(response) as Map<String, dynamic>)['sha'] as String;
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -239,12 +238,12 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.put(
+      final response = await _httpClient.put(
         '/repos/$owner/$repo/contents/$path',
-        data: {'message': message, 'content': base64Content},
+        body: HttpBody.json({'message': message, 'content': base64Content}),
         cancelToken: cancelToken,
       );
-      final data = response.data as Map<String, dynamic>;
+      final data = httpJsonBody(response) as Map<String, dynamic>;
       final content = data['content'] as Map<String, dynamic>?;
       final downloadUrl = content?['download_url'] as String?;
       if (downloadUrl == null || downloadUrl.isEmpty) {
@@ -254,12 +253,12 @@ class GitHubContentClient {
         );
       }
       return downloadUrl;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -274,12 +273,13 @@ class GitHubContentClient {
     var page = 1;
     try {
       while (true) {
-        final response = await _dio.get(
+        final response = await _httpClient.get(
           '/user/teams',
-          queryParameters: {'per_page': 100, 'page': page},
+          query: {'per_page': '100', 'page': '$page'},
           cancelToken: cancelToken,
         );
-        final raw = response.data is List ? response.data as List : const [];
+        final data = httpJsonBody(response);
+        final raw = data is List ? data : const [];
         for (final json in raw.whereType<Map<String, dynamic>>()) {
           final org =
               (json['organization'] as Map<String, dynamic>?)?['login']
@@ -295,11 +295,11 @@ class GitHubContentClient {
         }
         page++;
       }
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
     return teams;
   }
@@ -307,18 +307,18 @@ class GitHubContentClient {
   /// Fetches the authenticated user's profile.
   Future<GitHubUser?> getAuthenticatedUser({CancelToken? cancelToken}) async {
     try {
-      final response = await _dio.get('/user', cancelToken: cancelToken);
-      final data = response.data;
+      final response = await _httpClient.get('/user', cancelToken: cancelToken);
+      final data = httpJsonBody(response);
       if (data is Map<String, dynamic>) {
         return GitHubUser.fromJson(data);
       }
       return null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -339,21 +339,21 @@ class GitHubContentClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/users/$login',
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is Map<String, dynamic>) {
         return GitHubUser.fromJson(data);
       }
       return null;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
 
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -372,11 +372,11 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/repos/$owner/$repo',
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is! Map<String, dynamic>) {
         return 'none';
       }
@@ -398,11 +398,11 @@ class GitHubContentClient {
         'triage' || 'read' => 'read',
         _ => 'none',
       };
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -417,20 +417,20 @@ class GitHubContentClient {
   }) async {
     _requireOwnerRepo(owner, repo);
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/repos/$owner/$repo/collaborators/$username/permission',
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is Map<String, dynamic>) {
         return (data['permission'] as String?) ?? 'none';
       }
       return 'none';
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 
@@ -443,12 +443,12 @@ class GitHubContentClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get(
+      final response = await _httpClient.get(
         '/orgs/$org/members',
-        queryParameters: {'per_page': 100},
+        query: {'per_page': '100'},
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = httpJsonBody(response);
       if (data is List) {
         return data
             .whereType<Map<String, dynamic>>()
@@ -456,15 +456,15 @@ class GitHubContentClient {
             .toList();
       }
       return const [];
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
         rethrow;
       }
       // 404 = not an org or no access; return empty rather than crashing.
-      if (e.response?.statusCode == 404) {
+      if (isHttpStatus(e, 404)) {
         return const [];
       }
-      throw mapDioException(e);
+      throw mapHttpException(e);
     }
   }
 

@@ -1,12 +1,10 @@
 import 'package:cc_data/cc_data.dart';
-import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The evals RPC helper ([RpcEvalsClient]) built over the single shared RPC
-/// client (PRD 21 §5). `workspace_id` is auto-injected by the client.
-final rpcEvalsClientProvider = Provider<RpcEvalsClient>((ref) {
-  return RpcEvalsClient(ref.watch(rpcClientProvider));
-});
+/// Both suite runs and campaign UI share the same typed RPC helper. Legacy
+/// suites remain session-bound; campaign calls pass explicit workspace IDs.
+final rpcEvalsClientProvider = skillCampaignClientProvider;
 
 /// Live eval suites for the active workspace over `evals.watchSuites`.
 ///

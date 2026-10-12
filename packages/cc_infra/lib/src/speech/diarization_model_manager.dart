@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:archive/archive.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/speech/tar_bz2_extract.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/src/util/http_file_download.dart';
 import 'package:path/path.dart' as p;
+import 'package:rhttp/rhttp.dart';
 
 /// Description of the installable speaker-diarization models.
 ///
@@ -103,12 +104,14 @@ class DiarizationModelManager {
   /// on-disk layout that supplies the `models/` directory).
   DiarizationModelManager({
     required this._paths,
-    Dio? dio,
+    RhttpClient? httpClient,
     this.model = DiarizationModelInfo.pyannoteWespeaker,
-  }) : _dio = dio ?? createDio();
+  }) : _httpClient =
+           httpClient ??
+           createHttpClient(settings: modelDownloadClientSettings);
 
   final CcPaths _paths;
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Model bundle to manage.
   final DiarizationModelInfo model;
@@ -166,7 +169,8 @@ class DiarizationModelManager {
 
     onProgress?.call(0, 'downloading');
     try {
-      await _dio.download(
+      await downloadToFile(
+        _httpClient,
         model.segmentationArchiveUrl,
         tmpArchive.path,
         cancelToken: cancelToken,
@@ -175,10 +179,6 @@ class DiarizationModelManager {
           final pct = (received / expected).clamp(0.0, 1.0) * 0.45;
           onProgress?.call(pct, 'downloading');
         },
-        options: Options(
-          followRedirects: true,
-          responseType: ResponseType.bytes,
-        ),
       );
 
       onProgress?.call(0.46, 'extracting');
@@ -188,7 +188,8 @@ class DiarizationModelManager {
       }
 
       onProgress?.call(0.55, 'downloading');
-      await _dio.download(
+      await downloadToFile(
+        _httpClient,
         model.embeddingUrl,
         embeddingPart.path,
         cancelToken: cancelToken,
@@ -197,10 +198,6 @@ class DiarizationModelManager {
           final pct = 0.55 + (received / expected).clamp(0.0, 1.0) * 0.45;
           onProgress?.call(pct, 'downloading');
         },
-        options: Options(
-          followRedirects: true,
-          responseType: ResponseType.bytes,
-        ),
       );
       await embeddingPart.rename(embeddingPath);
     } catch (e) {
@@ -223,7 +220,7 @@ class DiarizationModelManager {
     return resolved;
   }
 
-  /// Extracts the bzip2 + tar archive off the main isolate.
+  /// Streams the bzip2 + tar archive off the main isolate.
   ///
   /// Kept as its own method on purpose: Dart shares a single closure context
   /// across a whole function body, so running [Isolate.run] inside [install]
@@ -232,31 +229,13 @@ class DiarizationModelManager {
   /// crashes the isolate send. Here the closure's scope holds only the two
   /// (sendable) path strings.
   Future<void> _extractArchive(String archivePath, String destPath) =>
-      Isolate.run(() => _extractTarBz2Sync(archivePath, destPath));
+      Isolate.run(() => extractTarBz2Streamed(archivePath, destPath));
 
   /// Removes the installed diarization models.
   Future<void> uninstall() async {
     final dir = await _modelDir();
     if (dir.existsSync()) {
       await dir.delete(recursive: true);
-    }
-  }
-}
-
-/// Decodes a bzip2+tar archive and writes its entries under [destPath].
-/// Runs on a background isolate via [Isolate.run]; all I/O is synchronous.
-void _extractTarBz2Sync(String archivePath, String destPath) {
-  final bytes = File(archivePath).readAsBytesSync();
-  final tarBytes = BZip2Decoder().decodeBytes(bytes);
-  final archive = TarDecoder().decodeBytes(tarBytes);
-  for (final file in archive) {
-    final outPath = p.join(destPath, file.name);
-    if (file.isFile) {
-      final out = File(outPath);
-      out.parent.createSync(recursive: true);
-      out.writeAsBytesSync(file.content as List<int>);
-    } else {
-      Directory(outPath).createSync(recursive: true);
     }
   }
 }

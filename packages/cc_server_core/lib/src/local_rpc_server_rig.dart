@@ -143,7 +143,7 @@ extension _RigMethods on LocalRpcServer {
       ..set(HttpHeaders.cacheControlHeader, 'no-store')
       ..set(HttpHeaders.connectionHeader, 'keep-alive');
     try {
-      await res.addStream(opened.bytes);
+      await res.addStream(_withResourceCancellation(request, opened.bytes));
     } catch (_) {
       // Viewer disconnected mid-stream; the source was cancelled.
     }

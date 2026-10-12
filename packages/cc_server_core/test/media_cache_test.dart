@@ -90,7 +90,7 @@ void main() {
     test('a miss fetches once and later resolves hit the disk cache', () async {
       final c = cache();
       var fetches = 0;
-      Future<MediaFetchOutcome> fetch({String? etag, String? lastModified}) async {
+      Future<MediaFetchOutcome> fetch({String? etag, String? lastModified, required MediaFetchCancellation cancellation}) async {
         fetches++;
         return avatar(etag: '"v1"');
       }
@@ -110,10 +110,10 @@ void main() {
     test('a fresh hit preserves the stored content type', () async {
       final c = cache();
       final key = MediaCache.keyFor('https://x/a.png', null);
-      await c.resolve(key, ({etag, lastModified}) async => avatar());
+      await c.resolve(key, ({etag, lastModified, required cancellation}) async => avatar());
       final hit = await c.resolve(
         key,
-        ({etag, lastModified}) async => throw StateError('must not fetch'),
+        ({etag, lastModified, required cancellation}) async => throw StateError('must not fetch'),
       );
       expect(hit, isA<MediaCacheHit>());
       expect((hit as MediaCacheHit).contentType, 'image/png');
@@ -127,14 +127,14 @@ void main() {
         final key = MediaCache.keyFor('https://x/a.png', 64);
         await c.resolve(
           key,
-          ({etag, lastModified}) async =>
+          ({etag, lastModified, required cancellation}) async =>
               avatar(etag: '"tag"', lastModified: 'Wed, 01 Jul 2026'),
         );
 
         // Advance past the (min-clamped) TTL so the entry is stale.
         now = now.add(const Duration(days: 2));
         final seenValidators = <String?>[];
-        final resolution = await c.resolve(key, ({etag, lastModified}) async {
+        final resolution = await c.resolve(key, ({etag, lastModified, required cancellation}) async {
           seenValidators.addAll([etag, lastModified]);
           return const MediaFetchNotModified();
         });
@@ -148,7 +148,7 @@ void main() {
         // The bump made it fresh again: a third resolve fetches nothing.
         final third = await c.resolve(
           key,
-          ({etag, lastModified}) async =>
+          ({etag, lastModified, required cancellation}) async =>
               throw StateError('must not fetch after 304 bump'),
         );
         expect(third, isA<MediaCacheHit>());
@@ -160,12 +160,12 @@ void main() {
       final key = MediaCache.keyFor('https://x/a.png', null);
       await c.resolve(
         key,
-        ({etag, lastModified}) async => avatar(body: 'old'),
+        ({etag, lastModified, required cancellation}) async => avatar(body: 'old'),
       );
       now = now.add(const Duration(days: 2));
       final resolution = await c.resolve(
         key,
-        ({etag, lastModified}) async => avatar(body: 'new'),
+        ({etag, lastModified, required cancellation}) async => avatar(body: 'new'),
       );
       expect(String.fromCharCodes(await servedBody(resolution)), 'new');
     });
@@ -175,7 +175,7 @@ void main() {
       final key = MediaCache.keyFor('https://x/a.png', null);
       await c.resolve(
         key,
-        ({etag, lastModified}) async => avatar(body: 'stale-but-fine'),
+        ({etag, lastModified, required cancellation}) async => avatar(body: 'stale-but-fine'),
       );
       // Past the TTL, inside the 7-day stale grace. A 30-day jump crosses
       // the grace, and the write's background sweep then deletes the body
@@ -183,7 +183,7 @@ void main() {
       now = now.add(const Duration(days: 2));
       final resolution = await c.resolve(
         key,
-        ({etag, lastModified}) async => const MediaFetchFailed(),
+        ({etag, lastModified, required cancellation}) async => const MediaFetchFailed(),
       );
       expect(
         String.fromCharCodes(await servedBody(resolution)),
@@ -195,7 +195,7 @@ void main() {
       final c = cache();
       final resolution = await c.resolve(
         MediaCache.keyFor('https://x/missing.png', null),
-        ({etag, lastModified}) async => const MediaFetchFailed(),
+        ({etag, lastModified, required cancellation}) async => const MediaFetchFailed(),
       );
       expect(resolution, isA<MediaCacheFailure>());
     });
@@ -204,7 +204,7 @@ void main() {
       final c = cache();
       var fetches = 0;
       final gate = Completer<void>();
-      Future<MediaFetchOutcome> fetch({String? etag, String? lastModified}) async {
+      Future<MediaFetchOutcome> fetch({String? etag, String? lastModified, required MediaFetchCancellation cancellation}) async {
         fetches++;
         await gate.future;
         return avatar();
@@ -224,6 +224,82 @@ void main() {
       gate.complete();
       await Future.wait([first, second, third]);
       expect(fetches, 1);
+    });
+
+    test('one cancelled waiter leaves a shared image fetch running', () async {
+      final c = cache();
+      final fetching = Completer<void>();
+      final finish = Completer<void>();
+      final firstCancelled = Completer<void>();
+      var firstIsCancelled = false;
+      var fetches = 0;
+      var upstreamCancelled = false;
+      Future<MediaFetchOutcome> fetch({
+        String? etag,
+        String? lastModified,
+        required MediaFetchCancellation cancellation,
+      }) async {
+        fetches++;
+        fetching.complete();
+        cancellation.cancelled.then((_) => upstreamCancelled = true);
+        await finish.future;
+        return avatar();
+      }
+
+      final key = MediaCache.keyFor('https://x/shared.png', null);
+      final first = c.resolve(
+        key, fetch,
+        cancelled: firstCancelled.future,
+        isCancelled: () => firstIsCancelled,
+      );
+      await fetching.future;
+      final second = c.resolve(key, fetch);
+      // Let the second resolve pass its disk read and join the flight.
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      firstIsCancelled = true;
+      firstCancelled.complete();
+      expect(await first, isA<MediaCacheFailure>());
+      expect(upstreamCancelled, isFalse);
+      finish.complete();
+      expect(String.fromCharCodes(await servedBody(await second)), 'png-bytes');
+      expect(fetches, 1);
+    });
+
+    test('last consumer cancellation waits until its upstream has stopped', () async {
+      final c = cache();
+      final fetching = Completer<void>();
+      final stopped = Completer<void>();
+      final cancel = Completer<void>();
+      var isCancelled = false;
+      var resolved = false;
+      Future<MediaFetchOutcome> fetch({
+        String? etag,
+        String? lastModified,
+        required MediaFetchCancellation cancellation,
+      }) async {
+        fetching.complete();
+        await cancellation.cancelled;
+        expect(cancellation.isCancelled, isTrue);
+        await stopped.future;
+        return const MediaFetchFailed();
+      }
+
+      final result = c.resolve(
+        MediaCache.keyFor('https://x/slow.png', null),
+        fetch,
+        cancelled: cancel.future,
+        isCancelled: () => isCancelled,
+      ).then((value) {
+        resolved = true;
+        return value;
+      });
+      await fetching.future;
+      isCancelled = true;
+      cancel.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(resolved, isFalse, reason: 'handler must retain its slot until upstream exits');
+      stopped.complete();
+      expect(await result, isA<MediaCacheFailure>());
     });
 
     test('a waiter on a stream outcome re-fetches for itself', () async {
@@ -248,6 +324,7 @@ void main() {
       Future<MediaFetchOutcome> fetch({
         String? etag,
         String? lastModified,
+        required MediaFetchCancellation cancellation,
       }) async {
         fetches++;
         await gate.future;
@@ -296,7 +373,7 @@ void main() {
       final key = MediaCache.keyFor('https://x/big.png', null);
       final resolution = await c.resolve(
         key,
-        ({etag, lastModified}) async => const MediaFetchBuffered(
+        ({etag, lastModified, required cancellation}) async => const MediaFetchBuffered(
           bytes: [1, 2, 3, 4, 5, 6, 7, 8, 9],
           contentType: 'image/png',
         ),
@@ -310,7 +387,7 @@ void main() {
       final key = MediaCache.keyFor('https://x/private.png', null);
       final resolution = await c.resolve(
         key,
-        ({etag, lastModified}) async => const MediaFetchBuffered(
+        ({etag, lastModified, required cancellation}) async => const MediaFetchBuffered(
           bytes: [1],
           contentType: 'image/png',
           cache: false,
@@ -327,12 +404,12 @@ void main() {
       // minutes later.
       await c.resolve(
         key,
-        ({etag, lastModified}) async => avatar(maxAgeSeconds: 1),
+        ({etag, lastModified, required cancellation}) async => avatar(maxAgeSeconds: 1),
       );
       now = now.add(const Duration(minutes: 10));
       final hit = await c.resolve(
         key,
-        ({etag, lastModified}) async =>
+        ({etag, lastModified, required cancellation}) async =>
             throw StateError('must not fetch inside the clamped floor'),
       );
       expect(hit, isA<MediaCacheHit>());
@@ -342,11 +419,11 @@ void main() {
       final key2 = MediaCache.keyFor('https://x/b.png', null);
       await c.resolve(
         key2,
-        ({etag, lastModified}) async => avatar(maxAgeSeconds: 365 * 24 * 3600),
+        ({etag, lastModified, required cancellation}) async => avatar(maxAgeSeconds: 365 * 24 * 3600),
       );
       now = now.add(const Duration(days: 8));
       var refetched = false;
-      await c.resolve(key2, ({etag, lastModified}) async {
+      await c.resolve(key2, ({etag, lastModified, required cancellation}) async {
         refetched = true;
         return avatar();
       });

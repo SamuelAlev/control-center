@@ -1,29 +1,6 @@
-import 'dart:typed_data';
-
-import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:test/test.dart';
-
-/// Captures the resolved URI without sending anything.
-class _CaptureAdapter implements HttpClientAdapter {
-  final List<Uri> uris = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    uris.add(options.uri);
-    return ResponseBody.fromString('[]', 200, headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    });
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
 
 /// GitLab addresses a project by its URL-encoded `namespace/project` path, so a
 /// nested namespace becomes `group%2Fsub%2Fproject` inside ONE path segment.
@@ -57,23 +34,24 @@ void main() {
     });
   });
 
-  group('dio preserves the encoding', () {
-    test('a nested project path survives as one segment on the wire', () async {
-      // The encoding is only correct if dio does not re-encode the `%` — a
+  group('project paths reach the wire intact', () {
+    test('a nested project path survives as one segment', () async {
+      // The encoding is only correct if the client forwards the `%` as-is — a
       // double encode (`%252F`) reaches a URL that cannot resolve.
-      final adapter = _CaptureAdapter();
-      final dio = createDio(baseUrl: 'https://gitlab.com/api/v4')
-        ..httpClientAdapter = adapter;
-
-      final encoded = GitLabApiClient.encodeProjectPath('group/sub/project');
-      await dio.get<dynamic>('/projects/$encoded/merge_requests');
-
-      final uri = adapter.uris.single.toString();
-      expect(
-        uri,
-        'https://gitlab.com/api/v4/projects/group%2Fsub%2Fproject/merge_requests',
+      final client = TestHttpClient(
+        handler: (request) async =>
+            httpTextResponse(request, const <Object?>[]),
       );
-      expect(uri, isNot(contains('%252F')));
+      final api = GitLabApiClient(client);
+
+      await api.listMergeRequests(
+        GitLabApiClient.encodeProjectPath('group/sub/project'),
+        state: 'opened',
+      );
+
+      final url = client.requests.single.url;
+      expect(url, '/projects/group%2Fsub%2Fproject/merge_requests');
+      expect(url, isNot(contains('%252F')));
     });
   });
 }

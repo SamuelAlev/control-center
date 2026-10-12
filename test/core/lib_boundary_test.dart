@@ -169,12 +169,12 @@ void main() {
           'style vendored by cc_ui.',
     ),
     (
-      label: 'package:dio imports (direct HTTP client)',
-      match: (s) => s.contains("import 'package:dio/"),
+      label: 'direct external HTTP client imports',
+      match: (s) => RegExp(r'''import\s+['"]package:rhttp/''').hasMatch(s),
       baseline: 0,
       why:
           'External network I/O belongs in cc_server, not the client — clients call '
-          'server RPC ops. Filter-list downloads now go through '
+          'server RPC ops. Filter-list downloads use '
           '`newsfeed.filterLists.*`. Do NOT raise this baseline.',
     ),
     (
@@ -193,7 +193,7 @@ void main() {
       match: (s) => s.contains("import 'package:cc_infra"),
       baseline: 5,
       why:
-          'cc_infra is the server-side VM-only adapter package (git, process, dio '
+          'cc_infra is the server-side VM-only adapter package (git, process, HTTP '
           'clients, sandbox). A thin client should not link it. Remaining hits are '
           'honest IO seams: logging (CcInfraLog), CcPaths, spawning the local '
           'cc_server, Tailscale discovery before a connection exists, and the '

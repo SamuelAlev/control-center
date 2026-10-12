@@ -3,7 +3,9 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_statu
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_label.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:collection/collection.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas_background.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/pipeline_edge_geometry.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_graph_layout.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_status_visuals.dart';
@@ -11,7 +13,9 @@ import 'package:control_center/features/pipelines/presentation/widgets/pipeline_
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/canvas/graph_canvas_viewport.dart';
 import 'package:control_center/shared/widgets/graph_node_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,7 +64,12 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
   static const double _panelMinWidth = 280;
   static const double _panelMaxWidth = 620;
 
-  Offset _panOffset = Offset.zero;
+  final _edgeCache = PipelineEdgeGeometryCache();
+  List<PipelineStepDefinition> _layoutSteps = const [];
+  Map<String, double> _layoutWidths = const {};
+  Map<String, Offset> _layout = const {};
+  Rect _bounds = Rect.zero;
+  GlobalKey _graphKey = GlobalKey();
   String? _selectedStepId;
 
   /// The sidebar's current width, updated as the seam is dragged. Held here (not
@@ -83,6 +92,10 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
     // selection, which would point at a step the new run never executed.
     if (old.runId != widget.runId) {
       _selectedStepId = widget.initialSelectedStepId;
+    }
+    if (old.runId != widget.runId ||
+        old.definition.templateId != widget.definition.templateId) {
+      _graphKey = GlobalKey();
     }
   }
 
@@ -147,75 +160,57 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
         ),
     };
 
-    final graph = LayoutBuilder(
-      builder: (context, constraints) {
-        // Read-only run view: derive a layered left-to-right layout from the
-        // graph (trigger leftmost, columns spaced so tiles never overlap)
-        // rather than trusting the stored editor coordinates.
-        final layout = PipelineGraphLayout.compute(
-          renderable,
-          nodeWidths: widths,
-          nodeHeight: _nodeHeight,
-        );
-        final baseOffset = _baseOffset(layout, constraints.biggest, widths);
-        final translate = baseOffset + _panOffset;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onPanUpdate: (d) => setState(() => _panOffset += d.delta),
-          child: Container(
-            color: tokens.bgPrimary,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: PipelineCanvasBackground(offset: _panOffset),
+    _resolveLayout(renderable, widths);
+    final graph = GraphCanvasViewport(
+      key: _graphKey,
+      bounds: _bounds,
+      sceneBuilder: (shift) => Stack(
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: PipelineEdgesPainter(
+                    steps: renderable,
+                    color: tokens.borderSecondary,
+                    nodeWidths: widths,
+                    nodeHeight: _nodeHeight,
+                    offset: shift,
+                    positions: _layout,
+                    edgeCache: _edgeCache,
                   ),
                 ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: PipelineEdgesPainter(
-                        steps: renderable,
-                        color: tokens.borderSecondary,
-                        nodeWidths: widths,
-                        nodeHeight: _nodeHeight,
-                        offset: translate,
-                        positions: layout,
-                      ),
-                    ),
-                  ),
-                ),
-                for (final step in renderable)
-                  _buildNode(
-                    step,
-                    labels[step.id]!,
-                    latestByStepId[step.id],
-                    tokens,
-                    translate,
-                    now,
-                    layout[step.id] ?? Offset.zero,
-                    widths[step.id] ?? _nodeMinWidth,
-                  ),
-              ],
+              ),
             ),
           ),
-        );
-      },
+          for (final step in renderable)
+            _buildNode(
+              step,
+              labels[step.id]!,
+              latestByStepId[step.id],
+              tokens,
+              shift,
+              now,
+              _layout[step.id] ?? Offset.zero,
+              widths[step.id] ?? _nodeMinWidth,
+            ),
+        ],
+      ),
     );
 
     final selectedStepId = _selectedStepId;
     final panelOpen = widget.runId != null && selectedStepId != null;
 
-    return Focus(
-      autofocus: true,
-      child: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.escape): () {
-            if (_selectedStepId != null) {
-              setState(() => _selectedStepId = null);
-            }
-          },
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          if (_selectedStepId != null) {
+            setState(() => _selectedStepId = null);
+          }
         },
+      },
+      child: Focus(
+        autofocus: true,
         child: !panelOpen
             ? graph
             : LayoutBuilder(
@@ -292,33 +287,36 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
     // RTL carve-out: a DAG canvas — node placement is canvas-coordinate math
     // over the laid-out graph, and diagram canvases stay LTR per policy.
     return Positioned(
+      key: ValueKey(step.id),
       left: position.dx,
       top: position.dy,
       width: width,
       height: _nodeHeight,
-      child: Semantics(
-        button: widget.runId != null,
-        selected: selected,
-        label: label,
-        value: status != null ? _statusLabel(status, l10n) : null,
-        child: CcTappable(
-          onPressed: widget.runId == null
-              ? null
-              : () => setState(() => _selectedStepId = step.id),
-          builder: (context, states) => GraphNodeCard(
-            glyph: _statusGlyph(status, isTrigger, dot),
-            title: label,
-            // The status in words under the name (not glyph/color alone);
-            // the duration sits right-aligned in the trailing meta.
-            subtitle: status != null ? _statusLabel(status, l10n) : null,
-            subtitleColor: sc?.foreground,
-            trailing: duration != null
-                ? formatPipelineDuration(duration)
-                : null,
-            selected: selected,
-            fill: isTrigger ? tokens.bgBrandPrimary : null,
-            border: isTrigger ? tokens.borderBrand : null,
-            hovered: states.contains(WidgetState.hovered),
+      child: RepaintBoundary(
+        child: Semantics(
+          button: widget.runId != null,
+          selected: selected,
+          label: label,
+          value: status != null ? _statusLabel(status, l10n) : null,
+          child: CcTappable(
+            onPressed: widget.runId == null
+                ? null
+                : () => setState(() => _selectedStepId = step.id),
+            builder: (context, states) => GraphNodeCard(
+              glyph: _statusGlyph(status, isTrigger, dot),
+              title: label,
+              // The status in words under the name (not glyph/color alone);
+              // the duration sits right-aligned in the trailing meta.
+              subtitle: status != null ? _statusLabel(status, l10n) : null,
+              subtitleColor: sc?.foreground,
+              trailing: duration != null
+                  ? formatPipelineDuration(duration)
+                  : null,
+              selected: selected,
+              fill: isTrigger ? tokens.bgBrandPrimary : null,
+              border: isTrigger ? tokens.borderBrand : null,
+              hovered: states.contains(WidgetState.hovered),
+            ),
           ),
         ),
       ),
@@ -393,47 +391,28 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
     };
   }
 
-  /// Left margin between the viewport edge and the trigger column at rest.
-  static const double _leftPadding = 48;
-
-  /// Base translation before the user's pan: center the graph vertically and
-  /// center it horizontally too when the whole graph fits the viewport —
-  /// otherwise pin the leftmost (trigger) column near the left edge so the
-  /// roots stay visible and the operator pans right to follow the flow.
-  Offset _baseOffset(
-    Map<String, Offset> positions,
-    Size viewport,
+  void _resolveLayout(
+    List<PipelineStepDefinition> steps,
     Map<String, double> widths,
   ) {
-    if (positions.isEmpty) {
-      return Offset.zero;
+    if (listEquals(_layoutSteps, steps) &&
+        const MapEquality<String, double>().equals(_layoutWidths, widths)) {
+      return;
     }
-    double minX = double.infinity;
-    double maxX = -double.infinity;
-    double minY = double.infinity;
-    double maxY = -double.infinity;
-    for (final e in positions.entries) {
-      final p = e.value;
-      final w = widths[e.key] ?? _nodeMinWidth;
-      if (p.dx < minX) {
-        minX = p.dx;
-      }
-      if (p.dx + w > maxX) {
-        maxX = p.dx + w;
-      }
-      if (p.dy < minY) {
-        minY = p.dy;
-      }
-      if (p.dy + _nodeHeight > maxY) {
-        maxY = p.dy + _nodeHeight;
-      }
+    _layoutSteps = steps;
+    _layoutWidths = widths;
+    _layout = PipelineGraphLayout.compute(
+      steps,
+      nodeWidths: widths,
+      nodeHeight: _nodeHeight,
+    );
+    Rect? bounds;
+    for (final entry in _layout.entries) {
+      final rect =
+          entry.value & Size(widths[entry.key] ?? _nodeMinWidth, _nodeHeight);
+      bounds = bounds?.expandToInclude(rect) ?? rect;
     }
-    final width = maxX - minX;
-    final height = maxY - minY;
-    final fits = width + 2 * _leftPadding <= viewport.width;
-    final dx = fits ? (viewport.width - width) / 2 - minX : _leftPadding - minX;
-    final dy = (viewport.height - height) / 2 - minY;
-    return Offset(dx, dy);
+    _bounds = bounds ?? Rect.zero;
   }
 
   /// Status indicator for a node: a spinner while running, otherwise a glyph,

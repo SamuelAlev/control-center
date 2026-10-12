@@ -4,8 +4,9 @@ import 'dart:convert';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/network_constants.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The OAuth tokens persisted for one connected server-side Google account.
 ///
@@ -199,15 +200,16 @@ class GoogleDevicePollOutcome {
 /// on the trusted server (unlike the iOS/PKCE client the desktop ships, which
 /// must be public).
 ///
-/// The token [Dio] is a *plain* [createDio] with none of the app's auth
-/// interceptors, so a 401 during refresh can never re-enter the refresh logic.
+/// The token [RhttpClient] is a *plain* [createHttpClient] with none of the
+/// app's auth interceptors, so a 401 during refresh can never re-enter the
+/// refresh logic.
 class GoogleDeviceAuthClient {
   /// Creates a [GoogleDeviceAuthClient].
   GoogleDeviceAuthClient({
     required this.clientId,
     required this.clientSecret,
-    Dio? dio,
-  }) : _dio = dio ?? createDio();
+    RhttpClient? httpClient,
+  }) : _httpClient = httpClient ?? createHttpClient();
 
   /// The device-code (limited-input) OAuth client id.
   final String clientId;
@@ -215,7 +217,7 @@ class GoogleDeviceAuthClient {
   /// The client secret for the confidential device-code client.
   final String clientSecret;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Requests a device + user code for [scope] (RFC 8628 §3.1–3.2).
   Future<GoogleDeviceCode> requestDeviceCode({
@@ -228,13 +230,15 @@ class GoogleDeviceAuthClient {
       );
     }
     try {
-      final response = await _dio.post<dynamic>(
+      final response = await _httpClient.post(
         googleOAuthDeviceCodeEndpoint,
-        data: {'client_id': clientId, 'scope': scope},
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+        headers: const HttpHeaders.rawMap({
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }),
+        body: HttpBody.form({'client_id': clientId, 'scope': scope}),
       );
-      return _deviceCodeFrom(_asMap(response.data));
-    } on DioException catch (e) {
+      return _deviceCodeFrom(_asMap(httpJsonBody(response)));
+    } on RhttpException catch (e) {
       throw _mapDeviceError(e, 'request a device code');
     }
   }
@@ -269,22 +273,24 @@ class GoogleDeviceAuthClient {
   /// client tick; it throws only on an unexpected transport error.
   Future<GoogleDevicePollOutcome> pollOnce(GoogleDeviceCode code) async {
     try {
-      final response = await _dio.post<dynamic>(
+      final response = await _httpClient.post(
         googleOAuthTokenEndpoint,
-        data: {
+        headers: const HttpHeaders.rawMap({
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }),
+        body: HttpBody.form({
           'client_id': clientId,
           'client_secret': clientSecret,
           'device_code': code.deviceCode,
           'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
-        },
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+        }),
       );
       return GoogleDevicePollOutcome(
         GoogleDevicePollStatus.connected,
-        credentials: _tokenSetFrom(_asMap(response.data)),
+        credentials: _tokenSetFrom(_asMap(httpJsonBody(response))),
       );
-    } on DioException catch (e) {
-      final error = (_asMap(e.response?.data)['error'] as String?) ?? '';
+    } on RhttpException catch (e) {
+      final error = (_asMap(httpErrorBody(e))['error'] as String?) ?? '';
       switch (error) {
         case 'authorization_pending':
           return const GoogleDevicePollOutcome(GoogleDevicePollStatus.pending);
@@ -345,17 +351,19 @@ class GoogleDeviceAuthClient {
     GoogleServerCredentials current,
   ) async {
     try {
-      final response = await _dio.post<dynamic>(
+      final response = await _httpClient.post(
         googleOAuthTokenEndpoint,
-        data: {
+        headers: const HttpHeaders.rawMap({
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }),
+        body: HttpBody.form({
           'grant_type': 'refresh_token',
           'refresh_token': current.refreshToken,
           'client_id': clientId,
           'client_secret': clientSecret,
-        },
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+        }),
       );
-      final body = _asMap(response.data);
+      final body = _asMap(httpJsonBody(response));
       final accessToken = body['access_token'] as String?;
       if (accessToken == null || accessToken.isEmpty) {
         throw const GoogleOAuthException(
@@ -368,8 +376,8 @@ class GoogleDeviceAuthClient {
         accessToken: accessToken,
         expiresAt: DateTime.now().add(Duration(seconds: expiresIn)),
       );
-    } on DioException catch (e) {
-      final error = _asMap(e.response?.data)['error'] as String?;
+    } on RhttpException catch (e) {
+      final error = _asMap(httpErrorBody(e))['error'] as String?;
       if (error == 'invalid_grant') {
         throw const GoogleOAuthException(
           'Google rejected the refresh token (invalid_grant). Reconnect the '
@@ -406,11 +414,11 @@ class GoogleDeviceAuthClient {
     );
   }
 
-  GoogleOAuthException _mapDeviceError(DioException e, String action) {
-    final body = _asMap(e.response?.data);
+  GoogleOAuthException _mapDeviceError(RhttpException e, String action) {
+    final body = _asMap(httpErrorBody(e));
     final detail =
         (body['error_description'] ?? body['error']) as String? ??
-        e.message ??
+        _describe(e) ??
         'unknown error';
     CcInfraLog.warning('google_device_auth: failed to $action: $detail');
     return GoogleOAuthException(
@@ -418,6 +426,16 @@ class GoogleDeviceAuthClient {
       kind: GoogleOAuthFailureKind.tokenExchangeFailed,
     );
   }
+
+  /// The transport's own explanation, for the exceptions that carry one (rhttp
+  /// only puts one on connection/unknown failures and timeouts). A status
+  /// failure explains itself through the token endpoint's error body instead.
+  static String? _describe(RhttpException e) => switch (e) {
+    RhttpConnectionException(:final message) => message,
+    RhttpUnknownException(:final message) => message,
+    RhttpTimeoutException() => 'request timed out',
+    _ => null,
+  };
 
   /// Decodes the `email` claim from a Google id_token JWT payload. The token is
   /// Google-issued over TLS during the exchange, so the signature is not

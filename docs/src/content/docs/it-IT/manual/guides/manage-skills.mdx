@@ -1,22 +1,25 @@
 ---
 title: Installa e gestisci le skill
-description: Aggiungi repository GitHub come sorgenti di skill, sfoglia i loro cataloghi e installa, aggiorna o disinstalla le skill passando per il varco della scansione antivirus.
+description: Installa e aggiorna le skill dello spazio di lavoro attraverso il varco della scansione, poi confronta le revisioni salvate con valutazioni delle skill a budget.
 slug: it-IT/manuale/guide/gestisci-skill
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Questa guida mostra come riempire uno spazio di lavoro di skill provenienti da
 GitHub: aggiungi un repository come sorgente, installa da esso le skill che
-vuoi e mantienile aggiornate nel tempo.
+vuoi e mantienile aggiornate nel tempo. Puoi anche valutare una revisione
+salvata rispetto a una baseline appaiata prima di decidere se tenerla.
 
 La cosa importante da sapere prima di iniziare: **un repository sorgente non è
 attendibile.** Il suo nome, la sua descrizione e il numero di stelle sono
-scritti da chi lo possiede. L'unico segnale di sicurezza di cui Control Center
-si fida è il verdetto della scansione antivirus, che ogni installazione
-attraversa prima che qualsiasi cosa arrivi su disco o in un prompt di un
-agente. Se vuoi il ragionamento, leggi la
-[sezione sulle skill del modello degli agenti](/it-IT/manuale/concetti/modello-agenti/); questa pagina resta
-sul fare.
+scritti da chi lo possiede. Ogni installazione attraversa il varco della
+scansione antivirus prima che qualsiasi cosa arrivi su disco o in un prompt di
+un agente. Quel verdetto è un controllo di ammissione, non la prova che una
+skill sia sicura o utile. Leggi la
+[sezione sulle skill del modello degli agenti](/it-IT/manuale/concetti/modello-agenti/)
+per il modello di installazione e [Eval e
+qualità](/it-IT/manuale/concetti/eval-e-qualita/) per capire in che cosa le
+evidenze comportamentali differiscono da una scansione.
 
 Le skill si trovano in **Impostazioni → Spazio di lavoro → Competenze**
 (`/workspaces/<id>/settings/workspace/skills`). Hanno come ambito lo spazio di
@@ -90,6 +93,90 @@ di un'installazione — una skill la cui nuova versione finisce in quarantena
 viene rifiutata e la versione che avevi resta al suo posto. L'hash della
 versione precedente viene conservato come riferimento per il rollback nel lock.
 
+## Valuta una skill
+
+1. Apri **Impostazioni → Spazio di lavoro → Competenze**, seleziona la skill
+   installata e salva ogni modifica. In **Valutazione della skill**, controlla
+   l'hash del pacchetto.
+2. Seleziona **Avvia valutazione**. Scegli una **Raccolta di attività** adatta
+   allo scopo della skill e un **Adattatore**. Il harness integrato usa un
+   provider configurato e un modello in grado di usare gli strumenti. **Claude
+   Code** usa l'account Claude gestito predefinito e un identificatore di
+   modello concreto; accedi prima in **Impostazioni → Adattatori**. Non prende
+   in prestito l'accesso personale dell'operatore del server.
+3. Scegli un **Confronto** dalla tabella qui sotto.
+4. Imposta **Ripetizioni per attività** (1–20) e **Budget (centesimi di dollaro
+   USA)**. Per esempio, `100` significa 1 US$. Seleziona **Avvia valutazione**
+   per autorizzare il lavoro a pagamento presso il provider.
+5. Segui la campagna in **Osservabilità → Qualità**, oppure torna indietro
+   tramite **Apri Qualità** nel pannello della skill.
+
+Per gli abbonamenti **Claude Code** e **Codex OAuth**, il budget è una **soglia
+di arresto per l'uso equivalente in API**, non un limite di fattura né una
+misura della quota dell'abbonamento. `100` ammette una soglia di 1 US$: una
+chiamata in corso può superarla, ma non parte nessun'altra chiamata quando l'uso
+riportato la raggiunge. Anche un uso sconosciuto arresta le chiamate successive.
+Un budget piccolo può lasciare il confronto parziale; non promette il
+completamento della raccolta selezionata.
+
+I provider con chiave API mantengono prenotazioni conservative per ogni
+chiamata, basate su limiti di token e prezzi documentati. Possono rifiutare
+`100` prima di spendere quando una singola chiamata prenotata in sicurezza
+richiede di più. L'errore identifica il modello selezionato e la prenotazione
+minima; scegli un modello meno costoso o aumenta quel budget.
+
+| Confronto | Usalo per rispondere |
+| --- | --- |
+| **Assente vs disponibile** | La scoperta e l'uso normali di questa skill migliorano il risultato rispetto al non averla? |
+| **Precedente vs attuale** | L'aggiornamento preserva o migliora il comportamento rispetto a una revisione acquisita in precedenza? |
+| **Caricamento forzato vs assente** | Il contenuto può aiutare quando viene caricato esplicitamente? Questo diagnostica i problemi di caricamento; non dimostra la scoperta normale. |
+| **Composizione** | L'aggiunta del candidato aiuta o entra in conflitto con le skill d'ambiente selezionate? La baseline mantiene lo stesso inventario d'ambiente senza il candidato. |
+
+**Precedente vs attuale** richiede un hash del pacchetto dalla cronologia delle
+campagne. Valuta una revisione prima di sostituirla, se vuoi usarla come
+baseline; la cronologia Git arbitraria non viene importata.
+
+Le modifiche non salvate, un hash non disponibile e la modalità demo in sola
+lettura disattivano l'avvio. Il server controlla anche l'accesso allo spazio di
+lavoro e al repository, la quarantena della scansione, i criteri delle azioni,
+il supporto dei modelli, i prezzi e l'isolamento dell'esecuzione. Risolvi un
+controllo fallito invece di aggirarlo. L'identità di provider e modello viene
+registrata, ma un alias di modello remoto non congela i pesi sottostanti del
+provider.
+
+### Ispeziona, annulla ed esporta
+
+Leggi copertura e spesa insieme agli esiti per attività e alle regressioni. Apri
+i singoli tentativi per esaminare i caricamenti delle skill osservati, gli
+eventi degli strumenti, gli errori e le evidenze dei verificatori. I risultati
+**parziali**, **non aggiornati** e **non conclusivi** non sono raccomandazioni
+ad adottare una revisione. L'hash di un report identifica il pacchetto
+acquisito, non necessariamente quello attualmente installato.
+
+Usa **Annulla esecuzione** per il lavoro in coda o attivo. I tentativi
+completati restano visibili; l'annullamento non rimborsa il lavoro già svolto
+presso il provider. **Copia JSON oscurato** copia negli appunti un'esportazione
+di evidenze limitata, non un bundle di replay completo del codice sorgente
+privato. Vedi [Eval e qualità](/it-IT/manuale/concetti/eval-e-qualita/) per le
+evidenze e i limiti della piattaforma.
+
+### Rivaluta dopo gli aggiornamenti
+
+La rivalutazione automatica a pagamento è **disattivata per impostazione
+predefinita**. Dopo aver valutato la revisione attuale, scegli una campagna in
+**Configurazione dei criteri di aggiornamento** e seleziona **Attiva le
+valutazioni degli aggiornamenti**. Modificare questi criteri richiede
+l'autorizzazione di amministratore dello spazio di lavoro. La campagna
+selezionata fornisce la raccolta di attività, l'adattatore, provider/modello, il
+confronto, le ripetizioni e il budget.
+
+Le successive modifiche di contenuto ammesse pianificano lavoro a budget; gli
+hash invariati vengono deduplicati. **Disattiva le valutazioni degli
+aggiornamenti** impedisce future ammissioni automatiche. Usa **Annulla
+esecuzione** per una campagna già ammessa. I report storici restano legati ai
+loro hash di pacchetto originali; la rivalutazione non pubblica, non abilita e
+non riscrive una skill.
+
 ## Disinstalla una skill, rimuovi un repository
 
 **Disinstalla** (nella vista di dettaglio di una skill installata, oppure
@@ -130,8 +217,9 @@ Le skill di repo passano la stessa scansione fail-closed (`pass` / `warn` /
 ammesso; `quarantine` viene trattenuto, senza alcun override dell'operatore su
 quel percorso.
 
-Vedi [Skill con ambito di repository](/it-IT/manuale/concetti/modello-agenti/#repo-scoped-skills) e
-[Comandi slash](/it-IT/manuale/riferimento/comandi-slash/).
+Vedi [Skill con ambito di
+repository](/it-IT/manuale/concetti/modello-agenti/#skill-con-ambito-di-repository)
+e [Comandi slash](/it-IT/manuale/riferimento/comandi-slash/).
 
 ## Guide correlate
 
@@ -141,3 +229,4 @@ Vedi [Skill con ambito di repository](/it-IT/manuale/concetti/modello-agenti/#re
 ## Concetti correlati
 
 - [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/)
+- [Eval e qualità](/it-IT/manuale/concetti/eval-e-qualita/)

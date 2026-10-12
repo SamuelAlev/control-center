@@ -33,6 +33,12 @@ class FileSearchTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.read;
 
+  /// Audited safe for speculative (early) execution: a ranked filename lookup
+  /// through the injected [FileSearchPort] (index-backed, read-only), capped by
+  /// [maxResults]. No writes, no prompts, no network.
+  @override
+  bool get speculativeReadSafe => true;
+
   @override
   Map<String, dynamic> get inputSchema => {
     'type': 'object',

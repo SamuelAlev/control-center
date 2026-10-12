@@ -1,36 +1,36 @@
 ---
 title: Kawalan jauh dan mudah alih
-description: Bagaimana telefon mencapai pelayan anda melalui geganti berperantara yang tersegel hujung ke hujung dan bukan pautan peer-to-peer, serta model akses berlapis yang mengekalkan jangkauan itu sempit.
+description: Bagaimana telefon mencapai pelayan anda melalui sambungan tersulit hujung ke hujung, sama ada langsung atau berperantara, serta model akses berlapis yang mengekalkan jangkauan itu sempit.
 slug: ms-MY/manual-pengguna/konsep/kawalan-jauh
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center ialah aplikasi desktop, tetapi kerja yang dijejakinya tidak
 berhenti apabila anda meninggalkan meja. **Kawalan jauh** menggandingkan telefon
 anda dengan `cc_server` anda, menggunakan **[Remote](https://remote.usectrl.dev/)**,
 aplikasi teman di remote.usectrl.dev, supaya anda boleh mengikuti armada dari
-sana: membaca mesej dan tiket, membalas ejen, menyusun suapan berita anda, tanpa
-audio, transkrip, kod sumber atau kelayakan yang tersimpan di pelayan pernah
-meninggalkannya.
+sana: membaca mesej dan tiket, membalas ejen, dan menyusun suapan berita anda
+melalui sambungan tersulit hujung ke hujung. Telefon dan `cc_server` ialah titik
+akhir teks biasa yang dipercayai; geganti hanya membawa rekod aplikasi tersulit.
 
 Anggaplah ia sebagai teman kepada dek yang kebanyakannya hanya membaca. Ia
 tidak bertujuan menggantikan klien desktop sepenuhnya.
 
-:::note[Dua laluan jauh yang berbeza]
-Teman telefon berganding dengan `cc_server` melalui **geganti WebSocket
-berperantara** yang membawa bingkai JSON-RPC tersegel hujung ke hujung. **Binaan
-web** penuh (dan desktop yang diarahkan ke pelayan jauh) ialah laluan jauh yang
-satu lagi; ia mendail `cc_server` melalui WebSocket dan memaparkan aplikasi
-lengkap. Lihat
+:::note[Dua klien jauh yang berbeza]
+Teman telefon dan **binaan web** penuh (atau desktop yang diarahkan ke pelayan
+jauh) boleh menyambung terus ke `cc_server` atau menggunakan geganti WebSocket
+berperantara. Kedua-dua laluan memerlukan sesi tersulit yang sama; telefon
+mendedahkan lebih sedikit operasi daripada klien lengkap. Lihat
 [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/) untuk perbezaan
-antara keduanya.
+antara klien.
 :::
 
 ## Pengangkutan
 
 Telefon mencapai `cc_server` melalui WebSocket: sama ada sambungan langsung
 (loopback, LAN, tailnet atau `wss://`) atau bilik yang dikawal jemputan pada
-broker isyarat yang menyampaikan bingkai tersegel. Tiada saluran data
+broker isyarat. Kedua-dua laluan memerlukan sesi yang disahkan dan disulitkan
+hujung ke hujung; broker hanya memajukan rekod tersulitnya. Tiada saluran data
 peer-to-peer.
 
 ## Apa yang boleh dilakukan oleh telefon
@@ -55,23 +55,26 @@ sekadar diniatkan.
 
 ## Bagaimana pautan dibina
 
-Sambungan ini menggunakan **geganti berperantara**: pelayan menyertai satu bilik
-yang dikawal jemputan pada broker `wss://` sebagai pemiliknya dan setiap klien
-yang berganding — desktop, web, telefon — menyertai bilik yang sama dengan token
-kemasukan yang dibatasi masa. Tiga komponen bekerjasama:
+Apabila telefon tidak dapat mencapai pelayan secara langsung, sambungan
+menggunakan **geganti berperantara**: pelayan menyertai satu bilik yang dikawal
+jemputan pada broker `wss://` sebagai pemiliknya dan klien yang berganding
+menyertai dengan token kemasukan yang dibatasi masa. Tiga komponen bekerjasama:
 
 | Komponen               | Peranan                                                                                                                                                                                                                                                                        |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Remote (aplikasi telefon)** | Aplikasi web teman, yang dihoskan secara lalai di `remote.usectrl.dev`, atau dihoskan sendiri. Dimuatkan dalam pelayar, menyimpan rekod penggandingan dalam IndexedDB.                                                                                                 |
-| **Broker geganti**     | Geganti `wss://` tanpa keadaan (`cc_signaling_server`) yang menghoskan bilik N-arah. Ia membawa **bingkai legap sahaja**: setiap muatan tersegel hujung ke hujung antara telefon dan pelayan, jadi broker tidak pernah melihat data aplikasi atau rahsia penggandingan dan tidak pernah mentafsir apa yang disampaikannya. |
+| **Broker geganti**     | Geganti `wss://` tanpa keadaan (`cc_signaling_server`) yang menghoskan bilik N-arah. Ia memajukan rekod tersulit tanpa rahsia penggandingan atau teks biasa aplikasi, tetapi melihat pengecam penghalaan, IP, saiz rekod dan masa. |
 | **`cc_server`**        | Pemilik bilik. Ia menjawab panggilan telefon melalui dispatcher yang sama seperti yang digunakan oleh setiap klien lain.                                                                                                                                                       |
 
 Tawaran penggandingan membawa **deskriptor sambungan** yang menyenaraikan setiap
 laluan ke pelayan (LAN, tailnet, `wss://` awam, geganti) berserta cap jari
-identitinya. Penyelesai telefon memilih laluan terbaik yang boleh dicapai dan
-menyematkan cap jari itu pada sambungan pertama (TOFU); geganti menjamin
-ketersambungan walaupun tiada laluan langsung wujud, tanpa pernah dapat membaca
-trafiknya.
+identitinya. Penyelesai telefon memilih laluan terbaik yang boleh dicapai. Pelayan
+menandatangani jabat tangan tersulit itu dan klien menyematkan cap jarinya. Pada
+sambungan pertama, semak cap jari itu terhadap kod QR atau sumber dipercayai lain:
+identiti bertandatangan pertama sahaja tidak membuktikan pelayan mana yang anda
+capai. Sematan yang berubah ditolak dan bukan dipercayai semula secara senyap.
+Geganti membawa teks sifer apabila tiada laluan langsung, tetapi masih boleh
+memutuskan atau melambatkan sambungan.
 
 ## Apakah muatan penggandingan
 
@@ -83,26 +86,33 @@ ialah anatominya.
 https://<pwa-host>/#<payload>
 ```
 
-Muatan itu berada dalam **fragment** URL, bahagian selepas `#` yang tidak pernah
-dihantar oleh pelayar kepada pelayan, jadi hos HTTPS PWA tidak pernah
-melihatnya. Ia membawa segala yang diperlukan telefon untuk mencapai pelayan dan
-membuktikan identitinya: deskriptor sambungan (setiap laluan berserta cap jari
-identiti), id peranti yang baru dijana, kunci pra-kongsi 32 bait dan cap
-kedaluwarsa. Telefon menyahkodnya, menyimpan rekod penggandingan secara
-setempat dan membuang fragment itu supaya rahsia tersebut keluar daripada URL.
+Muatan itu berada dalam **fragment** URL, bahagian selepas `#` yang tidak dihantar
+oleh pelayar dalam permintaan HTTP kepada hos PWA. Ia membawa segala yang
+diperlukan telefon untuk mencapai pelayan dan membuktikan identitinya: deskriptor
+sambungan (setiap laluan berserta cap jari identiti), id peranti yang baru dijana,
+kunci pra-kongsi 32 bait dan cap kedaluwarsa. Telefon menyahkodnya, menyimpan rekod
+penggandingan secara setempat dan membuang fragment itu daripada URL. Kod aplikasi
+web boleh membaca fragment itu, jadi gunakan hos aplikasi yang dipercayai dan
+anggap pautan itu sebagai rahsia.
 
 Terdapat dua bentuk muatan dan kedua-duanya **tidak boleh ditukar ganti**. Kod
 QR telefon yang dijana daripada panel penggandingan dalam aplikasi ialah
 `PairingPayload` v2 di atas, yang diarahkan ke hos PWA Remote. `cc_server pair
---client-url` mengeluarkan pautan v1 yang berbeza dan lebih lama (`{s, i, k}` —
-URL pelayan, id peranti, kunci) yang ditujukan untuk klien **web** sahaja.
+--client-url` mengeluarkan pautan v1 (`{s, i, k}` — URL pelayan, id peranti,
+kunci) yang ditujukan untuk klien **web** sahaja. Kedua-duanya ialah format data
+penggandingan, bukan sandaran pengangkutan: kedua-dua klien mesti menyokong
+protokol sesi tersulit semasa.
 
 Kedua-duanya juga berbeza dari segi tempoh hayat, yang mudah disalah anggap:
 
 | Dijana oleh                              | Kedaluwarsa kelayakan                        |
 | ---------------------------------------- | -------------------------------------------- |
 | Panel penggandingan dalam aplikasi (`pairing.mint`) | 30 hari, sentiasa                  |
-| `cc_server pair` pada baris perintah     | **Tiada** — kelayakan itu tidak kedaluwarsa  |
+| `cc_server pair` pada baris perintah     | Tiada kedaluwarsa dikodkan; dasar pelayan tetap terpakai |
+
+Dasar seluruh pelayan bagi umur peranti maksimum dan tamat masa melahu boleh
+menolak mana-mana kelayakan itu lebih awal. Tiada format penggandingan yang
+memintas dasar tersebut.
 
 ## Model akses
 
@@ -161,13 +171,15 @@ terpakai. Ini ialah invarian
 [pengasingan ruang kerja](/ms-MY/manual-pengguna/konsep/ruang-kerja/) yang sama
 yang dikuatkuasakan oleh seluruh produk.
 
-### 5. Bingkai tersegel hujung ke hujung yang dikunci dengan kunci pra-kongsi
+### 5. Penyulitan hujung ke hujung pada sambungan langsung dan melalui geganti
 
-Setiap bingkai antara telefon dan pelayan disegel dengan kunci penggandingan;
-token kemasukan hanya membawa klien masuk ke dalam bilik, ia tidak menyahsulit
-apa-apa. Broker menyampaikan teks sifer dan tidak pernah melihat kunci itu.
-Peranti yang dibatalkan akan mendapati kelayakannya sudah tiada, jadi ia **gagal
-secara tertutup** apabila menyambung semula.
+Setiap sesi klien, langsung atau melalui geganti, memerlukan jabat tangan Noise
+yang ditandatangani. Kunci penggandingan mengesahkan jabat tangan itu; kunci
+sementara yang baharu menerbitkan kunci trafik, bukannya menggunakan kunci
+penggandingan untuk menyegel setiap bingkai. Pelayan menandatangani identitinya
+dalam pertukaran itu dan klien memeriksa sematan cap jari yang disimpannya. Tiada
+sandaran kepada teks biasa atau klien lama. Token kemasukan geganti hanya membawa
+klien masuk ke dalam bilik; ia tidak boleh menyahsulit rekod.
 
 Kelayakan yang dijana oleh aplikasi dibatasi masa selama 30 hari; selepas itu
 gerbang sambungan akan menolaknya dan telefon mesti mengganding semula.
@@ -184,21 +196,24 @@ mengambil daripada satu peruntukan, jadi klien yang dirampas tidak boleh
 menambah kelonggaran dengan membuka lebih banyak sesi dan seorang ahli yang
 bising tidak boleh merampas peruntukan ahli lain.
 
-### 7. Broker yang tidak mempelajari apa-apa
+### 7. Broker yang tidak boleh membaca kandungan aplikasi
 
-Broker geganti ini sengaja dibiarkan bodoh: ia menghoskan bilik, menyampaikan
-bingkai tersegel dan tidak menyimpan sebarang akaun, data aplikasi atau kunci.
-Bilik dikawal jemputan dan bersifat sementara. Data aplikasi, audio, transkrip,
-kod sumber dan kelayakan semuanya kekal di pelayan.
+Broker geganti menghoskan bilik sementara yang dikawal jemputan dan memajukan
+rekod tersulit tanpa teks biasa aplikasi atau kunci penggandingan. Namun ia masih
+melihat alamat IP, pengecam bilik dan rakan, saiz rekod, masa serta tempoh hayat
+sambungan, dan boleh menggugurkan atau melambatkan trafik. Klien yang berganding
+dan `cc_server` yang dipilih ialah titik akhir teks biasa; operator pelayan dan
+perkhidmatan yang dihantar kandungan olehnya boleh melihat kandungan itu.
+Penyulitan semasa transit tidak menyulitkan data pelayan semasa disimpan.
 
 ## Kemas kini langsung
 
 Setelah berganding, telefon menerima **kemas kini langsung** sebagai bingkai
 pemberitahuan — mesej ejen baharu, tiket yang ditugaskan kepada anda, perubahan
-status — mencerminkan pemberitahuan desktop itu sendiri. Pelayan menyiarkan
-bingkai tersebut kepada setiap sesi yang bersambung dan penapis ruang kerja
-digunakan di sisi klien, jadi apa yang anda lihat terhad kepada ruang kerja yang
-sedang anda buka.
+status — mencerminkan pemberitahuan desktop itu sendiri. Pelayan memeriksa
+keahlian ruang kerja sebelum memajukan peristiwa kepada sesuatu sesi. Klien
+kemudian menapis peristiwa yang telah dibenarkan itu kepada ruang kerja yang
+sedang anda buka; penapis paparan itu bukan sempadan akses.
 
 ## Di mana ia berada
 
@@ -211,8 +226,8 @@ kedua, bukan hanya telefon — alirannya sama, hanya pautan mendalamnya berbeza.
 
 ::::note
 Kawalan jauh berjalan di sisi pelayan dan **tidak** didedahkan melalui MCP.
-Telefon berkomunikasi dengan dispatcher pelayan itu sendiri melalui geganti; ia
-bukan klien MCP bagi pelayan luaran.
+Telefon berkomunikasi dengan dispatcher pelayan itu sendiri melalui sambungan
+langsung atau geganti tersulitnya; ia bukan klien MCP bagi pelayan luaran.
 ::::
 
 ## Lihat juga

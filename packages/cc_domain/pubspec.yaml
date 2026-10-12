@@ -1,5 +1,5 @@
 name: cc_domain
-description: "Pure-Dart shared contracts for Control Center — JSON-RPC wire types and wire DTOs consumed by both the desktop app and the cc_remote PWA. Zero infrastructure deps (no drift/dio/dart:io/ffi) so it imports on native and Flutter web."
+description: "Pure-Dart shared contracts for Control Center — JSON-RPC wire types and wire DTOs consumed by both the desktop app and the cc_remote PWA. Zero infrastructure deps (no drift/rhttp/dart:io/ffi) so it imports on native and Flutter web."
 publish_to: "none"
 version: 0.0.1
 

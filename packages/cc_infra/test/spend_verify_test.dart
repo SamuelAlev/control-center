@@ -1,14 +1,18 @@
 import 'package:cc_infra/src/claude_accounts/claude_account_store.dart';
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/usage/subscription_usage_service.dart';
+import 'package:cc_natives/cc_natives.dart';
 import 'package:test/test.dart';
 
 /// THROWAWAY — checks the spend block reaches the entity.
 void main() {
+  setUpAll(initializeRhttp);
   test('per-account readings, windows or spend', () async {
     const dataDir = '/Users/samuel.alev/dev/control-center/apps/cc_server/data';
     final store = ClaudeAccountStore(dataDir: dataDir);
-    final service = SubscriptionUsageService(dio: createDio());
+    final httpClient = createHttpClient();
+    addTearDown(httpClient.dispose);
+    final service = SubscriptionUsageService(httpClient: httpClient);
     for (final a in await store.list()) {
       await store.syncCredentialFromKeychain(a.id);
       final u = await service.fetchClaudeForConfigDir(store.configDirFor(a.id));

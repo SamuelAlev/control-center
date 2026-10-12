@@ -13689,6 +13689,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get composerDropToAttach => '拖放到此处以附加';
 
   @override
+  String get composerAttachmentUploading => '正在上传…';
+
+  @override
+  String get composerAttachmentReady => '已就绪';
+
+  @override
+  String get composerAttachmentUploadFailed => '上传失败';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return '文件超过 $limit 的大小限制';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => '无法读取此文件';
+
+  @override
+  String get composerAttachmentWaitForUploads => '请等待附件上传完成';
+
+  @override
+  String get composerAttachmentResolveFailures => '发送前请重试或移除上传失败的附件';
+
+  @override
   String get attachmentUnavailable => '附件不可用';
 
   @override
@@ -14795,10 +14818,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get notificationAgentAwaitingInput => '智能体在等你';
+  String get notificationAgentAwaitingInput => '智能体需要关注';
 
   @override
-  String get notifyAgentAwaitingInput => '当智能体需要你的批准、回答或可用的凭据时';
+  String get notifyAgentAwaitingInput => '当智能体需要批准、回答或有效凭据，或策略阻止某项操作时';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -14869,6 +14892,373 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shutdownSubtitleServer => '服务器正在停止';
+
+  @override
+  String get skillEvalAbsent => '缺失与可用';
+
+  @override
+  String get skillEvalAmbient => '环境技能';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return '产物引用: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · 重复 $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => '尝试次数';
+
+  @override
+  String get skillEvalAvailableEvent => '可用';
+
+  @override
+  String get skillEvalBaseline => '上一版本哈希';
+
+  @override
+  String get skillEvalBodyLoad => '内容已加载';
+
+  @override
+  String get skillEvalBudgetCents => '预算 (美分)';
+
+  @override
+  String get skillEvalBudgetNote => '付费评估使用所选服务商和预算。安全扫描结果另行提供。';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      '订阅预算按等效 API 价格统计用量，并非账单金额。正在进行的调用可能超出预算；达到预算后不会发起新调用。安全扫描单独进行。';
+
+  @override
+  String get skillEvalCancel => '取消运行';
+
+  @override
+  String get skillEvalCancelled => '已取消';
+
+  @override
+  String get skillEvalCancelling => '正在取消';
+
+  @override
+  String get skillEvalComparison => '对比';
+
+  @override
+  String get skillEvalCompleted => '已完成';
+
+  @override
+  String get skillEvalComposition => '组成';
+
+  @override
+  String get skillEvalCorpus => '任务集';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · 重复 $repeatsString 次';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => '已观测到所有计划试验';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return '当前包哈希: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => '关闭更新评估';
+
+  @override
+  String get skillEvalEnableUpdates => '开启更新评估';
+
+  @override
+  String get skillEvalExport => '复制已脱敏的 JSON';
+
+  @override
+  String get skillEvalFailed => '失败';
+
+  @override
+  String get skillEvalForced => '强制加载与缺失对比';
+
+  @override
+  String get skillEvalForcedEvent => '强制加载';
+
+  @override
+  String get skillEvalHashUnavailable => '此服务器无法获取包哈希。评估已禁用。';
+
+  @override
+  String get skillEvalHistory => '版本历史';
+
+  @override
+  String get skillEvalImproved => '有所改善';
+
+  @override
+  String get skillEvalIncomplete => '未完成';
+
+  @override
+  String get skillEvalInconclusive => '无明确结论';
+
+  @override
+  String get skillEvalInferred => '推断得出';
+
+  @override
+  String get skillEvalInterrupted => '已中断';
+
+  @override
+  String get skillEvalLoadUnobserved => '无法观测技能加载情况；没有相关事件不代表技能被忽略。';
+
+  @override
+  String get skillEvalModel => '所选模型';
+
+  @override
+  String get skillEvalNoAttempts => '尚无尝试记录。';
+
+  @override
+  String get skillEvalNoModels => '没有可用的已连接模型。请先在设置中连接服务商。';
+
+  @override
+  String get skillEvalNoPrevious => '评估活动历史中没有上一版本的哈希。请在替换前评估上一版本。';
+
+  @override
+  String get skillEvalNoReport => '尚无报告；仍可查看部分尝试记录。';
+
+  @override
+  String get skillEvalNoWorkspace => '未选择工作区。';
+
+  @override
+  String get skillEvalNoTasks => '尚无任务报告。';
+
+  @override
+  String get skillEvalNoVerifiers => '未记录验证证据。';
+
+  @override
+  String get skillEvalNotEvaluated => '尚未针对这些确切字节进行评估。扫描结果不能作为行为证据。';
+
+  @override
+  String get skillEvalNotVerified => '未验证';
+
+  @override
+  String get skillEvalObserved => '已观测';
+
+  @override
+  String get skillEvalOpenQuality => '打开质量页面';
+
+  @override
+  String get skillEvalPolicyNote =>
+      '默认情况下，保存技能不会启动付费评估。只有明确启用更新时自动重新评估后，保存才会启动受预算限制的付费重新评估。';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign => '请先评估一个版本，再配置更新策略。';
+
+  @override
+  String get skillEvalPolicyTemplate => '更新策略配置';
+
+  @override
+  String get skillEvalPartial => '证据不完整；无法判定是否采用';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '已完成 $completedString / $plannedString 次尝试';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return '服务商: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro => '工作区技能评估活动及特定版本的证据。';
+
+  @override
+  String get skillEvalQueued => '已排队';
+
+  @override
+  String get skillEvalReconnecting => '正在重新连接评估活动快照…';
+
+  @override
+  String get skillEvalRefresh => '刷新';
+
+  @override
+  String get skillEvalReferenceLoad => '引用已加载';
+
+  @override
+  String get skillEvalRepetitions => '每项任务的重复次数';
+
+  @override
+  String get skillEvalReport => '证据报告';
+
+  @override
+  String get skillEvalRunning => '运行中';
+
+  @override
+  String get skillEvalScriptExecution => '脚本已执行';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return '花费: $spent / 预算 $budget';
+  }
+
+  @override
+  String get skillEvalStart => '开始评估';
+
+  @override
+  String get skillEvalStartTitle => '对比技能版本';
+
+  @override
+  String get skillEvalStale => '已过期';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return '已过期: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return '不同任务簇：$count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate (已验证 $passes 次) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => '各实验组任务';
+
+  @override
+  String get skillEvalToolError => '工具错误';
+
+  @override
+  String get skillEvalTools => '工具事件';
+
+  @override
+  String get skillEvalTitle => '技能评估';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return '不可用: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => '未知';
+
+  @override
+  String get skillEvalUnsaved => '未保存的编辑不会纳入评估。请先保存。';
+
+  @override
+  String get skillEvalUncertainty => '不确定性区间';
+
+  @override
+  String get skillEvalVerified => '已验证';
+
+  @override
+  String get skillEvalVerifiers => '验证';
+
+  @override
+  String get skillEvalVerdict => '结论';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return '复制完成: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => '违反计划';
+
+  @override
+  String get skillEvalPreserved => '质量保持不变';
+
+  @override
+  String get skillEvalPrevious => '上一版本与当前版本对比';
+
+  @override
+  String get skillEvalRegressed => '已证实退化';
+
+  @override
+  String get skillEvalCostRegression => '成本回归';
+
+  @override
+  String get skillEvalHarnessError => '测试框架错误';
+
+  @override
+  String get skillBehaviorRouting => '技能路由';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive 次按预期使用 · $falsePositive 次意外使用 · $falseNegative 次漏用 · $trueNegative 次正确跳过';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive 次使用情况不明 · $negative 次跳过情况不明 · $notOffered 次未提供';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return '观测准确率 $precision · 召回率 $recall · 误报率 $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => '强制组 · 仅用于诊断';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      '比率仅基于可观测的访问。通过 Shell 或搜索的访问可能无法确认；加载技能并不能证明已应用。';
+
+  @override
+  String get skillBehaviorSafety => '模拟安全性';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts 次产物检查通过 · $denials 次策略拒绝 · $violations 次受保护文件违规';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote => '产物检查是模拟的，不代表真实环境中的攻击发生率；实际副作用未受到监测。';
+
+  @override
+  String get skillBehaviorUtility => '按任务组统计效用';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts 次经验证的成功';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote => '所有尝试均计入效用分母，包括失败和未完成的尝试。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -28721,6 +29111,29 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get composerDropToAttach => '放下以附加';
 
   @override
+  String get composerAttachmentUploading => '正在上傳…';
+
+  @override
+  String get composerAttachmentReady => '已就緒';
+
+  @override
+  String get composerAttachmentUploadFailed => '上傳失敗';
+
+  @override
+  String composerAttachmentTooLarge(String limit) {
+    return '檔案超過 $limit 的大小限制';
+  }
+
+  @override
+  String get composerAttachmentUnreadable => '無法讀取此檔案';
+
+  @override
+  String get composerAttachmentWaitForUploads => '請等待附件上傳完成';
+
+  @override
+  String get composerAttachmentResolveFailures => '傳送前請重試或移除上傳失敗的附件';
+
+  @override
   String get attachmentUnavailable => '附件無法使用';
 
   @override
@@ -29828,10 +30241,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get notificationAgentAwaitingInput => '代理正在等你';
+  String get notificationAgentAwaitingInput => '代理需要關注';
 
   @override
-  String get notifyAgentAwaitingInput => '當代理需要你的核准、回答或可用的憑證時';
+  String get notifyAgentAwaitingInput => '當代理需要核准、回答或有效憑證，或政策封鎖某項操作時';
 
   @override
   String notificationAgentNeedsApproval(String agent) {
@@ -29902,4 +30315,371 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get shutdownSubtitleServer => '伺服器正在停止';
+
+  @override
+  String get skillEvalAbsent => '未提供與可用';
+
+  @override
+  String get skillEvalAmbient => '環境技能';
+
+  @override
+  String skillEvalArtifactRef(String reference) {
+    return '產出項目參照: $reference';
+  }
+
+  @override
+  String skillEvalAttempt(String task, String arm, int repeat) {
+    final intl.NumberFormat repeatNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatString = repeatNumberFormat.format(repeat);
+
+    return '$task · $arm · 重複 $repeatString';
+  }
+
+  @override
+  String get skillEvalAttempts => '嘗試次數';
+
+  @override
+  String get skillEvalAvailableEvent => '可用';
+
+  @override
+  String get skillEvalBaseline => '前一修訂版本雜湊值';
+
+  @override
+  String get skillEvalBodyLoad => '內容已載入';
+
+  @override
+  String get skillEvalBudgetCents => '預算 (美分)';
+
+  @override
+  String get skillEvalBudgetNote => '付費評估會使用所選提供者及預算。安全掃描結果另行提供。';
+
+  @override
+  String get skillEvalUsageBudgetNote =>
+      '訂閱預算依等效 API 價格統計用量，並非帳單金額。進行中的呼叫可能超出預算；達到預算後不會發起新呼叫。安全掃描另行執行。';
+
+  @override
+  String get skillEvalCancel => '取消執行';
+
+  @override
+  String get skillEvalCancelled => '已取消';
+
+  @override
+  String get skillEvalCancelling => '正在取消';
+
+  @override
+  String get skillEvalComparison => '比較';
+
+  @override
+  String get skillEvalCompleted => '已完成';
+
+  @override
+  String get skillEvalComposition => '組成';
+
+  @override
+  String get skillEvalCorpus => '任務集';
+
+  @override
+  String skillEvalCoverage(String corpus, int repeats) {
+    final intl.NumberFormat repeatsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String repeatsString = repeatsNumberFormat.format(repeats);
+
+    return '$corpus · 重複 $repeatsString 次';
+  }
+
+  @override
+  String get skillEvalCoverageComplete => '已觀察所有預定試驗';
+
+  @override
+  String skillEvalCurrentHash(String hash) {
+    return '目前套件雜湊值: $hash';
+  }
+
+  @override
+  String get skillEvalDisableUpdates => '停用更新評估';
+
+  @override
+  String get skillEvalEnableUpdates => '啟用更新評估';
+
+  @override
+  String get skillEvalExport => '複製已遮蔽資訊的 JSON';
+
+  @override
+  String get skillEvalFailed => '失敗';
+
+  @override
+  String get skillEvalForced => '強制載入與未提供';
+
+  @override
+  String get skillEvalForcedEvent => '強制載入';
+
+  @override
+  String get skillEvalHashUnavailable => '此伺服器無法取得套件雜湊值。評估功能已停用。';
+
+  @override
+  String get skillEvalHistory => '修訂版本紀錄';
+
+  @override
+  String get skillEvalImproved => '有所改善';
+
+  @override
+  String get skillEvalIncomplete => '未完成';
+
+  @override
+  String get skillEvalInconclusive => '無法判定';
+
+  @override
+  String get skillEvalInferred => '推斷所得';
+
+  @override
+  String get skillEvalInterrupted => '已中斷';
+
+  @override
+  String get skillEvalLoadUnobserved => '無法觀察技能載入情況；沒有事件不代表技能遭到忽略。';
+
+  @override
+  String get skillEvalModel => '所選模型';
+
+  @override
+  String get skillEvalNoAttempts => '尚無嘗試紀錄。';
+
+  @override
+  String get skillEvalNoModels => '沒有可用的已連線模型。請先在「設定」中連線至提供者。';
+
+  @override
+  String get skillEvalNoPrevious => '評估活動紀錄中沒有前一個雜湊值。請先評估前一修訂版本，再予以取代。';
+
+  @override
+  String get skillEvalNoReport => '尚無報告；仍可查看部分嘗試紀錄。';
+
+  @override
+  String get skillEvalNoWorkspace => '尚未選取工作區。';
+
+  @override
+  String get skillEvalNoTasks => '尚無任務回報。';
+
+  @override
+  String get skillEvalNoVerifiers => '尚無驗證證據紀錄。';
+
+  @override
+  String get skillEvalNotEvaluated => '尚未針對這些完全相同的位元組進行評估。掃描結果不構成行為證據。';
+
+  @override
+  String get skillEvalNotVerified => '未驗證';
+
+  @override
+  String get skillEvalObserved => '已觀察';
+
+  @override
+  String get skillEvalOpenQuality => '開啟品質頁面';
+
+  @override
+  String get skillEvalPolicyNote =>
+      '預設情況下，儲存技能不會啟動付費評估。只有明確啟用更新時自動重新評估後，儲存才會啟動受預算限制的付費重新評估。';
+
+  @override
+  String get skillEvalPolicyNeedsCampaign => '請先評估一個修訂版本，再設定更新政策。';
+
+  @override
+  String get skillEvalPolicyTemplate => '更新政策設定';
+
+  @override
+  String get skillEvalPartial => '證據不完整；無法判定是否採用';
+
+  @override
+  String skillEvalProgress(int completed, int planned) {
+    final intl.NumberFormat completedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String completedString = completedNumberFormat.format(completed);
+    final intl.NumberFormat plannedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String plannedString = plannedNumberFormat.format(planned);
+
+    return '已完成 $completedString / $plannedString 次嘗試';
+  }
+
+  @override
+  String skillEvalProvider(String provider) {
+    return '提供者: $provider';
+  }
+
+  @override
+  String get skillEvalQualityIntro => '工作區技能評估活動與各修訂版本的證據。';
+
+  @override
+  String get skillEvalQueued => '已排入佇列';
+
+  @override
+  String get skillEvalReconnecting => '正在重新連線至評估活動快照…';
+
+  @override
+  String get skillEvalRefresh => '重新整理';
+
+  @override
+  String get skillEvalReferenceLoad => '參照內容已載入';
+
+  @override
+  String get skillEvalRepetitions => '每項任務的重複次數';
+
+  @override
+  String get skillEvalReport => '證據報告';
+
+  @override
+  String get skillEvalRunning => '執行中';
+
+  @override
+  String get skillEvalScriptExecution => '指令碼已執行';
+
+  @override
+  String skillEvalSpend(String spent, String budget) {
+    return '支出: $spent / 預算 $budget';
+  }
+
+  @override
+  String get skillEvalStart => '開始評估';
+
+  @override
+  String get skillEvalStartTitle => '比較技能修訂版本';
+
+  @override
+  String get skillEvalStale => '已過時';
+
+  @override
+  String skillEvalStaleReason(String reason) {
+    return '已過時: $reason';
+  }
+
+  @override
+  String skillEvalTaskClusters(String count) {
+    return '不同任務群集：$count';
+  }
+
+  @override
+  String skillEvalTaskEvidence(String rate, String passes, String cost) {
+    return '$rate ($passes 次已驗證) · $cost';
+  }
+
+  @override
+  String get skillEvalTasks => '各組別任務';
+
+  @override
+  String get skillEvalToolError => '工具錯誤';
+
+  @override
+  String get skillEvalTools => '工具事件';
+
+  @override
+  String get skillEvalTitle => '技能評估';
+
+  @override
+  String skillEvalUnavailable(String reason) {
+    return '無法使用: $reason';
+  }
+
+  @override
+  String get skillEvalUnknown => '未知';
+
+  @override
+  String get skillEvalUnsaved => '未儲存的編輯不會納入評估。請先儲存再評估。';
+
+  @override
+  String get skillEvalUncertainty => '不確定性區間';
+
+  @override
+  String get skillEvalVerified => '已驗證';
+
+  @override
+  String get skillEvalVerifiers => '驗證';
+
+  @override
+  String get skillEvalVerdict => '結論';
+
+  @override
+  String skillEvalExportCopied(String filename) {
+    return '複製完成: $filename';
+  }
+
+  @override
+  String get skillEvalPlanViolation => '違反計畫';
+
+  @override
+  String get skillEvalPreserved => '品質維持不變';
+
+  @override
+  String get skillEvalPrevious => '前一版本與目前版本';
+
+  @override
+  String get skillEvalRegressed => '已證實退步';
+
+  @override
+  String get skillEvalCostRegression => '成本退化';
+
+  @override
+  String get skillEvalHarnessError => '測試框架錯誤';
+
+  @override
+  String get skillBehaviorRouting => '技能路由';
+
+  @override
+  String skillBehaviorRoutingCounts(
+    String truePositive,
+    String falsePositive,
+    String falseNegative,
+    String trueNegative,
+  ) {
+    return '$truePositive 次符合預期的使用 · $falsePositive 次非預期使用 · $falseNegative 次漏用 · $trueNegative 次正確略過';
+  }
+
+  @override
+  String skillBehaviorUnknownCounts(
+    String positive,
+    String negative,
+    String notOffered,
+  ) {
+    return '$positive 次使用情況不明 · $negative 次略過情況不明 · $notOffered 次未提供';
+  }
+
+  @override
+  String skillBehaviorRoutingRates(
+    String precision,
+    String recall,
+    String falsePositiveRate,
+  ) {
+    return '觀測精確率 $precision · 召回率 $recall · 偽陽性率 $falsePositiveRate';
+  }
+
+  @override
+  String get skillBehaviorForced => '強制組 · 僅供診斷';
+
+  @override
+  String get skillBehaviorRoutingNote =>
+      '比率僅根據可觀測的存取計算。透過 Shell 或搜尋的存取可能無法確認；載入技能不代表已套用。';
+
+  @override
+  String get skillBehaviorSafety => '模擬安全性';
+
+  @override
+  String skillBehaviorSafetyCounts(
+    String passes,
+    String attempts,
+    String denials,
+    String violations,
+  ) {
+    return '$passes/$attempts 次產物檢查通過 · $denials 次政策拒絕 · $violations 次受保護檔案違規';
+  }
+
+  @override
+  String get skillBehaviorSafetyNote => '產物檢查是模擬的，不代表真實環境中的攻擊發生率；實際副作用未受到監測。';
+
+  @override
+  String get skillBehaviorUtility => '依任務類別統計效用';
+
+  @override
+  String skillBehaviorUtilityCounts(String verified, String attempts) {
+    return '$verified/$attempts 次經驗證的成功';
+  }
+
+  @override
+  String get skillBehaviorUtilityNote => '所有嘗試均計入效用分母，包括失敗及未完成的嘗試。';
 }

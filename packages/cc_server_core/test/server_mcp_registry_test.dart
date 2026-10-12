@@ -15,9 +15,17 @@ import 'package:cc_mcp/cc_mcp.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/dao_newsfeed_repository.dart';
 import 'package:cc_server_core/src/server_mcp_registry.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
+
+/// Never touches the network: the newsfeed HTTP path is not exercised here, so
+/// this client only satisfies the `RssFetcherService` constructor.
+class _NullRhttpClient implements RhttpClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Proves the headless `cc_server` now serves a REAL MCP tool surface over
 /// `tools/list` — it used to mount `NoToolsRpcDispatcher` (method-not-found for
@@ -75,7 +83,7 @@ void main() {
       workspaceDbs: dbs,
       newsfeedRepository: DaoNewsfeedRepository(
         global.rssDao,
-        RssFetcherService(createDio()),
+        RssFetcherService(_NullRhttpClient()),
       ),
       newsfeedOwnerUserId: 'owner-user',
       ticketRepository: DaoTicketRepository(dbs, global.workspaceRouteDao),

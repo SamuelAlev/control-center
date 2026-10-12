@@ -2,7 +2,7 @@
 title: Deployment dan klien
 description: Bagaimana arsitektur thin-client Control Center memisahkan server headless dari klien desktop, web, dan selulernya.
 slug: id-ID/panduan-pengguna/konsep/deployment
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center bukan satu program. Control Center adalah **arsitektur
@@ -22,8 +22,10 @@ oleh dua klien, berada di sana.
 
 Tidak ada klien yang membuka file basis data sendiri. Sebaliknya, setiap klien
 memegang satu **`RemoteRpcClient`** dan mengirim operasi repo serta langganan
-melaluinya. Server mengautentikasi koneksi terhadap kunci pre-shared perangkat
-yang dipasangkan — lalu berhenti memedulikan koneksi itu. **Sebuah sesi tidak
+melaluinya. Sesi langsung maupun melalui relay sama-sama memerlukan jabat tangan
+Noise yang ditandatangani: kunci pre-shared perangkat yang dipasangkan
+mengautentikasi pertukaran itu, sementara kunci lalu lintas yang baru
+mengenkripsi setiap sesi. **Sebuah sesi tidak
 terikat pada ruang kerja.** Dispatcher bersifat stateless: setiap panggilan
 berlingkup ruang kerja membawa `workspace_id`-nya sendiri di argumennya dan
 panggilan yang menghilangkannya akan ditolak.
@@ -96,10 +98,11 @@ melalui server. Desktop tidak pernah menyentuh file basis data secara langsung.
 Build web adalah aplikasi Flutter yang sama yang dikompilasi untuk berjalan di
 peramban, dihosting di [app.usectrl.dev](https://app.usectrl.dev) sehingga tidak
 ada yang perlu diinstal. Peramban tidak dapat menjalankan subproses, jadi klien
-web **selalu** remote: klien ini menghubungi `cc_server` melalui `wss://` dan
-menampilkan antarmuka desktop lengkap. Setelah terhubung, klien ini menampilkan
-layar yang sama terhadap fleet yang sama, karena kodenya sama melalui RPC yang
-sama. Kesenjangannya adalah segelintir tempat yang memerlukan kemampuan native
+web **selalu** remote: klien ini menghubungi `cc_server` melalui sesi WebSocket
+terenkripsi dan menampilkan antarmuka desktop lengkap. Setelah terhubung, klien
+ini menampilkan layar yang sama untuk fleet yang sama, karena ia memakai kode yang
+sama di atas RPC yang sama.
+Kesenjangannya adalah segelintir tempat yang memerlukan kemampuan native
 yang tidak dimiliki peramban — lapisan kualitas perekaman rapat di bawah adalah
 yang utama dan notifikasi OS adalah yang lain.
 
@@ -123,27 +126,30 @@ Server hanya menerima origin peramban pada daftar `--allowed-origins`-nya, yang
 bawaannya `https://app.usectrl.dev`, jadi menghosting sendiri bundle berarti
 menambahkan origin-nya.
 
-Media (avatar, gambar feed, tangkapan layar PR) dirutekan melalui endpoint proxy
-server alih-alih memanggil host hulu secara langsung, sehingga peramban tidak
-pernah mengambil origin sembarangan. Klien yang di-deploy menyematkan
-Content-Security Policy per permintaan dari cookie non-sensitif sehingga hanya
-origin server yang terhubung yang diizinkan.
+Media (avatar, gambar feed, tangkapan layar PR), unggahan, cadangan, dan
+HTTP/WebSocket editor tertanam melewati terowongan sumber daya terenkripsi, bukan
+rute HTTP publik yang dapat dibaca; jalur bertanda tangan tetap memerlukan
+otorisasi. Frontend editor tepercaya berjalan pada origin aplikasi web itu sendiri.
+Service Worker-nya merutekan permintaan editor melalui sesi terenkripsi yang sudah
+ada ke `cc_server`, yang memiliki berkas dan backend code-server. Peramban
+memerlukan HTTPS atau konteks loopback yang aman untuk Service Worker. Klien native
+memakai fasad loopback yang dibatasi kapabilitas.
 
 ### Pendamping ponsel (cc_remote)
 
 Aplikasi **Remote** adalah klien terpisah yang lebih ringan — PWA web Flutter di
 [remote.usectrl.dev](https://remote.usectrl.dev/). Aplikasi ini sengaja
-**bukan** aplikasi lengkapnya. Aplikasi ini dipasangkan melalui relay WebSocket
-yang di-broker dan disegel end-to-end, lalu berbicara dengan sebagian besar
-operasi baca dari permukaan alat: membaca tiket, pesan, dan umpan berita;
-mengirim balasan atau memperbarui tiket.
+**bukan** aplikasi lengkapnya. Aplikasi ini terhubung langsung bila memungkinkan
+atau melalui relay dengan perantara; kedua jalur memerlukan enkripsi ujung ke
+ujung. Lalu ia berbicara dengan sebagian besar operasi baca dari permukaan alat:
+membaca tiket, pesan, dan umpan berita; mengirim balasan atau memperbarui tiket.
 
 Ponsel adalah **principal dengan hak istimewa lebih rendah** daripada agen
-lokal. Kebijakan alat yang menolak secara bawaan, kunci pre-shared yang menyegel
-setiap frame, kapabilitas sesi yang mengunci operasi berhak istimewa (misalnya
-pairing) dari klien pendamping, pemeriksaan peran dan hibah repo per panggilan
-di atas, serta pembatasan laju mencegah pairing yang disetujui (atau bocor)
-menjadi kontrol jarak jauh penuh. Lihat
+lokal. Kebijakan alat yang menolak secara bawaan, kapabilitas sesi yang mengunci
+operasi berhak istimewa (misalnya pairing) dari klien pendamping, pemeriksaan
+peran dan hibah repo per panggilan di atas, serta pembatasan laju mencegah
+pairing yang disetujui (atau bocor) menjadi kontrol jarak jauh penuh. Enkripsi
+transport tidak memberikan izin apa pun. Lihat
 [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/) untuk model
 keamanan selengkapnya.
 
@@ -228,15 +234,26 @@ rekam-dan-tautkan pada kalender.
 
 ## Pairing dan kepercayaan
 
-Setiap klien membuktikan identitasnya dengan **kunci pre-shared** yang
-disediakan sekali:
+Setiap klien memakai **kunci pre-shared** yang disediakan sekali untuk
+mengautentikasi jabat tangan Noise bertanda tangan miliknya dengan `cc_server`,
+termasuk melalui loopback dan relay:
 
 - Desktop dalam mode lokal membuat kunci baru setiap boot dan menyerahkannya ke
   server yang dijalankan melalui environment, sehingga tidak ada rahasia yang
   disimpan di desktop.
-- Klien remote (desktop-remote, web, ponsel) memakai kunci yang dibuat oleh
-  perintah `pair` server dan disimpan di keychain OS (atau, di ponsel, secara
-  lokal).
+- Klien remote (desktop-remote, web, ponsel) memakai kunci yang dibuat oleh alur
+  pairing server atau perintah `pair`. Klien native memakai keychain OS; klien
+  peramban menyimpan pairing-nya secara lokal.
+
+Klien memeriksa identitas bertanda tangan server terhadap penyematan sidik jari
+yang tersimpan. Pada koneksi pertama, verifikasi sidik jari itu melalui QR
+tepercaya atau saluran tepercaya lain: kontak pertama yang bertanda tangan saja
+tidak dapat mengautentikasi siapa yang memberikan kunci. Jika identitas berubah,
+klien gagal secara tertutup; lakukan pairing ulang melalui saluran tepercaya alih-alih
+mengabaikan ketidakcocokan. Klien lama dan RPC teks asli tidak dapat terhubung.
+TLS tetap diperlukan untuk origin peramban, bootstrap, dan metadata publik;
+`--insecure` memengaruhi listener luar server, bukan sesi terenkripsi yang
+diwajibkan.
 
 Pencabutan bersifat **langsung**, bukan tertunda. Server mengawasi tabel
 perangkat yang dipasangkan dan memutus sesi apa pun yang terbuka yang
@@ -244,13 +261,13 @@ perangkatnya telah keluar dari kumpulan aktif, dalam hitungan detik — baik pad
 jalur WebSocket langsung maupun jalur relay. Anda tidak perlu menunggu perangkat
 menyambung ulang untuk memutusnya.
 
-Kunci tidak pernah melewati URL yang dapat dilihat host statis. Saat kunci
-datang melalui tautan — di ponsel atau di peramban — kunci itu berada di
-**fragmen URL**, bagian setelah `#`, yang tidak pernah dikirim peramban ke
-server yang menghosting halaman. Itulah invarian yang perlu diingat dan berlaku
-untuk keduanya. Klien web memiliki dua titik masuk lain: formulir koneksi,
-tempat Anda menempelkan server dan kunci secara langsung, serta kode undangan,
-yang ditukarkannya dengan kredensial yang dibuat khusus untuk peramban itu saja.
+Saat kunci datang melalui tautan — di ponsel atau di peramban — kunci itu berada di
+**fragmen URL**, bagian setelah `#` yang tidak dikirim peramban dalam permintaan
+ke host halaman. Namun JavaScript halaman tetap dapat membacanya, jadi percayai
+host itu dan jaga tautannya tetap rahasia. Klien web juga memiliki formulir
+koneksi, tempat Anda menempelkan server dan kunci secara langsung, serta kode
+undangan, yang ditukarkannya dengan kredensial yang dibuat khusus untuk peramban
+itu saja.
 
 ## Konsep terkait
 

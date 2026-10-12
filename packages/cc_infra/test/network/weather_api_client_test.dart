@@ -1,31 +1,46 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/weather/domain/entities/weather_snapshot.dart';
 import 'package:cc_infra/src/network/weather_api_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// Exercises [WeatherApiClient] — the keyless Open-Meteo + IP-geo client. Pure
-/// response parsing over an injectable [Dio]: pins the forecast/geocode/ipgeo
-/// request paths + params, the WMO-condition bucketing, the numeric coercion,
-/// and the error mapping (DioException → NetworkException), plus the
-/// best-effort null-on-error behavior of [WeatherApiClient.ipGeolocate].
+/// response parsing over an injectable [RhttpClient]: pins the
+/// forecast/geocode/ipgeo request paths + params, the WMO-condition bucketing,
+/// the numeric coercion, and the error mapping (RhttpException →
+/// NetworkException), plus the best-effort null-on-error behavior of
+/// [WeatherApiClient.ipGeolocate].
 void main() {
-  late RecordingAdapter adapter;
+  late TestHttpClient fake;
   late WeatherApiClient client;
 
+  /// How the canned response to the next request should fail, if at all.
+  String? failWith;
+  Object nextBody = <String, dynamic>{};
+
   setUp(() {
-    adapter = RecordingAdapter();
-    client = WeatherApiClient(dio: Dio()..httpClientAdapter = adapter);
+    failWith = null;
+    nextBody = <String, dynamic>{};
+    fake = TestHttpClient(
+      handler: (request) {
+        switch (failWith) {
+          case 'timeout':
+            throw RhttpTimeoutException(request);
+          case 'server_error':
+            return httpTextResponse(request, 'boom', statusCode: 500);
+        }
+        return httpTextResponse(request, nextBody);
+      },
+    );
+    client = WeatherApiClient(httpClient: fake);
   });
 
   group('fetchCurrent', () {
     test(
       'parses a daytime clear-weather forecast with sunrise/sunset',
       () async {
-        adapter.nextJson({
+        nextBody = {
           'current': {
             'temperature_2m': 21.5,
             'weather_code': 0,
@@ -36,21 +51,20 @@ void main() {
             'sunrise': ['2026-01-01T06:00:00'],
             'sunset': ['2026-01-01T18:00:00'],
           },
-        });
+        };
         final snap = await client.fetchCurrent(
           latitude: 40.0,
           longitude: -73.0,
           label: 'NYC',
         );
-        expect(
-          adapter.requests.single.path,
-          'https://api.open-meteo.com/v1/forecast',
-        );
-        final qp = adapter.requests.single.queryParameters;
-        expect(qp['latitude'], 40.0);
-        expect(qp['longitude'], -73.0);
+        final uri = httpRequestUri(fake.requests.single);
+        expect(uri.host, 'api.open-meteo.com');
+        expect(uri.path, '/v1/forecast');
+        final qp = fake.requests.single.query!;
+        expect(qp['latitude'], '40.0');
+        expect(qp['longitude'], '-73.0');
         expect(qp['timezone'], 'auto');
-        expect(qp['forecast_days'], 1);
+        expect(qp['forecast_days'], '1');
 
         expect(snap.latitude, 40.0);
         expect(snap.longitude, -73.0);
@@ -66,7 +80,7 @@ void main() {
     );
 
     test('nighttime rain condition with string-typed numeric fields', () async {
-      adapter.nextJson({
+      nextBody = {
         'current': {
           'temperature_2m': '5',
           'weather_code': 61,
@@ -74,7 +88,7 @@ void main() {
           'wind_speed_10m': '8.5',
         },
         'daily': <String, dynamic>{},
-      });
+      };
       final snap = await client.fetchCurrent(latitude: 0, longitude: 0);
       expect(snap.condition, WeatherCondition.rain);
       expect(snap.isDay, isFalse);
@@ -85,9 +99,9 @@ void main() {
     });
 
     test('unknown weather_code falls back to clouds', () async {
-      adapter.nextJson({
+      nextBody = {
         'current': {'weather_code': 999, 'is_day': 1},
-      });
+      };
       final snap = await client.fetchCurrent(latitude: 0, longitude: 0);
       expect(snap.condition, WeatherCondition.clouds);
       expect(snap.temperatureCelsius, 0);
@@ -95,16 +109,13 @@ void main() {
     });
 
     test('a missing weather_code defaults to 0 → clear', () async {
-      adapter.nextJson({'current': <String, dynamic>{}});
+      nextBody = {'current': <String, dynamic>{}};
       final snap = await client.fetchCurrent(latitude: 0, longitude: 0);
       expect(snap.condition, WeatherCondition.clear);
     });
 
-    test('a DioException is mapped to a NetworkException', () async {
-      adapter.throwNext = DioException(
-        requestOptions: RequestOptions(),
-        response: Response(requestOptions: RequestOptions(), statusCode: 500),
-      );
+    test('a failed request is mapped to a NetworkException', () async {
+      failWith = 'server_error';
       expect(
         () => client.fetchCurrent(latitude: 0, longitude: 0),
         throwsA(isA<NetworkException>()),
@@ -112,7 +123,7 @@ void main() {
     });
 
     test('a non-map body is tolerated (empty current)', () async {
-      adapter.nextJson('not a map');
+      nextBody = 'not a map';
       final snap = await client.fetchCurrent(latitude: 0, longitude: 0);
       expect(snap.condition, WeatherCondition.clear);
       expect(snap.isDay, isFalse);
@@ -122,51 +133,47 @@ void main() {
 
   group('geocodeCity', () {
     test('returns the top match coordinates + label', () async {
-      adapter.nextJson({
+      nextBody = {
         'results': [
           {'latitude': 48.8, 'longitude': 2.3, 'name': 'Paris'},
         ],
-      });
+      };
       final r = (await client.geocodeCity('Paris'))!;
       expect(r.latitude, 48.8);
       expect(r.longitude, 2.3);
       expect(r.label, 'Paris');
-      expect(
-        adapter.requests.single.path,
-        'https://geocoding-api.open-meteo.com/v1/search',
-      );
-      expect(adapter.requests.single.queryParameters['count'], 1);
+      final uri = httpRequestUri(fake.requests.single);
+      expect(uri.host, 'geocoding-api.open-meteo.com');
+      expect(uri.path, '/v1/search');
+      expect(fake.requests.single.query!['count'], '1');
     });
 
     test('returns null when no results', () async {
-      adapter.nextJson({'results': const []});
+      nextBody = {'results': const []};
       expect(await client.geocodeCity('nowhere'), isNull);
 
-      adapter.nextJson(<String, dynamic>{});
+      nextBody = <String, dynamic>{};
       expect(await client.geocodeCity('nowhere'), isNull);
     });
 
     test('returns null when the top match lacks coordinates', () async {
-      adapter.nextJson({
+      nextBody = {
         'results': [
           {'name': 'X'},
         ],
-      });
+      };
       expect(await client.geocodeCity('x'), isNull);
     });
 
-    test('a DioException is mapped to a NetworkException', () async {
-      adapter.throwNext = DioException(
-        requestOptions: RequestOptions(),
-        type: DioExceptionType.connectionTimeout,
-      );
+    test('a timeout is mapped to a NetworkException', () async {
+      failWith = 'timeout';
       expect(() => client.geocodeCity('x'), throwsA(isA<NetworkException>()));
     });
   });
 
   group('nearestCity', () {
     test('returns the nearest city and its own coordinates', () async {
-      adapter.nextJson({
+      nextBody = {
         'features': [
           {
             'properties': {'name': 'Regensdorf'},
@@ -175,7 +182,7 @@ void main() {
             },
           },
         ],
-      });
+      };
       final city = (await client.nearestCity(
         latitude: 47.44,
         longitude: 8.47,
@@ -183,79 +190,46 @@ void main() {
       expect(city.label, 'Regensdorf');
       expect(city.latitude, 47.4317645);
       expect(city.longitude, 8.4680435);
-      expect(adapter.requests.single.path, 'https://photon.komoot.io/reverse');
-      expect(adapter.requests.single.queryParameters['layer'], 'city');
-      expect(adapter.requests.single.queryParameters['lat'], 47.44);
-      expect(adapter.requests.single.queryParameters['lon'], 8.47);
+      final uri = httpRequestUri(fake.requests.single);
+      expect(uri.host, 'photon.komoot.io');
+      expect(uri.path, '/reverse');
+      final qp = fake.requests.single.query!;
+      expect(qp['layer'], 'city');
+      expect(qp['lat'], '47.44');
+      expect(qp['lon'], '8.47');
     });
 
     test('returns null when there is no city', () async {
-      adapter.nextJson({'features': const []});
+      nextBody = {'features': const []};
       expect(await client.nearestCity(latitude: 0, longitude: 0), isNull);
     });
 
     test('swallows errors and returns null', () async {
-      adapter.throwNext = DioException(
-        requestOptions: RequestOptions(),
-        type: DioExceptionType.connectionTimeout,
-      );
+      failWith = 'timeout';
       expect(await client.nearestCity(latitude: 1, longitude: 2), isNull);
     });
   });
 
   group('ipGeolocate', () {
     test('returns coordinates + city label on a 200 response', () async {
-      adapter.nextJson({'latitude': 35.0, 'longitude': 139.0, 'city': 'Tokyo'});
+      nextBody = {'latitude': 35.0, 'longitude': 139.0, 'city': 'Tokyo'};
       final r = (await client.ipGeolocate())!;
       expect(r.latitude, 35.0);
       expect(r.longitude, 139.0);
       expect(r.label, 'Tokyo');
-      expect(adapter.requests.single.path, 'https://ipapi.co/json/');
+      final uri = httpRequestUri(fake.requests.single);
+      expect(uri.host, 'ipapi.co');
+      expect(uri.path, '/json/');
     });
 
     test('returns null when coordinates are missing', () async {
-      adapter.nextJson({'city': 'X'});
+      nextBody = {'city': 'X'};
       expect(await client.ipGeolocate(), isNull);
     });
 
     test('swallows errors and returns null (best-effort)', () async {
-      adapter.throwNext = DioException(
-        requestOptions: RequestOptions(),
-        response: Response(requestOptions: RequestOptions(), statusCode: 500),
-      );
+      failWith = 'server_error';
       expect(await client.ipGeolocate(), isNull);
     });
   });
-}
-
-class RecordingAdapter implements HttpClientAdapter {
-  final List<RequestOptions> requests = [];
-  Object _nextBody = <String, dynamic>{};
-  Object? _throwNext;
-  void nextJson(Object body) => _nextBody = body;
-  set throwNext(Object value) => _throwNext = value;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    final err = _throwNext;
-    if (err != null) {
-      _throwNext = null;
-      throw err;
-    }
-    return ResponseBody.fromString(
-      jsonEncode(_nextBody),
-      200,
-      headers: const {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }

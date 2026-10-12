@@ -1,0 +1,1 @@
+../../../web/cc_resource_ws_shim.js

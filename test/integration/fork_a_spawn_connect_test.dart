@@ -69,7 +69,7 @@ void main() {
       addTearDown(() => _deleteTempDir(tmp));
 
       const deviceId = 'desktop-thin-local';
-      const psk = 'fork-a-psk-please-and-thank-you-0123456789';
+      final psk = RemoteControlCrypto.generatePsk();
       const workspaceId = 'ws-fork-a';
 
       // --- Seed exactly as the desktop thin boot would (one-time, pre-spawn,

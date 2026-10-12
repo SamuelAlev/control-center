@@ -2,7 +2,7 @@
 title: Implementação e clientes
 description: Como a arquitetura de cliente leve do Control Center separa um servidor headless dos seus clientes de computador, web e telemóvel.
 slug: pt-PT/manual/conceitos/implementacao
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 O Control Center não é um único programa. É uma **arquitetura de cliente leve**:
@@ -23,8 +23,9 @@ idêntica, vive aí.
 
 Nenhum cliente abre um ficheiro de base de dados por si. Em vez disso, cada cliente
 detém um **`RemoteRpcClient`** e emite operações de repo e subscrições através dele.
-O servidor autentica a ligação com uma chave pré-partilhada de dispositivo
-emparelhado — e depois deixa de se preocupar com a ligação. **Uma sessão não está
+As sessões diretas e as intermediadas exigem ambas um handshake Noise assinado: a
+chave pré-partilhada do dispositivo emparelhado autentica o intercâmbio, enquanto
+chaves de tráfego novas cifram cada sessão. **Uma sessão não está
 vinculada a um espaço de trabalho.** O distribuidor é sem estado: cada chamada com
 âmbito de espaço de trabalho transporta o seu próprio `workspace_id` nos argumentos,
 e uma chamada que o omita é recusada.
@@ -94,11 +95,12 @@ servidor. O computador nunca toca diretamente no ficheiro de base de dados.
 A build web é a mesma aplicação Flutter compilada para correr num navegador, alojada
 em [app.usectrl.dev](https://app.usectrl.dev), por isso não há nada para instalar. Um
 navegador não consegue lançar um subprocesso, pelo que o cliente web é **sempre**
-remoto: liga-se a um `cc_server` por `wss://` e apresenta toda a interface de
-computador. Uma vez ligado, mostra os mesmos ecrãs sobre a mesma frota, porque é o
-mesmo código sobre o mesmo RPC. As lacunas são o punhado de locais que precisam de uma
-capacidade nativa que um navegador não tem — a camada de qualidade da captura de
-reuniões abaixo é a principal e as notificações do sistema operativo são outra.
+remoto: liga-se a um `cc_server` através de uma sessão WebSocket cifrada e apresenta
+toda a interface de computador. Uma vez ligado, mostra os mesmos ecrãs sobre a mesma
+frota, porque usa o mesmo código sobre o mesmo RPC. As lacunas são o punhado de locais
+que precisam de uma capacidade nativa que um navegador não tem — a camada de qualidade
+da captura de reuniões abaixo é a principal, e as notificações do sistema operativo
+são outra.
 
 É por isso que “sem transferência” e “sem servidor” são afirmações diferentes. O
 cliente web elimina a instalação; não elimina o servidor. Aquilo a que se liga pode
@@ -119,27 +121,31 @@ na sua lista `--allowed-origins`, que tem como predefinição
 `https://app.usectrl.dev`, por isso alojar o pacote por conta própria implica
 adicionar a sua origem.
 
-Os conteúdos multimédia (avatares, imagens do feed, capturas de PR) são encaminhados
-pelo ponto final de proxy do servidor em vez de contactarem diretamente os servidores
-a montante, por isso um navegador nunca vai buscar uma origem arbitrária. O cliente
-implementado aplica uma Content-Security Policy por pedido a partir de um cookie não
-sensível, para que só a origem do servidor ligado seja permitida.
+Os conteúdos multimédia (avatares, imagens do feed, capturas de PR), os envios, as
+cópias de segurança e o HTTP/WebSocket do editor incorporado viajam pelo túnel de
+recursos cifrado, e não por rotas HTTP públicas legíveis; os caminhos assinados
+continuam a exigir autorização. O frontend do editor fidedigno corre na origem
+própria da aplicação web. O seu service worker encaminha os pedidos do editor pela
+sessão cifrada existente até ao `cc_server`, que detém os ficheiros e o backend
+code-server. O navegador precisa de HTTPS ou de um contexto de loopback seguro
+para os service workers. Os clientes nativos usam uma fachada de loopback com
+âmbito de capacidade.
 
 ### Companheiro para telemóvel (cc_remote)
 
 A aplicação **Remote** é um cliente separado e mais leve — uma PWA Flutter para web em
 [remote.usectrl.dev](https://remote.usectrl.dev/). Deliberadamente **não** é a
-aplicação completa. Emparelha através de um relay WebSocket intermediado e selado
-ponto a ponto, e fala uma fatia predominantemente de leitura da superfície de
-ferramentas: ler tickets, mensagens e as notícias; enviar uma resposta ou atualizar um
-ticket.
+aplicação completa. Liga-se diretamente quando possível ou através de um relay
+intermediado; ambos os caminhos exigem cifragem ponto a ponto. Fala uma fatia
+predominantemente de leitura da superfície de ferramentas: ler tickets, mensagens e as
+notícias; enviar uma resposta ou atualizar um ticket.
 
 Um telemóvel é um **principal com menos privilégios** do que um agente local. Uma
-política de ferramentas de negação por predefinição, uma chave pré-partilhada que sela
-cada frame, uma capacidade de sessão que exclui operações privilegiadas (o
-emparelhamento, por exemplo) de um cliente companheiro, as verificações de função e de
-concessão por repo por chamada acima referidas e a limitação de taxa impedem que um
-emparelhamento aprovado (ou divulgado) se torne controlo remoto total. Ver
+política de ferramentas de negação por predefinição, uma capacidade de sessão que
+exclui operações privilegiadas (o emparelhamento, por exemplo) de um cliente
+companheiro, as verificações de função e de concessão por repo por chamada acima
+referidas e a limitação de taxa impedem que um emparelhamento aprovado (ou divulgado)
+se torne controlo remoto total. A cifragem do transporte não concede permissões. Ver
 [Controlo remoto e telemóvel](/pt-PT/manual/conceitos/controlo-remoto/) para o modelo
 de segurança completo.
 
@@ -219,27 +225,38 @@ calendário.
 
 ## Emparelhamento e confiança
 
-Cada cliente prova quem é com uma **chave pré-partilhada** fornecida uma única vez:
+Cada cliente usa uma **chave pré-partilhada** fornecida uma única vez para autenticar
+o seu handshake Noise assinado com o `cc_server`, incluindo por loopback e pelo relay:
 
 - O computador em modo local gera uma chave nova em cada arranque e entrega-a ao
   servidor lançado através do ambiente, para que nada secreto seja persistido no
   computador.
 - Os clientes remotos (computador remoto, web, telemóvel) usam uma chave emitida pelo
-  comando `pair` do servidor e guardada no porta-chaves do sistema operativo (ou, no
-  telemóvel, localmente).
+  fluxo de emparelhamento do servidor ou pelo comando `pair`. Os clientes nativos usam
+  o porta-chaves do sistema operativo; os clientes de navegador guardam o
+  emparelhamento localmente.
+
+O cliente verifica a identidade assinada do servidor contra a fixação da impressão
+digital guardada. Na primeira ligação, verifique essa impressão digital através de um
+QR fidedigno ou de outro canal fidedigno: um primeiro contacto assinado, por si só,
+não consegue autenticar quem forneceu a chave. Se a identidade mudar, o cliente falha
+de forma fechada; volte a emparelhar através de um canal fidedigno em vez de ignorar a
+divergência. Os clientes mais antigos e o RPC em texto simples não conseguem ligar-se.
+O TLS continua a ser necessário para as origens de navegador, o arranque e os
+metadados públicos; `--insecure` afeta o listener externo do servidor, e não a sessão
+cifrada obrigatória.
 
 A revogação é **imediata**, não preguiçosa. O servidor vigia a sua tabela de
 dispositivos emparelhados e derruba qualquer sessão aberta cujo dispositivo tenha saído
 do conjunto ativo, em segundos — tanto no caminho direto por WebSocket como no caminho
 do relay. Não tem de esperar que o dispositivo se volte a ligar para o cortar.
 
-A chave nunca viaja através de um URL que um alojamento estático possa ver. Quando
-chega por link — no telemóvel ou num navegador — vai no **fragmento do URL**, a parte
-depois de `#`, que o navegador nunca envia ao servidor que aloja a página. Essa é a
-invariante que vale a pena recordar, e aplica-se a ambos. O cliente web tem dois outros
-pontos de entrada: o formulário de ligação, onde cola diretamente um servidor e uma
-chave, e o código de convite, que troca por uma credencial emitida só para esse
-navegador.
+Quando a chave chega por link — no telemóvel ou num navegador — vai no **fragmento do
+URL**, a parte depois de `#` que os navegadores não enviam no pedido ao anfitrião da
+página. O JavaScript da página continua a conseguir lê-lo, por isso confie nesse
+anfitrião e mantenha o link em segredo. O cliente web também tem um formulário de
+ligação, onde cola diretamente um servidor e uma chave, e um código de convite, que
+troca por uma credencial emitida só para esse navegador.
 
 ## Conceitos relacionados
 

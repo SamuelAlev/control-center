@@ -18,6 +18,7 @@ Future<void> showMoveSpaceToFolderDialog(
   final actions = ref.read(spaceFolderActionsProvider(workspaceId));
   final choice = await showCcDialog<({String? folderId})>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (_) =>
         _MoveSpaceDialog(workspaceId: workspaceId, spaceId: spaceId),
   );

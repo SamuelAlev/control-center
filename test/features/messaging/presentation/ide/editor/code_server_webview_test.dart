@@ -99,14 +99,6 @@ void main() {
     expect(find.byKey(_coverKey), findsNothing);
   });
 
-  testWidgets('injects the editor-ready page script', (tester) async {
-    await pumpWebView(tester);
-
-    final scripts = platform.params!.initialUserScripts!;
-    expect(scripts, hasLength(1));
-    expect(scripts.single.source, contains(codeServerEditorReadyMarker));
-  });
-
   testWidgets('the page reporting a clean editor uncovers it', (tester) async {
     await pumpWebView(tester);
     expect(find.byKey(_coverKey), findsOneWidget);

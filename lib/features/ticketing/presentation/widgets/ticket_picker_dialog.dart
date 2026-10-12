@@ -19,6 +19,7 @@ Future<String?> showTicketPickerDialog(
 }) {
   return showCcDialog<String>(
     context: context,
+    presentation: CcDialogPresentation.immediate,
     builder: (ctx) => _TicketPickerDialog(
       workspaceId: workspaceId,
       title: title,

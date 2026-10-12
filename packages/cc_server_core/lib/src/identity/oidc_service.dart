@@ -158,6 +158,7 @@ class OidcService {
           String nonce,
           DateTime expiresAt,
           String? clientOrigin,
+          String? recipientPublicKey,
         })
       >{};
 
@@ -178,6 +179,7 @@ class OidcService {
     required Uri redirectUri,
     String relay = '',
     String? clientOrigin,
+    String? recipientPublicKey,
   }) async {
     if (!config.enabled) {
       throw const AuthException('SSO is not configured on this server');
@@ -212,6 +214,7 @@ class OidcService {
       clientOrigin: relay == 'web-popup'
           ? SsoProvisioner.sanitizeClientOrigin(clientOrigin)
           : null,
+      recipientPublicKey: recipientPublicKey,
     );
     final challenge = base64UrlEncode(
       sha256.convert(ascii.encode(verifier)).bytes,
@@ -290,6 +293,7 @@ class OidcService {
       psk: device.psk,
       groups: ssoClaims.groups,
       clientOrigin: pending.clientOrigin,
+      recipientPublicKey: pending.recipientPublicKey,
     );
   }
 

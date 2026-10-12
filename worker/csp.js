@@ -106,6 +106,7 @@ function buildCsp(origin) {
     // index.html, so 'none' emits a harmless-but-noisy violation. 'self' still
     // blocks an off-origin <base> injection (the real attack).
     "base-uri 'self'",
+    "frame-src 'self'",
     "frame-ancestors 'none'",
     "form-action 'none'",
   ].join("; ");
@@ -156,6 +157,9 @@ const NO_CACHE_PATHS = new Set([
   "/index.html",
   "/flutter_bootstrap.js",
   "/flutter_service_worker.js",
+  "/cc_resource_bridge.js",
+  "/cc_resource_worker.js",
+  "/cc_resource_ws_shim.js",
   "/manifest.json",
   "/deploy.json",
 ]);

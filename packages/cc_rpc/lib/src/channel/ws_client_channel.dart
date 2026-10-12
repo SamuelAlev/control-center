@@ -4,6 +4,7 @@ import 'package:cc_rpc/src/channel/frame_codec.dart';
 import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 import 'package:cc_rpc/src/client/remote_channel_auth.dart';
 import 'package:cc_rpc/src/client/remote_rpc_client.dart';
+import 'package:cc_rpc/src/crypto/server_identity.dart';
 import 'package:cc_rpc/src/transport_security_policy.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -12,7 +13,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// Cross-platform via `web_socket_channel` (a `dart:io` socket on the VM, a
 /// browser `WebSocket` on web) — so the desktop in REMOTE mode and the web
 /// build dial a `LocalRpcServer` with the *same* code. Buffers early frames so
-/// the auth handshake's first reply is never dropped before a listener attaches.
+/// the Noise handshake's first reply survives until a listener attaches.
 class WsClientChannel implements RemoteRpcChannelPort {
   WsClientChannel._(this._ws);
 
@@ -38,19 +39,17 @@ class WsClientChannel implements RemoteRpcChannelPort {
       StreamController<RemoteChannelState>.broadcast();
   final List<Map<String, dynamic>> _pending = [];
   bool _open = false;
+  bool _aborted = false;
 
-  /// Cap on frames buffered while no listener has attached yet, mirroring the
-  /// server's `WsRemoteTransport._maxPendingFrames`. Buffer-until-listener
-  /// exists so the auth handshake's first reply is never dropped — but with no
-  /// cap, a peer that streams frames at a client which never listens grows this
-  /// list without limit. Overflow closes the channel, exactly as the server
-  /// does: an unread channel is already broken.
+  /// A raw frame is one Noise record, not an assembled application message.
+  static const int _maxFrameBytes = 64 * 1024;
   static const int _maxPendingFrames = 64;
+  static const int _maxQueuedDecodes = 128;
 
-  /// Tail of the decode chain: frames decode asynchronously (large ones in a
-  /// worker isolate on the VM) but are DELIVERED strictly in arrival order —
-  /// snapshot/response ordering is part of the protocol contract.
-  Future<void> _decodeChain = Future.value();
+  /// Decode asynchronously without allowing a fast socket to grow an
+  /// unbounded queue or to reorder records around a slower decode.
+  Future<void> _decodeChain = Future<void>.value();
+  int _queuedDecodes = 0;
 
   void _start() {
     _open = true;
@@ -58,26 +57,35 @@ class WsClientChannel implements RemoteRpcChannelPort {
     _state.add(RemoteChannelState.open);
     _ws.stream.listen(
       (data) {
-        if (data is! String) {
+        if (data is! String ||
+            data.length > _maxFrameBytes ||
+            _queuedDecodes >= _maxQueuedDecodes) {
+          unawaited(close());
           return;
         }
+        _queuedDecodes++;
         _decodeChain = _decodeChain.then((_) async {
           try {
+            if (_aborted) return;
             final frame = await decodeJsonFrame(data);
+            if (_aborted) return;
             if (_incoming.hasListener) {
               _incoming.add(frame);
             } else if (_pending.length >= _maxPendingFrames) {
-              _onClosed();
+              unawaited(close());
             } else {
               _pending.add(frame);
             }
           } catch (_) {
-            // Ignore malformed frames.
+            // Invalid raw JSON cannot be interpreted as an encrypted record.
+            unawaited(close());
+          } finally {
+            _queuedDecodes--;
           }
         });
       },
-      onDone: _onClosed,
-      onError: (Object _) => _onClosed(),
+      onDone: () => unawaited(_onRemoteDone()),
+      onError: (Object _) => unawaited(close()),
       cancelOnError: true,
     );
   }
@@ -93,14 +101,16 @@ class WsClientChannel implements RemoteRpcChannelPort {
     }
   }
 
-  void _onClosed() {
-    if (!_open) {
-      return;
-    }
+  Future<void> _onRemoteDone() async {
+    if (_aborted || !_open) return;
     _open = false;
-    if (!_state.isClosed) {
-      _state.add(RemoteChannelState.closed);
-    }
+    _state.add(RemoteChannelState.closed);
+    // The socket's done event follows its data events, but JSON decode can
+    // still be in progress. End incoming only after every queued record.
+    await _decodeChain;
+    if (_aborted) return;
+    unawaited(_incoming.close());
+    unawaited(_state.close());
   }
 
   @override
@@ -117,32 +127,39 @@ class WsClientChannel implements RemoteRpcChannelPort {
     if (!_open) {
       throw StateError('WsClientChannel is not open');
     }
-    // Large frames encode off the UI isolate, mirroring the receive path.
-    _ws.sink.add(await encodeJsonFrame(frame));
+    final encoded = await encodeJsonFrame(frame);
+    if (encoded.length > _maxFrameBytes) {
+      throw StateError('WsClientChannel record exceeds wire cap');
+    }
+    if (!_open) throw StateError('WsClientChannel is not open');
+    _ws.sink.add(encoded);
   }
 
   @override
   Future<void> close() async {
-    _onClosed();
+    if (_aborted) return;
+    _aborted = true;
+    if (_open) {
+      _open = false;
+      _state.add(RemoteChannelState.closed);
+    }
+    _pending.clear();
+    // Local close (including malformed traffic) aborts queued decodes now.
+    unawaited(_incoming.close());
+    unawaited(_state.close());
     await _ws.sink.close();
-    if (!_incoming.isClosed) {
-      await _incoming.close();
-    }
-    if (!_state.isClosed) {
-      await _state.close();
-    }
   }
 }
 
-/// Connects to a cc-server's WSS endpoint, runs the PSK auth handshake and
-/// returns a started [RemoteRpcClient] ready for `repo/call` / `sub/subscribe`.
+/// Connects to a cc-server's WSS endpoint and returns an initialized RPC
+/// client over the authenticated Noise session.
 ///
-/// The handshake (shared with the relay path, see `authenticateRemoteChannel`)
-/// proves PSK possession both ways and verifies the server's Ed25519 identity
-/// against [pinnedFingerprint] when one is supplied (TOFU pinning — a changed
-/// fingerprint is a hard refusal). Throws [StateError] on auth failure or
-/// timeout (fail closed). [timeout] bounds the handshake; [requestTimeout]
-/// bounds each later `repo/call`.
+/// The client proves its 32-byte pairing PSK, requires the server's signed
+/// Ed25519 identity even on first contact, and rejects a changed
+/// [pinnedFingerprint]. There is no plaintext fallback. Authentication
+/// rejection yields [AuthRejectedException]; a changed pin yields
+/// [ServerIdentityMismatchException]. [timeout] bounds the handshake and
+/// [requestTimeout] bounds subsequent RPC calls.
 Future<RemoteRpcClient> connectRemoteRpc({
   required Uri uri,
   required String deviceId,

@@ -1,37 +1,38 @@
 ---
 title: Control remoto y móvil
-description: Cómo llega el teléfono a tu servidor a través de un relé intermediado y sellado de extremo a extremo en lugar de un enlace punto a punto, y el modelo de acceso por capas que mantiene ese alcance reducido.
+description: Cómo llega el teléfono a tu servidor a través de conexiones directas o intermediadas cifradas de extremo a extremo, y el modelo de acceso por capas que mantiene ese alcance reducido.
 slug: es-ES/manual/conceptos/control-remoto
-sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
+sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
 ---
 
 Control Center es una app de escritorio, pero el trabajo que sigue no se detiene
 cuando te alejas del escritorio. El **control remoto** empareja tu teléfono con
 tu `cc_server` mediante **[Remote](https://remote.usectrl.dev/)**, la app
 compañera de remote.usectrl.dev, para que puedas seguir la flota desde ahí: leer
-mensajes y tickets, responder a un agente, clasificar tu fuente de noticias, sin
-que el audio, la transcripción, el código fuente ni las credenciales que residen
-en el servidor lleguen a salir de él.
+mensajes y tickets, responder a un agente y clasificar tu fuente de noticias a
+través de una conexión cifrada de extremo a extremo. El teléfono y `cc_server`
+son extremos de texto plano de confianza; un relé solo transporta registros
+cifrados de la aplicación.
 
 Piensa en él como un compañero del escritorio centrado en la lectura. No
 pretende sustituir al cliente de escritorio completo.
 
-:::note[Dos rutas remotas distintas]
-La app compañera del teléfono se empareja con un `cc_server` a través de un
-**relé WebSocket intermediado** que transporta tramas JSON-RPC selladas de
-extremo a extremo. La **compilación web** completa (y un escritorio apuntado a un
-servidor remoto) es la otra ruta remota: marca `cc_server` por WebSocket y
-renderiza la app completa. Consulta
-[Despliegue y clientes](/es-ES/manual/conceptos/despliegue/) para saber en qué se
-diferencian las dos.
+:::note[Dos clientes remotos distintos]
+La app compañera del teléfono y la **compilación web** completa (o un escritorio
+apuntado a un servidor remoto) pueden conectarse directamente a `cc_server` o
+usar un relé WebSocket intermediado. Ambas rutas requieren la misma sesión
+cifrada; el teléfono expone un conjunto de operaciones más pequeño que el cliente
+completo. Consulta [Despliegue y clientes](/es-ES/manual/conceptos/despliegue/)
+para saber en qué se diferencian los clientes.
 :::
 
 ## Transporte
 
 El teléfono llega a `cc_server` por WebSocket: ya sea una conexión directa
 (loopback, LAN, tailnet o `wss://`) o una sala con acceso por invitación en un
-broker de señalización que retransmite tramas selladas. No hay ningún canal de
-datos punto a punto.
+broker de señalización. Ambas rutas requieren una sesión autenticada y cifrada de
+extremo a extremo; el broker solo reenvía sus registros cifrados. No hay ningún
+canal de datos punto a punto.
 
 ## Qué puede hacer el teléfono
 
@@ -54,22 +55,26 @@ limitarse a la intención.
 
 ## Cómo se construye el enlace
 
-La conexión viaja por un **relé intermediado**: el servidor entra como
-propietario en una sala con acceso por invitación en un broker `wss://`, y cada
-cliente emparejado —escritorio, web, teléfono— entra en la misma sala con un
-token de admisión con límite de tiempo. Concurren tres piezas:
+Cuando el teléfono no puede llegar al servidor directamente, la conexión usa un
+**relé intermediado**: el servidor entra como propietario en una sala con acceso
+por invitación en un broker `wss://`, y los clientes emparejados entran con
+tokens de admisión con límite de tiempo. Concurren tres piezas:
 
 | Pieza                              | Función                                                                                                                                                                                                                                                                                                                                     |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote (app para el teléfono)**  | La app web compañera, alojada en `remote.usectrl.dev` por defecto, o autoalojada. Se carga en un navegador y guarda el registro de emparejamiento en IndexedDB.                                                                                                                                                                               |
-| **Broker de relé**                 | Un relé `wss://` sin estado (`cc_signaling_server`) que aloja salas de N vías. Transporta **solo tramas opacas**: cada carga útil se sella de extremo a extremo entre el teléfono y el servidor, así que el broker nunca ve los datos de la app ni el secreto de emparejamiento y nunca interpreta lo que reenvía.                          |
+| **Broker de relé**                 | Un relé `wss://` sin estado (`cc_signaling_server`) que aloja salas de N vías. Reenvía registros cifrados sin el secreto de emparejamiento ni el texto plano de la app, pero ve identificadores de enrutamiento, IP, tamaños de registro y tiempos. |
 | **`cc_server`**                    | El propietario de la sala. Responde a las llamadas del teléfono a través del mismo despachador que usa cualquier otro cliente.                                                                                                                                                                                                              |
 
 Una oferta de emparejamiento incluye un **descriptor de conexión** que enumera
 todas las rutas hasta el servidor (LAN, tailnet, `wss://` público, relé) más su
-huella de identidad. El resolvedor del teléfono elige la mejor ruta accesible y
-fija la huella en la primera conexión (TOFU); el relé garantiza la conectividad
-incluso cuando no existe ninguna ruta directa, sin poder leer nunca el tráfico.
+huella de identidad. El resolvedor del teléfono elige la mejor ruta accesible. El
+servidor firma el handshake cifrado y el cliente fija su huella. En la primera
+conexión, comprueba la huella contra un QR u otra fuente de confianza: una primera
+identidad firmada por sí sola no demuestra a qué servidor has llegado. Un fijado
+que cambia se rechaza en lugar de volver a confiarse en silencio. El relé
+transporta texto cifrado cuando no existe ninguna ruta directa, pero aún puede
+interrumpir o retrasar la conexión.
 
 ## Qué es la carga útil de emparejamiento
 
@@ -82,26 +87,32 @@ https://<pwa-host>/#<payload>
 ```
 
 La carga útil viaja en el **fragmento** de la URL, la parte que va después de `#`
-y que los navegadores nunca envían al servidor, así que el host HTTPS de la PWA
-nunca la ve. Incluye todo lo que el teléfono necesita para llegar al servidor y
-demostrar quién es: el descriptor de conexión (todas las rutas más la huella de
-identidad), un id de dispositivo recién generado, una clave precompartida de 32
-bytes y un sello de caducidad. El teléfono la decodifica, guarda un registro de
-emparejamiento en local y elimina el fragmento para que el secreto desaparezca
-de la URL.
+y que los navegadores no envían en la petición HTTP al host de la PWA. Incluye
+todo lo que el teléfono necesita para llegar al servidor y demostrar quién es: el
+descriptor de conexión (todas las rutas más la huella de identidad), un id de
+dispositivo recién generado, una clave precompartida de 32 bytes y un sello de
+caducidad. El teléfono la decodifica, guarda un registro de emparejamiento en
+local y elimina el fragmento de la URL. El código de la app web puede leer el
+fragmento, así que usa un host de app de confianza y trata el enlace como un
+secreto.
 
 Hay dos formas de carga útil y **no son intercambiables**. El QR para teléfono
 generado desde el panel de emparejamiento de la app es el `PairingPayload` v2
-anterior, apuntado al host de la PWA de Remote. `cc_server pair --client-url`
-emite un enlace v1 distinto y más antiguo (`{s, i, k}` — URL del servidor, id de
-dispositivo, clave) pensado solo para el cliente **web**.
+anterior, apuntado al host de la PWA de Remote. `cc_server pair --client-url` emite un enlace v1
+(`{s, i, k}` — URL del servidor, id de dispositivo, clave) pensado solo para el
+cliente **web**. Son formatos de datos de emparejamiento, no alternativas de
+transporte: ambos clientes deben admitir el protocolo de sesión cifrada actual.
 
 También difieren en su vida útil, algo que es fácil equivocar:
 
 | Generado por                            | Caducidad de la credencial                   |
 | --------------------------------------- | -------------------------------------------- |
 | Panel de emparejamiento de la app (`pairing.mint`) | 30 días, siempre                  |
-| `cc_server pair` en la línea de comandos | **Ninguna** — la credencial no caduca      |
+| `cc_server pair` en la línea de comandos | Sin caducidad codificada; las políticas del servidor siguen aplicándose |
+
+Las políticas de antigüedad máxima de dispositivo y de tiempo de inactividad de
+todo el servidor pueden rechazar antes cualquiera de las dos credenciales.
+Ninguno de los dos formatos de emparejamiento elude esas políticas.
 
 ## El modelo de acceso
 
@@ -162,13 +173,15 @@ de pertenencia de la barrera 1 sigue aplicándose. Es la misma invariante de
 [aislamiento de espacios de trabajo](/es-ES/manual/conceptos/espacios-de-trabajo/)
 que aplica el resto del producto.
 
-### 5. Tramas selladas de extremo a extremo con la clave precompartida
+### 5. Cifrado de extremo a extremo en conexiones directas e intermediadas
 
-Cada trama entre el teléfono y el servidor se sella con la clave de
-emparejamiento; el token de admisión solo sirve para que un cliente entre en la
-sala, no descifra nada. El broker retransmite texto cifrado y nunca ve la clave.
-Un dispositivo revocado se encuentra con que su credencial ya no está, así que
-**falla en cerrado** al reconectarse.
+Cada sesión de cliente, directa o intermediada, requiere un handshake Noise
+firmado. La clave de emparejamiento autentica ese handshake; claves efímeras
+nuevas derivan las claves de tráfico, en lugar de usar la clave de emparejamiento
+para sellar cada trama. El servidor firma su identidad en el intercambio y el
+cliente comprueba su fijado de huella guardado. No hay texto plano ni alternativa
+para clientes antiguos. Un token de admisión del relé solo sirve para que un
+cliente entre en una sala; no puede descifrar los registros.
 
 Una credencial generada por la app tiene un límite de 30 días; pasado ese plazo,
 la barrera de conexión la rechaza y el teléfono debe volver a emparejarse. La
@@ -185,22 +198,26 @@ de tus dispositivos tiran de una misma asignación, así que un cliente secuestr
 no puede ganar margen abriendo más sesiones y un miembro ruidoso no puede dejar
 sin cupo a los demás.
 
-### 7. Un broker que no se entera de nada
+### 7. Un broker que no puede leer el contenido de la app
 
-El broker de relé es deliberadamente tonto: aloja salas, reenvía tramas selladas
-y no guarda ninguna cuenta, ningún dato de la app y ninguna clave. Las salas son
-transitorias y con acceso por invitación. Los datos de la app, el audio, la
-transcripción, el código fuente y las credenciales se quedan todos en el
-servidor.
+El broker de relé aloja salas transitorias con acceso por invitación y reenvía
+registros cifrados sin el texto plano de la app ni las claves de emparejamiento.
+Aun así ve direcciones IP, identificadores de sala y de interlocutor, tamaños de
+registro, tiempos y duración de la conexión, y puede descartar o retrasar
+tráfico. Los extremos en texto plano son el cliente emparejado y el `cc_server`
+elegido; el operador del servidor y los servicios a los que envía contenido
+pueden ver ese contenido. El cifrado en tránsito no cifra los datos del servidor
+en reposo.
 
 ## Actualizaciones en vivo
 
 Una vez emparejado, el teléfono recibe **actualizaciones en vivo** como tramas
 de notificación —mensajes nuevos de agentes, tickets asignados a ti, cambios de
-estado— que reflejan las propias notificaciones del escritorio. El servidor
-difunde esas tramas a todas las sesiones conectadas y el filtro de espacio de
-trabajo se aplica en el cliente, así que lo que ves queda acotado al espacio de
-trabajo que estás mirando.
+trabajo — que reflejan las propias notificaciones del escritorio. El servidor
+comprueba la pertenencia al espacio de trabajo antes de reenviar un evento a una
+sesión. Después, el cliente filtra esos eventos ya autorizados al espacio de
+trabajo que estás viendo; ese filtro de visualización no es la frontera de
+acceso.
 
 ## Dónde se encuentra
 
@@ -214,8 +231,8 @@ profundo.
 
 ::::note
 El control remoto está en el lado del servidor y **no** se expone por MCP. El
-teléfono habla con el propio despachador del servidor a través del relé; no es un
-cliente MCP de un servidor externo.
+teléfono habla con el propio despachador del servidor a través de su conexión
+cifrada directa o intermediada; no es un cliente MCP de un servidor externo.
 ::::
 
 ## Consulta también

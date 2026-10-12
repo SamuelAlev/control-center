@@ -56,7 +56,10 @@ void main() {
   test('read sel selects a line range', () async {
     File(p.join(dir.path, 'b.txt')).writeAsStringSync('a\nb\nc\nd\ne');
     final read = await ReadTool().execute({'path': 'b.txt', 'sel': '2-3'}, ctx);
-    expect(read.content, '2\tb\n3\tc');
+    final sourceLines = read.content
+        .split('\n')
+        .where((line) => RegExp(r'^\d+\t').hasMatch(line));
+    expect(sourceLines, ['2\tb', '3\tc']);
   });
 
   test('write refuses to escape the workspace', () async {
@@ -118,10 +121,7 @@ void main() {
       );
       final schema = BashTool(runner).inputSchema;
       expect(schema['required'], contains('description'));
-      expect(
-        (schema['properties'] as Map).containsKey('description'),
-        isTrue,
-      );
+      expect((schema['properties'] as Map).containsKey('description'), isTrue);
     });
 
     test('rejects a call without a description before running', () async {
@@ -140,10 +140,9 @@ void main() {
       final runner = _FakeCommandRunner(
         const HarnessCommandResult(exitCode: 0, stdout: 'hi', stderr: ''),
       );
-      final result = await BashTool(runner).execute({
-        'command': 'echo hi',
-        'description': 'Echo a greeting',
-      }, ctx);
+      final result = await BashTool(
+        runner,
+      ).execute({'command': 'echo hi', 'description': 'Echo a greeting'}, ctx);
       expect(runner.lastCommand, 'echo hi');
       expect(result.isError, isFalse);
       expect(result.content, contains('hi'));

@@ -13,6 +13,7 @@ export 'src/tools/staged_edit.dart';
 export 'src/tools/subagent_profile.dart';
 export 'src/tools/subagent_spawner.dart';
 export 'src/tools/tool.dart';
+export 'src/tools/tool_output_read_tool.dart';
 export 'src/tools/tool_registry.dart';
 export 'src/tools/tool_residency.dart';
 export 'src/tools/tool_surface.dart';

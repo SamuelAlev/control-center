@@ -3,7 +3,7 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
-import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
+import 'package:cc_harness/context.dart' show ToolOutputStore;
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
@@ -50,7 +50,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
   String? conversationId,
   SandboxManager? sandboxManager,
   ConfirmationPort? confirmationPort,
-  SandboxExecGrantService? execGrantService,
+  Future<List<String>> Function()? execGrantRootsResolver,
   ActionGuardService? actionGuard,
   required FileSearchPort fileSearch,
   McpToolRegistry? mcpRegistry,
@@ -65,6 +65,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
   StagedEditStore? stagedEditStore,
   DebugSessionSupervisor? debugSupervisor,
   EvalKernel Function(KernelLanguage language)? evalKernelFor,
+  ToolOutputStore? toolOutputStore,
 }) {
   final commandRunner = SandboxedHarnessCommandRunner(
     mode: mode,
@@ -72,7 +73,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
     loopbackPorts: loopbackPorts,
     sandboxManager: sandboxManager,
     confirmationPort: confirmationPort,
-    execGrantService: execGrantService,
+    execGrantRootsResolver: execGrantRootsResolver,
     actionGuard: actionGuard,
     workspaceId: workspaceId,
     agentId: agentId,
@@ -112,6 +113,9 @@ HarnessToolRegistry buildHarnessToolRegistry({
       RewindTool(),
       BashTool(commandRunner),
     ]);
+  if (toolOutputStore != null) {
+    registry.register(ToolOutputReadTool(toolOutputStore));
+  }
   // `ask_user` needs somewhere to render the form and someone to answer it, so
   // it is offered ONLY when both a port and a target space exist. Registering
   // it without them would advertise a tool whose every call ends in a timeout.

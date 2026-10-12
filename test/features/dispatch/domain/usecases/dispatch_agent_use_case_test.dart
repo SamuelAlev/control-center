@@ -141,6 +141,28 @@ class _FakeConversationContextUseCase
       characterBudget: characterBudget,
     );
   }
+
+  @override
+  Future<ConversationContextParts> executeStructured({
+    required String workspaceId,
+    required String spaceId,
+    required String selfAgentId,
+    required String selfAgentName,
+    required String taskDescription,
+    required int characterBudget,
+    String? conversationId,
+  }) async => ConversationContextParts(
+    text: await execute(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      selfAgentId: selfAgentId,
+      selfAgentName: selfAgentName,
+      taskDescription: taskDescription,
+      characterBudget: characterBudget,
+      conversationId: conversationId,
+    ),
+    entries: const [],
+  );
 }
 
 class _FakeModeResolver implements ModeResolver {

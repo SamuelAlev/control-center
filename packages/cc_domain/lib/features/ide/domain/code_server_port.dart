@@ -1,17 +1,12 @@
 /// Platform-neutral control surface for server-hosted code-server (VS Code in
 /// the browser) sessions.
-/// code-server runs on the **server** (`cc_server`) — never on a client — bound
-/// loopback only, opening the conversation's isolated copy-on-write worktree as
-/// its folder. A connected client reaches it through the authenticated
-/// `/proxy/vscode/<sessionId>/` reverse proxy; a loopback-local desktop/Linux
-/// may hit `127.0.0.1:<port>` directly. The thin-client invariant holds: every
-/// client talks to the same server.
-/// Sessions are **WORKSPACE-SCOPED**: `ensureSession` records the owning
-/// workspace and the host validates ownership on every `closeSession` /
-/// `lookup` before touching a session, so one workspace can never reach
-/// another's code-server (the workspace-isolation invariant). The worktree is
-/// resolved strictly from the caller's workspace; a foreign `space_id` /
-/// `repo_id` yields no worktree → no session.
+/// code-server runs on the **server** (`cc_server`), bound to loopback and
+/// opening the conversation's isolated copy-on-write worktree as its folder.
+/// A client reaches code-server only through its authenticated encrypted
+/// resource tunnel and a device-bound proxy capability. The shared process has
+/// a separate internal bridge id for extension-host reports and commands.
+/// Sessions remain workspace-scoped: foreign conversation worktrees are never
+/// resolved from another workspace's identifiers.
 library;
 
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
@@ -42,19 +37,28 @@ abstract interface class CodeServerPort {
     String autoSave = 'afterDelay',
   });
 
-  /// Releases one reference to [sessionId]; the host ref-counts shared
-  /// instances and idle-GCs the process when the last reference closes.
-  /// Idempotent. Throws on a cross-workspace mismatch.
+  /// Releases one device-owned reference to [sessionId]. Closing the last
+  /// reference revokes that device's capability but does not terminate a shared
+  /// process while another device still has live references. Idempotent for an
+  /// already-closed capability; rejects a live capability owned by another
+  /// device or workspace.
   Future<void> closeSession({
     required String workspaceId,
     required String sessionId,
+    required String deviceId,
   });
 
-  /// Looks up a live session by its capability [sessionId] — used by the
-  /// `/proxy/vscode/` reverse proxy to authorize each request (unknown /
-  /// expired / foreign-workspace → null → 403). Returns null when no such live,
-  /// unexpired session exists.
+  /// Resolves a live public capability to the owning device and shared process.
+  /// Unknown, closed and expired bindings return null. The proxy must compare
+  /// [CodeServerSession.deviceId] against its authenticated device on every
+  /// request; neither the process id nor the extension bridge id is a client
+  /// proxy capability.
   CodeServerSession? lookup(String sessionId);
+
+  /// True only for a live process addressed by its server-only bridge id with
+  /// at least one unexpired client binding. The private loopback listener calls
+  /// this before accepting extension reports and reverse command SSE.
+  bool lookupBridge(String instanceId);
 
   /// Streams "open this file as its own app tab" requests reported by the
   /// bundled bridge extension running inside the embedded editors, scoped to
@@ -64,14 +68,11 @@ abstract interface class CodeServerPort {
   /// swapping the file under the current tab.
   Stream<CodeServerOpenRequest> watchOpenRequests(String workspaceId);
 
-  /// Records a bridge-extension report that a new file became active inside the
-  /// code-server addressed by capability [sessionId]; validates the session and,
-  /// when the file resolves inside its worktree, fans a [CodeServerOpenRequest]
-  /// out on [watchOpenRequests]. An unknown/expired [sessionId] or an
-  /// out-of-worktree [absPath] is ignored (never throws — it is called from the
-  /// proxy's report endpoint). [line] is the best-effort go-to target.
-  /// [windowId] is the reporting window's bridge id, passed through to the
-  /// client.
+  /// Records a server-side bridge-extension report addressed by the internal
+  /// process id [sessionId]. Private loopback authorization is mandatory before
+  /// invocation. Out-of-worktree paths and dead instances are ignored. [line]
+  /// is the best-effort go-to target; [windowId] is the reporting window's
+  /// bridge id, passed through to the client.
   void reportOpen({
     required String sessionId,
     required String absPath,
@@ -85,12 +86,9 @@ abstract interface class CodeServerPort {
   /// unsaved-changes dot.
   Stream<CodeServerDirtyEvent> watchDirtyState(String workspaceId);
 
-  /// Records a bridge-extension report that the dirty state of [absPath] changed
-  /// inside the code-server addressed by capability [sessionId]. Validates the
-  /// session and, when the file resolves inside its worktree, fans a
-  /// [CodeServerDirtyEvent] out on [watchDirtyState]. Unknown/expired
-  /// [sessionId] or an out-of-worktree [absPath] is ignored (never throws — it
-  /// is called from the proxy's report endpoint).
+  /// Records the extension's dirty-state report for [absPath] via its internal
+  /// process id [sessionId]. The private listener authorizes this id before
+  /// invocation; dead instances and out-of-worktree paths are ignored.
   void reportDirty({
     required String sessionId,
     required String absPath,
@@ -143,9 +141,8 @@ abstract interface class CodeServerPort {
     bool revert = false,
   });
 
-  /// The reverse command stream for the session addressed by capability
-  /// [sessionId] — a sequence of `{cmd, …}` maps (e.g. `{cmd:'save', path}`) the
-  /// proxy relays to the bridge extension over the `/__cc_commands__` SSE
-  /// endpoint. Empty (never emits) for an unknown/expired session.
+  /// Reverse command stream for an internal process id [sessionId], served
+  /// only on the private listener's `/__cc_commands__` SSE endpoint. Empty for
+  /// an unknown or unreferenced process.
   Stream<Map<String, Object?>> commandStream(String sessionId);
 }

@@ -1,22 +1,25 @@
 ---
 title: Instalar y gestionar skills
-description: Añade repositorios de GitHub como fuentes de skills, explora sus catálogos e instala, actualiza o desinstala skills pasando por el filtro del análisis antivirus.
+description: Instala y actualiza las skills del espacio de trabajo a través del filtro del análisis y luego compara revisiones guardadas con evaluaciones de skills con presupuesto.
 slug: es-ES/manual/guias/gestionar-skills
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Esta guía te muestra cómo llenar un espacio de trabajo con skills de GitHub:
 añade un repositorio como fuente, instala las skills que quieras de él y
-mantenlas al día con el tiempo.
+mantenlas al día con el tiempo. También puedes evaluar una revisión guardada
+frente a una línea base equivalente antes de decidir si la conservas.
 
 Lo más importante que debes saber antes de empezar: **un repositorio de origen
 no es de confianza.** Su nombre, su descripción y su número de estrellas los
-escribe quien lo posee. La única señal de seguridad en la que Control Center
-confía es el veredicto del análisis antivirus, por el que pasa toda
-instalación antes de que nada llegue al disco o al prompt de un agente. Si
-quieres el razonamiento, lee la
-[sección sobre skills del modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/); esta página se queda
-en el cómo.
+escribe quien lo posee. Toda instalación pasa por el filtro del análisis
+antivirus antes de que nada llegue al disco o al prompt de un agente. Ese
+veredicto es una comprobación de admisión, no una prueba de que una skill sea
+segura o útil. Lee la
+[sección sobre skills del modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/)
+para el modelo de instalación y [Evaluaciones y
+calidad](/es-ES/manual/conceptos/evaluaciones-y-calidad/) para saber en qué se
+diferencia la evidencia de comportamiento de un análisis.
 
 Las skills viven en **Ajustes → Espacio de trabajo → Habilidades**
 (`/workspaces/<id>/settings/workspace/skills`). Tienen alcance de espacio de
@@ -92,6 +95,91 @@ en cuarentena se rechaza y la versión que tenías se queda como estaba. El hash
 de la versión antigua se conserva como referencia de reversión en el archivo
 de bloqueo.
 
+## Evaluar una skill
+
+1. Abre **Ajustes → Espacio de trabajo → Habilidades**, selecciona la skill
+   instalada y guarda los cambios. En **Evaluación de habilidades**, comprueba
+   el hash del paquete.
+2. Selecciona **Iniciar evaluación**. Elige un **Conjunto de tareas** acorde
+   con el propósito de la skill y un **Adaptador**. El harness integrado usa un
+   proveedor configurado y un modelo con capacidad de herramientas. **Claude
+   Code** usa la cuenta gestionada predeterminada de Claude y un identificador
+   de modelo concreto; inicia sesión primero en **Ajustes → Adaptadores**. No
+   toma prestado el inicio de sesión personal del operador del servidor.
+3. Elige una **Comparación** en la tabla de abajo.
+4. Define **Repeticiones por tarea** (1–20) y **Presupuesto (centavos de US)**.
+   Por ejemplo, `100` significa 1 dólar estadounidense. Selecciona **Iniciar
+   evaluación** para autorizar el trabajo de pago del proveedor.
+5. Sigue la campaña en **Observabilidad → Calidad**, o vuelve mediante
+   **Abrir Calidad** en el panel de la skill.
+
+Para las suscripciones de Claude Code y Codex OAuth, el presupuesto es un
+**umbral de detención del uso equivalente a la API**, no un límite de factura ni
+una medida de la cuota de suscripción. `100` admite un umbral de 1 dólar
+estadounidense: una llamada en curso puede superarlo, pero no se inicia ninguna
+llamada más en cuanto el uso declarado lo alcanza. El uso desconocido también
+detiene las llamadas siguientes. Un presupuesto pequeño puede dejar la
+comparación parcial; no promete completar el conjunto de tareas seleccionado.
+
+Los proveedores con clave de API mantienen reservas conservadoras por llamada a
+partir de los límites de tokens y los precios documentados. Pueden rechazar
+`100` antes de gastar cuando una sola llamada reservada con seguridad necesita
+más. El error identifica el modelo seleccionado y la reserva mínima; elige un
+modelo más barato o aumenta ese presupuesto.
+
+| Comparación | Úsala para responder |
+| --- | --- |
+| **Ausente vs. disponible** | ¿Mejora el resultado el descubrimiento y uso normales de esta skill frente a no tenerla? |
+| **Anterior vs. actual** | ¿La actualización conserva o mejora el comportamiento frente a una revisión capturada antes? |
+| **Carga forzada vs. ausencia** | ¿Puede el contenido ayudar cuando se carga de forma explícita? Esto diagnostica problemas de carga; no demuestra el descubrimiento normal. |
+| **Composición** | ¿Ayuda añadir el candidato o entra en conflicto con las skills ambientales seleccionadas? La línea base mantiene ese mismo inventario ambiental sin el candidato. |
+
+La comparación **Anterior vs. actual** necesita un hash de paquete del
+histórico de campañas. Evalúa una revisión antes de reemplazarla si quieres
+usarla como línea base; el historial de Git arbitrario no se importa.
+
+Las ediciones sin guardar, un hash no disponible y el modo demo de solo lectura
+desactivan el inicio. El servidor también comprueba el acceso al espacio de
+trabajo y al repositorio, la cuarentena del análisis, la política de acciones,
+la compatibilidad de modelos, los precios y el confinamiento de la ejecución.
+Resuelve una comprobación fallida en vez de eludirla. Se registra la identidad
+del proveedor y del modelo, pero un alias remoto de modelo no congela los pesos
+subyacentes del proveedor.
+
+### Inspeccionar, cancelar y exportar
+
+Lee la cobertura y el gasto junto con los resultados por tarea y las
+regresiones. Abre intentos individuales para inspeccionar las cargas de skills
+observadas, los eventos de herramientas, los errores y la evidencia de los
+verificadores. Los resultados **Parciales**, **Desactualizados** y **No
+concluyentes** no son recomendaciones para adoptar una revisión. El hash de un
+informe identifica el paquete capturado, no necesariamente el paquete instalado
+actualmente.
+
+Usa **Cancelar ejecución** para el trabajo en cola o activo. Los intentos
+completados siguen visibles; la cancelación no reembolsa el trabajo ya
+realizado del proveedor. **Copiar JSON anonimizado** copia al portapapeles una
+exportación acotada de evidencia, no un paquete completo de reproducción de
+código privado. Consulta [Evaluaciones y
+calidad](/es-ES/manual/conceptos/evaluaciones-y-calidad/) para la evidencia y
+los límites de la plataforma.
+
+### Reevaluar tras las actualizaciones
+
+La reevaluación automática de pago está **desactivada por defecto**. Tras
+evaluar la revisión actual, elige una campaña en **Configuración de la política
+de actualizaciones** y selecciona **Activar evaluaciones de actualizaciones**.
+Cambiar esta política requiere permiso de administrador del espacio de trabajo.
+La campaña elegida aporta el conjunto de tareas, el adaptador, el
+proveedor/modelo, la comparación, las repeticiones y el presupuesto.
+
+Los cambios de contenido admitidos posteriores programan trabajo con
+presupuesto; los hashes sin cambios se deduplican. **Desactivar evaluaciones de
+actualizaciones** impide futuras admisiones automáticas. Usa **Cancelar
+ejecución** para una campaña ya admitida. Los informes históricos permanecen
+vinculados a los hashes de sus paquetes originales; la reevaluación no publica,
+activa ni reescribe una skill.
+
 ## Desinstalar una skill, quitar un repositorio
 
 **Desinstalar** (en la vista de detalle de una skill instalada, o eliminar en
@@ -141,3 +229,4 @@ Consulta [Skills con alcance de repo](/es-ES/manual/conceptos/modelo-de-agentes/
 ## Conceptos relacionados
 
 - [El modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/)
+- [Evaluaciones y calidad](/es-ES/manual/conceptos/evaluaciones-y-calidad/)

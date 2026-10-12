@@ -1,13 +1,13 @@
 import 'package:cc_infra/src/network/github_api_client.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 import 'fake_github_pr_client.dart';
 
 /// Minimal manual mock for [GitHubApiClient] that returns a fake PR client.
 class _FakeGitHubApiClient extends GitHubApiClient {
-  _FakeGitHubApiClient(this._prClient) : super(_NullDio());
+  _FakeGitHubApiClient(this._prClient) : super(_NullHttpClient());
 
   final FakeGitHubPrClient _prClient;
 
@@ -15,7 +15,7 @@ class _FakeGitHubApiClient extends GitHubApiClient {
   GitHubPrClient get pr => _prClient;
 }
 
-class _NullDio implements Dio {
+class _NullHttpClient implements RhttpClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }

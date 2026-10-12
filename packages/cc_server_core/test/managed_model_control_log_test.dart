@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/features/settings/domain/model_control.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
 /// A first boot spends minutes fetching multi-hundred-megabyte models over the
@@ -22,7 +22,7 @@ void main() {
     final control = ManagedModelControl(
       probeInstalled: () async => false,
       runInstall: ({onProgress, cancelToken}) async {
-        // Simulate a dio transfer's per-chunk firehose.
+        // Simulate an rhttp transfer's per-chunk firehose.
         for (var i = 0; i <= 100; i++) {
           onProgress?.call(i / 100, 'downloading');
         }
@@ -82,21 +82,16 @@ void main() {
     'a cancelled download says so instead of looking like a failure',
     () async {
       final lines = <String>[];
+      // Drive the transfer failure separately so the lifecycle observes the
+      // same asynchronous cancellation completion as a native request.
+      final abort = Completer<void>();
       final control = ManagedModelControl(
         probeInstalled: () async => false,
         runInstall: ({onProgress, cancelToken}) async {
-          final completer = Completer<void>();
-          unawaited(
-            cancelToken?.whenCancel.then((_) {
-              completer.completeError(
-                DioException.requestCancelled(
-                  requestOptions: RequestOptions(),
-                  reason: 'cancelled by client',
-                ),
-              );
-            }),
+          await abort.future;
+          throw RhttpCancelException(
+            HttpRequest(url: 'https://example.invalid/model.bin'),
           );
-          return completer.future;
         },
         runUninstall: () async {},
         onLog: (level, message) => lines.add('${level.name}: $message'),
@@ -104,6 +99,7 @@ void main() {
 
       await control.install();
       await control.cancel();
+      abort.complete();
       await until(
         control,
         (s) => s.status == ModelLifecycleStatus.notInstalled,

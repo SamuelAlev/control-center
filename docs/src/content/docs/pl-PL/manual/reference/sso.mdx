@@ -2,7 +2,7 @@
 title: Dokumentacja referencyjna konfiguracji SSO
 description: Każde ustawienie, punkt końcowy, operacja i kod błędu logowania jednokrotnego.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/sso
-sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
+sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 ---
 
 Wszystko, co da się skonfigurować w logowaniu jednokrotnym, w jednym miejscu.
@@ -24,7 +24,7 @@ którego ekran ustawień może się nie zgadzać).
 | `displayNameAttribute` | SAML    | `displayName`   | atrybut nazwy wyświetlanej                                                                                                                             |
 | `groupsAttribute`      | SAML    | `groups`        | atrybut nazw grup                                                                                                                                      |
 | `clockSkewSeconds`     | SAML    | 90              | dopuszczalne odchylenie zegara przy walidacji okresu ważności                                                                                          |
-| `allowIdpInitiated`    | SAML    | wyłączone       | akceptuj niezamówione odpowiedzi (bez `InResponseTo`)                                                                                                  |
+| `allowIdpInitiated`    | SAML    | wyłączone       | akceptuj prawidłowe niezamówione odpowiedzi (bez `InResponseTo`); przeglądarka musi zgłosić roszczenie do krótkotrwałego grantu, zanim otrzyma poświadczenie zapieczętowane dla odbiorcy |
 | `wantResponseSigned`   | SAML    | wyłączone       | wymagaj podpisu koperty odpowiedzi (podpisy asercji są zawsze wymagane)                                                                                |
 | `issuer`               | OIDC    | —               | bazowy adres URL wystawcy (wymagany, aby włączyć)                                                                                                      |
 | `clientId`             | OIDC    | —               | identyfikator klienta publicznego (wymagany, aby włączyć)                                                                                              |
@@ -38,28 +38,61 @@ którego ekran ustawień może się nie zgadzać).
 ## Konfiguracja procesu
 
 Połączenia SSO nie są zasiewane ze środowiska. Jedna pozostała flaga procesu
-dotyczy **przekazania przeglądarki**, a nie wiersza połączenia:
+wybiera, gdzie przeglądarka otwiera klienta webowego po wywołaniu zwrotnym SSO:
 
 | Zmienna / flaga                          | Znaczenie                                                                                                             |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin, na który wywołania zwrotne SSO przekierowują przeglądarkę (poświadczenie jedzie we fragmencie adresu URL). Nieustawiona zachowuje przekazanie w obrębie tego samego originu. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | adres URL klienta webowego dla zapieczętowanego przekazania poświadczenia; nieustawiona zachowuje przekazanie w obrębie tego samego originu (przydatne tylko wtedy, gdy klient webowy jest tam serwowany). Przy logowaniu `web-popup` pierwszeństwo ma dozwolony `client_origin` z karty inicjującej. |
 
 Sam adres URL wystawcy musi używać protokołu `https` (`http` jest akceptowany
 wyłącznie dla wystawców działających na interfejsie loopback: `localhost`,
-`127.0.0.1` i `::1`).
+`127.0.0.1` i `::1`). Używaj zaufanego TLS dla wywołania zwrotnego IdP i hosta
+klienta webowego: strona generująca klucz odbiorcy i dostarczany przez nią
+JavaScript są częścią granicy zaufania. HTTPS chroni ten bootstrap; po
+sparowaniu zarówno bezpośrednie, jak i przez przekaźnik sesje `/rpc` wymagają
+szyfrowania Noise i przypiętej tożsamości serwera.
 
 ## Punkty końcowe HTTP
 
 | Punkt końcowy                                    | Uwierzytelnianie     | Przeznaczenie                                                                                                                                                                                                        |
 | ------------------------------------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | brak (przekierowanie) | rozpoczyna logowanie inicjowane przez SP; `relay=desktop` przekazuje sterowanie aplikacji, `relay=web-popup` wysyła wiadomość przez postMessage do oczekującej karty łączenia (która deklaruje swój `client_origin`, uwzględniany tylko wtedy, gdy lista dozwolonych originów mu ufa) |
-| `POST /saml/acs`                                 | brak (POST od IdP)   | konsument asercji — weryfikuje, aprowizuje, generuje                                                                                                                                                                  |
+| `GET /saml/login?relay=…&handoff_key=…`         | brak (przekierowanie) | rozpoczyna logowanie inicjowane przez SP z kluczem odbiorcy X25519 trzymanym przez klienta; `relay=desktop` przekazuje sterowanie aplikacji, `relay=web-popup` wysyła wiadomość przez postMessage do oczekującej karty łączenia (jej `client_origin` jest uwzględniany tylko wtedy, gdy lista dozwolonych originów mu ufa) |
+| `POST /saml/acs`                                 | brak (POST od IdP)   | weryfikuje asercję i aprowizuje użytkownika; logowanie inicjowane przez SP zapieczętowuje wygenerowane poświadczenie urządzenia dla klucza odbiorcy, który je rozpoczął; dozwolone niezamówione SAML zwraca zamiast tego roszczenie powiązane z przeglądarką |
+| `POST /saml/claim`                               | grant przeglądarki w tym samym origin | wykorzystuje jednorazowy niezamówiony grant SAML wraz z jego plikiem cookie i świeżym `handoff_key`; zwraca poświadczenie zapieczętowane dla odbiorcy, nigdy jawny klucz parowania |
 | `GET /saml/metadata`                             | brak                 | nasz `EntityDescriptor` SP                                                                                                                                                                                            |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | brak                 | runda OIDC; `relay=desktop` przekazuje sterowanie aplikacji, `relay=web-popup` — oczekującej karcie łączenia (ta sama konwencja `client_origin`)                                                                       |
+| `GET /oidc/login?relay=…&handoff_key=…` / `GET /oidc/callback` | brak | runda OIDC; logowanie wymaga klucza odbiorcy trzymanego przez klienta; `relay=desktop` przekazuje sterowanie aplikacji, `relay=web-popup` — oczekującej karcie łączenia (ta sama konwencja `client_origin`) |
 | `GET /auth/providers`                            | brak, CORS `*`       | sonda ekranu łączenia: oferowane połączenia SSO (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                               |
 | `/scim/v2/Users…`                                | Bearer (token SCIM)  | tworzenie/pobieranie/listowanie z filtrowaniem/PUT/PATCH/DELETE użytkowników                                                                                                                                          |
 | `/scim/v2/Groups`                                | Bearer               | tylko do odczytu; wypychanie grup odpowiada 501 z założenia                                                                                                                                                           |
 | `/scim/v2/ServiceProviderConfig`                 | Bearer               | dokument możliwości                                                                                                                                                                                                   |
+
+W przypadku SAML i OIDC inicjowanych przez SP adres URL startu logowania wymaga
+prawidłowego `handoff_key` (klucza publicznego X25519 klienta inicjującego).
+Serwer zachowuje ten klucz wraz z oczekującym logowaniem i przy wywołaniu zwrotnym
+zapieczętowuje wygenerowane poświadczenie urządzenia za pomocą efemerycznego
+X25519, HKDF-SHA256 i AES-256-GCM, powiązanych z originem serwera. Przekazanie na
+pulpit używa `control-center://pair`, przekazanie webowe w tej samej karcie używa
+fragmentu adresu URL, a `web-popup` wysyła postMessage do dozwolonego
+`client_origin`, jeśli został podany (w przeciwnym razie do skonfigurowanego
+adresu URL klienta webowego albo originu wywołania zwrotnego). We fragmencie lub
+komunikacie popup jedzie zapieczętowana koperta, a nie jawny klucz parowania.
+Klient inicjujący zachowuje odpowiadający mu klucz prywatny, aby ją otworzyć. Ta
+koperta różni się od obowiązkowej sesji Noise ustanawianej po sparowaniu.
+
+Odpowiedź SAML inicjowana przez IdP (gdy jest włączona) nie ma odbiorcy
+inicjującego. Zamiast tego ACS ustawia pięciominutowy plik cookie przeglądarki
+HttpOnly, SameSite=Strict i przedstawia wybór **Otwórz klienta webowego** /
+**Otwórz aplikację desktopową**. Ta strona generuje świeży klucz odbiorcy i wysyła
+jego publiczną połowę oraz uchwyt grantu do `POST /saml/claim` z tego samego
+originu. Wykorzystanie wymaga pasującego pliku cookie i originu (granica CSRF),
+zużywa grant jednorazowo i zwraca wyłącznie kopertę zapieczętowaną dla odbiorcy.
+Kolejny fragment webowy/desktopowy przenosi tę kopertę i materiał klucza
+prywatnego odbiorcy, aby klient docelowy mógł ją otworzyć, **nie** jawne
+poświadczenie urządzenia. Inna przeglądarka albo wygasły grant nie może jej
+wykorzystać. Origin docelowego klienta webowego może uzyskać dostęp do fragmentu
+i go odszyfrować; przejęta strona wywołania zwrotnego lub origin klienta
+webowego mogą wykraść poświadczenia. Szyfrowanie nie czyni niezaufanego,
+serwowanego kodu bezpiecznym.
 
 ## Operacje RPC
 

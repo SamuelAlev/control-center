@@ -2,7 +2,7 @@
 title: Dağıtım ve istemciler
 description: Control Center’ın ince istemci mimarisinin headless bir sunucuyu masaüstü, web ve mobil istemcilerinden nasıl ayırdığı.
 slug: tr-TR/kilavuz/kavramlar/dagitim
-sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
+sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
 ---
 
 Control Center tek bir program değildir. Bir **ince istemci mimarisidir**:
@@ -22,8 +22,9 @@ yaşar.
 
 Hiçbir istemci veritabanı dosyasını kendisi açmaz. Bunun yerine her istemci tek
 bir **`RemoteRpcClient`** tutar ve depo işlemlerini ve abonelikleri onun
-üzerinden yürütür. Sunucu bağlantının kimliğini eşleştirilmiş cihaz ön
-paylaşımlı anahtarına karşı doğrular — ve sonra bağlantıyı umursamayı bırakır.
+üzerinden yürütür. Doğrudan ve aktarıcı üzerinden oturumların ikisi de imzalı bir
+Noise el sıkışması gerektirir: eşleştirilmiş cihaz ön paylaşımlı anahtarı bu
+değiş tokuşu doğrular, yeni trafik anahtarları ise her oturumu şifreler.
 **Bir oturum bir çalışma alanına bağlı değildir.** Dağıtıcı durumsuzdur: çalışma
 alanı kapsamlı her çağrı kendi `workspace_id` değerini bağımsız değişkenlerinde
 taşır ve bunu atlayan bir çağrı reddedilir.
@@ -96,9 +97,9 @@ sunucu üzerinden yapar. Masaüstü veritabanı dosyasına asla doğrudan dokunm
 Web yapısı, tarayıcıda çalışacak biçimde derlenmiş aynı Flutter uygulamasıdır ve
 [app.usectrl.dev](https://app.usectrl.dev) adresinde barındırılır, yani kurulacak
 bir şey yoktur. Bir tarayıcı alt süreç başlatamaz, bu yüzden web istemcisi **her
-zaman** uzaktır: bir `cc_server`’a `wss://` üzerinden bağlanır ve tam masaüstü
-arayüzünü çizer. Bağlandıktan sonra aynı filoya karşı aynı ekranları gösterir,
-çünkü aynı RPC üzerinden çalışan aynı koddur. Eksik kalanlar, tarayıcının sahip
+zaman** uzaktır: bir `cc_server`’a şifrelenmiş bir WebSocket oturumu üzerinden
+bağlanır ve tam masaüstü arayüzünü çizer. Bağlandıktan sonra aynı filoya karşı aynı
+ekranları gösterir, çünkü aynı RPC üzerinden aynı kodu kullanır. Eksik kalanlar, tarayıcının sahip
 olmadığı yerel bir yetenek gerektiren birkaç yerdir — bunların başında aşağıdaki
 toplantı kaydı kalite katmanı gelir, işletim sistemi bildirimleri de bir
 diğeridir.
@@ -122,27 +123,30 @@ tarayıcı kaynaklarını yalnızca `--allowed-origins` listesinde kabul eder; b
 listenin varsayılanı `https://app.usectrl.dev` olduğundan, paketi kendi
 sunucunuzda barındırmak kaynağını eklemek anlamına gelir.
 
-Medya (avatarlar, akış görselleri, PR ekran görüntüleri) doğrudan üst kaynak
-sunuculara gitmek yerine sunucunun proxy uç noktası üzerinden yönlendirilir,
-böylece bir tarayıcı hiçbir zaman rastgele bir kaynaktan içerik çekmez.
-Dağıtılan istemci, hassas olmayan bir çerezden istek başına bir İçerik Güvenliği
-Politikası damgalar; böylece yalnızca bağlı sunucunun kaynağına izin verilir.
+Medya (avatarlar, akış görselleri, PR ekran görüntüleri), yüklemeler, yedekler ve
+gömülü düzenleyici HTTP/WebSocket trafiği okunabilir genel HTTP rotalarından değil,
+şifrelenmiş kaynak tünelinden geçer; imzalı yollar yine de yetkilendirme gerektirir.
+Güvenilir düzenleyici arayüzü web uygulamasının kendi kaynağında çalışır. Service
+Worker'ı düzenleyici isteklerini mevcut şifreli oturum üzerinden dosyalara ve
+code-server arka ucuna sahip olan `cc_server`'a yönlendirir. Tarayıcının Service
+Worker'lar için HTTPS'e ya da güvenli bir loopback bağlamına ihtiyacı vardır. Yerel
+istemciler ise yetenekle sınırlandırılmış bir loopback cephesi kullanır.
 
 ### Telefon yardımcı istemcisi (cc_remote)
 
 **Remote** uygulaması ayrı, daha hafif bir istemcidir —
 [remote.usectrl.dev](https://remote.usectrl.dev/) adresindeki bir Flutter web
-PWA. Kasıtlı olarak tam uygulama **değildir**. Aracılı, uçtan uca mühürlenmiş
-bir WebSocket aktarıcısı üzerinden eşleşir ve araç yüzeyinin ağırlıklı olarak
-okuma amaçlı bir dilimini konuşur: biletleri, mesajları ve haber akışını okuyun;
-bir yanıt gönderin ya da bir bileti güncelleyin.
+PWA. Kasıtlı olarak tam uygulama **değildir**. Mümkün olduğunda doğrudan, olmadığında
+aracılı bir aktarıcı üzerinden bağlanır; her iki yol da uçtan uca şifreleme gerektirir.
+Araç yüzeyinin ağırlıklı olarak okuma amaçlı bir dilimini konuşur: biletleri,
+mesajları ve haber akışını okuyun; bir yanıt gönderin ya da bir bileti güncelleyin.
 
 Telefon, yerel bir ajandan **daha düşük ayrıcalıklı bir varlıktır**. Varsayılan
-olarak reddeden bir araç politikası, her çerçeveyi mühürleyen bir ön paylaşımlı
-anahtar, ayrıcalıklı işlemleri (örneğin eşleştirmeyi) bir yardımcı istemcinin
-dışında tutan bir oturum yeteneği, yukarıdaki çağrı başına rol ve depo yetkisi
-denetimleri ve hız sınırlama, onaylanmış (ya da sızdırılmış) bir eşleştirmenin
-tam uzaktan kontrole dönüşmesini engeller. Tam güvenlik modeli için
+olarak reddeden bir araç politikası, ayrıcalıklı işlemleri (örneğin eşleştirmeyi)
+bir yardımcı istemcinin dışında tutan bir oturum yeteneği, yukarıdaki çağrı başına
+rol ve depo yetkisi denetimleri ve hız sınırlama, onaylanmış (ya da sızdırılmış) bir
+eşleştirmenin tam uzaktan kontrole dönüşmesini engeller. Aktarım şifrelemesi hiçbir
+izin vermez. Tam güvenlik modeli için
 [Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/) sayfasına
 bakın.
 
@@ -226,27 +230,38 @@ bağla eylemi.
 
 ## Eşleştirme ve güven
 
-Her istemci kimliğini, bir kez sağlanan bir **ön paylaşımlı anahtarla** kanıtlar:
+Her istemci, `cc_server` ile imzalı Noise el sıkışmasını doğrulamak için bir kez
+sağlanan bir **ön paylaşımlı anahtar** kullanır; buna loopback ve aktarıcı üzerinden
+bağlantılar da dâhildir:
 
 - Yerel moddaki masaüstü her açılışta yeni bir anahtar üretir ve bunu başlattığı
   sunucuya ortam üzerinden verir; böylece masaüstünde hiçbir gizli bilgi kalıcı
   olmaz.
-- Uzak istemciler (uzak masaüstü, web, telefon) sunucunun `pair` komutuyla
-  üretilen ve işletim sistemi anahtarlığında (telefonda ise yerel olarak)
-  saklanan bir anahtar kullanır.
+- Uzak istemciler (uzak masaüstü, web, telefon) sunucunun eşleştirme akışının ya da
+  `pair` komutunun ürettiği bir anahtar kullanır. Yerel istemciler işletim sistemi
+  anahtarlığını kullanır; tarayıcı istemcileri eşleştirmelerini yerel olarak saklar.
+
+İstemci, sunucunun imzalı kimliğini kayıtlı parmak izi sabitlemesine karşı denetler.
+İlk bağlantıda bu parmak izini güvenilir bir QR ya da başka bir güvenilir kanal
+üzerinden doğrulayın: tek başına imzalı bir ilk temas, anahtarı kimin sağladığını
+doğrulayamaz. Kimlik değişirse istemci kapalı yönde başarısız olur; uyuşmazlığı
+yok saymak yerine güvenilir bir kanal üzerinden yeniden eşleştirin. Eski istemciler
+ve düz metin RPC bağlanamaz. TLS yine de tarayıcı kaynakları, önyükleme ve genel üst
+veri için gereklidir; `--insecure` sunucunun dış dinleyicisini etkiler, zorunlu
+şifrelenmiş oturumu değil.
 
 İptal **anında** gerçekleşir, tembel değildir. Sunucu eşleştirilmiş cihaz
 tablosunu izler ve etkin kümeden çıkmış bir cihazın açık oturumunu saniyeler
 içinde düşürür — doğrudan WebSocket yolunda da aktarma yolunda da. Bir cihazın
 bağlantısını kesmek için yeniden bağlanmasını beklemeniz gerekmez.
 
-Anahtar, statik bir ana makinenin görebileceği bir URL üzerinden asla yol almaz.
-Bir bağlantıyla geldiğinde — telefonda ya da bir tarayıcıda — **URL parçası**
-içinde, yani `#` sonrasındaki bölümde taşınır; tarayıcı bunu sayfayı barındıran
-sunucuya asla göndermez. Hatırlamaya değer değişmez budur ve her ikisi için de
-geçerlidir. Web istemcisinin iki giriş noktası daha vardır: bir sunucu ile
-anahtarı doğrudan yapıştırdığınız bağlantı formu ve yalnızca o tarayıcı için
-üretilmiş bir kimlik bilgisi karşılığında kullandığı bir davet kodu.
+Bir bağlantıyla geldiğinde — telefonda ya da bir tarayıcıda — **URL parçası** içinde,
+yani `#` sonrasındaki ve tarayıcının sayfanın ana makinesine yaptığı istekte
+göndermediği bölümde taşınır. Ancak sayfanın JavaScript'i onu yine de okuyabilir;
+bu yüzden o ana makineye güvenin ve bağlantıyı bir sır olarak saklayın. Web
+istemcisinin ayrıca bir bağlantı formu vardır; orada sunucuyu ve anahtarı doğrudan
+yapıştırırsınız. Bir de yalnızca o tarayıcı için üretilmiş bir kimlik bilgisi
+karşılığında kullandığı bir davet kodu vardır.
 
 ## İlgili kavramlar
 

@@ -6,8 +6,8 @@ import 'package:cc_infra/src/network/models/github_review_comment.dart';
 /// Reads one pull request's comments on behalf of the signed-in operator.
 ///
 /// A narrow port rather than the whole [GitHubPrClient] so the viewer-activity
-/// poller can be driven from a fake in tests without a Dio, and so the three
-/// calls the mention lane is allowed to make are visible in one place — this
+/// poller can be driven from a fake in tests without an HTTP client, and so the
+/// three calls the mention lane is allowed to make are visible in one place — this
 /// runs on the operator's PERSONAL rate limit, so widening it is a decision,
 /// not an accident.
 abstract interface class ViewerCommentFetchPort {

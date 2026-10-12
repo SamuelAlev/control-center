@@ -11,10 +11,10 @@ import 'package:control_center/features/pr_review/providers/pr_filter_providers.
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/emoji_parser.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_emoji/flutter_emoji.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -106,7 +106,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     }
 
     final name = match.group(1)!;
-    final parser = EmojiParser();
+    final parser = emojiParser;
     if (!parser.hasName(name)) {
       return;
     }

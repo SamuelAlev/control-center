@@ -40,7 +40,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
 
     const deviceId = 'threads-test-device';
-    const psk = 'test-psk-threads-please-and-thank-you-0123456789';
+    final psk = RemoteControlCrypto.generatePsk();
     const workspaceId = 'ws-threads';
 
     final seed = openSeedDatabases(tmp.path);

@@ -2,7 +2,7 @@
 title: Copia de seguridad, exportación e importación
 description: La estructura de la instantánea, el manifiesto, cada operación de copia de seguridad y ruta de transferencia, y exactamente qué archivos contiene y no contiene una copia de seguridad.
 slug: es-ES/manual/referencia/copia-de-seguridad
-sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
+sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
 ---
 
 Todo lo que Control Center puede copiar, entregar o adoptar, y la forma exacta de cada
@@ -24,6 +24,13 @@ Hay tres artefactos de copia de la base de datos, con ámbitos y políticas de e
 Todos se escriben con `VACUUM INTO` de SQLite, que es seguro frente a una base de datos
 WAL activa: toma una transacción de lectura, produce una copia desfragmentada y
 transaccionalmente coherente, y nunca exige detener el servidor.
+
+Estos archivos y las copias descargadas **no están cifrados en reposo** por
+Control Center. La transferencia cifrada de extremo a extremo protege los bytes
+en tránsito entre un cliente emparejado y su `cc_server`, tanto en conexiones
+directas como a través del relé. Protege por separado el almacenamiento local y
+las copias fuera de la máquina; el servidor y cualquier destinatario autorizado
+pueden leer los archivos de base de datos.
 
 ## Estructura de la instantánea
 
@@ -209,11 +216,17 @@ de contenido de un archivo importado están pobladas, pero su índice puede esta
 
 ## Rutas de transferencia
 
-Todas las operaciones anteriores hablan en rutas del lado del servidor, lo cual es una
-respuesta completa solo cuando el servidor es tu propia máquina. Estas tres transportan
-los bytes, en el mismo carril firmado con PSK que usan el proxy de medios y el almacén de
-imágenes. Quien llama firma una cadena de destino con la clave precompartida de su
-dispositivo y pasa la firma como `s`.
+Las operaciones de exportación/importación y de listado de instantáneas anteriores
+hablan en rutas del lado del servidor, lo cual es una respuesta completa solo
+cuando el servidor es tu propia máquina. Estas rutas con forma de HTTP
+transportan los bytes de la copia de seguridad **dentro del mismo túnel de
+recursos autenticado y cifrado de extremo a extremo** que otros recursos
+sensibles, tanto si la conexión RPC es directa como si pasa por el relé. No son
+endpoints públicos de transferencia de archivos HTTP: una petición a uno de ellos
+en el listener público devuelve `426 Upgrade Required`, incluso desde loopback.
+Dentro del túnel cifrado, el dispositivo autenticado con Noise debe coincidir con
+`d`; el manejador comprueba además la firma del dispositivo sobre su cadena de
+destino usando su PSK de emparejamiento y el rol de más abajo.
 
 | Ruta                    | Método | Consulta        | Destino firmado                  | Requiere                     |
 | ----------------------- | ------ | --------------- | -------------------------------- | ---------------------------- |
@@ -233,6 +246,7 @@ no puede apuntarse a un directorio que el listado no habría mostrado.
 | `404`  | No hay puerto de copia de seguridad en este host, o la instantánea o el archivo de espacio de trabajo indicados no existen |
 | `405`  | Se llama a `/backup/restore` con algo distinto de `POST`                             |
 | `413`  | El cuerpo de la subida supera los 8 GiB, por la longitud de contenido declarada o por los bytes leídos realmente |
+| `426`  | Cualquier petición directa a una ruta de transferencia en el listener HTTP público; usa el túnel de recursos cifrado de un cliente emparejado |
 | `500`  | La exportación o el archivado falló en el lado del servidor                          |
 
 Ambas descargas responden con `Cache-Control: no-store` y `Accept-Ranges: none`. Cada
@@ -249,12 +263,15 @@ dos archivos comprimidos de la misma instantánea son idénticos.
 almacenarlo en búfer, lo acota antes y durante la lectura, y elimina el archivo preparado
 en **todas** las salidas posibles, incluida una denegación.
 
-:::caution[Una conexión retransmitida no tiene origen HTTP]
-El relay negociado transporta tramas RPC, no transferencias de archivos. Todo lo que habla
-en rutas del lado del servidor sigue funcionando a través de él; las tres rutas de
-transferencia necesitan una conexión directa, y la interfaz las desactiva con una nota en
-lugar de fallar a mitad de una descarga.
-:::
+::::caution[La conexión directa y el relé usan la misma transferencia cifrada]
+El relé transporta peticiones de recursos, respuestas en streaming y bytes de
+subida como texto cifrado; no puede leer el contenido de las copias de seguridad.
+Una ruta del lado del servidor sigue siendo una ruta en el host del servidor, no
+un archivo en el relé. El acceso sigue requiriendo el dispositivo emparejado, la
+firma del destino y el rol aplicable de espacio de trabajo o de instalación.
+Ninguno de los dos transportes cifra los archivos de copia de seguridad
+resultantes en reposo.
+::::
 
 ## Rutas y límites
 
@@ -265,7 +282,7 @@ lugar de fallar a mitad de una descarga.
 | Exportaciones de espacios de trabajo | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Preparación de transferencias      | `<dataDir>/backups/transfer/` — un banco de trabajo, barrido por la ruta que escribe en él |
 | Nombre del archivo de la instantánea | `<snapshot directory name>.zip`                              |
-| Techo de subida                    | 8 GiB por `POST /backup/restore`                             |
+| Techo de subida                    | 8 GiB por subida cifrada a `/backup/restore`                 |
 | Retención                          | Instantáneas de la instalación: eliminación manual. Copias de seguridad de espacios de trabajo: pipeline semanal, 30 días de forma predeterminada |
 
 Los directorios `exports/`, `transfer/` y `workspace-backups/` no son instantáneas de la

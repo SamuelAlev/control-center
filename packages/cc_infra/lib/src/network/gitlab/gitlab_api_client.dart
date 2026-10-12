@@ -16,7 +16,7 @@ import 'package:cc_infra/src/network/gitlab/models/gitlab_pipeline.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_project.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_tree_entry.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_user.dart';
-import 'package:dio/dio.dart';
+import 'package:rhttp/rhttp.dart';
 
 /// The largest page size GitLab's REST v4 list endpoints accept.
 const int kGitLabMaxPerPage = 100;
@@ -34,22 +34,22 @@ const int kGitLabMaxPages = 10;
 /// Two rules hold this class together:
 ///
 /// 1. **Every path is relative.** The instance base URL (`https://gitlab.com/
-///    api/v4`, or a self-hosted equivalent) lives on the injected [Dio], never
-///    in a path string here — that is what lets the same adapter serve
-///    gitlab.com and a private instance. Authentication is likewise the
-///    injected client's business: no header is built here.
+///    api/v4`, or a self-hosted equivalent) lives on the injected [RhttpClient]
+///    settings, never in a path string here — that is what lets the same
+///    adapter serve gitlab.com and a private instance. Authentication is
+///    likewise the injected client's business: no header is built here.
 /// 2. **It returns wire models and nothing else.** No domain type crosses this
-///    boundary and no `DioException` is caught to be reshaped — errors travel
+///    boundary and no `RhttpException` is caught to be reshaped — errors travel
 ///    up untouched so the layer above maps them once. The only exceptions are
 ///    the handful of documented "absent means empty" reads (a 404 on a
 ///    Premium-only or version-gated endpoint), which are a fact about the
 ///    instance rather than a failure.
 class GitLabApiClient {
-  /// Creates a [GitLabApiClient] over [dio], which must already carry the
-  /// instance base URL and the auth header.
-  GitLabApiClient(Dio dio) : _dio = dio;
+  /// Creates a [GitLabApiClient] over [httpClient], which must already carry
+  /// the instance base URL and the auth header.
+  GitLabApiClient(RhttpClient httpClient) : _httpClient = httpClient;
 
-  final Dio _dio;
+  final RhttpClient _httpClient;
 
   /// Percent-encodes a `namespace/project` path into the single path segment
   /// GitLab addresses projects by.
@@ -87,11 +87,11 @@ class GitLabApiClient {
     String projectId, {
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId',
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabProject.fromJson(data);
   }
 
@@ -136,18 +136,15 @@ class GitLabApiClient {
   /// The user the token belongs to, or null when the token is not accepted.
   Future<GitLabUser?> getCurrentUser({CancelToken? cancelToken}) async {
     try {
-      final response = await _dio.get<dynamic>(
-        '/user',
-        cancelToken: cancelToken,
-      );
-      final data = _asMap(response.data);
+      final response = await _httpClient.get('/user', cancelToken: cancelToken);
+      final data = _asMap(_decoded(response));
       return data == null ? null : GitLabUser.fromJson(data);
-    } on DioException catch (e) {
+    } on RhttpException catch (e) {
       // An unauthenticated client is a state the port models as `null`, not an
       // error: `getAuthenticatedUser` is documented to answer null exactly
       // here. Everything else propagates.
-      final status = e.response?.statusCode;
-      if (status == 401 || status == 403) {
+      if (e is RhttpStatusCodeException &&
+          (e.statusCode == 401 || e.statusCode == 403)) {
         return null;
       }
       rethrow;
@@ -163,12 +160,12 @@ class GitLabApiClient {
     if (handle.isEmpty) {
       return null;
     }
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/users',
-      queryParameters: <String, dynamic>{'username': handle},
+      query: <String, String>{'username': handle},
       cancelToken: cancelToken,
     );
-    final users = _decodeList(response.data, GitLabUser.fromJson);
+    final users = _decodeList(_decoded(response), GitLabUser.fromJson);
     for (final user in users) {
       if (user.username.toLowerCase() == handle.toLowerCase()) {
         return user;
@@ -191,18 +188,18 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/projects/$projectId/merge_requests/$iid',
-        queryParameters: <String, dynamic>{
-          'with_labels_details': true,
-          if (includeRebaseInProgress) 'include_rebase_in_progress': true,
+        query: <String, String>{
+          'with_labels_details': 'true',
+          if (includeRebaseInProgress) 'include_rebase_in_progress': 'true',
         },
         cancelToken: cancelToken,
       );
-      final data = _asMap(response.data);
+      final data = _asMap(_decoded(response));
       return data == null ? null : GitLabMergeRequest.fromJson(data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return null;
       }
       rethrow;
@@ -228,22 +225,22 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     final size = perPage.clamp(1, kGitLabMaxPerPage);
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId/merge_requests',
-      queryParameters: <String, dynamic>{
+      query: <String, String>{
         'state': state,
         'order_by': orderBy,
         'sort': sort,
-        'per_page': size,
-        'page': page,
-        'with_labels_details': true,
+        'per_page': '$size',
+        'page': '$page',
+        'with_labels_details': 'true',
         if (authorUsername != null && authorUsername.isNotEmpty)
           'author_username': authorUsername,
       },
       cancelToken: cancelToken,
     );
-    final items = _decodeList(response.data, GitLabMergeRequest.fromJson);
-    final next = response.headers.value('x-next-page');
+    final items = _decodeList(_decoded(response), GitLabMergeRequest.fromJson);
+    final next = _header(response, 'x-next-page');
     final hasMore = (next != null && next.isNotEmpty) || items.length >= size;
     return (items: items, hasMore: hasMore);
   }
@@ -266,19 +263,19 @@ class GitLabApiClient {
         limit: limit,
         cancelToken: cancelToken,
       );
-    } on DioException catch (e) {
+    } on RhttpException catch (e) {
       // A 404 here is ambiguous — either the endpoint predates the instance's
       // version or the MR is gone. The `/changes` retry settles it: a missing
       // MR 404s there too and that error is the one that propagates.
-      if (e.response?.statusCode != 404) {
+      if (e is! RhttpStatusCodeException || e.statusCode != 404) {
         rethrow;
       }
     }
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId/merge_requests/$iid/changes',
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     final changes = _decodeList(data?['changes'], GitLabDiff.fromJson);
     if (limit != null && changes.length > limit) {
       return changes.sublist(0, limit);
@@ -320,17 +317,17 @@ class GitLabApiClient {
     String? description,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/merge_requests',
-      data: <String, dynamic>{
+      body: HttpBody.json(<String, dynamic>{
         'title': title,
         'source_branch': sourceBranch,
         'target_branch': targetBranch,
         'description': ?description,
-      },
+      }),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     if (data == null) {
       throw const FormatException(
         'Unexpected payload from merge-request creation',
@@ -371,12 +368,12 @@ class GitLabApiClient {
     if (payload.isEmpty) {
       return null;
     }
-    final response = await _dio.put<dynamic>(
+    final response = await _httpClient.put(
       '/projects/$projectId/merge_requests/$iid',
-      data: payload,
+      body: HttpBody.json(payload),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabMergeRequest.fromJson(data);
   }
 
@@ -393,9 +390,9 @@ class GitLabApiClient {
     String? squashCommitMessage,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.put<dynamic>(
+    final response = await _httpClient.put(
       '/projects/$projectId/merge_requests/$iid/merge',
-      data: <String, dynamic>{
+      body: HttpBody.json(<String, dynamic>{
         'squash': squash,
         if (!squash &&
             mergeCommitMessage != null &&
@@ -405,10 +402,10 @@ class GitLabApiClient {
             squashCommitMessage != null &&
             squashCommitMessage.isNotEmpty)
           'squash_commit_message': squashCommitMessage,
-      },
+      }),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabMergeRequest.fromJson(data);
   }
 
@@ -423,9 +420,9 @@ class GitLabApiClient {
     bool skipCi = false,
     CancelToken? cancelToken,
   }) async {
-    await _dio.put<dynamic>(
+    await _httpClient.put(
       '/projects/$projectId/merge_requests/$iid/rebase',
-      queryParameters: <String, dynamic>{if (skipCi) 'skip_ci': true},
+      query: <String, String>{if (skipCi) 'skip_ci': 'true'},
       cancelToken: cancelToken,
     );
   }
@@ -438,11 +435,11 @@ class GitLabApiClient {
     int iid, {
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId/merge_requests/$iid/approvals',
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null
         ? GitLabApprovals.empty
         : GitLabApprovals.fromJson(data);
@@ -462,17 +459,17 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/projects/$projectId/merge_requests/$iid/approval_state',
         cancelToken: cancelToken,
       );
-      final data = _asMap(response.data);
+      final data = _asMap(_decoded(response));
       return data == null
           ? GitLabApprovalState.empty
           : GitLabApprovalState.fromJson(data);
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 403 || status == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException &&
+          (e.statusCode == 403 || e.statusCode == 404)) {
         return GitLabApprovalState.empty;
       }
       rethrow;
@@ -485,7 +482,7 @@ class GitLabApiClient {
     int iid, {
     CancelToken? cancelToken,
   }) async {
-    await _dio.post<dynamic>(
+    await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/approve',
       cancelToken: cancelToken,
     );
@@ -501,12 +498,12 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      await _dio.post<dynamic>(
+      await _httpClient.post(
         '/projects/$projectId/merge_requests/$iid/unapprove',
         cancelToken: cancelToken,
       );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return;
       }
       rethrow;
@@ -520,11 +517,11 @@ class GitLabApiClient {
     int iid, {
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId/merge_requests/$iid/reviewers',
       cancelToken: cancelToken,
     );
-    return _decodeList(response.data, GitLabMergeRequestReviewer.fromJson);
+    return _decodeList(_decoded(response), GitLabMergeRequestReviewer.fromJson);
   }
 
   // ── Notes and discussions ────────────────────────────────────────────────
@@ -548,7 +545,7 @@ class GitLabApiClient {
   }) => _getPaged(
     '/projects/$projectId/merge_requests/$iid/notes',
     GitLabNote.fromJson,
-    query: const <String, dynamic>{'sort': 'asc', 'order_by': 'created_at'},
+    query: const <String, String>{'sort': 'asc', 'order_by': 'created_at'},
     cancelToken: cancelToken,
   );
 
@@ -559,12 +556,12 @@ class GitLabApiClient {
     required String body,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/notes',
-      data: <String, dynamic>{'body': body},
+      body: HttpBody.json(<String, dynamic>{'body': body}),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabNote.fromJson(data);
   }
 
@@ -576,12 +573,12 @@ class GitLabApiClient {
     required String body,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.put<dynamic>(
+    final response = await _httpClient.put(
       '/projects/$projectId/merge_requests/$iid/notes/$noteId',
-      data: <String, dynamic>{'body': body},
+      body: HttpBody.json(<String, dynamic>{'body': body}),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabNote.fromJson(data);
   }
 
@@ -595,7 +592,7 @@ class GitLabApiClient {
     required int noteId,
     CancelToken? cancelToken,
   }) async {
-    await _dio.delete<dynamic>(
+    await _httpClient.delete(
       '/projects/$projectId/merge_requests/$iid/notes/$noteId',
       cancelToken: cancelToken,
     );
@@ -612,15 +609,15 @@ class GitLabApiClient {
     GitLabNotePosition? position,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/discussions',
-      data: <String, dynamic>{
+      body: HttpBody.json(<String, dynamic>{
         'body': body,
         if (position != null) 'position': position.toJson(),
-      },
+      }),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabDiscussion.fromJson(data);
   }
 
@@ -632,13 +629,13 @@ class GitLabApiClient {
     required String body,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/discussions/'
       '${Uri.encodeComponent(discussionId)}/notes',
-      data: <String, dynamic>{'body': body},
+      body: HttpBody.json(<String, dynamic>{'body': body}),
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabNote.fromJson(data);
   }
 
@@ -657,12 +654,12 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/projects/$projectId/merge_requests/$iid/draft_notes',
-        queryParameters: const <String, dynamic>{'per_page': kGitLabMaxPerPage},
+        query: <String, String>{'per_page': '$kGitLabMaxPerPage'},
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = _decoded(response);
       if (data is! List) {
         return const <int>[];
       }
@@ -670,8 +667,8 @@ class GitLabApiClient {
         for (final entry in data.whereType<Map<String, dynamic>>())
           if ((entry['id'] as num?)?.toInt() case final int id when id > 0) id,
       ];
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return const <int>[];
       }
       rethrow;
@@ -685,7 +682,7 @@ class GitLabApiClient {
     int iid, {
     CancelToken? cancelToken,
   }) async {
-    await _dio.post<dynamic>(
+    await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/draft_notes/bulk_publish',
       cancelToken: cancelToken,
     );
@@ -723,12 +720,12 @@ class GitLabApiClient {
     required String name,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/award_emoji',
-      queryParameters: <String, dynamic>{'name': name},
+      query: <String, String>{'name': name},
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabAwardEmoji.fromJson(data);
   }
 
@@ -740,12 +737,12 @@ class GitLabApiClient {
     required String name,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/merge_requests/$iid/notes/$noteId/award_emoji',
-      queryParameters: <String, dynamic>{'name': name},
+      query: <String, String>{'name': name},
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabAwardEmoji.fromJson(data);
   }
 
@@ -756,7 +753,7 @@ class GitLabApiClient {
     int awardId, {
     CancelToken? cancelToken,
   }) async {
-    await _dio.delete<dynamic>(
+    await _httpClient.delete(
       '/projects/$projectId/merge_requests/$iid/award_emoji/$awardId',
       cancelToken: cancelToken,
     );
@@ -770,7 +767,7 @@ class GitLabApiClient {
     int awardId, {
     CancelToken? cancelToken,
   }) async {
-    await _dio.delete<dynamic>(
+    await _httpClient.delete(
       '/projects/$projectId/merge_requests/$iid/notes/$noteId/'
       'award_emoji/$awardId',
       cancelToken: cancelToken,
@@ -790,7 +787,7 @@ class GitLabApiClient {
   }) => _getPaged(
     '/projects/$projectId/pipelines',
     GitLabPipeline.fromJson,
-    query: <String, dynamic>{'sha': sha, 'order_by': 'id', 'sort': 'desc'},
+    query: <String, String>{'sha': sha, 'order_by': 'id', 'sort': 'desc'},
     maxPages: 1,
     cancelToken: cancelToken,
   );
@@ -802,14 +799,14 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/projects/$projectId/pipelines/$pipelineId',
         cancelToken: cancelToken,
       );
-      final data = _asMap(response.data);
+      final data = _asMap(_decoded(response));
       return data == null ? null : GitLabPipeline.fromJson(data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return null;
       }
       rethrow;
@@ -834,14 +831,14 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/projects/$projectId/jobs/$jobId',
         cancelToken: cancelToken,
       );
-      final data = _asMap(response.data);
+      final data = _asMap(_decoded(response));
       return data == null ? null : GitLabJob.fromJson(data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return null;
       }
       rethrow;
@@ -860,12 +857,11 @@ class GitLabApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         '/projects/$projectId/jobs/$jobId/trace',
-        options: Options(responseType: ResponseType.plain),
         cancelToken: cancelToken,
       );
-      final raw = response.data?.toString() ?? '';
+      final raw = response.body;
       if (raw.isEmpty) {
         return null;
       }
@@ -878,8 +874,8 @@ class GitLabApiClient {
         allowMalformed: true,
       );
       return (text: tail.replaceAll('\r\n', '\n'), truncated: true);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return null;
       }
       rethrow;
@@ -928,12 +924,12 @@ class GitLabApiClient {
     required String to,
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId/repository/compare',
-      queryParameters: <String, dynamic>{'from': from, 'to': to},
+      query: <String, String>{'from': from, 'to': to},
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     return data == null ? null : GitLabComparison.fromJson(data);
   }
 
@@ -952,12 +948,12 @@ class GitLabApiClient {
       return await _getPaged(
         '/projects/$projectId/repository/tree',
         GitLabTreeEntry.fromJson,
-        query: <String, dynamic>{'path': path, 'ref': ?ref},
+        query: <String, String>{'path': path, 'ref': ?ref},
         maxPages: 1,
         cancelToken: cancelToken,
       );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on RhttpException catch (e) {
+      if (e is RhttpStatusCodeException && e.statusCode == 404) {
         return const <GitLabTreeEntry>[];
       }
       rethrow;
@@ -982,13 +978,12 @@ class GitLabApiClient {
     String ref, {
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<dynamic>(
+    final response = await _httpClient.get(
       '/projects/$projectId/repository/files/${encodeFilePath(filePath)}/raw',
-      queryParameters: <String, dynamic>{'ref': ref},
-      options: Options(responseType: ResponseType.plain),
+      query: <String, String>{'ref': ref},
       cancelToken: cancelToken,
     );
-    return response.data?.toString() ?? '';
+    return response.body;
   }
 
   /// The raw bytes of [filePath] at [ref]. Same route as [getRawFile] with a
@@ -999,17 +994,16 @@ class GitLabApiClient {
     String ref, {
     CancelToken? cancelToken,
   }) async {
-    final response = await _dio.get<List<int>>(
+    final response = await _httpClient.getBytes(
       '/projects/$projectId/repository/files/${encodeFilePath(filePath)}/raw',
-      queryParameters: <String, dynamic>{'ref': ref},
-      options: Options(responseType: ResponseType.bytes),
+      query: <String, String>{'ref': ref},
       cancelToken: cancelToken,
     );
-    final data = response.data;
-    if (data == null || data.isEmpty) {
+    final data = response.body;
+    if (data.isEmpty) {
       return Uint8List(0);
     }
-    return data is Uint8List ? data : Uint8List.fromList(data);
+    return data;
   }
 
   /// Uploads [bytes] to project [projectId] and returns the project-relative
@@ -1025,15 +1019,18 @@ class GitLabApiClient {
     required String filename,
     CancelToken? cancelToken,
   }) async {
-    final form = FormData.fromMap(<String, dynamic>{
-      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    final form = HttpBody.multipart(<String, MultipartItem>{
+      'file': MultipartItem.bytes(
+        bytes: Uint8List.fromList(bytes),
+        fileName: filename,
+      ),
     });
-    final response = await _dio.post<dynamic>(
+    final response = await _httpClient.post(
       '/projects/$projectId/uploads',
-      data: form,
+      body: form,
       cancelToken: cancelToken,
     );
-    final data = _asMap(response.data);
+    final data = _asMap(_decoded(response));
     final url = data?['url'] as String?;
     return (url == null || url.isEmpty) ? null : url;
   }
@@ -1050,7 +1047,7 @@ class GitLabApiClient {
   Future<List<T>> _getPaged<T>(
     String path,
     T Function(Map<String, dynamic>) fromJson, {
-    Map<String, dynamic> query = const <String, dynamic>{},
+    Map<String, String> query = const <String, String>{},
     int perPage = kGitLabMaxPerPage,
     int maxPages = kGitLabMaxPages,
     int? limit,
@@ -1059,16 +1056,16 @@ class GitLabApiClient {
     final items = <T>[];
     var page = 1;
     for (var fetched = 0; fetched < maxPages; fetched++) {
-      final response = await _dio.get<dynamic>(
+      final response = await _httpClient.get(
         path,
-        queryParameters: <String, dynamic>{
+        query: <String, String>{
           ...query,
-          'per_page': perPage,
-          'page': page,
+          'per_page': '$perPage',
+          'page': '$page',
         },
         cancelToken: cancelToken,
       );
-      final batch = _decodeList(response.data, fromJson);
+      final batch = _decodeList(_decoded(response), fromJson);
       items.addAll(batch);
       if (limit != null && items.length >= limit) {
         return items.sublist(0, limit);
@@ -1076,7 +1073,7 @@ class GitLabApiClient {
       if (batch.length < perPage) {
         break;
       }
-      final next = int.tryParse(response.headers.value('x-next-page') ?? '');
+      final next = int.tryParse(_header(response, 'x-next-page') ?? '');
       if (next == null || next <= page) {
         break;
       }
@@ -1087,6 +1084,32 @@ class GitLabApiClient {
 
   static Map<String, dynamic>? _asMap(Object? data) =>
       data is Map<String, dynamic> ? data : null;
+
+  /// JSON-decodes a text response, answering null for an empty body or one
+  /// that is not JSON — the "no usable document" answer `_asMap`/`_decodeList`
+  /// already treat as absent.
+  static Object? _decoded(HttpTextResponse response) {
+    final text = response.body;
+    if (text.trim().isEmpty) {
+      return null;
+    }
+    try {
+      return jsonDecode(text);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// The value of the first [name] header, matched case-insensitively.
+  static String? _header(HttpResponse response, String name) {
+    final lower = name.toLowerCase();
+    for (final (key, value) in response.headers) {
+      if (key.toLowerCase() == lower) {
+        return value;
+      }
+    }
+    return null;
+  }
 
   static List<T> _decodeList<T>(
     Object? data,

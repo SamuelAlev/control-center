@@ -6,7 +6,7 @@ import 'package:cc_server_core/src/dotenv.dart';
 /// Minimum log severity the server emits. Ordered most-to-least chatty so
 /// `a.index >= b.index` means "a is at least as severe as b".
 enum CcServerLogLevel {
-  /// Everything, including per-request dio traces and no-op sweep lines.
+  /// Everything, including per-request HTTP traces and no-op sweep lines.
   debug,
 
   /// Lifecycle and status messages.
@@ -150,7 +150,7 @@ class CcServerConfig {
   /// Minimum severity emitted to stdio + the rotating file log. From
   /// `--log-level` / `CC_SERVER_LOG_LEVEL` (`debug` / `info` / `warning` /
   /// `error`, default `warning`). `debug` opens the trace tier the façades
-  /// suppress by default (dio request/response lines, no-op index sweeps).
+  /// suppress by default (HTTP request/response lines, no-op index sweeps).
   /// The booting/ready lines bypass this — they always print.
   final CcServerLogLevel logLevel;
 

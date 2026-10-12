@@ -91,9 +91,20 @@ jobs:
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
+      - name: Generate Widgetbook navigation
+        if: matrix.target == 'gallery'
+        working-directory: apps/cc_gallery
+        run: dart run build_runner build
+
       - name: Build WebAssembly bundle
         working-directory: ${{ matrix.directory }}
-        run: flutter build web --release --wasm
+        run: flutter build web --release --wasm --enable-wasm-deferred-loading
+
+      - name: Stage encrypted resource assets
+        if: matrix.target != 'gallery'
+        env:
+          WEB_OUTPUT: ${{ matrix.directory }}/build/web
+        run: node tool/stage_resource_assets.mjs "$WEB_OUTPUT"
 
       - name: Verify SkWasm and CanvasKit fallback artifacts
         working-directory: ${{ matrix.directory }}
@@ -101,6 +112,27 @@ jobs:
           test -f build/web/main.dart.wasm
           test -f build/web/main.dart.mjs
           test -f build/web/main.dart.js
+
+  browser-resources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test encrypted browser resource lifecycle
+        run: node --test --test-concurrency=2 tool/resource_worker.test.mjs tool/resource_bridge.test.mjs
 
   test:
     # Sharded by test file (tool/test_shard.dart). `flutter test --total-shards`
@@ -457,7 +489,7 @@ jobs:
   # omitted: it skips on PRs, and a skipped need fails this gate.
   build:
     if: always()
-    needs: [analyze, codegen, build-web, test, test-packages, e2e]
+    needs: [analyze, codegen, build-web, browser-resources, test, test-packages, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -467,12 +499,14 @@ jobs:
           echo "analyze:       ${{ needs.analyze.result }}"
           echo "codegen:       ${{ needs.codegen.result }}"
           echo "build-web:     ${{ needs.build-web.result }}"
+          echo "browser-resources: ${{ needs.browser-resources.result }}"
           echo "test:          ${{ needs.test.result }}"
           echo "test-packages: ${{ needs.test-packages.result }}"
           echo "e2e:           ${{ needs.e2e.result }}"
           [ "${{ needs.analyze.result }}" = "success" ] \
             && [ "${{ needs.codegen.result }}" = "success" ] \
             && [ "${{ needs.build-web.result }}" = "success" ] \
+            && [ "${{ needs.browser-resources.result }}" = "success" ] \
             && [ "${{ needs.test.result }}" = "success" ] \
             && [ "${{ needs.test-packages.result }}" = "success" ] \
             && [ "${{ needs.e2e.result }}" = "success" ]

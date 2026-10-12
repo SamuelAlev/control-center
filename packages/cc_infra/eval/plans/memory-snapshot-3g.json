@@ -1,0 +1,65 @@
+{
+  "id": "memory-snapshot-3g",
+  "seed": 3937,
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "Conservative text policy (quality default)"
+    },
+    {
+      "id": "snapshot",
+      "axis": "memory_policy",
+      "memoryPolicy": "snapshot_images",
+      "label": "Screenshot-based text compaction (experimental)"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "minPairs": 8,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 6000,
+  "memoryExperiment": {
+    "id": "snapshot-compaction",
+    "enabled": true,
+    "mode": "snapshot_images",
+    "requireRecoverableReferences": true,
+    "requireSnapshotFidelityCheck": true,
+    "fidelityVerifiers": [
+      {
+        "id": "snapshot_fidelity_workers_fact",
+        "kind": "file_contains",
+        "params": {
+          "path": "notes.md",
+          "pattern": "^FACT:.*\\b7\\b.*\\b42\\b",
+          "caseSensitive": false,
+          "taskId": "long-context-continuation"
+        },
+        "description": "The exact facts from the first turn survived the fold — the OCR-fidelity risk report 3G names."
+      },
+      {
+        "id": "snapshot_fidelity_exact_id",
+        "kind": "file_contains",
+        "params": {
+          "path": "report.txt",
+          "pattern": "req-[0-9a-f]{6}",
+          "taskId": "tool-heavy-search-and-retry"
+        },
+        "description": "An exact identifier transcribed across a fold, where punctuation fidelity matters."
+      }
+    ],
+    "notes": "Report 3G. Screenshot compaction is only admissible with an explicit fidelity check; 'no summarizer call' does not establish lower end-to-end cost."
+  },
+  "notes": "Screenshot-based compaction as a SEPARATE experiment (3G), never as the default. Requires the fidelity verifiers above to keep passing."
+}

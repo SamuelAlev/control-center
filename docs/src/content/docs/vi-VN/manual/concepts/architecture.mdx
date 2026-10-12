@@ -3,7 +3,7 @@ title: "Kiến trúc"
 description: "Cách Control Center được tổ chức: mô hình máy khách mỏng trên máy chủ, Clean Architecture hướng tính năng, cổng và adapter."
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/khai-niem/kien-truc
-sourceHash: 024e556f5475c125c29e5c4af8c1904de0febc94
+sourceHash: f204d1a7c3910af60d6944159d5f9a6d76b934d7
 ---
 
 ## Tổng quan
@@ -26,7 +26,7 @@ Bản thân tầng RPC là **không trạng thái**: một phiên được xác 
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Tầng miền**: các thực thể, đối tượng giá trị, giao diện repository, cổng và dịch vụ miền thuần Dart. Không import hạ tầng nào (không dio, drift hay mô hình mạng).
+- **Tầng miền**: các thực thể, đối tượng giá trị, giao diện repository, cổng và dịch vụ miền thuần Dart. Không import hạ tầng nào (không rhttp, drift hay mô hình mạng).
 - **Tầng trình bày**: màn hình, widget, notifier. Không truy cập trực tiếp drift/DAO/tầng dữ liệu; mọi thứ đều đi qua provider Riverpod → repository.
 - **Tầng hạ tầng**: những triển khai cụ thể của cổng miền và giao diện repository. Phụ thuộc vào miền, chứ không bao giờ ngược lại.
 
@@ -122,7 +122,7 @@ Cả hai cơ sở dữ liệu đều thuộc sở hữu của `cc_persistence` v
 
 Toàn bộ HTTP ra bên ngoài đều nằm ở máy chủ. Máy khách không bao giờ gọi trực tiếp GitHub, Linear hay Google — chúng gọi các thao tác RPC của máy chủ, và ngay cả media từ xa cũng được lấy qua endpoint `/proxy/media` của máy chủ thay vì lấy trực tiếp từ nguồn gốc.
 
-- Các máy khách **dio** trong `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` và `GoogleCalendarApiClient`
+- Các máy khách **rhttp** trong `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` và `GoogleCalendarApiClient`
 - Việc tiêm token xác thực qua các interceptor, bao gồm một interceptor Google OAuth theo từng tài khoản trong `cc_server_core` để làm mới token khi gặp 401
 - Mọi lỗi đều được ánh xạ qua `packages/cc_infra/lib/src/network/error_mapper.dart` → các lớp con `AppException` được định kiểu, định nghĩa trong `cc_domain`
 

@@ -1,21 +1,24 @@
 ---
 title: Instaluj i zarządzaj skillami
-description: Dodawaj repozytoria GitHub jako źródła skilli, przeglądaj ich katalogi oraz instaluj, aktualizuj i odinstalowuj skille przez bramkę skanu antywirusowego.
+description: Instaluj i aktualizuj skille w obszarze roboczym przez bramkę skanu, a następnie porównuj zapisane wersje z ocenami umiejętności w ramach budżetu.
 slug: pl-PL/podrecznik/poradniki/zarzadzanie-skillami
-sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
+sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
 ---
 
 Ten poradnik pokazuje, jak zapełnić obszar roboczy skillami z GitHuba: dodaj
 repozytorium jako źródło, zainstaluj wybrane z niego skille i utrzymuj je
-aktualne w czasie.
+aktualne w czasie. Zapisana wersja może też zostać oceniona względem
+dopasowanego poziomu odniesienia, zanim zdecydujesz, czy ją zachować.
 
 Najważniejsza rzecz do wiedzenia przed startem: **repozytorium źródłowe jest
 niezaufane.** Jego nazwę, opis i liczbę gwiazdek pisze ten, kto nim zarządza.
-Jedynym sygnałem bezpieczeństwa, któremu ufa Control Center, jest werdykt skanu
-antywirusowego, przez który przechodzi każda instalacja, zanim cokolwiek trafi na
-dysk albo do promptu agenta. Jeśli chcesz poznać uzasadnienie, przeczytaj
-[sekcję o skillach w modelu agentów](/pl-PL/podrecznik/koncepcje/model-agentow/);
-ta strona koncentruje się na działaniu.
+Każda instalacja przechodzi przez bramkę skanu antywirusowego, zanim cokolwiek
+trafi na dysk albo do promptu agenta. Ten werdykt to kontrola dopuszczenia, a
+nie dowód, że skill jest bezpieczny lub przydatny. Przeczytaj
+[sekcję o skillach w modelu agentów](/pl-PL/podrecznik/koncepcje/model-agentow/),
+aby poznać model instalacji, oraz [Ewaluacje i
+jakość](/pl-PL/podrecznik/koncepcje/ewaluacje-i-jakosc/), aby zrozumieć, czym
+dane behawioralne różnią się od skanu.
 
 Skille znajdują się w **Ustawienia → Obszar roboczy → Umiejętności**
 (`/workspaces/<id>/settings/workspace/skills`). Mają zasięg obszaru roboczego:
@@ -86,6 +89,85 @@ instalacja — skill, którego nowa wersja trafia do kwarantanny, zostaje
 odrzucony, a wersja, którą miałeś, pozostaje bez zmian. Hash starej wersji jest
 zachowywany w pliku lock jako referencja do wycofania.
 
+## Oceń umiejętność
+
+1. Otwórz **Ustawienia → Obszar roboczy → Umiejętności**, wybierz zainstalowaną
+   umiejętność i zapisz wszelkie zmiany. W **Ocena umiejętności** sprawdź hash
+   pakietu.
+2. Wybierz **Rozpocznij ocenę**. Wybierz **Zestaw zadań** pasujący do celu
+   umiejętności oraz **Adapter**. Wbudowany harness używa skonfigurowanego
+   dostawcy i modelu obsługującego narzędzia. **Claude Code** używa domyślnego
+   zarządzanego konta Claude i konkretnego identyfikatora modelu; najpierw
+   zaloguj się w **Ustawienia → Adaptery**. Nie pożycza osobistego logowania
+   operatora serwera.
+3. Wybierz **Porównanie** z tabeli poniżej.
+4. Ustaw **Powtórzenia na zadanie** (1–20) i **Budżet (centy amerykańskie)**.
+   Na przykład `100` oznacza 1 USD. Wybierz **Rozpocznij ocenę**, aby
+   autoryzować płatną pracę u dostawcy.
+5. Śledź kampanię w **Obserwowalność → Jakość** albo wróć przez
+   **Otwórz Jakość** w panelu umiejętności.
+
+W przypadku subskrypcji **Claude Code** i **Codex OAuth** budżet jest **progiem
+zatrzymania użycia w przeliczeniu na API**, a nie limitem faktury ani miarą
+kwoty subskrypcji. `100` dopuszcza próg 1 USD: trwające wywołanie może go
+przekroczyć, ale gdy zgłoszone użycie go osiągnie, kolejne wywołania już się nie
+rozpoczynają. Nieznane użycie również zatrzymuje kolejne wywołania. Mały budżet
+może pozostawić porównanie częściowym; nie obiecuje ukończenia wybranego zestawu
+zadań.
+
+Dostawcy korzystający z klucza API zachowują konserwatywne rezerwacje na
+wywołanie, oparte na udokumentowanych limitach tokenów i cenniku. Mogą odrzucić
+`100` jeszcze przed wydatkiem, gdy jedno bezpiecznie zarezerwowane wywołanie
+wymaga więcej. Błąd wskazuje wybrany model i minimalną rezerwację; wybierz tańszy
+model albo zwiększ ten budżet.
+
+| Porównanie | Do czego służy |
+| --- | --- |
+| **Brak vs dostępność** | Czy normalne wykrycie i użycie tej umiejętności poprawia wynik w porównaniu z jej brakiem? |
+| **Poprzednia vs bieżąca** | Czy aktualizacja zachowuje lub poprawia zachowanie względem wcześniej zarejestrowanej wersji? |
+| **Wymuszone wczytanie vs brak** | Czy treść może pomóc, gdy zostanie wczytana jawnie? To diagnozuje problemy z wczytywaniem; nie dowodzi normalnego wykrycia. |
+| **Skład** | Czy dodanie kandydata pomaga, czy koliduje z wybranymi umiejętnościami tła? Poziom odniesienia zachowuje ten sam zestaw tła bez kandydata. |
+
+**Poprzednia vs bieżąca** wymaga hasha pakietu z historii kampanii. Oceń wersję
+przed jej zastąpieniem, jeśli chcesz użyć jej jako poziomu odniesienia;
+dowolna historia Git nie jest importowana.
+
+Niezapisane zmiany, niedostępny hash i tryb demo tylko do odczytu blokują
+uruchomienie. Serwer sprawdza też dostęp do obszaru roboczego i repozytorium,
+kwarantannę skanu, zasady działań, obsługę modeli, ceny i izolację wykonania.
+Nieudaną kontrolę rozwiąż, zamiast ją omijać. Tożsamość dostawcy i modelu jest
+rejestrowana, ale zdalny alias modelu nie zamraża bazowych wag dostawcy.
+
+### Sprawdź, anuluj i wyeksportuj
+
+Czytaj pokrycie i wydatki razem z wynikami poszczególnych zadań i regresjami.
+Otwieraj pojedyncze próby, aby sprawdzić zaobserwowane wczytania umiejętności,
+zdarzenia narzędzi, błędy i dane weryfikatorów. Wyniki **częściowe**,
+**nieaktualne** i **niejednoznaczne** nie są rekomendacją przyjęcia wersji.
+Hash raportu identyfikuje zarejestrowany pakiet, niekoniecznie ten aktualnie
+zainstalowany.
+
+Użyj **Anuluj przebieg** dla pracy w kolejce lub aktywnej. Ukończone próby
+pozostają widoczne; anulowanie nie zwraca kosztów pracy już wykonanej u
+dostawcy. **Kopiuj JSON z usuniętymi danymi wrażliwymi** kopiuje do schowka
+ograniczony eksport danych, a nie pełny pakiet odtworzeniowy prywatnego źródła.
+Zobacz [Ewaluacje i jakość](/pl-PL/podrecznik/koncepcje/ewaluacje-i-jakosc/),
+aby poznać ograniczenia danych i platformy.
+
+### Ponowna ocena po aktualizacjach
+
+Automatyczna płatna ponowna ocena jest **domyślnie wyłączona**. Po ocenie
+bieżącej wersji wybierz kampanię w **Konfiguracja zasad aktualizacji** i wybierz
+**Włącz oceny aktualizacji**. Zmiana tych zasad wymaga uprawnień administratora
+obszaru roboczego. Wybrana kampania dostarcza zestaw zadań, adapter,
+dostawcę/model, porównanie, powtórzenia i budżet.
+
+Późniejsze dopuszczone zmiany treści planują pracę w ramach budżetu; niezmienione
+hashe są deduplikowane. **Wyłącz oceny aktualizacji** zapobiega przyszłym
+automatycznym dopuszczeniom. Użyj **Anuluj przebieg** dla już dopuszczonej
+kampanii. Raporty historyczne pozostają przypisane do pierwotnych hashów
+pakietów; ponowna ocena nie publikuje, nie włącza i nie przepisuje umiejętności.
+
 ## Odinstaluj skill, usuń repozytorium
 
 **Odinstaluj** (w widoku szczegółów zainstalowanego skilla albo usuń na karcie
@@ -126,7 +208,8 @@ Skille repozytorium przechodzą ten sam skan w trybie fail-closed (`pass` / `war
 `quarantine` jest wstrzymywany, bez możliwości wymuszenia przez operatora na tej
 ścieżce.
 
-Zob. [Skille w zakresie repozytorium](/pl-PL/podrecznik/koncepcje/model-agentow/#repo-scoped-skills)
+Zob. [Skille w zakresie
+repozytorium](/pl-PL/podrecznik/koncepcje/model-agentow/#skille-ograniczone-do-repozytorium)
 i [Polecenia slash](/pl-PL/podrecznik/dokumentacja-referencyjna/polecenia-slash/).
 
 ## Powiązane poradniki
@@ -137,3 +220,4 @@ i [Polecenia slash](/pl-PL/podrecznik/dokumentacja-referencyjna/polecenia-slash/
 ## Powiązane koncepcje
 
 - [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/)
+- [Ewaluacje i jakość](/pl-PL/podrecznik/koncepcje/ewaluacje-i-jakosc/)

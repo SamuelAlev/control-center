@@ -1,55 +1,26 @@
 import 'dart:async';
 
-import 'package:cc_rpc/cc_rpc.dart';
+import 'package:cc_rpc/src/channel/relay_signaling_channel.dart';
+import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 
-/// A [RemoteRpcChannelPort] that carries ONE client's JSON-RPC frames over
-/// the server's N-way relay room, end-to-end-encrypted with that client's
-/// device PSK and chunked/backpressured for bulk payloads (PRD 15 §11).
+/// Raw records for one peer of the server's N-way broker room.
 ///
-/// The server keeps a single [RelaySignalingChannel] joined to its room as
-/// the owner (`RemoteRelayHost` owns it); one transport spans one client
-/// connection, scoped to that client's signaling [peer] id: inbound frames
-/// are accepted only `from` that peer, outbound frames are addressed `to` it.
-/// The broker only ever relays ciphertext ([ChunkedRelaySession] seals every
-/// frame, including flow-control credits).
-///
-/// [close] stops bridging without dropping the room membership.
+/// `SecureRpcChannel` owns encryption above this adapter. It addresses every
+/// response to this peer and never broadcasts another device's traffic.
+/// Closing the peer does not close the server's shared room membership.
 class RelayRemoteTransport implements RemoteRpcChannelPort {
-  /// Wraps the already-joined [_signaling] owner space for [peer], sealing
-  /// with [psk]. [replay] carries payloads that arrived between the client's
-  /// hello and this transport's construction — they are fed through the
-  /// codec in arrival order before live traffic.
+  /// [replay] contains records buffered while the host resolved this peer.
   RelayRemoteTransport({
     required this._signaling,
     required this.peer,
-    required String psk,
     List<Map<String, dynamic>> replay = const [],
   }) {
-    _session = ChunkedRelaySession(
-      psk: psk,
-      sendPayload: (payload) {
-        sentChars += _payloadChars(payload);
-        _signaling.sendSignal(to: peer, payload: payload);
-      },
-      onFrame: (frame) {
-        if (_incoming.hasListener) {
-          _incoming.add(frame);
-        } else {
-          _pending.add(frame);
-        }
-      },
-      onProgress: (p) {
-        if (!_progress.isClosed) {
-          _progress.add(p);
-        }
-      },
-    );
     _incoming.onListen = _flushPending;
     _state.add(RemoteChannelState.open);
     _open = true;
     _sub = _signaling.incoming.listen(_onSignal, onDone: _onClosed);
     for (final payload in replay) {
-      _session.handlePayload(payload);
+      _deliver(payload);
     }
   }
 
@@ -57,20 +28,16 @@ class RelayRemoteTransport implements RemoteRpcChannelPort {
   final String peer;
 
   final RelaySignalingChannel _signaling;
-  late final ChunkedRelaySession _session;
 
   final StreamController<Map<String, dynamic>> _incoming =
       StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<RemoteChannelState> _state =
       StreamController<RemoteChannelState>.broadcast();
-  final StreamController<RelayTransferProgress> _progress =
-      StreamController<RelayTransferProgress>.broadcast();
   final List<Map<String, dynamic>> _pending = [];
+  Timer? _pendingEofTimer;
+  bool _pendingEof = false;
   StreamSubscription<Map<String, dynamic>>? _sub;
   bool _open = false;
-
-  /// Progress of large transfers on this link.
-  Stream<RelayTransferProgress> get transferProgress => _progress.stream;
 
   /// Sealed characters sent over the relay on this link (~bytes; relay-usage
   /// accounting so a self-hosting operator sees what the broker carries).
@@ -90,13 +57,14 @@ class RelayRemoteTransport implements RemoteRpcChannelPort {
   }
 
   void _flushPending() {
-    if (_pending.isEmpty) {
-      return;
+    for (final frame in _pending) {
+      _incoming.add(frame);
     }
-    final buffered = List<Map<String, dynamic>>.of(_pending);
     _pending.clear();
-    for (final f in buffered) {
-      _incoming.add(f);
+    if (_pendingEof) {
+      _pendingEofTimer?.cancel();
+      _pendingEof = false;
+      unawaited(_incoming.close());
     }
   }
 
@@ -114,12 +82,21 @@ class RelayRemoteTransport implements RemoteRpcChannelPort {
     if (!_open) {
       throw StateError('RelayRemoteTransport is not open');
     }
-    await _session.sendFrame(frame);
+    sentChars += _payloadChars(frame);
+    _signaling.sendSignal(to: peer, payload: frame);
   }
 
   @override
   Future<void> close() async {
-    _onClosed();
+    try {
+      if (_open) {
+        _signaling.sendSignal(to: peer, kind: 'close', payload: const {});
+      }
+    } catch (_) {
+      // The broker may already be gone; local teardown is unconditional.
+    } finally {
+      _onClosed(abort: true);
+    }
   }
 
   void _onSignal(Map<String, dynamic> frame) {
@@ -139,26 +116,46 @@ class RelayRemoteTransport implements RemoteRpcChannelPort {
     if (payload is Map) {
       final cast = payload.cast<String, dynamic>();
       receivedChars += _payloadChars(cast);
-      _session.handlePayload(cast);
+      _deliver(cast);
     }
   }
 
-  void _onClosed() {
+  void _deliver(Map<String, dynamic> frame) {
+    if (!_open) return;
+    if (_incoming.hasListener) {
+      _incoming.add(frame);
+    } else if (_pending.length >= 64) {
+      _onClosed(abort: true);
+    } else {
+      _pending.add(frame);
+    }
+  }
+
+  void _onClosed({bool abort = false}) {
     if (!_open) {
+      if (abort && _pendingEof) {
+        _pendingEofTimer?.cancel();
+        _pendingEof = false;
+        _pending.clear();
+        unawaited(_incoming.close());
+      }
       return;
     }
     _open = false;
-    _session.close();
     unawaited(_sub?.cancel());
-    if (!_state.isClosed) {
-      _state.add(RemoteChannelState.closed);
-      unawaited(_state.close());
-    }
-    if (!_incoming.isClosed) {
+    _state.add(RemoteChannelState.closed);
+    unawaited(_state.close());
+    if (abort) _pending.clear();
+    if (!abort && _pending.isNotEmpty) {
+      // Deliver bounded pre-listener records that preceded the peer's EOF.
+      _pendingEof = true;
+      _pendingEofTimer = Timer(const Duration(seconds: 5), () {
+        _pendingEof = false;
+        _pending.clear();
+        unawaited(_incoming.close());
+      });
+    } else {
       unawaited(_incoming.close());
-    }
-    if (!_progress.isClosed) {
-      unawaited(_progress.close());
     }
   }
 }
