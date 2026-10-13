@@ -8,6 +8,11 @@
 #include <vector>
 
 #ifdef _WIN32
+// windows.h otherwise defines min/max macros that break std::min/std::max
+// and std::numeric_limits<int>::max().
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <fcntl.h>
 #include <io.h>
 #include <string>
