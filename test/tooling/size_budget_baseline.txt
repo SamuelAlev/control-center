@@ -62,13 +62,12 @@ lib/features/memory/presentation/widgets/knowledge_graph_layout.dart  391
 lib/features/memory/presentation/widgets/knowledge_graph_node_sheet.dart  447
 lib/features/memory/presentation/widgets/knowledge_graph_rendering.dart  327
 lib/features/messaging/presentation/widgets/ask_user/ask_user_card.dart  530
-lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  560
+lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  558
 lib/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart  399
-lib/features/messaging/presentation/widgets/bubbles/transcript_flow.dart  540
 lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  447
 lib/features/messaging/presentation/widgets/context_usage_flyout.dart  304
 lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  530
-lib/features/messaging/presentation/widgets/message_feed.dart  338
+lib/features/messaging/presentation/widgets/message_feed.dart  315
 lib/features/messaging/presentation/widgets/space_row_adornments.dart  309
 lib/features/messaging/presentation/widgets/space_sidebar_item.dart  394
 lib/features/newsfeed/presentation/screens/article_webview_screen.dart  430

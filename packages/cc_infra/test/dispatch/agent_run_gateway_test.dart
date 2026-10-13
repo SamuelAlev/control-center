@@ -134,6 +134,7 @@ void main() {
   late List<GuardAudit> audits;
   var linked = <String>{};
   String? hookReply;
+  var hookRequests = 0;
 
   setUp(() async {
     rules = _Rules();
@@ -142,6 +143,7 @@ void main() {
     linked = {};
     audits = [];
     hookReply = null;
+    hookRequests = 0;
     upstream = _Upstream(
       await HttpServer.bind(InternetAddress.loopbackIPv4, 0),
     );
@@ -158,6 +160,7 @@ void main() {
       githubBase: Uri.parse('http://127.0.0.1:${upstream.server.port}'),
     );
     host.listen((request) async {
+      if (request.uri.path == '/agent/hooks/pre-tool-use') hookRequests++;
       if (hookReply case final reply?) {
         await request.drain<void>();
         request.response.write(reply);
@@ -333,6 +336,28 @@ void main() {
       expect(confirm.asked, isEmpty);
     });
 
+    test(
+      'malformed pushes drain the upload before returning rejection',
+      () async {
+        final request = await client.postUrl(
+          Uri.parse('http://127.0.0.1:${host.port}$pushPath'),
+        );
+        request.headers.set(AgentRunLease.tokenHeader, lease.secret);
+        request.bufferOutput = false;
+        request.add(utf8.encode('invalid'));
+        await request.flush();
+        request.add(List<int>.filled(256 * 1024, 0));
+        final response = await request.close();
+        final body = await response.transform(utf8.decoder).join();
+
+        expect(response.statusCode, HttpStatus.badRequest);
+        expect(body, contains('push blocked'));
+        expect(upstream.seen, isEmpty);
+        expect(broker.scopes, isEmpty);
+        expect(confirm.asked, isEmpty);
+      },
+    );
+
     test('a flush-only probe remains effect-free', () async {
       final r = await send('POST', pushPath, body: utf8.encode('0000'));
       expect(r.body, 'upstream-ok');
@@ -453,12 +478,16 @@ void main() {
       );
       final out = process.stdout.transform(utf8.decoder).join();
       final err = process.stderr.transform(utf8.decoder).join();
-      process.stdin.write(
-        jsonEncode({
-          'tool_name': tool,
-          'tool_input': {'command': command, 'description': ?description},
-        }),
-      );
+      if (available) {
+        process.stdin.write(
+          jsonEncode({
+            'tool_name': tool,
+            'tool_input': {'command': command, 'description': ?description},
+          }),
+        );
+      }
+      // The missing-lease hook exits without reading stdin. Closing an empty
+      // pipe avoids racing that deliberate exit with a write (EPIPE).
       await process.stdin.close();
       return (exitCode: await process.exitCode, out: await out, err: await err);
     }
@@ -562,6 +591,8 @@ void main() {
     test('a missing lease installs a blocking hook', () async {
       final result = await hook('Bash', 'git push', available: false);
       expect(result.exitCode, 2);
+      expect(result.err, contains('permission gateway is unavailable'));
+      expect(hookRequests, 0);
       expect(confirm.asked, isEmpty);
     });
 

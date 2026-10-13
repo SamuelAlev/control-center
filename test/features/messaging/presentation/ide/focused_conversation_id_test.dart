@@ -48,6 +48,14 @@ EditorTab _chat(String conversationId) => EditorTab(
   args: {'spaceId': _spaceId, 'conversationId': conversationId},
 );
 
+// The visible label follows an invisible twin that reserves selected width.
+Finder _chatTab(String conversationId) => find
+    .descendant(
+      of: find.byType(EditorWorkspace),
+      matching: find.text(conversationId),
+    )
+    .last;
+
 class _Todos extends Fake implements TodoRepository {
   final rows = <String, List<TodoItem>>{
     _standingId: [_todo(_standingId, 'Standing task')],
@@ -208,7 +216,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('New task'), findsOneWidget);
 
-    await tester.tap(find.text(_standingId));
+    await tester.tap(_chatTab(_standingId));
     await tester.pumpAndSettle();
     expect(find.text('Standing task'), findsOneWidget);
     expect(find.text('Standing goal'), findsOneWidget);
@@ -219,7 +227,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Background task'), findsNothing);
 
-    await tester.tap(find.text(_newId));
+    await tester.tap(_chatTab(_newId));
     await tester.pumpAndSettle();
     expect(find.text('Background task'), findsOneWidget);
     expect(find.text('Standing task'), findsNothing);
@@ -240,12 +248,12 @@ void main() {
     expect(todos.rows[_otherId]!.single.status, TodoStatus.inProgress);
     expect(todos.rows[_standingId]!.single.status, TodoStatus.pending);
 
-    await tester.tap(find.text(_standingId));
+    await tester.tap(_chatTab(_standingId));
     await tester.pumpAndSettle();
     expect(find.text('Standing task'), findsOneWidget);
     expect(find.text('Other task'), findsNothing);
 
-    await tester.tap(find.text(_otherId));
+    await tester.tap(_chatTab(_otherId));
     await tester.pumpAndSettle();
     expect(find.text('Other task'), findsOneWidget);
     layout.closeTabByIdentity(layout.activeLeaf.controller.tabs.single);

@@ -30,6 +30,7 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 part 'message_feed_build.dart';
 part 'message_feed_navigation.dart';
 part 'message_feed_precalc.dart';
+part 'message_feed_rows.dart';
 part 'message_feed_scrolling.dart';
 
 /// How far below the viewport top a freshly anchored turn lands, leaving the
@@ -311,29 +312,4 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
       l10n: l10n,
     );
   }
-}
-
-/// One feed row's bubble, kept while that message is still in the window.
-///
-/// [child] is the widget handed back to the list. Flutter skips the element
-/// update when the instance is the same, which is the point: only the row
-/// whose message actually changed should build again.
-class _KeptFeedRow {
-  const _KeptFeedRow({
-    required this.message,
-    required this.collapseHeader,
-    required this.inlineMessages,
-    required this.highlighted,
-    required this.onOpenThread,
-    required this.onStartThread,
-    required this.child,
-  });
-
-  final Message message;
-  final bool collapseHeader;
-  final List<Message> inlineMessages;
-  final bool highlighted;
-  final void Function(String threadId)? onOpenThread;
-  final void Function(Message message)? onStartThread;
-  final Widget child;
 }

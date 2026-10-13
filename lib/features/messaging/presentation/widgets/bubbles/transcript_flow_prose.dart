@@ -75,3 +75,38 @@ class _ChatProseMarkdownState extends State<_ChatProseMarkdown> {
     );
   }
 }
+
+/// Visible answer text (a [TextSegment], or a whole message's content when it
+/// carries no transcript) rendered as markdown. Identical to the old bubble
+/// body minus the trailing timestamp — the turn shows a single timestamp on its
+/// trailer line, not one after every prose block.
+class TurnProse extends StatelessWidget {
+  /// Creates a [TurnProse].
+  const TurnProse({
+    super.key,
+    required this.content,
+    required this.codeFont,
+    this.streaming = false,
+  });
+
+  /// The markdown content.
+  final String content;
+
+  /// Font family for code blocks.
+  final String codeFont;
+
+  /// Whether [content] is still growing (a live answer). Renders through
+  /// [CcStreamingMarkdown] so per-delta builds re-parse only the volatile
+  /// tail block and never pollute the parse cache with intermediates.
+  final bool streaming;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChatProseMarkdown(
+      data: content,
+      style: appMarkdownStyle(context, codeFontFamily: codeFont),
+      codeBuilder: sharedCodeBuilder(codeFontFamily: codeFont),
+      streaming: streaming,
+    );
+  }
+}

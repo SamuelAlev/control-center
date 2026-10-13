@@ -474,7 +474,9 @@ class AgentRunGateway {
         throw const FormatException('Uninspectable push preamble.');
       }
     } on FormatException {
-      await iterator.cancel();
+      // Cancelling unread request bytes can reset the connection before git
+      // receives the rejection. Drain them just as for a policy denial.
+      while (await iterator.moveNext()) {}
       return _plain(
         request,
         HttpStatus.badRequest,
