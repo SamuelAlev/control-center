@@ -612,6 +612,19 @@ void main() {
 
 /// The host's `unzip`, or null when it has none.
 String? _findUnzip() {
+  if (Platform.isWindows) {
+    // `which` under Git Bash answers an MSYS path (/usr/bin/unzip) that
+    // Process.run cannot start; `where` answers a native one.
+    try {
+      final where = Process.runSync('where.exe', ['unzip']);
+      final first = (where.stdout as String).split(RegExp(r'\r?\n')).first;
+      return where.exitCode == 0 && first.trim().isNotEmpty
+          ? first.trim()
+          : null;
+    } on ProcessException {
+      return null;
+    }
+  }
   for (final candidate in const ['/usr/bin/unzip', '/bin/unzip']) {
     if (File(candidate).existsSync()) {
       return candidate;

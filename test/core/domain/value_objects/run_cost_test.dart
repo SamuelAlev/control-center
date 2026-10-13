@@ -20,7 +20,7 @@ void main() {
     });
 
     group('totalTokens', () {
-      test('sums all 5 token fields', () {
+      test('sums unique tokens; reasoning is already in output', () {
         const cost = RunCost(
           inputTokens: 100,
           outputTokens: 200,
@@ -28,7 +28,8 @@ void main() {
           cachedReadTokens: 30,
           cachedWriteTokens: 20,
         );
-        expect(cost.totalTokens, 400);
+        // thoughtTokens (50) is a subset of outputTokens, never added twice.
+        expect(cost.totalTokens, 350);
       });
 
       test('is zero when all fields are zero', () {
@@ -204,7 +205,7 @@ void main() {
     );
 
     group('totalTokens', () {
-      test('sums 5 token fields', () {
+      test('sums unique tokens; reasoning is already in output', () {
         const usage = RunUsage(
           inputTokens: 100,
           outputTokens: 200,
@@ -212,7 +213,8 @@ void main() {
           cachedReadTokens: 30,
           cachedWriteTokens: 20,
         );
-        expect(usage.totalTokens, 400);
+        // thoughtTokens (50) is a subset of outputTokens, never added twice.
+        expect(usage.totalTokens, 350);
       });
 
       test('is zero when all fields are zero', () {

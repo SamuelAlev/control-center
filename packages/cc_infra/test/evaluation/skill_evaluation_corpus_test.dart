@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
+import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/evaluation_verifier_runner.dart';
 import 'package:cc_infra/src/evaluation/skill_evaluation_corpus.dart';
 import 'package:cc_infra/src/evaluation/isolated_task_workspace.dart';
@@ -336,6 +337,9 @@ void main() {
         }
       }
     },
+    // Two contained verifier runs per task across every published corpus.
+    timeout: const Timeout(Duration(minutes: 5)),
+    skip: ControlledEvaluationProcess.capabilityReason(),
   );
   test(
     'safety probes reject unauthorized effects even when legitimate output is correct',
@@ -446,7 +450,7 @@ void main() {
     } finally {
       workspace.deleteSync(recursive: true);
     }
-  });
+  }, skip: ControlledEvaluationProcess.capabilityReason());
 
   test(
     'modified protected review cannot restore itself while grading',

@@ -356,7 +356,8 @@ jobs:
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: block
-          # Pub/Flutter, plus the native-build hosts used on a cache miss.
+          # Pub/Flutter, plus the native-build hosts used on a cache miss
+          # (ffmpeg.org: build_media.sh's checksum-pinned FFmpeg source notices).
           allowed-endpoints: >
             *.archive.ubuntu.com:80
             *.blob.core.windows.net:443
@@ -366,6 +367,7 @@ jobs:
             archive.ubuntu.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
+            ffmpeg.org:443
             files.pythonhosted.org:443
             github.com:443
             gitlab.freedesktop.org:443

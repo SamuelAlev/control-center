@@ -425,9 +425,16 @@ cap(resource.RLIMIT_CORE, 0)
 cap(resource.RLIMIT_CPU, seconds)
 cap(resource.RLIMIT_FSIZE, 16 * 1024 * 1024)
 cap(resource.RLIMIT_NOFILE, 128)
-processes = len(subprocess.check_output(
-    ['/bin/ps', '-U', str(os.getuid()), '-o', 'pid=']).splitlines())
-cap(resource.RLIMIT_NPROC, processes + 16)
+# RLIMIT_NPROC is charged per real uid: processes on Darwin, but every task
+# (thread) on Linux, where a multi-threaded host VM alone outnumbers the guest
+# headroom and clone() then fails with EAGAIN. Host threads also come and go
+# while the guest runs, so Linux keeps a wider margin.
+if sys.platform == 'darwin':
+    tasks, headroom = ['/bin/ps', '-U', str(os.getuid()), '-o', 'pid='], 16
+else:
+    tasks, headroom = ['/bin/ps', '-L', '-U', str(os.getuid()), '-o', 'lwp='], 64
+cap(resource.RLIMIT_NPROC,
+    len(subprocess.check_output(tasks).splitlines()) + headroom)
 if sys.platform == 'darwin':
     os.setsid()
 else:

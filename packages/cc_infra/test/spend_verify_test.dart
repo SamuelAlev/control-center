@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cc_infra/src/claude_accounts/claude_account_store.dart';
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/usage/subscription_usage_service.dart';
@@ -5,24 +7,35 @@ import 'package:cc_natives/cc_natives.dart';
 import 'package:test/test.dart';
 
 /// THROWAWAY — checks the spend block reaches the entity.
+///
+/// Reads one developer's local server data and live credentials, so it only
+/// runs where that data dir exists; everywhere else (CI) it is skipped.
 void main() {
-  setUpAll(initializeRhttp);
-  test('per-account readings, windows or spend', () async {
-    const dataDir = '/Users/samuel.alev/dev/control-center/apps/cc_server/data';
-    final store = ClaudeAccountStore(dataDir: dataDir);
-    final httpClient = createHttpClient();
-    addTearDown(httpClient.dispose);
-    final service = SubscriptionUsageService(httpClient: httpClient);
-    for (final a in await store.list()) {
-      await store.syncCredentialFromKeychain(a.id);
-      final u = await service.fetchClaudeForConfigDir(store.configDirFor(a.id));
-      final sp = u.spend;
-      // ignore: avoid_print
-      print(
-        '${a.id.padRight(18)} status=${u.status.name.padRight(12)} '
-        'windows=${[for (final w in u.windows) '${w.id}=${(w.usedFraction * 100).round()}%']} '
-        'spend=${sp == null ? 'none' : '${sp.used.toStringAsFixed(2)}/${sp.limit.toStringAsFixed(2)} ${sp.currency} (${(sp.usedFraction * 100).toStringAsFixed(2)}%)'}',
-      );
-    }
-  }, timeout: const Timeout(Duration(minutes: 2)));
+  const dataDir = '/Users/samuel.alev/dev/control-center/apps/cc_server/data';
+  final hasLocalData = Directory(dataDir).existsSync();
+  test(
+    'per-account readings, windows or spend',
+    () async {
+      await initializeRhttp();
+      final store = ClaudeAccountStore(dataDir: dataDir);
+      final httpClient = createHttpClient();
+      addTearDown(httpClient.dispose);
+      final service = SubscriptionUsageService(httpClient: httpClient);
+      for (final a in await store.list()) {
+        await store.syncCredentialFromKeychain(a.id);
+        final u = await service.fetchClaudeForConfigDir(
+          store.configDirFor(a.id),
+        );
+        final sp = u.spend;
+        // ignore: avoid_print
+        print(
+          '${a.id.padRight(18)} status=${u.status.name.padRight(12)} '
+          'windows=${[for (final w in u.windows) '${w.id}=${(w.usedFraction * 100).round()}%']} '
+          'spend=${sp == null ? 'none' : '${sp.used.toStringAsFixed(2)}/${sp.limit.toStringAsFixed(2)} ${sp.currency} (${(sp.usedFraction * 100).toStringAsFixed(2)}%)'}',
+        );
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+    skip: hasLocalData ? false : 'local-only: needs $dataDir',
+  );
 }

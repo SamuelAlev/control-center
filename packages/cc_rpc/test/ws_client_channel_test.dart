@@ -29,9 +29,8 @@ class _SocketServer {
     });
   }
 
-  static Future<_SocketServer> start() async => _SocketServer._(
-    await HttpServer.bind(InternetAddress.loopbackIPv4, 0),
-  );
+  static Future<_SocketServer> start() async =>
+      _SocketServer._(await HttpServer.bind(InternetAddress.loopbackIPv4, 0));
 
   final HttpServer _server;
   final List<_ServerSocketChannel> _channels = [];
@@ -130,53 +129,66 @@ void main() {
       );
     });
 
-    test('routes frames through /rpc and delivers replies in socket order', () async {
-      final received = <Map<String, dynamic>>[];
-      server.onConnection = (peer) {
-        peer.incoming.listen((frame) {
-          received.add(frame);
-          unawaited(peer.send({
-            'jsonrpc': '2.0',
-            'id': frame['id'],
-            'result': {'handled': received.length},
-          }));
-        });
-      };
-      final channel = await WsClientChannel.connect(server.uri);
-      final replies = channel.incoming.take(2).toList().timeout(
-        const Duration(seconds: 5),
-      );
-      final incomingDone = Completer<void>();
-      channel.incoming.listen((_) {}, onDone: incomingDone.complete);
-      await channel.send({'jsonrpc': '2.0', 'id': 1, 'method': 'repo/call'});
-      await channel.send({'jsonrpc': '2.0', 'id': 2, 'method': 'repo/call'});
+    test(
+      'routes frames through /rpc and delivers replies in socket order',
+      () async {
+        final received = <Map<String, dynamic>>[];
+        server.onConnection = (peer) {
+          peer.incoming.listen((frame) {
+            received.add(frame);
+            unawaited(
+              peer.send({
+                'jsonrpc': '2.0',
+                'id': frame['id'],
+                'result': {'handled': received.length},
+              }),
+            );
+          });
+        };
+        final channel = await WsClientChannel.connect(server.uri);
+        final replies = channel.incoming
+            .take(2)
+            .toList()
+            .timeout(const Duration(seconds: 5));
+        final incomingDone = Completer<void>();
+        channel.incoming.listen((_) {}, onDone: incomingDone.complete);
+        await channel.send({'jsonrpc': '2.0', 'id': 1, 'method': 'repo/call'});
+        await channel.send({'jsonrpc': '2.0', 'id': 2, 'method': 'repo/call'});
 
-      expect((await replies).map((frame) => frame['result']['handled']), [1, 2]);
-      expect(received.map((frame) => frame['id']), [1, 2]);
-      expect(server.paths, ['/rpc']);
-      expect(channel.isOpen, isTrue);
+        expect((await replies).map((frame) => frame['result']['handled']), [
+          1,
+          2,
+        ]);
+        expect(received.map((frame) => frame['id']), [1, 2]);
+        expect(server.paths, ['/rpc']);
+        expect(channel.isOpen, isTrue);
 
-      final closed = channel.state.firstWhere(
-        (state) => state == RemoteChannelState.closed,
-      );
-      await channel.close();
-      await closed.timeout(const Duration(seconds: 5));
-      await incomingDone.future.timeout(const Duration(seconds: 5));
-      expect(channel.isOpen, isFalse);
-      await expectLater(
-        channel.send({'jsonrpc': '2.0', 'id': 3, 'method': 'repo/call'}),
-        throwsA(isA<StateError>()),
-      );
-    });
+        final closed = channel.state.firstWhere(
+          (state) => state == RemoteChannelState.closed,
+        );
+        await channel.close();
+        await closed.timeout(const Duration(seconds: 5));
+        await incomingDone.future.timeout(const Duration(seconds: 5));
+        expect(channel.isOpen, isFalse);
+        await expectLater(
+          channel.send({'jsonrpc': '2.0', 'id': 3, 'method': 'repo/call'}),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
 
     test('buffers a reply delivered before a listener attaches', () async {
       final sent = Completer<void>();
       server.onConnection = (peer) {
-        unawaited(peer.send({
-          'jsonrpc': '2.0',
-          'id': 'early',
-          'result': {'ready': true},
-        }).then((_) => sent.complete()));
+        unawaited(
+          peer
+              .send({
+                'jsonrpc': '2.0',
+                'id': 'early',
+                'result': {'ready': true},
+              })
+              .then((_) => sent.complete()),
+        );
       };
       final channel = await WsClientChannel.connect(server.uri);
       await sent.future.timeout(const Duration(seconds: 5));
@@ -225,15 +237,18 @@ void main() {
       await channel.close();
     });
 
-    test('malformed raw JSON aborts without delivering another record', () async {
-      final connected = Completer<_ServerSocketChannel>();
-      server.onConnection = connected.complete;
-      final channel = await WsClientChannel.connect(server.uri);
-      final received = channel.incoming.toList();
-      (await connected.future).sendMalformed('{not json');
-      expect(await received.timeout(const Duration(seconds: 5)), isEmpty);
-      expect(channel.isOpen, isFalse);
-    });
+    test(
+      'malformed raw JSON aborts without delivering another record',
+      () async {
+        final connected = Completer<_ServerSocketChannel>();
+        server.onConnection = connected.complete;
+        final channel = await WsClientChannel.connect(server.uri);
+        final received = channel.incoming.toList();
+        (await connected.future).sendMalformed('{not json');
+        expect(await received.timeout(const Duration(seconds: 5)), isEmpty);
+        expect(channel.isOpen, isFalse);
+      },
+    );
 
     test('server EOF delivers the last decoded record before done', () async {
       final connected = Completer<_ServerSocketChannel>();
@@ -249,7 +264,13 @@ void main() {
     });
 
     test('surfaces closed when the server drops the socket', () async {
+      // The client can finish connecting before the server's upgrade handler
+      // registers the socket; closing then would drop nothing, since
+      // HttpServer.close does not reach upgraded sockets.
+      final accepted = Completer<void>();
+      server.onConnection = (_) => accepted.complete();
       final channel = await WsClientChannel.connect(server.uri);
+      await accepted.future.timeout(const Duration(seconds: 10));
       final closed = channel.state.firstWhere(
         (state) => state == RemoteChannelState.closed,
       );
@@ -278,36 +299,45 @@ void main() {
       late Future<SecureChannelConnection> accepted;
       server.onConnection = (peer) {
         raw = peer;
-        accepted = acceptSecureChannel(
-          channel: peer,
-          readPsk: (deviceId) async => deviceId == 'dev-1' ? psk : null,
-          serverPublicKey: publicKey,
-          signIdentity: (challenge) => ServerIdentityCrypto.signChallenge(
-            seedB64: seed,
-            nonce: challenge,
-          ),
-          timeout: const Duration(seconds: 5),
-        ).then((connection) async {
-          connection.channel.incoming.listen((frame) {
-            requests.add(frame);
-            final method = frame['method'];
-            if (method == 'initialize') {
-              unawaited(connection.channel.send({
-                'jsonrpc': '2.0',
-                'id': frame['id'],
-                'result': {'capabilities': <String, dynamic>{}},
-              }));
-            } else if (method == 'session/list_workspaces') {
-              unawaited(connection.channel.send({
-                'jsonrpc': '2.0',
-                'id': frame['id'],
-                'result': {'workspaces': [{'id': 'workspace-1', 'name': 'Test'}]},
-              }));
-            }
-          });
-          await connection.channel.send({'type': 'approved'});
-          return connection;
-        });
+        accepted =
+            acceptSecureChannel(
+              channel: peer,
+              readPsk: (deviceId) async => deviceId == 'dev-1' ? psk : null,
+              serverPublicKey: publicKey,
+              signIdentity: (challenge) => ServerIdentityCrypto.signChallenge(
+                seedB64: seed,
+                nonce: challenge,
+              ),
+              timeout: const Duration(seconds: 5),
+            ).then((connection) async {
+              connection.channel.incoming.listen((frame) {
+                requests.add(frame);
+                final method = frame['method'];
+                if (method == 'initialize') {
+                  unawaited(
+                    connection.channel.send({
+                      'jsonrpc': '2.0',
+                      'id': frame['id'],
+                      'result': {'capabilities': <String, dynamic>{}},
+                    }),
+                  );
+                } else if (method == 'session/list_workspaces') {
+                  unawaited(
+                    connection.channel.send({
+                      'jsonrpc': '2.0',
+                      'id': frame['id'],
+                      'result': {
+                        'workspaces': [
+                          {'id': 'workspace-1', 'name': 'Test'},
+                        ],
+                      },
+                    }),
+                  );
+                }
+              });
+              await connection.channel.send({'type': 'approved'});
+              return connection;
+            });
       };
       final client = await connectRemoteRpc(
         uri: server.uri,
@@ -340,33 +370,36 @@ void main() {
       await serverConnection.channel.close();
     });
 
-    test('refuses an unpaired device rather than falling back to raw RPC', () async {
-      late Future<SecureChannelConnection> accepted;
-      server.onConnection = (peer) {
-        accepted = acceptSecureChannel(
-          channel: peer,
-          readPsk: (_) async => null,
-          serverPublicKey: publicKey,
-          signIdentity: (challenge) => ServerIdentityCrypto.signChallenge(
-            seedB64: seed,
-            nonce: challenge,
+    test(
+      'refuses an unpaired device rather than falling back to raw RPC',
+      () async {
+        late Future<SecureChannelConnection> accepted;
+        server.onConnection = (peer) {
+          accepted = acceptSecureChannel(
+            channel: peer,
+            readPsk: (_) async => null,
+            serverPublicKey: publicKey,
+            signIdentity: (challenge) => ServerIdentityCrypto.signChallenge(
+              seedB64: seed,
+              nonce: challenge,
+            ),
+            timeout: const Duration(seconds: 5),
+          );
+          unawaited(accepted.then<void>((_) {}, onError: (Object _) {}));
+        };
+        await expectLater(
+          connectRemoteRpc(
+            uri: server.uri,
+            deviceId: 'unknown-device',
+            psk: psk,
+            pinnedFingerprint: fingerprint,
+            timeout: const Duration(seconds: 5),
           ),
-          timeout: const Duration(seconds: 5),
+          throwsA(isA<AuthRejectedException>()),
         );
-        unawaited(accepted.then<void>((_) {}, onError: (Object _) {}));
-      };
-      await expectLater(
-        connectRemoteRpc(
-          uri: server.uri,
-          deviceId: 'unknown-device',
-          psk: psk,
-          pinnedFingerprint: fingerprint,
-          timeout: const Duration(seconds: 5),
-        ),
-        throwsA(isA<AuthRejectedException>()),
-      );
-      await expectLater(accepted, throwsA(isA<SecureHandshakeException>()));
-    });
+        await expectLater(accepted, throwsA(isA<SecureHandshakeException>()));
+      },
+    );
 
     test('rejects an incorrect pairing credential', () async {
       late Future<SecureChannelConnection> accepted;

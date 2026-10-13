@@ -24,6 +24,8 @@ void main() {
   Set<String> declaredToolNames() {
     const dirs = [
       'packages/cc_mcp/lib/src/tools',
+      // Harness-owned tools, e.g. `read_output` for spilled tool results.
+      'packages/cc_harness/lib/src/tools',
       'packages/cc_harness_runtime/lib/src/tools',
       'packages/cc_infra/lib/src/harness',
       'packages/cc_mcp_client/lib/src',

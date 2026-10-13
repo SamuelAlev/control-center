@@ -17,6 +17,7 @@ import 'package:cc_infra/src/pipelines/register_meeting_bodies.dart';
 import 'package:cc_infra/src/speech/diarization_model_manager.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:cc_infra/src/util/wav_io.dart';
+import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_natives/cc_natives.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -422,6 +423,12 @@ void main() {
       voiceProfileRepository: voiceRepo,
       diarizationModelManager: DiarizationModelManager(
         paths: CcPaths(Directory.systemTemp.path),
+        // No body here downloads a model; a canned transport keeps the
+        // manager from opening the rhttp native in a unit test.
+        httpClient: TestHttpClient(
+          handler: (request) =>
+              throw StateError('meeting bodies must not download models'),
+        ),
       ),
       diarizationService: const MeetingDiarizationService(),
     );

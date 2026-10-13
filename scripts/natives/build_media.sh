@@ -40,7 +40,12 @@ case "$OS" in
     [ "${VSCMD_ARG_TGT_ARCH:-}" = "$ARCH" ] || die "MSVC target must be $ARCH (run vcvarsall for $ARCH)"
     PLATFORM=win-$ARCH
     PDF_LIB=pdfium.dll
-    SUFFIX=.exe ;;
+    SUFFIX=.exe
+    # RUNNER_TEMP is a drive path (D:\a\_temp). Git Bash's GNU tar reads the
+    # "D:" of `tar xf D:\...` as a remote host ("Cannot connect to D: resolve
+    # failed"), so every archive path below must be a POSIX /d/... path.
+    WORK="$(cygpath -u "$WORK")"
+    mkdir -p "$WORK" ;;
 esac
 
 # Re-verify cached archives on EVERY invocation. A stale/unverified cache must
@@ -198,9 +203,13 @@ rm -rf "$DEST/svg-licenses"
 mkdir -p "$DEST/svg-licenses"
 svg_notice_package() { # name version source
   local name="$1" version="$2" source="$3" source_dir= candidate found=0
+  local cargo_home="${CARGO_HOME:-$HOME/.cargo}"
+  # GitHub's Windows images export CARGO_HOME as C:\Users\...\.cargo; glob
+  # through the POSIX form so backslashes never reach the pattern.
+  [ "$OS" = windows ] && cargo_home="$(cygpath -u "$cargo_home")"
   [ "$source" = "registry+https://github.com/rust-lang/crates.io-index" ] \
     || die "unrecognized SVG dependency source for $name $version: $source"
-  for candidate in "${CARGO_HOME:-$HOME/.cargo}"/registry/src/*/"$name-$version"; do
+  for candidate in "$cargo_home"/registry/src/*/"$name-$version"; do
     [ -s "$candidate/Cargo.toml" ] && { source_dir="$candidate"; break; }
   done
   [ -n "$source_dir" ] || die "Cargo source missing for $name $version"
@@ -270,7 +279,7 @@ fi
     printf 'Publisher ffprobe archive: %s/%s (SHA-256 %s)\n' "$FF_BASE" "$(basename "$PROBE_ARCHIVE")" \
       "$FFMPEG_MEDIA_SHA256_MAC_FFPROBE"
     printf 'Publisher historical build recipe (version-matched, not attested by ZIP): https://git.martin-riedl.de/ffmpeg/build-script/src/commit/%s\n' \
-      "$FFMPEG_MEDIA_MAC_RECIPE_REF"
+      "$FFMPEG_MEDIA_MAC_RECIPE_COMMIT"
     printf 'Publisher component versions: %s/versions.txt\n' "$FF_BASE"
     printf 'Publisher-reported zlib: %s\n' "$ZLIB_MEDIA_VERSION"
     printf 'Bundled zlib version upstream source: https://github.com/madler/zlib/tree/v%s\n' \
@@ -280,12 +289,12 @@ fi
     printf 'Publisher retained release: https://github.com/BtbN/FFmpeg-Builds/releases/tag/%s\n' \
       "$FFMPEG_MEDIA_BTBN_RELEASE"
     printf 'Publisher build recipe: https://github.com/BtbN/FFmpeg-Builds/tree/%s\n' \
-      "$FFMPEG_MEDIA_BTBN_RECIPE_REF"
+      "$FFMPEG_MEDIA_BTBN_RECIPE_COMMIT"
     printf 'Publisher FFmpeg checkout: %s (9.0 release branch)\n' "$FFMPEG_MEDIA_BTBN_BUILD"
     printf 'Publisher FFmpeg source checkout: https://github.com/FFmpeg/FFmpeg/tree/%s\n' \
-      "$FFMPEG_MEDIA_BTBN_SOURCE_REF"
+      "$FFMPEG_MEDIA_BTBN_SOURCE_COMMIT"
     printf 'Publisher zlib recipe: https://github.com/BtbN/FFmpeg-Builds/blob/%s/scripts.d/20-zlib.sh\n' \
-      "$FFMPEG_MEDIA_BTBN_RECIPE_REF"
+      "$FFMPEG_MEDIA_BTBN_RECIPE_COMMIT"
     printf 'Publisher zlib checkout: https://github.com/madler/zlib/tree/767c4c947852e143f582c85f14cf573411df1b35 (zlib.h: %s)\n' \
       "$ZLIB_MEDIA_BTBN_VERSION"
   fi

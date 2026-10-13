@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
+import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/evaluation_verifier_runner.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -13,6 +14,11 @@ import 'package:test/test.dart';
 /// tests drive it against a REAL temporary workspace: real processes for the
 /// command checks and real bytes for the file checks.
 void main() {
+  // Command checks run their program under `bash`; on Windows that resolves
+  // to the WSL launcher, not a shell this suite can drive.
+  final posixShell = Platform.isWindows
+      ? 'command checks run under bash, which is POSIX-only'
+      : null;
   late Directory workspace;
 
   setUp(() {
@@ -72,6 +78,7 @@ void main() {
       expect(results[1].detail, contains('bad'));
       expect(results[2].passed, isTrue);
     },
+    skip: posixShell,
   );
 
   test(
@@ -95,6 +102,7 @@ void main() {
       // A non-authoritative (advisory) check may still use an inline command.
       expect(results[1].passed, isTrue);
     },
+    skip: posixShell,
   );
 
   test('a timeout is a failure, not a pass', () async {
@@ -107,7 +115,7 @@ void main() {
     ]);
     expect(results.single.passed, isFalse);
     expect(results.single.detail, contains('timed out'));
-  });
+  }, skip: posixShell);
 
   test('line-anchored patterns match per line by default', () async {
     File(
@@ -498,6 +506,7 @@ void main() {
       );
       expect(results.single.passed, isTrue);
     },
+    skip: ControlledEvaluationProcess.capabilityReason(),
   );
 
   test('exit zero without structured output cannot prove success', () async {

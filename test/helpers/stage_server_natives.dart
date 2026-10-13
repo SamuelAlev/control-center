@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_natives/cc_natives.dart' show resolveRhttpLibraryPath;
 import 'package:path/path.dart' as p;
 
 /// Whether this machine has the natives `runCcServer`'s boot preflight
@@ -18,6 +19,23 @@ bool get hostHasServerNatives {
     }
   }
   return false;
+}
+
+/// The rhttp native for a root-package test that drives a real `RhttpClient`,
+/// or null when this host has not built natives.
+///
+/// Checks rhttp's own resolution ($RHTTP_DYLIB, `$CC_NATIVE_LIB_DIR`, the
+/// bundle layout) and then the same source dirs as [stageServerNatives]. The
+/// root test job does not stage natives, so such tests skip there instead of
+/// failing; the cc_infra transport suite covers the native itself.
+String? get testRhttpLibraryPath {
+  for (final dir in <Directory?>[null, ..._nativeSourceDirs()]) {
+    final resolved = resolveRhttpLibraryPath(appSupportRoot: dir?.path);
+    if (resolved != null) {
+      return resolved;
+    }
+  }
+  return null;
 }
 
 /// True on GitHub Actions / generic CI.

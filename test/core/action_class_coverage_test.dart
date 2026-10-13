@@ -192,6 +192,10 @@ void main() {
     'record_observation': <String>{},
     'record_team_activity': <String>{},
     'remember': <String>{},
+    // Reads a confined workspace file and stores previews in the blob store.
+    // It runs only the bundled media helpers (FFmpeg, PDFium) with
+    // server-built arguments, never an agent-chosen command.
+    'render_media': <String>{},
     'request_peer_review': <String>{}, // posts a message; does NOT dispatch
     'resolve_review_node': <String>{},
     'revise_artifact': <String>{},

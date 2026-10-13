@@ -67,16 +67,45 @@ class SignalingBroker {
     this.turnTtl = const Duration(hours: 6),
     DateTime Function()? now,
     void Function(String message)? log,
-  }) : assert(rateWindow > Duration.zero),
-       assert(dataBytesPerWindow > 0 && roomDataBytesPerWindow > 0),
-       assert(dataBurstBytes >= maxFrameBytes),
-       assert(roomDataBurstBytes >= maxFrameBytes),
-       _dataFrameFloor = min(
+  }) : _dataFrameFloor = min(
          _minimumDataChargeBytes,
          min(dataBurstBytes, roomDataBurstBytes),
        ),
        _now = now ?? DateTime.now,
-       _log = log ?? _noopLog;
+       _log = log ?? _noopLog {
+    // Thrown, not asserted: `assert` is stripped from the release binary.
+    if (rateWindow <= Duration.zero) {
+      throw ArgumentError.value(rateWindow, 'rateWindow', 'must be positive');
+    }
+    if (dataBytesPerWindow <= 0) {
+      throw ArgumentError.value(
+        dataBytesPerWindow,
+        'dataBytesPerWindow',
+        'must be positive',
+      );
+    }
+    if (roomDataBytesPerWindow <= 0) {
+      throw ArgumentError.value(
+        roomDataBytesPerWindow,
+        'roomDataBytesPerWindow',
+        'must be positive',
+      );
+    }
+    if (dataBurstBytes < maxFrameBytes) {
+      throw ArgumentError.value(
+        dataBurstBytes,
+        'dataBurstBytes',
+        'must be at least maxFrameBytes ($maxFrameBytes)',
+      );
+    }
+    if (roomDataBurstBytes < maxFrameBytes) {
+      throw ArgumentError.value(
+        roomDataBurstBytes,
+        'roomDataBurstBytes',
+        'must be at least maxFrameBytes ($maxFrameBytes)',
+      );
+    }
+  }
 
   /// Maximum number of connected peers a room will accept (owner + clients).
   final int maxPeersPerRoom;

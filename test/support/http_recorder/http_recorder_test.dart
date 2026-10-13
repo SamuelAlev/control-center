@@ -5,12 +5,24 @@ import 'package:cc_natives/cc_natives.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rhttp/rhttp.dart' as http;
 
+import '../../helpers/stage_server_natives.dart';
 import 'http_recorder.dart';
 
 void main() {
+  final nativePath = testRhttpLibraryPath;
+  group(
+    'HttpRecorder over the rhttp native',
+    () => _recorderTests(nativePath),
+    skip: nativePath == null
+        ? 'Build natives and set RHTTP_DYLIB or CC_NATIVE_LIB_DIR.'
+        : false,
+  );
+}
+
+void _recorderTests(String? nativePath) {
   late Directory tempDir;
 
-  setUpAll(initializeRhttp);
+  setUpAll(() => initializeRhttp(explicitPath: nativePath));
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('cc_cassettes');
   });

@@ -15,24 +15,35 @@
 # Raised 2026-10-10: steering attachments, notification read-through, PR
 # integration and IDE data changes grew the server files; the agent shell
 # process ops moved to catalog/agent_shell_ops.dart.
+# Raised 2026-10-13: f7f5f2b (harness loop, evaluation plans, Claude stream
+# parsing, secure RPC/resource tunnel, PR polling) and 9f77f62 (read-media
+# capture in dispatch) grew the files past the floor; agent_run_log partial
+# writes and files.discard moved to catalog packs to keep the catalog frozen.
+# Lowered github_forge_pr_client.dart, which those commits shrank.
+packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
-packages/cc_domain/lib/src/dtos/dtos.dart  4173
+packages/cc_domain/lib/src/dtos/dtos.dart  4235
+packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2196
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2430
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2677
+packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1563
+packages/cc_infra/lib/src/ide/code_server_service.dart  1581
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1696
-packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1586
-packages/cc_infra/lib/src/network/github_graphql_client.dart  2368
-packages/cc_infra/lib/src/network/github_pr_client.dart  2195
-packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1782
+packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1585
+packages/cc_infra/lib/src/network/github_graphql_client.dart  2372
+packages/cc_infra/lib/src/network/github_pr_client.dart  2281
+packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1809
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1803
 packages/cc_infra/lib/src/rigs/rig_service.dart  2976
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
-packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2889
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3326
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7928
+packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1722
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2904
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8278
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
-packages/cc_server_core/lib/src/local_rpc_server.dart  2435
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16071
+packages/cc_server_core/lib/src/local_rpc_server.dart  2570
+packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16097
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2644

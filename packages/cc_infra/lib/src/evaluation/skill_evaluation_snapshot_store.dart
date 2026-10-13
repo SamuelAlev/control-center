@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -385,6 +386,11 @@ class SkillEvaluationSnapshotStore {
     );
   }
 
+  /// In-flight saves per snapshot path. POSIX record locks never exclude a
+  /// second handle in the same process, while Windows locks fail immediately
+  /// on one, so same-process writers queue here before taking the file lock.
+  static final Map<String, Future<void>> _pendingSaves = {};
+
   Future<void> _save(
     String workspaceId,
     AdmittedSkillEvaluationSnapshot snapshot,
@@ -394,13 +400,37 @@ class SkillEvaluationSnapshotStore {
       snapshot.skillKey,
       snapshot.package.packageHash,
     );
+    final key = p.normalize(p.absolute(file.path));
+    final previous = _pendingSaves[key];
+    final done = Completer<void>();
+    _pendingSaves[key] = done.future;
+    try {
+      if (previous != null) {
+        await previous;
+      }
+      await _saveLocked(file, workspaceId, snapshot);
+    } finally {
+      done.complete();
+      if (identical(_pendingSaves[key], done.future)) {
+        _pendingSaves.remove(key);
+      }
+    }
+  }
+
+  Future<void> _saveLocked(
+    File file,
+    String workspaceId,
+    AdmittedSkillEvaluationSnapshot snapshot,
+  ) async {
     await file.parent.create(recursive: true);
     if (await file.exists()) {
       return;
     }
     final lock = await File('${file.path}.lock').open(mode: FileMode.append);
     try {
-      await lock.lock(FileLock.exclusive);
+      // Blocking: another process saving the same address is waited for, not
+      // reported as a failed capture.
+      await lock.lock(FileLock.blockingExclusive);
       // Another capture may have installed the same content address while
       // this writer waited. Never overwrite its admitted history.
       if (await file.exists()) {

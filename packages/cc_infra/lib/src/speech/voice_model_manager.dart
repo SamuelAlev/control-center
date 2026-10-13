@@ -208,12 +208,16 @@ class VoiceModelManager {
     required this._paths,
     RhttpClient? httpClient,
     this.model = VoiceModelInfo.parakeetTdtV3,
-  }) : _httpClient =
-           httpClient ??
-           createHttpClient(settings: modelDownloadClientSettings);
+  }) : _injectedHttpClient = httpClient;
 
   final CcPaths _paths;
-  final RhttpClient _httpClient;
+  final RhttpClient? _injectedHttpClient;
+
+  /// Opened on the first download only: probing and uninstalling need no
+  /// network, and callers rebuild a manager on every model switch.
+  late final RhttpClient _httpClient =
+      _injectedHttpClient ??
+      createHttpClient(settings: modelDownloadClientSettings);
 
   /// Model to manage.
   final VoiceModelInfo model;

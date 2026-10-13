@@ -9,11 +9,13 @@ import 'package:rhttp/rhttp.dart';
 /// Routes each request through its handler with a 0-based call index so
 /// paginated responses can be varied per call.
 class _RecordingClient {
-  _RecordingClient(
-    FutureOr<HttpResponse> Function(HttpRequest request, int callIndex) handler,
-  ) : fake = TestHttpClient(handler: (request) => handler(request, _calls++));
+  _RecordingClient(this._handler);
 
-  final TestHttpClient fake;
+  final FutureOr<HttpResponse> Function(HttpRequest request, int callIndex)
+  _handler;
+  late final TestHttpClient fake = TestHttpClient(
+    handler: (request) => _handler(request, _calls++),
+  );
   int _calls = 0;
 
   List<HttpRequest> get requests => fake.requests;

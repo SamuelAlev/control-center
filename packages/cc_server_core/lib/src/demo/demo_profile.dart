@@ -280,6 +280,9 @@ class DemoProfile {
     'notes.update',
     'reactions.toggle',
     'blob.put',
+    // The inverse of `blob.put`: tombstones only the caller's own unclaimed
+    // draft upload in this workspace, and reclaims bytes nothing else holds.
+    'files.discard',
     // Agents + the scripted run lane.
     'agents.upsert',
     'agents.create',
@@ -635,6 +638,10 @@ class DemoProfile {
     'evals.watchRunsForSuite',
     'evals.watchGoldens',
     'evals.watchRecordings',
+    // Skill-evaluation campaigns: read through the service's own read
+    // authorization (workspace + repo access); launching stays denied.
+    'evals.watchCampaign',
+    'evals.watchCampaignsForSkill',
     // Read-only fleet panel. Mutations stay under the denied `fleet.` prefix.
     // Workers are the shared fictional rows (plus the host's own local
     // worker); jobs and placements are filtered to the caller's workspace.

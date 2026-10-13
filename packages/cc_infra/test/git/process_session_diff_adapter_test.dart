@@ -104,6 +104,12 @@ void main() {
       file.setLastModifiedSync(mtime);
       expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
     },
+    // Windows has no inode change time: Git for Windows reports the creation
+    // time as ctime, which an in-place rewrite keeps. Whether this edit is
+    // re-hashed there depends on racy-git timing, not on the capture.
+    skip: Platform.isWindows
+        ? 'no ctime on Windows to expose a restored-mtime edit'
+        : false,
   );
 
   test(

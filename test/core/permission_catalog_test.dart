@@ -35,7 +35,7 @@ void main() {
     'checker', 'claude', 'claude_accounts', 'codeGraph', 'codeServer',
     'confirmation', 'connection', 'connectivity', 'context',
     'conversation', 'credential_gate', 'credentials', 'demo',
-    'dictation', 'dispatch', 'evals', 'fleet',
+    'dictation', 'dispatch', 'evals', 'files', 'fleet',
     'fonts', 'forge', 'fs', 'gif',
     'github', 'goals', 'ide', 'identity',
     'invites', 'isolated_repo', 'kimi', 'mcp',

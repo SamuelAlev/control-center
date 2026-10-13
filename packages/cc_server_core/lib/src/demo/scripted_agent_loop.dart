@@ -6,6 +6,7 @@ import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_server_core/src/demo/demo_provider.dart';
 import 'package:cc_server_core/src/demo/demo_script.dart';
 
 /// How fast a scripted run streams.
@@ -136,9 +137,10 @@ class ScriptedAgentLoop implements AgentLoop {
     CancellationToken? cancel,
     List<HarnessImageBlock> userImages = const [],
   }) async* {
-    // `tools`, `deferredTools` and `provider` are deliberately unused: the
-    // whole point of this loop is that nothing is callable and nothing is
-    // dialled. See the class doc.
+    // `tools` and `deferredTools` are deliberately unused: the whole point of
+    // this loop is that nothing is callable and nothing is dialled. `provider`
+    // only ever receives usage replays, and only when it is the demo's inert
+    // provider (see [_usage]).
     history.add(HarnessMessage.user(userMessage));
 
     final script = selectScript(userMessage);
@@ -216,7 +218,8 @@ class ScriptedAgentLoop implements AgentLoop {
           :final thoughtTokens,
         ):
           sawUsage = true;
-          yield LoopUsage(
+          yield* _usage(
+            provider,
             LlmUsage(
               inputTokens: inputTokens,
               outputTokens: outputTokens,
@@ -234,7 +237,8 @@ class ScriptedAgentLoop implements AgentLoop {
     // cheap. Synthesize something proportionate to what was actually streamed.
     if (!sawUsage) {
       final out = (spoken.length / 4).ceil().clamp(1, 1 << 20);
-      yield LoopUsage(
+      yield* _usage(
+        provider,
         LlmUsage(
           inputTokens: 900 + out * 3,
           outputTokens: out,
@@ -252,6 +256,28 @@ class ScriptedAgentLoop implements AgentLoop {
     yield LoopDone(
       cancelled ? LoopDoneReason.cancelled : LoopDoneReason.completed,
     );
+  }
+
+  /// Reports [usage] for this run.
+  ///
+  /// The harness banks usage at the provider boundary and ignores
+  /// [LoopUsage], so the counts are replayed through [provider] — which
+  /// records and prices them like a live call — but only when it bottoms out
+  /// in [DemoInertProvider], so a replay can never reach a real model.
+  Stream<AgentLoopEvent> _usage(
+    LlmProviderPort provider,
+    LlmUsage usage,
+  ) async* {
+    var target = provider;
+    while (target is ObservedLlmProvider) {
+      target = target.delegate;
+    }
+    if (target is DemoInertProvider) {
+      await provider
+          .complete(messages: [demoUsageReplayRequest(usage)])
+          .drain<void>();
+    }
+    yield LoopUsage(usage);
   }
 
   /// Emits [text] in [chunk]-sized deltas built by [wrap], pausing [delay]

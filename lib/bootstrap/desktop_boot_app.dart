@@ -4,6 +4,10 @@ import 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
+/// The product name, shown as the startup wordmark. A brand name is the same in
+/// every locale, so it is not routed through `AppLocalizations`.
+const String _productName = 'Control Center';
+
 /// The first desktop frame, before secure storage, native media and server boot.
 ///
 /// Contains no session or cached workspace data. The setup window hosts it
@@ -24,7 +28,7 @@ class DesktopBootApp extends StatelessWidget {
       child: ForegroundTickerGate(
         child: WidgetsApp(
           color: theme.tokens.bgPrimary,
-          title: 'Control Center',
+          title: _productName,
           debugShowCheckedModeBanner: false,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -42,7 +46,7 @@ class DesktopBootApp extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Control Center'),
+                      const Text(_productName),
                       const SizedBox(height: 16),
                       CcSpinner(semanticLabel: loading),
                       const SizedBox(height: 12),

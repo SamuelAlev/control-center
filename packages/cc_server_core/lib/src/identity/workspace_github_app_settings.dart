@@ -140,14 +140,7 @@ class WorkspaceGitHubAppSettings {
     String? privateKeyPem,
   }) async {
     if (privateKeyPem != null && privateKeyPem.trim().isNotEmpty) {
-      final appId = workspace.githubAppId.trim().isNotEmpty
-          ? workspace.githubAppId.trim()
-          : 'probe';
-      final probe = GitHubAppClient.tryCreate(
-        appId: appId,
-        privateKeyPem: privateKeyPem.trim(),
-      );
-      if (probe == null) {
+      if (!GitHubAppClient.isReadablePrivateKey(privateKeyPem.trim())) {
         throw const AuthException(
           'That private key could not be read. Paste the whole .pem file '
           'GitHub gave you, including its BEGIN and END lines.',

@@ -172,7 +172,8 @@ HttpBytesResponse httpBytesResponse(
 /// Resolves the URI represented by a captured rhttp request.
 Uri httpRequestUri(HttpRequest request) {
   final uri = Uri.parse('${request.settings?.baseUrl ?? ''}${request.url}');
-  if (request.queryRaw case final query?) {
+  // An empty query adds no `?`, matching what the native client sends.
+  if (request.queryRaw case final query? when query.isNotEmpty) {
     return uri.replace(
       query: [
         for (final (key, value) in query)
@@ -180,7 +181,8 @@ Uri httpRequestUri(HttpRequest request) {
       ].join('&'),
     );
   }
-  return request.query == null
+  final params = request.query;
+  return params == null || params.isEmpty
       ? uri
-      : uri.replace(queryParameters: request.query);
+      : uri.replace(queryParameters: params);
 }

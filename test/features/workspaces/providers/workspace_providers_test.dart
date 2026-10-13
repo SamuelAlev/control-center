@@ -27,6 +27,20 @@ Map<String, dynamic> _wsJson(String id, String name, {String? logoPath}) => {
   'updated_at': DateTime(2024).toIso8601String(),
 };
 
+/// Emits [data] once the queued `sub/subscribe` frames have reached [host].
+///
+/// `RemoteRpcClient` sends through an ordered async queue, so a snapshot
+/// emitted in the same turn as `container.listen` finds no subscriber yet and
+/// is dropped.
+Future<void> _emitWhenSubscribed(
+  FakeRpcHost host,
+  String query,
+  Map<String, dynamic> data,
+) async {
+  await Future<void>.delayed(Duration.zero);
+  host.emit(query, data);
+}
+
 void main() {
   group('ActiveWorkspaceIdNotifier', () {
     late FakeRpcHost host;
@@ -48,7 +62,9 @@ void main() {
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {'workspaces': <Map<String, dynamic>>[]});
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
+        'workspaces': <Map<String, dynamic>>[],
+      });
       await Future.delayed(const Duration(milliseconds: 50));
       final id = container.read(activeWorkspaceIdProvider);
       expect(id, null);
@@ -66,7 +82,7 @@ void main() {
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'First'), _wsJson('ws-2', 'Second')],
       });
       await Future.delayed(const Duration(milliseconds: 50));
@@ -86,7 +102,7 @@ void main() {
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'First'), _wsJson('ws-2', 'Second')],
       });
       await Future.delayed(const Duration(milliseconds: 50));
@@ -108,7 +124,7 @@ void main() {
         addTearDown(container.dispose);
         container.listen(activeWorkspaceIdProvider, (_, _) {});
         container.listen(workspacesProvider, (_, _) {});
-        host.emit('workspace.watchAll', {
+        await _emitWhenSubscribed(host, 'workspace.watchAll', {
           'workspaces': [_wsJson('ws-1', 'First')],
         });
         await Future.delayed(const Duration(milliseconds: 50));
@@ -145,7 +161,7 @@ void main() {
         // is deliberate (it stops the workspace chip flashing empty).
         expect(container.read(activeWorkspaceIdProvider), 'ws-stale');
 
-        host.emit('workspace.watchAll', {
+        await _emitWhenSubscribed(host, 'workspace.watchAll', {
           'workspaces': <Map<String, dynamic>>[],
         });
         await Future.delayed(const Duration(milliseconds: 50));
@@ -167,7 +183,7 @@ void main() {
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'First')],
       });
       await Future.delayed(const Duration(milliseconds: 50));
@@ -201,7 +217,7 @@ void main() {
 
         // And it still resolves to the same id once the list loads.
         container.listen(workspacesProvider, (_, _) {});
-        host.emit('workspace.watchAll', {
+        await _emitWhenSubscribed(host, 'workspace.watchAll', {
           'workspaces': [_wsJson('ws-1', 'First'), _wsJson('ws-2', 'Second')],
         });
         await Future.delayed(const Duration(milliseconds: 50));
@@ -242,7 +258,7 @@ void main() {
       // Once the real row loads, it takes over.
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'Real name')],
       });
       await Future.delayed(const Duration(milliseconds: 50));
@@ -261,7 +277,9 @@ void main() {
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {'workspaces': <Map<String, dynamic>>[]});
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
+        'workspaces': <Map<String, dynamic>>[],
+      });
       await Future.delayed(const Duration(milliseconds: 50));
 
       expect(container.read(activeWorkspaceDisplayProvider), isNull);
@@ -292,7 +310,7 @@ void main() {
       container.listen(workspaceDisplayCacheProvider, (_, _) {});
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
-      host.emit('workspace.watchAll', {
+      await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'First', logoPath: '/icon.png')],
       });
       await Future.delayed(const Duration(milliseconds: 50));

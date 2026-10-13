@@ -164,9 +164,12 @@ cc_media_verify() { # media-dir os [architecture]
         || die "media/$f is not Linux x64"
       deps="$(readelf -d "$dir/$f")"
       # Only the supported OS C/C++ runtime may be external to media/.
+      # libmvec.so.1 is glibc's x86-64 vector math library, shipped in libc6
+      # itself (glibc >= 2.22) and on the AppImage excludelist; BtbN's
+      # FFmpeg links it.
       while IFS= read -r req; do
         case "$req" in
-          libc.so.6|libm.so.6|libpthread.so.0|libdl.so.2|librt.so.1|libstdc++.so.6|libgcc_s.so.1|ld-linux-x86-64.so.2) ;;
+          libc.so.6|libm.so.6|libmvec.so.1|libpthread.so.0|libdl.so.2|librt.so.1|libstdc++.so.6|libgcc_s.so.1|ld-linux-x86-64.so.2) ;;
           libpdfium.so) [ "$f" = cc_pdf_render ] || die "media/$f unexpectedly loads PDFium" ;;
           *) die "media/$f requires unbundled $req" ;;
         esac

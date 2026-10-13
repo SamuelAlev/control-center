@@ -22,6 +22,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/active_workspace.dart';
+
 PullRequest _pr() => PullRequest(
   id: 1,
   number: 42,
@@ -214,6 +216,9 @@ void main() {
             (ref, spaceId) => messages.stream,
           ),
           agentDetailProvider.overrideWith((ref, id) async => null),
+          // A finding's reply draft is keyed by workspace (a route always
+          // carries one in the app).
+          activeWorkspaceIdOverride('ws-1'),
           workspacesProvider.overrideWith(
             (ref) => const Stream<List<Workspace>>.empty(),
           ),

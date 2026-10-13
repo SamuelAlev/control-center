@@ -209,7 +209,9 @@ void main() {
       expect(find.textContaining('final written = 3;'), findsWidgets);
     });
 
-    testWidgets('completed tool is collapsed by default', (tester) async {
+    testWidgets('completed read opens by default and collapses on tap', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         testWrap(
           TranscriptSegmentRow(
@@ -228,10 +230,13 @@ void main() {
       );
       // Check icon for a successful tool.
       expect(find.byIcon(AppIcons.check), findsOneWidget);
-      // Tap to expand reveals the code body.
+      // A read's result is the point, so it shows inline without a click
+      // (`toolBodyOpensByDefault`).
+      expect(find.textContaining('aaa'), findsWidgets);
+      // Tapping the header closes it.
       await tester.tap(find.textContaining('Read').first);
       await tester.pumpAndSettle();
-      expect(find.textContaining('aaa'), findsWidgets);
+      expect(find.textContaining('aaa'), findsNothing);
     });
 
     testWidgets('tool row renders a category left border', (tester) async {

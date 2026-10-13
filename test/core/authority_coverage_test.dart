@@ -238,7 +238,10 @@ void main() {
       'tickets.watchForWorkspace', 'todos.watch', 'todos.watchGoal',
       'workProduct.watchById', 'workProduct.watchForSpace',
       'workspace.watchReposForWorkspace',
-      // Evals / recordings.
+      // Evals / recordings. Skill campaigns read like their sibling
+      // evals.getAttempt/listAttempts ops (no minRole); the service still
+      // authorizes the caller's principal.
+      'evals.watchCampaign', 'evals.watchCampaignsForSkill',
       'evals.watchGoldens', 'evals.watchRecordings',
       'evals.watchRunsForSuite', 'evals.watchSuites',
       // Live surfaces + utilities.

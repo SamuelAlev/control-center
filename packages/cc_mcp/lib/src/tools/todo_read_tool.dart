@@ -56,7 +56,7 @@ class TodoReadTool extends McpTool {
         'description': 'Filled from the session; supplied values are ignored.',
       },
     },
-    'required': <String>[],
+    'required': ['workspace_id'],
   };
 
   @override

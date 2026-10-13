@@ -91,7 +91,7 @@ class TodoWriteTool extends McpTool {
         },
       },
     },
-    'required': ['todos'],
+    'required': ['workspace_id', 'todos'],
   };
 
   @override

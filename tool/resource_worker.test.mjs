@@ -87,6 +87,10 @@ test('owner unbind releases the old worker port before rebind', async () => {
   };
   const channel = new MessageChannel();
   bind(h, channel.port1);
+  // `once` listens via addEventListener, which does not ref the port. Once the
+  // worker closes port1, nothing else holds the event loop open, so Node can
+  // drain before port2's 'close' arrives and cancel every remaining test.
+  channel.port2.ref();
   const unbound = once(channel.port2, 'close');
   channel.port2.postMessage({kind: 'unbind'});
   await unbound;

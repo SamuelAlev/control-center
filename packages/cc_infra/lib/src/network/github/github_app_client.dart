@@ -84,14 +84,7 @@ class GitHubAppClient {
     required String privateKeyPem,
     RhttpClient? httpClient,
   }) {
-    if (appId.isEmpty || privateKeyPem.isEmpty) {
-      return null;
-    }
-    try {
-      // Parsing here (rather than at first use) is what lets the settings
-      // screen reject a bad key while the operator is still looking at it.
-      RSAPrivateKey(privateKeyPem);
-    } on Object {
+    if (appId.isEmpty || !isReadablePrivateKey(privateKeyPem)) {
       return null;
     }
     return GitHubAppClient(
@@ -99,6 +92,23 @@ class GitHubAppClient {
       privateKeyPem: privateKeyPem,
       httpClient: httpClient,
     );
+  }
+
+  /// Whether [privateKeyPem] parses as the RSA key an app JWT is signed with.
+  ///
+  /// Parsing up front (rather than at first use) is what lets the settings
+  /// screen reject a bad key while the operator is still looking at it,
+  /// without opening an HTTP client just to validate it.
+  static bool isReadablePrivateKey(String privateKeyPem) {
+    if (privateKeyPem.isEmpty) {
+      return false;
+    }
+    try {
+      RSAPrivateKey(privateKeyPem);
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   final String _appId;

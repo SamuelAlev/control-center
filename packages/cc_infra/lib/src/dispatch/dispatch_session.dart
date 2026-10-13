@@ -2622,6 +2622,15 @@ class DispatchSession implements SteeringSessionView {
 
   void _closeController() {
     _cancelSilenceWatchdog();
+    // Close at once when no Read capture is in flight, so a caller that awaited
+    // stop()/terminate() sees a closed stream; otherwise close only after the
+    // queued events have been emitted.
+    if (_readMedia.isIdle) {
+      if (!controller.isClosed) {
+        unawaited(controller.close());
+      }
+      return;
+    }
     unawaited(
       _readMedia.drained.then((_) {
         if (!controller.isClosed) {

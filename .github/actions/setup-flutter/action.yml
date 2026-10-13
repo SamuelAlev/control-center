@@ -84,3 +84,9 @@ runs:
         cd "$GITHUB_WORKSPACE"
         dart run patchwork apply
         dart run patchwork doctor
+        # patchwork resolves with `dart pub get`, which leaves Flutter's plugin
+        # registrants as the first pub get wrote them: against the unpatched
+        # packages, before pubspec_overrides.yaml existed (rhttp's patch drops
+        # its ffiPlugin). Resolve again so they match the patched graph.
+        cd "$GITHUB_WORKSPACE/${{ inputs.working-directory }}"
+        flutter pub get

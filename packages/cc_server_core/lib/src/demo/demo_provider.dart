@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -191,16 +193,29 @@ class DemoInertProvider implements LlmProviderPort {
   @override
   String get defaultModel => model;
 
+  /// Answers only a [demoUsageReplayRequest], from the counts it carries.
+  ///
+  /// The harness prices and logs a run at the provider boundary, not from loop
+  /// events, so a scripted run's usage has to cross that boundary to be priced
+  /// like a live one. Nothing is dialled either way.
   @override
   Stream<LlmEvent> complete({
     required List<HarnessMessage> messages,
     List<LlmToolSchema> tools = const [],
     LlmCompleteConfig config = const LlmCompleteConfig(),
-  }) => throw StateError(
-    'The demo server must never call a model. A scripted AgentLoop should have '
-    'replaced the loop entirely — reaching the provider means the demo wiring '
-    'regressed.',
-  );
+  }) {
+    final usage = decodeDemoUsageReplay(messages);
+    if (usage == null) {
+      throw StateError(
+        'The demo server must never call a model. A scripted AgentLoop should '
+        'have replaced the loop entirely — reaching the provider means the '
+        'demo wiring regressed.',
+      );
+    }
+    return Stream.value(
+      LlmDone(stopReason: LlmStopReason.endTurn, usage: usage),
+    );
+  }
 
   /// Static catalogs for the providers [kDemoProviderAccounts] connects.
   ///
@@ -211,6 +226,51 @@ class DemoInertProvider implements LlmProviderPort {
   @override
   Future<List<ProviderModel>> listModels() async =>
       kDemoProviderModels[providerId] ?? const [];
+}
+
+/// Marks the one request [DemoInertProvider] answers: a scripted run's usage
+/// report.
+///
+/// `ScriptedAgentLoop` sends it through the run's observed provider so the
+/// usage is recorded, priced and persisted by the same accounting a live call
+/// goes through. The request carries the counts; it is never sent anywhere.
+const String _usageReplayMarker = '[[demo:usage-replay]]';
+
+/// The request that replays [usage] through a [DemoInertProvider].
+HarnessMessage demoUsageReplayRequest(LlmUsage usage) {
+  final counts = jsonEncode({
+    'input': usage.inputTokens,
+    'output': usage.outputTokens,
+    'cache_read': usage.cacheReadTokens,
+    'cache_write': usage.cacheWriteTokens,
+    'thought': usage.thoughtTokens,
+  });
+  return HarnessMessage.user('$_usageReplayMarker$counts');
+}
+
+/// The usage [messages] replays, or null when they are anything else.
+LlmUsage? decodeDemoUsageReplay(List<HarnessMessage> messages) {
+  if (messages.length != 1) {
+    return null;
+  }
+  final text = messages.single.textContent;
+  if (!text.startsWith(_usageReplayMarker)) {
+    return null;
+  }
+  try {
+    final counts =
+        jsonDecode(text.substring(_usageReplayMarker.length))
+            as Map<String, dynamic>;
+    return LlmUsage(
+      inputTokens: counts['input'] as int,
+      outputTokens: counts['output'] as int,
+      cacheReadTokens: counts['cache_read'] as int,
+      cacheWriteTokens: counts['cache_write'] as int,
+      thoughtTokens: counts['thought'] as int,
+    );
+  } on Object {
+    return null;
+  }
 }
 
 /// Display metadata for the demo's connected providers, keyed by provider id.

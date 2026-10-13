@@ -317,45 +317,91 @@ void main() {
     },
   );
 
-  void cliScript(List<Map<String, dynamic>> lines) {
-    final executable = File('${workspace.path}/claude-fixture');
-    executable.writeAsStringSync(
-      '#!/bin/sh\nread prompt\n${lines.map((line) => "printf '%s\\n' '${jsonEncode(line)}'\n").join()}',
+  // The CLI fixture is a `#!/bin/sh` script, which Windows cannot execute.
+  group('Claude CLI backend', () {
+    void cliScript(List<Map<String, dynamic>> lines) {
+      final executable = File('${workspace.path}/claude-fixture');
+      executable.writeAsStringSync(
+        '#!/bin/sh\nread prompt\n${lines.map((line) => "printf '%s\\n' '${jsonEncode(line)}'\n").join()}',
+      );
+      expect(Process.runSync('chmod', ['+x', executable.path]).exitCode, 0);
+    }
+
+    Map<String, dynamic> stream(Map<String, dynamic> event) => {
+      'type': 'stream_event',
+      'event': event,
+    };
+
+    test(
+      'CLI init is not provider TTFB and streamed characters report work',
+      () async {
+        cliScript([
+          {'type': 'system', 'subtype': 'init', 'session_id': 'session-1'},
+          stream({
+            'type': 'content_block_start',
+            'index': 0,
+            'content_block': {'type': 'thinking'},
+          }),
+          stream({
+            'type': 'content_block_delta',
+            'index': 0,
+            'delta': {'type': 'thinking_delta', 'thinking': 'thinking'},
+          }),
+          stream({
+            'type': 'content_block_start',
+            'index': 1,
+            'content_block': {'type': 'text'},
+          }),
+          for (final text in [' ', 'o', 'k'])
+            stream({
+              'type': 'content_block_delta',
+              'index': 1,
+              'delta': {'type': 'text_delta', 'text': text},
+            }),
+          {
+            'type': 'result',
+            'subtype': 'success',
+            'total_cost_usd': 0,
+            'usage': {'input_tokens': 1, 'output_tokens': 2},
+          },
+        ]);
+        final attempt = await ClaudeCliEvaluationBackend(
+          claudePath: '${workspace.path}/claude-fixture',
+        ).execute(request());
+        expect(attempt.completed, isTrue);
+        expect(attempt.latency.transportTtfbMs, isNull);
+        expect(attempt.latency.firstModelEventMs, isNotNull);
+        expect(attempt.latency.firstUsefulTextMs, isNotNull);
+        expect(
+          attempt.latency.firstUsefulTextMs!,
+          greaterThanOrEqualTo(attempt.latency.firstModelEventMs!),
+        );
+      },
     );
-    expect(Process.runSync('chmod', ['+x', executable.path]).exitCode, 0);
-  }
 
-  Map<String, dynamic> stream(Map<String, dynamic> event) => {
-    'type': 'stream_event',
-    'event': event,
-  };
-
-  test(
-    'CLI init is not provider TTFB and streamed characters report work',
-    () async {
+    test('CLI tool call is useful even before any text arrives', () async {
       cliScript([
         {'type': 'system', 'subtype': 'init', 'session_id': 'session-1'},
         stream({
           'type': 'content_block_start',
           'index': 0,
-          'content_block': {'type': 'thinking'},
+          'content_block': {'type': 'tool_use', 'id': 'tool-1', 'name': 'Bash'},
         }),
-        stream({
-          'type': 'content_block_delta',
-          'index': 0,
-          'delta': {'type': 'thinking_delta', 'thinking': 'thinking'},
-        }),
-        stream({
-          'type': 'content_block_start',
-          'index': 1,
-          'content_block': {'type': 'text'},
-        }),
-        for (final text in [' ', 'o', 'k'])
-          stream({
-            'type': 'content_block_delta',
-            'index': 1,
-            'delta': {'type': 'text_delta', 'text': text},
-          }),
+        stream({'type': 'content_block_stop', 'index': 0}),
+        {
+          'type': 'user',
+          'message': {
+            'role': 'user',
+            'content': [
+              {
+                'type': 'tool_result',
+                'tool_use_id': 'tool-1',
+                'content': 'ok',
+                'is_error': false,
+              },
+            ],
+          },
+        },
         {
           'type': 'result',
           'subtype': 'success',
@@ -367,67 +413,27 @@ void main() {
         claudePath: '${workspace.path}/claude-fixture',
       ).execute(request());
       expect(attempt.completed, isTrue);
-      expect(attempt.latency.transportTtfbMs, isNull);
-      expect(attempt.latency.firstModelEventMs, isNotNull);
+      expect(attempt.toolEvents, hasLength(1));
       expect(attempt.latency.firstUsefulTextMs, isNotNull);
-      expect(
-        attempt.latency.firstUsefulTextMs!,
-        greaterThanOrEqualTo(attempt.latency.firstModelEventMs!),
-      );
-    },
-  );
+      expect(attempt.latency.transportTtfbMs, isNull);
+    });
 
-  test('CLI tool call is useful even before any text arrives', () async {
-    cliScript([
-      {'type': 'system', 'subtype': 'init', 'session_id': 'session-1'},
-      stream({
-        'type': 'content_block_start',
-        'index': 0,
-        'content_block': {'type': 'tool_use', 'id': 'tool-1', 'name': 'Bash'},
-      }),
-      stream({'type': 'content_block_stop', 'index': 0}),
-      {
-        'type': 'user',
-        'message': {
-          'role': 'user',
-          'content': [
-            {
-              'type': 'tool_result',
-              'tool_use_id': 'tool-1',
-              'content': 'ok',
-              'is_error': false,
-            },
-          ],
-        },
+    test(
+      'CLI init alone does not claim a model event or useful work',
+      () async {
+        cliScript([
+          {'type': 'system', 'subtype': 'init', 'session_id': 'session-1'},
+        ]);
+        final attempt = await ClaudeCliEvaluationBackend(
+          claudePath: '${workspace.path}/claude-fixture',
+        ).execute(request());
+        expect(attempt.completed, isFalse);
+        expect(attempt.error, isNotNull);
+        expect(attempt.latency.transportTtfbMs, isNull);
+        expect(attempt.latency.firstModelEventMs, isNull);
+        expect(attempt.latency.firstUsefulTextMs, isNull);
+        expect(attempt.cost.budgetMicros, isNull);
       },
-      {
-        'type': 'result',
-        'subtype': 'success',
-        'total_cost_usd': 0,
-        'usage': {'input_tokens': 1, 'output_tokens': 2},
-      },
-    ]);
-    final attempt = await ClaudeCliEvaluationBackend(
-      claudePath: '${workspace.path}/claude-fixture',
-    ).execute(request());
-    expect(attempt.completed, isTrue);
-    expect(attempt.toolEvents, hasLength(1));
-    expect(attempt.latency.firstUsefulTextMs, isNotNull);
-    expect(attempt.latency.transportTtfbMs, isNull);
-  });
-
-  test('CLI init alone does not claim a model event or useful work', () async {
-    cliScript([
-      {'type': 'system', 'subtype': 'init', 'session_id': 'session-1'},
-    ]);
-    final attempt = await ClaudeCliEvaluationBackend(
-      claudePath: '${workspace.path}/claude-fixture',
-    ).execute(request());
-    expect(attempt.completed, isFalse);
-    expect(attempt.error, isNotNull);
-    expect(attempt.latency.transportTtfbMs, isNull);
-    expect(attempt.latency.firstModelEventMs, isNull);
-    expect(attempt.latency.firstUsefulTextMs, isNull);
-    expect(attempt.cost.budgetMicros, isNull);
-  });
+    );
+  }, skip: Platform.isWindows ? 'the shebang CLI fixture is POSIX-only' : false);
 }

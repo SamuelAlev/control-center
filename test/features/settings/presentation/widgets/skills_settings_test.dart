@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_data/cc_data.dart' show SkillCampaignView;
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -18,6 +19,7 @@ import 'package:control_center/features/settings/providers/skill_security_provid
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -136,6 +138,12 @@ void main() {
         (ref) => Stream.value(const <Workspace>[]),
       ),
       skillSecurityControlProvider.overrideWithValue(securityControl),
+      // The selected skill's evaluation panel reads its campaign history and
+      // revision policy over RPC; no test here has a connected client.
+      skillCampaignsProvider.overrideWith(
+        (ref, scope) => Stream.value(const <SkillCampaignView>[]),
+      ),
+      skillCampaignPolicyProvider.overrideWith((ref, scope) async => null),
     ];
   }
 

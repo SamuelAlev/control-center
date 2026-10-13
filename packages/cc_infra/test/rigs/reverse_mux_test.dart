@@ -210,7 +210,8 @@ Future<_BoundPort> _bindFreePort() async {
 }
 
 Future<void> _waitUntilOpen(int port) async {
-  final deadline = DateTime.now().add(const Duration(seconds: 5));
+  // Generous: perl cold-starts slowly on a loaded Windows runner.
+  final deadline = DateTime.now().add(const Duration(seconds: 20));
   Object? last;
   while (DateTime.now().isBefore(deadline)) {
     try {

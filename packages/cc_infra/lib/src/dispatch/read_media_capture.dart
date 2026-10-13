@@ -74,6 +74,9 @@ class ReadMediaCapture {
   /// Completes after all accepted events have been emitted.
   Future<void> get drained => _pending ?? Future<void>.value();
 
+  /// Whether no accepted event is still waiting on a capture.
+  bool get isIdle => _pending == null;
+
   /// Captures final, successful Read results without delaying ordinary text.
   void add(AgentProcessEvent event) {
     _ReadSource? source;
